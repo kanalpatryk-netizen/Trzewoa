@@ -23,6 +23,8 @@ export interface Clan {
   forges: number[];
   /** Tik ostatniego wykucia (brak w starych zapisach). */
   kuto?: number;
+  /** Nacja z twojego szeptu (prorok) — jej wojny cię budzą. */
+  zSzeptu?: boolean;
   /** Czy spod rdzenia da się wrócić do gniazda i kiedy to sprawdzono (patrz pielgrzymka). */
   powrotOk?: boolean;
   powrotT?: number;
@@ -409,6 +411,18 @@ export class Sim {
       || this.rng.chance(0.05 * Math.min(1, this.clans[b.clan].pop / 12));
   }
 
+  /**
+   * „Obudzi cię tylko cudza wojna": śmierć w walce, w której bije się nacja z twojego
+   * szeptu, cofa sen — także gdy obie strony są tej samej krwi. Prorok to twój sposób
+   * na monokulturę, a dotąd nie zmieniał nic, bo sen patrzył wyłącznie na udział ras.
+   * Wojny, które toczą się bez ciebie, nie budzą — inaczej góra bez gracza nie zasypiała.
+   */
+  wojnaBudzi(a: number, b: number): void {
+    if (a === b || this.sen <= 0) return;
+    if (!this.clans[a]?.zSzeptu && !this.clans[b]?.zSzeptu) return;
+    this.sen = Math.max(0, this.sen - 0.01);
+  }
+
   feud(ca: number, cb: number): void {
     const A = this.clans[ca], B = this.clans[cb];
     A.grudge.set(cb, (A.grudge.get(cb) ?? 0) + 1);
@@ -538,6 +552,7 @@ export class Sim {
     const nc = this.newClan(c.race, Math.floor(c.x), Math.floor(c.y));
     nc.devotion = Math.min(1, old.devotion + 0.35);
     nc.tint = old.tint + 0.25;
+    nc.zSzeptu = true;
     c.prophet = true;
     old.pop--; c.clan = nc.id; nc.pop++;
     // kilku wiernych idzie za nim

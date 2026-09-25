@@ -778,6 +778,7 @@ function doFight(sim: Sim, c: Creature): void {
       sim.kill(foe, `z ręki ${sim.clans[c.clan].name}`, 'walka');
       if (RACES[c.race].eatsMeat) c.hunger = Math.max(0, c.hunger - 0.5);
       sim.feud(c.clan, foe.clan);
+      sim.wojnaBudzi(c.clan, foe.clan);
     }
   } else if (dist > 22) { sim.target.delete(c.id); c.jt = 0; }
   else walkTo(sim, c, foe.x, foe.y);

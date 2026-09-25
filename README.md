@@ -101,6 +101,10 @@ src/
 
 Ekologia zamiast balansu: pojemność każdej rasy wynika z jej sposobu istnienia (grzyb i padlina, liczba kuźni, liczba cudzych dzieci, szaleństwo głębi), a jej przekroczenie bije w głód kwadratem nadmiaru. Dzięki temu Ślepy Lud faluje w cyklu boomu i załamania zamiast rosnąć w nieskończoność, a dominacja trzyma się przedziału 0,34–0,66 przez 40 tysięcy tików.
 
+**Sen** przychodzi z monokultury albo z pustki. Budzi z niego tylko wojna, którą sam rozpętałeś: każda śmierć w walce z udziałem nacji założonej przez twojego proroka cofa powiekę — także gdy obie strony są tej samej krwi. Wojny toczone bez ciebie nie budzą.
+
+Pielgrzymi schodzą pod rdzeń tylko wtedy, gdy spod niego da się wrócić do gniazda; zeskok do wielkiej jaskini byłby drogą w jedną stronę. Wąski szyb wydrążony przez gracza wystarczy — po jego ścianach da się wspiąć.
+
 ## Uruchomienie
 
 ```bash

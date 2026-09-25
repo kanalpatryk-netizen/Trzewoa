@@ -90,6 +90,13 @@ function ruchGracza(sim: any) {
       if (gleboki) { gleboki.thought = 1; gleboki.jt = 0; sim.wiara -= 5; }
     }
   }
+  // monokulturę rozbija się prorokiem: nowa nacja tej samej krwi od razu ma urazę do starej
+  if (sim.dominance > 0.72 && sim.wiara > 40 && sim.tick % 1800 === 0) {
+    const klan = sim.clans.filter((k: any) => !k.dead && k.race === sim.domRace && k.pop > 14)
+      .sort((a: any, b: any) => b.pop - a.pop)[0];
+    const glos = klan && sim.creatures.find((c: any) => !c.dead && c.clan === klan.id && !c.prophet);
+    if (glos) { glos.thought = 3; glos.jt = 0; sim.wiara -= 18; }
+  }
   if (sim.dominance > 0.9 && sim.popByRace[sim.domRace] > 25 && sim.wiara > 40 && sim.tick % 900 === 0) {
     const ofiara = sim.creatures.find((c: any) => !c.dead && c.race === sim.domRace);
     if (ofiara) { ofiara.thought = 2; ofiara.jt = 0; sim.wiara -= 5; }
