@@ -1,7 +1,7 @@
 import type { Plate } from './plate';
 import { SERIF } from './ink';
 
-export type AkcjaPrzycisku = 'pauza' | 'wolniej' | 'szybciej' | 'zapiski' | 'legenda' | 'kamera' | 'zapis';
+export type AkcjaPrzycisku = 'pauza' | 'wolniej' | 'szybciej' | 'zapiski' | 'atlas' | 'legenda' | 'kamera' | 'zapis';
 
 export interface Przycisk {
   akcja: AkcjaPrzycisku;
@@ -21,15 +21,16 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
   // na wąskim ekranie pasek idzie na sam dół, bo margines pod płytą zajmuje spis warstw
   // 44 px to minimalne pole dotyku; promień 22 daje dokładnie tyle
   const r = p.waski ? Math.max(22, Math.min(26, p.w * 0.052)) : Math.max(22, Math.min(26, p.w * 0.02));
-  const odstep = p.waski ? Math.min(r * 2.4, (p.w - r) / 7) : r * 2.5;
+  const odstep = p.waski ? Math.min(r * 2.3, (p.w - r) / 8) : r * 2.3;
   const y = p.waski ? p.y + p.h - r * 1.5 : Math.min(vh - r * 1.6, p.y + p.h + r * 1.8);
-  const x0 = p.waski ? p.x + (p.w - odstep * 6) / 2 : p.x + p.w - odstep * 6.3;
+  const x0 = p.waski ? p.x + (p.w - odstep * 7) / 2 : p.x + p.w - odstep * 7 - r * 1.2;
   const lista: { akcja: AkcjaPrzycisku; etykieta: string; wlaczony?: boolean }[] = [
     { akcja: 'pauza', etykieta: stan.pauza ? 'wznów' : 'pauza', wlaczony: stan.pauza },
     { akcja: 'wolniej', etykieta: 'wolniej' },
     { akcja: 'szybciej', etykieta: `szybciej (×${stan.tempo})` },
     { akcja: 'kamera', etykieta: 'wróć do swoich' },
     { akcja: 'zapiski', etykieta: 'zapiski', wlaczony: stan.zapiski },
+    { akcja: 'atlas', etykieta: 'atlas' },
     { akcja: 'legenda', etykieta: 'klucz', wlaczony: stan.legenda },
     { akcja: 'zapis', etykieta: 'zapisz' },
   ];
@@ -105,6 +106,13 @@ function znak(ctx: CanvasRenderingContext2D, akcja: AkcjaPrzycisku, u: number, t
       ctx.moveTo(-u * 0.8, -u); ctx.lineTo(u * 0.8, -u);
       ctx.moveTo(-u * 0.8, -u * 0.2); ctx.lineTo(u * 0.5, -u * 0.2);
       ctx.moveTo(-u * 0.8, u * 0.6); ctx.lineTo(u * 0.8, u * 0.6);
+      break;
+    case 'atlas':                          // otwarta księga: dwie karty i grzbiet
+      ctx.moveTo(0, -u * 0.7); ctx.lineTo(0, u * 0.9);
+      ctx.moveTo(0, -u * 0.7); ctx.quadraticCurveTo(-u * 0.5, -u, -u, -u * 0.75); ctx.lineTo(-u, u * 0.7);
+      ctx.quadraticCurveTo(-u * 0.5, u * 0.5, 0, u * 0.9);
+      ctx.moveTo(0, -u * 0.7); ctx.quadraticCurveTo(u * 0.5, -u, u, -u * 0.75); ctx.lineTo(u, u * 0.7);
+      ctx.quadraticCurveTo(u * 0.5, u * 0.5, 0, u * 0.9);
       break;
     case 'legenda':                        // klucz
       ctx.arc(-u * 0.35, 0, u * 0.42, 0, Math.PI * 2);

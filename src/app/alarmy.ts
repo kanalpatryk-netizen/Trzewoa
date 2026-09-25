@@ -10,6 +10,8 @@ export interface Alarm {
   tekst: string;
   rada: string;
   cel?: { x: number; y: number; tekst: string };
+  /** Tablica atlasu, która opisuje tę sytuację. */
+  tablica?: string;
 }
 
 export type PoziomPauzy = 'wyłączona' | 'kryzysy' | 'wszystko';
@@ -50,6 +52,10 @@ export class Straznik {
     if (poziom === 'wyłączona' || sim.ending || sim.tick % 30 !== 0) return null;
     const alarm = this.wykryj(sim);
     if (!alarm) return null;
+    alarm.tablica = alarm.rodzaj.startsWith('wymiera-') ? `rasa-${alarm.rodzaj.slice(8)}`
+      : alarm.rodzaj === 'dominacja' || alarm.rodzaj.startsWith('sen') ? 'sen'
+      : alarm.rodzaj === 'otwarta' || alarm.rodzaj === 'pekniecie' ? 'rdzen'
+      : alarm.rodzaj.startsWith('przyplyw') ? 'przyplyw' : undefined;
     if (!alarm.kryzys && poziom !== 'wszystko') return null;
     if (this.wyciszone.has(alarm.rodzaj)) return null;
     // nie częściej niż co kilkanaście sekund świata, a ten sam rodzaj rzadziej

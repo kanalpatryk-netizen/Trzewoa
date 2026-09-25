@@ -22,6 +22,11 @@ import { rysujRozkazy, rysujBanerPauzy, type PoleBanera } from '../../render/roz
 import { miejsceKlepsydry } from '../../render/tempo';
 import { Straznik, type Alarm } from '../alarmy';
 import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
+import { OknoAtlasu } from '../../atlas/okno';
+import { odkrycia } from '../../atlas/odkrycia';
+import { tablica } from '../../atlas/tablice';
+import { Race } from '../../sim/races';
+import { Job } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
 import { ustawienia, ustaw } from '../../core/settings-store';
 import type { Akcja } from '../../core/keybinds';
@@ -101,6 +106,9 @@ export class EkranGry implements Ekran {
   private straznik = new Straznik();
   alarm: Alarm | null = null;
   private polaAlarmu: PoleAlarmu[] = [];
+  /** Atlas tablic — okno nad płytą; świat stoi, póki jest otwarte. */
+  atlas = new OknoAtlasu();
+  private ostatniaTablica = -1e9;
   legenda = false;
   liczby = false;
   /** Otwarte zapiski — cała kronika na wierzchu, świat czeka. */
@@ -208,7 +216,7 @@ export class EkranGry implements Ekran {
   /** Czas staje tylko na pauzie i po zakończeniu — nigdy przez sam wybór czasownika. */
   zamrozone(): boolean {
     // otwarta karta zatrzymuje świat: to moment rozmowy z jednym stworzeniem
-    return this.pauza || this.wstrzymane || this.zapiski || !!this.sim.ending || this.ui.selected !== null;
+    return this.pauza || this.wstrzymane || this.zapiski || this.atlas.otwarte || !!this.sim.ending || this.ui.selected !== null;
   }
 
   /**
@@ -230,6 +238,40 @@ export class EkranGry implements Ekran {
     this.nasluch?.({ typ: 'pauza', stoi });
     if (!stoi) this.wykonajPlan();
     this.dirty = true;
+  }
+
+  /**
+   * Tablice atlasu odkrywa się, grając: rasę — gdy pierwszy raz stanie w kadrze,
+   * ryt — gdy pierwszy raz go chwycisz, prawo góry — gdy pierwszy raz zadziała.
+   * Ważne tablice czekają w kolejce na pokazanie, drobne trafiają do atlasu po cichu.
+   */
+  private odkrywaj(): void {
+    const { sim, cam } = this;
+    const z = cam.zoom;
+    const left = cam.x - cam.vw / 2 / z, top = cam.y - cam.vh / 2 / z;
+    const right = left + cam.vw / z, bottom = top + cam.vh / z;
+    const cicho = (id: string) => {
+      if (odkrycia.odkryj(id, false)) this.ui.say(`Nowa tablica w atlasie: ${tablica(id)?.nazwa ?? ''}.`, sim.tick);
+    };
+    let prorok = false, pielgrzym = false;
+    for (const c of sim.creatures) {
+      if (c.dead) continue;
+      if (c.prophet) prorok = true;
+      if (c.job === Job.PIELGRZYM) pielgrzym = true;
+      if (c.x >= left && c.x <= right && c.y >= top && c.y <= bottom) odkrycia.odkryj(`rasa-${c.race}`);
+    }
+    if (sim.popByRace[Race.MYCELIUM] > 2 && sim.tick > 6000) odkrycia.odkryj('rasa-5');
+    if (prorok) odkrycia.odkryj('prorok');
+    if (pielgrzym) odkrycia.odkryj('pielgrzymka');
+    if (sim.sen > 0.05) odkrycia.odkryj('sen');
+    if (sim.tideTick >= 0) odkrycia.odkryj('przyplyw');
+    if (sim.rytual.pekniecia > 0 || sim.world.ever[sim.world.idx(sim.world.coreX, sim.world.coreY)]) odkrycia.odkryj('rdzen');
+    if (sim.tick > 1500) cicho('krew');
+    if (sim.wiara > 15) cicho('wiara');
+    if (sim.tick > 4000) cicho('otchlan');
+    if (sim.tick > 7000) cicho('pamiec');
+    if (this.ui.verb) cicho(`ryt-${this.ui.verb}`);
+    if (this.pauza) cicho('pauza');
   }
 
   private podniesAlarm(a: Alarm): void {
@@ -308,6 +350,16 @@ export class EkranGry implements Ekran {
         this.nasluch?.({ typ: 'koniec', opis: this.sim.ending });
         if (!this.nasluch) this.app.idz('kronika', { sim: this.sim });
       }
+    }
+
+    if (!this.nasluch && this.sim.tick % 30 === 0) this.odkrywaj();
+    // nowa tablica otwiera się sama — najwyżej jedna na pół minuty i nigdy na kryzys
+    if (!this.nasluch && odkrycia.kolejka.length && !this.atlas.otwarte && !this.alarm && !this.zapiski
+        && !this.sim.ending && this.sim.tick > 1200 && teraz - this.ostatniaTablica > 30000) {
+      const id = odkrycia.kolejka.shift()!;
+      this.ostatniaTablica = teraz;
+      if (ustawienia.tablice === 'pokazuj') { this.atlas.otworzTablice(id, true); this.app.dzwiek.toll(); }
+      else this.ui.say(`Nowa tablica w atlasie: ${tablica(id)?.nazwa ?? ''}.`, this.sim.tick);
     }
 
     if (this.zapisujAuto && ustawienia.autozapis && !this.sim.ending && !this.zamrozone() && teraz - this.lastSave > 60000) {
@@ -455,7 +507,7 @@ export class EkranGry implements Ekran {
       ctx.restore();
     }
     if (this.legenda) rysujLegende(ctx, plate, w);
-    if (this.rada && !this.ui.verb && !this.legenda && !this.alarm) {
+    if (this.rada && !this.ui.verb && !this.legenda && !this.alarm && !this.atlas.otwarte) {
       ctx.save();
       ctx.textAlign = 'center';
       const rozmiar = Math.max(15, Math.min(20, w / 66));
@@ -484,6 +536,7 @@ export class EkranGry implements Ekran {
       this.trafieniaZapiskow = r.trafienia;
       this.maxPrzewin = r.maxPrzewin;
     }
+    this.atlas.rysuj(ctx, w, h, teraz);
   }
 
   /** Gdzie leży przycisk pod płytą — samouczek go wskazuje. */
@@ -617,12 +670,33 @@ export class EkranGry implements Ekran {
     ui.pointer.x = e.clientX; ui.pointer.y = e.clientY;
     ui.plan = this.pauza ? this.rozkazy : null;
 
+    if (this.atlas.otwarte) {
+      if (faza === 'dol') this.atlas.dotyk(e.clientX, e.clientY);
+      else this.atlas.ruch(e.clientX, e.clientY);
+      this.dirty = true;
+      return;
+    }
+    // prawy przycisk na rycie otwiera jego tablicę
+    if (faza === 'dol' && e.button === 2) {
+      for (const v of ['ksztaltuj', 'zasiej', 'szept', 'znak', 'skaz']) {
+        const m = ui.miejsce('verb', v);
+        if (m && Math.abs(e.clientX - m.x) <= m.hw && Math.abs(e.clientY - m.y) <= m.hh) {
+          odkrycia.odkryj(`ryt-${v}`, false);
+          this.atlas.otworzTablice(`ryt-${v}`);
+          return;
+        }
+      }
+    }
+
     if (faza === 'dol' && !this.zapiski) {
       // karta sytuacji: planuj (zostaje pauza), puść czas, nie zatrzymuj przy tym
       for (const b of this.polaAlarmu) {
         if (Math.abs(e.clientX - b.x) > b.w / 2 || Math.abs(e.clientY - b.y) > b.h / 2) continue;
         if (b.akcja === 'pusc') this.ustawPauze(false);
-        else {
+        else if (b.akcja === 'tablica' && this.alarm?.tablica) {
+          odkrycia.odkryj(this.alarm.tablica, false);
+          this.atlas.otworzTablice(this.alarm.tablica);
+        } else {
           if (b.akcja === 'wycisz' && this.alarm) {
             this.straznik.wyciszone.add(this.alarm.rodzaj);
             ui.say('Przy tym już nie zatrzymam czasu.', sim.tick);
@@ -761,6 +835,7 @@ export class EkranGry implements Ekran {
       case 'szybciej': this.klawisz('szybciej'); break;
       case 'kamera': this.doMieszkancow(); break;
       case 'zapiski': this.zapiski = !this.zapiski; this.przewinZapiskow = 0; break;
+      case 'atlas': this.atlas.otworzAtlas(); break;
       case 'legenda': this.legenda = !this.legenda; break;
       case 'zapis': this.klawisz('zapis'); break;
     }
@@ -768,6 +843,7 @@ export class EkranGry implements Ekran {
   }
 
   kolko(e: WheelEvent): void {
+    if (this.atlas.otwarte) { this.atlas.kolko(e.deltaY > 0 ? 70 : -70); return; }
     if (this.zapiski) {
       this.przewinZapiskow = Math.max(0, Math.min(this.maxPrzewin, this.przewinZapiskow + (e.deltaY > 0 ? 3 : -3)));
       return;
@@ -788,6 +864,7 @@ export class EkranGry implements Ekran {
   klawisz(akcja: Akcja | null, _e?: KeyboardEvent): void {
     if (_e?.key === 'Tab') { this.liczby = true; return; }
     const { ui, sim } = this;
+    if (this.atlas.otwarte && _e) { this.atlas.klawisz(_e.key); return; }
     // Enter przy karcie sytuacji: „planuj" — karta znika, czas dalej stoi
     if (this.alarm && _e?.key === 'Enter') { this.alarm = null; return; }
     switch (akcja) {

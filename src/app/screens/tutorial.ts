@@ -11,6 +11,7 @@ import { SERIF, panel, akapit, linieAkapitu } from '../../render/ink';
 import { obszarKrwi, obszarOtchlani, obszarWiary, obszarSpisu, type Obszar } from '../../render/plate';
 import { ustaw, ustawienia } from '../../core/settings-store';
 import { TOOLS } from '../../powers/powers';
+import { odkrycia } from '../../atlas/odkrycia';
 import { T, PASSABLE } from '../../sim/tiles';
 import { Race } from '../../sim/races';
 
@@ -551,6 +552,9 @@ export class EkranSamouczka implements Ekran {
 
   private koniecNauki(): void {
     ustaw('samouczekZrobiony', true);
+    // co pokazał samouczek, to trafia do atlasu — bez wyskakujących tablic
+    for (const id of ['rasa-0', 'ryt-ksztaltuj', 'ryt-zasiej', 'ryt-szept', 'ryt-znak', 'ryt-skaz',
+      'krew', 'wiara', 'otchlan', 'pamiec', 'sen', 'rdzen', 'prorok', 'pauza']) odkrycia.odkryj(id, false);
     this.faza = 'final';
     const g = this.gra;
     g.dozwolone = new Set();
@@ -568,7 +572,7 @@ export class EkranSamouczka implements Ekran {
   private doMenu(): void {
     this.gra.dozwolone = null;
     ustawienia.tempo = this.tempoPrzed;
-    this.app.idz('menu', this.faza === 'final' ? { komunikat: 'Samouczek skończony. Bestiariusz opisuje każdą nację.' } : undefined);
+    this.app.idz('menu', this.faza === 'final' ? { komunikat: 'Samouczek skończony. Pierwsze tablice czekają w atlasie.' } : undefined);
   }
 
   // ------------------------------------------------------------- czas i obraz
@@ -900,7 +904,7 @@ export class EkranSamouczka implements Ekran {
   private rysujFinal(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     const rozm = Math.max(16, Math.min(22, w / 56));
     const szer = Math.min(560, w - 32);
-    const tekst = `Umiesz już wszystko, czego trzeba na początek. Rasy, przypływy, woda, żar i zawały — resztę odkryjesz sam. Klawisz ${nazwaKlawisza(klawisze.legenda)} pokazuje klucz do ryciny, a bestiariusz w menu opisuje każdą nację.`;
+    const tekst = `Umiesz już wszystko, czego trzeba na początek. Rasy, przypływy, woda, żar i zawały — resztę odkryjesz sam. Klawisz ${nazwaKlawisza(klawisze.legenda)} pokazuje klucz do ryciny, a w atlasie czekają już pierwsze tablice — kolejne odkryjesz, grając.`;
     ctx.save();
     ctx.fillStyle = 'rgba(6,4,3,0.55)';
     ctx.fillRect(0, 0, w, h);

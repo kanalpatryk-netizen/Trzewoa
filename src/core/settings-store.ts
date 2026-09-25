@@ -18,6 +18,8 @@ export interface Settings {
   samouczekZrobiony: boolean;
   /** Kiedy gra sama zatrzymuje czas: przy kryzysach, przy każdym wydarzeniu albo nigdy. */
   autoPauza: 'wyłączona' | 'kryzysy' | 'wszystko';
+  /** Nowa tablica atlasu: otwiera się sama przy pierwszym spotkaniu albo tylko trafia do atlasu. */
+  tablice: 'pokazuj' | 'tylko w atlasie';
 }
 
 export const DOMYSLNE: Settings = {
@@ -38,6 +40,7 @@ export const DOMYSLNE: Settings = {
   autozapis: true,
   samouczekZrobiony: false,
   autoPauza: 'kryzysy',
+  tablice: 'pokazuj',
 };
 
 const KLUCZ = 'trzewia:ustawienia';

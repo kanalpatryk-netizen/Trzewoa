@@ -34,7 +34,7 @@ export function obszarKrwi(p: Plate, vh: number): Obszar {
 /** Kwadrat Otchłani razem z podpisem. */
 export function obszarOtchlani(p: Plate, vh: number): Obszar {
   const bok = Math.max(26, Math.min(46, p.bottom * (p.waski ? 0.16 : 0.28)));
-  const x = p.waski ? p.x + p.w - bok * 3.4 : p.x + p.w * 0.56;
+  const x = p.waski ? p.x + p.w - bok * 3.4 : p.x + p.w * 0.5;
   const y = vh - p.bottom + p.bottom * (p.waski ? 0.4 : 0.14);
   return { x, y, w: bok * (p.waski ? 3.3 : 4.6), h: bok };
 }

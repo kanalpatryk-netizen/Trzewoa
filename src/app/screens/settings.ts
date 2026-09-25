@@ -50,6 +50,7 @@ export class EkranUstawien implements Ekran {
 
       { typ: 'naglowek', tekst: 'Świat' },
       { typ: 'wybor', etykieta: 'Auto-pauza', opis: 'gra sama zatrzymuje czas, gdy trzeba decydować', opcje: ['kryzysy', 'wszystko', 'wyłączona'], czytaj: () => ustawienia.autoPauza, zmien: (v) => ustaw('autoPauza', v as typeof ustawienia.autoPauza) },
+      { typ: 'wybor', etykieta: 'Nowe tablice', opis: 'przy pierwszym spotkaniu tablica atlasu otwiera się sama', opcje: ['pokazuj', 'tylko w atlasie'], czytaj: () => ustawienia.tablice, zmien: (v) => ustaw('tablice', v as typeof ustawienia.tablice) },
       { typ: 'suwak', etykieta: 'Tempo czasu', opis: 'ile tików świata przypada na klatkę', min: 1, max: 8, krok: 1, czytaj: () => ustawienia.tempo, zmien: (v) => ustaw('tempo', v), format: (v) => `${v}×` },
       { typ: 'przelacznik', etykieta: 'Kamera za życiem', opis: 'sama wraca tam, gdzie jest najgęściej — dopóki jej nie chwycisz', czytaj: () => ustawienia.kameraZaZyciem, zmien: (v) => ustaw('kameraZaZyciem', v) },
       { typ: 'przelacznik', etykieta: 'Automatyczne przybliżanie', opis: 'kamera sama dobiera skalę do wielkości kolonii', czytaj: () => ustawienia.autoZoom, zmien: (v) => ustaw('autoZoom', v) },

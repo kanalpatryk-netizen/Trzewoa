@@ -10,7 +10,7 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 |---|---|
 | **Menu** | powrót do trwającej gry, nowa góra, samouczek, bestiariusz, ustawienia — wszystko rysowane tą samą kreską, co świat |
 | **Samouczek** | 10 krótkich rozdziałów z listą czynności do odhaczenia; palec wskazuje dokładnie ryt, słowo, przycisk albo miejsce na płycie |
-| **Bestiariusz** | stała karta wiedzy: pięć czasowników z kosztami, sześć ras ze sposobem istnienia, trzy zasoby, przypływy i zakończenia. Liczby brane wprost z kodu, więc nie zdezaktualizują się |
+| **Atlas** | 21 tablic z ryciną i opisem: sześć ras, pięć rytów, trzy zasoby i siedem praw góry — odkrywanych w trakcie gry |
 | **Ustawienia** | dźwięk, obraz, świat oraz **pełna lista sterowania z przypisywaniem klawiszy** |
 | **Rozgrywka** | przekrój góry 176×240, sześć sposobów istnienia, pięć czasowników, trzy zasoby, przypływy, zapis stanu |
 | **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś |
@@ -25,6 +25,14 @@ naraz, gdy puścisz czas. Szkic skreśla dotknięcie bez rytu w ręku albo „co
 **Auto-pauza** zatrzymuje świat w chwilach, w których trzeba decydować: nacja wymiera, jedna krew bierze
 górę, zaczyna się sen, pęka skorupa rdzenia albo przychodzi przypływ. Kamera jedzie na miejsce, a karta
 sytuacji mówi, co się stało i **co możesz z tym zrobić**. Poziom (kryzysy / wszystko / wyłączona) w ustawieniach.
+
+## Atlas tablic
+
+Każda rasa, ryt, zasób i prawo góry ma swoją **tablicę** jak plansza z dawnego atlasu: u góry rycina,
+pod nią nazwa, łaciński podpis, opis i jedno zdanie — **kiedy tego użyć**. Tablice odkrywa się, grając
+(rasę, gdy pierwszy raz stanie w kadrze; prawo, gdy pierwszy raz zadziała), a ważne otwierają się same
+przy pierwszym spotkaniu. Atlas jest pod przyciskiem z księgą, w menu, na karcie sytuacji („tablica")
+i pod prawym przyciskiem na rycie. Odkrycia pamiętane są między partiami.
 
 ## Samouczek — robisz, nie czytasz
 

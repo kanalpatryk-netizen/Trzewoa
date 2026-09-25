@@ -3,7 +3,7 @@ import type { Alarm } from '../app/alarmy';
 import { SERIF, panel, akapit, linieAkapitu } from './ink';
 import { BARWA, rgba } from './palette';
 
-export interface PoleAlarmu { akcja: 'planuj' | 'pusc' | 'wycisz'; x: number; y: number; w: number; h: number }
+export interface PoleAlarmu { akcja: 'planuj' | 'pusc' | 'wycisz' | 'tablica'; x: number; y: number; w: number; h: number }
 
 /**
  * Karta sytuacji przy auto-pauzie: co się stało, dlaczego to ważne i co możesz
@@ -78,7 +78,8 @@ export function rysujAlarm(ctx: CanvasRenderingContext2D, p: Plate, a: Alarm, te
   };
   let px = x + szer - 18;
   px = przycisk('planuj', 'Planuj →', px, true);
-  przycisk('pusc', 'puść czas', px, false);
+  px = przycisk('pusc', 'puść czas', px, false);
+  if (a.tablica) px = przycisk('tablica', 'tablica', px, false);
   ctx.font = `italic ${Math.max(12, rozm * 0.7)}px ${SERIF}`;
   ctx.textAlign = 'left';
   ctx.fillStyle = rgba(BARWA.atramentCichy, 0.8);
