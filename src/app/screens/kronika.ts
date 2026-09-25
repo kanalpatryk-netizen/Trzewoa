@@ -50,9 +50,18 @@ export class EkranKroniki implements Ekran {
     ctx.fillText(podtytul, w / 2, h * 0.175);
 
     // --- karta: prawdziwy papier z atramentem, bo to jest dokument, nie panel
-    const linie = (this.sim?.chronicle ?? []).slice(-12);
     const rozmiar = Math.max(14, Math.min(18, w / 74));
     const kw = Math.min(820, w * 0.78);
+    // długie wpisy łamiemy w obrębie karty — wcześniej wychodziły poza papier;
+    // bierzemy tyle ostatnich, ile się zmieści
+    ctx.font = `${rozmiar}px ${SERIF}`;
+    const maxLinii = Math.max(4, Math.floor((h * 0.58 - 90) / (rozmiar * 1.75)));
+    const linie: { text: string; kind: string }[] = [];
+    for (const e of [...(this.sim?.chronicle ?? [])].reverse()) {
+      const kawalki = zlam(ctx, `— ${e.text}`, kw * 0.84);
+      if (linie.length + kawalki.length > maxLinii) break;
+      linie.unshift(...kawalki.map((t, i) => ({ text: i ? `   ${t}` : t, kind: e.kind })));
+    }
     const kh = Math.min(h * 0.58, 90 + linie.length * rozmiar * 1.75);
     const kx = w / 2 - kw / 2, ky = h * 0.22;
 
@@ -107,7 +116,7 @@ export class EkranKroniki implements Ekran {
       ctx.font = `${e.kind === 'koniec' ? 'italic ' : ''}${rozmiar}px ${SERIF}`;
       const kolor = e.kind === 'krew' ? '120,34,28' : e.kind === 'wiara' ? '104,74,26' : e.kind === 'otchlan' ? '70,72,88' : '46,38,32';
       ctx.fillStyle = `rgba(${kolor},${0.92 * alfa})`;
-      ctx.fillText(`— ${e.text}`, kw * 0.08, kh * 0.2 + i * rozmiar * 1.75);
+      ctx.fillText(e.text, kw * 0.08, kh * 0.2 + i * rozmiar * 1.75);
     });
 
     // pieczęć: odcisk zamiast podpisu
@@ -171,4 +180,18 @@ export class EkranKroniki implements Ekran {
     if (e.key === 'Enter' || e.key === ' ') { this.uruchom(this.opcje[this.wybrana].id); return; }
     if (akcja === 'menu') this.app.idz('menu');
   }
+}
+
+/** Łamie wpis kroniki na linie mieszczące się na karcie. */
+function zlam(ctx: CanvasRenderingContext2D, tekst: string, maxW: number): string[] {
+  const slowa = tekst.split(' ');
+  const out: string[] = [];
+  let linia = '';
+  for (const s of slowa) {
+    const proba = linia ? `${linia} ${s}` : s;
+    if (ctx.measureText(proba).width > maxW && linia) { out.push(linia); linia = s; }
+    else linia = proba;
+  }
+  if (linia) out.push(linia);
+  return out;
 }

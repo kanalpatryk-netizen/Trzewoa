@@ -29,20 +29,18 @@ function lamiTekst(ctx: CanvasRenderingContext2D, tekst: string, maxW: number, i
   const slowa = tekst.split(' ');
   const linie: string[] = [];
   let biezaca = '';
-  for (const s of slowa) {
-    const proba = biezaca ? `${biezaca} ${s}` : s;
-    if (ctx.measureText(proba).width > maxW && biezaca) {
-      linie.push(biezaca);
-      biezaca = s;
-      if (linie.length === ile - 1) break;
-    } else biezaca = proba;
+  let i = 0;
+  // pełne linie do przedostatniej; resztę liczymy od miejsca, w którym skończyliśmy —
+  // szukanie jej po słowie myliło się, gdy to samo słowo padło w zdaniu dwa razy
+  for (; i < slowa.length && linie.length < ile - 1; i++) {
+    const proba = biezaca ? `${biezaca} ${slowa[i]}` : slowa[i];
+    if (ctx.measureText(proba).width > maxW && biezaca) { linie.push(biezaca); biezaca = ''; i--; }
+    else biezaca = proba;
   }
-  const reszta = biezaca + (linie.length === ile - 1
-    ? ' ' + slowa.slice(slowa.indexOf(biezaca.split(' ')[0]) + biezaca.split(' ').length).join(' ')
-    : '');
-  let ostatnia = reszta.trim();
+  const reszta = [biezaca, ...slowa.slice(i)].filter(Boolean).join(' ').trim();
+  let ostatnia = reszta;
   while (ctx.measureText(ostatnia + '…').width > maxW && ostatnia.length > 8) ostatnia = ostatnia.slice(0, -2);
-  linie.push(ostatnia === reszta.trim() ? ostatnia : ostatnia + '…');
+  if (ostatnia) linie.push(ostatnia === reszta ? ostatnia : ostatnia.trimEnd() + '…');
   return linie;
 }
 
@@ -116,7 +114,11 @@ export class EkranGry implements Ekran {
     if (tryb === 'nowa') this.nowaGra();
     else if (tryb === 'wczytaj') {
       const s = loadFromStorage();
-      if (s) { this.sim = s; this.doSerca(true); }
+      if (s) {
+        this.sim = s; this.doSerca(true);
+        // zapis skończonej gry nie może otwierać zamrożonej płyty bez wyjścia
+        if (s.ending) { this.app.idz('kronika', { sim: s }); return; }
+      }
     }
     this.app.muzyka.ustawScene(tryb === 'samouczek' ? 'samouczek' : 'gra');
     this.rozmiar(this.app.w, this.app.h);
@@ -514,7 +516,8 @@ export class EkranGry implements Ekran {
     }
 
     if (faza === 'dol') {
-      const mm = miejsceZMinimapy(sim, this.plate, e.clientX, e.clientY);
+      // tylko gdy pasek naprawdę jest na ekranie — ukryty przerzucał kamerę po kliknięciu w pustkę
+      const mm = ustawienia.skalaGlebokosci && !this.plate.waski ? miejsceZMinimapy(sim, this.plate, e.clientX, e.clientY) : null;
       if (mm) {
         this.przejmijKamere();
         this.cam.x = this.camTarget.x = mm[0];
@@ -635,7 +638,17 @@ export class EkranGry implements Ekran {
       case 'szybciej': ustawienia.tempo = Math.min(8, ustawienia.tempo + 1); break;
       case 'wolniej': ustawienia.tempo = Math.max(1, ustawienia.tempo - 1); break;
       case 'zapis': ui.say(this.zapisujAuto && saveToStorage(sim) ? 'Zapisane.' : 'Nie tutaj.', sim.tick); break;
-      case 'wczytaj': { const s = loadFromStorage(); if (s) { this.sim = s; this.doSerca(true); ui.say('Wróciłeś tam, gdzie byłeś.', s.tick); } else ui.say('Nie ma do czego wracać.', sim.tick); break; }
+      case 'wczytaj': {
+        // w samouczku zapis gracza nie ma prawa podmienić góry, na której się uczy
+        if (!this.zapisujAuto) { ui.say('Nie tutaj.', sim.tick); break; }
+        const s = loadFromStorage();
+        if (s) {
+          this.sim = s; this.doSerca(true); this.dirty = true;
+          if (s.ending) { this.app.idz('kronika', { sim: s }); break; }
+          ui.say('Wróciłeś tam, gdzie byłeś.', s.tick);
+        } else ui.say('Nie ma do czego wracać.', sim.tick);
+        break;
+      }
       case 'odNowa': if (sim.ending) this.nowaGra(); break;
       case 'legenda': this.legenda = !this.legenda; break;
       case 'zapiski': this.zapiski = !this.zapiski; this.przewinZapiskow = 0; break;

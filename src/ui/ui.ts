@@ -52,7 +52,12 @@ export class Ui {
     return { x: this.gx + kolumna * this.gs * 1.5, y: this.gy + wiersz * this.gap };
   }
 
-  say(text: string, tick: number): void { this.flash = text; this.flashAt = tick; }
+  /**
+   * Komunikat przy kursorze. Czas liczony zegarem, nie tikami świata: przy pauzie
+   * albo otwartej karcie tiki stoją i komunikat wisiał bez końca, a po nowej grze
+   * licznik tików się cofał i stary napis potrafił wrócić.
+   */
+  say(text: string, _tick?: number): void { this.flash = text; this.flashAt = performance.now(); }
 
   draw(ctx: CanvasRenderingContext2D, sim: Sim, time: number): void {
     this.hits = [];
@@ -72,8 +77,8 @@ export class Ui {
     if (this.verb && !(this.selected && !this.selected.dead)) this.drawTools(ctx, sim);
     if (this.selected && !this.selected.dead) this.drawCard(ctx, sim, this.selected);
 
-    if (sim.tick - this.flashAt < 130 && this.flash) {
-      const a = Math.min(1, (130 - (sim.tick - this.flashAt)) / 60);
+    if (time - this.flashAt < 2600 && this.flash) {
+      const a = Math.min(1, (2600 - (time - this.flashAt)) / 1000);
       const size = Math.max(14, this.vw / 76);
       ctx.font = `italic ${size}px ${SERIF}`;
       ctx.textAlign = 'center';

@@ -78,7 +78,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
       cel: { x: sim.world.coreX, y: sim.world.coreY - 14, r: 7, tekst: 'rytuał' },
       waga: 85,
     });
-  } else if (najwierniejszy && najwierniejszy.devotion > 0.55) {
+  } else if (najwierniejszy && najwierniejszy.devotion > 0.6) {     // próg pielgrzymki
     // droga jest robotą gracza: pielgrzymka przez pięćdziesiąt kafli litej skały
     // nie dojdzie nigdy, choćby wierzyli najmocniej
     const w = sim.world;

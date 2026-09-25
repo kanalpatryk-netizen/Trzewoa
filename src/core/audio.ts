@@ -85,6 +85,16 @@ export class Resonance {
     pray.start();
   }
 
+  /**
+   * Głośność od razu, nie dopiero w następnej klatce gry — w menu i ustawieniach
+   * `update` nie jest wołane, więc wyłączony rezonans dudnił dalej.
+   */
+  odswiezGlosnosc(): void {
+    if (!this.ctx) return;
+    const docelowa = ustawienia.rezonans ? ustawienia.glosnosc * 0.55 : 0.0001;
+    this.master.gain.setTargetAtTime(Math.max(0.0001, docelowa), this.ctx.currentTime, 0.25);
+  }
+
   /** Stuk kucia — praca jest rytmem, nie efektem. */
   private knock(when: number, pitch: number, level: number): void {
     const ctx = this.ctx!;
@@ -130,7 +140,7 @@ export class Resonance {
 
   /** Cud słychać jako uderzenie w skałę, nie jako fanfarę. */
   toll(): void {
-    if (!this.ctx) return;
+    if (!this.ctx || !ustawienia.rezonans) return;
     const t = this.ctx.currentTime;
     for (let i = 0; i < 3; i++) this.knock(t + i * 0.16, 70 - i * 8, 0.22);
   }

@@ -22,6 +22,9 @@ export class EkranUstawien implements Ekran {
   private czekamNa: Akcja | null = null;
   private trafienia: { x: number; y: number; w: number; h: number; i: number; strefa?: 'minus' | 'plus' }[] = [];
   private wysokoscListy = 0;
+  private maxPrzewin = 0;
+  /** Położenie każdego wiersza na liście — strzałki trzymają zaznaczenie w widoku. */
+  private pozycjeWierszy: { y: number; h: number }[] = [];
 
   constructor(private app: Kontekst) { this.zbuduj(); }
 
@@ -31,9 +34,9 @@ export class EkranUstawien implements Ekran {
     const proc = (v: number) => `${Math.round(v * 100)}%`;
     this.wiersze = [
       { typ: 'naglowek', tekst: 'Dźwięk' },
-      { typ: 'suwak', etykieta: 'Głośność', opis: 'wspólna dla muzyki i rezonansu skały', min: 0, max: 1, krok: 0.1, czytaj: () => ustawienia.glosnosc, zmien: (v) => { ustaw('glosnosc', v); this.app.muzyka.glosnosc(v); }, format: proc },
+      { typ: 'suwak', etykieta: 'Głośność', opis: 'wspólna dla muzyki i rezonansu skały', min: 0, max: 1, krok: 0.1, czytaj: () => ustawienia.glosnosc, zmien: (v) => { ustaw('glosnosc', v); this.app.muzyka.glosnosc(v); this.app.dzwiek.odswiezGlosnosc(); }, format: proc },
       { typ: 'przelacznik', etykieta: 'Muzyka', opis: 'powolne akordy kamienia i uderzenia w metal', czytaj: () => ustawienia.muzyka, zmien: (v) => { ustaw('muzyka', v); if (v) this.app.muzyka.start(); else this.app.muzyka.stop(); } },
-      { typ: 'przelacznik', etykieta: 'Rezonans świata', opis: 'kucie, modlitwa i niski ton zależny od głębokości', czytaj: () => ustawienia.rezonans, zmien: (v) => { ustaw('rezonans', v); if (v) this.app.dzwiek.start(); } },
+      { typ: 'przelacznik', etykieta: 'Rezonans świata', opis: 'kucie, modlitwa i niski ton zależny od głębokości', czytaj: () => ustawienia.rezonans, zmien: (v) => { ustaw('rezonans', v); if (v) this.app.dzwiek.start(); this.app.dzwiek.odswiezGlosnosc(); } },
 
       { typ: 'naglowek', tekst: 'Obraz' },
       { typ: 'wybor', etykieta: 'Jakość ryciny', opis: 'ostra rysuje w pełnej rozdzielczości, szybka w połowie', opcje: ['auto', 'ostra', 'szybka'], czytaj: () => ustawienia.jakosc, zmien: (v) => ustaw('jakosc', v as typeof ustawienia.jakosc) },
@@ -85,12 +88,14 @@ export class EkranUstawien implements Ekran {
     ctx.clip();
 
     this.trafienia = [];
+    this.pozycjeWierszy = [];
     let y = gora - this.przewiniecie;
     const podstawa = Math.max(15, Math.min(19, w / 62));
 
     for (let i = 0; i < this.wiersze.length; i++) {
       const wiersz = this.wiersze[i];
       const wysokosc = wiersz.typ === 'naglowek' ? podstawa * 3.1 : podstawa * 3.05;
+      this.pozycjeWierszy.push({ y: y + this.przewiniecie - gora, h: wysokosc });
       if (y + wysokosc > gora - 40 && y < dol + 40) this.rysujWiersz(ctx, wiersz, x, y, szer, podstawa, i === this.wybrany, teraz);
       if (wiersz.typ !== 'naglowek') {
         this.trafienia.push({ x, y, w: szer, h: wysokosc, i });
@@ -103,6 +108,8 @@ export class EkranUstawien implements Ekran {
     }
     const calkowita = y + this.przewiniecie - gora;
     ctx.restore();
+    this.maxPrzewin = Math.max(0, calkowita - this.wysokoscListy + podstawa);
+    if (this.przewiniecie > this.maxPrzewin) this.przewiniecie = this.maxPrzewin;
 
     // pasek przewijania jako rysa w kamieniu
     if (calkowita > this.wysokoscListy) {
@@ -211,7 +218,7 @@ export class EkranUstawien implements Ekran {
   }
 
   kolko(e: WheelEvent): void {
-    this.przewiniecie = Math.max(0, this.przewiniecie + e.deltaY * 0.6);
+    this.przewiniecie = Math.max(0, Math.min(this.maxPrzewin, this.przewiniecie + e.deltaY * 0.6));
   }
 
   klawisz(akcja: Akcja | null, e: KeyboardEvent): void {
@@ -236,10 +243,12 @@ export class EkranUstawien implements Ekran {
       if (this.wiersze[i].typ !== 'naglowek') break;
     }
     this.wybrany = i;
-    // trzymaj zaznaczenie w widoku
-    const przed = this.wiersze.slice(0, i).reduce((a, w) => a + (w.typ === 'naglowek' ? 1 : 1), 0);
-    const przybliżona = przed * 56;
-    if (przybliżona < this.przewiniecie) this.przewiniecie = Math.max(0, przybliżona - 20);
-    if (przybliżona > this.przewiniecie + this.wysokoscListy - 80) this.przewiniecie = przybliżona - this.wysokoscListy + 120;
+    // trzymaj zaznaczenie w widoku — według prawdziwych wysokości wierszy z ostatniej klatki
+    const poz = this.pozycjeWierszy[i];
+    if (!poz) return;
+    if (poz.y < this.przewiniecie) this.przewiniecie = Math.max(0, poz.y - 20);
+    else if (poz.y + poz.h > this.przewiniecie + this.wysokoscListy) {
+      this.przewiniecie = Math.min(this.maxPrzewin, poz.y + poz.h - this.wysokoscListy + 20);
+    }
   }
 }

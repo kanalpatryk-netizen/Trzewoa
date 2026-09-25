@@ -81,7 +81,13 @@ export class EkranMenu implements Ekran {
   }
 
   krok(_dt: number, teraz: number): void {
-    // tło żyje własnym, wolnym życiem
+    // tło żyje własnym, wolnym życiem — a gdy zaśnie, budzi się inna góra;
+    // inaczej po kwadransie w menu obraz za tytułem zamierał na zawsze
+    if (this.sim.ending) {
+      this.sim = new Sim(4242 + ((teraz | 0) % 9973));
+      for (let i = 0; i < 900; i++) this.sim.step();
+      this.ostatniRys = 0;
+    }
     this.sim.step();
     if (this.sim.tick % 6 === 0) {
       const serce = this.sim.heartOfLife();

@@ -21,6 +21,8 @@ const SPOSOB_ISTNIENIA: Record<number, string> = {
 export class EkranBestiariusza implements Ekran {
   nazwa = 'bestiariusz';
   private przewiniecie = 0;
+  /** Dalej nie ma czego czytać — bez tej granicy kółko przewijało kartę w pustkę. */
+  private maxPrzewin = 0;
   private wpisy: Wpis[] = [];
 
   constructor(private app: Kontekst) { this.zbuduj(); }
@@ -120,6 +122,8 @@ export class EkranBestiariusza implements Ekran {
     }
     const calosc = y + this.przewiniecie - gora;
     ctx.restore();
+    this.maxPrzewin = Math.max(0, calosc - (dol - gora) + podstawa);
+    if (this.przewiniecie > this.maxPrzewin) this.przewiniecie = this.maxPrzewin;
 
     if (calosc > dol - gora) {
       const t = this.przewiniecie / Math.max(1, calosc - (dol - gora));
@@ -138,12 +142,14 @@ export class EkranBestiariusza implements Ekran {
     ctx.fillText('kółko przewija · P albo esc wraca do menu', w / 2, h * 0.975);
   }
 
-  kolko(e: WheelEvent): void { this.przewiniecie = Math.max(0, this.przewiniecie + e.deltaY * 0.7); }
+  private przewin(o: number): void { this.przewiniecie = Math.max(0, Math.min(this.maxPrzewin, this.przewiniecie + o)); }
+
+  kolko(e: WheelEvent): void { this.przewin(e.deltaY * 0.7); }
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
     if (faza === 'dol') this.ostatniY = e.clientY;
     else if (faza === 'ruch' && this.ostatniY !== null) {
-      this.przewiniecie = Math.max(0, this.przewiniecie - (e.clientY - this.ostatniY));
+      this.przewin(-(e.clientY - this.ostatniY));
       this.ostatniY = e.clientY;
     } else this.ostatniY = null;
   }
@@ -151,9 +157,9 @@ export class EkranBestiariusza implements Ekran {
 
   klawisz(akcja: Akcja | null, e: KeyboardEvent): void {
     if (e.key === 'Escape' || akcja === 'menu') { this.app.idz('menu'); return; }
-    if (e.key === 'ArrowDown') this.przewiniecie += 60;
-    if (e.key === 'ArrowUp') this.przewiniecie = Math.max(0, this.przewiniecie - 60);
-    if (e.key === 'PageDown') this.przewiniecie += 400;
-    if (e.key === 'PageUp') this.przewiniecie = Math.max(0, this.przewiniecie - 400);
+    if (e.key === 'ArrowDown') this.przewin(60);
+    if (e.key === 'ArrowUp') this.przewin(-60);
+    if (e.key === 'PageDown') this.przewin(400);
+    if (e.key === 'PageUp') this.przewin(-400);
   }
 }
