@@ -18,13 +18,7 @@ export interface Przycisk {
  * bo na dotyku klawiatury nie ma wcale.
  */
 export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; zapiski: boolean; legenda: boolean; tempo: number; noweTablice?: number }): Przycisk[] {
-  // na wąskim ekranie pasek idzie na sam dół, bo margines pod płytą zajmuje spis warstw
-  // 44 px to minimalne pole dotyku; promień 22 daje dokładnie tyle
-  const r = p.waski ? Math.max(22, Math.min(26, p.w * 0.052)) : Math.max(22, Math.min(26, p.w * 0.02));
-  const odstep = p.waski ? Math.min(r * 2.3, (p.w - r) / 8) : r * 2.3;
-  const y = p.waski ? p.y + p.h - r * 1.5 : Math.min(vh - r * 1.6, p.y + p.h + r * 1.8);
-  const x0 = p.waski ? p.x + (p.w - odstep * 7) / 2 : p.x + p.w - odstep * 7 - r * 1.2;
-  const lista: { akcja: AkcjaPrzycisku; etykieta: string; wlaczony?: boolean }[] = [
+  const wszystkie: { akcja: AkcjaPrzycisku; etykieta: string; wlaczony?: boolean }[] = [
     { akcja: 'pauza', etykieta: stan.pauza ? 'wznów' : 'pauza', wlaczony: stan.pauza },
     { akcja: 'wolniej', etykieta: 'wolniej' },
     { akcja: 'szybciej', etykieta: `szybciej (×${stan.tempo})` },
@@ -34,6 +28,17 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
     { akcja: 'legenda', etykieta: 'klucz', wlaczony: stan.legenda },
     { akcja: 'zapis', etykieta: 'zapisz' },
   ];
+  // telefon: klucz i ręczny zapis zostają pod klawiszami — zapis i tak dzieje się sam,
+  // a osiem znaków na wąskiej płycie nachodziło na siebie
+  const lista = p.waski ? wszystkie.filter((b) => b.akcja !== 'legenda' && b.akcja !== 'zapis') : wszystkie;
+  const n = lista.length;
+  // na wąskim ekranie pasek idzie na sam dół, bo margines pod płytą zajmuje spis warstw;
+  // 44 px to minimalne pole dotyku — ale znaki nie mogą na siebie wchodzić
+  const odstepW = (p.w - 12) / n;
+  const r = p.waski ? Math.min(26, odstepW * 0.46) : Math.max(22, Math.min(26, p.w * 0.02));
+  const odstep = p.waski ? odstepW : r * 2.3;
+  const y = p.waski ? p.y + p.h - r * 1.5 : Math.min(vh - r * 1.6, p.y + p.h + r * 1.8);
+  const x0 = p.waski ? p.x + (p.w - odstep * (n - 1)) / 2 : p.x + p.w - odstep * (n - 1) - r * 1.2;
   return lista.map((z, i) => ({ ...z, x: x0 + i * odstep, y, r, naPlycie: p.waski }));
 }
 

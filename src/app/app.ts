@@ -3,7 +3,7 @@ import type { Kontekst } from './context';
 import { Resonance } from '../core/audio';
 import { Muzyka } from '../core/music';
 import { akcjaDlaKlawisza } from '../core/keybinds';
-import { ustawienia } from '../core/settings-store';
+import { ustawienia, ekran } from '../core/settings-store';
 
 /**
  * Pętla i przełącznik ekranów. Trzyma jedno miejsce, w którym dzieje się czas,
@@ -12,6 +12,8 @@ import { ustawienia } from '../core/settings-store';
 export class App implements Kontekst {
   ctx: CanvasRenderingContext2D;
   w = 1; h = 1;
+  /** Rozmiar w pikselach CSS i mnożnik, z którego wyszła skala — po nich poznajemy zmianę. */
+  private cssW = 0; private cssH = 0; private mnoznik = 1;
   dzwiek = new Resonance();
   muzyka = new Muzyka();
   private ekrany = new Map<string, Ekran>();
@@ -40,15 +42,47 @@ export class App implements Kontekst {
 
   get aktywnyEkran(): Ekran | null { return this.aktywny; }
 
+  /**
+   * Gra liczy wszystko w pikselach logicznych: do ekranu 1366×820 to po prostu piksele,
+   * na większym cały obraz — płyta, napisy, ryty — rośnie proporcjonalnie. Gracz może
+   * to jeszcze powiększyć albo zmniejszyć w ustawieniach.
+   */
   private przelicz(): void {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     // karta bez kompozycji potrafi zgłosić zerowy rozmiar — wtedy trzymamy sensowny domyślny
-    this.w = Math.max(320, innerWidth || 1280);
-    this.h = Math.max(240, innerHeight || 720);
-    this.canvas.width = Math.floor(this.w * dpr);
-    this.canvas.height = Math.floor(this.h * dpr);
-    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const cssW = Math.max(320, innerWidth || 1280);
+    const cssH = Math.max(240, innerHeight || 720);
+    // telefon: odrobinę większe pismo; duży monitor: cały obraz rośnie z ekranem
+    const auto = cssW < 520 ? 1.1 : Math.max(1, Math.min(2.4, Math.min(cssW / 1366, cssH / 820)));
+    this.mnoznik = ustawienia.wielkoscUI || 1;
+    // logiczny ekran nie może zejść poniżej 320×240 — tyle potrzebuje najwęższy układ
+    const skala = Math.min(auto * this.mnoznik, cssW / 320, cssH / 240);
+    ekran.skala = Math.max(0.5, skala);
+    this.cssW = cssW; this.cssH = cssH;
+    this.w = cssW / ekran.skala;
+    this.h = cssH / ekran.skala;
+    this.canvas.width = Math.floor(cssW * dpr);
+    this.canvas.height = Math.floor(cssH * dpr);
+    this.ctx.setTransform(dpr * ekran.skala, 0, 0, dpr * ekran.skala, 0, 0);
     this.aktywny?.rozmiar?.(this.w, this.h);
+  }
+
+  private zmienilSieEkran(): boolean {
+    return (innerWidth || 1280) !== this.cssW || (innerHeight || 720) !== this.cssH || (ustawienia.wielkoscUI || 1) !== this.mnoznik;
+  }
+
+  /** Zdarzenie wskaźnika w pikselach logicznych — ekrany nie wiedzą o skali. */
+  private logiczne<T extends PointerEvent | WheelEvent>(e: T): T {
+    const s = ekran.skala;
+    if (s === 1) return e;
+    const w = e as WheelEvent;
+    return {
+      clientX: e.clientX / s, clientY: e.clientY / s,
+      button: e.button, buttons: e.buttons,
+      pointerId: (e as PointerEvent).pointerId, pointerType: (e as PointerEvent).pointerType,
+      deltaX: w.deltaX, deltaY: w.deltaY, deltaMode: w.deltaMode,
+      preventDefault: () => e.preventDefault(),
+    } as unknown as T;
   }
 
   /** Przeglądarka pozwala odpalić dźwięk dopiero po dotknięciu — łapiemy pierwsze. */
@@ -66,13 +100,13 @@ export class App implements Kontekst {
       // przechwycenie wskaźnika bywa odrzucane (zdarzenia syntetyczne, część przeglądarek) —
       // nie może to blokować obsługi dotknięcia
       try { c.setPointerCapture(e.pointerId); } catch { /* nieistotne */ }
-      this.aktywny?.dotyk?.(e, 'dol');
+      this.aktywny?.dotyk?.(this.logiczne(e), 'dol');
     });
-    c.addEventListener('pointermove', (e) => this.aktywny?.dotyk?.(e, 'ruch'));
-    c.addEventListener('pointerup', (e) => this.aktywny?.dotyk?.(e, 'gora'));
-    c.addEventListener('pointercancel', (e) => this.aktywny?.dotyk?.(e, 'gora'));
+    c.addEventListener('pointermove', (e) => this.aktywny?.dotyk?.(this.logiczne(e), 'ruch'));
+    c.addEventListener('pointerup', (e) => this.aktywny?.dotyk?.(this.logiczne(e), 'gora'));
+    c.addEventListener('pointercancel', (e) => this.aktywny?.dotyk?.(this.logiczne(e), 'gora'));
     c.addEventListener('contextmenu', (e) => e.preventDefault());   // prawy przycisk przesuwa kamerę
-    c.addEventListener('wheel', (e) => { e.preventDefault(); this.aktywny?.kolko?.(e); }, { passive: false });
+    c.addEventListener('wheel', (e) => { e.preventDefault(); this.aktywny?.kolko?.(this.logiczne(e)); }, { passive: false });
     addEventListener('keydown', (e) => {
       this.obudzDzwiek();
       if (e.key === 'Tab') e.preventDefault();          // Tab pokazuje liczby, nie przeskakuje po stronie
@@ -87,7 +121,7 @@ export class App implements Kontekst {
   rysujRaz(): void {
     const e = this.aktywny;
     if (!e) return;
-    if (innerWidth !== this.w || innerHeight !== this.h) this.przelicz();
+    if (this.zmienilSieEkran()) this.przelicz();
     const teraz = performance.now();
     e.krok(0, teraz);
     e.rysuj(this.ctx, this.w, this.h, teraz);
@@ -98,7 +132,7 @@ export class App implements Kontekst {
     const klatka = (teraz: number) => {
       const dt = Math.min(100, teraz - this.ostatnia);
       this.ostatnia = teraz;
-      if ((innerWidth || 1280) !== this.w || (innerHeight || 720) !== this.h) this.przelicz();
+      if (this.zmienilSieEkran()) this.przelicz();
       const e = this.aktywny;
       if (e) {
         e.krok(dt, teraz);

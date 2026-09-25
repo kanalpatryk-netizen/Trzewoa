@@ -20,6 +20,8 @@ export interface Settings {
   autoPauza: 'wyłączona' | 'kryzysy' | 'wszystko';
   /** Nowa tablica atlasu: otwiera się sama przy pierwszym spotkaniu albo tylko trafia do atlasu. */
   tablice: 'pokazuj' | 'tylko w atlasie';
+  /** Mnożnik wielkości całego obrazu ponad automatyczne dopasowanie do ekranu. */
+  wielkoscUI: number;
 }
 
 export const DOMYSLNE: Settings = {
@@ -41,7 +43,14 @@ export const DOMYSLNE: Settings = {
   samouczekZrobiony: false,
   autoPauza: 'kryzysy',
   tablice: 'pokazuj',
+  wielkoscUI: 1,
 };
+
+/**
+ * Skala ekranu: ile pikseli CSS przypada na jeden piksel logiczny gry. Na dużym
+ * monitorze cały obraz rośnie razem z ekranem, zamiast zostawać drobnym ziarnkiem.
+ */
+export const ekran = { skala: 1 };
 
 const KLUCZ = 'trzewia:ustawienia';
 
@@ -70,5 +79,7 @@ export function ustaw<K extends keyof Settings>(klucz: K, wartosc: Settings[K]):
 export function skalaRenderu(szerokosc: number): number {
   if (ustawienia.jakosc === 'ostra') return 1;
   if (ustawienia.jakosc === 'szybka') return 2;
+  // powiększony ekran i tak rozciąga rycinę — rysujemy ją wtedy w pełnej rozdzielczości logicznej
+  if (ekran.skala >= 1.4) return 1;
   return szerokosc > 900 ? 2 : 1;
 }

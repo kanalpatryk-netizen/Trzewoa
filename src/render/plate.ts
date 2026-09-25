@@ -374,7 +374,8 @@ export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim,
   const lines3 = (yBase - bandTop) / 3 / 1.4;
   const size = Math.max(14, Math.min(Math.min(22, vw / 46), lines3));
   const x = p.x;
-  const maxW = p.w * (p.waski ? 0.98 : 0.58);
+  // na telefonie kronika dzieli dolny margines z Otchłanią — nie może na nią wchodzić
+  const maxW = p.waski ? p.w - obszarOtchlani(p, vh).w - 14 : p.w * 0.58;
   ctx.save();
   ctx.textAlign = 'left';
   const lines = sim.chronicle.slice(-3);
@@ -384,7 +385,8 @@ export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim,
     const age = sim.tick - e.tick;
     // koniec świata nie znika po chwili; zwykły ruch tak
     const zycie = e.kind === 'koniec' ? 12000 : e.kind === 'krew' || e.kind === 'otchlan' ? 6000 : 3400;
-    const fade = Math.max(0.16, 1 - age / zycie) * (1 - back * 0.26);
+    // starsze linijki cichną, ale nie znikają — dawniej gasły do ledwie widocznej szarości
+    const fade = Math.max(0.34, 1 - age / zycie) * (1 - back * 0.2);
     const y = yBase - back * size * 1.4;
     ctx.font = `${back === 0 ? '' : 'italic '}${size * (back === 0 ? 1 : 0.84)}px ${SERIF}`;
     let text = e.text;

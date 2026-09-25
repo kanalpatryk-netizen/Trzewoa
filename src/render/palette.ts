@@ -10,7 +10,7 @@ export const BARWA = {
   papierCien: '#c9c2ae',
   atrament: '#cfc2a6',
   atramentMocny: '#efe3c6',
-  atramentCichy: '#8d8577',
+  atramentCichy: '#a39a8b',
   krew: '#8a1a16',
   krewJasna: '#c2503c',
   zar: '#ff8c32',

@@ -39,6 +39,7 @@ export class EkranUstawien implements Ekran {
       { typ: 'przelacznik', etykieta: 'Rezonans świata', opis: 'kucie, modlitwa i niski ton zależny od głębokości', czytaj: () => ustawienia.rezonans, zmien: (v) => { ustaw('rezonans', v); if (v) this.app.dzwiek.start(); this.app.dzwiek.odswiezGlosnosc(); } },
 
       { typ: 'naglowek', tekst: 'Obraz' },
+      { typ: 'suwak', etykieta: 'Wielkość obrazu', opis: 'napisy, ryty i płyta — ponad dopasowanie do ekranu', min: 0.8, max: 1.6, krok: 0.1, czytaj: () => ustawienia.wielkoscUI, zmien: (v) => ustaw('wielkoscUI', Math.round(v * 10) / 10), format: (v) => `${Math.round(v * 100)}%` },
       { typ: 'wybor', etykieta: 'Jakość ryciny', opis: 'ostra rysuje w pełnej rozdzielczości, szybka w połowie', opcje: ['auto', 'ostra', 'szybka'], czytaj: () => ustawienia.jakosc, zmien: (v) => ustaw('jakosc', v as typeof ustawienia.jakosc) },
       { typ: 'suwak', etykieta: 'Siła kreskowania', opis: 'ile atramentu wchodzi w skałę', min: 0.75, max: 1.35, krok: 0.05, czytaj: () => ustawienia.kontrast, zmien: (v) => ustaw('kontrast', v), format: (v) => `${Math.round(v * 100)}%` },
       { typ: 'suwak', etykieta: 'Wielkość mieszkańców', opis: 'sylwetki w kaflach', min: 0.7, max: 2.2, krok: 0.1, czytaj: () => ustawienia.wielkoscSylwetek, zmien: (v) => ustaw('wielkoscSylwetek', v), format: (v) => `${v.toFixed(1)}×` },
