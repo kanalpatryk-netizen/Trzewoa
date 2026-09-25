@@ -1,0 +1,17 @@
+{
+  "name": "trzewia",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "pack": "vite build && node scripts/inline.mjs",
+    "test:swiat": "node scripts/test-swiata.mjs 100"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "5.4.21"
+  }
+}
