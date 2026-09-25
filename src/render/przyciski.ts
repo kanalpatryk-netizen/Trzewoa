@@ -17,7 +17,7 @@ export interface Przycisk {
  * z klawiatury — pauza, tempo, zapiski, klucz, powrót kamery, zapis — ma tu swój znak,
  * bo na dotyku klawiatury nie ma wcale.
  */
-export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; zapiski: boolean; legenda: boolean; tempo: number }): Przycisk[] {
+export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; zapiski: boolean; legenda: boolean; tempo: number; noweTablice?: number }): Przycisk[] {
   // na wąskim ekranie pasek idzie na sam dół, bo margines pod płytą zajmuje spis warstw
   // 44 px to minimalne pole dotyku; promień 22 daje dokładnie tyle
   const r = p.waski ? Math.max(22, Math.min(26, p.w * 0.052)) : Math.max(22, Math.min(26, p.w * 0.02));
@@ -30,7 +30,7 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
     { akcja: 'szybciej', etykieta: `szybciej (×${stan.tempo})` },
     { akcja: 'kamera', etykieta: 'wróć do swoich' },
     { akcja: 'zapiski', etykieta: 'zapiski', wlaczony: stan.zapiski },
-    { akcja: 'atlas', etykieta: 'atlas' },
+    { akcja: 'atlas', etykieta: stan.noweTablice ? `atlas — nowe tablice: ${stan.noweTablice}` : 'atlas', wlaczony: !!stan.noweTablice },
     { akcja: 'legenda', etykieta: 'klucz', wlaczony: stan.legenda },
     { akcja: 'zapis', etykieta: 'zapisz' },
   ];

@@ -357,24 +357,34 @@ export class EkranSamouczka implements Ekran {
       koniec: (s) => s.skaza.skutek,
     },
     {
-      tytul: 'Czas',
-      wstep: 'Świat żyje bez ciebie. Możesz go zatrzymać i popędzić.',
-      czasowniki: [],
+      tytul: 'Pauza i plan',
+      wstep: 'Jak w dawnych grach taktycznych: zatrzymujesz świat, spokojnie planujesz, a potem wszystko dzieje się naraz.',
+      czasowniki: ['zasiej'],
+      przygotuj: (g) => { g.sim.krew += 60; },
       etapy: [
         {
-          tekst: 'Zatrzymaj czas.', klawisz: 'pauza',
+          tekst: 'Zatrzymaj czas — spacją, klepsydrą albo tym przyciskiem.', klawisz: 'pauza',
           wskaz: (s) => s.przycisk('pauza'), gotowe: (g) => g.pauza,
         },
         {
-          tekst: 'Puść go znowu.', klawisz: 'pauza',
-          wskaz: (s) => s.przycisk('pauza'), gotowe: (g) => !g.pauza,
+          tekst: 'Wybierz ryt „Zasiej”, a u góry słowo „grzyb”.', klawisz: 'zasiej', cofa: true,
+          wskaz: (s) => s.gra.ui.verb === 'zasiej' ? s.slowo('tool', 'grzyb') : s.ryt('zasiej'),
+          gotowe: (g) => g.ui.verb === 'zasiej' && g.ui.tool === 'grzyb',
         },
         {
-          tekst: 'Przyspiesz czas — pokolenia polecą prędzej.', klawisz: 'szybciej',
-          wskaz: (s) => s.przycisk('szybciej'), gotowe: (_g, z) => z?.typ === 'tempo',
+          tekst: (s) => s.gra.pauza
+            ? 'Zaznacz dwa miejsca na grzyb. Nic się jeszcze nie stanie — narysują się szkice.'
+            : 'Najpierw zatrzymaj czas — dopiero wtedy rozkazy czekają jako szkice.',
+          wskaz: (s) => { const c = s.miejsceNaGrzyb(); return c ? { typ: 'swiat', cel: { ...c, tekst: 'zaznacz tutaj' } } : null; },
+          gotowe: (g) => g.rozkazy.ile >= 2,
+        },
+        {
+          tekst: 'Puść czas — rozkazy staną się naraz.', klawisz: 'pauza',
+          wskaz: (s) => s.przycisk('pauza'),
+          gotowe: (_g, z) => z?.typ === 'moc' && !!z.zPlanu,
         },
       ],
-      koniec: 'Obok leży „wolniej". Póki trzymasz wybrany ryt, świat i tak zwalnia — masz czas wycelować.',
+      koniec: 'W pauzie koszt jest tylko zarezerwowany, a szkic skreślisz dotknięciem bez rytu w ręku. Gdy wydarzy się coś ważnego, gra sama zatrzyma czas i powie, co możesz zrobić. Obok pauzy leżą „wolniej” i „szybciej”.',
     },
     {
       tytul: 'Jak to się kończy',
@@ -904,7 +914,7 @@ export class EkranSamouczka implements Ekran {
   private rysujFinal(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     const rozm = Math.max(16, Math.min(22, w / 56));
     const szer = Math.min(560, w - 32);
-    const tekst = `Umiesz już wszystko, czego trzeba na początek. Rasy, przypływy, woda, żar i zawały — resztę odkryjesz sam. Klawisz ${nazwaKlawisza(klawisze.legenda)} pokazuje klucz do ryciny, a w atlasie czekają już pierwsze tablice — kolejne odkryjesz, grając.`;
+    const tekst = `Umiesz już wszystko, czego trzeba na początek. Nad płytą zawsze stoi jedno zdanie: co teraz najpilniejsze — kliknij je, a kamera pojedzie na miejsce. Rasy, przypływy, woda, żar i zawały — resztę odkryjesz sam. Klawisz ${nazwaKlawisza(klawisze.legenda)} pokazuje klucz do ryciny, a w atlasie czekają już pierwsze tablice — kolejne odkryjesz, grając.`;
     ctx.save();
     ctx.fillStyle = 'rgba(6,4,3,0.55)';
     ctx.fillRect(0, 0, w, h);

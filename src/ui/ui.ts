@@ -10,6 +10,15 @@ import type { Rozkazy } from '../powers/rozkazy';
 
 interface Hit { x: number; y: number; hw: number; hh: number; kind: 'verb' | 'tool' | 'thought'; verb?: Verb; tool?: string; }
 
+/** Co ryt robi — jedno zdanie w podpisie pod kursorem. */
+const SKUTKI: Record<Verb, string> = {
+  ksztaltuj: 'drąż, zawal, wpuść wodę albo żar',
+  zasiej: 'grzyb, ruda, kości albo trucizna',
+  szept: 'jedna myśl w jedną głowę',
+  znak: 'jawny cud: oddanie albo panika',
+  skaz: 'zmiana krwi całego gatunku',
+};
+
 const VERBS: { id: Verb; label: string }[] = [
   { id: 'ksztaltuj', label: 'Kształtuj' },
   { id: 'zasiej', label: 'Zasiej' },
@@ -127,12 +136,14 @@ export class Ui {
     if (c.krew) czesci.push(`${c.krew} krwi`);
     if (c.otchlan) czesci.push(`${c.otchlan} otchłani`);
     const linie = [`${nazwa}  ·  ${klawisz}`, czesci.length ? `od ${czesci.join(', ')}` : 'nic nie kosztuje'];
+    const skutek = SKUTKI[v];
 
     const size = Math.max(14, Math.min(18, this.vw / 72));
     ctx.save();
     ctx.font = `${size}px ${SERIF}`;
-    const szer = Math.max(...linie.map((l) => ctx.measureText(l).width)) + size * 1.4;
-    const wys = size * 2.9;
+    const szer = Math.max(...linie.map((l) => ctx.measureText(l).width), ctx.measureText(skutek).width * 0.9,
+      ctx.measureText('prawy przycisk — tablica').width * 0.8) + size * 1.4;
+    const wys = size * 5.1;
     const px = Math.min(x + this.gs * 0.9, this.plate.x - 6);
     const py = Math.max(this.plate.y + 4, y - wys / 2);
     ctx.fillStyle = 'rgba(12,9,8,0.92)';
@@ -146,6 +157,12 @@ export class Ui {
     ctx.font = `italic ${size * 0.86}px ${SERIF}`;
     ctx.fillStyle = ready ? 'rgba(206,192,166,0.85)' : 'rgba(216,140,120,0.9)';
     ctx.fillText(ready ? linie[1] : `${linie[1]} — nie stać cię`, px + size * 0.7, py + size * 2.3);
+    // co to robi — jednym zdaniem, bo sama nazwa rytu nic nie mówi
+    ctx.fillStyle = 'rgba(232,210,160,0.95)';
+    ctx.fillText(skutek, px + size * 0.7, py + size * 3.45);
+    ctx.font = `italic ${size * 0.72}px ${SERIF}`;
+    ctx.fillStyle = 'rgba(170,156,132,0.8)';
+    ctx.fillText('prawy przycisk — tablica', px + size * 0.7, py + size * 4.5);
     ctx.restore();
   }
 

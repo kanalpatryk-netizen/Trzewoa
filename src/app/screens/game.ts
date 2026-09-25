@@ -55,7 +55,7 @@ function lamiTekst(ctx: CanvasRenderingContext2D, tekst: string, maxW: number, i
 }
 
 export type ZdarzenieGry =
-  | { typ: 'moc'; czasownik: string; narzedzie: string }
+  | { typ: 'moc'; czasownik: string; narzedzie: string; zPlanu?: boolean }
   | { typ: 'szept'; narzedzie: string }
   | { typ: 'wybranoCzasownik'; czasownik: string | null }
   | { typ: 'kamera'; rodzaj: 'przesun' | 'zoom' | 'powrot' }
@@ -102,6 +102,8 @@ export class EkranGry implements Ekran {
   /** Rozkazy wydane w pauzie: czekają jako szkice, dzieją się po puszczeniu czasu. */
   rozkazy = new Rozkazy();
   private polaBanera: PoleBanera[] = [];
+  /** Podpowiedź nad płytą jako odnośnik do miejsca, o którym mówi. */
+  private radaRect: { x: number; y: number; w: number; h: number } | null = null;
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
   private straznik = new Straznik();
   alarm: Alarm | null = null;
@@ -250,9 +252,8 @@ export class EkranGry implements Ekran {
     const z = cam.zoom;
     const left = cam.x - cam.vw / 2 / z, top = cam.y - cam.vh / 2 / z;
     const right = left + cam.vw / z, bottom = top + cam.vh / z;
-    const cicho = (id: string) => {
-      if (odkrycia.odkryj(id, false)) this.ui.say(`Nowa tablica w atlasie: ${tablica(id)?.nazwa ?? ''}.`, sim.tick);
-    };
+    // drobne tablice nie przerywają — przycisk atlasu świeci, dopóki do niego nie zajrzysz
+    const cicho = (id: string) => { odkrycia.odkryj(id, false); };
     let prorok = false, pielgrzym = false;
     for (const c of sim.creatures) {
       if (c.dead) continue;
@@ -300,7 +301,7 @@ export class EkranGry implements Ekran {
       udanych++;
       const o = w.rozkaz;
       if (o.czasownik === 'szept') this.nasluch?.({ typ: 'szept', narzedzie: o.narzedzie });
-      else this.nasluch?.({ typ: 'moc', czasownik: o.czasownik, narzedzie: o.narzedzie });
+      else this.nasluch?.({ typ: 'moc', czasownik: o.czasownik, narzedzie: o.narzedzie, zPlanu: true });
     }
     if (wyniki.some((w) => w.udane && w.rozkaz.czasownik === 'znak')) this.app.dzwiek.toll();
     const nieudane = wyniki.length - udanych;
@@ -478,7 +479,7 @@ export class EkranGry implements Ekran {
     if (ustawienia.kronika) drawChronicle(ctx, plate, sim, w, h);
     this.ui.draw(ctx, sim, teraz);
     this.przyciski = rozmiescPrzyciski(plate, h, {
-      pauza: this.pauza, zapiski: this.zapiski, legenda: this.legenda,
+      pauza: this.pauza, zapiski: this.zapiski, legenda: this.legenda, noweTablice: odkrycia.niezobaczone,
       tempo: Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik)),
     });
     const podPrzyciskiem = przyciskPod(this.przyciski, this.ui.pointer.x, this.ui.pointer.y);
@@ -517,15 +518,29 @@ export class EkranGry implements Ekran {
       const linie = lamiTekst(ctx, this.rada.tekst, maxW, 2);
       const podstawa = plate.y - plate.top * 0.28 - (linie.length - 1) * rozmiar * 1.15;
       ctx.lineWidth = 3;
+      const nad = this.radaRect && this.ui.pointer.x >= this.radaRect.x && this.ui.pointer.x <= this.radaRect.x + this.radaRect.w
+        && this.ui.pointer.y >= this.radaRect.y && this.ui.pointer.y <= this.radaRect.y + this.radaRect.h;
+      let szer = 0;
       for (let i = 0; i < linie.length; i++) {
         const y = podstawa + i * rozmiar * 1.15;
+        szer = Math.max(szer, ctx.measureText(linie[i]).width);
         ctx.strokeStyle = 'rgba(10,7,6,0.75)';
         ctx.strokeText(linie[i], plate.x + plate.w / 2, y);
-        ctx.fillStyle = 'rgba(226,206,160,0.9)';
+        ctx.fillStyle = nad && this.rada.cel ? 'rgba(248,228,184,1)' : 'rgba(226,206,160,0.9)';
         ctx.fillText(linie[i], plate.x + plate.w / 2, y);
       }
+      // podpowiedź z miejscem jest odnośnikiem: dotknięcie wiezie tam kamerę
+      this.radaRect = this.rada.cel
+        ? { x: plate.x + plate.w / 2 - szer / 2 - 8, y: podstawa - rozmiar * 1.1, w: szer + 16, h: linie.length * rozmiar * 1.15 + rozmiar * 0.5 }
+        : null;
+      if (this.rada.cel && nad) {
+        ctx.strokeStyle = 'rgba(232,196,130,0.6)';
+        ctx.lineWidth = 1;
+        const y = podstawa + (linie.length - 1) * rozmiar * 1.15 + rozmiar * 0.3;
+        ctx.beginPath(); ctx.moveTo(plate.x + plate.w / 2 - szer / 2, y); ctx.lineTo(plate.x + plate.w / 2 + szer / 2, y); ctx.stroke();
+      }
       ctx.restore();
-    }
+    } else this.radaRect = null;
     if (this.painting) this.rysujKoszt(ctx, w);
     if (!sim.ending) {
       const stan = this.zamrozone() ? 'stoi' : this.spowolnione() ? 'zwalnia' : 'plynie';
@@ -713,6 +728,13 @@ export class EkranGry implements Ekran {
         else if (b.akcja === 'skresl') { this.rozkazy.skreslWszystkie(sim); ui.say('Plan pusty.', sim.tick); }
         else this.ustawPauze(false);
         this.dirty = true;
+        return;
+      }
+      // podpowiedź z miejscem: dotknięcie wiezie tam kamerę
+      const rr = this.radaRect;
+      if (rr && this.rada?.cel && e.clientX >= rr.x && e.clientX <= rr.x + rr.w && e.clientY >= rr.y && e.clientY <= rr.y + rr.h) {
+        this.pokazMiejsce(this.rada.cel.x, this.rada.cel.y, Math.max(this.cam.zoom, 10));
+        this.cel = this.rada.cel;
         return;
       }
       // klepsydra przy płycie to też przycisk pauzy

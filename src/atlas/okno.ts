@@ -26,7 +26,7 @@ export class OknoAtlasu {
     this.id = id; this.nowa = nowa; this.tryb = 'tablica'; this.zAtlasu = false;
   }
 
-  otworzAtlas(): void { this.tryb = 'atlas'; this.nowa = false; }
+  otworzAtlas(): void { this.tryb = 'atlas'; this.nowa = false; odkrycia.niezobaczone = 0; }
 
   zamknij(): void { this.tryb = 'zamkniete'; }
 

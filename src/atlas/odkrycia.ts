@@ -10,6 +10,8 @@ class Odkrycia {
   private znane = new Set<string>();
   /** Odkryte w tej sesji, jeszcze niepokazane. */
   kolejka: string[] = [];
+  /** Odkryte po cichu, a gracz jeszcze nie zajrzał do atlasu — przycisk świeci. */
+  niezobaczone = 0;
 
   constructor() {
     try {
@@ -27,6 +29,7 @@ class Odkrycia {
     if (this.znane.has(id) || !TABLICE.some((t) => t.id === id)) return false;
     this.znane.add(id);
     if (pokaz) this.kolejka.push(id);
+    else this.niezobaczone++;
     this.zapisz();
     return true;
   }
