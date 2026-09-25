@@ -74,6 +74,8 @@ export class EkranGry implements Ekran {
 
   private camTarget = { x: 0, y: 0 };
   private dirty = true;
+  /** Kamera z chwili ostatniego przerysowania ryciny. */
+  private rysKam = [NaN, NaN, NaN];
   private lastInk = 0;
   private lastSave = 0;
   private lastSound = 0;
@@ -276,7 +278,14 @@ export class EkranGry implements Ekran {
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     const { plate, cam, eng, sim } = this;
-    if (this.dirty || teraz - this.lastInk > 150) { eng.rebuild(sim, cam, teraz); this.lastInk = teraz; this.dirty = false; }
+    // Rycina jest najdroższa w klatce. Ruch kamery przerysowuje ją od razu (inaczej świat
+    // odjeżdżałby spod postaci), a zmiany samego świata wystarczą trzydzieści razy na sekundę.
+    const kameraRuszona = cam.x !== this.rysKam[0] || cam.y !== this.rysKam[1] || cam.zoom !== this.rysKam[2];
+    if (kameraRuszona || (this.dirty && teraz - this.lastInk > 30) || teraz - this.lastInk > 150) {
+      eng.rebuild(sim, cam, teraz);
+      this.lastInk = teraz; this.dirty = false;
+      this.rysKam[0] = cam.x; this.rysKam[1] = cam.y; this.rysKam[2] = cam.zoom;
+    }
 
     ctx.fillStyle = '#0b0807';
     ctx.fillRect(0, 0, w, h);
