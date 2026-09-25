@@ -87,7 +87,9 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     kandydaci.push({
       tekst: zasypane > 8
         ? `${najwierniejszy.name} wierzą dość mocno, by zejść pod rdzeń — ale nie mają którędy. Wydrąż im szyb w dół do przedsionka.`
-        : `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. Pilnuj im drogi i zasiej grzyb przy przedsionku.`,
+        : najwierniejszy.powrotOk === false
+          ? `${najwierniejszy.name} chcą zejść pod rdzeń, ale spod niego nie ma powrotu. Wydrąż im wąski szyb — po ścianach da się wspiąć.`
+          : `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. Pilnuj im drogi i zasiej grzyb przy przedsionku.`,
       cel: { x: sim.world.coreX, y: sim.world.coreY - 14, r: 7, tekst: 'przedsionek' },
       waga: 55,
     });

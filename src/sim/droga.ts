@@ -24,6 +24,8 @@ let pokolenie = 0;
 /** Ile szukań zostało w tym tiku — reszta czeka albo idzie na przełaj. */
 let budzet = 0;
 export function nowyTik(ile = 18): void { budzet = ile; }
+/** Ile szukań zostało w tym tiku — żeby odróżnić „nie ma drogi" od „nie było czasu szukać". */
+export function budzetDrog(): number { return budzet; }
 
 function wolny(sim: Sim, i: number, plywa: boolean): boolean {
   const w = sim.world;
@@ -44,7 +46,7 @@ function stoi(sim: Sim, x: number, y: number): boolean {
 }
 
 /** Spadając stąd, wylądowałby w ogniu. */
-function nadOgniem(sim: Sim, x: number, y: number): boolean {
+export function nadOgniem(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
   for (let yy = y + 1; yy <= y + 16 && yy < w.h; yy++) {
     const j = w.idx(x, yy);

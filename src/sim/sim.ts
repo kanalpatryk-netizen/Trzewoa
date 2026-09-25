@@ -21,6 +21,11 @@ export interface Clan {
   dead: boolean;
   /** Kuźnie klanu — Żużlowcy wychodzą z ognia, nie z gniazda. */
   forges: number[];
+  /** Tik ostatniego wykucia (brak w starych zapisach). */
+  kuto?: number;
+  /** Czy spod rdzenia da się wrócić do gniazda i kiedy to sprawdzono (patrz pielgrzymka). */
+  powrotOk?: boolean;
+  powrotT?: number;
   tint: number;             // odcień, żeby odróżnić nacje tej samej rasy
   /**
    * Postęp kruszenia skorupy rdzenia. Należy do nacji, nie do konkretnych wiernych:
@@ -114,6 +119,10 @@ export class Sim {
     this.hashW = Math.ceil(this.world.w / this.CELL);
     this.hashH = Math.ceil(this.world.h / this.CELL);
     this.hash = Array.from({ length: this.hashW * this.hashH }, () => []);
+    // Płyny z generatora najpierw spływają tam, gdzie mają leżeć. Wcześniej jeziora
+    // magmy ruszały dopiero z pierwszym tikiem i w kilka sekund zalewały świeżo
+    // osadzone gniazda: Żużlowcy i trole ginęli, zanim gracz cokolwiek zobaczył.
+    for (let t = 1; t <= 900; t++) this.world.tickFluids(t);
     this.seedWorld();
     this.log('Budzisz się. Coś w tobie drąży.', 'swiat');
   }
@@ -126,7 +135,7 @@ export class Sim {
       for (let tries = 0; tries < 4000; tries++) {
         const y = Math.floor(SURFACE_Y + (w.h - SURFACE_Y) * (minD + this.rng.next() * (maxD - minD)));
         const x = 4 + this.rng.int(w.w - 8);
-        if (w.passable(x, y) && !w.passable(x, y + 1) && w.magma[w.idx(x, y)] === 0 && w.water[w.idx(x, y)] < 3) return [x, y];
+        if (w.passable(x, y) && !w.passable(x, y + 1) && w.water[w.idx(x, y)] < 3 && !this.przyMagmie(x, y, 3)) return [x, y];
       }
       return [(w.w / 2) | 0, (w.h / 3) | 0];
     };
@@ -135,7 +144,7 @@ export class Sim {
     const hotSpot = (minD: number, maxD: number): [number, number] => {
       for (let tries = 0; tries < 3000; tries++) {
         const [x, y] = spot(minD, maxD);
-        for (let r = 2; r <= 9; r++) {
+        for (let r = 4; r <= 10; r++) {           // ciepło w zasięgu, ale nie pod nogami
           for (let k = 0; k < 12; k++) {
             const a = (k / 12) * Math.PI * 2;
             const mx = Math.round(x + Math.cos(a) * r), my = Math.round(y + Math.sin(a) * r);
@@ -178,14 +187,21 @@ export class Sim {
     }
     // Trole się nie rodzą, a dwa pierwsze nie dożywały trzeciej minuty — góra bez
     // nich traciła jedyny drapieżnik, który trzymał w ryzach zwycięzcę
-    found(Race.TROLL, 3, 0.55, 0.8);
+    // z dala od gniazd: budzony głodem trol wybijał Żużlowców, zanim się rozejrzeli
+    let legowisko = spot(0.55, 0.8);
+    for (let k = 0; k < 300; k++) {
+      const najblizej = Math.min(...this.clans.map((cl) => Math.hypot(cl.hx - legowisko[0], cl.hy - legowisko[1])));
+      if (najblizej >= 30) break;
+      legowisko = spot(0.55, 0.8);
+    }
+    found(Race.TROLL, 3, 0.55, 0.8, legowisko);
     // Prządki są pasożytem politycznym — siadają tam, gdzie jest kogo brać
     // niedaleko Ślepego Ludu, ale nie na jego głowie — inaczej rzeź zaczyna się w pierwszej minucie
     // (na podłodze: punkt liczony na ślepo wypadał w litej skale i Prządki zaczynały grę
     // zamurowane, a zanim się wygrzebały, ziemia osypywała się im na głowy)
     let gniazdoPrzadek: [number, number] | undefined;
     for (let k = 0; k < 600 && !gniazdoPrzadek; k++) {
-      const x = goblinTwo.hx + (this.rng.chance(0.5) ? 1 : -1) * (14 + this.rng.int(14));
+      const x = goblinTwo.hx + (this.rng.chance(0.5) ? 1 : -1) * (24 + this.rng.int(14));
       const y = goblinTwo.hy + this.rng.int(15) - 9;
       if (!w.inb(x, y + 1) || !w.passable(x, y) || w.passable(x, y + 1)) continue;
       if (w.water[w.idx(x, y)] > 2 || this.przyMagmie(x, y, 3)) continue;
@@ -367,13 +383,17 @@ export class Sim {
     return null;
   }
 
+  /**
+   * Rozejm na rozruch: przy starcie wszyscy siedzą sobie na głowach i w pierwszej
+   * minucie wyrzynali się nawzajem — góra traciła połowę mieszkańców, zanim gracz
+   * zdążył cokolwiek zrobić. Obejmuje też głodne trole i polowanie na mięso.
+   */
+  get rozejm(): boolean { return this.tick < 2400; }
+
   hostile(a: Creature, b: Creature): boolean {
     if (b.dead || b.id === a.id) return false;
     if (this.spokojnySwiat) return false;      // w samouczku nikt nikogo nie bije ani nie bierze w jarzmo
-    // Rozejm na rozruch: przy starcie wszyscy siedzą sobie na głowach i w pierwszej
-    // minucie wyrzynali się nawzajem — góra traciła połowę mieszkańców, zanim gracz
-    // zdążył cokolwiek zrobić.
-    if (this.tick < 1200) return false;
+    if (this.rozejm) return false;
     if (b.race === Race.HUMAN || a.race === Race.HUMAN) return b.race !== a.race;
     if (a.clan === b.clan) return false;
     if (a.race === b.race) {
@@ -383,7 +403,10 @@ export class Sim {
     if (a.race === Race.TROLL) return a.hunger > 0.45 || a.fear > 0.3;
     // obcy biją się z urazy; bez niej tylko czasem — wcześniej co siódme spotkanie
     // kończyło się bójką, a pierwsza śmierć zapisywała urazę na zawsze
-    return (this.clans[a.clan].grudge.get(b.clan) ?? 0) > 0 || this.rng.chance(0.05);
+    // garstka nie ściąga na siebie cudzej uwagi — bez tego każda nowa, mała nacja
+    // ginęła przy pierwszym spotkaniu z dużą, a rasa wymierała w kilka minut
+    return (this.clans[a.clan].grudge.get(b.clan) ?? 0) > 0
+      || this.rng.chance(0.05 * Math.min(1, this.clans[b.clan].pop / 12));
   }
 
   feud(ca: number, cb: number): void {
@@ -847,7 +870,7 @@ export class Sim {
     const race = chetni[this.rng.int(chetni.length)];
 
     let x = -1, y = -1;
-    const cieplo = race === Race.DWARF ? this.miejsceWCieple(0.45, 0.77) : null;
+    const cieplo = race === Race.DWARF ? this.miejsceWCieple(0.45, 0.7) : null;   // poniżej 0,72 zaczyna się obłęd
     if (cieplo) { x = cieplo[0]; y = cieplo[1]; }
     for (let k = 0; k < 400 && x < 0; k++) {
       const xx = 6 + this.rng.int(w.w - 12);
@@ -1059,11 +1082,17 @@ export class Sim {
   private forgeAndThread(): void {
     for (const clan of this.clans) {
       if (clan.dead) continue;
+      // Kucie trwa: jedna kuźnia daje nowego co dwadzieścia kilka sekund, kilka kuźni
+      // szybciej. Wcześniej każde 90 tików przy pełnym składzie rudy wychodził następny
+      // i klan rósł z jednego do trzydziestu w minutę, a potem wyrzynał sąsiadów.
+      const odstep = Math.max(300, 1500 / Math.max(1, clan.forges.length));
       if (clan.race === Race.DWARF && clan.stock >= 3 && clan.forges.length > 0
+          && this.tick - (clan.kuto ?? -1e9) >= odstep
           && this.crowding[Race.DWARF] < 0.95 && clan.pop < clan.cap) {
         const f = clan.forges[this.rng.int(clan.forges.length)];
         if (this.world.tile[f] !== T.FORGE) { clan.forges = clan.forges.filter((i) => i !== f); continue; }
         clan.stock -= 3;
+        clan.kuto = this.tick;
         const fx = f % this.world.w, fy = (f / this.world.w) | 0;
         const born = this.spawn(Race.DWARF, clan.id, fx, fy - 1);
         if (born) born.age = 400;
@@ -1124,7 +1153,7 @@ export class Sim {
       if (!far) continue;
       const nc = this.newClan(clan.race, Math.floor(far.x), Math.floor(far.y));
       zywych++;
-      nc.devotion = clan.devotion * this.rng.range(0.5, 1.2);
+      nc.devotion = Math.min(1, clan.devotion * this.rng.range(0.5, 1.2));
       clan.pop--; far.clan = nc.id; nc.pop++;
       let taken = 0;
       for (const o of this.creatures) {
