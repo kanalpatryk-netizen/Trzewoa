@@ -624,8 +624,13 @@ export class Engraver {
 
             if (rodzaj === 3) {
               // magma: płynący żar — jaśniejsze żyły wędrują z czasem
-              const plyn = smooth[((((gy + fala * 40) | 0) & 255) << 8) | ((gx * 2 + (fala * 23 | 0)) & 255)];
-              const zyla = plyn > 0.62 ? 1 : plyn > 0.5 ? 0.6 : 0.25;
+              // dwie warstwy płynącego szumu i miękki próg — żyły zamiast pomarańczowych kwadratów
+              // współrzędne obrócone względem siatki szumu — inaczej plamy układały się w kwadraty
+              const plyn = smooth[((((gy * 0.62 - gx * 0.42 + fala * 40) | 0) & 255) << 8) | (((gx * 0.62 + gy * 0.42 + fala * 23) | 0) & 255)];
+              const plyn2 = smooth[((((gy * 1.2 + gx * 0.75 - fala * 31) | 0) & 255) << 8) | (((gx * 1.2 - gy * 0.75 + fala * 17) | 0) & 255)];
+              let zyla = (plyn * 0.62 + plyn2 * 0.38 - 0.4) * 3.4;
+              zyla = zyla < 0 ? 0 : zyla > 1 ? 1 : zyla * zyla * (3 - 2 * zyla);
+              zyla = 0.2 + zyla * 0.8;
               const moc = 0.55 + (magma || 4) / 8 * 0.45;
               r = 150 + 105 * moc * (0.6 + 0.4 * zyla); g = (60 + 150 * zyla) * moc - depth * 20; b = (20 + 60 * zyla * zyla) * moc;
               edata[o] = r; edata[o + 1] = g * 0.8; edata[o + 2] = b * 0.5; edata[o + 3] = 255;
@@ -645,9 +650,16 @@ export class Engraver {
                 const dxr = tx + fx - w.coreX - 0.5, dyr = ty + fy - w.coreY - 0.5;
                 const dr = Math.sqrt(dxr * dxr + dyr * dyr);
                 const krag = 0.5 + 0.5 * Math.sin(dr * 5 - time * 0.004);
-                const srodek = Math.max(0, 1 - dr / 2.8);
-                r = 110 + 140 * srodek + 40 * krag; g = 18 + 70 * srodek * srodek + 20 * krag * srodek; b = 26 + 50 * srodek * srodek;
-                edata[o] = r; edata[o + 1] = g * 0.6; edata[o + 2] = b * 0.6; edata[o + 3] = 255 * (0.4 + 0.5 * tetno);
+                // okrągła kula w ciemnej skorupie, nie krzyż z kafli: brzeg kuli oddycha z tętnem
+                const R = 1.55 + 0.18 * tetno;
+                let kula = (R + 0.3 - dr) / 0.6;
+                kula = kula < 0 ? 0 : kula > 1 ? 1 : kula * kula * (3 - 2 * kula);
+                const srodek = Math.max(0, 1 - dr / 2.2);
+                const pr = 120 + 130 * srodek + 40 * krag, pg = 20 + 80 * srodek * srodek + 20 * krag * srodek, pb = 28 + 56 * srodek * srodek;
+                const blask = Math.max(0, 1 - dr / 3.6) * (0.5 + 0.5 * tetno);
+                const sr = 30 + 70 * blask, sg = 10 + 12 * blask, sb = 12 + 12 * blask;
+                r = sr + (pr - sr) * kula; g = sg + (pg - sg) * kula; b = sb + (pb - sb) * kula;
+                edata[o] = r; edata[o + 1] = g * 0.6; edata[o + 2] = b * 0.6; edata[o + 3] = 255 * (0.25 + 0.6 * tetno) * (0.35 + 0.65 * kula);
               } else {
                 // skała: ciemna masa, kreska gęstnieje i jaśnieje ku krawędzi jaskini
                 const bl = ba0 * (1 - fx) + ba1 * fx;
