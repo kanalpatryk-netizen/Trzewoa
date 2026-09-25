@@ -5,6 +5,7 @@ import { Sim } from '../../sim/sim';
 import { Camera } from '../../render/camera';
 import { Engraver } from '../../render/engrave';
 import { Poswiata } from '../../render/bloom';
+import { Tajemnica, oddechRdzenia, rysujAstrolabium } from '../../render/tajemnica';
 import { drawParticles } from '../../render/overlay';
 import { rysujStworzenia } from '../../render/figury';
 import { BARWA, rgba } from '../../render/palette';
@@ -31,6 +32,7 @@ export class EkranMenu implements Ekran {
   private cam = new Camera(1, 1);
   private eng = new Engraver();
   private poswiata = new Poswiata();
+  private tajemnica = new Tajemnica();
   private ostatniRys = 0;
   private pylki = Array.from({ length: 44 }, (_, i) => ({
     x: (i * 137.5) % 1, y: (i * 61.8) % 1, v: 0.2 + ((i * 29) % 10) / 22, r: 0.6 + ((i * 17) % 10) / 9,
@@ -110,7 +112,8 @@ export class EkranMenu implements Ekran {
     ctx.save();
     ctx.imageSmoothingEnabled = this.eng.scale > 1;
     ctx.drawImage(this.eng.buf, 0, 0, w, h);
-    this.poswiata.nalozy(ctx, this.eng.emis, 0, 0, w, h, 0.7);
+    // żar w tle przygaszony: jasne plamy magmy robiły z ryciny kolorowankę
+    this.poswiata.nalozy(ctx, this.eng.emis, 0, 0, w, h, 0.45);
     drawParticles(ctx, this.sim, this.cam);
     rysujStworzenia(ctx, this.sim, this.cam, teraz);
     ctx.restore();
@@ -127,6 +130,14 @@ export class EkranMenu implements Ekran {
     wg.addColorStop(1, 'rgba(6,4,4,0.75)');
     ctx.fillStyle = wg;
     ctx.fillRect(0, 0, w, h);
+
+    // astrolabium podziemia i rytowane brzegi: stara rycina, której nikt nie umie odczytać
+    const ruch = ustawienia.oddech && !ustawienia.ograniczRuch;
+    const oddech = ruch ? oddechRdzenia(this.sim, teraz, this.app.dzwiek.oddech(this.sim.sen)) : 0.5;
+    const czas = ruch ? teraz : 0;
+    if (w < 700) rysujAstrolabium(ctx, w / 2, h * 0.19, Math.min(w * 0.44, h * 0.2), czas, oddech, 0.22 * wejscie);
+    else rysujAstrolabium(ctx, w * 0.63, h * 0.62, Math.min(h * 0.27, w * 0.17), czas, oddech, 0.34 * wejscie);
+    this.tajemnica.brzegi(ctx, { x: 0, y: 0, w, h }, oddech);
 
     // kurz w powietrzu — ledwie widoczny, ale obraz przestaje być martwy
     ctx.save();

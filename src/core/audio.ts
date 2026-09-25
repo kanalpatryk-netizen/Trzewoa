@@ -167,6 +167,15 @@ export class Resonance {
     }
   }
 
+  /**
+   * Oddech skały w tej chwili (-1..1), liczony tym samym wzorem co dudnienie —
+   * obraz oddycha razem z dźwiękiem. Bez dźwięku nie ma czego słuchać: null.
+   */
+  oddech(glod: number): number | null {
+    if (!this.ctx || !ustawienia.rezonans) return null;
+    return Math.sin(this.ctx.currentTime * (0.5 + glod * 2));
+  }
+
   /** Cud słychać jako uderzenie w skałę, nie jako fanfarę. */
   toll(): void {
     if (!this.ctx || !ustawienia.rezonans) return;

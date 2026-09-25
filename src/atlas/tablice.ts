@@ -15,6 +15,7 @@ import { rysujKrew } from '../cutscene/art/krew';
 import { rysujSpis } from '../cutscene/art/spis';
 import { rysujOrgany } from '../cutscene/art/organy';
 import { rysujPrzyplyw } from '../cutscene/art/przyplyw';
+import { glif } from '../render/tajemnica';
 
 export type Grupa = 'rasy' | 'ryty' | 'zasoby' | 'prawa';
 
@@ -247,6 +248,47 @@ function pauza({ ctx, w, h, t }: Plotno): void {
   ctx.restore();
 }
 
+/** Pismo w skale: blok litej skały z żarzącymi się znakami, które gasną w smudze światła. */
+function pismo({ ctx, w, h, t }: Plotno): void {
+  ctx.save();
+  ctx.fillStyle = '#0d0a09';
+  ctx.fillRect(0, 0, w, h);
+  const blok = new Path2D();
+  blok.rect(0, 0, w, h);
+  kreskuj(ctx, blok, 0.62, 5, rgba(BARWA.atrament, 0.1), 1);
+  // smuga światła z lewej: tam, gdzie pada, znaków już nie ma
+  const g = ctx.createLinearGradient(0, 0, w * 0.45, 0);
+  g.addColorStop(0, 'rgba(224,186,120,0.22)');
+  g.addColorStop(1, 'rgba(224,186,120,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  const oddech = 0.5 + 0.5 * Math.sin(t * 0.0012);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const znaki: [number, number, number, boolean][] = [
+    [0.52, 0.3, 0.07, false], [0.68, 0.62, 0.06, false], [0.86, 0.34, 0.075, true], [0.6, 0.84, 0.05, false],
+    [0.9, 0.78, 0.055, false], [0.36, 0.66, 0.05, false], [0.64, 0.12, 0.045, false],
+  ];
+  znaki.forEach(([x, y, r, pieczec], i) => {
+    const s = h * r * 1.3;
+    // bliżej światła — bledsze
+    const a = Math.max(0, Math.min(1, (x - 0.3) / 0.5)) * (0.45 + 0.35 * Math.sin(oddech * 3 + i));
+    ctx.save();
+    ctx.translate(w * x, h * y);
+    ctx.rotate((i % 3 - 1) * 0.15);
+    ctx.strokeStyle = `rgba(226,170,110,${a})`;
+    if (pieczec) {
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(0, 0, s * 1.6, 0, Math.PI * 2); ctx.stroke();
+    }
+    ctx.scale(s, s);
+    ctx.lineWidth = 1.6 / s;
+    ctx.stroke(glif(40 + i * 13, i % 3));
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
 // ---------------------------------------------------------------- tablice
 
 export const TABLICE: Tablica[] = [
@@ -384,6 +426,12 @@ export const TABLICE: Tablica[] = [
     opis: 'Czas możesz zatrzymać. Rozkazy wydane w pauzie rysują się jako szkice, rezerwują koszt i dzieją się naraz, gdy puścisz czas.',
     kiedy: 'Zatrzymuj świat, gdy musisz trafić — i przy każdym kryzysie.',
     rycina: pauza,
+  },
+  {
+    id: 'pismo', grupa: 'prawa', nazwa: 'Pismo w skale', lacina: 'Scriptura ignota',
+    opis: 'W skale, do której nikt jeszcze nie zajrzał, widać znaki. Nikt z żyjących ich nie wyrył — były tu przed pierwszym goblinem. Gasną, gdy dojdzie do nich światło; w zatrzymanym czasie widać je wyraźniej.',
+    kiedy: 'Nie da się ich przeczytać. Można tylko pójść tam, gdzie są, i patrzeć, jak znikają.',
+    rycina: pismo,
   },
 ];
 

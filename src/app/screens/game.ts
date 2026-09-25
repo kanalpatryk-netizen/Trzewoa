@@ -11,6 +11,7 @@ import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, type Przycisk } from '.
 import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
+import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
@@ -72,6 +73,10 @@ export class EkranGry implements Ekran {
   cam = new Camera(1, 1);
   eng = new Engraver();
   private poswiata = new Poswiata();
+  private tajemnica = new Tajemnica();
+  /** Ile znaków pisma w skale było w ostatniej klatce — po nich odkrywa się ich tablica. */
+  private znakowWidac = 0;
+  private ostatnieOdkrywanie = 0;
   ui = new Ui();
   plate: Plate = computePlate(innerWidth, innerHeight);
   /** Samouczek podsłuchuje, co gracz zrobił. */
@@ -277,6 +282,8 @@ export class EkranGry implements Ekran {
     if (sim.tick > 7000) cicho('pamiec');
     if (this.ui.verb) cicho(`ryt-${this.ui.verb}`);
     if (this.pauza) cicho('pauza');
+    // pismo w skale: kiedy czas stoi, a znaki świecą — albo gdy ktoś długo na nie patrzy
+    if (this.znakowWidac >= 2 && (this.pauza || sim.tick > 6000)) cicho('pismo');
   }
 
   private podniesAlarm(a: Alarm): void {
@@ -385,7 +392,8 @@ export class EkranGry implements Ekran {
       }
     }
 
-    if (!this.nasluch && this.sim.tick % 30 === 0) this.odkrywaj();
+    // co pół sekundy zegara, nie co tyle tików — w pauzie tiki stoją, a pauzę też się odkrywa
+    if (!this.nasluch && teraz - this.ostatnieOdkrywanie > 500) { this.ostatnieOdkrywanie = teraz; this.odkrywaj(); }
     // nowa tablica otwiera się sama — najwyżej jedna na pół minuty i nigdy na kryzys
     if (!this.nasluch && odkrycia.kolejka.length && !this.atlas.otwarte && !this.alarm && !this.zapiski
         && !this.sim.ending && this.sim.tick > 1200 && teraz - this.ostatniaTablica > 30000) {
@@ -451,6 +459,9 @@ export class EkranGry implements Ekran {
     const breath = ruch ? 1 + Math.sin(teraz * rate) * 0.0035 : 1;
     const jx = ruch ? (Math.random() - 0.5) * 0.5 : 0;
     const jy = ruch ? (Math.random() - 0.5) * 0.5 : 0;
+    // rdzeń oddycha tym samym rytmem, którym dudni skała — ciemność na brzegach
+    // zaciska się i puszcza, znaki w nieznanym ledwo żarzą
+    const oddech = ruch ? oddechRdzenia(sim, teraz, this.app.dzwiek.oddech(sim.sen)) : 0.5;
 
     ctx.save();
     ctx.beginPath();
@@ -464,6 +475,7 @@ export class EkranGry implements Ekran {
     ctx.imageSmoothingEnabled = eng.scale > 1;
     ctx.drawImage(eng.buf, 0, 0, cam.vw, cam.vh);
     this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.5);
+    this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
     rysujZarys(ctx, sim, cam, teraz);
@@ -489,22 +501,13 @@ export class EkranGry implements Ekran {
       ctx.restore();
     }
 
-    // delikatna winieta płyty — rysunek ma brzeg, nie ekran
-    const wg = ctx.createRadialGradient(plate.x + plate.w / 2, plate.y + plate.h / 2, Math.min(plate.w, plate.h) * 0.38,
-      plate.x + plate.w / 2, plate.y + plate.h / 2, Math.max(plate.w, plate.h) * 0.72);
-    wg.addColorStop(0, 'rgba(0,0,0,0)');
-    wg.addColorStop(1, 'rgba(8,5,4,0.35)');
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(plate.x, plate.y, plate.w, plate.h);
-    ctx.clip();
-    ctx.fillStyle = wg;
-    ctx.fillRect(plate.x, plate.y, plate.w, plate.h);
-    ctx.restore();
+    // rycina ma brzeg, nie ekran: rytowana ciemność, patyna odbitki i skala w obcym piśmie
+    this.tajemnica.brzegi(ctx, plate, oddech);
+    if (ustawienia.skalaGlebokosci) this.tajemnica.skala(ctx, plate, sim, cam, oddech);
 
     drawSmoke(ctx, plate, sim, teraz);
     drawEyelid(ctx, plate, sim, teraz);
-    drawFrame(ctx, plate, teraz);
+    drawFrame(ctx, plate, teraz, oddech);
     if (ustawienia.skalaGlebokosci && !plate.waski) rysujMinimape(ctx, sim, cam, plate, teraz);
     if (ustawienia.spisRas) drawCensus(ctx, plate, sim, h);
     drawOtchlan(ctx, plate, sim, h);

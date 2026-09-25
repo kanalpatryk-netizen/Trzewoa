@@ -51,10 +51,11 @@ export function obszarSpisu(p: Plate, vh: number): Obszar {
   return { x: p.x, y: y - h * 0.4, w: p.w * (p.waski ? 0.78 : 0.46), h: h * 2.4 };
 }
 
-export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number): void {
+export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number, oddech = 0.5): void {
   ctx.save();
   ctx.lineWidth = 1;
-  ctx.strokeStyle = `${INK}0.45)`;
+  // rama oddycha razem z rdzeniem — ledwie, ale całość przestaje być martwym prostokątem
+  ctx.strokeStyle = `${INK}${0.4 + 0.1 * oddech})`;
   ctx.strokeRect(p.x - 6.5, p.y - 6.5, p.w + 13, p.h + 13);
   ctx.strokeStyle = `${INK}0.18)`;
   ctx.strokeRect(p.x - 10.5, p.y - 10.5, p.w + 21, p.h + 21);
@@ -66,6 +67,32 @@ export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number)
     ctx.beginPath();
     ctx.moveTo(cx + sx * n, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy + sy * n);
     ctx.stroke();
+    // zwój w rogu zewnętrznej ramy: trzewia zwinięte w ślimak
+    const ox = cx - sx * 4.5, oy = cy - sy * 4.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 28; i++) {
+      const t = i / 28;
+      const k = t * Math.PI * 3.2 + (sx > 0 ? 0 : Math.PI) * (sy > 0 ? 1 : -1);
+      const r = 0.6 + t * 3.6;
+      const x = ox + Math.cos(k) * r * sx, y = oy + Math.sin(k) * r * sy;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = `${INK}0.34)`;
+    ctx.stroke();
+    ctx.strokeStyle = `${INK}0.5)`;
+  }
+  // pionowe oko w lewej ramie: przerwa w zewnętrznej linii, powieka i źrenica, która
+  // oddycha razem z rdzeniem (pod płytą wchodziło na znaki spisu ras)
+  if (!p.waski) {
+    const ex = p.x - 10.5, ey = p.y + p.h / 2;
+    ctx.fillStyle = '#0b0807';
+    ctx.fillRect(ex - 3, ey - 13, 6, 26);
+    ctx.strokeStyle = `${INK}0.42)`;
+    ctx.beginPath();
+    ctx.moveTo(ex, ey - 10); ctx.quadraticCurveTo(ex + 6, ey, ex, ey + 10); ctx.quadraticCurveTo(ex - 6, ey, ex, ey - 10);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(200,70,48,${0.35 + 0.45 * oddech})`;
+    ctx.beginPath(); ctx.ellipse(ex, ey, 0.9 + 0.3 * oddech, 1.8 + 0.6 * oddech, 0, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }

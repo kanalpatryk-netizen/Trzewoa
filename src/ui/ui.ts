@@ -112,7 +112,10 @@ export class Ui {
       const size = Math.max(14, this.vw / 76);
       ctx.font = `italic ${size}px ${SERIF}`;
       ctx.textAlign = 'center';
-      const x = Math.max(this.plate.x + 60, Math.min(this.plate.x + this.plate.w - 60, this.pointer.x));
+      // środek napisu trzyma się płyty tak, żeby cały tekst się w niej mieścił —
+      // przy lewym brzegu wchodził na znak menu
+      const pol = Math.min(this.plate.w / 2 - 8, ctx.measureText(this.flash).width / 2 + 10);
+      const x = Math.max(this.plate.x + pol, Math.min(this.plate.x + this.plate.w - pol, this.pointer.x));
       const y = Math.max(this.plate.y + 20, this.pointer.y - size * 1.4);
       ctx.lineWidth = 3;
       ctx.strokeStyle = `rgba(10,7,6,${a * 0.85})`;

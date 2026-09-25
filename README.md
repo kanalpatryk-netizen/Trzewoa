@@ -14,6 +14,7 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 | **Ustawienia** | dźwięk, obraz, świat oraz **pełna lista sterowania z przypisywaniem klawiszy** |
 | **Rozgrywka** | przekrój góry 176×240, sześć sposobów istnienia, pięć czasowników, trzy zasoby, przypływy, zapis stanu |
 | **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś |
+| **Rycina** | brzegi płyty gęstnieją rytowaną kreską i oddychają razem z rdzeniem (tym samym rytmem, którym dudni skała); patyna starej odbitki, zwoje w rogach ramy i pionowe oko; skala głębokości w nieznanym piśmie; w skale, do której nikt nie zajrzał, żarzą się znaki — gasną, gdy dojdzie do nich światło, a w pauzie widać je wyraźniej. W menu obraca się astrolabium podziemia |
 | **Dźwięk** | rezonans świata (kucie, modlitwa, ton zależny od głębokości), muzyka — powolne akordy frygijskie i uderzenia w metal — oraz dźwięki gestów: rylec szkicu rozkazu, kamień pauzy, kaskada wykonanego planu, dzwony ostrzeżeń, szelest kart atlasu. Wszystko syntezowane w locie, przez wspólny pogłos jaskini; w pauzie góra brzmi jak zza ściany |
 
 ## Pauza taktyczna
