@@ -171,7 +171,7 @@ export function sign(sim: Sim, tool: string, tx: number, ty: number): boolean {
     if (tool === 'objawienie') {
       c.devotion = Math.min(1, c.devotion + 0.35);
       c.fear *= 0.4;
-      sim.clans[c.clan].devotion = Math.min(1, sim.clans[c.clan].devotion + 0.08);
+      sim.clans[c.clan].devotion = Math.min(1, sim.clans[c.clan].devotion + 0.12);
     } else {
       c.fear = 1;
       c.thought = Thought.FLEE_UP;

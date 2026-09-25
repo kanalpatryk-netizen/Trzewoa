@@ -34,7 +34,8 @@ export function serialize(sim: Sim): string {
     taints: sim.taints, nextId: sim.nextId, allForges: sim.allForges,
     chronicle: sim.chronicle.slice(-120),
     clans: sim.clans.map((c) => ({ ...c, grudge: [...c.grudge] })),
-    creatures: sim.creatures.filter((c) => !c.dead),
+    // droga to rachunek na chwilę — po wczytaniu i tak wyznaczy się na nowo
+    creatures: sim.creatures.filter((c) => !c.dead).map((c) => ({ ...c, droga: undefined, drogaI: undefined })),
     tile: toB64(w.tile), water: toB64(w.water), magma: toB64(w.magma),
     mem: toB64(w.mem), ever: toB64(w.ever), lastSeen: toB64(w.lastSeen), slad: toB64(w.slad),
   });

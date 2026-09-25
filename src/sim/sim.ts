@@ -5,6 +5,7 @@ import { Race, RACES, RACE_COUNT, clanName } from './races';
 import { Creature, Job, Thought, makeCreature, stepCreature } from './creatures';
 import type { Efekt, RodzajEfektu } from '../render/efekty';
 import { tikRytualu, type StanRytualu } from './rytual';
+import { nowyTik } from './droga';
 
 export interface Clan {
   id: number;
@@ -149,7 +150,9 @@ export class Sim {
       const [hx, hy] = at ?? spot(minD, maxD);
       const clan = this.newClan(race, hx, hy);
       for (let i = 0; i < n; i++) {
-        const c = this.spawn(race, clan.id, hx + this.rng.int(5) - 2, hy - this.rng.int(2));
+        let x = hx + this.rng.int(5) - 2, y = hy - this.rng.int(2);
+        if (!w.passable(x, y)) { x = hx; y = hy; }       // nie w ścianie — tam zostawali zamurowani
+        const c = this.spawn(race, clan.id, x, y);
         // pokolenie zastane: część z nich jest już dorosła, inaczej kolonia nie zdąży się rozmnożyć
         if (c) c.age = this.rng.int(Math.floor(RACES[race].lifespan * 0.45));
       }
@@ -173,13 +176,22 @@ export class Sim {
         }
       }
     }
-    found(Race.TROLL, 2, 0.55, 0.8);
+    // Trole się nie rodzą, a dwa pierwsze nie dożywały trzeciej minuty — góra bez
+    // nich traciła jedyny drapieżnik, który trzymał w ryzach zwycięzcę
+    found(Race.TROLL, 3, 0.55, 0.8);
     // Prządki są pasożytem politycznym — siadają tam, gdzie jest kogo brać
     // niedaleko Ślepego Ludu, ale nie na jego głowie — inaczej rzeź zaczyna się w pierwszej minucie
-    found(Race.SPINNER, 5, 0.3, 0.5, [
-      goblinTwo.hx + (this.rng.chance(0.5) ? 1 : -1) * (14 + this.rng.int(10)),
-      goblinTwo.hy - this.rng.int(6),
-    ]);
+    // (na podłodze: punkt liczony na ślepo wypadał w litej skale i Prządki zaczynały grę
+    // zamurowane, a zanim się wygrzebały, ziemia osypywała się im na głowy)
+    let gniazdoPrzadek: [number, number] | undefined;
+    for (let k = 0; k < 600 && !gniazdoPrzadek; k++) {
+      const x = goblinTwo.hx + (this.rng.chance(0.5) ? 1 : -1) * (14 + this.rng.int(14));
+      const y = goblinTwo.hy + this.rng.int(15) - 9;
+      if (!w.inb(x, y + 1) || !w.passable(x, y) || w.passable(x, y + 1)) continue;
+      if (w.water[w.idx(x, y)] > 2 || this.przyMagmie(x, y, 3)) continue;
+      gniazdoPrzadek = [x, y];
+    }
+    found(Race.SPINNER, 5, 0.3, 0.5, gniazdoPrzadek);
 
     // to, co wiedzą od pokoleń: okolice własnych gniazd
     for (const clan of this.clans) {
@@ -369,7 +381,9 @@ export class Sim {
       return g > 2;                        // swoi biją się dopiero, gdy jest o co
     }
     if (a.race === Race.TROLL) return a.hunger > 0.45 || a.fear > 0.3;
-    return (this.clans[a.clan].grudge.get(b.clan) ?? 0) > 0 || this.rng.chance(0.15);
+    // obcy biją się z urazy; bez niej tylko czasem — wcześniej co siódme spotkanie
+    // kończyło się bójką, a pierwsza śmierć zapisywała urazę na zawsze
+    return (this.clans[a.clan].grudge.get(b.clan) ?? 0) > 0 || this.rng.chance(0.05);
   }
 
   feud(ca: number, cb: number): void {
@@ -527,7 +541,11 @@ export class Sim {
     const mult = tile === T.CORE ? 3 : tile === T.GLYPH ? 2 : 1;
     this.prayers++;
     this.wiara += RACES[c.race].faithGain * clan.devotion * 0.05 * mult * this.incomeMult();
-    clan.devotion = Math.min(1, clan.devotion + 0.0006);
+    // Modlitwa podsyca oddanie, ale coraz słabiej, im go więcej. Wcześniej każdy tik
+    // modlitwy dokładał tyle, że klan dochodził do pełnego oddania w kilka sekund —
+    // i wtedy zaczynał masowo składać ofiary z dzieci, a Znak gracza nie miał nic do dodania.
+    // (i tyle, ile dana krew w ogóle umie wierzyć)
+    clan.devotion = Math.min(1, clan.devotion + 0.000005 * RACES[c.race].faithGain * (1 - clan.devotion));
     if (this.rng.chance(0.06)) this.spark(c.x, c.y - 0.6, 'pray');
   }
 
@@ -538,7 +556,7 @@ export class Sim {
     this.kill(victim, 'na ołtarzu', 'ofiara');
     this.wiara += 14 * this.incomeMult();
     this.krew += 6;
-    clan.devotion = Math.min(1, clan.devotion + 0.04);
+    clan.devotion = Math.min(1, clan.devotion + 0.012);
     if (this.rng.chance(0.3)) this.gdzie(c.x, c.y).log(`${clan.name} złożyli ci w ofierze własne dziecko. Zrobili to chętnie.`, 'wiara',
       'ofiara', (n) => `${clan.name} złożyli ci w ofierze ${n === 2 ? 'dwoje' : n === 3 ? 'troje' : n} własnych dzieci.`);
   }
@@ -588,7 +606,7 @@ export class Sim {
   buildStep(c: Creature): boolean {
     const w = this.world;
     if (w.get(c.jx, c.jy) !== T.AIR) return false;
-    if (Math.abs(c.jx - c.x) > 1.6 || Math.abs(c.jy - c.y) > 1.6) return true;   // jeszcze idzie
+    if (Math.abs(c.jx - Math.floor(c.x)) > 1 || Math.abs(c.jy - Math.floor(c.y)) > 1) return true;   // jeszcze idzie
     const clan = this.clans[c.clan];
     if (c.race === Race.GOBLIN && clan.stock >= 2) {
       clan.stock -= 2; w.set(c.jx, c.jy, T.SHRINE);
@@ -776,7 +794,9 @@ export class Sim {
     this.lastSettlers = this.tick;
     // Schodzi ta krew, której w górze brakuje. Gdy zawsze schodził Ślepy Lud,
     // każde opustoszenie góry wzmacniało zwycięzcę i monokultura była nie do cofnięcia.
-    const kandydaci = [Race.GOBLIN, Race.DWARF, Race.SPINNER];
+    // Prządki tylko tam, gdzie jest kogo brać w jarzmo — w pustej górze umierały z głodu
+    const ofiar = this.popByRace[Race.GOBLIN] + this.popByRace[Race.DWARF];
+    const kandydaci = ofiar >= 10 ? [Race.GOBLIN, Race.DWARF, Race.SPINNER] : [Race.GOBLIN, Race.DWARF];
     let race = Race.GOBLIN, najmniej = Infinity;
     for (const r of kandydaci) {
       const ilu = this.popByRace[r] + (r === Race.GOBLIN ? 6 : 0);   // Ślepy Lud i tak się rodzi
@@ -817,8 +837,9 @@ export class Sim {
    */
   obcyLud(): boolean {
     const w = this.world;
+    const ofiar = this.popByRace[Race.GOBLIN] + this.popByRace[Race.DWARF];
     const chetni = [Race.DWARF, Race.SPINNER, Race.TROLL, Race.GOBLIN]
-      .filter((r) => r !== this.domRace && this.popByRace[r] <= 2);
+      .filter((r) => r !== this.domRace && this.popByRace[r] <= 2 && (r !== Race.SPINNER || ofiar >= 10));
     if (!chetni.length) return false;
     const race = chetni[this.rng.int(chetni.length)];
 
@@ -887,6 +908,15 @@ export class Sim {
       if (this.findHeat(x, y, 9)) return [x, y];
     }
     return null;
+  }
+
+  /** Czy tu grzeje: kuźnia w zasięgu ośmiu kafli albo magma tuż obok — tak liczy się głód Żużlowców. */
+  goraco(x: number, y: number): boolean {
+    const w = this.world;
+    for (const f of this.allForges) {
+      if (Math.abs((f % w.w) - x) <= 8 && Math.abs(((f / w.w) | 0) - y) <= 8) return true;
+    }
+    return this.przyMagmie(x, y, 2);
   }
 
   /** Czy w promieniu r od kafla płynie magma. */
@@ -1050,6 +1080,24 @@ export class Sim {
     }
   }
 
+  /**
+   * Oddanie stygnie samo: bez cudów i ołtarzy każda nacja wraca do tego, jak czci
+   * z natury. Dzięki temu Znak coś znaczy, a wysokie oddanie trzeba podtrzymywać.
+   */
+  private stygnie(): void {
+    for (const clan of this.clans) {
+      if (clan.dead) continue;
+      const natura = clan.race === Race.GOBLIN ? 0.4 : clan.race === Race.DWARF ? 0.3 : 0.08;
+      clan.devotion += (natura - clan.devotion) * 0.004;
+      // urazy też stygną: wcześniej każda śmierć dopisywała się na zawsze i jedna bójka
+      // na granicy zamieniała się w wojnę do ostatniego — dziś wygasa, gdy przestają zabijać
+      for (const [k, g] of clan.grudge) {
+        if (g <= 0.004) clan.grudge.delete(k);
+        else clan.grudge.set(k, g - 0.004);
+      }
+    }
+  }
+
   /** Klan, który urósł i się rozlazł, pęka sam — z powodu odległości, nie twojego szeptu. */
   private schism(): void {
     for (const clan of this.clans) {
@@ -1086,6 +1134,7 @@ export class Sim {
   step(): void {
     if (this.ending) return;
     this.tick++;
+    nowyTik();
     const w = this.world;
     w.tickFluids(this.tick);
     if (this.tick % 3 === 0) w.tickSoil(this.tick);
@@ -1131,7 +1180,7 @@ export class Sim {
     }
 
     if (this.tick % 600 === 0) this.allForges = this.allForges.filter((i) => w.tile[i] === T.FORGE);
-    if (this.tick % 90 === 0) this.forgeAndThread();
+    if (this.tick % 90 === 0) { this.forgeAndThread(); this.stygnie(); }
     if (this.tick % 240 === 0) this.schism();
     if (this.tick % 45 === 0) w.countUnknown(this.tick);
     if (this.tick % 5 === 0) tikRytualu(this, this.rytual);
