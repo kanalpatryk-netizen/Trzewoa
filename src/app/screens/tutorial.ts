@@ -10,6 +10,7 @@ import { BARWA, rgba } from '../../render/palette';
 import { SERIF, panel, akapit, linieAkapitu } from '../../render/ink';
 import { obszarKrwi, obszarOtchlani, obszarWiary, obszarSpisu, type Obszar } from '../../render/plate';
 import { ustaw, ustawienia } from '../../core/settings-store';
+import { TOOLS } from '../../powers/powers';
 import { T, PASSABLE } from '../../sim/tiles';
 import { Race } from '../../sim/races';
 
@@ -21,11 +22,13 @@ type Wskazanie =
 
 type Gest = 'przeciagnij' | 'kolko';
 
+type Tekst = string | ((s: EkranSamouczka) => string);
+
 interface Etap {
   /** Polecenie: jedno krótkie zdanie. */
-  tekst: string;
+  tekst: Tekst;
   /** Skrót: akcja z klawiszologii albo gotowy napis („kółko myszy"). */
-  klawisz?: Akcja | string;
+  klawisz?: Tekst;
   wskaz?: (s: EkranSamouczka) => Wskazanie | null;
   gest?: Gest;
   /** Czy etap jest spełniony — stan gry albo zdarzenie. */
@@ -44,7 +47,7 @@ interface Rozdzial {
   wstep: string;
   etapy: Etap[];
   /** Co się właśnie stało. */
-  koniec: string;
+  koniec: Tekst;
   czasowniki?: string[];
   /** Świat stoi przez cały rozdział — gdy trzeba trafić w konkretne stworzenie. */
   stopCzasu?: boolean;
@@ -56,6 +59,15 @@ const wPolu = (p: Pole | null, x: number, y: number): boolean =>
   !!p && x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h;
 
 const AKCJE_KLAWISZY = new Set<string>(Object.keys(klawisze));
+
+/** Skazy po kolei: gdy gracz wraca do rozdziału, bierze następną — tej samej drugi raz się nie da. */
+const SKAZY: { id: string; nazwa: string; skutek: string }[] = [
+  { id: 'slepota', nazwa: 'ślepota', skutek: 'Cały Ślepy Lud jest teraz ślepy: wolniejszy, ale każda jego modlitwa liczy się podwójnie.' },
+  { id: 'plodnosc', nazwa: 'płodność', skutek: 'Ślepy Lud będzie rodził więcej — i żył krócej, i głodniał szybciej.' },
+  { id: 'kamien', nazwa: 'kamienna skóra', skutek: 'Ślepy Lud stwardniał: trudniej go zabić, za to gorzej kopie i więcej je.' },
+  { id: 'zadza', nazwa: 'żądza krwi', skutek: 'Ślepy Lud jest silniejszy i nieustraszony — ale przestał się modlić.' },
+];
+const tekstZ = (t: Tekst, s: EkranSamouczka): string => typeof t === 'function' ? t(s) : t;
 
 /**
  * Samouczek: dziesięć krótkich rozdziałów, każdy z listą czynności do odhaczenia.
@@ -79,6 +91,8 @@ export class EkranSamouczka implements Ekran {
   kamStart = { x: 0, y: 0, zoom: 1 };
   /** Stworzenie wskazane w rozdziale — śledzimy je, zamiast szukać co klatkę nowego. */
   private wskazaneId = -1;
+  /** Skaza, której uczy rozdział — pierwsza jeszcze nienałożona na Ślepy Lud. */
+  skaza = SKAZY[0];
   /** Miejsca na płycie liczone raz na etap — pierścień nie może skakać za tłumem. */
   private celeEtapow = new Map<number, Wskazanie | null>();
   /** Wysokość ekranu — organy w ramie liczą się od dołu. */
@@ -315,7 +329,10 @@ export class EkranSamouczka implements Ekran {
     {
       tytul: 'Zmień im krew',
       wstep: 'Skaza zmienia cały gatunek na wszystkie pokolenia. Cofnąć się jej nie da.',
-      przygotuj: (g) => { g.sim.krew += 260; },   // otchłani starcza: prawie cała góra jest jeszcze nieznana
+      przygotuj: (g, s) => {
+        g.sim.krew += 260;   // otchłani starcza: prawie cała góra jest jeszcze nieznana
+        s.skaza = SKAZY.find((k) => !g.sim.taints[Race.GOBLIN].includes(k.id)) ?? SKAZY[0];
+      },
       czasowniki: ['skaz'],
       stopCzasu: true,
       etapy: [
@@ -324,16 +341,19 @@ export class EkranSamouczka implements Ekran {
           wskaz: (s) => s.ryt('skaz'), gotowe: (g) => g.ui.verb === 'skaz',
         },
         {
-          tekst: 'U góry wybierz słowo „ślepota".', klawisz: 'narzedzie3', cofa: true,
-          wskaz: (s) => s.slowo('tool', 'slepota'), gotowe: (g) => g.ui.verb === 'skaz' && g.ui.tool === 'slepota',
+          tekst: (s) => `U góry wybierz słowo „${s.skaza.nazwa}".`,
+          klawisz: (s) => `narzedzie${TOOLS.skaz.findIndex((t) => t.id === s.skaza.id) + 1}`, cofa: true,
+          wskaz: (s) => s.slowo('tool', s.skaza.id),
+          gotowe: (g, _z, s) => g.ui.verb === 'skaz' && g.ui.tool === s.skaza.id,
         },
         {
           tekst: 'Kliknij zaznaczonego goblina.',
           wskaz: (s) => { const c = s.wskazanyGoblin('kliknij go'); return c ? { typ: 'swiat', cel: c } : null; },
-          gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'skaz',
+          // po stanie krwi, nie po zdarzeniu: skaza rzucona na kogoś innego niż Ślepy Lud się nie liczy
+          gotowe: (g, _z, s) => g.sim.taints[Race.GOBLIN].includes(s.skaza.id),
         },
       ],
-      koniec: 'Cały Ślepy Lud jest teraz ślepy: wolniejszy, ale każda jego modlitwa liczy się podwójnie.',
+      koniec: (s) => s.skaza.skutek,
     },
     {
       tytul: 'Czas',
@@ -696,8 +716,9 @@ export class EkranSamouczka implements Ekran {
     ctx.restore();
   }
 
-  private opisKlawisza(k: Akcja | string | undefined): string {
-    if (!k) return '';
+  private opisKlawisza(t: Tekst | undefined): string {
+    if (!t) return '';
+    const k = tekstZ(t, this);
     if (AKCJE_KLAWISZY.has(k)) return `klawisz ${nazwaKlawisza(klawisze[k as Akcja])}`;
     return k;
   }
@@ -720,9 +741,10 @@ export class EkranSamouczka implements Ekran {
     ctx.font = `italic ${rozm * 0.86}px ${SERIF}`;
     const lWstep = linieAkapitu(ctx, r.wstep, wew);
     ctx.font = `${rozm * 0.95}px ${SERIF}`;
-    const lEtapy = r.etapy.map((e) => linieAkapitu(ctx, e.tekst, wew - rozm * 1.4));
+    const lEtapy = r.etapy.map((e) => linieAkapitu(ctx, tekstZ(e.tekst, this), wew - rozm * 1.4));
     ctx.font = `${rozm}px ${SERIF}`;
-    const lKoniec = this.zrobiony ? linieAkapitu(ctx, r.koniec, wew) : 0;
+    const koniec = tekstZ(r.koniec, this);
+    const lKoniec = this.zrobiony ? linieAkapitu(ctx, koniec, wew) : 0;
     const glowny = this.zrobiony ? (this.idx === this.rozdzialy.length - 1 ? 'Zakończ →' : 'Dalej →')
       : cur >= 0 && r.etapy[cur].rozumiem ? 'Rozumiem →' : '';
     let wys = 20 + rozm * 3.65 + lWstep * rozm * 1.15;
@@ -812,7 +834,7 @@ export class EkranSamouczka implements Ekran {
       }
       ctx.textAlign = 'left';
       ctx.fillStyle = zrob ? rgba(BARWA.atramentCichy, 0.8) : biezacy ? rgba(BARWA.atramentMocny, 1) : rgba(BARWA.atramentCichy, 0.6);
-      akapit(ctx, e.tekst, ex, yy, wew - rozm * 1.4, lhE);
+      akapit(ctx, tekstZ(e.tekst, this), ex, yy, wew - rozm * 1.4, lhE);
       yy += (lEtapy[i] - 1) * lhE;
       if (biezacy && e.klawisz) {
         yy += rozm * 1.0;
@@ -827,7 +849,7 @@ export class EkranSamouczka implements Ekran {
       yy += rozm * 0.6;
       ctx.font = `${rozm}px ${SERIF}`;
       ctx.fillStyle = rgba(BARWA.zarBlady, 0.97);
-      akapit(ctx, r.koniec, lx, yy, wew, rozm * 1.3);
+      akapit(ctx, koniec, lx, yy, wew, rozm * 1.3);
     }
 
     // przyciski: główny po prawej, „wstecz" i „pomiń" cicho po lewej
