@@ -1103,8 +1103,12 @@ export class Sim {
 
   /** Klan, który urósł i się rozlazł, pęka sam — z powodu odległości, nie twojego szeptu. */
   private schism(): void {
+    // limit dotyczy żyjących nacji — liczony po wszystkich, jakie kiedykolwiek powstały
+    // (z wymarłymi i każdą wyprawą ludzi), po kwadransie gry blokował rozłamy na zawsze
+    let zywych = 0;
+    for (const k of this.clans) if (!k.dead) zywych++;
     for (const clan of this.clans) {
-      if (clan.dead || clan.pop < clan.cap * 0.7 || this.clans.length > 24) continue;
+      if (clan.dead || clan.pop < clan.cap * 0.7 || zywych > 24) continue;
       if (!this.rng.chance(0.25)) continue;
       // Pielgrzymi pod rdzeniem są zawsze najdalej od gniazda, więc rozłam odrywał właśnie
       // ich — nowa nacja dostawała losowe oddanie, a postęp rytuału przepadał razem ze starą.
@@ -1119,6 +1123,7 @@ export class Sim {
       }
       if (!far) continue;
       const nc = this.newClan(clan.race, Math.floor(far.x), Math.floor(far.y));
+      zywych++;
       nc.devotion = clan.devotion * this.rng.range(0.5, 1.2);
       clan.pop--; far.clan = nc.id; nc.pop++;
       let taken = 0;
