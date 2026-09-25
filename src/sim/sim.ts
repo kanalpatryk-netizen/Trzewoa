@@ -59,6 +59,8 @@ export class Sim {
   chronicle: ChronicleEntry[] = [];
 
   tick = 0;
+  /** Numer następnego stworzenia — osobny dla każdej góry, żeby partia była powtarzalna. */
+  nextId = 1;
   dug = 0;
   wiara = 30;
   krew = 60;
@@ -220,7 +222,7 @@ export class Sim {
     const w = this.world;
     x = Math.max(1, Math.min(w.w - 2, x)); y = Math.max(1, Math.min(w.h - 2, y));
     if (!w.passable(x, y)) w.set(x, y, T.AIR);
-    const c = makeCreature(race, clanId, x + 0.5, y);
+    const c = makeCreature(race, clanId, x + 0.5, y, this.nextId++);
     this.creatures.push(c);
     this.byId.set(c.id, c);
     this.clans[clanId].pop++;
@@ -291,7 +293,7 @@ export class Sim {
   }
 
   /** Spirala po kaflach — tanie zmysły zamiast wszechwiedzy. */
-  findTile(x: number, y: number, r: number, pred: (t: number) => boolean): [number, number] | null {
+  findTile(x: number, y: number, r: number, pred: (t: number, tx: number, ty: number) => boolean): [number, number] | null {
     const w = this.world;
     const ox = Math.floor(x), oy = Math.floor(y);
     for (let ring = 1; ring <= r; ring++) {
@@ -301,11 +303,36 @@ export class Sim {
           if (Math.max(Math.abs(dx), Math.abs(dy)) !== ring) continue;
           const tx = ox + dx, ty = oy + dy;
           if (!w.inb(tx, ty)) continue;
-          if (pred(w.tile[w.idx(tx, ty)])) return [tx, ty];
+          if (pred(w.tile[w.idx(tx, ty)], tx, ty)) return [tx, ty];
         }
       }
     }
     return null;
+  }
+
+  /**
+   * Jedzenie, do którego da się dojść. Najbliższy grzyb w linii prostej wisiał często
+   * pod stropem albo na półce — a w górę wchodzi się tylko po stopniu, więc głodny kręcił
+   * się pod nim, aż padł. Liczy się tylko kęs, przy którym jest podłoga do stania,
+   * i najpierw ten na własnym poziomie albo niżej: w dół się spada, pod górę trzeba się wspiąć.
+   * Kto nie pływa, nie sięgnie też grzyba pod głęboką wodą — a grzybnia rodzi się tam, gdzie mokro.
+   */
+  findFood(x: number, y: number, r: number, plywa: boolean, pred: (t: number) => boolean): [number, number] | null {
+    const w = this.world;
+    const ox = Math.floor(x), oy = Math.floor(y);
+    const sucho = (tx: number, ty: number) => plywa || w.water[w.idx(tx, ty)] <= 5;
+    if (w.inb(ox, oy) && pred(w.tile[w.idx(ox, oy)])) return [ox, oy];
+    const doSiegniecia = (tx: number, ty: number): boolean => {
+      if (!sucho(tx, ty)) return false;
+      for (let sy = ty - 1; sy <= ty + 1; sy++) {
+        for (let sx = tx - 1; sx <= tx + 1; sx++) {
+          if (w.passable(sx, sy) && !w.passable(sx, sy + 1) && sucho(sx, sy)) return true;
+        }
+      }
+      return false;
+    };
+    return this.findTile(x, y, r, (t, tx, ty) => ty >= oy - 1 && pred(t) && doSiegniecia(tx, ty))
+      ?? this.findTile(x, y, r, (t, tx, ty) => pred(t) && doSiegniecia(tx, ty));
   }
 
   /** Najbliższy ogień: magma albo kuźnia. Dla Żużlowców to spiżarnia. */
@@ -747,17 +774,6 @@ export class Sim {
   settlers(): void {
     const w = this.world;
     this.lastSettlers = this.tick;
-    let x = 10 + this.rng.int(w.w - 20), y = SURFACE_Y + 2;
-    // najpierw szukamy podłogi przy grzybie: plemię wysadzone na gołej skale
-    // przy powierzchni ginęło z głodu w kilkanaście sekund
-    const przyGrzybie = this.miejscePrzyJedzeniu();
-    if (przyGrzybie) { x = przyGrzybie[0]; y = przyGrzybie[1]; }
-    else for (let k = 0; k < 60; k++) {
-      const xx = 10 + this.rng.int(w.w - 20);
-      for (let yy = SURFACE_Y; yy < w.h * 0.3; yy++) {
-        if (w.passable(xx, yy) && !w.passable(xx, yy + 1)) { x = xx; y = yy; k = 60; break; }
-      }
-    }
     // Schodzi ta krew, której w górze brakuje. Gdy zawsze schodził Ślepy Lud,
     // każde opustoszenie góry wzmacniało zwycięzcę i monokultura była nie do cofnięcia.
     const kandydaci = [Race.GOBLIN, Race.DWARF, Race.SPINNER];
@@ -765,6 +781,19 @@ export class Sim {
     for (const r of kandydaci) {
       const ilu = this.popByRace[r] + (r === Race.GOBLIN ? 6 : 0);   // Ślepy Lud i tak się rodzi
       if (ilu < najmniej) { najmniej = ilu; race = r; }
+    }
+    let x = 10 + this.rng.int(w.w - 20), y = SURFACE_Y + 2;
+    // najpierw szukamy podłogi przy tym, z czego ta krew żyje: plemię wysadzone
+    // na gołej skale przy powierzchni ginęło z głodu w kilkanaście sekund
+    const miejsce = race === Race.DWARF
+      ? this.miejsceWCieple(0.3, 0.7) ?? this.miejscePrzyJedzeniu()
+      : this.miejscePrzyJedzeniu();
+    if (miejsce) { x = miejsce[0]; y = miejsce[1]; }
+    else for (let k = 0; k < 60; k++) {
+      const xx = 10 + this.rng.int(w.w - 20);
+      for (let yy = SURFACE_Y; yy < w.h * 0.3; yy++) {
+        if (w.passable(xx, yy) && !w.passable(xx, yy + 1)) { x = xx; y = yy; k = 60; break; }
+      }
     }
     const clan = this.newClan(race, x, y);
     clan.devotion = 0.3 + this.rng.next() * 0.3;
@@ -774,6 +803,7 @@ export class Sim {
       if (c) c.age = this.rng.int(1200);
     }
     if (race === Race.DWARF) clan.stock = 6;        // mają z czego rozpalić pierwszą kuźnię
+    this.zapasy(clan, 10);                          // przyszli za jedzeniem — niech je zastaną
     clan.founded = this.tick;
     this.przybyszow++;
     this.lastTide = 'nowe plemię';
@@ -793,7 +823,9 @@ export class Sim {
     const race = chetni[this.rng.int(chetni.length)];
 
     let x = -1, y = -1;
-    for (let k = 0; k < 400; k++) {
+    const cieplo = race === Race.DWARF ? this.miejsceWCieple(0.45, 0.77) : null;
+    if (cieplo) { x = cieplo[0]; y = cieplo[1]; }
+    for (let k = 0; k < 400 && x < 0; k++) {
       const xx = 6 + this.rng.int(w.w - 12);
       const yy = Math.floor(w.h * 0.45) + this.rng.int(Math.floor(w.h * 0.32));
       if (!w.passable(xx, yy) || w.passable(xx, yy + 1)) continue;
@@ -819,6 +851,7 @@ export class Sim {
       const c = this.spawn(race, clan.id, x + this.rng.int(5) - 2, y);
       if (c) c.age = this.rng.int(800);
     }
+    this.zapasy(clan, 8);
     this.lastTide = 'obcy lud';
     this.lastSettlers = this.tick;
     this.przybyszow++;
@@ -834,41 +867,70 @@ export class Sim {
       const y = SURFACE_Y + 2 + this.rng.int(Math.floor(w.h * 0.55));
       if (!w.passable(x, y) || w.passable(x, y + 1)) continue;
       if (w.water[w.idx(x, y)] > 2 || w.magma[w.idx(x, y)] > 0) continue;
-      let jedzenie = false;
-      for (let dy = -4; dy <= 4 && !jedzenie; dy++) {
-        for (let dx = -6; dx <= 6; dx++) {
-          if (!w.inb(x + dx, y + dy)) continue;
-          const t = w.tile[w.idx(x + dx, y + dy)];
-          if (t === T.FUNGUS || t === T.BONES) { jedzenie = true; break; }
-        }
-      }
-      if (jedzenie) return [x, y];
+      // grzyb za ścianą albo pod wodą to nie spiżarnia — plemię marło przy nim z głodu
+      if (this.findFood(x, y, 8, false, (t) => t === T.FUNGUS || t === T.BONES)) return [x, y];
     }
     return null;
   }
 
   /**
-   * Obsiewa okolice gniazd grzybem. Świat samouczka startuje z pełną górą ludzi
+   * Podłoga przy ogniu, ale nie w nim — Żużlowcy żyją z ciepła, nie z grzyba.
+   * Wysadzeni przy grzybni głodowali, zanim zdążyli rozpalić pierwszą kuźnię.
+   */
+  private miejsceWCieple(minD: number, maxD: number): [number, number] | null {
+    const w = this.world;
+    for (let k = 0; k < 3000; k++) {
+      const x = 4 + this.rng.int(w.w - 8);
+      const y = Math.floor(SURFACE_Y + (w.h - SURFACE_Y) * (minD + this.rng.next() * (maxD - minD)));
+      if (!w.passable(x, y) || w.passable(x, y + 1)) continue;
+      if (w.water[w.idx(x, y)] > 2 || this.przyMagmie(x, y, 2)) continue;
+      if (this.findHeat(x, y, 9)) return [x, y];
+    }
+    return null;
+  }
+
+  /** Czy w promieniu r od kafla płynie magma. */
+  przyMagmie(x: number, y: number, r = 1): boolean {
+    const w = this.world;
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dx = -r; dx <= r; dx++) {
+        if (w.inb(x + dx, y + dy) && w.magma[w.idx(x + dx, y + dy)] > 0) return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Zaopatruje okolice gniazd w to, co dana krew je. Świat samouczka startuje z pełną górą ludzi
    * i pustą spiżarnią — bez tego nauka sprowadzała się do patrzenia na głód.
    */
   nakarmSwiat(ile = 26): void {
-    const w = this.world;
-    for (const klan of this.clans) {
-      if (klan.dead) continue;
-      let poszlo = 0;
-      for (let k = 0; k < 600 && poszlo < ile; k++) {
-        const x = klan.hx + this.rng.int(19) - 9;
-        const y = klan.hy + this.rng.int(13) - 6;
-        if (!w.inb(x, y)) continue;
-        const i = w.idx(x, y);
-        if (w.tile[i] !== T.AIR || w.water[i] > 0) continue;
-        if (w.passable(x, y + 1)) continue;
-        w.set(x, y, T.FUNGUS);
-        poszlo++;
-      }
-    }
+    for (const klan of this.clans) if (!klan.dead) this.zapasy(klan, ile);
     this.fungusBudget += 240;
     for (const c of this.creatures) if (!c.dead) c.hunger = Math.min(c.hunger, 0.12);
+  }
+
+  /**
+   * Spiżarnia przy gnieździe — z tego, co dana krew je. Grzyb dostaje tylko Ślepy Lud:
+   * wszystkich innych grzybnia parzy, a Żużlowcy i tak jej nie jedzą, więc obsiany grzybem
+   * obóz Żużlowców albo Prządek zabijał własnych mieszkańców. Prządki i Trole dostają kości,
+   * Żużlowcy nic — oni żyją z ognia.
+   */
+  private zapasy(klan: Clan, ile: number): void {
+    if (klan.race === Race.DWARF || klan.race === Race.HUMAN) return;
+    const w = this.world;
+    const kafel = klan.race === Race.GOBLIN ? T.FUNGUS : T.BONES;
+    let poszlo = 0;
+    for (let k = 0; k < 600 && poszlo < ile; k++) {
+      const x = klan.hx + this.rng.int(19) - 9;
+      const y = klan.hy + this.rng.int(13) - 6;
+      if (!w.inb(x, y)) continue;
+      const i = w.idx(x, y);
+      if (w.tile[i] !== T.AIR || w.water[i] > 0) continue;
+      if (w.passable(x, y + 1)) continue;
+      w.set(x, y, kafel);
+      poszlo++;
+    }
   }
 
   /**
@@ -993,9 +1055,14 @@ export class Sim {
     for (const clan of this.clans) {
       if (clan.dead || clan.pop < clan.cap * 0.7 || this.clans.length > 24) continue;
       if (!this.rng.chance(0.25)) continue;
+      // Pielgrzymi pod rdzeniem są zawsze najdalej od gniazda, więc rozłam odrywał właśnie
+      // ich — nowa nacja dostawała losowe oddanie, a postęp rytuału przepadał razem ze starą.
+      // Warta należy do nacji, która ją wysłała.
+      const wWarcie = (c: Creature) => c.job === Job.PIELGRZYM
+        || (Math.abs(c.x - this.world.coreX) < 20 && Math.abs(c.y - this.world.coreY) < 20);
       let far: Creature | null = null, fd = 18;
       for (const c of this.creatures) {
-        if (c.dead || c.clan !== clan.id) continue;
+        if (c.dead || c.clan !== clan.id || wWarcie(c)) continue;
         const d = Math.hypot(c.x - clan.hx, c.y - clan.hy);
         if (d > fd) { fd = d; far = c; }
       }
@@ -1005,7 +1072,7 @@ export class Sim {
       clan.pop--; far.clan = nc.id; nc.pop++;
       let taken = 0;
       for (const o of this.creatures) {
-        if (taken >= 8 || o.dead || o.clan !== clan.id) continue;
+        if (taken >= 8 || o.dead || o.clan !== clan.id || wWarcie(o)) continue;
         if (Math.hypot(o.x - far.x, o.y - far.y) > 10) continue;
         clan.pop--; o.clan = nc.id; nc.pop++; taken++;
       }

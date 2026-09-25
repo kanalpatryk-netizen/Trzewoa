@@ -46,14 +46,12 @@ export interface Creature {
   dead: boolean;
 }
 
-let nextId = 1;
-export function peekNextId(): number { return nextId; }
-export function setNextId(n: number): void { nextId = n; }
-
-export function makeCreature(race: Race, clan: number, x: number, y: number): Creature {
+/** Numer nadaje symulacja: licznik wspólny dla wszystkich gór sprawiał, że ta sama góra
+ *  w drugiej partii żyła inaczej niż w pierwszej (od numeru zależy rytm rozglądania się). */
+export function makeCreature(race: Race, clan: number, x: number, y: number, id: number): Creature {
   const d = RACES[race];
   return {
-    id: nextId++, race, clan, x, y, vy: 0,
+    id, race, clan, x, y, vy: 0,
     hp: d.maxHp, hunger: 0.2, fear: 0, devotion: 0.25, age: 0,
     job: Job.WANDER, jx: x, jy: y, jt: 0, dig: 0, carry: 0, carryT: 0,
     face: 1, anim: 0, thought: Thought.NONE, stall: 0, lx: x, ly: y, prophet: false, slave: false, mad: 0, dead: false,
@@ -297,7 +295,7 @@ function pickJob(sim: Sim, c: Creature): void {
   if (c.race === Race.HUMAN) { c.job = Job.RAID; c.jt = 90; return; }
 
   if (c.hunger > 0.45 && c.race !== Race.DWARF) {
-    const food = sim.findTile(c.x, c.y, c.hunger > 0.8 ? 30 : 18, (t) => edible(c.race, t));
+    const food = sim.findFood(c.x, c.y, c.hunger > 0.8 ? 30 : 18, d.swims, (t) => edible(c.race, t));
     if (food) { c.job = Job.EAT; c.jx = food[0]; c.jy = food[1]; c.jt = 60 + Math.round(Math.hypot(food[0] - c.x, food[1] - c.y) * 14); return; }
     sim.foodMiss++;
     if (d.eatsMeat && !sim.spokojnySwiat) {
@@ -395,7 +393,9 @@ function walkTo(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): b
 
   const cx = Math.floor(c.x), cy = Math.floor(c.y);
   const deepWater = (x: number, y: number) => !d.swims && w.inb(x, y) && w.water[w.idx(x, y)] > 5;
-  const free = (x: number, y: number) => w.passable(x, y) && !deepWater(x, y);
+  // w magmę nikt nie wchodzi z własnej woli — wcześniej była dla nich zwykłym korytarzem,
+  // a Żużlowcy, którzy chodzą do ognia po ciepło, ginęli w nim całymi klanami
+  const free = (x: number, y: number) => w.passable(x, y) && !deepWater(x, y) && w.magma[w.idx(x, y)] === 0;
   const speed = d.speed
     * (w.water[w.idx(cx, cy)] > 3 ? 0.5 : 1)
     * (w.tile[w.idx(cx, cy)] === T.WEB && c.race !== Race.SPINNER ? 0.4 : 1);
@@ -427,6 +427,12 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
   const t = w.get(x, y);
   const hard = w.hardness(x, y);
   if (hard <= 0) return;
+  // Nikt przy zdrowych zmysłach nie przebija ściany, za którą płynie ogień: losowe
+  // drążenie otwierało kieszenie magmy i wypalało całe plemiona w kilka sekund.
+  // Szaleni i ci, którym szepnąłeś „kop w dół", kopią dalej.
+  if (t !== T.CORE && c.mad < 0.6 && c.job !== Job.DESCEND && sim.przyMagmie(x, y)) {
+    c.dig = 0; c.jt = 0; return;
+  }
   c.dig += RACES[c.race].digPower * (1 + c.mad * 0.6);
   if (c.dig < hard * 9) return;
   c.dig = 0;
@@ -453,7 +459,9 @@ function doEat(sim: Sim, c: Creature): void {
   const w = sim.world;
   const t = w.get(c.jx, c.jy);
   if (!edible(c.race, t)) { c.jt = 0; return; }
-  if (Math.abs(c.jx - c.x) <= 1.3 && Math.abs(c.jy - c.y) <= 1.3) {
+  // po kaflach, nie po współrzędnych: jx to lewa krawędź kafla, więc kęs po lewej
+  // był „dalej” niż ten sam kęs po prawej, a ten nad głową bywał poza zasięgiem na zawsze
+  if (Math.abs(c.jx - Math.floor(c.x)) <= 1 && Math.abs(c.jy - Math.floor(c.y)) <= 1) {
     w.set(c.jx, c.jy, T.AIR);
     sim.meals++;
     c.hunger = Math.max(0, c.hunger - (t === T.BONES ? 0.9 : 0.7));
@@ -471,7 +479,7 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   const w = sim.world;
   // po drodze je, co znajdzie; dopiero gdy nie ma nic, zawraca do swoich
   if (c.hunger > 0.62) {
-    const jedzenie = sim.findTile(c.x, c.y, 12, (t) => edible(c.race, t));
+    const jedzenie = sim.findFood(c.x, c.y, 12, RACES[c.race].swims, (t) => edible(c.race, t));
     if (jedzenie) { c.job = Job.EAT; c.jx = jedzenie[0]; c.jy = jedzenie[1]; c.jt = 90; return; }
     if (c.hunger > 0.7) { c.job = Job.WANDER; c.jt = 0; c.jx = sim.clans[c.clan].hx; c.jy = sim.clans[c.clan].hy; return; }
   }

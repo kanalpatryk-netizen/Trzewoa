@@ -1,5 +1,5 @@
 import { Sim } from '../sim/sim';
-import { Creature, peekNextId, setNextId } from '../sim/creatures';
+import type { Creature } from '../sim/creatures';
 import { applyTaintEffect } from '../powers/powers';
 
 /**
@@ -31,7 +31,7 @@ export function serialize(sim: Sim): string {
     tick: sim.tick,
     wiara: sim.wiara, krew: sim.krew, sen: sim.sen, rytual: sim.rytual,
     fungusBudget: sim.fungusBudget, nextTide: sim.nextTide, ending: sim.ending, przybyszow: sim.przybyszow,
-    taints: sim.taints, nextId: peekNextId(), allForges: sim.allForges,
+    taints: sim.taints, nextId: sim.nextId, allForges: sim.allForges,
     chronicle: sim.chronicle.slice(-120),
     clans: sim.clans.map((c) => ({ ...c, grudge: [...c.grudge] })),
     creatures: sim.creatures.filter((c) => !c.dead),
@@ -59,7 +59,6 @@ export function restore(json: string): Sim | null {
   sim.taints = data.taints;
   sim.allForges = data.allForges ?? [];
   sim.chronicle = data.chronicle ?? [];
-  setNextId(data.nextId ?? 1);
 
   sim.clans = data.clans.map((c: any) => ({
     ...c, grudge: new Map<number, number>(c.grudge),
@@ -67,6 +66,10 @@ export function restore(json: string): Sim | null {
   }));
   sim.creatures = data.creatures as Creature[];
   sim.byId = new Map(sim.creatures.map((c) => [c.id, c]));
+  // numer nie może wrócić do już zajętego — inaczej nowe stworzenie nadpisze stare w byId
+  let maxId = 0;
+  for (const c of sim.creatures) if (c.id > maxId) maxId = c.id;
+  sim.nextId = Math.max(data.nextId ?? 1, maxId + 1);
   sim.target.clear();
   sim.particles.length = 0;
 

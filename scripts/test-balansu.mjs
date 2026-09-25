@@ -108,8 +108,9 @@ export function pomiar(ziaren: number, maksMinut: number) {
   for (let z = 0; z < ziaren; z++) {
     for (const zGraczem of [false, true]) {
       const sim: any = new Sim(z * 104729 + 17);
+      // spis ras powstaje dopiero w pierwszym kroku — liczony przed nim był pusty
+      // i test nigdy nie widział żadnej wymarłej rasy
       const rasyNaStarcie = new Set<number>();
-      for (let r = 0; r < RACE_COUNT; r++) if (r !== Race.MYCELIUM && sim.popByRace[r] > 0) rasyNaStarcie.add(r);
       let rasyWymarle = 0, klanyWymarle = 0;
       const znikle = new Set<number>();
       const wymarleRasy: { rasa: number; minuta: number }[] = [];
@@ -118,6 +119,7 @@ export function pomiar(ziaren: number, maksMinut: number) {
       let i = 0;
       for (; i < maks && !sim.ending; i++) {
         sim.step();
+        if (i === 0) for (let r = 0; r < RACE_COUNT; r++) if (r !== Race.MYCELIUM && sim.popByRace[r] > 0) rasyNaStarcie.add(r);
         if (zGraczem && i % 60 === 0) ruchGracza(sim);
         if (i % 600 === 0) {
           for (const r of rasyNaStarcie) {
@@ -130,6 +132,7 @@ export function pomiar(ziaren: number, maksMinut: number) {
         if (i % 1000 === 0) populacja.push(sim.creatures.reduce((n: number, c: any) => n + (c.dead ? 0 : 1), 0));
       }
       klanyWymarle = sim.clans.filter((k: any) => k.dead).length;
+      const zywi = sim.creatures.filter((c: any) => !c.dead).length;
       wyniki.push({
         ziarno: z, gracz: zGraczem,
         koniec: sim.ending ?? 'brak (limit)',
@@ -137,14 +140,15 @@ export function pomiar(ziaren: number, maksMinut: number) {
         pekniecia: sim.rytual.pekniecia,
         najlepszyRytual: +Math.max(0, ...sim.clans.map((k: any) => k.rytual)).toFixed(2),
         rasyWymarle, klanyWymarle, klanowRazem: sim.clans.length,
-        zywi: sim.creatures.filter((c: any) => !c.dead).length,
+        zywi,
         dominacja: +sim.dominance.toFixed(2),
         przybyszow: sim.przybyszow,
         wymarleRasy,
         populacja,
         // dlaczego się skończyło: sen z pustki czy sen z monokultury
+        // (garstka ocalałych z jednej krwi to pustka, choć dominacja wychodzi 1)
         powod: sim.ending === 'sen'
-          ? (sim.dominance > 0.8 ? 'sen/monokultura' : 'sen/pustka')
+          ? (zywi >= 10 && sim.dominance > 0.8 ? 'sen/monokultura' : 'sen/pustka')
           : (sim.ending ?? 'limit'),
       });
     }

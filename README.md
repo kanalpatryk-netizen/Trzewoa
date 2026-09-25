@@ -109,6 +109,15 @@ npm run dev     # http://localhost:5180
 npm run pack    # trzewia.html — jeden plik, działa z file://
 ```
 
+## Testy
+
+```bash
+npm test               # świat + skorupa (szybkie, kończą się błędem, gdy coś pękło)
+npm run test:swiat     # 100 gór: przedsionek pod rdzeniem ma być suchy
+npm run test:skorupa   # 12 gór z wymuszoną wartą: droga po ≤8 pęknięciach i Uwolnienie
+npm run test:balans    # pomiar długości partii bez gracza i z automatem (kilka minut)
+```
+
 ## Czego świadomie nie ma
 
 Drzewka technologii, bezpośredniej kontroli jednostek, pasków zdrowia, ikon nad głowami,
