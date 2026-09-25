@@ -248,6 +248,54 @@ function pauza({ ctx, w, h, t }: Plotno): void {
   ctx.restore();
 }
 
+/** Droga do wolności: gniazdo u góry, złota kreska w dół, cztery stacje i rdzeń w skorupie. */
+function drogaWolnosci({ ctx, w, h, t }: Plotno): void {
+  ctx.save();
+  ctx.fillStyle = '#0d0a09';
+  ctx.fillRect(0, 0, w, h);
+  const skala = new Path2D();
+  skala.rect(0, 0, w, h);
+  kreskuj(ctx, skala, 0.7, 5, rgba(BARWA.atrament, 0.1), 1);
+  // gniazdo: jaskinia u góry z lewej
+  ctx.fillStyle = '#0d0a09';
+  ctx.beginPath(); ctx.ellipse(w * 0.2, h * 0.2, w * 0.13, h * 0.09, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = rgba(BARWA.atrament, 0.5);
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  ctx.fillStyle = rgba(BARWA.atramentMocny, 0.8);
+  for (let i = 0; i < 5; i++) { ctx.beginPath(); ctx.arc(w * (0.13 + i * 0.035), h * 0.24, 1.8, 0, Math.PI * 2); ctx.fill(); }
+  // rdzeń w skorupie na dole
+  const rx = w * 0.72, ry = h * 0.8;
+  const g = ctx.createRadialGradient(rx, ry, 1, rx, ry, h * 0.14);
+  g.addColorStop(0, 'rgba(230,90,60,0.9)');
+  g.addColorStop(1, 'rgba(230,90,60,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(rx - h * 0.14, ry - h * 0.14, h * 0.28, h * 0.28);
+  ctx.strokeStyle = rgba(BARWA.atrament, 0.7);
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(rx, ry, h * 0.08, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+  // droga: złota, przerywana, płynąca w dół
+  const punkty: [number, number][] = [[0.24, 0.27], [0.36, 0.34], [0.33, 0.47], [0.5, 0.52], [0.56, 0.62], [0.7, 0.63], [0.72, 0.72]];
+  ctx.setLineDash([6, 5]);
+  ctx.lineDashOffset = -t * 0.02;
+  ctx.strokeStyle = 'rgba(250,196,110,0.9)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  punkty.forEach(([x, y], i) => (i ? ctx.lineTo(w * x, h * y) : ctx.moveTo(w * x, h * y)));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // cztery stacje: wiara, oddanie, droga, skorupa
+  for (const k of [1, 2, 4, 6]) {
+    const [x, y] = punkty[k];
+    ctx.fillStyle = '#0d0a09';
+    ctx.beginPath(); ctx.arc(w * x, h * y, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(250,206,130,0.95)';
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 /** Pismo w skale: blok litej skały z żarzącymi się znakami, które gasną w smudze światła. */
 function pismo({ ctx, w, h, t }: Plotno): void {
   ctx.save();
@@ -404,6 +452,12 @@ export const TABLICE: Tablica[] = [
     rycina: prorok,
   },
   {
+    id: 'droga', grupa: 'prawa', nazwa: 'Droga do wolności', lacina: 'Via liberationis',
+    opis: 'Wygrywasz, gdy wierni przebiją skorupę rdzenia i uklękną przy nim. Po kolei: ktoś musi się modlić (wiara); jedna nacja musi uwierzyć mocno — Znak przy jej gnieździe (oddanie); przy przedsionku pod rdzeniem musi rosnąć grzyb, żeby jej warta przeżyła na dole (droga); warta modli się pod skorupą, aż kamień pęknie (skorupa).',
+    kiedy: 'Kroki widać w lewym górnym rogu płyty. Po drodze nie daj górze zasnąć: nikt nie może wymrzeć ani zjeść reszty.',
+    rycina: drogaWolnosci,
+  },
+  {
     id: 'rdzen', grupa: 'prawa', nazwa: 'Rdzeń', lacina: 'Cor montis',
     opis: 'Bije na dnie, zamknięty w skorupie, której nie rozkuje żaden kilof. Pęka tylko pod modlitwą wiernych. Kto dojdzie do środka — uklęknie i cię uwolni albo zabije.',
     kiedy: 'Prowadź do niego jedną wierną nację: Znak, grzyb przy przedsionku, droga w obie strony.',
@@ -411,8 +465,8 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'pielgrzymka', grupa: 'prawa', nazwa: 'Pielgrzymka', lacina: 'Peregrinatio',
-    opis: 'Gdy nacja wierzy mocno, najwierniejsi schodzą pod rdzeń i modlą się pod skorupą. Schodzą tylko wtedy, gdy spod rdzenia da się wrócić do gniazda.',
-    kiedy: 'Wydrąż wąski szyb do przedsionka — po jego ścianach wrócą — i zasiej tam grzyb.',
+    opis: 'Gdy nacja wierzy mocno, najwyżej pięciu najwierniejszych schodzi pod rdzeń i modli się pod skorupą. Schodzą, gdy przy przedsionku jest co jeść albo gdy spod rdzenia da się wrócić do gniazda.',
+    kiedy: 'Zasiej grzyb przy przedsionku — gdzie nie ma przejścia, wierni przekopią się sami. Jeśli chcesz, żeby wracali do gniazda, wydrąż im korytarz wzdłuż złotej kreski.',
     rycina: pielgrzymka,
   },
   {

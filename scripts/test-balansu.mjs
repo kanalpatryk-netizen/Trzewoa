@@ -102,15 +102,8 @@ function ruchGracza(sim: any) {
     if (ofiara) { ofiara.thought = 2; ofiara.jt = 0; sim.wiara -= 5; }
   }
 
-  // 5. szyb do przedsionka: gracz kopie go sam, kafel po kaflu, gdy ma krew
-  if (sim.krew > 90) {
-    const najwierniejszy = sim.clans.filter((k: any) => !k.dead && k.pop > 2)
-      .sort((a: any, b: any) => b.devotion - a.devotion)[0];
-    const startY = najwierniejszy ? najwierniejszy.hy : 40;
-    for (let y = startY; y < w.coreY - 14; y++) {
-      if (!w.passable(w.coreX, y)) { shape(sim, 'draz', w.coreX, y); break; }
-    }
-  }
+  // 5. droga pielgrzymów: warta żyje z grzybu przy przedsionku (krok 2) — gracz nie
+  // musi drążyć korytarza; pielgrzymi sami przekopią się w dół
 }
 
 export function pomiar(ziaren: number, maksMinut: number) {

@@ -5,6 +5,8 @@ import { Race, RACES, RACE_COUNT, clanName } from './races';
 import { Creature, Job, Thought, makeCreature, stepCreature } from './creatures';
 import type { Efekt, RodzajEfektu } from '../render/efekty';
 import { tikRytualu, type StanRytualu } from './rytual';
+import type { PlanDrogi } from './pielgrzymka';
+import { policzJedzeniePrzedsionka } from './rytual';
 import { nowyTik } from './droga';
 
 export interface Clan {
@@ -103,10 +105,19 @@ export class Sim {
   przybyszow = 0;
   /** W samouczku świat ma stać spokojnie — bez przypływów i wymierania nacji. */
   spokojnySwiat = false;
+  /**
+   * Łaskawa góra: na pierwsze partie. Sen przychodzi wolniej, a modlitwa pod skorupą
+   * kruszy ją szybciej — reszta świata jest taka sama, więc nauka się nie marnuje.
+   */
+  lagodna = false;
+  /** Ile jedzenia rośnie w suchej strefie przy przedsionku — liczone co sekundę gry. */
+  jedzeniePrzedsionka = 0;
   /** Ustawiane przy przekroczeniu progu senności — ekran gry bije w dzwon i kasuje. */
   senDzwon = false;
   /** Postęp kruszenia skorupy rdzenia — koniec gry wymaga kultu, nie jednego kilofa. */
   rytual: StanRytualu = { postep: 0, klan: -1, wierni: 0, pekniecia: 0, otwarta: false, skorupa: 0 };
+  /** Plan drogi pielgrzymów (patrz pielgrzymka.ts) — pamięć podręczna, nie stan gry. */
+  planDrogi: PlanDrogi | null = null;
   lastTide = '';
   /** Tik ostatniego przypływu — po nim strażnik pauzy poznaje, że coś weszło z zewnątrz. */
   tideTick = -1;
@@ -673,7 +684,9 @@ export class Sim {
   reachCore(c: Creature): void {
     if (this.ending) return;
     const clan = this.clans[c.clan];
-    if (clan.devotion > 0.55) {
+    // liczy się też wiara tego, kto wchodzi: warta z pełnym oddaniem, której nacja
+    // w domu akurat ostygła, wchodziła jako zabójcy — i gracz przegrywał wygraną
+    if (clan.devotion > 0.55 || c.devotion > 0.7) {
       this.ending = `uwolnienie:${clan.name}`;
       this.gdzie(this.world.coreX, this.world.coreY).log(`${clan.name} dokopali się do twojego rdzenia i padli na twarz. Jesteś wolny.`, 'koniec');
     } else {
@@ -743,7 +756,7 @@ export class Sim {
     // góra z sześcioma mieszkańcami budziła się w nieskończoność, bo „nikt nie górował".
     // Góra o kilkunastu mieszkańcach jeszcze żyje — usypia dopiero naprawdę pusta.
     const pustka = total < 10 ? 1 - total / 10 : 0;
-    const rosnie = 0.000012 * nadmiar + 0.00004 * pustka;
+    const rosnie = (0.000009 * nadmiar + 0.000022 * pustka) * (this.lagodna ? 0.6 : 1);
     this.sen = Math.max(0, Math.min(1, this.sen + (rosnie > 0 ? rosnie : -0.0005)));
     // sen ma być słyszalny, a nie tylko widoczny na krawędziach płyty
     for (const prog of [0.25, 0.5, 0.8]) {
@@ -1071,8 +1084,10 @@ export class Sim {
       if (c.dead) continue;
       if (this.tick - this.clans[c.clan].founded < 3000) continue;   // przybysze mają chwilę spokoju
       const celowana = c.race === this.domRace;     // ciasnota choruje pierwsza
-      if (this.rng.chance(celowana ? 0.25 : 0.82)) continue;
-      c.hp -= RACES[c.race].maxHp * (celowana ? 0.6 : 0.35); c.fear = 1; hit++;
+      // zaraza ma przerzedzić ciasnotę, nie wymieść całą nację w pół minuty —
+      // przy dawnej sile czterdzieści głodnych goblinów znikało naraz
+      if (this.rng.chance(celowana ? 0.4 : 0.85)) continue;
+      c.hp -= RACES[c.race].maxHp * (celowana ? 0.45 : 0.3); c.fear = 1; hit++;
     }
     this.lastTide = 'zaraza'; this.tideTick = this.tick;
     // zaraza, która nikogo nie tknęła, nie jest zdarzeniem — nie ma po co o niej pisać
@@ -1240,6 +1255,7 @@ export class Sim {
     if (this.tick % 240 === 0) this.schism();
     if (this.tick % 45 === 0) w.countUnknown(this.tick);
     if (this.tick % 5 === 0) tikRytualu(this, this.rytual);
+    if (this.tick % 60 === 0) this.jedzeniePrzedsionka = policzJedzeniePrzedsionka(this);
     this.census();
     this.tides();
   }

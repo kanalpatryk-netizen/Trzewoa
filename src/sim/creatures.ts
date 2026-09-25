@@ -216,12 +216,19 @@ export function stepCreature(sim: Sim, c: Creature): void {
   // Wchodzi tylko nacja, która skuła skorupę, albo taka, która wierzy dość, by cię uwolnić.
   // Obcy — Trol z głębi, Żużlowiec za ciepłem — musi rdzeń wykuć, a to trwa: przypadkowy
   // przechodzień nie kończy gry śmiercią sekundę po tym, jak warta otworzyła drogę.
-  const wolnoWejsc = c.clan === sim.rytual.klan || sim.clans[c.clan].devotion > 0.55;
-  if (wolnoWejsc && Math.abs(c.x - w.coreX) <= 3 && Math.abs(c.y - w.coreY) <= 3) {
+  const wolnoWejsc = c.clan === sim.rytual.klan || sim.clans[c.clan].devotion > 0.55 || c.devotion > 0.7;
+  if (wolnoWejsc && Math.abs(c.x - w.coreX) <= 4 && Math.abs(c.y - w.coreY) <= 4) {
     const cx = Math.round(c.x), cy = Math.round(c.y);
     for (const [dx, dy] of [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]]) {
       if (w.get(cx + dx, cy + dy) === T.CORE) { sim.reachCore(c); return; }
     }
+  }
+  // Komora wokół rdzenia jest pusta i szeroka: kto przez otwartą skorupę wejdzie do niej,
+  // doszedł. Wcześniej warta wchodziła od dołu i stała na dnie komory, bo w pustej
+  // przestrzeni nie ma się czego chwycić, żeby podciągnąć się do samego rdzenia.
+  if (wolnoWejsc && sim.rytual.otwarta && Math.abs(c.x - (w.coreX + 0.5)) <= 8 && Math.abs(c.y - (w.coreY + 0.5)) <= 7
+      && w.passable(Math.floor(c.x), Math.floor(c.y))) {
+    sim.reachCore(c); return;
   }
 
   // --- ogień tuż obok: ucieka, zanim spłynie — wcześniej stali przy kuźni i czekali,
@@ -386,8 +393,12 @@ function pickJob(sim: Sim, c: Creature): void {
   // (próg powyżej progu Uwolnienia: kto schodzi pod rdzeń, ma dość wiary, by wejść do środka)
   if (d.faithGain > 0 && clan.devotion > 0.6 && c.devotion > 0.45 && c.hunger < 0.35
       && clan.pop >= 8 && sim.crowding[c.race] < 0.95
-      && pielgrzymowKlanu(sim, clan.id) < Math.min(PIELGRZYMOW, Math.floor(clan.pop * 0.25))
-      && powrotSpodRdzenia(sim, c, clan)) {
+      // co najmniej trzech — tylu trzeba naraz pod skorupą, żeby kamień w ogóle drgnął
+      && pielgrzymowKlanu(sim, clan.id) < Math.min(PIELGRZYMOW, Math.max(3, Math.floor(clan.pop * 0.3)))
+      // schodzą, gdy da się wrócić — albo gdy przy przedsionku jest co jeść: wtedy warta
+      // przeżyje na dole i bez drogi powrotnej (dla gracza to jedno kliknięcie grzybem,
+      // a nie sto kafli korytarza)
+      && (sim.jedzeniePrzedsionka >= 3 || powrotSpodRdzenia(sim, c, clan))) {
     // im bliżej przedsionka ktoś już jest, tym chętniej schodzi resztę drogi
     const dystans = Math.hypot(c.x - w.coreX, c.y - (w.coreY - 14));
     const chec = 0.06 + 0.3 * Math.max(0, 1 - dystans / 90);
@@ -703,10 +714,8 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   if (!wPrzedsionku) { walkTo(sim, c, c.jx, c.jy); return; }
   // Dopiero na miejscu widać, czy skorupa już puściła — i liczy się faktyczna droga,
   // nie licznik pęknięć. Wtedy pielgrzym przestaje być pielgrzymem: schodzi do rdzenia.
-  if (sim.rytual.otwarta && sim.clans[c.clan].devotion > 0.55) {
-    wyslijDoRdzenia(sim, c, 1200);
-    return;
-  }
+  if (sim.rytual.otwarta && (sim.clans[c.clan].devotion > 0.55 || c.devotion > 0.7)
+      && sim.tick % 30 === c.id % 30 && wyslijDoRdzenia(sim, c, 1200)) return;
   c.devotion = Math.min(1, c.devotion + 0.0012);
   c.hunger = Math.max(0, c.hunger - 0.00018);      // wiara trawi wolniej, ale trawi
   sim.wiara += 0.0025 * sim.incomeMult();
@@ -735,12 +744,17 @@ function powrotSpodRdzenia(sim: Sim, c: Creature, clan: Sim['clans'][number]): b
   return clan.powrotOk;
 }
 
-export function wyslijDoRdzenia(sim: Sim, c: Creature, jt: number): void {
+/**
+ * Wysyła wiernego do rdzenia — drogą, jeśli ją widać, a jeśli nie, na przełaj
+ * z kilofem: nacja spod rdzenia wchodzi do komory od dołu i to też się liczy.
+ */
+export function wyslijDoRdzenia(sim: Sim, c: Creature, jt: number): boolean {
   const w = sim.world;
   c.job = Job.DIG; c.jx = w.coreX; c.jy = w.coreY; c.jt = jt; c.dig = 0;
   const droga = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - w.coreX) <= 3 && Math.abs(y - w.coreY) <= 3
-    && (w.get(x, y + 1) === T.CORE || w.get(x - 1, y) === T.CORE || w.get(x + 1, y) === T.CORE || w.get(x, y - 1) === T.CORE), 4000);
+    && (w.get(x, y + 1) === T.CORE || w.get(x - 1, y) === T.CORE || w.get(x + 1, y) === T.CORE || w.get(x, y - 1) === T.CORE), 6000);
   c.droga = droga ?? undefined; c.drogaI = 0;
+  return true;
 }
 
 function doPray(sim: Sim, c: Creature): void {

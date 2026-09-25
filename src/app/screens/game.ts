@@ -12,6 +12,8 @@ import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
+import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
+import { rysujDrogeDoWolnosci } from '../../render/droga';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
@@ -112,6 +114,8 @@ export class EkranGry implements Ekran {
   private polaBanera: PoleBanera[] = [];
   /** Podpowiedź nad płytą jako odnośnik do miejsca, o którym mówi. */
   private radaRect: { x: number; y: number; w: number; h: number } | null = null;
+  /** Linia „droga do wolności" na brzegu płyty — kliknięcie otwiera jej tablicę. */
+  private drogaRect: { x: number; y: number; w: number; h: number } | null = null;
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
   private straznik = new Straznik();
   alarm: Alarm | null = null;
@@ -164,6 +168,7 @@ export class EkranGry implements Ekran {
 
   nowaGra(ziarno = (Math.random() * 1e9) | 0): void {
     this.sim = new Sim(ziarno);
+    if (ustawienia.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += 100; }
     this.ui.verb = null; this.ui.tool = null; this.ui.selected = null;
     this.cam.zoom = 14;
     this.doSerca(true);
@@ -395,6 +400,13 @@ export class EkranGry implements Ekran {
     // co pół sekundy zegara, nie co tyle tików — w pauzie tiki stoją, a pauzę też się odkrywa
     if (!this.nasluch && teraz - this.ostatnieOdkrywanie > 500) { this.ostatnieOdkrywanie = teraz; this.odkrywaj(); }
     // nowa tablica otwiera się sama — najwyżej jedna na pół minuty i nigdy na kryzys
+    // pierwsza prawdziwa partia zaczyna się od celu: tablica drogi do wolności
+    if (!this.nasluch && !odkrycia.zna('droga') && this.sim.tick > 90 && !this.atlas.otwarte && !this.sim.ending) {
+      odkrycia.odkryj('droga', false);
+      odkrycia.niezobaczone = Math.max(0, odkrycia.niezobaczone - 1);
+      this.atlas.otworzTablice('droga', true);
+      this.app.gesty.tablica();
+    }
     if (!this.nasluch && odkrycia.kolejka.length && !this.atlas.otwarte && !this.alarm && !this.zapiski
         && !this.sim.ending && this.sim.tick > 1200 && teraz - this.ostatniaTablica > 30000) {
       const id = odkrycia.kolejka.shift()!;
@@ -478,6 +490,11 @@ export class EkranGry implements Ekran {
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
+    // droga pielgrzymów: szkic tego, co trzeba wydrążyć, żeby wierni zeszli pod rdzeń
+    const plan = sim.planDrogi;
+    if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
+      rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, this.ui.verb === 'ksztaltuj' || this.rada?.cel?.tekst === 'drąż tutaj');
+    }
     rysujZarys(ctx, sim, cam, teraz);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
@@ -508,6 +525,8 @@ export class EkranGry implements Ekran {
     drawSmoke(ctx, plate, sim, teraz);
     drawEyelid(ctx, plate, sim, teraz);
     drawFrame(ctx, plate, teraz, oddech);
+    // w samouczku cel gry dochodzi dopiero na końcu — linia kroków by tylko rozpraszała
+    this.drogaRect = !this.nasluch && !sim.ending ? rysujDrogeDoWolnosci(ctx, plate, sim, teraz) : null;
     if (ustawienia.skalaGlebokosci && !plate.waski) rysujMinimape(ctx, sim, cam, plate, teraz);
     if (ustawienia.spisRas) drawCensus(ctx, plate, sim, h);
     drawOtchlan(ctx, plate, sim, h);
@@ -765,6 +784,14 @@ export class EkranGry implements Ekran {
         if (b.akcja === 'cofnij') { if (this.rozkazy.cofnij(sim)) ui.say('Skreślone.', sim.tick); }
         else if (b.akcja === 'skresl') { this.rozkazy.skreslWszystkie(sim); ui.say('Plan pusty.', sim.tick); }
         else this.ustawPauze(false);
+        this.dirty = true;
+        return;
+      }
+      // linia drogi do wolności: tablica, która tłumaczy wszystkie kroki
+      const dr = this.drogaRect;
+      if (dr && e.clientX >= dr.x && e.clientX <= dr.x + dr.w && e.clientY >= dr.y && e.clientY <= dr.y + dr.h) {
+        odkrycia.odkryj('droga', false);
+        this.atlas.otworzTablice('droga');
         this.dirty = true;
         return;
       }

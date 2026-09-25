@@ -27,7 +27,7 @@ export function nowyTik(ile = 18): void { budzet = ile; }
 /** Ile szukań zostało w tym tiku — żeby odróżnić „nie ma drogi" od „nie było czasu szukać". */
 export function budzetDrog(): number { return budzet; }
 
-function wolny(sim: Sim, i: number, plywa: boolean): boolean {
+export function wolny(sim: Sim, i: number, plywa: boolean): boolean {
   const w = sim.world;
   return PASSABLE[w.tile[i]] === 1 && w.magma[i] === 0 && (plywa || w.water[i] <= 5);
 }
@@ -39,7 +39,7 @@ export function uchwyt(sim: Sim, x: number, y: number): boolean {
 }
 
 /** Czy tu się stoi: pod spodem lita skała albo woda, na której się unosi. */
-function stoi(sim: Sim, x: number, y: number): boolean {
+export function stoi(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
   if (!w.inb(x, y + 1)) return true;
   return w.solid(x, y + 1) || w.water[w.idx(x, y + 1)] >= 4;

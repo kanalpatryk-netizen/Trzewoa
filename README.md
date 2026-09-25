@@ -10,12 +10,30 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 |---|---|
 | **Menu** | powrót do trwającej gry, nowa góra, samouczek, bestiariusz, ustawienia — wszystko rysowane tą samą kreską, co świat |
 | **Samouczek** | 10 krótkich rozdziałów z listą czynności do odhaczenia; palec wskazuje dokładnie ryt, słowo, przycisk albo miejsce na płycie |
-| **Atlas** | 21 tablic z ryciną i opisem: sześć ras, pięć rytów, trzy zasoby i siedem praw góry — odkrywanych w trakcie gry |
+| **Atlas** | 23 tablice z ryciną i opisem: sześć ras, pięć rytów, trzy zasoby i dziewięć praw góry — odkrywanych w trakcie gry |
 | **Ustawienia** | dźwięk, obraz, świat oraz **pełna lista sterowania z przypisywaniem klawiszy** |
 | **Rozgrywka** | przekrój góry 176×240, sześć sposobów istnienia, pięć czasowników, trzy zasoby, przypływy, zapis stanu |
-| **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś |
+| **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś — i wyrokiem: dlaczego tak się skończyło, jak daleko zaszła droga do wolności i jedna rada na następny raz |
 | **Rycina** | brzegi płyty gęstnieją rytowaną kreską i oddychają razem z rdzeniem (tym samym rytmem, którym dudni skała); patyna starej odbitki, zwoje w rogach ramy i pionowe oko; skala głębokości w nieznanym piśmie; w skale, do której nikt nie zajrzał, żarzą się znaki — gasną, gdy dojdzie do nich światło, a w pauzie widać je wyraźniej. W menu obraca się astrolabium podziemia |
 | **Dźwięk** | rezonans świata (kucie, modlitwa, ton zależny od głębokości), muzyka — powolne akordy frygijskie i uderzenia w metal — oraz dźwięki gestów: rylec szkicu rozkazu, kamień pauzy, kaskada wykonanego planu, dzwony ostrzeżeń, szelest kart atlasu. Wszystko syntezowane w locie, przez wspólny pogłos jaskini; w pauzie góra brzmi jak zza ściany |
+
+## Jak się wygrywa
+
+Wygrywasz, gdy wierni przebiją skorupę rdzenia i uklękną przy nim (**Uwolnienie**). W lewym górnym rogu
+płyty stoi plakietka **Droga do wolności** z pięcioma krokami — bieżący się żarzy, zrobione są przekreślone,
+kliknięcie otwiera tablicę z całą drogą (otwiera się też sama na początku pierwszej partii):
+
+1. **wiara** — ktoś się do ciebie modli (ruda przy Ślepym Ludzie → ołtarz);
+2. **oddanie** — jedna nacja wierzy mocno (Znak przy jej gnieździe);
+3. **droga** — przy przedsionku pod rdzeniem rośnie grzyb: wtedy najwyżej pięciu wiernych schodzi na wartę
+   i przeżyje na dole. Jeśli spod rdzenia nie ma drogi do gniazda, gra rysuje złotą kreską korytarz,
+   który można wydrążyć — nie trzeba;
+4. **skorupa** — warta modli się, aż kamień pęknie (licznik pęknięć przy kroku);
+5. **wolność**.
+
+Przegrywasz, gdy góra zaśnie: z pustki albo gdy jedna krew zje resztę. **Łaskawa góra** (domyślna,
+Ustawienia → Świat → Góra) zasypia wolniej, daje więcej krwi na start i szybszy rytuał — na pierwsze
+partie. Po przegranej kronika mówi, dlaczego, jak daleko zaszła droga i co zrobić następnym razem.
 
 ## Pauza taktyczna
 

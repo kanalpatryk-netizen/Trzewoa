@@ -116,7 +116,8 @@ export class Ui {
       // przy lewym brzegu wchodził na znak menu
       const pol = Math.min(this.plate.w / 2 - 8, ctx.measureText(this.flash).width / 2 + 10);
       const x = Math.max(this.plate.x + pol, Math.min(this.plate.x + this.plate.w - pol, this.pointer.x));
-      const y = Math.max(this.plate.y + 20, this.pointer.y - size * 1.4);
+      // górny pasek płyty należy do drogi do wolności — komunikat nie może go zasłaniać
+      const y = Math.max(this.plate.y + (this.plate.waski ? 84 : 52), this.pointer.y - size * 1.4);
       ctx.lineWidth = 3;
       ctx.strokeStyle = `rgba(10,7,6,${a * 0.85})`;
       ctx.strokeText(this.flash, x, y);

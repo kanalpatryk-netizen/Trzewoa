@@ -4,6 +4,7 @@ import type { Akcja } from '../../core/keybinds';
 import type { Sim } from '../../sim/sim';
 import { BARWA, rgba } from '../../render/palette';
 import { SERIF, SERIF_TYTUL, tloSadzy, tytulRyty, kreska } from '../../render/ink';
+import { wyrok } from '../wyrok';
 
 /** Ekran końcowy: spisana legenda tego, czym byłeś dla tych, co w tobie mieszkali. */
 export class EkranKroniki implements Ekran {
@@ -52,17 +53,30 @@ export class EkranKroniki implements Ekran {
     // --- karta: prawdziwy papier z atramentem, bo to jest dokument, nie panel
     const rozmiar = Math.max(14, Math.min(18, w / 74));
     const kw = Math.min(820, w * 0.78);
+    // wyrok pod kartą: przyczyna, jak daleko zaszła droga i rada na następny raz —
+    // liczony najpierw, bo od jego wysokości zależy, ile kroniki zmieści się na karcie
+    const wr = this.sim ? wyrok(this.sim) : null;
+    const wrW = Math.min(760, w - 32);
+    ctx.font = `italic ${rozmiar}px ${SERIF}`;
+    const wrLinie: { t: string; k: string }[] = wr ? [
+      ...zlam(ctx, wr.przyczyna, wrW).map((t) => ({ t, k: 'p' })),
+      ...zlam(ctx, wr.etap, wrW).map((t) => ({ t, k: 'e' })),
+      ...zlam(ctx, `Następnym razem: ${wr.rada.charAt(0).toLowerCase()}${wr.rada.slice(1)}`, wrW).map((t) => ({ t, k: 'r' })),
+    ] : [];
+    const wrH = wrLinie.length * rozmiar * 1.45;
+    const dolne = h * 0.92;
     // długie wpisy łamiemy w obrębie karty — wcześniej wychodziły poza papier;
     // bierzemy tyle ostatnich, ile się zmieści
     ctx.font = `${rozmiar}px ${SERIF}`;
-    const maxLinii = Math.max(4, Math.floor((h * 0.58 - 90) / (rozmiar * 1.75)));
+    const miejsceNaKarte = Math.max(rozmiar * 8, dolne - rozmiar * 2.6 - wrH - h * 0.22 - rozmiar);
+    const maxLinii = Math.max(3, Math.floor((Math.min(h * 0.58, miejsceNaKarte) - 90) / (rozmiar * 1.75)));
     const linie: { text: string; kind: string }[] = [];
     for (const e of [...(this.sim?.chronicle ?? [])].reverse()) {
       const kawalki = zlam(ctx, `— ${e.text}`, kw * 0.84);
       if (linie.length + kawalki.length > maxLinii) break;
       linie.unshift(...kawalki.map((t, i) => ({ text: i ? `   ${t}` : t, kind: e.kind })));
     }
-    const kh = Math.min(h * 0.58, 90 + linie.length * rozmiar * 1.75);
+    const kh = Math.min(h * 0.58, miejsceNaKarte, 90 + linie.length * rozmiar * 1.75);
     const kx = w / 2 - kw / 2, ky = h * 0.22;
 
     ctx.save();
@@ -143,9 +157,22 @@ export class EkranKroniki implements Ekran {
     ctx.restore();
     ctx.restore();
 
+    // --- wyrok
+    if (wrLinie.length) {
+      const alfa = Math.min(1, Math.max(0, (wiek - 1400) / 700));
+      ctx.textAlign = 'center';
+      let y = ky + kh + rozmiar * 1.9;
+      for (const l of wrLinie) {
+        ctx.font = `${l.k === 'p' ? '' : 'italic '}${rozmiar}px ${SERIF}`;
+        ctx.fillStyle = l.k === 'p' ? rgba(BARWA.atramentMocny, 0.95 * alfa)
+          : l.k === 'e' ? rgba(BARWA.zarBlady, 0.9 * alfa) : rgba(BARWA.atrament, 0.85 * alfa);
+        ctx.fillText(l.t, w / 2, y);
+        y += rozmiar * 1.45;
+      }
+    }
+
     // --- co dalej
     this.trafienia = [];
-    const dolne = h * 0.9;
     ctx.textAlign = 'center';
     this.opcje.forEach((o, i) => {
       const ox = w / 2 + (i === 0 ? -1 : 1) * Math.min(220, w * 0.2);

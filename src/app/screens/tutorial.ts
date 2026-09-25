@@ -388,7 +388,7 @@ export class EkranSamouczka implements Ekran {
     },
     {
       tytul: 'Jak to się kończy',
-      wstep: 'Wygranej nie ma. Jest życie tak długo, jak się da — i trzy końce.',
+      wstep: 'Jedna wygrana, jedna przegrana — i długa droga między nimi.',
       czasowniki: [],
       etapy: [
         {
@@ -396,7 +396,7 @@ export class EkranSamouczka implements Ekran {
           rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
         },
         {
-          tekst: 'Na dnie bije twój rdzeń. Otworzą go tylko wierni, modląc się pod skorupą. Kto do niego dojdzie — uklęknie albo zabije.',
+          tekst: 'Na dnie bije twój rdzeń — to twoja wygrana. Jedna nacja musi mocno uwierzyć, a przy przedsionku pod rdzeniem musi rosnąć grzyb: wtedy jej warta zejdzie i wymodli pęknięcie skorupy. Kroki tej drogi zobaczysz w rogu płyty.',
           rozumiem: true,
           wejdz: (g, s) => { const c = s.rdzen(); g.pokazMiejsce(c.x, c.y, 9, true); },
           wskaz: (s) => ({ typ: 'swiat', cel: s.rdzen() }),
