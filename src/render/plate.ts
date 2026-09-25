@@ -20,6 +20,37 @@ export function computePlate(vw: number, vh: number): Plate {
 
 const INK = 'rgba(206,192,166,';
 
+/** Prostokąt na ekranie — samouczek wskazuje nim organy w ramie. */
+export interface Obszar { x: number; y: number; w: number; h: number; }
+
+/** Rysa Krwi pod płytą. */
+export function obszarKrwi(p: Plate, vh: number): Obszar {
+  const cx0 = p.waski ? p.x : p.x + p.w * 0.6;
+  const base = p.waski ? vh - p.bottom * 0.04 : vh - p.bottom * 0.1;
+  const maxH = p.waski ? p.bottom * 0.16 : p.bottom * 0.34;
+  return { x: cx0, y: base - maxH, w: p.x + p.w - cx0, h: maxH };
+}
+
+/** Kwadrat Otchłani razem z podpisem. */
+export function obszarOtchlani(p: Plate, vh: number): Obszar {
+  const bok = Math.max(26, Math.min(46, p.bottom * (p.waski ? 0.16 : 0.28)));
+  const x = p.waski ? p.x + p.w - bok * 3.4 : p.x + p.w * 0.56;
+  const y = vh - p.bottom + p.bottom * (p.waski ? 0.4 : 0.14);
+  return { x, y, w: bok * (p.waski ? 3.3 : 4.6), h: bok };
+}
+
+/** Pasmo dymu Wiary pod górną krawędzią płyty. */
+export function obszarWiary(p: Plate): Obszar {
+  return { x: p.x, y: p.y, w: p.w, h: Math.max(30, p.h * 0.13) };
+}
+
+/** Wstęga warstw — spis ras. */
+export function obszarSpisu(p: Plate, vh: number): Obszar {
+  const y = vh - p.bottom + p.bottom * (p.waski ? 0.12 : 0.17);
+  const h = Math.max(12, p.bottom * (p.waski ? 0.09 : 0.11));
+  return { x: p.x, y: y - h * 0.4, w: p.w * (p.waski ? 0.78 : 0.46), h: h * 2.4 };
+}
+
 export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number): void {
   ctx.save();
   ctx.lineWidth = 1;
@@ -156,10 +187,9 @@ export function drawCrack(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vw:
   // skala liniowa: przy logarytmicznej „krwi masz dość" wyglądało na pół misy
   const PELNA = 300;
   const level = Math.min(1, sim.krew / PELNA);
-  const cx0 = p.waski ? p.x : p.x + p.w * 0.6;
-  const cx1 = p.x + p.w;
-  const base = p.waski ? vh - p.bottom * 0.04 : vh - p.bottom * 0.1;
-  const maxH = p.waski ? p.bottom * 0.16 : p.bottom * 0.34;   // rysa, nie wykres słupkowy
+  // rysa, nie wykres słupkowy — geometria wspólna z samouczkiem
+  const o = obszarKrwi(p, vh);
+  const cx0 = o.x, cx1 = o.x + o.w, base = o.y + o.h, maxH = o.h;
 
   // obrys rysy: postrzępiona góra, końce zbiegające się w szpic
   const segs = 22;
@@ -229,10 +259,8 @@ function prog(ctx: CanvasRenderingContext2D, x1: number, x2: number, y: number, 
 /** Otchłań jako osobny znak: tyle ciebie jest teraz nieznane. */
 export function drawOtchlan(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number): void {
   const udzial = Math.max(0, Math.min(1, sim.world.unknown / (sim.world.w * sim.world.h)));
-  const bok = Math.max(26, Math.min(46, p.bottom * (p.waski ? 0.16 : 0.28)));
   // na wąskim ekranie kwadrat Otchłani wchodził w podpisy nacji — schodzi pod spis
-  const x = p.waski ? p.x + p.w - bok * 3.4 : p.x + p.w * 0.56;
-  const y = vh - p.bottom + p.bottom * (p.waski ? 0.4 : 0.14);
+  const { x, y, h: bok } = obszarOtchlani(p, vh);
   ctx.save();
   ctx.strokeStyle = `${INK}0.45)`;
   ctx.lineWidth = 1;

@@ -9,34 +9,34 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 | Warstwa | Zawartość |
 |---|---|
 | **Menu** | powrót do trwającej gry, nowa góra, samouczek, bestiariusz, ustawienia — wszystko rysowane tą samą kreską, co świat |
-| **Samouczek** | 13 kroków i 12 scen: przerywnik z własną ryciną, po nim jedno konkretne zadanie na tę samą mechanikę |
+| **Samouczek** | 10 krótkich rozdziałów z listą czynności do odhaczenia; palec wskazuje dokładnie ryt, słowo, przycisk albo miejsce na płycie |
 | **Bestiariusz** | stała karta wiedzy: pięć czasowników z kosztami, sześć ras ze sposobem istnienia, trzy zasoby, przypływy i zakończenia. Liczby brane wprost z kodu, więc nie zdezaktualizują się |
 | **Ustawienia** | dźwięk, obraz, świat oraz **pełna lista sterowania z przypisywaniem klawiszy** |
 | **Rozgrywka** | przekrój góry 176×240, sześć sposobów istnienia, pięć czasowników, trzy zasoby, przypływy, zapis stanu |
 | **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś |
 | **Dźwięk** | rezonans świata (kucie, modlitwa, ton zależny od głębokości) i osobna warstwa muzyki — powolne akordy frygijskie i uderzenia w metal, wszystko syntezowane w locie |
 
-## Samouczek — sześć poleceń, nie wykład
+## Samouczek — robisz, nie czytasz
 
-Każdy krok to jedna rzecz do zrobienia, z **podświetlonym miejscem na planszy**,
-gotowym narzędziem w ręku i zdaniem o tym, co się właśnie stało:
+Jedna krótka scena na wejście, potem dziesięć rozdziałów. Każdy ma **listę czynności
+z odhaczaniem**, a bieżąca czynność jest **wskazana palcem**: reszta ekranu przygasa,
+od karty biegnie strzałka do rytu, słowa u góry, przycisku albo miejsca na płycie.
+Przy każdej czynności stoi też jej klawisz.
 
-1. **Znajdź swoich mieszkańców** — kamera dowozi do gniazda, przy nim stoi imię nacji
-2. **Popatrz, jak rysunek sam się dopisuje** — pamięć i ciemność
-3. **Trzy organy w ramie obrazu** — Krew, Wiara, Otchłań
-4. **Nakarm ich** — zasiej grzyb w zaznaczonym miejscu
-5. **Otwórz im drogę** — wydrąż korytarz w zaznaczonej skale
-6. **Kto jeszcze w tobie mieszka** — sześć sposobów istnienia
-7. **Zrób proroka** — dotknij zaznaczonego stworzenia i wybierz myśl (czas stoi)
-8. **Zrób jawny cud** — Znak przy gnieździe
-9. **Zmień im krew** — Skaź na zaznaczonym stworzeniu (czas stoi)
-10. **Przetrzymaj przypływ** — z powierzchni schodzą ludzie
-11. **To jest twój rdzeń** — skorupa, rytuał i oba zakończenia
-12. **Popatrz na wstęgę warstw** — spis ras i zasypianie
-13. **Otwórz zapiski** — cała kronika pod `K`
+1. **Rozejrzyj się** — przeciągnij płytę, przybliż, wróć do swoich
+2. **Czym płacisz** — Krew, Wiara i Otchłań wskazane w ramie obrazu
+3. **Nakarm ich** — ryt Zasiej → słowo „grzyb" → przeciągnij po zaznaczonym miejscu
+4. **Otwórz drogę** — ryt Kształtuj → „drąż" → przeciągnij po skale
+5. **Szepnij** — ryt Szepcz → kliknij goblina → „prorokuj" na jego karcie (czas stoi)
+6. **Zrób cud** — ryt Znak → „objawienie" → klik przy gnieździe
+7. **Zmień im krew** — ryt Skaź → „ślepota" → klik w goblina (czas stoi)
+8. **Czas** — pauza, wznowienie, przyspieszenie
+9. **Jak to się kończy** — wstęga warstw, zasypianie i rdzeń
+10. **Kronika** — otwórz i zamknij zapiski
 
-Nic nie przełącza się samo: krok kończy dopiero **„Dalej →"**. Dwa kroki z celowaniem
-zatrzymują czas, żeby stworzenie nie uciekło spod pierścienia.
+Odznaczenie rytu cofa do odpowiedniej czynności, a kto zrobi coś szybciej, niż
+kazano, ma to zaliczone. Rozdział można pominąć albo wrócić do poprzedniego.
+Na końcu jednym kliknięciem zaczyna się prawdziwa gra.
 
 W zwykłej rozgrywce nad płytą stoi **jedno zdanie podpowiedzi** czytane ze stanu świata
 („Żużlowcy są o krok od wygaśnięcia — otwórz im żar"), a miejsce, o którym mówi,

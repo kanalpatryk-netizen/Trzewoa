@@ -30,6 +30,8 @@ export class Ui {
   private flashAt = -1e9;
   /** Ostatnie miejsce dotknięcia — komunikat pojawia się tam, gdzie patrzysz. */
   pointer = { x: 0, y: 0 };
+  /** Myśl właśnie szepnięta z karty — gra zgłasza ją samouczkowi i czyści. */
+  ostatniaMysl: string | null = null;
 
   private dwieKolumny = false;
 
@@ -42,6 +44,22 @@ export class Ui {
     this.gap = Math.min(plate.h / (rzedy + 0.6), this.gs * 2.1);
     this.gx = this.dwieKolumny ? plate.left * 0.32 : plate.left / 2;
     this.gy = plate.y + plate.h / 2 - this.gap * (rzedy - 1) / 2;
+  }
+
+  /**
+   * Gdzie na ekranie leży ryt, słowo narzędzia albo myśl na karcie — samouczek
+   * wskazuje palcem dokładnie to, w co trzeba kliknąć. Narzędzia i myśli są znane
+   * dopiero po narysowaniu, więc przed pierwszą klatką zwraca null.
+   */
+  miejsce(rodzaj: 'verb' | 'tool' | 'thought', id: string): { x: number; y: number; hw: number; hh: number } | null {
+    if (rodzaj === 'verb') {
+      const i = VERBS.findIndex((v) => v.id === id);
+      if (i < 0 || !this.plate) return null;
+      const { x, y } = this.pozycjaRytu(i);
+      return { x, y, hw: this.gs * 0.8, hh: this.gs * 0.8 };
+    }
+    const h = this.hits.find((z) => z.kind === rodzaj && z.tool === id);
+    return h ? { x: h.x, y: h.y, hw: h.hw, hh: h.hh } : null;
   }
 
   /** Miejsce rytu numer i — jedna kolumna albo dwie, zależnie od wysokości okna. */
@@ -301,6 +319,7 @@ export class Ui {
         this.tool = h.tool!;
       } else if (h.kind === 'thought' && this.selected) {
         if (whisper(sim, h.tool!, this.selected)) {
+          this.ostatniaMysl = h.tool!;
           const t = TOOLS.szept.find((z) => z.id === h.tool)!;
           sim.log(`Szepnąłeś ${creatureNameCelownik(this.selected)}: „${t.label}". Usłyszał.`, 'wiara',
             'szept', (n) => `Szepnąłeś ${n === 2 ? 'dwóm' : n === 3 ? 'trzem' : n}. Usłyszeli.`);

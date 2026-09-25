@@ -48,7 +48,8 @@ export type ZdarzenieGry =
   | { typ: 'moc'; czasownik: string; narzedzie: string }
   | { typ: 'szept'; narzedzie: string }
   | { typ: 'wybranoCzasownik'; czasownik: string | null }
-  | { typ: 'kamera' }
+  | { typ: 'kamera'; rodzaj: 'przesun' | 'zoom' | 'powrot' }
+  | { typ: 'tempo' }
   | { typ: 'koniec'; opis: string };
 
 /** Ekran rozgrywki: świat, płyta, organy i ryty. Samouczek nakłada się na niego z góry. */
@@ -134,7 +135,6 @@ export class EkranGry implements Ekran {
     this.dirty = true;
   }
 
-  /** Dowozi kamerę w konkretne miejsce — samouczek pokazuje nim, o czym mówi. */
   /** Wraca do najgęstszego skupiska i oddaje kamerę automatowi. */
   doMieszkancow(): void {
     const serce = this.sim.heartOfLife();
@@ -145,15 +145,17 @@ export class EkranGry implements Ekran {
     this.cam.zoom = Math.max(this.cam.minZoom, Math.min(16, Math.min(this.cam.vw / (serce.w + 26), this.cam.vh / (serce.h + 18))));
     this.cam.clamp(this.sim.world.w, this.sim.world.h);
     this.ui.say('Wracasz do swoich.', this.sim.tick);
+    this.nasluch?.({ typ: 'kamera', rodzaj: 'powrot' });
     this.dirty = true;
   }
 
-  pokazMiejsce(x: number, y: number, zoom?: number): void {
+  /** Dowozi kamerę w miejsce; `obokKarty` kładzie je po lewej, bo po prawej stoi karta samouczka. */
+  pokazMiejsce(x: number, y: number, zoom?: number, obokKarty = false): void {
     if (zoom) this.cam.zoom = Math.max(this.cam.minZoom, zoom);
-    // cel ląduje po lewej stronie płyty, bo po prawej stoi karta samouczka
-    const odsuniecie = this.plate.waski ? 0 : -(this.plate.w * 0.17) / this.cam.zoom;
+    const odsuniecie = !obokKarty || this.plate.waski ? 0 : (this.plate.w * 0.17) / this.cam.zoom;
     this.cam.x = this.camTarget.x = x + odsuniecie;
-    this.cam.y = this.camTarget.y = y + (this.plate.waski ? this.plate.h * 0.12 / this.cam.zoom : 0);
+    // na wąskim ekranie karta leży u góry, więc cel schodzi poniżej środka
+    this.cam.y = this.camTarget.y = y - (obokKarty && this.plate.waski ? this.plate.h * 0.12 / this.cam.zoom : 0);
     this.przejmijKamere();
     this.cam.clamp(this.sim.world.w, this.sim.world.h);
     this.dirty = true;
@@ -395,6 +397,11 @@ export class EkranGry implements Ekran {
     }
   }
 
+  /** Gdzie leży przycisk pod płytą — samouczek go wskazuje. */
+  miejscePrzycisku(akcja: Przycisk['akcja']): Przycisk | null {
+    return this.przyciski.find((b) => b.akcja === akcja) ?? null;
+  }
+
   /** Trzy nacięcia w lewym górnym rogu płyty — wyjście do menu bez klawiatury. */
   private znakMenu(ctx: CanvasRenderingContext2D, teraz: number): void {
     const { x, y } = this.menuRect();
@@ -550,7 +557,9 @@ export class EkranGry implements Ekran {
       if (ui.tap(sim, e.clientX, e.clientY)) {
         if (wpis) wpis.interfejs = true;               // karta i ryty nie są światem
         if (ui.verb !== przedWyborem) this.nasluch?.({ typ: 'wybranoCzasownik', czasownik: ui.verb });
-        if (wybranaMysl && !ui.selected) this.nasluch?.({ typ: 'szept', narzedzie: ui.tool ?? '' });
+        // tylko naprawdę szepnięta myśl — zamknięcie karty kliknięciem w ryt to nie szept
+        if (wybranaMysl && ui.ostatniaMysl) this.nasluch?.({ typ: 'szept', narzedzie: ui.ostatniaMysl });
+        ui.ostatniaMysl = null;
         return;
       }
       if (ui.selected) { ui.selected = null; if (wpis) wpis.interfejs = true; return; }
@@ -582,6 +591,7 @@ export class EkranGry implements Ekran {
             this.cam.y -= (sy - this.srodekPinch.y) / this.cam.zoom;
           }
           this.cam.clamp(sim.world.w, sim.world.h);
+          this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' });
           this.dirty = true;
         }
         this.pinch = d;
@@ -592,7 +602,7 @@ export class EkranGry implements Ekran {
       this.cam.x -= dx / this.cam.zoom; this.cam.y -= dy / this.cam.zoom;
       this.przejmijKamere();                           // przeciągnięcie to przejęcie kamery, nie sugestia
       this.cam.clamp(sim.world.w, sim.world.h);
-      this.nasluch?.({ typ: 'kamera' });
+      this.nasluch?.({ typ: 'kamera', rodzaj: 'przesun' });
       this.dirty = true;
       return;
     }
@@ -632,7 +642,7 @@ export class EkranGry implements Ekran {
     this.cam.x += bx - this.cam.toWorldX(e.clientX - this.plate.x);
     this.cam.y += by - this.cam.toWorldY(e.clientY - this.plate.y);
     this.cam.clamp(this.sim.world.w, this.sim.world.h);
-    this.nasluch?.({ typ: 'kamera' });
+    this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' });
     this.dirty = true;
   }
 
@@ -644,8 +654,8 @@ export class EkranGry implements Ekran {
     switch (akcja) {
       case 'menu': this.app.idz('menu'); break;
       case 'pauza': this.pauza = !this.pauza; ui.say(this.pauza ? 'Czas stoi.' : 'Czas znów płynie.', sim.tick); break;
-      case 'szybciej': ustawienia.tempo = Math.min(8, ustawienia.tempo + 1); break;
-      case 'wolniej': ustawienia.tempo = Math.max(1, ustawienia.tempo - 1); break;
+      case 'szybciej': ustawienia.tempo = Math.min(8, ustawienia.tempo + 1); this.nasluch?.({ typ: 'tempo' }); break;
+      case 'wolniej': ustawienia.tempo = Math.max(1, ustawienia.tempo - 1); this.nasluch?.({ typ: 'tempo' }); break;
       case 'zapis': ui.say(this.zapisujAuto && saveToStorage(sim) ? 'Zapisane.' : 'Nie tutaj.', sim.tick); break;
       case 'wczytaj': {
         // w samouczku zapis gracza nie ma prawa podmienić góry, na której się uczy
@@ -662,8 +672,8 @@ export class EkranGry implements Ekran {
       case 'legenda': this.legenda = !this.legenda; break;
       case 'zapiski': this.zapiski = !this.zapiski; this.przewinZapiskow = 0; break;
       case 'kamera': this.doMieszkancow(); break;
-      case 'przyblizenie': this.cam.zoom = Math.min(this.cam.maxZoom, this.cam.zoom * 1.15); this.cam.clamp(sim.world.w, sim.world.h); this.dirty = true; break;
-      case 'oddalenie': this.cam.zoom = Math.max(this.cam.minZoom, this.cam.zoom / 1.15); this.cam.clamp(sim.world.w, sim.world.h); this.dirty = true; break;
+      case 'przyblizenie': this.cam.zoom = Math.min(this.cam.maxZoom, this.cam.zoom * 1.15); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
+      case 'oddalenie': this.cam.zoom = Math.max(this.cam.minZoom, this.cam.zoom / 1.15); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
       case 'ksztaltuj': case 'zasiej': case 'szept': case 'znak': case 'skaz': this.wybierzCzasownik(akcja); break;
       case 'narzedzie1': case 'narzedzie2': case 'narzedzie3': case 'narzedzie4': this.wybierzNarzedzie(Number(akcja.slice(-1)) - 1); break;
       default: break;

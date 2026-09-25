@@ -42,7 +42,7 @@ export class EkranMenu implements Ekran {
     { id: 'wroc', etykieta: 'Wróć do góry', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś', aktywna: () => this.trwaGra() },
     { id: 'nowa', etykieta: 'Obudź się', opis: 'nowa góra, nowi mieszkańcy, nowa legenda', aktywna: () => true },
     { id: 'wczytaj', etykieta: 'Wróć tam, gdzie byłeś', opis: 'ostatni zapis stanu góry', aktywna: () => hasSave() },
-    { id: 'samouczek', etykieta: 'Naucz się być górą', opis: 'dwanaście scen, każda o jednej mechanice', aktywna: () => true },
+    { id: 'samouczek', etykieta: 'Naucz się być górą', opis: 'dziesięć krótkich lekcji — palec pokazuje, gdzie kliknąć', aktywna: () => true },
     { id: 'bestiariusz', etykieta: 'Bestiariusz', opis: 'wszystkie reguły, rasy i koszty na jednej karcie', aktywna: () => true },
     { id: 'ustawienia', etykieta: 'Ustawienia', opis: 'dźwięk, obraz, świat i wszystkie klawisze', aktywna: () => true },
   ];
