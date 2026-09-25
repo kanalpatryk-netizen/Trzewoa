@@ -34,9 +34,10 @@ export class EkranUstawien implements Ekran {
     const proc = (v: number) => `${Math.round(v * 100)}%`;
     this.wiersze = [
       { typ: 'naglowek', tekst: 'Dźwięk' },
-      { typ: 'suwak', etykieta: 'Głośność', opis: 'wspólna dla muzyki i rezonansu skały', min: 0, max: 1, krok: 0.1, czytaj: () => ustawienia.glosnosc, zmien: (v) => { ustaw('glosnosc', v); this.app.muzyka.glosnosc(v); this.app.dzwiek.odswiezGlosnosc(); }, format: proc },
+      { typ: 'suwak', etykieta: 'Głośność', opis: 'jedna dla muzyki, skały i gestów', min: 0, max: 1, krok: 0.1, czytaj: () => ustawienia.glosnosc, zmien: (v) => { ustaw('glosnosc', v); this.app.muzyka.glosnosc(v); this.app.dzwiek.odswiezGlosnosc(); this.app.gesty.odswiezGlosnosc(); this.app.gesty.klik(); }, format: proc },
       { typ: 'przelacznik', etykieta: 'Muzyka', opis: 'powolne akordy kamienia i uderzenia w metal', czytaj: () => ustawienia.muzyka, zmien: (v) => { ustaw('muzyka', v); if (v) this.app.muzyka.start(); else this.app.muzyka.stop(); } },
       { typ: 'przelacznik', etykieta: 'Rezonans świata', opis: 'kucie, modlitwa i niski ton zależny od głębokości', czytaj: () => ustawienia.rezonans, zmien: (v) => { ustaw('rezonans', v); if (v) this.app.dzwiek.start(); this.app.dzwiek.odswiezGlosnosc(); } },
+      { typ: 'przelacznik', etykieta: 'Dźwięki gestów', opis: 'szkic rozkazu, pauza, ostrzeżenia, karty atlasu', czytaj: () => ustawienia.efekty, zmien: (v) => { ustaw('efekty', v); this.app.gesty.start(); this.app.gesty.odswiezGlosnosc(); if (v) this.app.gesty.klik(); } },
 
       { typ: 'naglowek', tekst: 'Obraz' },
       { typ: 'suwak', etykieta: 'Wielkość obrazu', opis: 'napisy, ryty i płyta — ponad dopasowanie do ekranu', min: 0.8, max: 1.6, krok: 0.1, czytaj: () => ustawienia.wielkoscUI, zmien: (v) => ustaw('wielkoscUI', Math.round(v * 10) / 10), format: (v) => `${Math.round(v * 100)}%` },

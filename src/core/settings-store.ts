@@ -3,6 +3,7 @@ export interface Settings {
   glosnosc: number;        // 0..1
   muzyka: boolean;
   rezonans: boolean;       // dźwięk świata: kucie, modlitwa, kamień
+  efekty: boolean;         // dźwięki gestów: szkic, pauza, ostrzeżenia, atlas
   tempo: number;           // tików symulacji na klatkę
   jakosc: 'auto' | 'ostra' | 'szybka';
   kameraZaZyciem: boolean;
@@ -28,6 +29,7 @@ export const DOMYSLNE: Settings = {
   glosnosc: 0.7,
   muzyka: true,
   rezonans: true,
+  efekty: true,
   tempo: 2,
   jakosc: 'auto',
   kameraZaZyciem: true,

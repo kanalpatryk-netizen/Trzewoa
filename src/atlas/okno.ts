@@ -21,6 +21,9 @@ export class OknoAtlasu {
 
   get otwarte(): boolean { return this.tryb !== 'zamkniete'; }
 
+  /** Co teraz leży na stole — zmiana to przewrócona karta, a karta ma swój szelest. */
+  get strona(): string { return this.tryb === 'tablica' ? `tablica:${this.id}` : this.tryb; }
+
   otworzTablice(id: string, nowa = false): void {
     if (!tablica(id)) return;
     this.id = id; this.nowa = nowa; this.tryb = 'tablica'; this.zAtlasu = false;

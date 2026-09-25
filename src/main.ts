@@ -6,6 +6,7 @@ import { EkranUstawien } from './app/screens/settings';
 import { EkranKroniki } from './app/screens/kronika';
 import { EkranBestiariusza } from './app/screens/bestiariusz';
 import { ustawienia } from './core/settings-store';
+import { mikser } from './core/mikser';
 import { zaladujKroje } from './render/fonts';
 
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
@@ -34,6 +35,7 @@ if (import.meta.env.DEV) {
   idz: (nazwa: string, dane?: unknown) => app.idz(nazwa, dane),
   step: (n = 1) => { for (let i = 0; i < n; i++) gra.sim.step(); },
   klatka: () => app.rysujRaz(),
+  mikser,
 };
 
 (window as any).shot = async (name = 'shot') => {

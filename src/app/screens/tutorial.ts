@@ -541,7 +541,9 @@ export class EkranSamouczka implements Ekran {
     this.gra.wstrzymane = false;             // skutek ma być widoczny od razu
     this.gra.cel = null;
     this.blysk = 1;
-    this.app.dzwiek.toll();
+    // zaliczony krok brzmi jak wykonany plan: trzy stuki w górę i dzwon
+    if (ustawienia.efekty) this.app.gesty.wykonanie(3, 0);
+    else this.app.dzwiek.toll();
   }
 
   private rozumiem(): void {

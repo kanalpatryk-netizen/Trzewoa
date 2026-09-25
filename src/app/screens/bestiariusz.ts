@@ -14,14 +14,16 @@ export class EkranBestiariusza implements Ekran {
   private start: { x: number; y: number } | null = null;
   private ostatniY = 0;
   private przeciaga = false;
+  private strona = '';
 
   constructor(private app: Kontekst) {}
 
-  wejdz(): void { this.okno.otworzAtlas(); }
+  wejdz(): void { this.okno.otworzAtlas(); this.strona = this.okno.strona; this.app.gesty.kartka(); }
 
   krok(): void {
     // zamknięte okno atlasu to powrót do menu
-    if (!this.okno.otwarte) this.app.idz('menu');
+    if (!this.okno.otwarte) { this.app.idz('menu'); return; }
+    if (this.okno.strona !== this.strona) { this.strona = this.okno.strona; this.app.gesty.kartka(); }
   }
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {

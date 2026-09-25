@@ -2,6 +2,8 @@ import type { Ekran } from './screen';
 import type { Kontekst } from './context';
 import { Resonance } from '../core/audio';
 import { Muzyka } from '../core/music';
+import { Gesty } from '../core/gesty';
+import { mikser } from '../core/mikser';
 import { akcjaDlaKlawisza } from '../core/keybinds';
 import { ustawienia, ekran } from '../core/settings-store';
 
@@ -16,6 +18,7 @@ export class App implements Kontekst {
   private cssW = 0; private cssH = 0; private mnoznik = 1;
   dzwiek = new Resonance();
   muzyka = new Muzyka();
+  gesty = new Gesty();
   private ekrany = new Map<string, Ekran>();
   private aktywny: Ekran | null = null;
   private ostatnia = performance.now();
@@ -24,6 +27,8 @@ export class App implements Kontekst {
   constructor(public canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d', { alpha: false })!;
     addEventListener('resize', () => this.przelicz());
+    // karta w tle nie gra: telefon oszczędza baterię, a góra nie dudni z kieszeni
+    document.addEventListener('visibilitychange', () => { if (document.hidden) mikser.usnij(); else if (this.dzwiekRuszyl) mikser.wznow(); });
     this.przelicz();
     this.podepnijWejscie();
   }
@@ -35,6 +40,9 @@ export class App implements Kontekst {
     const nowy = this.ekrany.get(nazwa);
     if (!nowy) return;
     if (this.aktywny?.wyjdz) this.aktywny.wyjdz();
+    // nowy ekran zaczyna od czystego dźwięku — pauza z gry nie może zostać w menu
+    mikser.zawies(0);
+    this.gesty.tonPauzy(false);
     this.aktywny = nowy;
     nowy.rozmiar?.(this.w, this.h);
     nowy.wejdz?.(dane);
@@ -87,10 +95,12 @@ export class App implements Kontekst {
 
   /** Przeglądarka pozwala odpalić dźwięk dopiero po dotknięciu — łapiemy pierwsze. */
   private obudzDzwiek(): void {
-    if (this.dzwiekRuszyl) return;
+    if (this.dzwiekRuszyl) { mikser.wznow(); return; }
     this.dzwiekRuszyl = true;
+    this.gesty.start();
     if (ustawienia.rezonans) this.dzwiek.start();
     if (ustawienia.muzyka) this.muzyka.start();
+    mikser.wznow();
   }
 
   private podepnijWejscie(): void {

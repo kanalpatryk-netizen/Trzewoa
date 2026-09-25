@@ -14,7 +14,7 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 | **Ustawienia** | dźwięk, obraz, świat oraz **pełna lista sterowania z przypisywaniem klawiszy** |
 | **Rozgrywka** | przekrój góry 176×240, sześć sposobów istnienia, pięć czasowników, trzy zasoby, przypływy, zapis stanu |
 | **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś |
-| **Dźwięk** | rezonans świata (kucie, modlitwa, ton zależny od głębokości) i osobna warstwa muzyki — powolne akordy frygijskie i uderzenia w metal, wszystko syntezowane w locie |
+| **Dźwięk** | rezonans świata (kucie, modlitwa, ton zależny od głębokości), muzyka — powolne akordy frygijskie i uderzenia w metal — oraz dźwięki gestów: rylec szkicu rozkazu, kamień pauzy, kaskada wykonanego planu, dzwony ostrzeżeń, szelest kart atlasu. Wszystko syntezowane w locie, przez wspólny pogłos jaskini; w pauzie góra brzmi jak zza ściany |
 
 ## Pauza taktyczna
 
@@ -98,7 +98,7 @@ src/
   cutscene/       odtwarzacz scen + scenariusz
     art/          jedna rycina na plik (gora, pamiec, zyly, ziarno, szept,
                   znak, krew, spis, kronika, organy, rasy, przyplyw)
-  core/           rng, audio (rezonans), music, save, settings-store, keybinds
+  core/           rng, audio (rezonans), music, gesty, mikser, save, settings-store, keybinds
   render/         engrave (sitodruk kreskowania), plate (rama i organy),
                   overlay (sylwetki, cząsteczki), bloom, shafts, ink, palette, camera
   sim/            world, sim, creatures, races, tiles

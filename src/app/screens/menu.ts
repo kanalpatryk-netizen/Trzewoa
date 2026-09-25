@@ -345,6 +345,7 @@ export class EkranMenu implements Ekran {
   private uruchom(i: number): void {
     const p = this.pozycje[i];
     if (!p || !p.aktywna()) return;
+    this.app.gesty.klik();
     if (p.id === 'wroc') this.app.idz('gra');
     else if (p.id === 'nowa') this.app.idz('gra', { tryb: 'nowa' });
     else if (p.id === 'wczytaj') this.app.idz('gra', { tryb: 'wczytaj' });

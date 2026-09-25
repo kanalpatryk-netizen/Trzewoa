@@ -29,6 +29,7 @@ import { Race } from '../../sim/races';
 import { Job } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
 import { ustawienia, ustaw } from '../../core/settings-store';
+import { mikser } from '../../core/mikser';
 import type { Akcja } from '../../core/keybinds';
 import type { Ekran } from '../screen';
 import type { Kontekst } from '../context';
@@ -97,6 +98,8 @@ export class EkranGry implements Ekran {
   private radaOd = -1e9;
   /** Pauza żyje tylko w tej sesji — zapisana potrafiła uruchomić grę w bezruchu. */
   pauza = false;
+  /** Stan z poprzedniej klatki, z którego różnicy biorą się dźwięki gestów. */
+  private slad: { pauza: boolean; zawies: number; plan: number; verb: string | null; tool: string | null; karta: number; strona: string } | null = null;
   /** Samouczek zatrzymuje świat bez pauzy — żeby szept i skaza działały od razu, a nie szły do planu. */
   wstrzymane = false;
   /** Rozkazy wydane w pauzie: czekają jako szkice, dzieją się po puszczeniu czasu. */
@@ -138,6 +141,7 @@ export class EkranGry implements Ekran {
 
   wejdz(dane?: unknown): void {
     this.pauza = false;
+    this.slad = null;
     if (ustawienia.tempo < 1) ustaw('tempo', 1);
     const tryb = (dane as { tryb?: string } | undefined)?.tryb;
     if (tryb === 'nowa') this.nowaGra();
@@ -288,7 +292,8 @@ export class EkranGry implements Ekran {
       this.cel = { x: a.cel.x, y: a.cel.y, r: 5, tekst: a.cel.tekst };
       this.radaOd = performance.now();             // podpowiedź nie nadpisze celu alarmu od razu
     }
-    this.app.dzwiek.toll();
+    if (ustawienia.efekty) this.app.gesty.alarm(a.kryzys);
+    else this.app.dzwiek.toll();
     this.dirty = true;
   }
 
@@ -305,13 +310,40 @@ export class EkranGry implements Ekran {
     }
     if (wyniki.some((w) => w.udane && w.rozkaz.czasownik === 'znak')) this.app.dzwiek.toll();
     const nieudane = wyniki.length - udanych;
+    this.app.gesty.wykonanie(udanych, nieudane);
     this.ui.say(nieudane ? `Stało się ${udanych} z ${wyniki.length} — świat zdążył się zmienić.` : 'Twoja wola stała się ciałem.', this.sim.tick);
     this.dirty = true;
+  }
+
+  /**
+   * Dźwięki gestów z różnicy stanu między klatkami: plan, pauza, wybrany ryt, karta,
+   * atlas. Każda droga do tej samej zmiany — mysz, palec, klawisz, samouczek — brzmi
+   * więc tak samo i żadnej nie da się pominąć.
+   */
+  private sluchaj(): void {
+    const ui = this.ui, g = this.app.gesty;
+    const zawies = this.pauza ? 1 : this.zamrozone() ? 0.45 : 0;
+    const teraz = {
+      pauza: this.pauza, zawies, plan: this.rozkazy.ile, verb: ui.verb as string | null, tool: ui.tool as string | null,
+      karta: ui.selected?.id ?? -1, strona: this.atlas.strona,
+    };
+    const s = this.slad;
+    this.slad = teraz;
+    if (!s) { mikser.zawies(zawies); if (this.pauza) g.tonPauzy(true); return; }
+    if (zawies !== s.zawies) mikser.zawies(zawies);
+    // karta alarmu ma własny dzwon — pauza pod nią nie uderza drugi raz
+    if (teraz.pauza !== s.pauza) g.pauza(teraz.pauza, !!this.alarm);
+    if (teraz.plan > s.plan) g.szkic();
+    else if (teraz.plan < s.plan && this.pauza) g.skresl(teraz.plan === 0 && s.plan > 1);
+    if (teraz.verb !== s.verb || teraz.tool !== s.tool) g.klik();
+    if (teraz.karta !== s.karta && teraz.karta >= 0) g.kartka();
+    if (teraz.strona !== s.strona && teraz.strona !== 'zamkniete') g.kartka();
   }
 
   krok(_dt: number, teraz: number): void {
     // plan wykonuje się także wtedy, gdy pauzę zdjęło coś innego niż przycisk
     if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
+    this.sluchaj();
     if (!this.zamrozone()) {
       let kroki = Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik));
       if (this.spowolnione()) {
@@ -359,7 +391,7 @@ export class EkranGry implements Ekran {
         && !this.sim.ending && this.sim.tick > 1200 && teraz - this.ostatniaTablica > 30000) {
       const id = odkrycia.kolejka.shift()!;
       this.ostatniaTablica = teraz;
-      if (ustawienia.tablice === 'pokazuj') { this.atlas.otworzTablice(id, true); this.app.dzwiek.toll(); }
+      if (ustawienia.tablice === 'pokazuj') { this.atlas.otworzTablice(id, true); this.app.gesty.tablica(); }
       else this.ui.say(`Nowa tablica w atlasie: ${tablica(id)?.nazwa ?? ''}.`, this.sim.tick);
     }
 
@@ -392,6 +424,7 @@ export class EkranGry implements Ekran {
         Math.min(1, this.sim.wiara / 260),
         Math.min(1, zywi / 120),
         this.sim.sen,
+        this.zamrozone(),
       );
       this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2));
     }
@@ -611,7 +644,7 @@ export class EkranGry implements Ekran {
     if (this.pauza && (ui.verb === 'ksztaltuj' || ui.verb === 'zasiej' || ui.verb === 'znak')) {
       const powod = this.rozkazy.zaplanuj(sim, { czasownik: ui.verb as Verb, narzedzie: ui.tool, x: wx, y: wy });
       if (powod === null) this.nasluch?.({ typ: 'rozkaz', czasownik: ui.verb, narzedzie: ui.tool });
-      else if (powod && !this.painting) ui.say(powod, sim.tick);
+      else if (powod && !this.painting) { ui.say(powod, sim.tick); this.app.gesty.odmowa(); }
       this.dirty = true;
       return;
     }
@@ -633,6 +666,7 @@ export class EkranGry implements Ekran {
         udane = ui.touchCreature(sim, pobliscy[this.indeksWTlumie]);
       } else {
         ui.say('Nikogo tam nie ma.', sim.tick);
+        this.app.gesty.odmowa();
       }
     }
     if (!udane && (ui.verb === 'ksztaltuj' || ui.verb === 'zasiej' || ui.verb === 'znak')) {
@@ -644,6 +678,7 @@ export class EkranGry implements Ekran {
         : ui.tool === 'draz' ? 'Tu nie ma czego drążyć — celuj w skałę.'
         : 'Nie da się tego zrobić w tym miejscu.');
       ui.say(powod, sim.tick);
+      this.app.gesty.odmowa();
     }
     if (udane && this.painting) {
       this.kosztPociagniecia.krew += Math.max(0, przedKrew - sim.krew);
