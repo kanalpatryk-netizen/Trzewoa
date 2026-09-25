@@ -119,13 +119,19 @@ export function stepCreature(sim: Sim, c: Creature): void {
   const depth = w.depth(ty);
   // Blisko rdzenia wiara trzyma głowę na miejscu. Bez tego przedsionek zjadał
   // każdą pielgrzymkę: wierni wariowali, rozszczepiali się i wracali trolami.
+  // Pielgrzym niesie tę wiarę ze sobą przez całą drogę w dół — inaczej wariował
+  // w połowie zejścia, zanim w ogóle doszedł pod skorupę.
   const podRdzeniem = c.devotion > 0.5
-    && Math.abs(c.x - w.coreX) < 20 && Math.abs(c.y - w.coreY) < 20;
-  if (!podRdzeniem && depth > 0.72 && c.race !== Race.TROLL && sim.rng.chance(0.0016 * (depth - 0.7) * 10)) {
+    && (c.job === Job.PIELGRZYM || (Math.abs(c.x - w.coreX) < 20 && Math.abs(c.y - w.coreY) < 20));
+  // (wolniej niż kiedyś: pół minuty przy dnie wystarczało, żeby Żużlowiec, który zszedł
+  // tylko po ciepło, wrócił z nożem na swoich)
+  if (!podRdzeniem && depth > 0.72 && c.race !== Race.TROLL && sim.rng.chance(0.00065 * (depth - 0.7) * 10)) {
     c.mad = Math.min(1, c.mad + 0.12);
     if (c.mad > 0.6 && sim.rng.chance(0.05)) sim.maddenCreature(c);
   }
   if (podRdzeniem && c.mad > 0) c.mad = Math.max(0, c.mad - 0.0015);
+  // kto wrócił wyżej, powoli dochodzi do siebie — szaleństwo nie jest już wieczne
+  else if (depth < 0.6 && c.mad > 0 && c.race !== Race.TROLL) c.mad = Math.max(0, c.mad - 0.0003);
 
   if (c.hp <= 0) { sim.kill(c, 'z wycieńczenia', c.age > d.lifespan ? 'starość' : 'wycieńczenie'); return; }
 
@@ -205,11 +211,27 @@ export function stepCreature(sim: Sim, c: Creature): void {
 
   // Dotknięcie rdzenia kończy grę. Wcześniej trzeba było wykuć sam kafel rdzenia,
   // więc stworzenie potrafiło stać na nim godzinami i nigdy nie „dojść".
-  if (Math.abs(c.x - w.coreX) <= 3 && Math.abs(c.y - w.coreY) <= 3) {
+  // Wchodzi tylko nacja, która skuła skorupę, albo taka, która wierzy dość, by cię uwolnić.
+  // Obcy — Trol z głębi, Żużlowiec za ciepłem — musi rdzeń wykuć, a to trwa: przypadkowy
+  // przechodzień nie kończy gry śmiercią sekundę po tym, jak warta otworzyła drogę.
+  const wolnoWejsc = c.clan === sim.rytual.klan || sim.clans[c.clan].devotion > 0.55;
+  if (wolnoWejsc && Math.abs(c.x - w.coreX) <= 3 && Math.abs(c.y - w.coreY) <= 3) {
     const cx = Math.round(c.x), cy = Math.round(c.y);
     for (const [dx, dy] of [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]]) {
       if (w.get(cx + dx, cy + dy) === T.CORE) { sim.reachCore(c); return; }
     }
+  }
+
+  // --- ogień tuż obok: ucieka, zanim spłynie — wcześniej stali przy kuźni i czekali,
+  // aż magma z rozkopanej kieszeni wleje im się pod nogi
+  if ((c.id + sim.tick) % 4 === 0 && c.job !== Job.FLEE && sim.przyMagmie(tx, ty, 1)) {
+    let mx = 0, my = 0;
+    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+      if (w.inb(tx + dx, ty + dy) && w.magma[w.idx(tx + dx, ty + dy)] > 0) { mx += dx; my += dy; }
+    }
+    c.job = Job.FLEE; c.droga = undefined;
+    c.jx = tx - Math.sign(mx || c.face) * 6; c.jy = ty - (my >= 0 ? 4 : -2);
+    c.jt = 50; c.fear = 1;
   }
 
   // --- wybór zajęcia
@@ -612,7 +634,7 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
   // Nikt przy zdrowych zmysłach nie przebija ściany, za którą płynie ogień: losowe
   // drążenie otwierało kieszenie magmy i wypalało całe plemiona w kilka sekund.
   // Szaleni i ci, którym szepnąłeś „kop w dół", kopią dalej.
-  if (t !== T.CORE && c.mad < 0.6 && c.job !== Job.DESCEND && sim.przyMagmie(x, y)) {
+  if (t !== T.CORE && c.mad < 0.6 && c.job !== Job.DESCEND && sim.przyMagmie(x, y, 2)) {
     c.dig = 0; c.jt = 0; return;
   }
   c.dig += RACES[c.race].digPower * (1 + c.mad * 0.6);
@@ -671,13 +693,25 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   // Dopiero na miejscu widać, czy skorupa już puściła — i liczy się faktyczna droga,
   // nie licznik pęknięć. Wtedy pielgrzym przestaje być pielgrzymem: schodzi do rdzenia.
   if (sim.rytual.otwarta && sim.clans[c.clan].devotion > 0.55) {
-    c.job = Job.DIG; c.jx = w.coreX; c.jy = w.coreY; c.jt = 1200; c.dig = 0;
+    wyslijDoRdzenia(sim, c, 1200);
     return;
   }
   c.devotion = Math.min(1, c.devotion + 0.0012);
   c.hunger = Math.max(0, c.hunger - 0.00018);      // wiara trawi wolniej, ale trawi
   sim.wiara += 0.0025 * sim.incomeMult();
   if (sim.tick % 24 === 0 && sim.rng.chance(0.3)) sim.efekt(c.x, c.y - 0.4, 'mysl');
+}
+
+/**
+ * Zejście do rdzenia przez otwartą skorupę — drogą. Na przełaj wierni szli prosto
+ * na kamień skorupy (którego nie da się wykuć) i stali pod nim, choć szyb był obok.
+ */
+export function wyslijDoRdzenia(sim: Sim, c: Creature, jt: number): void {
+  const w = sim.world;
+  c.job = Job.DIG; c.jx = w.coreX; c.jy = w.coreY; c.jt = jt; c.dig = 0;
+  const droga = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - w.coreX) <= 3 && Math.abs(y - w.coreY) <= 3
+    && (w.get(x, y + 1) === T.CORE || w.get(x - 1, y) === T.CORE || w.get(x + 1, y) === T.CORE || w.get(x, y - 1) === T.CORE), 4000);
+  c.droga = droga ?? undefined; c.drogaI = 0;
 }
 
 function doPray(sim: Sim, c: Creature): void {

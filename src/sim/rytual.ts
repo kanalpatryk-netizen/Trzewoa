@@ -1,7 +1,7 @@
 import type { Sim } from './sim';
 import { T, PASSABLE } from './tiles';
 import { Race } from './races';
-import { Job } from './creatures';
+import { Job, wyslijDoRdzenia } from './creatures';
 
 export interface StanRytualu {
   /** Postęp nacji, która jest najbliżej przebicia — tylko do pokazania graczowi. */
@@ -43,8 +43,11 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
     if (n > ilu) { ilu = n; najlepszy = c.clan; }
   }
 
+  // Kuje jedna nacja — ta, której wiernych jest pod skorupą najwięcej. Gdy kuły wszystkie
+  // naraz, ich pęknięcia się sumowały i trzy klany tej samej krwi otwierały rdzeń
+  // w pięć minut, zamiast w długiej, bronionej warcie.
   for (const [id, n] of liczniki) {
-    if (n < POTRZEBA) continue;
+    if (n < POTRZEBA || id !== najlepszy) continue;
     const klan = sim.clans[id];
     // nacja, której ktoś właśnie klęczy pod skorupą, z definicji nie jest martwa;
     // flaga potrafi zostać po przepisaniu ludzi między klanami i mroziła rytuał na zawsze
@@ -95,8 +98,9 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
         if (c.dead || c.race === Race.HUMAN || c.clan !== stan.klan) continue;
         if (c.devotion <= 0.55) continue;
         if (Math.hypot(c.x - w.coreX, c.y - w.coreY) > 22) continue;
-        if (c.job === Job.DIG && c.jx === w.coreX && c.jy === w.coreY) break;
-        c.job = Job.DIG; c.jx = w.coreX; c.jy = w.coreY; c.jt = 1500; c.dig = 0;
+        // (już schodzi — chyba że nie dostał drogi, bo w tym tiku zabrakło na nią czasu)
+        if (c.job === Job.DIG && c.jx === w.coreX && c.jy === w.coreY && c.droga) break;
+        wyslijDoRdzenia(sim, c, 1500);
         break;
       }
     }

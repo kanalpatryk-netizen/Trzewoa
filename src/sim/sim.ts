@@ -544,8 +544,11 @@ export class Sim {
     // Modlitwa podsyca oddanie, ale coraz słabiej, im go więcej. Wcześniej każdy tik
     // modlitwy dokładał tyle, że klan dochodził do pełnego oddania w kilka sekund —
     // i wtedy zaczynał masowo składać ofiary z dzieci, a Znak gracza nie miał nic do dodania.
-    // (i tyle, ile dana krew w ogóle umie wierzyć)
-    clan.devotion = Math.min(1, clan.devotion + 0.000005 * RACES[c.race].faithGain * (1 - clan.devotion));
+    // (i tyle, ile dana krew w ogóle umie wierzyć). Liczone na głowę: oddanie nacji to jej
+    // przeciętna pobożność, a nie suma modłów — inaczej każda duża nacja sama dochodziła
+    // do pełnego oddania i odprawiała rytuał bez ciebie.
+    clan.devotion = Math.min(1, clan.devotion
+      + 0.00004 * RACES[c.race].faithGain * (1 - clan.devotion) / Math.max(8, clan.pop));
     if (this.rng.chance(0.06)) this.spark(c.x, c.y - 0.6, 'pray');
   }
 
