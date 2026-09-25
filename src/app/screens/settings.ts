@@ -49,6 +49,7 @@ export class EkranUstawien implements Ekran {
       { typ: 'przelacznik', etykieta: 'Skala głębokości', opis: 'karby na prawym marginesie', czytaj: () => ustawienia.skalaGlebokosci, zmien: (v) => ustaw('skalaGlebokosci', v) },
 
       { typ: 'naglowek', tekst: 'Świat' },
+      { typ: 'wybor', etykieta: 'Auto-pauza', opis: 'gra sama zatrzymuje czas, gdy trzeba decydować', opcje: ['kryzysy', 'wszystko', 'wyłączona'], czytaj: () => ustawienia.autoPauza, zmien: (v) => ustaw('autoPauza', v as typeof ustawienia.autoPauza) },
       { typ: 'suwak', etykieta: 'Tempo czasu', opis: 'ile tików świata przypada na klatkę', min: 1, max: 8, krok: 1, czytaj: () => ustawienia.tempo, zmien: (v) => ustaw('tempo', v), format: (v) => `${v}×` },
       { typ: 'przelacznik', etykieta: 'Kamera za życiem', opis: 'sama wraca tam, gdzie jest najgęściej — dopóki jej nie chwycisz', czytaj: () => ustawienia.kameraZaZyciem, zmien: (v) => ustaw('kameraZaZyciem', v) },
       { typ: 'przelacznik', etykieta: 'Automatyczne przybliżanie', opis: 'kamera sama dobiera skalę do wielkości kolonii', czytaj: () => ustawienia.autoZoom, zmien: (v) => ustaw('autoZoom', v) },
@@ -65,6 +66,8 @@ export class EkranUstawien implements Ekran {
       { typ: 'akcja', etykieta: 'Przeciągnięcie', opis: 'przesuwa kamerę; przy wybranym czasowniku maluje', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'Kółko / szczypanie', opis: 'przybliża i oddala', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'Dotknięcie rytu', opis: 'wybiera czasownik; drugie dotknięcie go odkłada i puszcza czas', wykonaj: () => {} },
+      { typ: 'akcja', etykieta: 'W pauzie', opis: 'rozkazy czekają jako szkice; dotknięcie szkicu bez rytu w ręku go skreśla', wykonaj: () => {} },
+      { typ: 'akcja', etykieta: 'Klepsydra', opis: 'dotknięcie klepsydry nad płytą zatrzymuje i puszcza czas', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'Dotknięcie stworzenia', opis: 'przy Szepcie otwiera kartę, przy Skazie zmienia krew rasy', wykonaj: () => {} },
     ];
   }

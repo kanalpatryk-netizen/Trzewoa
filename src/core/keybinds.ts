@@ -9,7 +9,7 @@ export interface OpisAkcji { akcja: Akcja; nazwa: string; opis: string; }
 
 export const AKCJE: OpisAkcji[] = [
   { akcja: 'menu', nazwa: 'Menu', opis: 'wraca do menu — działa też P oraz esc' },
-  { akcja: 'pauza', nazwa: 'Wstrzymaj czas', opis: 'to samo, co odłożenie czasownika' },
+  { akcja: 'pauza', nazwa: 'Pauza i plan', opis: 'czas staje; rozkazy wydane w pauzie dzieją się naraz po jej zdjęciu' },
   { akcja: 'szybciej', nazwa: 'Szybciej', opis: 'więcej tików na klatkę — pokolenia lecą prędzej' },
   { akcja: 'wolniej', nazwa: 'Wolniej', opis: 'mniej tików na klatkę' },
   { akcja: 'ksztaltuj', nazwa: 'Kształtuj', opis: 'drążysz, zawalasz, wpuszczasz wodę i żar' },

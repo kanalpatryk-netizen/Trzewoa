@@ -16,6 +16,16 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 | **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś |
 | **Dźwięk** | rezonans świata (kucie, modlitwa, ton zależny od głębokości) i osobna warstwa muzyki — powolne akordy frygijskie i uderzenia w metal, wszystko syntezowane w locie |
 
+## Pauza taktyczna
+
+Jak w Baldur's Gate: czas można zatrzymać (spacja, klepsydra albo przycisk pod płytą) i w zatrzymanym
+świecie wydawać rozkazy. Każdy rysuje się jako **szkic rylcem** i rezerwuje koszt; wszystkie dzieją się
+naraz, gdy puścisz czas. Szkic skreśla dotknięcie bez rytu w ręku albo „cofnij" na banerze pauzy.
+
+**Auto-pauza** zatrzymuje świat w chwilach, w których trzeba decydować: nacja wymiera, jedna krew bierze
+górę, zaczyna się sen, pęka skorupa rdzenia albo przychodzi przypływ. Kamera jedzie na miejsce, a karta
+sytuacji mówi, co się stało i **co możesz z tym zrobić**. Poziom (kryzysy / wszystko / wyłączona) w ustawieniach.
+
 ## Samouczek — robisz, nie czytasz
 
 Jedna krótka scena na wejście, potem dziesięć rozdziałów. Każdy ma **listę czynności

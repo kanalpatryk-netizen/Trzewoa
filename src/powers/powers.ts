@@ -49,9 +49,11 @@ export function cost(verb: Verb, tool: string): { krew: number; wiara: number; o
   }
 }
 
+/** Czy stać cię na to — z odliczeniem tego, co już zarezerwowały rozkazy z pauzy. */
 export function affordable(sim: Sim, verb: Verb, tool: string): boolean {
   const c = cost(verb, tool);
-  return sim.krew >= c.krew && sim.wiara >= c.wiara && sim.otchlan >= c.otchlan;
+  const r = sim.rezerwa;
+  return sim.krew - r.krew >= c.krew && sim.wiara - r.wiara >= c.wiara && sim.otchlan - r.otchlan >= c.otchlan;
 }
 
 function pay(sim: Sim, verb: Verb, tool: string): boolean {
@@ -62,13 +64,14 @@ function pay(sim: Sim, verb: Verb, tool: string): boolean {
   return true;
 }
 
-/** Kształtowanie — drążysz, zawalasz, wpuszczasz wodę albo otwierasz żyłę gorąca. */
-export function shape(sim: Sim, tool: string, tx: number, ty: number, radius = 1.6): boolean {
+/**
+ * Kafle, które kształtowanie by zmieniło, albo null, gdy nie ma tu nic do zrobienia.
+ * Wspólne dla wykonania i dla planu w pauzie — szkic nie może obiecywać czegoś,
+ * czego wykonanie potem nie zrobi.
+ */
+export function kafleKsztaltu(sim: Sim, tool: string, tx: number, ty: number, radius = 1.6): number[] | null {
   const w = sim.world;
-  if (!w.inb(tx, ty)) return false;
-
-  // Najpierw sprawdzamy, czy jest co robić — inaczej narzędzie brało zapłatę
-  // i nie zmieniało niczego, co wyglądało jak zepsuta mechanika.
+  if (!w.inb(tx, ty)) return null;
   const r = Math.ceil(radius);
   const kafle: number[] = [];
   for (let dy = -r; dy <= r; dy++) {
@@ -82,10 +85,19 @@ export function shape(sim: Sim, tool: string, tx: number, ty: number, radius = 1
     }
   }
   // sucha strefa wokół przedsionka: ani wody, ani żaru — to jedyna droga do rdzenia
-  if ((tool === 'woda' || tool === 'zar') && w.suchaStrefa(tx, ty)) return false;
-  if (tool === 'zawal' && !kafle.some((i) => PASSABLE[w.tile[i]] === 1)) return false;
-  if (tool === 'draz' && !kafle.some((i) => PASSABLE[w.tile[i]] !== 1 && w.tile[i] !== T.STONE)) return false;
-  if (!kafle.length) return false;
+  if ((tool === 'woda' || tool === 'zar') && w.suchaStrefa(tx, ty)) return null;
+  if (tool === 'zawal' && !kafle.some((i) => PASSABLE[w.tile[i]] === 1)) return null;
+  if (tool === 'draz' && !kafle.some((i) => PASSABLE[w.tile[i]] !== 1 && w.tile[i] !== T.STONE)) return null;
+  return kafle.length ? kafle : null;
+}
+
+/** Kształtowanie — drążysz, zawalasz, wpuszczasz wodę albo otwierasz żyłę gorąca. */
+export function shape(sim: Sim, tool: string, tx: number, ty: number, radius = 1.6): boolean {
+  const w = sim.world;
+  // Najpierw sprawdzamy, czy jest co robić — inaczej narzędzie brało zapłatę
+  // i nie zmieniało niczego, co wyglądało jak zepsuta mechanika.
+  const kafle = kafleKsztaltu(sim, tool, tx, ty, radius);
+  if (!kafle) return false;
   if (!pay(sim, 'ksztaltuj', tool)) return false;
 
   for (const i of kafle) {

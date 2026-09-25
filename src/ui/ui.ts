@@ -6,6 +6,7 @@ import { SERIF, creatureName, creatureNameCelownik } from '../render/overlay';
 import { Plate } from '../render/plate';
 import { rysujStany } from '../render/stany';
 import { klawisze, nazwaKlawisza } from '../core/keybinds';
+import type { Rozkazy } from '../powers/rozkazy';
 
 interface Hit { x: number; y: number; hw: number; hh: number; kind: 'verb' | 'tool' | 'thought'; verb?: Verb; tool?: string; }
 
@@ -32,6 +33,8 @@ export class Ui {
   pointer = { x: 0, y: 0 };
   /** Myśl właśnie szepnięta z karty — gra zgłasza ją samouczkowi i czyści. */
   ostatniaMysl: string | null = null;
+  /** W pauzie myśli i skazy nie dzieją się od razu — idą do planu i czekają na czas. */
+  plan: Rozkazy | null = null;
 
   private dwieKolumny = false;
 
@@ -317,6 +320,11 @@ export class Ui {
         this.selected = null;
       } else if (h.kind === 'tool') {
         this.tool = h.tool!;
+      } else if (h.kind === 'thought' && this.selected && this.plan) {
+        const kto = this.selected;
+        const powod = this.plan.zaplanuj(sim, { czasownik: 'szept', narzedzie: h.tool!, x: kto.x, y: kto.y, kto: kto.id });
+        if (powod === null) { this.say('Myśl czeka. Usłyszy ją, gdy puścisz czas.', sim.tick); this.selected = null; }
+        else if (powod) this.say(powod, sim.tick);
       } else if (h.kind === 'thought' && this.selected) {
         if (whisper(sim, h.tool!, this.selected)) {
           this.ostatniaMysl = h.tool!;
@@ -335,6 +343,12 @@ export class Ui {
     if (this.verb === 'szept') { this.selected = c; return true; }
     if (this.verb === 'skaz' && this.tool) {
       if (c.race === Race.HUMAN || c.race === Race.MYCELIUM) { this.say('Tej krwi nie sięgniesz.', sim.tick); return true; }
+      if (this.plan) {
+        const powod = this.plan.zaplanuj(sim, { czasownik: 'skaz', narzedzie: this.tool, x: c.x, y: c.y, kto: c.id, rasa: c.race });
+        if (powod === null) this.say(`Skaza ${RACES[c.race].nazwaDopelniacz} czeka na czas.`, sim.tick);
+        else if (powod) this.say(powod, sim.tick);
+        return powod === null;
+      }
       if (taint(sim, this.tool, c.race)) this.say(`Krew ${RACES[c.race].nazwaDopelniacz} zmieniona na zawsze.`, sim.tick);
       else this.say('Nie stać cię albo już to zrobiłeś.', sim.tick);
       return true;

@@ -16,7 +16,12 @@ import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki'
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
 import { computePlate, drawFrame, drawCensus, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOtchlan, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
-import { shape, seed, sign, TOOLS } from '../../powers/powers';
+import { shape, seed, sign, TOOLS, type Verb } from '../../powers/powers';
+import { Rozkazy } from '../../powers/rozkazy';
+import { rysujRozkazy, rysujBanerPauzy, type PoleBanera } from '../../render/rozkazy';
+import { miejsceKlepsydry } from '../../render/tempo';
+import { Straznik, type Alarm } from '../alarmy';
+import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { saveToStorage, loadFromStorage } from '../../core/save';
 import { ustawienia, ustaw } from '../../core/settings-store';
 import type { Akcja } from '../../core/keybinds';
@@ -49,6 +54,8 @@ export type ZdarzenieGry =
   | { typ: 'szept'; narzedzie: string }
   | { typ: 'wybranoCzasownik'; czasownik: string | null }
   | { typ: 'kamera'; rodzaj: 'przesun' | 'zoom' | 'powrot' }
+  | { typ: 'rozkaz'; czasownik: string; narzedzie: string }
+  | { typ: 'pauza'; stoi: boolean }
   | { typ: 'tempo' }
   | { typ: 'koniec'; opis: string };
 
@@ -85,6 +92,15 @@ export class EkranGry implements Ekran {
   private radaOd = -1e9;
   /** Pauza żyje tylko w tej sesji — zapisana potrafiła uruchomić grę w bezruchu. */
   pauza = false;
+  /** Samouczek zatrzymuje świat bez pauzy — żeby szept i skaza działały od razu, a nie szły do planu. */
+  wstrzymane = false;
+  /** Rozkazy wydane w pauzie: czekają jako szkice, dzieją się po puszczeniu czasu. */
+  rozkazy = new Rozkazy();
+  private polaBanera: PoleBanera[] = [];
+  /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
+  private straznik = new Straznik();
+  alarm: Alarm | null = null;
+  private polaAlarmu: PoleAlarmu[] = [];
   legenda = false;
   liczby = false;
   /** Otwarte zapiski — cała kronika na wierzchu, świat czeka. */
@@ -192,7 +208,7 @@ export class EkranGry implements Ekran {
   /** Czas staje tylko na pauzie i po zakończeniu — nigdy przez sam wybór czasownika. */
   zamrozone(): boolean {
     // otwarta karta zatrzymuje świat: to moment rozmowy z jednym stworzeniem
-    return this.pauza || this.zapiski || !!this.sim.ending || this.ui.selected !== null;
+    return this.pauza || this.wstrzymane || this.zapiski || !!this.sim.ending || this.ui.selected !== null;
   }
 
   /**
@@ -205,7 +221,54 @@ export class EkranGry implements Ekran {
 
   // ---------------------------------------------------------------------- krok
 
+  /** Przełącza pauzę; puszczenie czasu wykonuje plan. */
+  ustawPauze(stoi: boolean): void {
+    if (!stoi) this.alarm = null;
+    if (this.pauza === stoi) return;
+    this.pauza = stoi;
+    this.ui.say(stoi ? 'Czas stoi. Planuj — rozkazy staną się, gdy go puścisz.' : 'Czas znów płynie.', this.sim.tick);
+    this.nasluch?.({ typ: 'pauza', stoi });
+    if (!stoi) this.wykonajPlan();
+    this.dirty = true;
+  }
+
+  private podniesAlarm(a: Alarm): void {
+    this.alarm = a;
+    this.pauza = true;
+    this.nasluch?.({ typ: 'pauza', stoi: true });
+    this.ui.selected = null;
+    if (a.cel) {
+      this.pokazMiejsce(a.cel.x, a.cel.y, Math.max(this.cam.zoom, 10));
+      // karta sytuacji stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
+      this.cam.y = this.camTarget.y = a.cel.y - (this.plate.h * 0.2) / this.cam.zoom;
+      this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      this.cel = { x: a.cel.x, y: a.cel.y, r: 5, tekst: a.cel.tekst };
+      this.radaOd = performance.now();             // podpowiedź nie nadpisze celu alarmu od razu
+    }
+    this.app.dzwiek.toll();
+    this.dirty = true;
+  }
+
+  private wykonajPlan(): void {
+    if (!this.rozkazy.ile) return;
+    const wyniki = this.rozkazy.wykonaj(this.sim);
+    let udanych = 0;
+    for (const w of wyniki) {
+      if (!w.udane) continue;
+      udanych++;
+      const o = w.rozkaz;
+      if (o.czasownik === 'szept') this.nasluch?.({ typ: 'szept', narzedzie: o.narzedzie });
+      else this.nasluch?.({ typ: 'moc', czasownik: o.czasownik, narzedzie: o.narzedzie });
+    }
+    if (wyniki.some((w) => w.udane && w.rozkaz.czasownik === 'znak')) this.app.dzwiek.toll();
+    const nieudane = wyniki.length - udanych;
+    this.ui.say(nieudane ? `Stało się ${udanych} z ${wyniki.length} — świat zdążył się zmienić.` : 'Twoja wola stała się ciałem.', this.sim.tick);
+    this.dirty = true;
+  }
+
   krok(_dt: number, teraz: number): void {
+    // plan wykonuje się także wtedy, gdy pauzę zdjęło coś innego niż przycisk
+    if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
     if (!this.zamrozone()) {
       let kroki = Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik));
       if (this.spowolnione()) {
@@ -236,6 +299,11 @@ export class EkranGry implements Ekran {
         }
       }
       if (this.sim.senDzwon) { this.sim.senDzwon = false; this.app.dzwiek.toll(); }
+      // auto-pauza: przy chwilach, w których trzeba decydować, świat staje sam
+      if (!this.nasluch) {
+        const a = this.straznik.sprawdz(this.sim, ustawienia.autoPauza);
+        if (a) this.podniesAlarm(a);
+      }
       if (this.sim.ending) {
         this.nasluch?.({ typ: 'koniec', opis: this.sim.ending });
         if (!this.nasluch) this.app.idz('kronika', { sim: this.sim });
@@ -250,7 +318,7 @@ export class EkranGry implements Ekran {
     // podpowiedź odświeżana rzadko, żeby nie migotała
     // Podpowiedź trzyma się co najmniej 25 sekund; zmienia się wcześniej tylko wtedy,
     // gdy pojawi się wyraźnie pilniejsza sprawa. Wcześniej skakała co kilka sekund.
-    if (!this.nasluch && teraz - this.radaOd > 2500) {
+    if (!this.nasluch && !this.alarm && teraz - this.radaOd > 2500) {
       const nowa = podpowiedz(this.sim);
       const stara = this.rada;
       const czas = teraz - this.radaOd;
@@ -316,9 +384,24 @@ export class EkranGry implements Ekran {
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
     if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
+    if (this.pauza) {
+      // czas stoi: świat przygasa, a na nim widać już tylko plan
+      ctx.fillStyle = 'rgba(8,6,10,0.26)';
+      ctx.fillRect(-cam.vw, -cam.vh, cam.vw * 3, cam.vh * 3);
+      rysujRozkazy(ctx, sim, cam, this.rozkazy.lista, teraz);
+    }
     if (this.cel) podswietlCel(ctx, cam, this.cel, teraz);
     ctx.restore();
     ctx.restore();
+    if (this.pauza) {
+      // wstrzymany oddech: złota, pulsująca rama wewnątrz płyty
+      const puls = 0.5 + 0.5 * Math.sin(teraz * 0.0025);
+      ctx.save();
+      ctx.strokeStyle = `rgba(224,176,104,${0.28 + 0.22 * puls})`;
+      ctx.lineWidth = 2;
+      ctx.strokeRect(plate.x + 4, plate.y + 4, plate.w - 8, plate.h - 8);
+      ctx.restore();
+    }
 
     // delikatna winieta płyty — rysunek ma brzeg, nie ekran
     const wg = ctx.createRadialGradient(plate.x + plate.w / 2, plate.y + plate.h / 2, Math.min(plate.w, plate.h) * 0.38,
@@ -348,6 +431,12 @@ export class EkranGry implements Ekran {
     });
     const podPrzyciskiem = przyciskPod(this.przyciski, this.ui.pointer.x, this.ui.pointer.y);
     rysujPrzyciski(ctx, this.przyciski, podPrzyciskiem?.akcja ?? null, teraz);
+    this.ui.plan = this.pauza ? this.rozkazy : null;
+    // na wąskim ekranie przyciski leżą na dole płyty — baner siada nad nimi
+    const nadPrzyciskami = plate.waski && this.przyciski.length ? this.przyciski[0].r * 3 : 0;
+    this.polaBanera = this.pauza && !this.zapiski && !sim.ending
+      ? rysujBanerPauzy(ctx, plate, sim, this.rozkazy.ile, teraz, nadPrzyciskami) : [];
+    this.polaAlarmu = this.alarm && this.pauza && !this.zapiski ? rysujAlarm(ctx, plate, this.alarm, teraz) : [];
     this.znakMenu(ctx, teraz);
     if (this.liczby) {
       ctx.save();
@@ -366,7 +455,7 @@ export class EkranGry implements Ekran {
       ctx.restore();
     }
     if (this.legenda) rysujLegende(ctx, plate, w);
-    if (this.rada && !this.ui.verb && !this.legenda) {
+    if (this.rada && !this.ui.verb && !this.legenda && !this.alarm) {
       ctx.save();
       ctx.textAlign = 'center';
       const rozmiar = Math.max(15, Math.min(20, w / 66));
@@ -450,6 +539,14 @@ export class EkranGry implements Ekran {
       if (this.malowane.has(klucz)) return;
       this.malowane.add(klucz);
     }
+    // w pauzie nic nie dzieje się od razu: skała, ziarno i Znak idą do planu jako szkic
+    if (this.pauza && (ui.verb === 'ksztaltuj' || ui.verb === 'zasiej' || ui.verb === 'znak')) {
+      const powod = this.rozkazy.zaplanuj(sim, { czasownik: ui.verb as Verb, narzedzie: ui.tool, x: wx, y: wy });
+      if (powod === null) this.nasluch?.({ typ: 'rozkaz', czasownik: ui.verb, narzedzie: ui.tool });
+      else if (powod && !this.painting) ui.say(powod, sim.tick);
+      this.dirty = true;
+      return;
+    }
     const przedKrew = sim.krew, przedWiara = sim.wiara, przedOtchlan = sim.otchlan;
     let udane = false;
     if (ui.verb === 'ksztaltuj') udane = shape(sim, ui.tool, wx, wy);
@@ -485,7 +582,11 @@ export class EkranGry implements Ekran {
       this.kosztPociagniecia.wiara += Math.max(0, przedWiara - sim.wiara);
       this.kosztPociagniecia.otchlan += Math.max(0, przedOtchlan - sim.otchlan);
     }
-    if (udane) this.nasluch?.({ typ: 'moc', czasownik: ui.verb, narzedzie: ui.tool });
+    if (udane) {
+      // skaza w pauzie też jest tylko zamiarem — zgłaszamy rozkaz, nie czyn
+      if (this.pauza && ui.verb === 'skaz') this.nasluch?.({ typ: 'rozkaz', czasownik: ui.verb, narzedzie: ui.tool });
+      else this.nasluch?.({ typ: 'moc', czasownik: ui.verb, narzedzie: ui.tool });
+    }
     this.dirty = true;
   }
 
@@ -514,6 +615,36 @@ export class EkranGry implements Ekran {
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
     const { ui, sim } = this;
     ui.pointer.x = e.clientX; ui.pointer.y = e.clientY;
+    ui.plan = this.pauza ? this.rozkazy : null;
+
+    if (faza === 'dol' && !this.zapiski) {
+      // karta sytuacji: planuj (zostaje pauza), puść czas, nie zatrzymuj przy tym
+      for (const b of this.polaAlarmu) {
+        if (Math.abs(e.clientX - b.x) > b.w / 2 || Math.abs(e.clientY - b.y) > b.h / 2) continue;
+        if (b.akcja === 'pusc') this.ustawPauze(false);
+        else {
+          if (b.akcja === 'wycisz' && this.alarm) {
+            this.straznik.wyciszone.add(this.alarm.rodzaj);
+            ui.say('Przy tym już nie zatrzymam czasu.', sim.tick);
+          }
+          this.alarm = null;
+        }
+        this.dirty = true;
+        return;
+      }
+      // baner pauzy: cofnij, skreśl wszystko, puść czas
+      for (const b of this.polaBanera) {
+        if (Math.abs(e.clientX - b.x) > b.w / 2 || Math.abs(e.clientY - b.y) > b.h / 2) continue;
+        if (b.akcja === 'cofnij') { if (this.rozkazy.cofnij(sim)) ui.say('Skreślone.', sim.tick); }
+        else if (b.akcja === 'skresl') { this.rozkazy.skreslWszystkie(sim); ui.say('Plan pusty.', sim.tick); }
+        else this.ustawPauze(false);
+        this.dirty = true;
+        return;
+      }
+      // klepsydra przy płycie to też przycisk pauzy
+      const k = miejsceKlepsydry(this.plate);
+      if (Math.hypot(e.clientX - k.x, e.clientY - k.y) < k.r) { this.ustawPauze(!this.pauza); return; }
+    }
 
     if (faza === 'dol' && this.zapiski) {
       for (const t of this.trafieniaZapiskow) {
@@ -613,6 +744,12 @@ export class EkranGry implements Ekran {
     if (!p) return;
     if (this.painting) { this.painting = false; this.malowane.clear(); return; }
     if (p.interfejs) return;
+    // w pauzie dotknięcie szkicu bez rytu w ręku (albo prawy przycisk) go skreśla
+    if (!p.moved && this.pauza && this.rozkazy.ile && this.naPlycie(p.sx, p.sy) && (!ui.verb || p.przycisk === 2)) {
+      const wx = this.cam.toWorldX(p.sx - this.plate.x), wy = this.cam.toWorldY(p.sy - this.plate.y);
+      const o = this.rozkazy.pod(sim, wx, wy);
+      if (o) { this.rozkazy.skresl(sim, o); ui.say('Skreślone. Koszt wrócił.', sim.tick); this.dirty = true; return; }
+    }
     if (!p.moved && p.przycisk !== 2 && !sim.ending && ui.verb && ui.verb !== 'ksztaltuj' && ui.verb !== 'zasiej' && this.naPlycie(p.sx, p.sy)) this.uzyj(p.sx, p.sy);
   }
 
@@ -651,9 +788,11 @@ export class EkranGry implements Ekran {
   klawisz(akcja: Akcja | null, _e?: KeyboardEvent): void {
     if (_e?.key === 'Tab') { this.liczby = true; return; }
     const { ui, sim } = this;
+    // Enter przy karcie sytuacji: „planuj" — karta znika, czas dalej stoi
+    if (this.alarm && _e?.key === 'Enter') { this.alarm = null; return; }
     switch (akcja) {
       case 'menu': this.app.idz('menu'); break;
-      case 'pauza': this.pauza = !this.pauza; ui.say(this.pauza ? 'Czas stoi.' : 'Czas znów płynie.', sim.tick); break;
+      case 'pauza': this.ustawPauze(!this.pauza); break;
       case 'szybciej': ustawienia.tempo = Math.min(8, ustawienia.tempo + 1); this.nasluch?.({ typ: 'tempo' }); break;
       case 'wolniej': ustawienia.tempo = Math.max(1, ustawienia.tempo - 1); this.nasluch?.({ typ: 'tempo' }); break;
       case 'zapis': ui.say(this.zapisujAuto && saveToStorage(sim) ? 'Zapisane.' : 'Nie tutaj.', sim.tick); break;

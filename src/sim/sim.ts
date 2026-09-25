@@ -75,6 +75,8 @@ export class Sim {
   /** Otchłań nie jest dochodem — jest miarą tego, o czym nikt nie pamięta. */
   get otchlan(): number { return this.world.unknown * OTCHLAN_PER_TILE; }
   sen = 0;                    // 0 = czuwasz, 1 = zasnąłeś na zawsze
+  /** Zasoby zarezerwowane przez rozkazy wydane w pauzie (nie idą do zapisu). */
+  rezerwa = { krew: 0, wiara: 0, otchlan: 0 };
   dominance = 0;
   domRace = -1;
   ending: string | null = null;
@@ -106,6 +108,8 @@ export class Sim {
   /** Postęp kruszenia skorupy rdzenia — koniec gry wymaga kultu, nie jednego kilofa. */
   rytual: StanRytualu = { postep: 0, klan: -1, wierni: 0, pekniecia: 0, otwarta: false, skorupa: 0 };
   lastTide = '';
+  /** Tik ostatniego przypływu — po nim strażnik pauzy poznaje, że coś weszło z zewnątrz. */
+  tideTick = -1;
 
   private hash: Creature[][] = [];
   private hashW = 0; private hashH = 0;
@@ -867,7 +871,7 @@ export class Sim {
     this.zapasy(clan, 10);                          // przyszli za jedzeniem — niech je zastaną
     clan.founded = this.tick;
     this.przybyszow++;
-    this.lastTide = 'nowe plemię';
+    this.lastTide = 'nowe plemię'; this.tideTick = this.tick;
     this.gdzie(clan.hx, clan.hy).log(`${clan.name} zeszli w pustą górę. Nie wiedzą, co ich tu ściągnęło.`, 'swiat');
   }
 
@@ -914,7 +918,7 @@ export class Sim {
       if (c) c.age = this.rng.int(800);
     }
     this.zapasy(clan, 8);
-    this.lastTide = 'obcy lud';
+    this.lastTide = 'obcy lud'; this.tideTick = this.tick;
     this.lastSettlers = this.tick;
     this.przybyszow++;
     this.gdzie(clan.hx, clan.hy).log(`Ze szczelin w głębi wyszli ${clan.name}. Nikt ich nie wołał.`, 'swiat');
@@ -1041,7 +1045,7 @@ export class Sim {
     const clan = this.newClan(Race.HUMAN, x, y);
     const n = 5 + this.rng.int(7);
     for (let i = 0; i < n; i++) this.spawn(Race.HUMAN, clan.id, x + this.rng.int(6) - 3, y);
-    this.lastTide = 'krucjata';
+    this.lastTide = 'krucjata'; this.tideTick = this.tick;
     this.gdzie(clan.hx, clan.hy).log(`Z powierzchni zeszli ludzie: ${clan.name}. Szukają rudy i sławy.`, 'swiat');
   }
 
@@ -1057,7 +1061,7 @@ export class Sim {
       const i = w.idx(xx, yy);
       if (PASSABLE[w.tile[i]] === 1) w.water[i] = 8;
     }
-    this.lastTide = 'zalanie';
+    this.lastTide = 'zalanie'; this.tideTick = this.tick;
     this.log('Woda znalazła szczelinę. Zalewa górne korytarze.', 'swiat');
   }
 
@@ -1070,7 +1074,7 @@ export class Sim {
       if (this.rng.chance(celowana ? 0.25 : 0.82)) continue;
       c.hp -= RACES[c.race].maxHp * (celowana ? 0.6 : 0.35); c.fear = 1; hit++;
     }
-    this.lastTide = 'zaraza';
+    this.lastTide = 'zaraza'; this.tideTick = this.tick;
     // zaraza, która nikogo nie tknęła, nie jest zdarzeniem — nie ma po co o niej pisać
     if (hit > 0) this.log(`Zaraza przeszła przez twoje trzewia. Zachorowało ${hit}.`, 'krew');
   }
@@ -1085,7 +1089,7 @@ export class Sim {
       if (w.suchaStrefa(xx, yy)) continue;            // droga pielgrzymów zostaje czysta
       if (w.tile[i] === T.ROCK) w.tile[i] = T.CRYSTAL;
     }
-    this.lastTide = 'żyła szaleństwa';
+    this.lastTide = 'żyła szaleństwa'; this.tideTick = this.tick;
     this.log('Żyła szaleństwa otworzyła się w głębi. Kto tam kopie, wraca inny.', 'otchlan');
   }
 

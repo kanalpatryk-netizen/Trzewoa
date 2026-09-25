@@ -16,6 +16,8 @@ export interface Settings {
   kontrast: number;         // 0.75..1.35 — siła kreskowania
   autozapis: boolean;
   samouczekZrobiony: boolean;
+  /** Kiedy gra sama zatrzymuje czas: przy kryzysach, przy każdym wydarzeniu albo nigdy. */
+  autoPauza: 'wyłączona' | 'kryzysy' | 'wszystko';
 }
 
 export const DOMYSLNE: Settings = {
@@ -35,6 +37,7 @@ export const DOMYSLNE: Settings = {
   kontrast: 1,
   autozapis: true,
   samouczekZrobiony: false,
+  autoPauza: 'kryzysy',
 };
 
 const KLUCZ = 'trzewia:ustawienia';

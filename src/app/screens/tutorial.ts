@@ -453,7 +453,8 @@ export class EkranSamouczka implements Ekran {
     g.dozwolone = new Set(r.czasowniki ?? []);
     this.ustawianie = true;
     r.przygotuj?.(g, this);
-    g.pauza = !!r.stopCzasu;                  // rozdział z celowaniem dostaje nieruchomy świat
+    g.pauza = false;
+    g.wstrzymane = !!r.stopCzasu;                  // rozdział z celowaniem dostaje nieruchomy świat
     // miejsce na płycie, o które chodzi w rozdziale, ma być w kadrze od pierwszej chwili
     for (let i = 0; i < r.etapy.length; i++) {
       if (r.etapy[i].wejdz) continue;
@@ -526,7 +527,7 @@ export class EkranSamouczka implements Ekran {
   private zalicz(): void {
     if (this.zrobiony) return;
     this.zrobiony = true;
-    this.gra.pauza = false;                  // skutek ma być widoczny od razu
+    this.gra.wstrzymane = false;             // skutek ma być widoczny od razu
     this.gra.cel = null;
     this.blysk = 1;
     this.app.dzwiek.toll();
