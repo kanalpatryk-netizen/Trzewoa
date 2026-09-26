@@ -21,6 +21,9 @@ const SKUTKI: Record<Verb, string> = {
   skaz: 'zmiana krwi całego gatunku',
 };
 
+/** Dolna krawędź znaku menu, liczona od górnej krawędzi płyty (patrz EkranGry.menuRect). */
+const ZNAK_MENU_DOL = 40;
+
 const VERBS: { id: Verb; label: string }[] = [
   { id: 'ksztaltuj', label: 'Kształtuj' },
   { id: 'zasiej', label: 'Zasiej' },
@@ -58,6 +61,13 @@ export class Ui {
     this.gap = Math.min(plate.h / (rzedy + 0.6), this.gs * 2.1);
     this.gx = this.dwieKolumny ? plate.left * 0.32 : plate.left / 2;
     this.gy = plate.y + plate.h / 2 - this.gap * (rzedy - 1) / 2;
+    // pierwszy ryt nie może wejść na znak menu w lewym górnym rogu płyty
+    const odGory = plate.y + ZNAK_MENU_DOL + this.gs * 0.85;
+    if (this.gy < odGory) {
+      const dol = plate.y + plate.h - this.gs * 0.85;
+      this.gap = Math.min(this.gap, (dol - odGory) / Math.max(1, rzedy - 1));
+      this.gy = odGory;
+    }
   }
 
   /**
@@ -120,7 +130,7 @@ export class Ui {
       const pol = Math.min(this.plate.w / 2 - 8, ctx.measureText(this.flash).width / 2 + 10);
       const x = Math.max(this.plate.x + pol, Math.min(this.plate.x + this.plate.w - pol, this.pointer.x));
       // górny pasek płyty należy do drogi do wolności — komunikat nie może go zasłaniać
-      const y = Math.max(this.plate.y + (this.plate.waski ? 100 : 70), this.pointer.y - size * 1.4);
+      const y = Math.max(this.plate.y + (this.plate.waski ? 128 : 96), this.pointer.y - size * 1.4);
       ctx.lineWidth = 3;
       ctx.strokeStyle = `rgba(10,7,6,${a * 0.85})`;
       ctx.strokeText(this.flash, x, y);
@@ -321,7 +331,7 @@ export class Ui {
     const cw = Math.min(360, p.w * (p.waski ? 0.94 : 0.46)), ch = Math.min(290, p.h * 0.7);
     const x = p.waski ? p.x + (p.w - cw) / 2 : p.x + p.w - cw - 12;
     // wąsko karta schodzi pod wstęgę drogi do wolności, szeroko wstęga jest w lewym rogu
-    const y = Math.max(p.y + (p.waski ? 90 : 14), Math.min(p.y + p.h - ch - 8, p.y + p.h / 2 - ch / 2));
+    const y = Math.max(p.y + (p.waski ? 122 : 14), Math.min(p.y + p.h - ch - 8, p.y + p.h / 2 - ch / 2));
     const clan = sim.clans[c.clan];
     ctx.save();
     ramaKarty(ctx, x, y, cw, ch, 1, 'mieszkaniec góry');

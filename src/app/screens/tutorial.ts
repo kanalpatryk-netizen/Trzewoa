@@ -9,52 +9,12 @@ import type { AkcjaPrzycisku } from '../../render/przyciski';
 import { BARWA, rgba } from '../../render/palette';
 import { SERIF, panel, akapit, linieAkapitu } from '../../render/ink';
 import { ramaKarty } from '../../render/ozdoby';
-import { obszarKrwi, obszarOtchlani, obszarWiary, obszarSpisu, type Obszar } from '../../render/plate';
 import { ustaw, ustawienia } from '../../core/settings-store';
-import { TOOLS } from '../../powers/powers';
 import { odkrycia } from '../../atlas/odkrycia';
 import { T, PASSABLE } from '../../sim/tiles';
 import { Race } from '../../sim/races';
+import { ROZDZIALY, SKAZY, type Rozdzial, type Wskazanie, type Gest, type Tekst } from './samouczek/rozdzialy';
 
-/** Na co samouczek wskazuje palcem. */
-type Wskazanie =
-  | { typ: 'punkt'; x: number; y: number; r: number }     // ryt, słowo, przycisk — ekran
-  | { typ: 'obszar'; o: Obszar }                           // organ w ramie
-  | { typ: 'swiat'; cel: Cel };                            // miejsce na płycie
-
-type Gest = 'przeciagnij' | 'kolko';
-
-type Tekst = string | ((s: EkranSamouczka) => string);
-
-interface Etap {
-  /** Polecenie: jedno krótkie zdanie. */
-  tekst: Tekst;
-  /** Skrót: akcja z klawiszologii albo gotowy napis („kółko myszy"). */
-  klawisz?: Tekst;
-  wskaz?: (s: EkranSamouczka) => Wskazanie | null;
-  gest?: Gest;
-  /** Czy etap jest spełniony — stan gry albo zdarzenie. */
-  gotowe?: (g: EkranGry, z: ZdarzenieGry | null, s: EkranSamouczka) => boolean;
-  /** Etap wyboru (ryt, słowo): odznaczenie cofa do niego. */
-  cofa?: boolean;
-  /** Etap opisowy — kończy go „Rozumiem". */
-  rozumiem?: boolean;
-  /** Przy wejściu w etap. */
-  wejdz?: (g: EkranGry, s: EkranSamouczka) => void;
-}
-
-interface Rozdzial {
-  tytul: string;
-  /** Po co — jedno, dwa zdania. */
-  wstep: string;
-  etapy: Etap[];
-  /** Co się właśnie stało. */
-  koniec: Tekst;
-  czasowniki?: string[];
-  /** Świat stoi przez cały rozdział — gdy trzeba trafić w konkretne stworzenie. */
-  stopCzasu?: boolean;
-  przygotuj?: (g: EkranGry, s: EkranSamouczka) => void;
-}
 
 interface Pole { x: number; y: number; w: number; h: number; }
 const wPolu = (p: Pole | null, x: number, y: number): boolean =>
@@ -62,13 +22,6 @@ const wPolu = (p: Pole | null, x: number, y: number): boolean =>
 
 const AKCJE_KLAWISZY = new Set<string>(Object.keys(klawisze));
 
-/** Skazy po kolei: gdy gracz wraca do rozdziału, bierze następną — tej samej drugi raz się nie da. */
-const SKAZY: { id: string; nazwa: string; skutek: string }[] = [
-  { id: 'slepota', nazwa: 'ślepota', skutek: 'Cały Ślepy Lud jest teraz ślepy: wolniejszy, ale każda jego modlitwa liczy się podwójnie.' },
-  { id: 'plodnosc', nazwa: 'płodność', skutek: 'Ślepy Lud będzie rodził więcej — i żył krócej, i głodniał szybciej.' },
-  { id: 'kamien', nazwa: 'kamienna skóra', skutek: 'Ślepy Lud stwardniał: trudniej go zabić, za to gorzej kopie i więcej je.' },
-  { id: 'zadza', nazwa: 'żądza krwi', skutek: 'Ślepy Lud jest silniejszy i nieustraszony — ale przestał się modlić.' },
-];
 const tekstZ = (t: Tekst, s: EkranSamouczka): string => typeof t === 'function' ? t(s) : t;
 
 /**
@@ -89,6 +42,8 @@ export class EkranSamouczka implements Ekran {
   private idx = 0;
   private zaliczoneEtapy: boolean[] = [];
   private zrobiony = false;
+  /** Karta zwinięta do jednego paska — na telefonie odsłania płytę. */
+  private zwinieta = false;
   private ostatniEtap = -1;
   private blysk = 0;
   private odEtapu = 0;
@@ -107,27 +62,27 @@ export class EkranSamouczka implements Ekran {
   /** Tempo sprzed samouczka: nauka przyspieszania nie może zostawić gracza na ×3. */
   private tempoPrzed = 1;
 
-  private pola: { dalej: Pole | null; wstecz: Pole | null; pomin: Pole | null; karta: Pole | null; graj: Pole | null; menu: Pole | null } =
+  private pola: { dalej: Pole | null; wstecz: Pole | null; pomin: Pole | null; karta: Pole | null; graj: Pole | null; menu: Pole | null; zwin?: Pole | null } =
     { dalej: null, wstecz: null, pomin: null, karta: null, graj: null, menu: null };
 
   // ------------------------------------------------------------ wskazywanie
 
-  private ryt(v: string): Wskazanie | null {
+  ryt(v: string): Wskazanie | null {
     const m = this.gra.ui.miejsce('verb', v);
     return m ? { typ: 'punkt', x: m.x, y: m.y, r: Math.max(m.hw, m.hh) * 1.15 } : null;
   }
 
-  private slowo(rodzaj: 'tool' | 'thought', id: string): Wskazanie | null {
+  slowo(rodzaj: 'tool' | 'thought', id: string): Wskazanie | null {
     const m = this.gra.ui.miejsce(rodzaj, id);
     return m ? { typ: 'punkt', x: m.x, y: m.y + m.hh * 0.2, r: Math.max(m.hw, m.hh) * 1.2 } : null;
   }
 
-  private przycisk(a: AkcjaPrzycisku): Wskazanie | null {
+  przycisk(a: AkcjaPrzycisku): Wskazanie | null {
     const b = this.gra.miejscePrzycisku(a);
     return b ? { typ: 'punkt', x: b.x, y: b.y, r: b.r * 1.35 } : null;
   }
 
-  private gniazdoGoblinow(): { x: number; y: number } | null {
+  gniazdoGoblinow(): { x: number; y: number } | null {
     // środek żywych goblinów, nie punkt gniazda: gniazdo zostaje na mapie nawet wtedy,
     // gdy mieszka tam już kto inny
     const g = this.gra;
@@ -143,7 +98,7 @@ export class EkranSamouczka implements Ekran {
   }
 
   /** Puste miejsce z podłogą przy gnieździe — tam ma trafić grzyb. */
-  private miejsceNaGrzyb(): Cel | null {
+  miejsceNaGrzyb(): Cel | null {
     const dom = this.gniazdoGoblinow();
     if (!dom) return null;
     const w = this.gra.sim.world;
@@ -161,7 +116,7 @@ export class EkranSamouczka implements Ekran {
   }
 
   /** Lita skała tuż obok gniazda — tam ma powstać korytarz. */
-  private miejsceNaKorytarz(): Cel | null {
+  miejsceNaKorytarz(): Cel | null {
     const dom = this.gniazdoGoblinow();
     if (!dom) return null;
     const w = this.gra.sim.world;
@@ -177,7 +132,7 @@ export class EkranSamouczka implements Ekran {
   }
 
   /** Jeden goblin do szeptu i skazy — ten sam przez cały rozdział. */
-  private wskazanyGoblin(tekst: string): Cel | null {
+  wskazanyGoblin(tekst: string): Cel | null {
     const sim = this.gra.sim;
     let c = sim.creatures.find((o) => o.id === this.wskazaneId && !o.dead);
     if (!c) {
@@ -189,243 +144,14 @@ export class EkranSamouczka implements Ekran {
     return c ? { x: c.x, y: c.y - 0.4, r: 2, tekst } : null;
   }
 
-  private rdzen(): Cel {
+  rdzen(): Cel {
     const w = this.gra.sim.world;
     return { x: w.coreX + 0.5, y: w.coreY + 0.5, r: 6, tekst: 'twój rdzeń' };
   }
 
   // ------------------------------------------------------------- rozdziały
 
-  private rozdzialy: Rozdzial[] = [
-    {
-      tytul: 'Rozejrzyj się',
-      wstep: 'Jesteś górą. W twoich korytarzach mieszkają małe ludy — to na nich patrzysz.',
-      // mieszkańcy obok karty, nie pod nią
-      przygotuj: (g, s) => { const d = s.gniazdoGoblinow(); if (d) g.pokazMiejsce(d.x, d.y, 14, true); },
-      etapy: [
-        {
-          tekst: 'Przeciągnij płytę, żeby się rozejrzeć.', klawisz: 'mysz albo palec', gest: 'przeciagnij',
-          gotowe: (g, z, s) => z?.typ === 'kamera' && Math.hypot(g.cam.x - s.kamStart.x, g.cam.y - s.kamStart.y) > 3,
-        },
-        {
-          tekst: 'Przybliż i oddal widok.', klawisz: 'kółko myszy, dwa palce albo [ ]', gest: 'kolko',
-          gotowe: (g, z, s) => z?.typ === 'kamera' && z.rodzaj === 'zoom' && Math.abs(Math.log(g.cam.zoom / s.kamStart.zoom)) > 0.25,
-        },
-        {
-          tekst: 'Kliknij „wróć do swoich" — kamera znajdzie mieszkańców.', klawisz: 'kamera',
-          wskaz: (s) => s.przycisk('kamera'),
-          gotowe: (_g, z) => z?.typ === 'kamera' && z.rodzaj === 'powrot',
-        },
-      ],
-      koniec: 'To twoi pierwsi mieszkańcy — Ślepy Lud. Przy gnieździe stoi imię nacji i liczba żywych.',
-      czasowniki: [],
-    },
-    {
-      tytul: 'Czym płacisz',
-      wstep: 'Nie ma tu liczb. Twoje zasoby widać w ramie obrazu.',
-      przygotuj: (g) => { g.sim.krew += 120; g.sim.wiara += 40; },
-      etapy: [
-        {
-          tekst: 'Krew — czerwona rysa pod płytą. Rośnie z każdej śmierci. Płacisz nią za kształtowanie skały.',
-          rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarKrwi(s.gra.plate, s.vh) }),
-        },
-        {
-          tekst: 'Wiara — jasny dym pod górną krawędzią płyty. Rośnie z modlitwy. Płacisz nią za szept i cud.',
-          rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarWiary(s.gra.plate) }),
-        },
-        {
-          tekst: 'Otchłań — biały kwadrat. To ciemność, o której zapomnieli. Płacisz nią za skazę krwi.',
-          rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOtchlani(s.gra.plate, s.vh) }),
-        },
-      ],
-      koniec: 'Gdy na coś cię nie stać, ryt po lewej przygasa. Najedź na ryt kursorem, a zobaczysz jego cenę.',
-      czasowniki: [],
-    },
-    {
-      tytul: 'Nakarm ich',
-      wstep: 'Nie wydajesz rozkazów. Kładziesz w skale powód, żeby poszli.',
-      przygotuj: (g) => { g.sim.krew += 300; g.sim.wiara += 60; },
-      czasowniki: ['zasiej'],
-      etapy: [
-        {
-          tekst: 'Wybierz ryt „Zasiej" po lewej.', klawisz: 'zasiej', cofa: true,
-          wskaz: (s) => s.ryt('zasiej'), gotowe: (g) => g.ui.verb === 'zasiej',
-        },
-        {
-          tekst: 'U góry wybierz słowo „grzyb".', klawisz: 'narzedzie2', cofa: true,
-          wskaz: (s) => s.slowo('tool', 'grzyb'), gotowe: (g) => g.ui.verb === 'zasiej' && g.ui.tool === 'grzyb',
-        },
-        {
-          tekst: 'Przeciągnij po zaznaczonym miejscu.',
-          wskaz: (s) => { const c = s.miejsceNaGrzyb(); return c ? { typ: 'swiat', cel: c } : null; },
-          gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'zasiej' && z.narzedzie === 'grzyb',
-        },
-      ],
-      koniec: 'Grzyb rośnie. Pójdą jeść — a ilość grzyba wyznacza, ilu ich góra wyżywi.',
-    },
-    {
-      tytul: 'Otwórz drogę',
-      wstep: 'Skała jest twoim ciałem. Kształtowanie jej kosztuje Krew.',
-      przygotuj: (g) => { g.sim.krew += 300; },
-      czasowniki: ['ksztaltuj'],
-      etapy: [
-        {
-          tekst: 'Wybierz ryt „Kształtuj".', klawisz: 'ksztaltuj', cofa: true,
-          wskaz: (s) => s.ryt('ksztaltuj'), gotowe: (g) => g.ui.verb === 'ksztaltuj',
-        },
-        {
-          tekst: 'U góry wybierz słowo „drąż".', klawisz: 'narzedzie1', cofa: true,
-          wskaz: (s) => s.slowo('tool', 'draz'), gotowe: (g) => g.ui.verb === 'ksztaltuj' && g.ui.tool === 'draz',
-        },
-        {
-          tekst: 'Przeciągnij po zaznaczonej skale — powstanie korytarz.',
-          wskaz: (s) => { const c = s.miejsceNaKorytarz(); return c ? { typ: 'swiat', cel: c } : null; },
-          gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'ksztaltuj' && z.narzedzie === 'draz',
-        },
-      ],
-      koniec: 'Tunel jest twój, ale pójdą nim oni. Tak się prowadzi cudze życie. „Zawal" robi odwrotnie — zasypuje.',
-    },
-    {
-      tytul: 'Szepnij',
-      wstep: 'Szept dotyka jednej głowy. Najtańszy czasownik — i najgroźniejszy.',
-      przygotuj: (g) => { g.sim.wiara += 150; },
-      czasowniki: ['szept'],
-      stopCzasu: true,
-      etapy: [
-        {
-          tekst: 'Wybierz ryt „Szepcz".', klawisz: 'szept', cofa: true,
-          wskaz: (s) => s.ryt('szept'), gotowe: (g) => g.ui.verb === 'szept',
-        },
-        {
-          tekst: 'Kliknij zaznaczonego goblina — otworzy się jego karta.', cofa: true,
-          wskaz: (s) => { const c = s.wskazanyGoblin('kliknij go'); return c ? { typ: 'swiat', cel: c } : null; },
-          gotowe: (g) => g.ui.verb === 'szept' && !!g.ui.selected && !g.ui.selected.dead,
-        },
-        {
-          tekst: 'Na karcie wybierz „prorokuj".',
-          wskaz: (s) => s.slowo('thought', 'prorok'),
-          gotowe: (_g, z) => z?.typ === 'szept' && z.narzedzie === 'prorok',
-        },
-      ],
-      koniec: 'Odszedł z wiernymi i założył własną nację — z urazą do dawnej. Tak zaczynają się wojny, z których żyjesz.',
-    },
-    {
-      tytul: 'Zrób cud',
-      wstep: 'Znak to jawny cud. Widzą go wszyscy dookoła i modlą się gorliwiej.',
-      przygotuj: (g) => { g.sim.wiara += 160; },
-      czasowniki: ['znak'],
-      etapy: [
-        {
-          tekst: 'Wybierz ryt „Znak".', klawisz: 'znak', cofa: true,
-          wskaz: (s) => s.ryt('znak'), gotowe: (g) => g.ui.verb === 'znak',
-        },
-        {
-          tekst: 'U góry wybierz słowo „objawienie".', klawisz: 'narzedzie1', cofa: true,
-          wskaz: (s) => s.slowo('tool', 'objawienie'), gotowe: (g) => g.ui.verb === 'znak' && g.ui.tool === 'objawienie',
-        },
-        {
-          tekst: 'Kliknij płytę przy gnieździe.',
-          wskaz: (s) => { const d = s.gniazdoGoblinow(); return d ? { typ: 'swiat', cel: { x: d.x, y: d.y, r: 4, tekst: 'kliknij tutaj' } } : null; },
-          gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'znak',
-        },
-      ],
-      koniec: 'Został świecący glif — modlitwa przy nim liczy się podwójnie. Oddanie Ślepego Ludu skoczyło w górę.',
-    },
-    {
-      tytul: 'Zmień im krew',
-      wstep: 'Skaza zmienia cały gatunek na wszystkie pokolenia. Cofnąć się jej nie da.',
-      przygotuj: (g, s) => {
-        g.sim.krew += 260;   // otchłani starcza: prawie cała góra jest jeszcze nieznana
-        s.skaza = SKAZY.find((k) => !g.sim.taints[Race.GOBLIN].includes(k.id)) ?? SKAZY[0];
-      },
-      czasowniki: ['skaz'],
-      stopCzasu: true,
-      etapy: [
-        {
-          tekst: 'Wybierz ryt „Skaź".', klawisz: 'skaz', cofa: true,
-          wskaz: (s) => s.ryt('skaz'), gotowe: (g) => g.ui.verb === 'skaz',
-        },
-        {
-          tekst: (s) => `U góry wybierz słowo „${s.skaza.nazwa}".`,
-          klawisz: (s) => `narzedzie${TOOLS.skaz.findIndex((t) => t.id === s.skaza.id) + 1}`, cofa: true,
-          wskaz: (s) => s.slowo('tool', s.skaza.id),
-          gotowe: (g, _z, s) => g.ui.verb === 'skaz' && g.ui.tool === s.skaza.id,
-        },
-        {
-          tekst: 'Kliknij zaznaczonego goblina.',
-          wskaz: (s) => { const c = s.wskazanyGoblin('kliknij go'); return c ? { typ: 'swiat', cel: c } : null; },
-          // po stanie krwi, nie po zdarzeniu: skaza rzucona na kogoś innego niż Ślepy Lud się nie liczy
-          gotowe: (g, _z, s) => g.sim.taints[Race.GOBLIN].includes(s.skaza.id),
-        },
-      ],
-      koniec: (s) => s.skaza.skutek,
-    },
-    {
-      tytul: 'Pauza i plan',
-      wstep: 'Jak w dawnych grach taktycznych: zatrzymujesz świat, spokojnie planujesz, a potem wszystko dzieje się naraz.',
-      czasowniki: ['zasiej'],
-      przygotuj: (g) => { g.sim.krew += 60; },
-      etapy: [
-        {
-          tekst: 'Zatrzymaj czas — spacją, klepsydrą albo tym przyciskiem.', klawisz: 'pauza',
-          wskaz: (s) => s.przycisk('pauza'), gotowe: (g) => g.pauza,
-        },
-        {
-          tekst: 'Wybierz ryt „Zasiej”, a u góry słowo „grzyb”.', klawisz: 'zasiej', cofa: true,
-          wskaz: (s) => s.gra.ui.verb === 'zasiej' ? s.slowo('tool', 'grzyb') : s.ryt('zasiej'),
-          gotowe: (g) => g.ui.verb === 'zasiej' && g.ui.tool === 'grzyb',
-        },
-        {
-          tekst: (s) => s.gra.pauza
-            ? 'Zaznacz dwa miejsca na grzyb. Nic się jeszcze nie stanie — narysują się szkice.'
-            : 'Najpierw zatrzymaj czas — dopiero wtedy rozkazy czekają jako szkice.',
-          wskaz: (s) => { const c = s.miejsceNaGrzyb(); return c ? { typ: 'swiat', cel: { ...c, tekst: 'zaznacz tutaj' } } : null; },
-          gotowe: (g) => g.rozkazy.ile >= 2,
-        },
-        {
-          tekst: 'Puść czas — rozkazy staną się naraz.', klawisz: 'pauza',
-          wskaz: (s) => s.przycisk('pauza'),
-          gotowe: (_g, z) => z?.typ === 'moc' && !!z.zPlanu,
-        },
-      ],
-      koniec: 'W pauzie koszt jest tylko zarezerwowany, a szkic skreślisz dotknięciem bez rytu w ręku. Gdy wydarzy się coś ważnego, gra sama zatrzyma czas i powie, co możesz zrobić. Obok pauzy leżą „wolniej” i „szybciej”.',
-    },
-    {
-      tytul: 'Jak to się kończy',
-      wstep: 'Jedna wygrana, jedna przegrana — i długa droga między nimi.',
-      czasowniki: [],
-      etapy: [
-        {
-          tekst: 'To wstęga warstw: każda nacja ma tu swoje pasmo. Gdy jedna krew zje resztę, zaczniesz zasypiać — to twoja jedyna przegrana.',
-          rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
-        },
-        {
-          tekst: 'Na dnie bije twój rdzeń — to twoja wygrana. Jedna nacja musi mocno uwierzyć, a przy przedsionku pod rdzeniem musi rosnąć grzyb: wtedy jej warta zejdzie i wymodli pęknięcie skorupy. Kroki tej drogi zobaczysz w rogu płyty.',
-          rozumiem: true,
-          wejdz: (g, s) => { const c = s.rdzen(); g.pokazMiejsce(c.x, c.y, 9, true); },
-          wskaz: (s) => ({ typ: 'swiat', cel: s.rdzen() }),
-        },
-      ],
-      koniec: 'Podtrzymuj konflikt, ale nie pozwól nikomu wyginąć. Rozbijaj silnych szeptem, zawałem i cudem.',
-    },
-    {
-      tytul: 'Kronika',
-      wstep: 'Gra przez cały czas pisze. Trzy ostatnie zdania widać pod płytą.',
-      czasowniki: [],
-      przygotuj: (g) => { g.doMieszkancow(); },
-      etapy: [
-        {
-          tekst: 'Otwórz zapiski.', klawisz: 'zapiski',
-          wskaz: (s) => s.przycisk('zapiski'), gotowe: (g) => g.zapiski,
-        },
-        {
-          tekst: 'Zamknij je — kliknij gdziekolwiek.',
-          gotowe: (g) => !g.zapiski,
-        },
-      ],
-      koniec: 'Tu gra spisuje twoją legendę. Kliknięcie we wpis przenosi wzrok tam, gdzie to się stało.',
-    },
-  ];
+  private rozdzialy: Rozdzial[] = ROZDZIALY;
 
   constructor(private app: Kontekst) {
     this.gra = new EkranGry(app);
@@ -458,6 +184,7 @@ export class EkranSamouczka implements Ekran {
   private zacznijRozdzial(i: number): void {
     this.faza = 'lekcja';
     this.idx = i;
+    this.zwinieta = false;                   // nowy rozdział zawsze pokazuje się w całości
     const r = this.rozdzial;
     const g = this.gra;
     this.zrobiony = false;
@@ -546,6 +273,7 @@ export class EkranSamouczka implements Ekran {
   private zalicz(): void {
     if (this.zrobiony) return;
     this.zrobiony = true;
+    this.zwinieta = false;                   // „Dalej” musi być widać
     this.gra.wstrzymane = false;             // skutek ma być widoczny od razu
     this.gra.cel = null;
     this.blysk = 1;
@@ -753,6 +481,7 @@ export class EkranSamouczka implements Ekran {
    * zaliczeniu — co się stało i „Dalej". Siada w rogu płyty, który nie zasłania celu.
    */
   private rysujKarte(ctx: CanvasRenderingContext2D, w: number, teraz: number, cel: Pole | null): Pole {
+    if (this.zwinieta) return this.rysujPasek(ctx, w, teraz);
     const r = this.rozdzial;
     const p = this.gra.plate;
     const rozm = Math.max(15, Math.min(20, w / 62));
@@ -795,7 +524,7 @@ export class EkranSamouczka implements Ekran {
     }
     const karta = { x, y, w: szer, h: wys };
     this.pola.karta = karta;
-    ramaKarty(ctx, x, y, szer, wys, 1, `samouczek · rozdział ${this.idx + 1} z ${this.rozdzialy.length}`, true);
+    ramaKarty(ctx, x, y, szer, wys, 1, this.tytulKarty(szer), true);
     if (this.blysk > 0) {
       ctx.strokeStyle = rgba(BARWA.zarBlady, this.blysk * 0.9);
       ctx.lineWidth = 2;
@@ -915,8 +644,70 @@ export class EkranSamouczka implements Ekran {
     ctx.font = `italic ${Math.max(12, rozm * 0.66)}px ${SERIF}`;
     ctx.fillStyle = rgba(BARWA.atramentCichy, 0.55);
     ctx.fillText('esc — wyjście z samouczka', lx, y + wys - rozm * 0.45);
+    // zwiń — karta chowa się do paska, gdy zasłania płytę (póki krok nie jest zaliczony)
+    this.pola.zwin = null;
+    if (!this.zrobiony) {
+      // zakładka na górnej krawędzi, po prawej — nie wchodzi na przyciski na dole karty
+      ctx.font = `italic ${Math.max(12, rozm * 0.72)}px ${SERIF}`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      const t = 'zwiń ▴';
+      const tw = ctx.measureText(t).width;
+      const zx = x + szer - 14, zy = y;
+      ctx.fillStyle = rgba(BARWA.sadza, 1);
+      ctx.fillRect(zx - tw - 8, zy - rozm * 0.55, tw + 14, rozm * 1.1);
+      ctx.fillStyle = rgba(BARWA.zarBlady, 0.85);
+      ctx.fillText(t, zx, zy + 1);
+      ctx.textBaseline = 'alphabetic';
+      this.pola.zwin = { x: zx - tw - 10, y: zy - rozm * 0.8, w: tw + 18, h: rozm * 1.6 };
+    }
     ctx.restore();
     return karta;
+  }
+
+  /** Napis na zakładce karty — na wąskiej karcie krótszy, żeby zmieścił się obok „zwiń”. */
+  private tytulKarty(szer: number): string {
+    const r = `rozdział ${this.idx + 1} z ${this.rozdzialy.length}`;
+    return szer < 460 ? r : `samouczek · ${r}`;
+  }
+
+  /** Zwinięta karta: jeden pasek z bieżącą czynnością; dotknięcie rozwija. */
+  private rysujPasek(ctx: CanvasRenderingContext2D, w: number, teraz: number): Pole {
+    const p = this.gra.plate;
+    const rozm = Math.max(13, Math.min(17, w / 70));
+    const szer = p.waski ? p.w - 16 : Math.min(440, Math.max(300, p.w * 0.4));
+    const wys = rozm * 2.6;
+    const x = p.waski ? p.x + 8 : p.x + p.w - szer - 14;
+    const y = p.waski ? p.y + 38 : p.y + 14;
+    ramaKarty(ctx, x, y, szer, wys, 1, this.tytulKarty(szer), true);
+    const cur = this.biezacyEtap;
+    const tekst = cur >= 0 ? tekstZ(this.rozdzial.etapy[cur].tekst, this) : this.rozdzial.tytul;
+    ctx.save();
+    ctx.textBaseline = 'middle';
+    ctx.font = `italic ${rozm * 0.8}px ${SERIF}`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = rgba(BARWA.zarBlady, 0.85);
+    const roz = 'rozwiń ▾';
+    const rw = ctx.measureText(roz).width;
+    ctx.fillText(roz, x + szer - 14, y + wys / 2 + 1);
+    ctx.textAlign = 'left';
+    ctx.font = `${rozm}px ${SERIF}`;
+    let t = tekst;
+    const maxW = szer - 44 - rw;
+    while (ctx.measureText(t).width > maxW && t.length > 8) t = t.slice(0, -2);
+    if (t !== tekst) t += '…';
+    const drg = Math.sin(teraz * 0.008) * 2;
+    ctx.fillStyle = rgba(BARWA.zarBlady, 0.95);
+    ctx.beginPath();
+    ctx.moveTo(x + 14 + drg, y + wys / 2 - rozm * 0.3); ctx.lineTo(x + 14 + rozm * 0.5 + drg, y + wys / 2); ctx.lineTo(x + 14 + drg, y + wys / 2 + rozm * 0.3);
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = rgba(BARWA.atramentMocny, 0.97);
+    ctx.fillText(t, x + 20 + rozm * 0.6, y + wys / 2 + 1);
+    ctx.restore();
+    const pasek = { x, y, w: szer, h: wys };
+    this.pola.karta = pasek;
+    this.pola.dalej = null; this.pola.wstecz = null; this.pola.pomin = null; this.pola.zwin = null;
+    return pasek;
   }
 
   /** Ostatnia karta: co dalej — prawdziwa gra albo menu. */
@@ -976,6 +767,8 @@ export class EkranSamouczka implements Ekran {
       return;
     }
     if (faza === 'dol') {
+      if (this.zwinieta && wPolu(this.pola.karta, x, y)) { this.zwinieta = false; this.app.gesty.klik(); return; }
+      if (wPolu(this.pola.zwin ?? null, x, y)) { this.zwinieta = true; this.app.gesty.klik(); return; }
       if (wPolu(this.pola.dalej, x, y)) { if (this.zrobiony) this.dalej(); else this.rozumiem(); return; }
       if (wPolu(this.pola.wstecz, x, y)) { this.wstecz(); return; }
       if (wPolu(this.pola.pomin, x, y)) { this.dalej(); return; }

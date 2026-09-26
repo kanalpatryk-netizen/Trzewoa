@@ -1,8 +1,10 @@
 import type { Plate } from './plate';
 import type { Sim } from '../sim/sim';
-import { RACES } from '../sim/races';
+import { RACES, Race } from '../sim/races';
+import { PIELGRZYMKA } from '../nastawy/rytual';
 import { SERIF } from './ink';
 import { ramaKarty } from './ozdoby';
+import { miejsceKlepsydry } from './tempo';
 
 /**
  * Droga do wolności: pięć kroków do Uwolnienia w jednej linii na brzegu płyty.
@@ -34,24 +36,68 @@ export function krokiDrogi(sim: Sim): { kroki: KrokDrogi[]; biezacy: number } {
   return { kroki, biezacy: biezacy < 0 ? kroki.length - 1 : biezacy };
 }
 
+/** Co zrobić teraz, żeby przejść do następnego kroku — i gdzie (dla kamery). */
+export interface Teraz { tekst: string; cel?: { x: number; y: number; r: number; tekst: string } }
+
+export function terazDrogi(sim: Sim): Teraz {
+  const { kroki, biezacy } = krokiDrogi(sim);
+  const w = sim.world;
+  const przedsionek = { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'przedsionek' };
+  let najw: Sim['clans'][number] | null = null;
+  for (const k of sim.clans) {
+    if (k.dead || k.pop < PIELGRZYMKA.minNacja || RACES[k.race].faithGain <= 0) continue;
+    if (!najw || k.devotion > najw.devotion) najw = k;
+  }
+  const gniazdo = (k: Sim['clans'][number]) => ({ x: k.hx, y: k.hy, r: 5, tekst: k.name });
+  switch (kroki[biezacy]?.nazwa) {
+    case 'wiara': {
+      const lud = sim.clans.filter((k) => !k.dead && k.race === Race.GOBLIN && k.pop > 0).sort((a, b) => b.pop - a.pop)[0];
+      return { tekst: 'Zasiej rudę przy Ślepym Ludzie — postawią ołtarz i zaczną się modlić.', cel: lud ? gniazdo(lud) : undefined };
+    }
+    case 'oddanie':
+      return najw
+        ? { tekst: `Postaw Znak (objawienie) przy gnieździe: ${najw.name} — ${Math.round(najw.devotion * 100)}% z ${Math.round(PIELGRZYMKA.oddanieNacji * 100)}% oddania.`, cel: gniazdo(najw) }
+        : { tekst: 'Żadna nacja nie jest dość liczna, by w ciebie uwierzyć. Nakarm którąś.' };
+    case 'droga':
+      return sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku
+        ? { tekst: 'Zasiej grzyb przy przedsionku nad rdzeniem — z nim warta przeżyje na dole.', cel: przedsionek }
+        : { tekst: `${najw ? najw.name : 'Wierni'} ruszą pod rdzeń. Możesz wydrążyć im prostszą drogę.`, cel: przedsionek };
+    case 'skorupa':
+      return { tekst: `Wierni kują skorupę (${sim.rytual.pekniecia} pęknięć). Pilnuj grzybu przy przedsionku.`, cel: przedsionek };
+    default:
+      return { tekst: 'Skorupa otwarta — wierni schodzą do rdzenia.', cel: { x: w.coreX, y: w.coreY, r: 5, tekst: 'rdzeń' } };
+  }
+}
+
 /**
  * Rysuje drogę jako tor z pięcioma węzłami: zrobione są złote, bieżący pulsuje, dalsze
  * czekają puste. Pod węzłami nazwy kroków, nad wszystkim tytuł na zakładce ramki.
  * Zwraca prostokąt, w który można kliknąć (otwiera tablicę).
  */
-export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, teraz: number): { x: number; y: number; w: number; h: number } {
+export interface ObszarDrogi { x: number; y: number; w: number; h: number; linia: { x: number; y: number; w: number; h: number }; teraz: Teraz }
+
+export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, teraz: number): ObszarDrogi {
   const { kroki, biezacy } = krokiDrogi(sim);
   const rozm = p.waski ? 11 : Math.max(12, Math.min(14, p.w / 90));
-  const szer = p.waski ? Math.min(p.w - 70, 330) : Math.max(300, Math.min(440, p.w * 0.38));
-  const wys = rozm * 3.3;
-  const x0 = p.waski ? p.x + (p.w - szer) / 2 : p.x + 12;
+  // wąsko: od lewej krawędzi płyty do klepsydry w prawym górnym rogu — nie pod nią
+  const k = miejsceKlepsydry(p);
+  const szer = p.waski ? Math.min(k.x - k.s * 1.2 - (p.x + 8), 330) : Math.max(300, Math.min(440, p.w * 0.38));
+  // „teraz:” łamane do szerokości ramy — na telefonie zwykle w dwóch linijkach
+  const co = terazDrogi(sim);
+  ctx.save();
+  ctx.font = `italic ${rozm * 0.9}px ${SERIF}`;
+  const linieTeraz = lamLinie(ctx, `teraz: ${co.tekst}`, szer - 20).slice(0, 3);
+  ctx.restore();
+  const wysToru = rozm * 3.3;
+  const wys = wysToru + linieTeraz.length * rozm * 1.15 + rozm * 0.5;
+  const x0 = p.waski ? p.x + 8 : p.x + 12;
   // wąsko: pod progiem Znaku i klepsydrą, które zajmują górny pas płyty
   const y0 = p.waski ? p.y + 46 : p.y + 12;
   ramaKarty(ctx, x0, y0, szer, wys, 0.92, 'droga do wolności', true);
 
   const n = kroki.length;
   const lx0 = x0 + szer * 0.1, lx1 = x0 + szer * 0.9;
-  const ly = y0 + wys * 0.4;
+  const ly = y0 + wysToru * 0.4;
   const krok = (lx1 - lx0) / (n - 1);
   const puls = 0.5 + 0.5 * Math.sin(teraz * 0.004);
   ctx.save();
@@ -95,6 +141,39 @@ export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, si
     ctx.fillStyle = k.zrobiony ? 'rgba(236,200,140,0.8)' : i === biezacy ? `rgba(252,222,160,${0.85 + 0.15 * puls})` : 'rgba(170,158,138,0.55)';
     ctx.fillText(t, x, ly + rozm * 1.45, krok * 1.1);
   });
+  // co teraz — konkretna czynność; dotknięcie tej linii wiezie kamerę na miejsce
+  const yl = y0 + wysToru + rozm * 0.2;
+  ctx.strokeStyle = 'rgba(207,194,166,0.18)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(x0 + 10, yl - rozm * 0.75); ctx.lineTo(x0 + szer - 10, yl - rozm * 0.75); ctx.stroke();
+  ctx.textAlign = 'left';
+  ctx.font = `italic ${rozm * 0.9}px ${SERIF}`;
+  linieTeraz.forEach((l, i) => {
+    ctx.fillStyle = i === 0 ? 'rgba(244,226,190,0.95)' : 'rgba(232,214,180,0.9)';
+    ctx.fillText(l, x0 + 10, yl + i * rozm * 1.15);
+  });
+  if (co.cel) {
+    ctx.fillStyle = `rgba(252,212,140,${0.55 + 0.35 * puls})`;
+    ctx.textAlign = 'right';
+    ctx.font = `${rozm * 0.8}px ${SERIF}`;
+    ctx.fillText('pokaż ›', x0 + szer - 10, y0 + wys - rozm * 0.45);
+  }
   ctx.restore();
-  return { x: x0, y: y0 - rozm * 0.6, w: szer, h: wys + rozm * 0.6 };
+  return {
+    x: x0, y: y0 - rozm * 0.6, w: szer, h: wysToru + rozm * 0.6,
+    linia: { x: x0, y: y0 + wysToru - rozm * 0.4, w: szer, h: wys - wysToru + rozm * 0.4 },
+    teraz: co,
+  };
+}
+
+/** Tekst łamany na linijki o zadanej szerokości. */
+function lamLinie(ctx: CanvasRenderingContext2D, tekst: string, maxW: number): string[] {
+  const wynik: string[] = [];
+  let linia = '';
+  for (const s of tekst.split(' ')) {
+    const test = linia ? `${linia} ${s}` : s;
+    if (ctx.measureText(test).width > maxW && linia) { wynik.push(linia); linia = s; } else linia = test;
+  }
+  if (linia) wynik.push(linia);
+  return wynik;
 }

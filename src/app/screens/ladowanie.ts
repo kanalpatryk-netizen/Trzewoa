@@ -24,6 +24,8 @@ export class EkranLadowania implements Ekran {
   private start = 0;
   private koniecOd = 0;
   private blad = '';
+  /** Czy gracz już dotknął ekranu po załadowaniu (patrz LADOWANIE.czekajNaDotyk). */
+  private obudzony = !L.czekajNaDotyk || import.meta.env.DEV;
 
   constructor(private app: Kontekst, private etapy: Etap[], private potem: () => void) {}
 
@@ -35,7 +37,8 @@ export class EkranLadowania implements Ekran {
   krok(_dt: number, teraz: number): void {
     if (this.blad) return;
     if (this.zrobione >= this.etapy.length) {
-      // gotowe: nie znikamy szybciej niż minimalny czas i dajemy chwilę na wygaszenie
+      // gotowe: czekamy na dotknięcie, nie znikamy szybciej niż minimalny czas i dajemy chwilę na wygaszenie
+      if (!this.obudzony) return;
       if (!this.koniecOd) this.koniecOd = Math.max(teraz, this.start + L.minCzasMs);
       if (teraz >= this.koniecOd + L.wygaszenieMs) this.potem();
       return;
@@ -49,6 +52,17 @@ export class EkranLadowania implements Ekran {
       .then(() => e.zrob())
       .then(() => { this.zrobione++; this.pracuje = false; })
       .catch((err: unknown) => { this.blad = `${e.nazwa}: ${err instanceof Error ? err.message : String(err)}`; });
+  }
+
+  /** Dotknięcie po załadowaniu budzi grę (App przy okazji włącza dźwięk). */
+  dotyk(_e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
+    if (faza === 'dol') this.obudz();
+  }
+
+  klawisz(): void { this.obudz(); }
+
+  private obudz(): void {
+    if (this.zrobione >= this.etapy.length && !this.blad) this.obudzony = true;
   }
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
@@ -134,8 +148,10 @@ export class EkranLadowania implements Ekran {
     ctx.globalAlpha = alfa;
     ctx.textAlign = 'center';
     ctx.font = `italic ${rozm}px ${SERIF}`;
-    ctx.fillStyle = rgba(this.blad ? BARWA.krewJasna : BARWA.atrament, 0.9);
-    const napis = this.blad || (gotowe ? L.gotowe : `${this.biezacy}…`);
+    const czeka = gotowe && !this.obudzony && !this.blad;
+    const puls = czeka ? 0.8 + 0.2 * Math.sin(teraz * 0.004) : 0.9;
+    ctx.fillStyle = rgba(this.blad ? BARWA.krewJasna : czeka ? BARWA.zarBlady : BARWA.atrament, puls);
+    const napis = this.blad || (czeka ? L.dotknij : gotowe ? L.gotowe : `${this.biezacy}…`);
     const ny = Math.min(h - rozm * 3.6, dy + rozm * 1.8);
     ctx.fillText(napis, w / 2, ny, w * 0.86);
     ctx.font = `${rozm * 0.8}px ${SERIF}`;

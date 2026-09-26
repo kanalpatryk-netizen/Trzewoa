@@ -16,7 +16,7 @@ import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
-import { rysujDrogeDoWolnosci } from '../../render/droga';
+import { rysujDrogeDoWolnosci, type ObszarDrogi } from '../../render/droga';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
@@ -27,6 +27,7 @@ import { shape, seed, sign, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
 import { rysujRozkazy, rysujBanerPauzy, type PoleBanera } from '../../render/rozkazy';
 import { miejsceKlepsydry } from '../../render/tempo';
+import { zbierzObszaryHud, type ObszarHud } from '../obszary-hud';
 import { Straznik, type Alarm } from '../alarmy';
 import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { OknoAtlasu } from '../../atlas/okno';
@@ -35,7 +36,8 @@ import { tablica } from '../../atlas/tablice';
 import { Race } from '../../sim/races';
 import { Job } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
-import { ustawienia, ustaw } from '../../core/settings-store';
+import { ustawienia, ustaw, jakoscAuto } from '../../core/settings-store';
+import { StrazKlatek } from '../../render/straz-klatek';
 import { mikser } from '../../core/mikser';
 import type { Akcja } from '../../core/keybinds';
 import type { Ekran } from '../screen';
@@ -78,6 +80,8 @@ export class EkranGry implements Ekran {
   sim = new Sim((Math.random() * 1e9) | 0);
   cam = new Camera(1, 1);
   eng = new Engraver();
+  /** Pilnuje klatek w trybie jakości „auto” — przy zadyszce rycina tanieje. */
+  private straz = new StrazKlatek();
   private poswiata = new Poswiata();
   private tajemnica = new Tajemnica();
   /** Ile znaków pisma w skale było w ostatniej klatce — po nich odkrywa się ich tablica. */
@@ -119,7 +123,7 @@ export class EkranGry implements Ekran {
   /** Podpowiedź nad płytą jako odnośnik do miejsca, o którym mówi. */
   private radaRect: { x: number; y: number; w: number; h: number } | null = null;
   /** Linia „droga do wolności" na brzegu płyty — kliknięcie otwiera jej tablicę. */
-  private drogaRect: { x: number; y: number; w: number; h: number } | null = null;
+  private drogaRect: ObszarDrogi | null = null;
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
   private straznik = new Straznik();
   alarm: Alarm | null = null;
@@ -154,6 +158,7 @@ export class EkranGry implements Ekran {
 
   wejdz(dane?: unknown): void {
     this.pauza = false;
+    this.straz.zeruj();
     this.slad = null;
     if (ustawienia.tempo < 1) ustaw('tempo', 1);
     const tryb = (dane as { tryb?: string } | undefined)?.tryb;
@@ -480,6 +485,11 @@ export class EkranGry implements Ekran {
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     const { plate, cam, eng, sim } = this;
+    if (ustawienia.jakosc === 'auto' && !jakoscAuto.taniej && eng.scale === 1 && this.straz.klatka(teraz)) {
+      jakoscAuto.taniej = true;
+      eng.resize(plate.w, plate.h);
+      this.dirty = true;
+    }
     // Rycina jest najdroższa w klatce. Ruch kamery przerysowuje ją od razu (inaczej świat
     // odjeżdżałby spod postaci), a zmiany samego świata wystarczą trzydzieści razy na sekundę.
     const kameraRuszona = cam.x !== this.rysKam[0] || cam.y !== this.rysKam[1] || cam.zoom !== this.rysKam[2];
@@ -634,6 +644,14 @@ export class EkranGry implements Ekran {
       this.maxPrzewin = r.maxPrzewin;
     }
     this.atlas.rysuj(ctx, w, h, teraz);
+  }
+
+  /** Prostokąty interfejsu — dla automatycznego testu nakładania (narzędzie deweloperskie). */
+  obszaryHud(): ObszarHud[] {
+    return zbierzObszaryHud({
+      plate: this.plate, vh: this.app.h, ui: this.ui, przyciski: this.przyciski,
+      droga: this.drogaRect, rada: this.radaRect, menu: this.menuRect(),
+    });
   }
 
   /** Gdzie leży przycisk pod płytą — samouczek go wskazuje. */
@@ -818,6 +836,15 @@ export class EkranGry implements Ekran {
       }
       // linia drogi do wolności: tablica, która tłumaczy wszystkie kroki
       const dr = this.drogaRect;
+      // linia „teraz:” wiezie kamerę tam, gdzie trzeba działać
+      const dl = dr?.linia;
+      if (dr && dl && dr.teraz.cel && e.clientX >= dl.x && e.clientX <= dl.x + dl.w && e.clientY >= dl.y && e.clientY <= dl.y + dl.h) {
+        const c = dr.teraz.cel;
+        this.pokazMiejsce(c.x, c.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+        this.cel = c;
+        this.dirty = true;
+        return;
+      }
       if (dr && e.clientX >= dr.x && e.clientX <= dr.x + dr.w && e.clientY >= dr.y && e.clientY <= dr.y + dr.h) {
         odkrycia.odkryj('droga', false);
         this.atlas.otworzTablice('droga');

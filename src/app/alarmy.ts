@@ -1,5 +1,6 @@
 import type { Sim } from '../sim/sim';
 import { Race, RACES, odmien } from '../sim/races';
+import { RYTUAL } from '../nastawy/rytual';
 
 /** Sytuacja, przy której gra sama zatrzymuje czas i mówi, co możesz zrobić. */
 export interface Alarm {
@@ -54,7 +55,8 @@ export class Straznik {
     if (!alarm) return null;
     alarm.tablica = alarm.rodzaj.startsWith('wymiera-') ? `rasa-${alarm.rodzaj.slice(8)}`
       : alarm.rodzaj === 'dominacja' || alarm.rodzaj.startsWith('sen') ? 'sen'
-      : alarm.rodzaj === 'otwarta' || alarm.rodzaj === 'pekniecie' ? 'rdzen'
+      : alarm.rodzaj === 'otwarta' ? 'rdzen'
+      : alarm.rodzaj.startsWith('pekniecie') ? 'skorupa'
       : alarm.rodzaj.startsWith('przyplyw') ? 'przyplyw' : undefined;
     if (!alarm.kryzys && poziom !== 'wszystko') return null;
     if (this.wyciszone.has(alarm.rodzaj)) return null;
@@ -136,12 +138,16 @@ export class Straznik {
     if (sim.rytual.pekniecia > this.pekniec) {
       this.pekniec = sim.rytual.pekniecia;
       const w = sim.world;
+      const r = sim.rytual;
+      const potrzeba = Math.max(r.pekniecia + (r.otwarta ? 0 : 1), r.skorupa);
+      // pierwsze pęknięcie to kamień milowy partii — czas staje, żeby gracz to zobaczył
+      const pierwsze = r.pekniecia === 1;
       return {
-        rodzaj: 'pekniecie', kryzys: false,
-        tytul: 'Skorupa rdzenia pękła',
-        tekst: 'Modlitwa wiernych rozkuwa kamień, którego nie ruszy żaden kilof.',
-        rada: 'Zasiej grzyb przy przedsionku, żeby warta nie umarła z głodu.',
-        cel: { x: w.coreX + 0.5, y: w.coreY - 13.5, tekst: 'przedsionek' },
+        rodzaj: pierwsze ? 'pekniecie-pierwsze' : 'pekniecie', kryzys: pierwsze,
+        tytul: pierwsze ? 'Pierwsze pęknięcie skorupy' : `Skorupa pęka: ${r.pekniecia} z ${potrzeba}`,
+        tekst: `Modlitwa wiernych rozkuwa kamień, którego nie ruszy żaden kilof. Góra oddaje ci za to ${RYTUAL.nagrodaWiary} wiary.`,
+        rada: 'Pilnuj grzybu przy przedsionku, żeby warta nie umarła z głodu — i nie wpuszczaj pod rdzeń obcych.',
+        cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, tekst: 'przedsionek' },
       };
     }
     // 5. przypływ

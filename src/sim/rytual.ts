@@ -78,6 +78,8 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
       klan.rytual = 0;
       klan.pekniecia++;
       stan.pekniecia++;
+      // każde pęknięcie to nagroda: wiara, którą góra oddaje za wytrwałą wartę
+      sim.wiara += R.nagrodaWiary;
       stan.klan = id;                  // to ta nacja kuje; to jej ludzie wejdą do środka
       // Skorupa pęka od strony, z której się modlą. Wcześniej zawsze od góry, więc nacja
       // mieszkająca pod rdzeniem albo obok niego kruszyła kamień i nigdy nie mogła wejść.

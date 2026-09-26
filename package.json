@@ -11,7 +11,8 @@
     "test": "node scripts/test-swiata.mjs 100 && node scripts/test-skorupy.mjs",
     "test:swiat": "node scripts/test-swiata.mjs 100",
     "test:skorupa": "node scripts/test-skorupy.mjs",
-    "test:balans": "node scripts/test-balansu.mjs"
+    "test:balans": "node scripts/test-balansu.mjs",
+    "test:nakladanie": "node scripts/test-nakladania.mjs"
   },
   "devDependencies": {
     "typescript": "5.9.3",

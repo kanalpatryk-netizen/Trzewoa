@@ -49,6 +49,8 @@ export const RYTUAL = {
   kronikaPolowa: 0.55,
 
   // -------------------------------------------------------------- pęknięcia
+  /** Każde pęknięcie daje graczowi tyle Wiary. */
+  nagrodaWiary: 20,
   /** Pęknięcie schodzi kolumną w głąb aż do tylu kafli od rdzenia. */
   glebokoscPekniecia: 16,
   /** Kolejność kolumn przy kruszeniu: środek, potem boki. */

@@ -3,6 +3,7 @@ import { RACES, RACE_COUNT, Race, odmien } from '../sim/races';
 import { SERIF } from './overlay';
 import { ustawienia } from '../core/settings-store';
 import { lewaKrawedzPrzyciskow } from './przyciski';
+import { EKRAN } from '../nastawy/ekran';
 
 export interface Plate { x: number; y: number; w: number; h: number; left: number; bottom: number; right: number; top: number; waski: boolean; }
 
@@ -11,7 +12,9 @@ export interface Plate { x: number; y: number; w: number; h: number; left: numbe
  * jest górą — ryty, kronika, organy — leży na marginesie. Nic nie przykrywa skały.
  */
 export function computePlate(vw: number, vh: number): Plate {
-  const waski = vw < 700;                     // telefon w pionie: inny podział marginesów
+  // telefon w pionie (i tablet w pionie): inny podział marginesów — na szerokim układzie
+  // pod płytą brakowało miejsca na spis, Otchłań i osiem przycisków naraz
+  const waski = vw < EKRAN.waskiPonizej || (vw < EKRAN.pionowyTabletPonizej && vh > vw * EKRAN.pionowyOd);
   const left = waski ? 46 : Math.max(58, Math.min(104, vw * 0.075));
   const right = waski ? 20 : Math.max(58, Math.min(104, vw * 0.075));
   const top = Math.max(34, Math.min(72, vh * 0.07));
