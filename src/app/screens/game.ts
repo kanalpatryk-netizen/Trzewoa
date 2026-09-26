@@ -14,6 +14,7 @@ import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { rysujDrogeDoWolnosci } from '../../render/droga';
+import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
@@ -490,6 +491,7 @@ export class EkranGry implements Ekran {
     ctx.drawImage(eng.buf, 0, 0, cam.vw, cam.vh);
     this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.5);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
+    rysujRdzen(ctx, sim, cam, teraz);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
     // droga pielgrzymów: szkic tego, co trzeba wydrążyć, żeby wierni zeszli pod rdzeń

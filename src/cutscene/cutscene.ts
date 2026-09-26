@@ -20,8 +20,25 @@ export class Cutscenka {
   private znaki = 0;
   private koniecCb: (() => void) | null = null;
   private zamykanie = 0;
+  /** Kolejka scen: przerywnik to kilka plansz, a nie jedna. */
+  private kolejka: Scena[] = [];
+  private nr = 0;
+  private razem = 1;
+
+  /** Odtwarza kilka scen po kolei; `koniec` woła się po ostatniej albo po pominięciu. */
+  odtworzListe(sceny: Scena[], koniec: () => void): void {
+    this.kolejka = sceny.slice(1);
+    this.razem = sceny.length;
+    this.nr = 0;
+    this.pojedyncza(sceny[0], koniec);
+  }
 
   odtworz(scena: Scena, koniec: () => void): void {
+    this.kolejka = []; this.razem = 1; this.nr = 0;
+    this.pojedyncza(scena, koniec);
+  }
+
+  private pojedyncza(scena: Scena, koniec: () => void): void {
     this.scena = scena;
     this.koniecCb = koniec;
     this.start = performance.now();
@@ -38,6 +55,8 @@ export class Cutscenka {
       this.zamykanie += dt;
       if (this.zamykanie > 420) {
         const cb = this.koniecCb;
+        const nastepna = this.kolejka.shift();
+        if (nastepna && cb) { this.nr++; this.pojedyncza(nastepna, cb); return; }
         this.scena = null; this.koniecCb = null; this.zamykanie = 0;
         cb?.();
       }
@@ -63,6 +82,7 @@ export class Cutscenka {
 
   pomin(): void {
     if (!this.scena) return;
+    this.kolejka = [];
     this.zamykanie = 1;
   }
 
@@ -145,13 +165,29 @@ export class Cutscenka {
       lx += lw + odstepLiter;
     }
     naciecie(ctx, w / 2, h * 0.098, Math.min(420, Math.max(szer * 1.4, w * 0.3)), 0.35);
+    // która to plansza z ilu — rzymskimi, jak tablice w atlasie
+    if (this.razem > 1) {
+      const RZ = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'];
+      ctx.font = `italic ${Math.max(12, w / 90)}px ${SERIF}`;
+      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.7);
+      ctx.fillText(`plansza ${RZ[this.nr] ?? this.nr + 1} z ${RZ[this.razem - 1] ?? this.razem}`, w / 2, h * 0.03);
+    }
 
     // narracja
     const maxW = Math.min(760, w * 0.76);
     const rozmiar = Math.max(16, Math.min(26, w / 42));
     ctx.font = `${rozmiar}px ${SERIF}`;
     let y = h * 0.64;
-    for (let i = 0; i <= this.widoczneLinie && i < s.linie.length; i++) {
+    // gdy wszystkie linijki się nie mieszczą (telefon), znikają najstarsze — bieżąca
+    // musi być widać cała
+    let od = 0;
+    const wys = (i: number) => linieAkapitu(ctx, s.linie[i], maxW) * rozmiar * 1.45 + rozmiar * 0.5;
+    let suma = 0;
+    for (let i = Math.min(this.widoczneLinie, s.linie.length - 1); i >= 0; i--) {
+      suma += wys(i);
+      if (y + suma > h * 0.94) { od = i + 1; break; }
+    }
+    for (let i = od; i <= this.widoczneLinie && i < s.linie.length; i++) {
       const pelna = s.linie[i];
       const tekst = i === this.widoczneLinie ? pelna.slice(0, Math.floor(this.znaki)) : pelna;
       ctx.fillStyle = rgba(i === this.widoczneLinie ? BARWA.atramentMocny : BARWA.atrament, i === this.widoczneLinie ? 0.96 : 0.6);
@@ -159,12 +195,11 @@ export class Cutscenka {
       y += n * rozmiar * 1.45 + rozmiar * 0.5;
       if (y > h * 0.94) break;
     }
-    void linieAkapitu;
 
     ctx.font = `italic ${Math.max(12, w / 82)}px ${SERIF}`;
     ctx.fillStyle = rgba(BARWA.atramentCichy, 0.45 + 0.2 * Math.sin(teraz * 0.003));
     ctx.textAlign = 'center';
-    ctx.fillText('dotknij, żeby czytać dalej  ·  P albo esc pomija', w / 2, h * 0.975);
+    ctx.fillText(this.razem > 1 ? 'dotknij, żeby czytać dalej  ·  P albo esc pomija cały wstęp' : 'dotknij, żeby czytać dalej  ·  P albo esc pomija', w / 2, h * 0.975);
     ctx.restore();
   }
 }
