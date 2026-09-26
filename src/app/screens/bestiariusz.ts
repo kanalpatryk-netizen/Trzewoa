@@ -3,6 +3,10 @@ import type { Kontekst } from '../context';
 import type { Akcja } from '../../core/keybinds';
 import { tloSadzy } from '../../render/ink';
 import { OknoAtlasu } from '../../atlas/okno';
+import { Tajemnica } from '../../render/tajemnica';
+import { ramaRyciny } from '../../render/ozdoby';
+import { odkrycia } from '../../atlas/odkrycia';
+import { TABLICE } from '../../atlas/tablice';
 
 /**
  * Atlas z menu: te same tablice, co w grze — tylko te, które już odkryłeś.
@@ -15,6 +19,7 @@ export class EkranBestiariusza implements Ekran {
   private ostatniY = 0;
   private przeciaga = false;
   private strona = '';
+  private tajemnica = new Tajemnica();
 
   constructor(private app: Kontekst) {}
 
@@ -28,7 +33,10 @@ export class EkranBestiariusza implements Ekran {
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     tloSadzy(ctx, w, h, teraz);
+    this.tajemnica.brzegi(ctx, { x: 0, y: 0, w, h }, 0.5 + 0.5 * Math.sin(teraz * 0.0006));
+    this.okno.margines = Math.max(12, Math.min(34, w * 0.024)) + 18;
     this.okno.rysuj(ctx, w, h, teraz, false);
+    ramaRyciny(ctx, w, h, 1, w < 700 ? 'Atlas' : 'Atlas trzewi · tablice ras, rytów i praw góry', w < 700 ? `odkryte ${odkrycia.ile} z ${TABLICE.length}` : `odkryte ${odkrycia.ile} z ${TABLICE.length} · kółko przewija · esc zamyka`);
   }
 
   kolko(e: WheelEvent): void { this.okno.kolko(e.deltaY * 0.7); }

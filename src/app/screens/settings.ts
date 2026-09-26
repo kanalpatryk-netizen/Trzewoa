@@ -3,7 +3,9 @@ import type { Kontekst } from '../context';
 import { AKCJE, klawisze, nazwaKlawisza, przypisz, przywrocDomyslne, type Akcja } from '../../core/keybinds';
 import { ustawienia, ustaw, DOMYSLNE, zapiszUstawienia } from '../../core/settings-store';
 import { BARWA, rgba } from '../../render/palette';
-import { SERIF, SERIF_TYTUL, tloSadzy, tytulRyty, naciecie, kreska } from '../../render/ink';
+import { SERIF, tloSadzy, kreska } from '../../render/ink';
+import { Tajemnica } from '../../render/tajemnica';
+import { ramaRyciny, kartusz, naglowekDzialu } from '../../render/ozdoby';
 
 type Wiersz =
   | { typ: 'naglowek'; tekst: string }
@@ -11,7 +13,7 @@ type Wiersz =
   | { typ: 'suwak'; etykieta: string; opis: string; min: number; max: number; krok: number; czytaj: () => number; zmien: (v: number) => void; format: (v: number) => string }
   | { typ: 'wybor'; etykieta: string; opis: string; opcje: string[]; czytaj: () => string; zmien: (v: string) => void }
   | { typ: 'klawisz'; akcja: Akcja; etykieta: string; opis: string }
-  | { typ: 'akcja'; etykieta: string; opis: string; wykonaj: () => void };
+  | { typ: 'akcja'; etykieta: string; opis: string; wykonaj: () => void; przycisk?: string };
 
 /** Ustawienia: dźwięk, obraz, świat i pełna lista sterowania z możliwością przypisania. */
 export class EkranUstawien implements Ekran {
@@ -22,9 +24,12 @@ export class EkranUstawien implements Ekran {
   private czekamNa: Akcja | null = null;
   private trafienia: { x: number; y: number; w: number; h: number; i: number; strefa?: 'minus' | 'plus' }[] = [];
   private wysokoscListy = 0;
+  private dlSuwaka = 86;
   private maxPrzewin = 0;
   /** Położenie każdego wiersza na liście — strzałki trzymają zaznaczenie w widoku. */
   private pozycjeWierszy: { y: number; h: number }[] = [];
+  private tajemnica = new Tajemnica();
+  private blysk = { i: -1, od: 0 };
 
   constructor(private app: Kontekst) { this.zbuduj(); }
 
@@ -61,10 +66,10 @@ export class EkranUstawien implements Ekran {
 
       { typ: 'naglowek', tekst: 'Sterowanie' },
       ...AKCJE.map((a) => ({ typ: 'klawisz' as const, akcja: a.akcja, etykieta: a.nazwa, opis: a.opis })),
-      { typ: 'akcja', etykieta: 'Przywróć domyślne klawisze', opis: 'wraca do układu z pierwszego uruchomienia', wykonaj: () => przywrocDomyslne() },
-      { typ: 'akcja', etykieta: 'Przywróć domyślne ustawienia', opis: 'dźwięk, obraz i świat od nowa', wykonaj: () => { Object.assign(ustawienia, DOMYSLNE, { samouczekZrobiony: ustawienia.samouczekZrobiony }); zapiszUstawienia(); } },
+      { typ: 'akcja', etykieta: 'Przywróć domyślne klawisze', opis: 'wraca do układu z pierwszego uruchomienia', wykonaj: () => przywrocDomyslne(), przycisk: 'przywróć' },
+      { typ: 'akcja', etykieta: 'Przywróć domyślne ustawienia', opis: 'dźwięk, obraz i świat od nowa', wykonaj: () => { Object.assign(ustawienia, DOMYSLNE, { samouczekZrobiony: ustawienia.samouczekZrobiony }); zapiszUstawienia(); }, przycisk: 'przywróć' },
 
-      { typ: 'akcja', etykieta: 'Samouczek od nowa', opis: 'odblokowuje podpowiedź w menu i pozwala przejść wszystko jeszcze raz', wykonaj: () => ustaw('samouczekZrobiony', false) },
+      { typ: 'akcja', etykieta: 'Samouczek od nowa', opis: 'odblokowuje podpowiedź w menu i pozwala przejść wszystko jeszcze raz', wykonaj: () => ustaw('samouczekZrobiony', false), przycisk: 'od nowa' },
 
       { typ: 'naglowek', tekst: 'Mysz i dotyk' },
       { typ: 'akcja', etykieta: 'Przeciągnięcie', opis: 'przesuwa kamerę; przy wybranym czasowniku maluje', wykonaj: () => {} },
@@ -80,34 +85,40 @@ export class EkranUstawien implements Ekran {
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     tloSadzy(ctx, w, h, teraz);
-    tytulRyty(ctx, 'USTAWIENIA', w / 2, h * 0.1, Math.max(26, Math.min(48, w / 22)), 1);
-    naciecie(ctx, w / 2, h * 0.125, Math.min(420, w * 0.42), 0.3);
+    this.tajemnica.brzegi(ctx, { x: 0, y: 0, w, h }, 0.5 + 0.5 * Math.sin(teraz * 0.0006));
+    const m = Math.max(12, Math.min(34, w * 0.024)) + 14;
+    const rt = Math.max(24, Math.min(44, w / 26));
+    kartusz(ctx, w / 2, m + rt * 1.15, 'USTAWIENIA', rt, 1);
 
-    const gora = h * 0.17;
-    const dol = h * 0.92;
+    const gora = m + rt * 2.2;
+    const dol = h - m - 6;
     this.wysokoscListy = dol - gora;
-    const szer = Math.min(880, w * 0.86);
+    const szer = Math.min(880, w - m * 2 - 36);
     const x = (w - szer) / 2;
 
     ctx.save();
     ctx.beginPath();
-    ctx.rect(x - 20, gora - 10, szer + 40, this.wysokoscListy + 20);
+    ctx.rect(x - 20, gora - 10, szer + 40, this.wysokoscListy + 16);
     ctx.clip();
 
     this.trafienia = [];
     this.pozycjeWierszy = [];
     let y = gora - this.przewiniecie;
     const podstawa = Math.max(15, Math.min(19, w / 62));
+    this.dlSuwaka = szer < 480 ? 58 : 86;
+    let dzial = 0;
 
     for (let i = 0; i < this.wiersze.length; i++) {
       const wiersz = this.wiersze[i];
-      const wysokosc = wiersz.typ === 'naglowek' ? podstawa * 3.1 : podstawa * 3.05;
+      const linie = wiersz.typ === 'naglowek' ? 1 : this.linieOpisu(ctx, wiersz, szer, podstawa).length;
+      const wysokosc = wiersz.typ === 'naglowek' ? podstawa * 3.1 : podstawa * (3.05 + (linie - 1) * 0.85);
       this.pozycjeWierszy.push({ y: y + this.przewiniecie - gora, h: wysokosc });
-      if (y + wysokosc > gora - 40 && y < dol + 40) this.rysujWiersz(ctx, wiersz, x, y, szer, podstawa, i === this.wybrany, teraz);
+      if (wiersz.typ === 'naglowek') dzial++;
+      if (y + wysokosc > gora - 40 && y < dol + 40) this.rysujWiersz(ctx, wiersz, x, y, szer, podstawa, i === this.wybrany, teraz, dzial, i);
       if (wiersz.typ !== 'naglowek') {
         this.trafienia.push({ x, y, w: szer, h: wysokosc, i });
         if (wiersz.typ === 'suwak') {
-          this.trafienia.push({ x: x + szer - 96, y, w: 40, h: wysokosc, i, strefa: 'minus' });
+          this.trafienia.push({ x: x + szer - this.dlSuwaka - 64, y, w: 40, h: wysokosc, i, strefa: 'minus' });
           this.trafienia.push({ x: x + szer - 40, y, w: 40, h: wysokosc, i, strefa: 'plus' });
         }
       }
@@ -118,91 +129,212 @@ export class EkranUstawien implements Ekran {
     this.maxPrzewin = Math.max(0, calkowita - this.wysokoscListy + podstawa);
     if (this.przewiniecie > this.maxPrzewin) this.przewiniecie = this.maxPrzewin;
 
-    // pasek przewijania jako rysa w kamieniu
+    // pasek przewijania: rysa w kamieniu z romboidalnym uchwytem
     if (calkowita > this.wysokoscListy) {
       const t = this.przewiniecie / (calkowita - this.wysokoscListy);
       const dl = Math.max(40, this.wysokoscListy * (this.wysokoscListy / calkowita));
-      ctx.strokeStyle = rgba(BARWA.atrament, 0.35);
+      const sx = Math.min(x + szer + 26, w - m - 2), sy = gora + t * (this.wysokoscListy - dl);
+      ctx.strokeStyle = rgba(BARWA.atrament, 0.15);
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(sx, gora); ctx.lineTo(sx, gora + this.wysokoscListy); ctx.stroke();
+      ctx.strokeStyle = rgba(BARWA.zarBlady, 0.5);
       ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy + dl); ctx.stroke();
+      ctx.fillStyle = rgba(BARWA.zarBlady, 0.8);
+      ctx.beginPath(); ctx.moveTo(sx, sy + dl / 2 - 5); ctx.lineTo(sx + 4, sy + dl / 2); ctx.lineTo(sx, sy + dl / 2 + 5); ctx.lineTo(sx - 4, sy + dl / 2); ctx.closePath(); ctx.fill();
+    }
+
+    ramaRyciny(ctx, w, h, 1, w < 700 ? '' : 'Ustawienia · jak góra ma śnić',
+      this.czekamNa ? 'naciśnij klawisz, który ma to robić · esc anuluje' : (w < 700 ? 'esc wraca' : 'P albo esc wraca do menu · kółko przewija'));
+  }
+
+  private rysujWiersz(ctx: CanvasRenderingContext2D, wiersz: Wiersz, x: number, y: number, szer: number, podstawa: number, wybrany: boolean, teraz: number, dzial: number, i: number): void {
+    if (wiersz.typ === 'naglowek') {
+      naglowekDzialu(ctx, wiersz.tekst, x, y + podstawa * 1.75, szer, podstawa * 0.95, 1, 200 + dzial * 13);
+      return;
+    }
+    const srodek = y + podstawa * 1.55;
+    const linie = this.linieOpisu(ctx, wiersz, szer, podstawa);
+    const wys = podstawa * (3 + (linie.length - 1) * 0.85);
+    // kropkowana linia pod wierszem, jak w spisie treści
+    ctx.fillStyle = rgba(BARWA.atrament, 0.12);
+    for (let dx = 0; dx < szer; dx += 6) ctx.fillRect(x + dx, y + wys - 1, 1.2, 1.2);
+    if (wybrany) {
+      const g = ctx.createLinearGradient(x - 14, 0, x + szer + 14, 0);
+      g.addColorStop(0, 'rgba(60,42,30,0.55)');
+      g.addColorStop(1, 'rgba(60,42,30,0.08)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x - 14, y + 3, szer + 28, wys - podstawa * 0.15);
+      // klamry po bokach, jak zaznaczenie rylcem na marginesie
+      ctx.strokeStyle = rgba(BARWA.zarBlady, 0.75);
+      ctx.lineWidth = 1.2;
+      const t0 = y + 5, t1 = y + wys - podstawa * 0.15;
       ctx.beginPath();
-      ctx.moveTo(x + szer + 26, gora + t * (this.wysokoscListy - dl));
-      ctx.lineTo(x + szer + 26, gora + t * (this.wysokoscListy - dl) + dl);
+      ctx.moveTo(x - 6, t0); ctx.lineTo(x - 12, t0); ctx.lineTo(x - 12, t1); ctx.lineTo(x - 6, t1);
+      ctx.moveTo(x + szer + 6, t0); ctx.lineTo(x + szer + 12, t0); ctx.lineTo(x + szer + 12, t1); ctx.lineTo(x + szer + 6, t1);
       ctx.stroke();
     }
 
-    ctx.textAlign = 'center';
-    ctx.font = `italic ${Math.max(14, w / 86)}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.atramentCichy, 0.5);
-    ctx.fillText(this.czekamNa ? 'naciśnij klawisz, który ma to robić — esc anuluje' : 'P albo esc wraca do menu · kółko przewija', w / 2, h * 0.965);
-  }
-
-  private rysujWiersz(ctx: CanvasRenderingContext2D, wiersz: Wiersz, x: number, y: number, szer: number, podstawa: number, wybrany: boolean, teraz: number): void {
-    if (wiersz.typ === 'naglowek') {
-      ctx.textAlign = 'left';
-      ctx.font = `600 ${podstawa * 1.0}px ${SERIF_TYTUL}`;
-      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.9);
-      ctx.fillText(wiersz.tekst.toUpperCase(), x, y + podstawa * 2);
-      ctx.strokeStyle = rgba(BARWA.atrament, 0.22);
-      ctx.lineWidth = 1;
-      kreska(ctx, x + ctx.measureText(wiersz.tekst.toUpperCase()).width + 16, y + podstawa * 1.7, x + szer, y + podstawa * 1.7, 0.7, 20);
-      return;
-    }
-
-    if (wybrany) {
-      ctx.fillStyle = rgba('#1c1513', 0.75);
-      ctx.fillRect(x - 12, y + 2, szer + 24, podstawa * 2.9);
-      ctx.strokeStyle = rgba(BARWA.zarBlady, 0.35);
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x - 12, y + 2, szer + 24, podstawa * 2.9);
-    }
-
     ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
     ctx.font = `${podstawa}px ${SERIF}`;
     ctx.fillStyle = rgba(wybrany ? BARWA.atramentMocny : BARWA.atrament, 0.95);
     ctx.fillText(wiersz.etykieta, x, y + podstawa * 1.35);
     ctx.font = `italic ${podstawa * 0.72}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.atramentCichy, 0.72);
-    ctx.fillText(wiersz.opis, x, y + podstawa * 2.45);
+    ctx.fillStyle = rgba(BARWA.atramentCichy, 0.75);
+    linie.forEach((l, k) => ctx.fillText(l, x, y + podstawa * (2.45 + k * 0.85)));
 
-    ctx.textAlign = 'right';
-    ctx.font = `${podstawa}px ${SERIF}`;
     const px = x + szer;
+    const swiezy = this.blysk.i === i ? Math.max(0, 1 - (teraz - this.blysk.od) / 500) : 0;
+    ctx.textBaseline = 'middle';
 
     if (wiersz.typ === 'przelacznik') {
+      // „nie · tak": aktywne słowo w owalu, drugie ledwie widoczne
       const on = wiersz.czytaj();
-      ctx.fillStyle = rgba(on ? BARWA.zarBlady : BARWA.atramentCichy, on ? 0.95 : 0.6);
-      ctx.fillText(on ? 'tak' : 'nie', px, y + podstawa * 1.8);
+      ctx.font = `${podstawa * 0.95}px ${SERIF}`;
+      ctx.textAlign = 'right';
+      const tw = ctx.measureText('tak').width, nw = ctx.measureText('nie').width;
+      const xTak = px, xNie = px - tw - podstawa * 1.3;
+      const owal = (cx: number, szerokosc: number) => {
+        ctx.strokeStyle = rgba(BARWA.zarBlady, 0.7 + 0.3 * swiezy);
+        ctx.lineWidth = 1.1;
+        ctx.beginPath();
+        ctx.ellipse(cx, srodek, szerokosc / 2 + podstawa * 0.45, podstawa * 0.62, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      };
+      if (on) owal(xTak - tw / 2, tw); else owal(xNie - nw / 2, nw);
+      ctx.fillStyle = rgba(on ? BARWA.zarBlady : BARWA.atramentCichy, on ? 1 : 0.35);
+      ctx.fillText('tak', xTak, srodek);
+      ctx.fillStyle = rgba(!on ? BARWA.atramentMocny : BARWA.atramentCichy, !on ? 0.95 : 0.35);
+      ctx.fillText('nie', xNie, srodek);
+      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.4);
+      ctx.fillText('·', xNie + podstawa * 0.62, srodek);
     } else if (wiersz.typ === 'suwak') {
+      // linijka z podziałką: każda kreska to jeden krok, romb to wartość
       const v = wiersz.czytaj();
       const t = (v - wiersz.min) / (wiersz.max - wiersz.min);
-      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.8);
-      ctx.fillText('–', px - 96, y + podstawa * 1.8);
-      ctx.fillText('+', px - 6, y + podstawa * 1.8);
-      const sx = px - 84, sw = 68;
-      ctx.strokeStyle = rgba(BARWA.atrament, 0.35);
+      const sw = this.dlSuwaka, sx = px - 32 - sw;
+      const kolko = (cx: number, znak: string) => {
+        ctx.strokeStyle = rgba(BARWA.atrament, 0.45);
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, srodek - podstawa * 0.1, podstawa * 0.55, 0, Math.PI * 2); ctx.stroke();
+        ctx.textAlign = 'center';
+        ctx.font = `${podstawa * 0.9}px ${SERIF}`;
+        ctx.fillStyle = rgba(BARWA.atrament, 0.8);
+        ctx.fillText(znak, cx, srodek - podstawa * 0.12);
+      };
+      kolko(sx - 18, '−');
+      kolko(px - 12, '+');
+      const ly = srodek - podstawa * 0.1;
+      ctx.strokeStyle = rgba(BARWA.atrament, 0.45);
       ctx.lineWidth = 1;
-      kreska(ctx, sx, y + podstawa * 1.55, sx + sw, y + podstawa * 1.55, 0.6, 16);
-      ctx.fillStyle = rgba(BARWA.zarBlady, 0.9);
-      ctx.beginPath();
-      ctx.arc(sx + sw * t, y + podstawa * 1.55, 4, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.beginPath(); ctx.moveTo(sx, ly); ctx.lineTo(sx + sw, ly);
+      const kroki = Math.max(1, Math.round((wiersz.max - wiersz.min) / wiersz.krok));
+      const co = kroki > 20 ? Math.ceil(kroki / 10) : 1;
+      for (let k = 0; k <= kroki; k += co) {
+        const kx = sx + (k / kroki) * sw;
+        const dl = k === 0 || k === kroki ? 5 : 3;
+        ctx.moveTo(kx, ly - dl); ctx.lineTo(kx, ly + dl);
+      }
+      ctx.stroke();
+      // wypełnienie do wartości — złota kreska
+      ctx.strokeStyle = rgba(BARWA.zarBlady, 0.7);
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(sx, ly); ctx.lineTo(sx + sw * t, ly); ctx.stroke();
+      const mx = sx + sw * t;
+      ctx.fillStyle = rgba(BARWA.zarBlady, 1);
+      const r = 5 + 2 * swiezy;
+      ctx.beginPath(); ctx.moveTo(mx, ly - r); ctx.lineTo(mx + r * 0.8, ly); ctx.lineTo(mx, ly + r); ctx.lineTo(mx - r * 0.8, ly); ctx.closePath(); ctx.fill();
       ctx.textAlign = 'center';
-      ctx.font = `${podstawa * 0.78}px ${SERIF}`;
-      ctx.fillStyle = rgba(BARWA.atrament, 0.85);
-      ctx.fillText(wiersz.format(v), sx + sw / 2, y + podstawa * 2.6);
+      ctx.font = `${podstawa * 0.74}px ${SERIF}`;
+      ctx.fillStyle = rgba(BARWA.atrament, 0.9);
+      ctx.fillText(wiersz.format(v), sx + sw / 2, ly + podstawa * 0.95);
     } else if (wiersz.typ === 'wybor') {
-      ctx.fillStyle = rgba(BARWA.zarBlady, 0.9);
-      ctx.fillText(wiersz.czytaj(), px, y + podstawa * 1.8);
+      // „‹ wartość ›" — strzałki mówią, że się to przełącza
+      ctx.font = `${podstawa * 0.95}px ${SERIF}`;
+      ctx.textAlign = 'right';
+      const val = wiersz.czytaj();
+      const vw = ctx.measureText(val).width;
+      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.7);
+      ctx.fillText('›', px, srodek);
+      ctx.fillStyle = rgba(BARWA.zarBlady, 0.95);
+      ctx.fillText(val, px - podstawa * 1.1, srodek);
+      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.7);
+      ctx.fillText('‹', px - podstawa * 1.9 - vw, srodek);
+      // kropki: ile opcji i która wybrana
+      const n = wiersz.opcje.length, idx = wiersz.opcje.indexOf(val);
+      for (let k = 0; k < n; k++) {
+        ctx.fillStyle = k === idx ? rgba(BARWA.zarBlady, 0.9) : rgba(BARWA.atramentCichy, 0.35);
+        ctx.beginPath(); ctx.arc(px - podstawa * 1.1 - vw / 2 + (k - (n - 1) / 2) * 7, srodek + podstawa * 0.85, k === idx ? 2 : 1.4, 0, Math.PI * 2); ctx.fill();
+      }
     } else if (wiersz.typ === 'klawisz') {
+      // klawisz jak klawisz: wypukła tabliczka z nazwą
       const czeka = this.czekamNa === wiersz.akcja;
-      ctx.fillStyle = rgba(czeka ? BARWA.zar : BARWA.atramentMocny, czeka ? 0.75 + 0.25 * Math.sin(teraz * 0.008) : 0.9);
-      ctx.fillText(czeka ? '…' : nazwaKlawisza(klawisze[wiersz.akcja]), px, y + podstawa * 1.8);
+      const tekst = czeka ? '…' : nazwaKlawisza(klawisze[wiersz.akcja]);
+      ctx.font = `${podstawa * 0.85}px ${SERIF}`;
+      const kw = Math.max(podstawa * 1.8, ctx.measureText(tekst).width + podstawa * 1.1), kh = podstawa * 1.55;
+      const kx = px - kw, ky = srodek - kh / 2;
+      ctx.fillStyle = czeka ? 'rgba(80,40,20,0.8)' : 'rgba(34,26,22,0.95)';
+      ctx.fillRect(kx, ky, kw, kh);
+      ctx.strokeStyle = rgba(czeka ? BARWA.zar : BARWA.atrament, czeka ? 0.6 + 0.4 * Math.sin(teraz * 0.008) : 0.55);
+      ctx.lineWidth = 1;
+      ctx.strokeRect(kx + 0.5, ky + 0.5, kw - 1, kh - 1);
+      ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+      ctx.beginPath(); ctx.moveTo(kx + 1, ky + kh + 1.5); ctx.lineTo(kx + kw + 1, ky + kh + 1.5); ctx.lineTo(kx + kw + 1, ky + 1); ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = rgba(czeka ? BARWA.zar : BARWA.atramentMocny, 0.95);
+      ctx.fillText(tekst, kx + kw / 2, srodek + 1);
+    } else if (wiersz.typ === 'akcja' && wiersz.przycisk) {
+      // przycisk: słowo w nawiasach rylca, rozjaśnia się po kliknięciu
+      ctx.font = `italic ${podstawa * 0.9}px ${SERIF}`;
+      ctx.textAlign = 'right';
+      const tekst = wiersz.przycisk;
+      const bw = ctx.measureText(tekst).width;
+      ctx.fillStyle = rgba(BARWA.zarBlady, 0.85 + 0.15 * swiezy);
+      ctx.fillText(tekst, px - 10, srodek);
+      ctx.strokeStyle = rgba(BARWA.zarBlady, 0.5 + 0.5 * swiezy);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px - bw - 14, srodek - podstawa * 0.6); ctx.lineTo(px - bw - 20, srodek - podstawa * 0.6); ctx.lineTo(px - bw - 20, srodek + podstawa * 0.6); ctx.lineTo(px - bw - 14, srodek + podstawa * 0.6);
+      ctx.moveTo(px - 4, srodek - podstawa * 0.6); ctx.lineTo(px + 2, srodek - podstawa * 0.6); ctx.lineTo(px + 2, srodek + podstawa * 0.6); ctx.lineTo(px - 4, srodek + podstawa * 0.6);
+      ctx.stroke();
     }
+    ctx.textBaseline = 'alphabetic';
+    void kreska;
+  }
+
+  /** Ile miejsca po prawej zajmuje kontrolka wiersza — opis nie może w nią wejść. */
+  private szerKontrolki(ctx: CanvasRenderingContext2D, wiersz: Wiersz, podstawa: number): number {
+    if (wiersz.typ === 'suwak') return this.dlSuwaka + 64;
+    if (wiersz.typ === 'przelacznik') return podstawa * 4.4;
+    if (wiersz.typ === 'klawisz') return podstawa * 4;
+    ctx.font = `${podstawa * 0.95}px ${SERIF}`;
+    if (wiersz.typ === 'wybor') return Math.max(...wiersz.opcje.map((o) => ctx.measureText(o).width)) + podstawa * 2.6;
+    if (wiersz.typ === 'akcja' && wiersz.przycisk) return ctx.measureText(wiersz.przycisk).width + 30;
+    return 0;
+  }
+
+  /** Opis złamany do szerokości obok kontrolki; na szerokim ekranie to prawie zawsze jedna linijka. */
+  private linieOpisu(ctx: CanvasRenderingContext2D, wiersz: Wiersz, szer: number, podstawa: number): string[] {
+    if (wiersz.typ === 'naglowek') return [];
+    const dost = Math.max(80, szer - this.szerKontrolki(ctx, wiersz, podstawa) - 12);
+    ctx.font = `italic ${podstawa * 0.72}px ${SERIF}`;
+    const wynik: string[] = [];
+    let biezaca = '';
+    for (const slowo of wiersz.opis.split(' ')) {
+      const proba = biezaca ? biezaca + ' ' + slowo : slowo;
+      if (biezaca && ctx.measureText(proba).width > dost) { wynik.push(biezaca); biezaca = slowo; }
+      else biezaca = proba;
+    }
+    if (biezaca) wynik.push(biezaca);
+    return wynik;
   }
 
   private zmien(i: number, kierunek: number): void {
     const wiersz = this.wiersze[i];
     if (!wiersz) return;
+    this.blysk = { i, od: performance.now() };
+    this.app.gesty.klik();
     if (wiersz.typ === 'przelacznik') wiersz.zmien(!wiersz.czytaj());
     else if (wiersz.typ === 'suwak') {
       const v = Math.min(wiersz.max, Math.max(wiersz.min, +(wiersz.czytaj() + kierunek * wiersz.krok).toFixed(3)));

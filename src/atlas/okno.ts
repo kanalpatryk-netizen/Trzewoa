@@ -1,7 +1,8 @@
 import { tablica, TABLICE } from './tablice';
 import { odkrycia } from './odkrycia';
 import { rysujTablice, rysujAtlas, wPolu, type PoleTablicy } from '../render/tablica';
-import { SERIF, SERIF_TYTUL } from '../render/ink';
+import { SERIF } from '../render/ink';
+import { kartusz } from '../render/ozdoby';
 import { BARWA, rgba } from '../render/palette';
 
 /**
@@ -18,6 +19,8 @@ export class OknoAtlasu {
   private kursor = { x: -1, y: -1 };
   /** Z atlasu do tablicy i z powrotem — „wstecz" wraca tam, skąd przyszedłeś. */
   private zAtlasu = false;
+  /** Odstęp od brzegu ekranu — w menu okno stoi w ozdobnej ramie i nie może na nią wchodzić. */
+  margines = 16;
 
   get otwarte(): boolean { return this.tryb !== 'zamkniete'; }
 
@@ -41,10 +44,10 @@ export class OknoAtlasu {
     const rozm = Math.max(14, Math.min(18, w / 60));
     if (this.tryb === 'tablica') {
       const t = tablica(this.id)!;
-      const tw = Math.min(470, w - 24);
-      const gora = this.nowa ? rozm * 3.2 : rozm * 2.4;
+      const tw = Math.min(470, w - Math.max(24, this.margines * 2));
+      const gora = (this.nowa ? rozm * 3.2 : rozm * 2.4) + Math.max(0, this.margines - 16);
       const x = (w - tw) / 2, y = Math.max(8, gora);
-      const th = rysujTablice(ctx, t, x, y, tw, h - y - 12, teraz);
+      const th = rysujTablice(ctx, t, x, y, tw, h - y - Math.max(12, this.margines), teraz);
       void th;
       if (this.nowa) {
         ctx.font = `${rozm * 0.85}px ${SERIF}`;
@@ -67,17 +70,26 @@ export class OknoAtlasu {
       this.pola.push({ akcja: 'zamknij', x: x + tw - zw - 6, y: ly - rozm, w: zw + 12, h: rozm * 1.5 });
       this.pola.push({ akcja: 'tlo-tablicy', x, y, w: tw, h: h - y });
     } else {
-      const aw = Math.min(900, w - 32);
+      const aw = Math.min(900, w - this.margines * 2);
       const x = (w - aw) / 2;
-      const y = rozm * 4.2;
+      const gora = this.margines + rozm * 0.6;
+      const rt = Math.max(24, Math.min(44, w / 24));
+      kartusz(ctx, w / 2, gora + rt * 1.05, 'ATLAS', rt, 1);
+      // postęp: kreska z kropką na każdą tablicę, zapełnione — odkryte
+      const py = gora + rt * 1.7;
+      const n = TABLICE.length, pw = Math.min(aw * 0.6, n * 14);
+      for (let i = 0; i < n; i++) {
+        const px = w / 2 - pw / 2 + (i + 0.5) * (pw / n);
+        const zna = odkrycia.zna(TABLICE[i].id);
+        ctx.fillStyle = zna ? rgba(BARWA.zarBlady, 0.9) : rgba(BARWA.atramentCichy, 0.3);
+        ctx.beginPath(); ctx.arc(px, py, zna ? 2.4 : 1.6, 0, Math.PI * 2); ctx.fill();
+      }
       ctx.textAlign = 'center';
-      ctx.font = `600 ${Math.max(22, Math.min(38, w / 26))}px ${SERIF_TYTUL}`;
-      ctx.fillStyle = rgba(BARWA.atramentMocny, 0.95);
-      ctx.fillText('A T L A S', w / 2, rozm * 2.2);
       ctx.font = `italic ${rozm * 0.85}px ${SERIF}`;
       ctx.fillStyle = rgba(BARWA.atramentCichy, 0.9);
-      ctx.fillText(`odkryte ${odkrycia.ile} z ${TABLICE.length} tablic — resztę znajdziesz w górze`, w / 2, rozm * 3.3);
-      const r = rysujAtlas(ctx, x, y, aw, h - y - rozm * 2, this.przewin, teraz, this.kursor);
+      ctx.fillText(`odkryte ${odkrycia.ile} z ${TABLICE.length} tablic — resztę znajdziesz w górze`, w / 2, py + rozm * 1.3);
+      const y = py + rozm * 2;
+      const r = rysujAtlas(ctx, x, y, aw, h - y - (this.margines > 16 ? this.margines : rozm * 2), this.przewin, teraz, this.kursor);
       this.maxPrzewin = r.maxPrzewin;
       this.przewin = Math.min(this.przewin, this.maxPrzewin);
       this.pola.push(...r.pola.map((p) => ({ ...p, akcja: 'tab:' + p.akcja })));
@@ -85,12 +97,13 @@ export class OknoAtlasu {
       ctx.fillStyle = rgba(BARWA.atrament, 0.9);
       ctx.textAlign = 'right';
       const zam = 'zamknij ×';
-      ctx.fillText(zam, x + aw, rozm * 2.2);
+      ctx.fillText(zam, x + aw, gora + rozm * 1.2);
       const zw = ctx.measureText(zam).width;
-      this.pola.push({ akcja: 'zamknij', x: x + aw - zw - 6, y: rozm * 1.2, w: zw + 12, h: rozm * 1.5 });
+      this.pola.push({ akcja: 'zamknij', x: x + aw - zw - 6, y: gora + rozm * 0.2, w: zw + 12, h: rozm * 1.5 });
       ctx.textAlign = 'center';
       ctx.fillStyle = rgba(BARWA.atramentCichy, 0.6);
-      ctx.fillText('kółko albo przeciągnięcie przewija · esc zamyka', w / 2, h - rozm * 0.7);
+      // w ramie menu ta sama podpowiedź stoi na dolnym marginesie ramy
+      if (this.margines <= 16) ctx.fillText('kółko albo przeciągnięcie przewija · esc zamyka', w / 2, h - rozm * 0.7);
     }
     ctx.restore();
   }

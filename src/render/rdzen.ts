@@ -18,8 +18,7 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
   if (sx < -zasieg || sy < -zasieg || sx > cam.vw + zasieg || sy > cam.vh + zasieg) return;
   const r = sim.rytual;
   // tętno: podwójne uderzenie, jak serce — „bum-bum", pauza
-  const f = (teraz % 1600) / 1600;
-  const uderz = Math.max(0, 1 - Math.abs(f - 0.08) * 14) + 0.7 * Math.max(0, 1 - Math.abs(f - 0.26) * 14);
+  const uderz = tetnoRdzenia(teraz);
   const otwarta = r.otwarta;
 
   ctx.save();
@@ -92,48 +91,7 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
 
   // --- serce z kamienia: ośmiokąt ciosany, żyły i jasny środek
   const R = Math.max(13, z * 3) * (1 + 0.06 * uderz);
-  const kanty = new Path2D();
-  for (let i = 0; i < 8; i++) {
-    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
-    const rr = R * (i % 2 ? 0.92 : 1);
-    if (i === 0) kanty.moveTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr);
-    else kanty.lineTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr);
-  }
-  kanty.closePath();
-  const wnetrze = ctx.createRadialGradient(sx - R * 0.25, sy - R * 0.3, R * 0.05, sx, sy, R);
-  wnetrze.addColorStop(0, otwarta ? '#fff0c8' : '#ffd2a6');
-  wnetrze.addColorStop(0.3, otwarta ? '#f2a04a' : '#e2553c');
-  wnetrze.addColorStop(0.75, '#7a1618');
-  wnetrze.addColorStop(1, '#2a0808');
-  ctx.fillStyle = wnetrze;
-  ctx.fill(kanty);
-  // żyły: kilka pękniętych linii od środka, jaśniejące z uderzeniem
-  ctx.save();
-  ctx.clip(kanty);
-  ctx.strokeStyle = `rgba(255,214,160,${0.35 + 0.45 * uderz})`;
-  ctx.lineWidth = Math.max(1, R * 0.06);
-  ctx.beginPath();
-  for (let i = 0; i < 7; i++) {
-    const a = i * 0.9 + 0.4;
-    let x = sx, y = sy;
-    ctx.moveTo(x, y);
-    for (let k = 1; k <= 3; k++) {
-      x = sx + Math.cos(a + Math.sin(i * 3 + k) * 0.35) * R * k / 3;
-      y = sy + Math.sin(a + Math.sin(i * 3 + k) * 0.35) * R * k / 3;
-      ctx.lineTo(x, y);
-    }
-  }
-  ctx.stroke();
-  // kreska ryciny na kuli — cień po prawej stronie
-  ctx.strokeStyle = 'rgba(20,4,4,0.35)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let d = -R; d < R; d += Math.max(2.2, R * 0.12)) { ctx.moveTo(sx + d, sy + R); ctx.lineTo(sx + d + R, sy); }
-  ctx.stroke();
-  ctx.restore();
-  ctx.strokeStyle = 'rgba(255,220,180,0.85)';
-  ctx.lineWidth = Math.max(1.2, R * 0.07);
-  ctx.stroke(kanty);
+  rysujSerce(ctx, sx, sy, R, uderz, otwarta);
 
   // --- wieniec: tyle ogniw, ile pęknięć trzeba; zapalone = pęknięte
   const potrzeba = Math.max(1, Math.max(r.skorupa, r.pekniecia + (otwarta ? 0 : 1)));
@@ -178,4 +136,57 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
     ctx.fillText(tekst, sx, ty);
   }
   ctx.restore();
+}
+
+/** Tętno rdzenia 0..1: podwójne uderzenie „bum-bum" i pauza, wspólne dla gry i menu. */
+export function tetnoRdzenia(teraz: number): number {
+  const f = (teraz % 1600) / 1600;
+  return Math.max(0, 1 - Math.abs(f - 0.08) * 14) + 0.7 * Math.max(0, 1 - Math.abs(f - 0.26) * 14);
+}
+
+/** Serce z kamienia: ciosany ośmiokąt, żyły, kreska cienia i jasne obrzeże. */
+export function rysujSerce(ctx: CanvasRenderingContext2D, sx: number, sy: number, R: number, uderz: number, otwarta: boolean): void {
+  const kanty = new Path2D();
+  for (let i = 0; i < 8; i++) {
+    const a = (i / 8) * Math.PI * 2 + Math.PI / 8;
+    const rr = R * (i % 2 ? 0.92 : 1);
+    if (i === 0) kanty.moveTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr);
+    else kanty.lineTo(sx + Math.cos(a) * rr, sy + Math.sin(a) * rr);
+  }
+  kanty.closePath();
+  const wnetrze = ctx.createRadialGradient(sx - R * 0.25, sy - R * 0.3, R * 0.05, sx, sy, R);
+  wnetrze.addColorStop(0, otwarta ? '#fff0c8' : '#ffd2a6');
+  wnetrze.addColorStop(0.3, otwarta ? '#f2a04a' : '#e2553c');
+  wnetrze.addColorStop(0.75, '#7a1618');
+  wnetrze.addColorStop(1, '#2a0808');
+  ctx.fillStyle = wnetrze;
+  ctx.fill(kanty);
+  // żyły: kilka pękniętych linii od środka, jaśniejące z uderzeniem
+  ctx.save();
+  ctx.clip(kanty);
+  ctx.strokeStyle = `rgba(255,214,160,${0.35 + 0.45 * uderz})`;
+  ctx.lineWidth = Math.max(1, R * 0.06);
+  ctx.beginPath();
+  for (let i = 0; i < 7; i++) {
+    const a = i * 0.9 + 0.4;
+    let x = sx, y = sy;
+    ctx.moveTo(x, y);
+    for (let k = 1; k <= 3; k++) {
+      x = sx + Math.cos(a + Math.sin(i * 3 + k) * 0.35) * R * k / 3;
+      y = sy + Math.sin(a + Math.sin(i * 3 + k) * 0.35) * R * k / 3;
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
+  // kreska ryciny na kuli — cień po prawej stronie
+  ctx.strokeStyle = 'rgba(20,4,4,0.35)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for (let d = -R; d < R; d += Math.max(2.2, R * 0.12)) { ctx.moveTo(sx + d, sy + R); ctx.lineTo(sx + d + R, sy); }
+  ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,220,180,0.85)';
+  ctx.lineWidth = Math.max(1.2, R * 0.07);
+  ctx.stroke(kanty);
+
 }

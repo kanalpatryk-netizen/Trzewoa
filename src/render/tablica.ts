@@ -3,6 +3,8 @@ import { odkrycia } from '../atlas/odkrycia';
 import { SERIF, SERIF_TYTUL, akapit, linieAkapitu, naciecie } from './ink';
 import { BARWA, rgba } from './palette';
 import { kreskuj } from '../cutscene/art/common';
+import { naglowekDzialu } from './ozdoby';
+import { glif } from './tajemnica';
 
 export interface PoleTablicy { akcja: string; x: number; y: number; w: number; h: number }
 export const wPolu = (p: PoleTablicy, x: number, y: number): boolean =>
@@ -151,33 +153,88 @@ function miniatura(t: Tablica, w: number, h: number): HTMLCanvasElement {
 function malaTablica(ctx: CanvasRenderingContext2D, t: Tablica, x: number, y: number, w: number, h: number, zaznaczona: boolean, teraz: number): void {
   const znana = odkrycia.zna(t.id);
   const rozm = Math.max(12, Math.min(16, w / 9));
+  const nr = TABLICE.indexOf(t) + 1;
+  ctx.save();
+  // wskazana plansza unosi się o włos i dostaje cień — jak kartka wyjęta z teczki
+  if (zaznaczona && znana) {
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetY = 4;
+    y -= 3;
+  }
   rama(ctx, x, y, w, h, zaznaczona ? 1.3 : 0.8);
+  ctx.shadowColor = 'transparent';
+  // odcisk płyty: jasna krawędź u góry i z lewej, ciemna u dołu i z prawej
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(236,220,190,0.12)';
+  ctx.beginPath(); ctx.moveTo(x + 2.5, y + h - 2.5); ctx.lineTo(x + 2.5, y + 2.5); ctx.lineTo(x + w - 2.5, y + 2.5); ctx.stroke();
+  ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+  ctx.beginPath(); ctx.moveTo(x + w - 2.5, y + 2.5); ctx.lineTo(x + w - 2.5, y + h - 2.5); ctx.lineTo(x + 2.5, y + h - 2.5); ctx.stroke();
   const ax = x + 12, ay = y + 12, aw = w - 24, ah = h - 24 - rozm * 1.8;
   if (znana) {
     ctx.drawImage(miniatura(t, aw, ah), ax, ay, aw, ah);
     ctx.strokeStyle = rgba(BARWA.atrament, 0.45);
     ctx.strokeRect(ax + 0.5, ay + 0.5, aw - 1, ah - 1);
+    // numer tablicy w małej tabliczce w rogu ryciny
+    const num = `${rzymska(nr)}`;
+    ctx.font = `${Math.max(9, rozm * 0.62)}px ${SERIF}`;
+    const nw = ctx.measureText(num).width + 8;
+    ctx.fillStyle = 'rgba(14,10,9,0.9)';
+    ctx.fillRect(ax + 3, ay + 3, nw, rozm * 0.9);
+    ctx.strokeStyle = rgba(BARWA.atrament, 0.4);
+    ctx.strokeRect(ax + 3.5, ay + 3.5, nw - 1, rozm * 0.9 - 1);
+    ctx.fillStyle = rgba(BARWA.atrament, 0.85);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(num, ax + 3 + nw / 2, ay + 3 + rozm * 0.46);
+    ctx.textBaseline = 'alphabetic';
   } else {
-    // nieodkryta: zatarta plansza, na której ledwie widać znak zapytania
+    // zapieczętowana: zatarta plansza z woskową pieczęcią, na której jest cudzy znak
     const p = new Path2D();
     p.rect(ax, ay, aw, ah);
     ctx.fillStyle = 'rgba(20,15,13,1)';
     ctx.fill(p);
-    kreskuj(ctx, p, 0.8, 4, rgba(BARWA.atrament, 0.12), 1);
-    ctx.font = `italic ${ah * 0.45}px ${SERIF}`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = rgba(BARWA.atramentCichy, 0.35 + 0.1 * Math.sin(teraz * 0.002 + x));
-    ctx.fillText('?', ax + aw / 2, ay + ah * 0.66);
+    kreskuj(ctx, p, 0.8, 4, rgba(BARWA.atrament, 0.1), 1);
+    kreskuj(ctx, p, -0.8, 7, rgba(BARWA.atrament, 0.05), 1);
+    const px = ax + aw / 2, py = ay + ah / 2, pr = Math.min(aw, ah) * 0.22;
+    const puls = 0.85 + 0.15 * Math.sin(teraz * 0.002 + x * 0.01);
+    ctx.beginPath();
+    for (let i = 0; i <= 16; i++) {
+      const a = (i / 16) * Math.PI * 2;
+      const rr = pr * (1 + 0.08 * Math.sin(i * 2.7 + nr));
+      if (i === 0) ctx.moveTo(px + Math.cos(a) * rr, py + Math.sin(a) * rr); else ctx.lineTo(px + Math.cos(a) * rr, py + Math.sin(a) * rr);
+    }
+    ctx.closePath();
+    const wosk = ctx.createRadialGradient(px - pr * 0.3, py - pr * 0.3, pr * 0.1, px, py, pr);
+    wosk.addColorStop(0, `rgba(170,50,40,${0.9 * puls})`);
+    wosk.addColorStop(1, `rgba(80,16,14,${0.95 * puls})`);
+    ctx.fillStyle = wosk;
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(40,6,6,0.8)';
+    ctx.stroke();
+    ctx.save();
+    ctx.translate(px, py);
+    ctx.scale(pr * 0.5, pr * 0.5);
+    ctx.lineWidth = 1.4 / (pr * 0.5);
+    ctx.strokeStyle = 'rgba(255,190,160,0.55)';
+    ctx.stroke(glif(40 + nr * 7, 1));
+    ctx.restore();
   }
   ctx.font = `${rozm}px ${SERIF}`;
   ctx.textAlign = 'center';
-  ctx.fillStyle = znana ? rgba(BARWA.atramentMocny, zaznaczona ? 1 : 0.88) : rgba(BARWA.atramentCichy, 0.6);
-  ctx.fillText(znana ? t.nazwa : 'nieodkryta', x + w / 2, y + h - 12 - rozm * 0.25);
-  if (zaznaczona) {
-    ctx.strokeStyle = rgba(BARWA.zarBlady, 0.8);
+  ctx.fillStyle = znana ? rgba(BARWA.atramentMocny, zaznaczona ? 1 : 0.88) : rgba(BARWA.atramentCichy, 0.55);
+  ctx.fillText(znana ? t.nazwa : `Tab. ${rzymska(nr)}`, x + w / 2, y + h - 12 - rozm * 0.25);
+  if (zaznaczona && znana) {
+    ctx.strokeStyle = rgba(BARWA.zarBlady, 0.85);
     ctx.lineWidth = 1.5;
-    ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+    const n = Math.min(16, w * 0.14);
+    ctx.beginPath();
+    for (const [cx, cy, sx, sy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]] as [number, number, number, number][]) {
+      ctx.moveTo(cx + sx * 1, cy + sy * n); ctx.lineTo(cx + sx * 1, cy + sy * 1); ctx.lineTo(cx + sx * n, cy + sy * 1);
+    }
+    ctx.stroke();
   }
+  ctx.restore();
 }
 
 /**
@@ -197,18 +254,13 @@ export function rysujAtlas(
   ctx.rect(x - 4, y, w + 8, h);
   ctx.clip();
   let yy = y - przewin;
-  for (const g of ['rasy', 'ryty', 'zasoby', 'prawa'] as Grupa[]) {
+  const grupy = ['rasy', 'ryty', 'zasoby', 'prawa'] as Grupa[];
+  for (const g of grupy) {
     const lista = TABLICE.filter((t) => t.grupa === g);
     const znane = lista.filter((t) => odkrycia.zna(t.id)).length;
     yy += rozm * 1.4;
-    ctx.font = `${rozm * 0.8}px ${SERIF}`;
-    ctx.textAlign = 'left';
-    ctx.fillStyle = rgba(BARWA.zarBlady, 0.9);
-    ctx.fillText(NAZWY_GRUP[g].toUpperCase().split('').join(' '), x, yy);
-    ctx.textAlign = 'right';
-    ctx.fillStyle = rgba(BARWA.atramentCichy, 0.8);
-    ctx.fillText(`${znane} z ${lista.length}`, x + w, yy);
-    yy += rozm * 0.7;
+    naglowekDzialu(ctx, NAZWY_GRUP[g], x, yy - rozm * 0.3, w, rozm * 0.8, 1, 60 + grupy.indexOf(g) * 11, `${znane} z ${lista.length}`);
+    yy += rozm * 0.9;
     for (let i = 0; i < lista.length; i++) {
       const tx = x + (i % kol) * (tw + odstep);
       const ty = yy + Math.floor(i / kol) * (th + odstep);
