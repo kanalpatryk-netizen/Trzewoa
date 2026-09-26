@@ -3,6 +3,7 @@ import { RACES } from './races';
 import { PASSABLE, T } from './tiles';
 import { WORLD_W, WORLD_H } from './world';
 import { wolny, stoi, uchwyt, nadOgniem } from './droga';
+import { PLAN_DROGI } from '../nastawy/rytual';
 
 /**
  * Droga pielgrzymów: którędy najwierniejsza nacja zejdzie pod rdzeń i — co ważniejsze —
@@ -23,7 +24,7 @@ export interface PlanDrogi {
   kopac: number[];
 }
 
-const KOSZT_SKALY = 6;
+const KOSZT_SKALY = PLAN_DROGI.kosztSkaly;
 const K = KOSZT_SKALY + 1;
 const N = WORLD_W * WORLD_H;
 const odl = new Int32Array(N);
@@ -47,7 +48,8 @@ export function planujDroge(sim: Sim, klanId: number): PlanDrogi | null {
     odl[j] = d; skad[j] = od;
     kubly[d % K].push(j); zostalo++;
   };
-  for (let y = w.coreY - 16; y <= w.coreY - 12; y++) {
+  // start: środek przedsionka ± 2 kafle w pionie i ± 4 w poziomie
+  for (let y = w.przedsionekY - 2; y <= w.przedsionekY + 2; y++) {
     for (let x = w.coreX - 4; x <= w.coreX + 4; x++) {
       if (!w.inb(x, y)) continue;
       const i = w.idx(x, y);
@@ -122,7 +124,7 @@ export function planujDroge(sim: Sim, klanId: number): PlanDrogi | null {
 export function najwierniejsza(sim: Sim): Sim['clans'][number] | null {
   let best: Sim['clans'][number] | null = null;
   for (const k of sim.clans) {
-    if (k.dead || k.pop < 8 || RACES[k.race].faithGain <= 0) continue;
+    if (k.dead || k.pop < PLAN_DROGI.minNacja || RACES[k.race].faithGain <= 0) continue;
     if (!best || k.devotion > best.devotion) best = k;
   }
   return best;
@@ -135,9 +137,9 @@ export function najwierniejsza(sim: Sim): Sim['clans'][number] | null {
 export function aktualnyPlan(sim: Sim): PlanDrogi | null {
   const klan = najwierniejsza(sim);
   // plan rusza, gdy nacja jest gotowa na pielgrzymkę — wcześniej drążenie tylko psuło gniazda
-  if (!klan || klan.devotion < 0.6 || klan.pop < 8 || sim.rytual.otwarta) { sim.planDrogi = null; return null; }
+  if (!klan || klan.devotion < PLAN_DROGI.oddanieNacji || klan.pop < PLAN_DROGI.minNacja || sim.rytual.otwarta) { sim.planDrogi = null; return null; }
   const stary = sim.planDrogi;
-  if (stary && stary.klan === klan.id && sim.tick - stary.tick < 600) {
+  if (stary && stary.klan === klan.id && sim.tick - stary.tick < PLAN_DROGI.odswiezCo) {
     stary.kopac = stary.kopac.filter((i) => doKopania(sim.world.tile[i]));
     return stary;
   }

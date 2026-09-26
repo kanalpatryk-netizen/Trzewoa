@@ -5,6 +5,7 @@ import { BARWA, rgba } from './palette';
 import { kreskuj } from '../cutscene/art/common';
 import { naglowekDzialu } from './ozdoby';
 import { glif } from './tajemnica';
+import { ATLAS, MINIATURA as MN, TABLICA as TB } from '../nastawy/wyglad/atlas';
 
 export interface PoleTablicy { akcja: string; x: number; y: number; w: number; h: number }
 export const wPolu = (p: PoleTablicy, x: number, y: number): boolean =>
@@ -60,7 +61,7 @@ function rycina(ctx: CanvasRenderingContext2D, t: Tablica, x: number, y: number,
 function tytul(ctx: CanvasRenderingContext2D, tekst: string, cx: number, y: number, rozm: number): void {
   ctx.font = `600 ${rozm}px ${SERIF_TYTUL}`;
   const litery = [...tekst.toUpperCase()];
-  const odstep = rozm * 0.14;
+  const odstep = rozm * TB.rozstrzelenie;
   const szer = litery.reduce((a, l) => a + ctx.measureText(l).width, 0) + odstep * (litery.length - 1);
   let lx = cx - szer / 2;
   ctx.textAlign = 'center';
@@ -76,15 +77,15 @@ function tytul(ctx: CanvasRenderingContext2D, tekst: string, cx: number, y: numb
  * i koszt. Zwraca wysokość, jakiej potrzebowała — okno dopasowuje się do treści.
  */
 export function rysujTablice(ctx: CanvasRenderingContext2D, t: Tablica, x: number, y: number, w: number, maxH: number, teraz: number): number {
-  const rozm = Math.max(14, Math.min(19, w / 24));
+  const rozm = Math.max(TB.rozmiar.min, Math.min(TB.rozmiar.max, w / 24));
   const wew = w - 48;
   ctx.save();
   ctx.font = `${rozm}px ${SERIF}`;
   const lOpis = linieAkapitu(ctx, t.opis, wew);
   ctx.font = `italic ${rozm * 0.95}px ${SERIF}`;
   const lKiedy = linieAkapitu(ctx, t.kiedy, wew - rozm * 1.4);
-  const tekstH = rozm * 4.2 + lOpis * rozm * 1.3 + rozm * 0.9 + lKiedy * rozm * 1.25 + (t.koszt ? rozm * 1.6 : 0) + rozm * 1.2;
-  const rycH = Math.max(120, Math.min(w * 0.62, maxH - tekstH - 40));
+  const tekstH = rozm * 4.2 + lOpis * rozm * TB.interlinia + rozm * 0.9 + lKiedy * rozm * TB.interliniaKiedy + (t.koszt ? rozm * 1.6 : 0) + rozm * 1.2;
+  const rycH = Math.max(TB.rycinaMin, Math.min(w * TB.rycinaMax, maxH - tekstH - 40));
   const h = rycH + tekstH + 40;
   rama(ctx, x, y, w, h);
 
@@ -100,7 +101,7 @@ export function rysujTablice(ctx: CanvasRenderingContext2D, t: Tablica, x: numbe
   rycina(ctx, t, x + 18, y + 36, w - 36, rycH, teraz);
   let yy = y + 36 + rycH + rozm * 1.9;
   ctx.fillStyle = rgba(BARWA.atramentMocny, 0.97);
-  tytul(ctx, t.nazwa, x + w / 2, yy, rozm * 1.35);
+  tytul(ctx, t.nazwa, x + w / 2, yy, rozm * TB.tytul);
   yy += rozm * 1.15;
   ctx.font = `italic ${rozm * 0.85}px ${SERIF}`;
   ctx.fillStyle = rgba(BARWA.zarBlady, 0.85);
@@ -110,8 +111,8 @@ export function rysujTablice(ctx: CanvasRenderingContext2D, t: Tablica, x: numbe
   yy += rozm * 1.6;
   ctx.font = `${rozm}px ${SERIF}`;
   ctx.fillStyle = rgba(BARWA.atrament, 0.92);
-  akapit(ctx, t.opis, x + 24, yy, wew, rozm * 1.3);
-  yy += lOpis * rozm * 1.3 + rozm * 0.5;
+  akapit(ctx, t.opis, x + 24, yy, wew, rozm * TB.interlinia);
+  yy += lOpis * rozm * TB.interlinia + rozm * 0.5;
   // kiedy tego użyć — to jest to zdanie, po które gracz otwiera tablicę
   ctx.fillStyle = rgba(BARWA.zarBlady, 0.95);
   ctx.beginPath();
@@ -119,8 +120,8 @@ export function rysujTablice(ctx: CanvasRenderingContext2D, t: Tablica, x: numbe
   ctx.closePath(); ctx.fill();
   ctx.font = `italic ${rozm * 0.95}px ${SERIF}`;
   ctx.fillStyle = rgba(BARWA.atramentMocny, 0.95);
-  akapit(ctx, t.kiedy, x + 24 + rozm * 1.2, yy, wew - rozm * 1.2, rozm * 1.25);
-  yy += lKiedy * rozm * 1.25;
+  akapit(ctx, t.kiedy, x + 24 + rozm * 1.2, yy, wew - rozm * 1.2, rozm * TB.interliniaKiedy);
+  yy += lKiedy * rozm * TB.interliniaKiedy;
   if (t.koszt) {
     yy += rozm * 0.4;
     ctx.font = `${rozm * 0.82}px ${SERIF}`;
@@ -157,12 +158,12 @@ function malaTablica(ctx: CanvasRenderingContext2D, t: Tablica, x: number, y: nu
   ctx.save();
   // wskazana plansza unosi się o włos i dostaje cień — jak kartka wyjęta z teczki
   if (zaznaczona && znana) {
-    ctx.shadowColor = 'rgba(0,0,0,0.7)';
-    ctx.shadowBlur = 14;
-    ctx.shadowOffsetY = 4;
-    y -= 3;
+    ctx.shadowColor = `rgba(0,0,0,${MN.cienAlfa})`;
+    ctx.shadowBlur = MN.cien;
+    ctx.shadowOffsetY = MN.cienY;
+    y -= MN.uniesienie;
   }
-  rama(ctx, x, y, w, h, zaznaczona ? 1.3 : 0.8);
+  rama(ctx, x, y, w, h, zaznaczona ? MN.ramaWskazana : MN.ramaZwykla);
   ctx.shadowColor = 'transparent';
   // odcisk płyty: jasna krawędź u góry i z lewej, ciemna u dołu i z prawej
   ctx.lineWidth = 1;
@@ -196,8 +197,8 @@ function malaTablica(ctx: CanvasRenderingContext2D, t: Tablica, x: number, y: nu
     ctx.fill(p);
     kreskuj(ctx, p, 0.8, 4, rgba(BARWA.atrament, 0.1), 1);
     kreskuj(ctx, p, -0.8, 7, rgba(BARWA.atrament, 0.05), 1);
-    const px = ax + aw / 2, py = ay + ah / 2, pr = Math.min(aw, ah) * 0.22;
-    const puls = 0.85 + 0.15 * Math.sin(teraz * 0.002 + x * 0.01);
+    const px = ax + aw / 2, py = ay + ah / 2, pr = Math.min(aw, ah) * MN.pieczec;
+    const puls = (1 - MN.puls) + MN.puls * Math.sin(teraz * 0.002 + x * 0.01);
     ctx.beginPath();
     for (let i = 0; i <= 16; i++) {
       const a = (i / 16) * Math.PI * 2;
@@ -206,8 +207,8 @@ function malaTablica(ctx: CanvasRenderingContext2D, t: Tablica, x: number, y: nu
     }
     ctx.closePath();
     const wosk = ctx.createRadialGradient(px - pr * 0.3, py - pr * 0.3, pr * 0.1, px, py, pr);
-    wosk.addColorStop(0, `rgba(170,50,40,${0.9 * puls})`);
-    wosk.addColorStop(1, `rgba(80,16,14,${0.95 * puls})`);
+    wosk.addColorStop(0, `rgba(${MN.woskJasny},${0.9 * puls})`);
+    wosk.addColorStop(1, `rgba(${MN.woskCiemny},${0.95 * puls})`);
     ctx.fillStyle = wosk;
     ctx.fill();
     ctx.strokeStyle = 'rgba(40,6,6,0.8)';
@@ -225,8 +226,8 @@ function malaTablica(ctx: CanvasRenderingContext2D, t: Tablica, x: number, y: nu
   ctx.fillStyle = znana ? rgba(BARWA.atramentMocny, zaznaczona ? 1 : 0.88) : rgba(BARWA.atramentCichy, 0.55);
   ctx.fillText(znana ? t.nazwa : `Tab. ${rzymska(nr)}`, x + w / 2, y + h - 12 - rozm * 0.25);
   if (zaznaczona && znana) {
-    ctx.strokeStyle = rgba(BARWA.zarBlady, 0.85);
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = rgba(BARWA.zarBlady, MN.naroznikAlfa);
+    ctx.lineWidth = MN.naroznikGrubosc;
     const n = Math.min(16, w * 0.14);
     ctx.beginPath();
     for (const [cx, cy, sx, sy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]] as [number, number, number, number][]) {
@@ -245,16 +246,16 @@ export function rysujAtlas(
   ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, przewin: number, teraz: number, pod: { x: number; y: number },
 ): { pola: PoleTablicy[]; maxPrzewin: number } {
   const pola: PoleTablicy[] = [];
-  const kol = Math.max(2, Math.min(6, Math.floor(w / 118)));
-  const odstep = 12;
-  const tw = (w - odstep * (kol - 1)) / kol, th = tw * 1.22;
+  const kol = Math.max(ATLAS.kolumny.min, Math.min(ATLAS.kolumny.max, Math.floor(w / ATLAS.kolumny.szerokosc)));
+  const odstep = ATLAS.odstep;
+  const tw = (w - odstep * (kol - 1)) / kol, th = tw * ATLAS.proporcje;
   const rozm = Math.max(14, Math.min(19, w / 40));
   ctx.save();
   ctx.beginPath();
   ctx.rect(x - 4, y, w + 8, h);
   ctx.clip();
   let yy = y - przewin;
-  const grupy = ['rasy', 'ryty', 'zasoby', 'prawa'] as Grupa[];
+  const grupy = ATLAS.grupy as Grupa[];
   for (const g of grupy) {
     const lista = TABLICE.filter((t) => t.grupa === g);
     const znane = lista.filter((t) => odkrycia.zna(t.id)).length;

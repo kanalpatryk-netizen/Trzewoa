@@ -1,6 +1,7 @@
 import { BARWA, rgba } from './palette';
 import { SERIF, SERIF_TYTUL, kreska } from './ink';
 import { glif } from './tajemnica';
+import { RAMA, KARTUSZ, PRZERYWNIK, NAGLOWEK_DZIALU } from '../nastawy/wyglad/ozdoby';
 
 /**
  * Ozdoby wspólne dla ekranów poza grą: rama ryciny z podziałką i napisami na marginesie,
@@ -41,55 +42,56 @@ export function zwoj(ctx: CanvasRenderingContext2D, x: number, y: number, r: num
  * na górnym i dolnym marginesie. `napis` idzie u góry, `podpis` na dole.
  */
 export function ramaRyciny(ctx: CanvasRenderingContext2D, w: number, h: number, alfa: number, napis: string, podpis: string): void {
-  const m = Math.max(12, Math.min(34, w * 0.024));
-  const d = Math.max(8, Math.min(14, w * 0.01));
+  const R = RAMA;
+  const m = Math.max(R.margines.min, Math.min(R.margines.max, w * R.margines.czesc));
+  const d = Math.max(R.pas.min, Math.min(R.pas.max, w * R.pas.czesc));
   ctx.save();
   ctx.lineWidth = 1;
   // linia zewnętrzna i wewnętrzna, między nimi podziałka
-  ctx.strokeStyle = rgba(BARWA.atrament, 0.5 * alfa);
+  ctx.strokeStyle = rgba(BARWA.atrament, R.alfaZewnetrzna * alfa);
   ctx.strokeRect(m + 0.5, m + 0.5, w - m * 2 - 1, h - m * 2 - 1);
-  ctx.strokeStyle = rgba(BARWA.atrament, 0.32 * alfa);
+  ctx.strokeStyle = rgba(BARWA.atrament, R.alfaWewnetrzna * alfa);
   ctx.strokeRect(m + d + 0.5, m + d + 0.5, w - (m + d) * 2 - 1, h - (m + d) * 2 - 1);
-  ctx.strokeStyle = rgba(BARWA.atrament, 0.26 * alfa);
+  ctx.strokeStyle = rgba(BARWA.atrament, R.alfaPodzialki * alfa);
   ctx.beginPath();
-  const krok = Math.max(14, Math.min(24, w / 60));
+  const krok = Math.max(R.krok.min, Math.min(R.krok.max, w / R.krok.dzielnik));
   for (let x = m + d + krok; x < w - m - d; x += krok) {
-    const dl = Math.round((x - m) / krok) % 5 === 0 ? d : d * 0.45;
+    const dl = Math.round((x - m) / krok) % R.dlugaCo === 0 ? d : d * R.krotka;
     ctx.moveTo(x, m); ctx.lineTo(x, m + dl);
     ctx.moveTo(x, h - m); ctx.lineTo(x, h - m - dl);
   }
   for (let y = m + d + krok; y < h - m - d; y += krok) {
-    const dl = Math.round((y - m) / krok) % 5 === 0 ? d : d * 0.45;
+    const dl = Math.round((y - m) / krok) % R.dlugaCo === 0 ? d : d * R.krotka;
     ctx.moveTo(m, y); ctx.lineTo(m + dl, y);
     ctx.moveTo(w - m, y); ctx.lineTo(w - m - dl, y);
   }
   ctx.stroke();
   // rogi: kwadrat z rozetą i zwojami wychodzącymi na boki
-  ctx.strokeStyle = rgba(BARWA.atramentMocny, 0.6 * alfa);
+  ctx.strokeStyle = rgba(BARWA.atramentMocny, R.alfaRogow * alfa);
   for (const [cx, cy, sx, sy] of [[m, m, 1, 1], [w - m, m, -1, 1], [m, h - m, 1, -1], [w - m, h - m, -1, -1]] as const) {
-    ctx.fillStyle = rgba(BARWA.sadza, 0.95 * alfa);
+    ctx.fillStyle = rgba(BARWA.sadza, R.alfaTlaRogu * alfa);
     ctx.fillRect(cx + (sx > 0 ? 0 : -d), cy + (sy > 0 ? 0 : -d), d, d);
     ctx.strokeRect(cx + (sx > 0 ? 0 : -d) + 0.5, cy + (sy > 0 ? 0 : -d) + 0.5, d - 1, d - 1);
     ctx.beginPath();
-    ctx.arc(cx + sx * d / 2, cy + sy * d / 2, d * 0.22, 0, Math.PI * 2);
+    ctx.arc(cx + sx * d / 2, cy + sy * d / 2, d * R.rozeta, 0, Math.PI * 2);
     ctx.stroke();
     ctx.lineWidth = 1;
-    zwoj(ctx, cx + sx * (d + d * 1.1), cy + sy * d * 0.5, d * 0.55, sx * sy);
-    zwoj(ctx, cx + sx * d * 0.5, cy + sy * (d + d * 1.1), d * 0.55, -sx * sy);
+    zwoj(ctx, cx + sx * (d + d * 1.1), cy + sy * d * 0.5, d * R.zwojRogu, sx * sy);
+    zwoj(ctx, cx + sx * d * 0.5, cy + sy * (d + d * 1.1), d * R.zwojRogu, -sx * sy);
   }
   // napisy na marginesie, na tle, które przerywa podziałkę
-  const rozm = Math.max(10, Math.min(13, w / 110));
+  const rozm = Math.max(R.napis.min, Math.min(R.napis.max, w / R.napis.dzielnik));
   ctx.font = `${rozm}px ${SERIF}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   for (const [tekst, y] of [[napis, m + d / 2], [podpis, h - m - d / 2]] as const) {
     if (!tekst) continue;
     const t = tekst.toUpperCase();
-    const odst = rozm * 0.35;
+    const odst = rozm * R.napisRozstrzelenie;
     const szer = [...t].reduce((a, l) => a + ctx.measureText(l).width, 0) + odst * (t.length - 1);
-    ctx.fillStyle = rgba(BARWA.sadza, 0.97 * alfa);
+    ctx.fillStyle = rgba(BARWA.sadza, R.alfaTlaNapisu * alfa);
     ctx.fillRect(w / 2 - szer / 2 - rozm, y - d / 2 + 1, szer + rozm * 2, d - 2);
-    ctx.fillStyle = rgba(BARWA.atrament, 0.7 * alfa);
+    ctx.fillStyle = rgba(BARWA.atrament, R.alfaNapisu * alfa);
     rozstrzel(ctx, t, w / 2, y + 0.5, odst);
   }
   ctx.restore();
@@ -103,15 +105,16 @@ export function kartusz(ctx: CanvasRenderingContext2D, x: number, y: number, tek
   ctx.save();
   ctx.textAlign = 'center';
   ctx.textBaseline = 'alphabetic';
-  ctx.font = `600 ${rozmiar}px ${SERIF_TYTUL}`;
-  const odst = rozmiar * 0.16;
+  const K = KARTUSZ;
+  ctx.font = `${K.waga} ${rozmiar}px ${SERIF_TYTUL}`;
+  const odst = rozmiar * K.rozstrzelenie;
   const litery = [...tekst];
   const szer = litery.reduce((a, l) => a + ctx.measureText(l).width, 0) + odst * (litery.length - 1);
-  const pw = szer + rozmiar * 1.6, ph = rozmiar * 1.25;
+  const pw = szer + rozmiar * K.poszerzenie, ph = rozmiar * K.wysokosc;
   const px = x - pw / 2, py = y - rozmiar * 0.95;
   // wstęga: górna i dolna krawędź lekko wygięte, końce zwinięte w zwoje
-  ctx.lineWidth = 1.1;
-  ctx.strokeStyle = rgba(BARWA.atrament, 0.55 * alfa);
+  ctx.lineWidth = K.grubosc;
+  ctx.strokeStyle = rgba(BARWA.atrament, K.alfaWstegi * alfa);
   ctx.beginPath();
   ctx.moveTo(px, py + ph * 0.12);
   ctx.quadraticCurveTo(x, py - ph * 0.1, px + pw, py + ph * 0.12);
@@ -137,24 +140,24 @@ export function kartusz(ctx: CanvasRenderingContext2D, x: number, y: number, tek
   ctx.textAlign = 'left';
   for (const l of litery) {
     const lw = ctx.measureText(l).width;
-    ctx.fillStyle = rgba('#000000', 0.8 * alfa);
-    ctx.fillText(l, lx + rozmiar * 0.02, y + rozmiar * 0.035);
+    ctx.fillStyle = rgba('#000000', K.alfaCienia * alfa);
+    ctx.fillText(l, lx + rozmiar * K.cienX, y + rozmiar * K.cienY);
     ctx.fillStyle = rgba(BARWA.atramentMocny, alfa);
     ctx.fillText(l, lx, y);
     lx += lw + odst;
   }
   ctx.textAlign = 'center';
   if (nadtytul) {
-    const r = Math.max(10, rozmiar * 0.16);
+    const r = Math.max(K.nadtytul.min, rozmiar * K.nadtytul.czesc);
     ctx.font = `${r}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.atrament, 0.7 * alfa);
-    rozstrzel(ctx, nadtytul.toUpperCase(), x, py - r * 0.9, r * 0.4);
+    ctx.fillStyle = rgba(BARWA.atrament, K.nadtytul.alfa * alfa);
+    rozstrzel(ctx, nadtytul.toUpperCase(), x, py - r * 0.9, r * K.nadtytul.rozstrzelenie);
   }
   if (podtytul) {
-    const r = Math.max(13, rozmiar * 0.2);
+    const r = Math.max(K.podtytul.min, rozmiar * K.podtytul.czesc);
     ctx.font = `italic ${r}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.atrament, 0.8 * alfa);
-    ctx.fillText(podtytul, x, py + ph + r * 1.7);
+    ctx.fillStyle = rgba(BARWA.atrament, K.podtytul.alfa * alfa);
+    ctx.fillText(podtytul, x, py + ph + r * K.podtytul.odstep);
   }
   ctx.restore();
   return szer;
@@ -162,16 +165,17 @@ export function kartusz(ctx: CanvasRenderingContext2D, x: number, y: number, tek
 
 /** Przerywnik: kreska, romb pośrodku i dwa drobne zwoje po bokach rombu. */
 export function przerywnik(ctx: CanvasRenderingContext2D, x: number, y: number, szer: number, alfa: number): void {
+  const P = PRZERYWNIK;
   ctx.save();
-  ctx.strokeStyle = rgba(BARWA.atrament, 0.45 * alfa);
+  ctx.strokeStyle = rgba(BARWA.atrament, P.alfaKreski * alfa);
   ctx.lineWidth = 1;
-  kreska(ctx, x - szer / 2, y, x - 18, y, 0.6, 24);
-  kreska(ctx, x + 18, y, x + szer / 2, y, 0.6, 24);
-  zwoj(ctx, x - 12, y, 4, 1, 1.2);
-  zwoj(ctx, x + 12, y, 4, -1, 1.2);
-  ctx.fillStyle = rgba(BARWA.zarBlady, 0.7 * alfa);
+  kreska(ctx, x - szer / 2, y, x - P.przerwa, y, 0.6, 24);
+  kreska(ctx, x + P.przerwa, y, x + szer / 2, y, 0.6, 24);
+  zwoj(ctx, x - P.zwojOdstep, y, P.zwojPromien, 1, 1.2);
+  zwoj(ctx, x + P.zwojOdstep, y, P.zwojPromien, -1, 1.2);
+  ctx.fillStyle = rgba(BARWA.zarBlady, P.alfaRombu * alfa);
   ctx.beginPath();
-  ctx.moveTo(x, y - 4); ctx.lineTo(x + 4, y); ctx.lineTo(x, y + 4); ctx.lineTo(x - 4, y);
+  ctx.moveTo(x, y - P.romb); ctx.lineTo(x + P.romb, y); ctx.lineTo(x, y + P.romb); ctx.lineTo(x - P.romb, y);
   ctx.closePath(); ctx.fill();
   ctx.restore();
 }
@@ -181,8 +185,9 @@ export function naglowekDzialu(ctx: CanvasRenderingContext2D, tekst: string, x: 
   ctx.save();
   ctx.textBaseline = 'middle';
   // glif działu w kółku
-  const r = rozmiar * 0.62;
-  ctx.strokeStyle = rgba(BARWA.zarBlady, 0.65 * alfa);
+  const N = NAGLOWEK_DZIALU;
+  const r = rozmiar * N.kolko;
+  ctx.strokeStyle = rgba(BARWA.zarBlady, N.alfaKolka * alfa);
   ctx.lineWidth = 1;
   ctx.beginPath(); ctx.arc(x + r, y, r, 0, Math.PI * 2); ctx.stroke();
   ctx.save();
@@ -193,18 +198,18 @@ export function naglowekDzialu(ctx: CanvasRenderingContext2D, tekst: string, x: 
   ctx.restore();
   ctx.font = `${rozmiar}px ${SERIF}`;
   ctx.textAlign = 'left';
-  ctx.fillStyle = rgba(BARWA.zarBlady, 0.9 * alfa);
-  const tw = rozstrzel(ctx, tekst.toUpperCase(), x + r * 2.8, y + 1, rozmiar * 0.22);
+  ctx.fillStyle = rgba(BARWA.zarBlady, N.alfaTekstu * alfa);
+  const tw = rozstrzel(ctx, tekst.toUpperCase(), x + r * N.wciecie, y + 1, rozmiar * N.rozstrzelenie);
   let koniec = x + szer;
   if (prawy) {
     ctx.textAlign = 'right';
     ctx.font = `italic ${rozmiar * 0.85}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.atramentCichy, 0.8 * alfa);
+    ctx.fillStyle = rgba(BARWA.atramentCichy, N.alfaDopisku * alfa);
     ctx.fillText(prawy, x + szer, y + 1);
     koniec -= ctx.measureText(prawy).width + rozmiar;
   }
-  ctx.strokeStyle = rgba(BARWA.atrament, 0.3 * alfa);
-  kreska(ctx, x + r * 2.8 + tw + rozmiar * 0.8, y, koniec, y, 0.5, 30);
+  ctx.strokeStyle = rgba(BARWA.atrament, N.alfaKreski * alfa);
+  kreska(ctx, x + r * N.wciecie + tw + rozmiar * 0.8, y, koniec, y, 0.5, 30);
   ctx.restore();
 }
 

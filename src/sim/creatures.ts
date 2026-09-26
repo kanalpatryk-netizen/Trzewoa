@@ -1,7 +1,10 @@
 import type { Sim } from './sim';
 import { T, PASSABLE } from './tiles';
 import { Race, RACES } from './races';
-import { pielgrzymowKlanu, PIELGRZYMOW } from './rytual';
+import { pielgrzymowKlanu } from './rytual';
+import { STWORZENIA as K } from '../nastawy/stworzenia';
+import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
+import { LUDY } from '../nastawy/gora';
 import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog } from './droga';
 
 export enum Job {
@@ -58,7 +61,7 @@ export function makeCreature(race: Race, clan: number, x: number, y: number, id:
   const d = RACES[race];
   return {
     id, race, clan, x, y, vy: 0,
-    hp: d.maxHp, hunger: 0.2, fear: 0, devotion: 0.25, age: 0,
+    hp: d.maxHp, hunger: K.glodNaStart, fear: 0, devotion: K.oddanieNaStart, age: 0,
     job: Job.WANDER, jx: x, jy: y, jt: 0, dig: 0, carry: 0, carryT: 0,
     face: 1, anim: 0, thought: Thought.NONE, stall: 0, lx: x, ly: y, prophet: false, slave: false, mad: 0, dead: false,
   };
@@ -82,38 +85,38 @@ export function stepCreature(sim: Sim, c: Creature): void {
 
   // --- żywioły
   const i = w.idx(Math.max(0, Math.min(w.w - 1, tx)), Math.max(0, Math.min(w.h - 1, ty)));
-  if (w.magma[i] > 0) { c.hp -= 4 + w.magma[i]; c.fear = 1; }
-  if (w.water[i] > 5 && !d.swims) { c.hp -= 0.22; c.fear = Math.min(1, c.fear + 0.05); }
+  if (w.magma[i] > 0) { c.hp -= K.magmaObrazenia + w.magma[i]; c.fear = 1; }
+  if (w.water[i] > K.toniePowyzej && !d.swims) { c.hp -= K.tonieObrazenia; c.fear = Math.min(1, c.fear + K.tonieStrach); }
   // grzybnia parzy obcych, ale nie zabija w pół minuty tego, kto tylko przez nią przechodzi
-  if (w.tile[i] === T.FUNGUS && c.race !== Race.GOBLIN) c.hp -= 0.02;
+  if (w.tile[i] === T.FUNGUS && c.race !== Race.GOBLIN) c.hp -= K.grzybniaParzy;
 
   // --- głód i wiek
   // zatłoczenie bije w głód natychmiast: nadmiar nie chudnie powoli, tylko pada
   const over = sim.crowding[c.race] - 1;
-  const press = over > 0 ? 1 + over * over * 3 : 1;
+  const press = over > 0 ? 1 + over * over * K.glodOdTloku : 1;
   // w samouczku góra trawi wolniej: nauka nie może polegać na patrzeniu, jak wszyscy mrą
-  c.hunger += 0.0003 * d.metabolism * (1 + c.mad * 0.5) * press * (sim.spokojnySwiat ? 0.35 : 1);
+  c.hunger += K.glodNaTik * d.metabolism * (1 + c.mad * K.glodOdSzalenstwa) * press * (sim.spokojnySwiat ? K.glodWSamouczku : 1);
   // Żużlowcy żywią się tym, co wypluwa ogień — przy gorącu głód im nie doskwiera
   if (c.race === Race.DWARF) {
     // ciepło własnej kuźni sięga daleko — przy niej się mieszka, nie tylko je
     let hot = false;
     for (const f of sim.allForges) {
       const fx = f % w.w, fy = (f / w.w) | 0;
-      if (Math.abs(fx - tx) <= 8 && Math.abs(fy - ty) <= 8) { hot = true; break; }
+      if (Math.abs(fx - tx) <= K.cieploKuzni && Math.abs(fy - ty) <= K.cieploKuzni) { hot = true; break; }
     }
     if (!hot) {
-      for (let dy = -2; dy <= 2 && !hot; dy++)
-        for (let dx = -2; dx <= 2; dx++) {
+      for (let dy = -K.cieploMagmy; dy <= K.cieploMagmy && !hot; dy++)
+        for (let dx = -K.cieploMagmy; dx <= K.cieploMagmy; dx++) {
           const x = tx + dx, y = ty + dy;
           if (w.inb(x, y) && w.magma[w.idx(x, y)] > 0) { hot = true; break; }
         }
     }
-    if (hot) c.hunger = Math.max(0, c.hunger - 0.0035);
+    if (hot) c.hunger = Math.max(0, c.hunger - K.cieploKarmi);
   }
-  if (c.hunger > 1) c.hp -= 0.6;
-  else if (c.hunger < 0.5 && c.hp < RACES[c.race].maxHp) c.hp = Math.min(RACES[c.race].maxHp, c.hp + 0.02);
-  if (c.age > d.lifespan && !sim.spokojnySwiat) c.hp -= 0.5;
-  c.fear *= 0.985;
+  if (c.hunger > K.glodZabija) c.hp -= K.glodObrazenia;
+  else if (c.hunger < K.najedzonyLeczy && c.hp < RACES[c.race].maxHp) c.hp = Math.min(RACES[c.race].maxHp, c.hp + K.leczenieNaTik);
+  if (c.age > d.lifespan && !sim.spokojnySwiat) c.hp -= K.starosc;
+  c.fear *= K.wygasanieStrachu;
 
   // --- szaleństwo głębi: im niżej, tym mniej z niego zostaje
   const depth = w.depth(ty);
@@ -121,37 +124,37 @@ export function stepCreature(sim: Sim, c: Creature): void {
   // każdą pielgrzymkę: wierni wariowali, rozszczepiali się i wracali trolami.
   // Pielgrzym niesie tę wiarę ze sobą przez całą drogę w dół — inaczej wariował
   // w połowie zejścia, zanim w ogóle doszedł pod skorupę.
-  const podRdzeniem = c.devotion > 0.5
-    && (c.job === Job.PIELGRZYM || (Math.abs(c.x - w.coreX) < 20 && Math.abs(c.y - w.coreY) < 20));
+  const podRdzeniem = c.devotion > P.ochronaOddanie
+    && (c.job === Job.PIELGRZYM || (Math.abs(c.x - w.coreX) < P.ochronaZasieg && Math.abs(c.y - w.coreY) < P.ochronaZasieg));
   // (wolniej niż kiedyś: pół minuty przy dnie wystarczało, żeby Żużlowiec, który zszedł
   // tylko po ciepło, wrócił z nożem na swoich)
   // Żużlowcy żyją przy ogniu głębi i głębia mniej im miesza w głowach
-  const odpornosc = c.race === Race.DWARF ? 0.4 : 1;
-  if (!podRdzeniem && depth > 0.72 && c.race !== Race.TROLL && sim.rng.chance(0.00065 * (depth - 0.7) * 10 * odpornosc)) {
-    c.mad = Math.min(1, c.mad + 0.12);
-    if (c.mad > 0.6 && sim.rng.chance(0.05)) sim.maddenCreature(c);
+  const odpornosc = c.race === Race.DWARF ? K.odpornoscZuzlowcow : 1;
+  if (!podRdzeniem && depth > K.szalenstwoOdGlebokosci && c.race !== Race.TROLL && sim.rng.chance(K.szalenstwoSzansa * (depth - K.szalenstwoPunkt) * 10 * odpornosc)) {
+    c.mad = Math.min(1, c.mad + K.szalenstwoSkok);
+    if (c.mad > K.szalenstwoPrzelom && sim.rng.chance(K.szalenstwoPrzelomSzansa)) sim.maddenCreature(c);
   }
-  if (podRdzeniem && c.mad > 0) c.mad = Math.max(0, c.mad - 0.0015);
+  if (podRdzeniem && c.mad > 0) c.mad = Math.max(0, c.mad - P.ochronaLeczy);
   // kto wrócił wyżej, powoli dochodzi do siebie — szaleństwo nie jest już wieczne
-  else if (depth < 0.6 && c.mad > 0 && c.race !== Race.TROLL) c.mad = Math.max(0, c.mad - 0.0003);
+  else if (depth < K.zdrowiejePowyzej && c.mad > 0 && c.race !== Race.TROLL) c.mad = Math.max(0, c.mad - K.zdrowienie);
 
   if (c.hp <= 0) { sim.kill(c, 'z wycieńczenia', c.age > d.lifespan ? 'starość' : 'wycieńczenie'); return; }
 
   // --- przysypanie: kiedy strop się osunie, stworzenie zostaje w litej skale.
   // Bez tego stało nieruchomo do śmierci i wyglądało to jak zawieszona gra.
   if (!w.passable(tx, ty)) {
-    c.hp -= 0.12;
-    c.fear = Math.min(1, c.fear + 0.08);
+    c.hp -= K.przysypanyObrazenia;
+    c.fear = Math.min(1, c.fear + K.przysypanyStrach);
     if (d.digPower > 0) {
-      c.dig += d.digPower * 2.5;
+      c.dig += d.digPower * K.wygrzebywanieSila;
       const twardosc = w.hardness(tx, ty);
-      if (twardosc > 0 && c.dig >= twardosc * 5) {
+      if (twardosc > 0 && c.dig >= twardosc * K.wygrzebywanieProg) {
         c.dig = 0;
         w.set(tx, ty, T.AIR);
         sim.spark(c.x, c.y, 'dust');
       }
     } else if (w.passable(tx, ty - 1)) {
-      c.y -= 0.35;                       // kto nie kopie, ten się wygrzebuje w górę
+      c.y -= K.wygrzebywanieWGore;       // kto nie kopie, ten się wygrzebuje w górę
     }
     return;
   }
@@ -160,36 +163,36 @@ export function stepCreature(sim: Sim, c: Creature): void {
   // Kto właśnie się podciąga i ma ścianę pod ręką, trzyma się jej. Bez tego szyb, który
   // sami wykopali, był pułapką: wchodzili o pół kafla i spadali z powrotem, w kółko —
   // Żużlowcy potrafili tak przestać całe życie pod rudą, której nigdy nie dosięgli.
-  const trzymaSie = (c.wspina ?? -9) >= sim.tick - 2
+  const trzymaSie = (c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
     && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1));
-  if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < 4) {
+  if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
     // Kto dopiero co się wspinał i ma ścianę pod ręką, zsuwa się po niej, zamiast lecieć.
     // Inaczej każda zmiana zamiaru w połowie szybu kończyła się upadkiem z całej wysokości.
-    if ((c.wspina ?? -99) >= sim.tick - 40 && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty))
+    if ((c.wspina ?? -99) >= sim.tick - K.zsuwaSieTikow && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty))
         && w.magma[w.idx(tx, Math.min(w.h - 1, ty + 1))] === 0) {
       c.vy = 0;
-      c.y += 0.2;
-      c.wspina = sim.tick - 3;
+      c.y += K.zsuwanie;
+      c.wspina = sim.tick - (K.trzymaSieTikow + 1);
       return;
     }
-    c.vy = Math.min(0.9, c.vy + 0.12);
+    c.vy = Math.min(K.maxSpadanie, c.vy + K.grawitacja);
     c.y += c.vy;
     return;
   }
-  if (c.vy > 0.35) {
+  if (c.vy > K.kurzOdPredkosci) {
     // każdy upadek wzbija kurz — widać, że grunt naprawdę im uciekł spod nóg
-    const ile = c.vy > 0.7 ? 3 : 1;
+    const ile = c.vy > K.bolesnyUpadek ? 3 : 1;
     for (let k = 0; k < ile; k++) sim.spark(c.x + sim.rng.range(-0.4, 0.4), c.y + 0.3, 'dust');
-    if (c.vy > 0.7) sim.efekt(c.x, c.y + 0.4, 'kopniecie');
+    if (c.vy > K.bolesnyUpadek) sim.efekt(c.x, c.y + 0.4, 'kopniecie');
   }
   // Upadek boli, ale nie zabija na miejscu: raz, przy lądowaniu, i dopiero z wysokości
   // kilku kafli (wcześniej liczył się dwa razy — w locie i po lądowaniu).
-  if (c.vy > 0.7) c.hp -= RACES[c.race].maxHp * 0.25 * Math.min(1, (c.vy - 0.7) / 0.2);
+  if (c.vy > K.bolesnyUpadek) c.hp -= RACES[c.race].maxHp * K.upadekObrazenia * Math.min(1, (c.vy - K.bolesnyUpadek) / K.upadekPelny);
   c.vy = 0;
 
   // --- rozglądanie się: rysunek twojego ciała powstaje tylko z ich oczu
-  if ((c.id + sim.tick) % 7 === 0) {
-    const r = c.race === Race.HUMAN ? 8 : c.race === Race.TROLL ? 8 : 6;
+  if ((c.id + sim.tick) % K.rozgladanieCo === 0) {
+    const r = c.race === Race.HUMAN ? K.wzrokLudzi : c.race === Race.TROLL ? K.wzrokTroli : K.wzrok;
     const fresh = w.observe(tx, ty, r, sim.tick);
     if (fresh) sim.onVisit(fresh);
   }
@@ -197,16 +200,16 @@ export function stepCreature(sim: Sim, c: Creature): void {
   if (c.carry > 0) c.carryT++; else c.carryT = 0;
 
   // --- zakleszczenie: stoi w miejscu mimo zajęcia, więc niech spróbuje czegoś innego
-  if ((c.id + sim.tick) % 12 === 0) {
-    if (Math.abs(c.x - c.lx) < 0.12 && Math.abs(c.y - c.ly) < 0.12) c.stall++;
+  if ((c.id + sim.tick) % K.zakleszczenieCo === 0) {
+    if (Math.abs(c.x - c.lx) < K.zakleszczenieRuch && Math.abs(c.y - c.ly) < K.zakleszczenieRuch) c.stall++;
     else c.stall = 0;
     c.lx = c.x; c.ly = c.y;
-    if (c.stall > 4) {
+    if (c.stall > K.zakleszczenieLimit) {
       c.stall = 0;
       c.jt = 0;
       c.job = Job.WANDER;
-      c.jx = c.x + sim.rng.range(-9, 9);
-      c.jy = c.y + sim.rng.range(-4, 4);
+      c.jx = c.x + sim.rng.range(-K.zakleszczenieUciekaX, K.zakleszczenieUciekaX);
+      c.jy = c.y + sim.rng.range(-K.zakleszczenieUciekaY, K.zakleszczenieUciekaY);
       c.face = -c.face;
     }
   }
@@ -216,8 +219,8 @@ export function stepCreature(sim: Sim, c: Creature): void {
   // Wchodzi tylko nacja, która skuła skorupę, albo taka, która wierzy dość, by cię uwolnić.
   // Obcy — Trol z głębi, Żużlowiec za ciepłem — musi rdzeń wykuć, a to trwa: przypadkowy
   // przechodzień nie kończy gry śmiercią sekundę po tym, jak warta otworzyła drogę.
-  const wolnoWejsc = c.clan === sim.rytual.klan || sim.clans[c.clan].devotion > 0.55 || c.devotion > 0.7;
-  if (wolnoWejsc && Math.abs(c.x - w.coreX) <= 4 && Math.abs(c.y - w.coreY) <= 4) {
+  const wolnoWejsc = c.clan === sim.rytual.klan || sim.clans[c.clan].devotion > RYTUAL.uwolnienieNacja || c.devotion > RYTUAL.uwolnienieWlasne;
+  if (wolnoWejsc && Math.abs(c.x - w.coreX) <= RYTUAL.dotykZasieg && Math.abs(c.y - w.coreY) <= RYTUAL.dotykZasieg) {
     const cx = Math.round(c.x), cy = Math.round(c.y);
     for (const [dx, dy] of [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]]) {
       if (w.get(cx + dx, cy + dy) === T.CORE) { sim.reachCore(c); return; }
@@ -226,21 +229,21 @@ export function stepCreature(sim: Sim, c: Creature): void {
   // Komora wokół rdzenia jest pusta i szeroka: kto przez otwartą skorupę wejdzie do niej,
   // doszedł. Wcześniej warta wchodziła od dołu i stała na dnie komory, bo w pustej
   // przestrzeni nie ma się czego chwycić, żeby podciągnąć się do samego rdzenia.
-  if (wolnoWejsc && sim.rytual.otwarta && Math.abs(c.x - (w.coreX + 0.5)) <= 8 && Math.abs(c.y - (w.coreY + 0.5)) <= 7
+  if (wolnoWejsc && sim.rytual.otwarta && Math.abs(c.x - (w.coreX + 0.5)) <= RYTUAL.komoraX && Math.abs(c.y - (w.coreY + 0.5)) <= RYTUAL.komoraY
       && w.passable(Math.floor(c.x), Math.floor(c.y))) {
     sim.reachCore(c); return;
   }
 
   // --- ogień tuż obok: ucieka, zanim spłynie — wcześniej stali przy kuźni i czekali,
   // aż magma z rozkopanej kieszeni wleje im się pod nogi
-  if ((c.id + sim.tick) % 4 === 0 && c.job !== Job.FLEE && sim.przyMagmie(tx, ty, 1)) {
+  if ((c.id + sim.tick) % K.ogienSprawdzCo === 0 && c.job !== Job.FLEE && sim.przyMagmie(tx, ty, 1)) {
     let mx = 0, my = 0;
-    for (let dy = -2; dy <= 2; dy++) for (let dx = -2; dx <= 2; dx++) {
+    for (let dy = -K.ogienZasieg; dy <= K.ogienZasieg; dy++) for (let dx = -K.ogienZasieg; dx <= K.ogienZasieg; dx++) {
       if (w.inb(tx + dx, ty + dy) && w.magma[w.idx(tx + dx, ty + dy)] > 0) { mx += dx; my += dy; }
     }
     c.job = Job.FLEE; c.droga = undefined;
-    c.jx = tx - Math.sign(mx || c.face) * 6; c.jy = ty - (my >= 0 ? 4 : -2);
-    c.jt = 50; c.fear = 1;
+    c.jx = tx - Math.sign(mx || c.face) * K.ogienUciekaX; c.jy = ty - (my >= 0 ? K.ogienUciekaWGore : -K.ogienUciekaWDol);
+    c.jt = K.ogienTikow; c.fear = 1;
   }
 
   // --- wybór zajęcia
@@ -273,7 +276,7 @@ function pickJob(sim: Sim, c: Creature): void {
   const d = RACES[c.race];
   const clan = sim.clans[c.clan];
   const oldX = c.jx, oldY = c.jy;
-  c.jt = 18 + sim.rng.int(24);
+  c.jt = K.decyzjaTikow + sim.rng.int(K.decyzjaRozrzut);
   c.droga = undefined; c.drogaI = 0;
   /** Zapamiętuje drogę i ustawia cel zajęcia na jej końcu (albo na podanym kaflu). */
   const naDroge = (droga: number[], cx?: number, cy?: number): void => {
@@ -292,7 +295,7 @@ function pickJob(sim: Sim, c: Creature): void {
   };
   // Łup i tak trafia do klanu: chowają go po drodze. Warunek „tylko gdy niesie"
   // rozbijał się o antyzakleszczenie, które kasowało zajęcie — ruda krążyła w kółko.
-  if (c.carry > 0 && (c.job === Job.HAUL || c.carryT > 240)) {
+  if (c.carry > 0 && (c.job === Job.HAUL || c.carryT > K.lupChowaPo)) {
     clan.stock += c.carry; c.carry = 0; c.carryT = 0;
   }
   /** Zachowaj postęp kucia, jeśli cel się nie zmienił — inaczej tunel nigdy nie powstaje. */
@@ -302,15 +305,15 @@ function pickJob(sim: Sim, c: Creature): void {
   if (c.thought !== Thought.NONE) {
     switch (c.thought) {
       case Thought.DIG_DOWN:
-        c.job = Job.DESCEND; c.jx = Math.floor(c.x); c.jy = Math.min(w.h - 2, Math.floor(c.y) + 12);
-        c.jt = 120; return;
+        c.job = Job.DESCEND; c.jx = Math.floor(c.x); c.jy = Math.min(w.h - 2, Math.floor(c.y) + K.szeptKopGlebiej);
+        c.jt = K.szeptKopTikow; return;
       case Thought.KILL_KIN: {
         // szuka najpierw swoich, potem kogokolwiek z rasy — szept nie może gasnąć bez skutku
-        const swoj = sim.nearestCreature(c.x, c.y, 40, (o) => o.id !== c.id && o.clan === c.clan);
-        const ktokolwiek = swoj ?? sim.nearestCreature(c.x, c.y, 60, (o) => o.id !== c.id && o.race === c.race);
+        const swoj = sim.nearestCreature(c.x, c.y, K.szeptZabijSwoich, (o) => o.id !== c.id && o.clan === c.clan);
+        const ktokolwiek = swoj ?? sim.nearestCreature(c.x, c.y, K.szeptZabijRasy, (o) => o.id !== c.id && o.race === c.race);
         if (ktokolwiek) {
           c.job = Job.FIGHT; c.jx = ktokolwiek.x; c.jy = ktokolwiek.y;
-          sim.target.set(c.id, ktokolwiek.id); c.jt = 90;
+          sim.target.set(c.id, ktokolwiek.id); c.jt = K.szeptZabijTikow;
           // jeden nóż, nie rzeź: myśl gaśnie po pierwszym ataku. Trwała myśl robiła
           // z szaleńca seryjnego mordercę, który wybijał pół własnej nacji
           c.thought = Thought.NONE;
@@ -322,65 +325,65 @@ function pickJob(sim: Sim, c: Creature): void {
         if (!c.prophet) sim.makeProphet(c);
         c.thought = Thought.NONE; break;
       case Thought.FLEE_UP:
-        c.job = Job.FLEE; c.jx = c.x + sim.rng.range(-8, 8); c.jy = Math.max(2, c.y - 14); c.jt = 80; return;
+        c.job = Job.FLEE; c.jx = c.x + sim.rng.range(-K.szeptUciekajWBok, K.szeptUciekajWBok); c.jy = Math.max(2, c.y - K.szeptUciekajWGore); c.jt = K.szeptUciekajTikow; return;
       case Thought.BREED:
-        c.job = Job.BREED; c.jt = 40; c.thought = Thought.NONE; return;
+        c.job = Job.BREED; c.jt = K.szeptPlodzTikow; c.thought = Thought.NONE; return;
     }
   }
 
-  if (c.hp < RACES[c.race].maxHp * 0.3 && c.fear > 0.3) { c.job = Job.FLEE; c.jt = 40; return; }
+  if (c.hp < RACES[c.race].maxHp * K.rannyUcieka && c.fear > K.rannyStrach) { c.job = Job.FLEE; c.jt = K.ucieczkaTikow; return; }
 
   // każda rasa ma własny sposób na głód; bez tego wszystkie poza Ślepym Ludem wymierały
-  if (c.hunger > (c.race === Race.DWARF ? 0.34 : 0.5)) {
-    if (c.race === Race.TROLL && c.hunger > 0.85) {
-      const prey = sim.spokojnySwiat || sim.rozejm ? null : sim.nearestCreature(c.x, c.y, 7, (o) => o.id !== c.id && o.race !== Race.TROLL);
-      if (!prey) { c.job = Job.SLEEP; c.jt = 220; return; }
+  if (c.hunger > (c.race === Race.DWARF ? K.glodZuzlowcow : K.glodInnych)) {
+    if (c.race === Race.TROLL && c.hunger > K.trolZasypiaOd) {
+      const prey = sim.spokojnySwiat || sim.rozejm ? null : sim.nearestCreature(c.x, c.y, K.trolOfiaraZasieg, (o) => o.id !== c.id && o.race !== Race.TROLL);
+      if (!prey) { c.job = Job.SLEEP; c.jt = K.trolSpiTikow; return; }
     }
     if (c.race === Race.DWARF) {
       // do ciepła drogą, nie na przełaj — kuźnia za ścianą nikogo nie grzeje
-      const droga = szukajDrogi(sim, c, (_i, x, y) => sim.goraco(x, y), 1800);
-      if (droga) { naDroge(droga); c.job = Job.HEAT; c.jt = 200 + droga.length * 14; return; }
-      const heat = sim.findHeat(c.x, c.y, 40);
-      if (heat) { c.job = Job.HEAT; c.jx = heat[0]; c.jy = heat[1]; c.jt = 200; return; }
+      const droga = szukajDrogi(sim, c, (_i, x, y) => sim.goraco(x, y), K.cieploLimitDrogi);
+      if (droga) { naDroge(droga); c.job = Job.HEAT; c.jt = K.cieploTikow + droga.length * K.tikowNaKafel; return; }
+      const heat = sim.findHeat(c.x, c.y, K.cieploZasieg);
+      if (heat) { c.job = Job.HEAT; c.jx = heat[0]; c.jy = heat[1]; c.jt = K.cieploTikow; return; }
     }
     if (c.race === Race.SPINNER && !sim.spokojnySwiat) {
-      const slave = sim.nearestCreature(c.x, c.y, 16, (o) => o.clan === c.clan && o.slave);
-      if (slave) { c.job = Job.DRAIN; sim.target.set(c.id, slave.id); c.jt = 90; return; }
+      const slave = sim.nearestCreature(c.x, c.y, K.przadkaNiewolnik, (o) => o.clan === c.clan && o.slave);
+      if (slave) { c.job = Job.DRAIN; sim.target.set(c.id, slave.id); c.jt = K.przadkaTikow; return; }
       // głodna Prządka poluje — nie czeka, aż ktoś sam na nią wpadnie
-      const ofiara = sim.nearestCreature(c.x, c.y, 18, (o) => o.race !== Race.SPINNER && o.race !== Race.TROLL
-        && o.clan !== c.clan && !o.slave && RACES[o.race].strength < 7);
-      if (ofiara) { c.job = Job.SLAVE; sim.target.set(c.id, ofiara.id); c.jt = 90; return; }
+      const ofiara = sim.nearestCreature(c.x, c.y, K.przadkaPoluje, (o) => o.race !== Race.SPINNER && o.race !== Race.TROLL
+        && o.clan !== c.clan && !o.slave && RACES[o.race].strength < K.przadkaSilaOfiary);
+      if (ofiara) { c.job = Job.SLAVE; sim.target.set(c.id, ofiara.id); c.jt = K.przadkaTikow; return; }
     }
   }
 
   // wróg w pobliżu
-  const foe = sim.nearestCreature(c.x, c.y, c.race === Race.HUMAN ? 16 : 11, (o) => sim.hostile(c, o));
+  const foe = sim.nearestCreature(c.x, c.y, c.race === Race.HUMAN ? K.wrogZasiegLudzi : K.wrogZasieg, (o) => sim.hostile(c, o));
   if (foe) {
-    const scary = RACES[foe.race].strength > d.strength * 2.2;
-    if (scary && sim.rng.chance(0.6 * d.fearGain)) {
-      c.job = Job.FLEE; c.jx = c.x - (foe.x - c.x); c.jy = c.y - (foe.y - c.y); c.jt = 40; c.fear = 1; return;
+    const scary = RACES[foe.race].strength > d.strength * K.strasznyWrog;
+    if (scary && sim.rng.chance(K.strachSzansa * d.fearGain)) {
+      c.job = Job.FLEE; c.jx = c.x - (foe.x - c.x); c.jy = c.y - (foe.y - c.y); c.jt = K.ucieczkaTikow; c.fear = 1; return;
     }
-    if (c.race === Race.SPINNER && RACES[foe.race].strength < 7 && sim.rng.chance(0.75)) {
-      c.job = Job.SLAVE; sim.target.set(c.id, foe.id); c.jt = 70; return;
+    if (c.race === Race.SPINNER && RACES[foe.race].strength < K.przadkaSilaOfiary && sim.rng.chance(K.przadkaJarzmoSzansa)) {
+      c.job = Job.SLAVE; sim.target.set(c.id, foe.id); c.jt = K.jarzmoTikow; return;
     }
-    c.job = Job.FIGHT; sim.target.set(c.id, foe.id); c.jt = 60; return;
+    c.job = Job.FIGHT; sim.target.set(c.id, foe.id); c.jt = K.walkaTikow; return;
   }
 
-  if (c.race === Race.HUMAN) { c.job = Job.RAID; c.jt = 90; return; }
+  if (c.race === Race.HUMAN) { c.job = Job.RAID; c.jt = K.najazdTikow; return; }
 
-  if (c.hunger > 0.45 && c.race !== Race.DWARF) {
+  if (c.hunger > K.idzieJesc && c.race !== Race.DWARF) {
     // najbliższy drogą, nie w linii prostej: grzyb za ścianą albo na półce był „najbliżej",
     // a głodny chodził pod nim, aż padł
-    const droga = szukajDrogi(sim, c, (i) => edible(c.race, w.tile[i]), c.hunger > 0.8 ? 2600 : 1500);
-    if (droga) { naDroge(droga); c.job = Job.EAT; c.jt = 60 + droga.length * 16; return; }
-    const food = sim.findFood(c.x, c.y, c.hunger > 0.8 ? 30 : 18, d.swims, (t) => edible(c.race, t));
-    if (food) { c.job = Job.EAT; c.jx = food[0]; c.jy = food[1]; c.jt = 60 + Math.round(Math.hypot(food[0] - c.x, food[1] - c.y) * 14); return; }
+    const droga = szukajDrogi(sim, c, (i) => edible(c.race, w.tile[i]), c.hunger > K.bardzoGlodny ? K.jedzenieLimitGlodny : K.jedzenieLimit);
+    if (droga) { naDroge(droga); c.job = Job.EAT; c.jt = K.jedzenieTikow + droga.length * K.tikowNaKafelDoJedzenia; return; }
+    const food = sim.findFood(c.x, c.y, c.hunger > K.bardzoGlodny ? K.jedzenieZasiegGlodny : K.jedzenieZasieg, d.swims, (t) => edible(c.race, t));
+    if (food) { c.job = Job.EAT; c.jx = food[0]; c.jy = food[1]; c.jt = K.jedzenieTikow + Math.round(Math.hypot(food[0] - c.x, food[1] - c.y) * K.tikowNaKafel); return; }
     sim.foodMiss++;
     if (d.eatsMeat && !sim.spokojnySwiat && !sim.rozejm) {
       // głód najpierw pcha na obcych; po swoich sięga się dopiero na skraju śmierci
-      const prey = sim.nearestCreature(c.x, c.y, 18, (o) => o.id !== c.id && o.clan !== c.clan && (o.race !== c.race || c.hunger > 0.9))
-        ?? (c.hunger > 0.95 ? sim.nearestCreature(c.x, c.y, 18, (o) => o.id !== c.id) : null);
-      if (prey) { c.job = Job.FIGHT; sim.target.set(c.id, prey.id); c.jt = 70; return; }
+      const prey = sim.nearestCreature(c.x, c.y, K.polowanieZasieg, (o) => o.id !== c.id && o.clan !== c.clan && (o.race !== c.race || c.hunger > K.kanibalizmOd))
+        ?? (c.hunger > K.glodSlepy ? sim.nearestCreature(c.x, c.y, K.polowanieZasieg, (o) => o.id !== c.id) : null);
+      if (prey) { c.job = Job.FIGHT; sim.target.set(c.id, prey.id); c.jt = K.polowanieTikow; return; }
     }
   }
 
@@ -391,69 +394,69 @@ function pickJob(sim: Sim, c: Creature): void {
   // plemienia — razem z tymi, którzy ledwo się trzymali — i cała góra wymierała w drodze
   // pod rdzeń, choć grzyb rósł tuż obok gniazda.
   // (próg powyżej progu Uwolnienia: kto schodzi pod rdzeń, ma dość wiary, by wejść do środka)
-  if (d.faithGain > 0 && clan.devotion > 0.6 && c.devotion > 0.45 && c.hunger < 0.35
-      && clan.pop >= 8 && sim.crowding[c.race] < 0.95
+  if (d.faithGain > 0 && clan.devotion > P.oddanieNacji && c.devotion > P.oddanieWlasne && c.hunger < P.najedzony
+      && clan.pop >= P.minNacja && sim.crowding[c.race] < P.maxZatloczenie
       // co najmniej trzech — tylu trzeba naraz pod skorupą, żeby kamień w ogóle drgnął
-      && pielgrzymowKlanu(sim, clan.id) < Math.min(PIELGRZYMOW, Math.max(3, Math.floor(clan.pop * 0.3)))
+      && pielgrzymowKlanu(sim, clan.id) < Math.min(P.maxPielgrzymow, Math.max(P.minPielgrzymow, Math.floor(clan.pop * P.czescNacji)))
       // schodzą, gdy da się wrócić — albo gdy przy przedsionku jest co jeść: wtedy warta
       // przeżyje na dole i bez drogi powrotnej (dla gracza to jedno kliknięcie grzybem,
       // a nie sto kafli korytarza)
-      && (sim.jedzeniePrzedsionka >= 3 || powrotSpodRdzenia(sim, c, clan))) {
+      && (sim.jedzeniePrzedsionka >= P.jedzenieWPrzedsionku || powrotSpodRdzenia(sim, c, clan))) {
     // im bliżej przedsionka ktoś już jest, tym chętniej schodzi resztę drogi
-    const dystans = Math.hypot(c.x - w.coreX, c.y - (w.coreY - 14));
-    const chec = 0.06 + 0.3 * Math.max(0, 1 - dystans / 90);
+    const dystans = Math.hypot(c.x - w.coreX, c.y - w.przedsionekY);
+    const chec = P.szansa + P.szansaBliskosc * Math.max(0, 1 - dystans / P.zasiegBliskosci);
     if (sim.rng.chance(chec)) {
       c.job = Job.PIELGRZYM;
-      c.jx = w.coreX + sim.rng.int(7) - 3;
-      c.jy = w.coreY - 14;
-      c.jt = 7000; c.dig = 0; return;       // to wyprawa, nie spacer — nie porzuca jej po chwili
+      c.jx = w.coreX + sim.rng.int(P.rozrzutCelu * 2 + 1) - P.rozrzutCelu;
+      c.jy = w.przedsionekY;
+      c.jt = P.wyprawaTikow; c.dig = 0; return;       // to wyprawa, nie spacer — nie porzuca jej po chwili
     }
   }
 
   if (c.carry > 0) {
-    c.job = Job.HAUL; c.jx = clan.hx; c.jy = clan.hy; c.jt = 120;
-    const droga = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - clan.hx) <= 2 && Math.abs(y - clan.hy) <= 2, 1800);
-    if (droga) { naDroge(droga, clan.hx, clan.hy); c.jt = 120 + droga.length * 14; }
+    c.job = Job.HAUL; c.jx = clan.hx; c.jy = clan.hy; c.jt = K.noszenieTikow;
+    const droga = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - clan.hx) <= K.noszenieBliskoGniazda && Math.abs(y - clan.hy) <= K.noszenieBliskoGniazda, K.noszenieLimit);
+    if (droga) { naDroge(droga, clan.hx, clan.hy); c.jt = K.noszenieTikow + droga.length * K.tikowNaKafel; }
     return;
   }
 
   // klan bez ognia przestaje istnieć — odbudowa kuźni jest ważniejsza niż wszystko
-  if (c.race === Race.DWARF && clan.forges.length === 0 && clan.stock >= 3 && sim.canBuild(c)) {
-    c.job = Job.BUILD; c.jt = 200;
+  if (c.race === Race.DWARF && clan.forges.length === 0 && clan.stock >= LUDY.kosztKuzni && sim.canBuild(c)) {
+    c.job = Job.BUILD; c.jt = K.kuzniaTikow;
     const plac = w.idx(c.jx, c.jy);
-    const droga = szukajDrogi(sim, c, (i) => i === plac, 1800);
-    if (droga) { naDroge(droga, c.jx, c.jy); c.jt = 200 + droga.length * 14; }
+    const droga = szukajDrogi(sim, c, (i) => i === plac, K.kuzniaLimit);
+    if (droga) { naDroge(droga, c.jx, c.jy); c.jt = K.kuzniaTikow + droga.length * K.tikowNaKafel; }
     return;
   }
 
-  if (c.race === Race.DWARF && clan.stock < 8 && c.hunger < 0.6) {
+  if (c.race === Race.DWARF && clan.stock < K.zuzlowcyKopiaDo && c.hunger < K.zuzlowcyKopiaGlod) {
     // nie oddalają się od ognia dalej, niż zdążą wrócić
     let ruda = -1;
     const droga = szukajDrogi(sim, c, (_i, x, y) => {
       ruda = swietoscObok(x, y, (t) => t === T.ORE || t === T.CRYSTAL);
       return ruda >= 0 && !sim.przyMagmie(ruda % w.w, (ruda / w.w) | 0);
-    }, 1200);
+    }, K.zuzlowcyRudaLimit);
     if (droga && ruda >= 0) {
       naDroge(droga, ruda % w.w, (ruda / w.w) | 0);
-      c.job = Job.DIG; c.jt = 140 + droga.length * 14;
+      c.job = Job.DIG; c.jt = K.zuzlowcyRudaTikow + droga.length * K.tikowNaKafel;
       keepDig(); return;
     }
-    const ore = sim.findTile(c.x, c.y, 14, (t) => t === T.ORE || t === T.CRYSTAL);
+    const ore = sim.findTile(c.x, c.y, K.rudaZasieg, (t) => t === T.ORE || t === T.CRYSTAL);
     if (ore) {
       const dist = Math.hypot(ore[0] - c.x, ore[1] - c.y);
-      c.job = Job.DIG; c.jx = ore[0]; c.jy = ore[1]; c.jt = 140 + Math.round(dist * 30);
+      c.job = Job.DIG; c.jx = ore[0]; c.jy = ore[1]; c.jt = K.zuzlowcyRudaTikow + Math.round(dist * K.tikowNaKafelKopania);
       keepDig(); return;
     }
   }
 
   // rytuał: ofiara z własnych dzieci, gdy oddanie jest wysokie
   // (rzadko i tylko w dużym klanie — przy dawnej częstości ofiar ginęło prawie tyle, ile się rodziło)
-  if (c.race === Race.GOBLIN && clan.devotion > 0.6 && clan.pop > 16 && sim.rng.chance(0.012)) {
+  if (c.race === Race.GOBLIN && clan.devotion > K.ofiaraOddanie && clan.pop > K.ofiaraMinKlan && sim.rng.chance(K.ofiaraSzansa)) {
     let oltarz = -1;
-    const droga = szukajDrogi(sim, c, (_i, x, y) => (oltarz = swietoscObok(x, y, (t) => t === T.SHRINE || t === T.GLYPH)) >= 0, 1500);
-    if (droga && oltarz >= 0) { naDroge(droga, oltarz % w.w, (oltarz / w.w) | 0); c.job = Job.SACRIFICE; c.jt = 120 + droga.length * 14; return; }
-    const shrine = sim.findTile(c.x, c.y, 20, (t) => t === T.SHRINE || t === T.GLYPH);
-    if (shrine) { c.job = Job.SACRIFICE; c.jx = shrine[0]; c.jy = shrine[1]; c.jt = 120; return; }
+    const droga = szukajDrogi(sim, c, (_i, x, y) => (oltarz = swietoscObok(x, y, (t) => t === T.SHRINE || t === T.GLYPH)) >= 0, K.ofiaraLimit);
+    if (droga && oltarz >= 0) { naDroge(droga, oltarz % w.w, (oltarz / w.w) | 0); c.job = Job.SACRIFICE; c.jt = K.ofiaraTikow + droga.length * K.tikowNaKafel; return; }
+    const shrine = sim.findTile(c.x, c.y, K.ofiaraZasieg, (t) => t === T.SHRINE || t === T.GLYPH);
+    if (shrine) { c.job = Job.SACRIFICE; c.jx = shrine[0]; c.jy = shrine[1]; c.jt = K.ofiaraTikow; return; }
   }
 
   // Rozmnaża się wyłącznie Ślepy Lud. Żużlowców się wykuwa, Prządki przerabiają
@@ -461,57 +464,57 @@ function pickJob(sim: Sim, c: Creature): void {
   // ze zwłok. Inaczej jedyny wektor wzrostu wygrywa ten, kto rodzi najszybciej.
   // Im ciaśniej, tym rzadziej — zamiast twardego progu, przy którym rodzili się do ostatniej
   // chwili, a potem cała nacja głodowała naraz i zjadała się nawzajem aż do zera.
-  const miejsce = Math.max(0, Math.min(1, (0.92 - sim.crowding[c.race]) * 1.6));
+  const miejsce = Math.max(0, Math.min(1, (K.rozrodTlok - sim.crowding[c.race]) * K.rozrodCzulosc));
   if (c.race === Race.GOBLIN && clan.pop < clan.cap && miejsce > 0
       && sim.popByRace[c.race] < sim.raceCap[c.race]
-      && c.hunger < 0.5 && c.age > 400 && sim.rng.chance(RACES[c.race].breedRate * miejsce)) {
-    c.job = Job.BREED; c.jt = 60;
-    if (Math.hypot(clan.hx - c.x, clan.hy - c.y) > 3) {
-      const droga = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - clan.hx) <= 2 && Math.abs(y - clan.hy) <= 2, 1200);
-      if (droga) { naDroge(droga, clan.hx, clan.hy); c.jt = 60 + droga.length * 14; }
+      && c.hunger < K.rozrodGlod && c.age > K.rozrodWiek && sim.rng.chance(RACES[c.race].breedRate * miejsce)) {
+    c.job = Job.BREED; c.jt = K.rozrodTikow;
+    if (Math.hypot(clan.hx - c.x, clan.hy - c.y) > K.rozrodDoGniazda) {
+      const droga = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - clan.hx) <= K.noszenieBliskoGniazda && Math.abs(y - clan.hy) <= K.noszenieBliskoGniazda, K.rozrodLimit);
+      if (droga) { naDroge(droga, clan.hx, clan.hy); c.jt = K.rozrodTikow + droga.length * K.tikowNaKafel; }
     }
     return;
   }
 
   // modlitwa albo praca — zależnie od tego, jak dana rasa cię czci
   // Trole nie czczą nikogo: chodziły modlić się pod ołtarze Ślepego Ludu i tam ginęły
-  if (d.faithGain > 0 && c.race !== Race.TROLL && sim.rng.chance(0.22 + clan.devotion * 0.5)) {
+  if (d.faithGain > 0 && c.race !== Race.TROLL && sim.rng.chance(K.modlitwaSzansa + clan.devotion * K.modlitwaOdOddania)) {
     const swiete = (t: number) => t === (c.race === Race.DWARF ? T.FORGE : T.SHRINE) || t === T.GLYPH || t === T.CORE;
     let cel = -1;
-    const droga = szukajDrogi(sim, c, (_i, x, y) => (cel = swietoscObok(x, y, swiete)) >= 0, 1500);
-    if (droga && cel >= 0) { naDroge(droga, cel % w.w, (cel / w.w) | 0); c.job = Job.PRAY; c.jt = 110 + droga.length * 14; return; }
-    const holy = sim.findTile(c.x, c.y, 22, swiete);
-    if (holy) { c.job = Job.PRAY; c.jx = holy[0]; c.jy = holy[1]; c.jt = 110; return; }
-    if (sim.canBuild(c)) { c.job = Job.BUILD; c.jt = 90; return; }
+    const droga = szukajDrogi(sim, c, (_i, x, y) => (cel = swietoscObok(x, y, swiete)) >= 0, K.modlitwaLimit);
+    if (droga && cel >= 0) { naDroge(droga, cel % w.w, (cel / w.w) | 0); c.job = Job.PRAY; c.jt = K.modlitwaTikow + droga.length * K.tikowNaKafel; return; }
+    const holy = sim.findTile(c.x, c.y, K.modlitwaZasieg, swiete);
+    if (holy) { c.job = Job.PRAY; c.jx = holy[0]; c.jy = holy[1]; c.jt = K.modlitwaTikow; return; }
+    if (sim.canBuild(c)) { c.job = Job.BUILD; c.jt = K.budowaTikow; return; }
   }
 
   // kopanie: ruda ciągnie, ale pusty korytarz też trzeba komuś wydrążyć
-  if (d.digPower > 0 && sim.rng.chance(0.55)) {
+  if (d.digPower > 0 && sim.rng.chance(K.kopanieSzansa)) {
     let ruda = -1;
     const droga = szukajDrogi(sim, c, (_i, x, y) => {
       ruda = swietoscObok(x, y, (t) => t === T.ORE || (c.race === Race.DWARF && t === T.CRYSTAL));
       return ruda >= 0 && !sim.przyMagmie(ruda % w.w, (ruda / w.w) | 0);
-    }, 900);
+    }, K.kopanieLimit);
     if (droga && ruda >= 0) {
       naDroge(droga, ruda % w.w, (ruda / w.w) | 0);
-      c.job = Job.DIG; c.jt = 100 + droga.length * 14;
+      c.job = Job.DIG; c.jt = K.kopanieTikow + droga.length * K.tikowNaKafel;
       keepDig(); return;
     }
-    const ore = sim.findTile(c.x, c.y, 14, (t) => t === T.ORE || (c.race === Race.DWARF && t === T.CRYSTAL));
+    const ore = sim.findTile(c.x, c.y, K.rudaZasieg, (t) => t === T.ORE || (c.race === Race.DWARF && t === T.CRYSTAL));
     if (ore) {
       const dist = Math.hypot(ore[0] - c.x, ore[1] - c.y);
-      c.job = Job.DIG; c.jx = ore[0]; c.jy = ore[1]; c.jt = 100 + Math.round(dist * 30);
+      c.job = Job.DIG; c.jx = ore[0]; c.jy = ore[1]; c.jt = K.kopanieTikow + Math.round(dist * K.tikowNaKafelKopania);
       keepDig(); return;
     }
     c.job = Job.DIG;
-    c.jx = Math.floor(c.x) + sim.rng.int(13) - 6;
+    c.jx = Math.floor(c.x) + sim.rng.int(K.kopanieLosoweX * 2 + 1) - K.kopanieLosoweX;
     c.jy = Math.floor(c.y) + sim.rng.int(9) - 3;
-    c.jt = 90; c.dig = 0; return;
+    c.jt = K.kopanieTikowLosowe; c.dig = 0; return;
   }
 
   c.job = Job.WANDER;
-  c.jx = c.x + sim.rng.range(-10, 10);
-  c.jy = c.y + sim.rng.range(-3, 3);
+  c.jx = c.x + sim.rng.range(-K.spacerX, K.spacerX);
+  c.jy = c.y + sim.rng.range(-K.spacerY, K.spacerY);
 }
 
 // -------------------------------------------------------------------- ruch
@@ -536,17 +539,17 @@ function krok(sim: Sim, c: Creature, cel: number): void {
   const cx = Math.floor(c.x), cy = Math.floor(c.y);
   const nx = cel % w.w, ny = (cel / w.w) | 0;
   const speed = d.speed
-    * (w.water[w.idx(cx, cy)] > 3 ? 0.5 : 1)
-    * (w.tile[w.idx(cx, cy)] === T.WEB && c.race !== Race.SPINNER ? 0.4 : 1);
+    * (w.water[w.idx(cx, cy)] > K.wodaSpowalniaOd ? K.wodaSpowalnia : 1)
+    * (w.tile[w.idx(cx, cy)] === T.WEB && c.race !== Race.SPINNER ? K.siecSpowalnia : 1);
   const doSrodka = (v: number) => Math.max(-speed, Math.min(speed, nx + 0.5 - v));
   if (ny < cy) {
     c.wspina = sim.tick;
     c.x += doSrodka(c.x);
-    c.y -= speed * 0.6;
+    c.y -= speed * K.wspinanie;
   } else if (ny > cy) {
     c.wspina = sim.tick;                        // schodzi, trzymając się ściany
     c.x += doSrodka(c.x);
-    c.y += speed * 1.2;
+    c.y += speed * K.schodzenie;
   } else {
     const dir = nx > cx ? 1 : -1;
     c.face = dir;
@@ -563,15 +566,15 @@ function walkTo(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): b
   // do środka kafla, nie do jego lewej krawędzi: stworzenie stojące na granicy
   // dwóch kafli dreptało w miejscu, bo cel był raz z lewej, raz z prawej
   const dx = tx + 0.5 - c.x, dy = ty + 0.5 - c.y;
-  if (Math.abs(dx) < 0.6 && Math.abs(dy) < 1.2) return true;
+  if (Math.abs(dx) < K.naMiejscuX && Math.abs(dy) < K.naMiejscuY) return true;
 
   const cx = Math.floor(c.x), cy = Math.floor(c.y);
-  const deepWater = (x: number, y: number) => !d.swims && w.inb(x, y) && w.water[w.idx(x, y)] > 5;
+  const deepWater = (x: number, y: number) => !d.swims && w.inb(x, y) && w.water[w.idx(x, y)] > K.toniePowyzej;
   // w magmę nikt nie wchodzi z własnej woli — wcześniej była dla nich zwykłym korytarzem,
   // a Żużlowcy, którzy chodzą do ognia po ciepło, ginęli w nim całymi klanami
   // i nie staje nad nią: krok nad jezioro magmy kończył się upadkiem prosto w ogień
   const nadOgniem = (x: number, y: number) => {
-    for (let yy = y + 1; yy <= y + 14 && w.inb(x, yy); yy++) {
+    for (let yy = y + 1; yy <= y + K.nadOgniemPatrzy && w.inb(x, yy); yy++) {
       if (w.magma[w.idx(x, yy)] > 0) return true;
       if (!w.passable(x, yy)) return false;
     }
@@ -580,13 +583,13 @@ function walkTo(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): b
   const free = (x: number, y: number) => w.passable(x, y) && !deepWater(x, y) && w.magma[w.idx(x, y)] === 0
     && !nadOgniem(x, y);
   const speed = d.speed
-    * (w.water[w.idx(cx, cy)] > 3 ? 0.5 : 1)
-    * (w.tile[w.idx(cx, cy)] === T.WEB && c.race !== Race.SPINNER ? 0.4 : 1);
+    * (w.water[w.idx(cx, cy)] > K.wodaSpowalniaOd ? K.wodaSpowalnia : 1)
+    * (w.tile[w.idx(cx, cy)] === T.WEB && c.race !== Race.SPINNER ? K.siecSpowalnia : 1);
 
   // ściana pod ręką: przy niej da się wisieć i podciągać
   const sciana = (x: number, y: number) => w.solid(x - 1, y) || w.solid(x + 1, y);
   const kopie = mayDig && d.digPower > 0;
-  const wisi = (c.wspina ?? -9) >= sim.tick - 2;
+  const wisi = (c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow;
 
   // pion: cel wyraźnie wyżej albo niżej i nic nie stoi na drodze w poziomie
   // (także cel tuż nad głową — wcześniej między 1,2 a 2,5 kafla w pionie była martwa strefa:
@@ -597,11 +600,11 @@ function walkTo(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): b
       // przy ścianie schodzą, trzymając się jej — swobodny lot z szybu, który sami
       // wykopali, łamał im kości i po kilku zejściach zabijał
       if (sciana(cx, cy) || sciana(cx, ny)) c.wspina = sim.tick;
-      c.y += speed * 1.4;
+      c.y += speed * K.schodzenieNaPrzelaj;
       return false;
     }
     // w górę tylko po ścianie — w otwartej pustce nie ma się czego chwycić
-    if (dy < 0 && free(cx, ny) && sciana(cx, ny)) { c.wspina = sim.tick; c.y -= speed * 0.55; return false; }
+    if (dy < 0 && free(cx, ny) && sciana(cx, ny)) { c.wspina = sim.tick; c.y -= speed * K.wspinanieNaPrzelaj; return false; }
     if (kopie && w.solid(cx, ny)) { digTile(sim, c, cx, ny); return false; }
   }
 
@@ -623,7 +626,7 @@ function walkTo(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): b
   // na stopień wchodził tylko ten, kto przypadkiem stał przy samej krawędzi kafla.
   if (free(nx, cy - 1) && free(cx, cy - 1)) {
     c.wspina = sim.tick;
-    c.y -= speed * 1.2;
+    c.y -= speed * K.stopien;
     return false;
   }
   if (kopie && w.solid(nx, cy)) {
@@ -638,7 +641,7 @@ function walkTo(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): b
 
   // droga zablokowana wodą albo skałą, której nie ugryzie — obejściem jest inna strona
   const alt = cx - dir;
-  if (free(alt, cy)) { c.x -= dir * speed * 0.8; c.face = -dir; return false; }
+  if (free(alt, cy)) { c.x -= dir * speed * K.obejscie; c.face = -dir; return false; }
   if (kopie && w.solid(cx, cy - 1)) { digTile(sim, c, cx, cy - 1); return false; }
   return false;
 }
@@ -655,15 +658,15 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
   // Trol jest szalony z natury, ale ognia i tak się boi — inaczej żaden nie dożywał drugiej minuty.
   // Tak samo z dziurą w podłodze nad jeziorem ognia: po wykopaniu kafla spadało się
   // szybem prosto w magmę i całe gniazdo ginęło po kolei w jednym miejscu.
-  if (t !== T.CORE && (c.mad < 0.6 || c.race === Race.TROLL) && c.job !== Job.DESCEND
-      && (sim.przyMagmie(x, y, 2) || nadOgniem(sim, x, y))) {
+  if (t !== T.CORE && (c.mad < K.kopanieOgienSzalenstwo || c.race === Race.TROLL) && c.job !== Job.DESCEND
+      && (sim.przyMagmie(x, y, K.kopanieOgienZasieg) || nadOgniem(sim, x, y))) {
     c.dig = 0; c.jt = 0; return;
   }
-  c.dig += RACES[c.race].digPower * (1 + c.mad * 0.6);
-  if (c.dig < hard * 9) return;
+  c.dig += RACES[c.race].digPower * (1 + c.mad * K.kopanieOdSzalenstwa);
+  if (c.dig < hard * K.kopanieProg) return;
   c.dig = 0;
-  if (t === T.ORE) c.carry += 1;
-  if (t === T.CRYSTAL) { c.carry += 2; c.mad = Math.min(1, c.mad + 0.2); sim.onCrystal(x, y); }
+  if (t === T.ORE) c.carry += K.lupRudy;
+  if (t === T.CRYSTAL) { c.carry += K.lupKrysztalu; c.mad = Math.min(1, c.mad + K.krysztalSzalenstwo); sim.onCrystal(x, y); }
   if (t === T.CORE) { sim.reachCore(c); return; }
   w.set(x, y, T.AIR);
   sim.dug++;
@@ -671,7 +674,7 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
 
 // ------------------------------------------------------------------ zajęcia
 
-function doWander(sim: Sim, c: Creature): void { walkTo(sim, c, c.jx, c.jy, sim.rng.chance(0.25)); }
+function doWander(sim: Sim, c: Creature): void { walkTo(sim, c, c.jx, c.jy, sim.rng.chance(K.spacerKopie)); }
 
 function doDig(sim: Sim, c: Creature): void {
   const w = sim.world;
@@ -691,8 +694,8 @@ function doEat(sim: Sim, c: Creature): void {
   if (Math.abs(c.jx - Math.floor(c.x)) <= 1 && Math.abs(c.jy - Math.floor(c.y)) <= 1) {
     w.set(c.jx, c.jy, T.AIR);
     sim.meals++;
-    c.hunger = Math.max(0, c.hunger - (t === T.BONES ? 0.9 : 0.7));
-    c.hp = Math.min(RACES[c.race].maxHp, c.hp + 2);
+    c.hunger = Math.max(0, c.hunger - (t === T.BONES ? K.kesKosci : K.kesGrzyba));
+    c.hp = Math.min(RACES[c.race].maxHp, c.hp + K.kesLeczy);
     c.jt = 0;
   } else idz(sim, c, c.jx, c.jy);
 }
@@ -705,21 +708,21 @@ function doEat(sim: Sim, c: Creature): void {
 function doPielgrzym(sim: Sim, c: Creature): void {
   const w = sim.world;
   // po drodze je, co znajdzie; dopiero gdy nie ma nic, zawraca do swoich
-  if (c.hunger > 0.62) {
-    const jedzenie = sim.findFood(c.x, c.y, 12, RACES[c.race].swims, (t) => edible(c.race, t));
+  if (c.hunger > P.glodSzukaJedzenia) {
+    const jedzenie = sim.findFood(c.x, c.y, P.zasiegJedzenia, RACES[c.race].swims, (t) => edible(c.race, t));
     if (jedzenie) { c.job = Job.EAT; c.jx = jedzenie[0]; c.jy = jedzenie[1]; c.jt = 90; return; }
-    if (c.hunger > 0.7) { c.job = Job.WANDER; c.jt = 0; c.jx = sim.clans[c.clan].hx; c.jy = sim.clans[c.clan].hy; return; }
+    if (c.hunger > P.glodWraca) { c.job = Job.WANDER; c.jt = 0; c.jx = sim.clans[c.clan].hx; c.jy = sim.clans[c.clan].hy; return; }
   }
-  const wPrzedsionku = Math.abs(c.x - w.coreX) < 6 && Math.abs(c.y - (w.coreY - 14)) < 5;
+  const wPrzedsionku = Math.abs(c.x - w.coreX) < P.przedsionekX && Math.abs(c.y - w.przedsionekY) < P.przedsionekY;
   if (!wPrzedsionku) { walkTo(sim, c, c.jx, c.jy); return; }
   // Dopiero na miejscu widać, czy skorupa już puściła — i liczy się faktyczna droga,
   // nie licznik pęknięć. Wtedy pielgrzym przestaje być pielgrzymem: schodzi do rdzenia.
-  if (sim.rytual.otwarta && (sim.clans[c.clan].devotion > 0.55 || c.devotion > 0.7)
-      && sim.tick % 30 === c.id % 30 && wyslijDoRdzenia(sim, c, 1200)) return;
-  c.devotion = Math.min(1, c.devotion + 0.0012);
-  c.hunger = Math.max(0, c.hunger - 0.00018);      // wiara trawi wolniej, ale trawi
-  sim.wiara += 0.0025 * sim.incomeMult();
-  if (sim.tick % 24 === 0 && sim.rng.chance(0.3)) sim.efekt(c.x, c.y - 0.4, 'mysl');
+  if (sim.rytual.otwarta && (sim.clans[c.clan].devotion > RYTUAL.uwolnienieNacja || c.devotion > RYTUAL.uwolnienieWlasne)
+      && sim.tick % P.sprawdzOtwarcieCo === c.id % P.sprawdzOtwarcieCo && wyslijDoRdzenia(sim, c, RYTUAL.zejsciePielgrzymaTikow)) return;
+  c.devotion = Math.min(1, c.devotion + P.modlitwaOddanie);
+  c.hunger = Math.max(0, c.hunger - P.modlitwaKarmi);      // wiara trawi wolniej, ale trawi
+  sim.wiara += P.modlitwaWiara * sim.incomeMult();
+  if (sim.tick % P.mysliCo === 0 && sim.rng.chance(P.mysliSzansa)) sim.efekt(c.x, c.y - 0.4, 'mysl');
 }
 
 /**
@@ -733,12 +736,12 @@ function doPielgrzym(sim: Sim, c: Creature): void {
  * Wynik trzymany w klanie na pół minuty; bez budżetu szukania pielgrzymka czeka.
  */
 function powrotSpodRdzenia(sim: Sim, c: Creature, clan: Sim['clans'][number]): boolean {
-  if (clan.powrotT !== undefined && sim.tick - clan.powrotT < 3600) return !!clan.powrotOk;
+  if (clan.powrotT !== undefined && sim.tick - clan.powrotT < P.powrotPamiecTikow) return !!clan.powrotOk;
   if (budzetDrog() < 2) return false;
   const w = sim.world;
   // pozorny wędrowiec z przedsionka: ta sama rasa, więc ta sama fizyka wspinania i pływania
-  const zPrzedsionka = { ...c, x: w.coreX + 0.5, y: w.coreY - 14 + 0.5 };
-  const droga = szukajDrogi(sim, zPrzedsionka, (_i, x, y) => Math.abs(x - clan.hx) <= 3 && Math.abs(y - clan.hy) <= 3, 12000);
+  const zPrzedsionka = { ...c, x: w.coreX + 0.5, y: w.przedsionekY + 0.5 };
+  const droga = szukajDrogi(sim, zPrzedsionka, (_i, x, y) => Math.abs(x - clan.hx) <= 3 && Math.abs(y - clan.hy) <= 3, P.powrotLimitDrogi);
   clan.powrotT = sim.tick;
   clan.powrotOk = droga !== null;
   return clan.powrotOk;
@@ -752,7 +755,7 @@ export function wyslijDoRdzenia(sim: Sim, c: Creature, jt: number): boolean {
   const w = sim.world;
   c.job = Job.DIG; c.jx = w.coreX; c.jy = w.coreY; c.jt = jt; c.dig = 0;
   const droga = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - w.coreX) <= 3 && Math.abs(y - w.coreY) <= 3
-    && (w.get(x, y + 1) === T.CORE || w.get(x - 1, y) === T.CORE || w.get(x + 1, y) === T.CORE || w.get(x, y - 1) === T.CORE), 6000);
+    && (w.get(x, y + 1) === T.CORE || w.get(x - 1, y) === T.CORE || w.get(x + 1, y) === T.CORE || w.get(x, y - 1) === T.CORE), RYTUAL.zejscieLimitDrogi);
   c.droga = droga ?? undefined; c.drogaI = 0;
   return true;
 }
@@ -761,9 +764,9 @@ function doPray(sim: Sim, c: Creature): void {
   const w = sim.world;
   const t = w.get(c.jx, c.jy);
   if (t !== T.SHRINE && t !== T.FORGE && t !== T.GLYPH && t !== T.CORE) { c.jt = 0; return; }
-  if (Math.abs(c.jx - Math.floor(c.x)) <= 2 && Math.abs(c.jy - Math.floor(c.y)) <= 2) {
+  if (Math.abs(c.jx - Math.floor(c.x)) <= K.modlitwaBlisko && Math.abs(c.jy - Math.floor(c.y)) <= K.modlitwaBlisko) {
     sim.pray(c, t);
-    c.devotion = Math.min(1, c.devotion + 0.004);
+    c.devotion = Math.min(1, c.devotion + K.modlitwaOddanie);
   } else idz(sim, c, c.jx, c.jy);
 }
 
@@ -783,18 +786,18 @@ function doFight(sim: Sim, c: Creature): void {
   const foe = sim.creatureById(sim.target.get(c.id) ?? -1);
   if (!foe || foe.dead) { sim.target.delete(c.id); c.jt = 0; return; }
   const dist = Math.hypot(foe.x - c.x, foe.y - c.y);
-  if (dist < 1.5) {
-    const dmg = RACES[c.race].strength * (0.6 + sim.rng.next() * 0.8) * (1 + c.mad);
+  if (dist < K.walkaZasieg) {
+    const dmg = RACES[c.race].strength * (K.walkaMin + sim.rng.next() * K.walkaRozrzut) * (1 + c.mad);
     foe.hp -= dmg;
-    foe.fear = Math.min(1, foe.fear + 0.3);
+    foe.fear = Math.min(1, foe.fear + K.walkaStrach);
     sim.spark(foe.x, foe.y, 'hit');
     if (foe.hp <= 0) {
       sim.kill(foe, `z ręki ${sim.clans[c.clan].name}`, 'walka');
-      if (RACES[c.race].eatsMeat) c.hunger = Math.max(0, c.hunger - 0.5);
+      if (RACES[c.race].eatsMeat) c.hunger = Math.max(0, c.hunger - K.zjadaOfiare);
       sim.feud(c.clan, foe.clan);
       sim.wojnaBudzi(c.clan, foe.clan);
     }
-  } else if (dist > 22) { sim.target.delete(c.id); c.jt = 0; }
+  } else if (dist > K.walkaGubi) { sim.target.delete(c.id); c.jt = 0; }
   else walkTo(sim, c, foe.x, foe.y);
 }
 
@@ -803,16 +806,16 @@ function doFlee(sim: Sim, c: Creature): void { walkTo(sim, c, c.jx, c.jy, false)
 function doBreed(sim: Sim, c: Creature): void {
   const clan = sim.clans[c.clan];
   const far = Math.hypot(clan.hx - c.x, clan.hy - c.y);
-  if (far > 14) { sim.birth(c); c.hunger = Math.min(1, c.hunger + 0.3); c.jt = 0; return; }
-  if (far > 3) { idz(sim, c, clan.hx, clan.hy); return; }
+  if (far > K.rozrodDaleko) { sim.birth(c); c.hunger = Math.min(1, c.hunger + K.rozrodGlodPoWDrodze); c.jt = 0; return; }
+  if (far > K.rozrodDoGniazda) { idz(sim, c, clan.hx, clan.hy); return; }
   sim.birth(c);
-  c.hunger = Math.min(1, c.hunger + 0.25);
+  c.hunger = Math.min(1, c.hunger + K.rozrodGlodPo);
   c.jt = 0;
 }
 
 function doHaul(sim: Sim, c: Creature): void {
   const clan = sim.clans[c.clan];
-  if (Math.hypot(clan.hx - c.x, clan.hy - c.y) < 3.5) {
+  if (Math.hypot(clan.hx - c.x, clan.hy - c.y) < K.oddajeLupOd) {
     clan.stock += c.carry; c.carry = 0; c.jt = 0;
   } else idz(sim, c, clan.hx, clan.hy);
 }
@@ -822,10 +825,10 @@ function doSlave(sim: Sim, c: Creature): void {
   const foe = sim.creatureById(sim.target.get(c.id) ?? -1);
   if (!foe || foe.dead) { c.jt = 0; return; }
   const dist = Math.hypot(foe.x - c.x, foe.y - c.y);
-  if (dist < 1.4) {
-    foe.hp -= 1.5;
+  if (dist < K.jarzmoZasieg) {
+    foe.hp -= K.jarzmoCios;
     foe.fear = 1;
-    if (foe.hp < RACES[foe.race].maxHp * 0.62) sim.enslave(foe, c.clan);
+    if (foe.hp < RACES[foe.race].maxHp * K.jarzmoProg) sim.enslave(foe, c.clan);
     c.jt = 0;
   } else walkTo(sim, c, foe.x, foe.y);
 }
@@ -838,22 +841,22 @@ function doSacrifice(sim: Sim, c: Creature): void {
 
 /** Sen w skale: nie rusza się, nie je, budzi go dopiero czyjś krok. */
 function doSleep(sim: Sim, c: Creature): void {
-  c.hunger = Math.max(0.5, c.hunger - 0.0004);
-  c.hp = Math.min(RACES[c.race].maxHp, c.hp + 0.03);
-  if (!sim.rozejm && (c.id + sim.tick) % 30 === 0) {
-    const prey = sim.nearestCreature(c.x, c.y, 8, (o) => o.id !== c.id && o.race !== Race.TROLL);
-    if (prey) { c.job = Job.FIGHT; sim.target.set(c.id, prey.id); c.jt = 80; c.hunger = Math.min(1, c.hunger); }
+  c.hunger = Math.max(K.snuGlodMin, c.hunger - K.snuGlodNaTik);
+  c.hp = Math.min(RACES[c.race].maxHp, c.hp + K.snuLeczy);
+  if (!sim.rozejm && (c.id + sim.tick) % K.snuCzujneCo === 0) {
+    const prey = sim.nearestCreature(c.x, c.y, K.snuCzujneZasieg, (o) => o.id !== c.id && o.race !== Race.TROLL);
+    if (prey) { c.job = Job.FIGHT; sim.target.set(c.id, prey.id); c.jt = K.snuAtakTikow; c.hunger = Math.min(1, c.hunger); }
   }
 }
 
 /** Powrót do ognia: żużel jest dla nich jedzeniem, a kuźnia domem. */
 function doHeat(sim: Sim, c: Creature): void {
   const clan = sim.clans[c.clan];
-  if (c.carry > 0 && Math.hypot(clan.hx - c.x, clan.hy - c.y) < 4) { clan.stock += c.carry; c.carry = 0; }
+  if (c.carry > 0 && Math.hypot(clan.hx - c.x, clan.hy - c.y) < K.cieploOddajeLup) { clan.stock += c.carry; c.carry = 0; }
   const d = Math.hypot(c.jx + 0.5 - c.x, c.jy + 0.5 - c.y);
-  if (d < 3.6 || (!c.droga && sim.goraco(Math.floor(c.x), Math.floor(c.y)))) {
-    c.hunger = Math.max(0, c.hunger - 0.005);
-    if (c.hunger < 0.12) c.jt = 0;
+  if (d < K.cieploBlisko || (!c.droga && sim.goraco(Math.floor(c.x), Math.floor(c.y)))) {
+    c.hunger = Math.max(0, c.hunger - K.cieploJe);
+    if (c.hunger < K.cieploSyty) c.jt = 0;
   } else idz(sim, c, c.jx, c.jy);
 }
 
@@ -861,26 +864,26 @@ function doHeat(sim: Sim, c: Creature): void {
 function doDrain(sim: Sim, c: Creature): void {
   const victim = sim.creatureById(sim.target.get(c.id) ?? -1);
   if (!victim || victim.dead || victim.clan !== c.clan) { c.jt = 0; return; }
-  if (Math.hypot(victim.x - c.x, victim.y - c.y) < 1.5) {
-    victim.hp -= 0.25;
+  if (Math.hypot(victim.x - c.x, victim.y - c.y) < K.wysysanieZasieg) {
+    victim.hp -= K.wysysanieCios;
     victim.fear = 1;
-    c.hunger = Math.max(0, c.hunger - 0.006);
+    c.hunger = Math.max(0, c.hunger - K.wysysanieKarmi);
     if (sim.rng.chance(0.04)) sim.spark(victim.x, victim.y, 'hit');
     if (victim.hp <= 0) sim.kill(victim, 'wyssany przez Prządki', 'jarzmo');
-    if (c.hunger < 0.15) c.jt = 0;
+    if (c.hunger < K.wysysanieSyta) c.jt = 0;
   } else walkTo(sim, c, victim.x, victim.y);
 }
 
 /** Ludzie nie mieszkają w tobie. Przychodzą po rudę i po sławę. */
 function doRaid(sim: Sim, c: Creature): void {
-  if (c.carry >= 4 || c.hp < RACES[c.race].maxHp * 0.35) {
-    if (c.y < 12) { sim.leaveWorld(c); return; }
+  if (c.carry >= K.ludzieNiosa || c.hp < RACES[c.race].maxHp * K.ludzieRanni) {
+    if (c.y < K.ludzieWychodza) { sim.leaveWorld(c); return; }
     walkTo(sim, c, c.x + sim.rng.range(-3, 3), 2);
     return;
   }
-  const ore = sim.findTile(c.x, c.y, 18, (t) => t === T.ORE);
+  const ore = sim.findTile(c.x, c.y, K.ludzieRuda, (t) => t === T.ORE);
   if (ore) { c.jx = ore[0]; c.jy = ore[1]; doDig(sim, c); return; }
-  walkTo(sim, c, c.x + sim.rng.range(-14, 14), c.y + sim.rng.range(0, 10));
+  walkTo(sim, c, c.x + sim.rng.range(-K.ludzieSzukajX, K.ludzieSzukajX), c.y + sim.rng.range(0, K.ludzieSzukajY));
 }
 
 export { PASSABLE };

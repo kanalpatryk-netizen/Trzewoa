@@ -7,6 +7,9 @@ import { Tajemnica } from '../../render/tajemnica';
 import { ramaRyciny } from '../../render/ozdoby';
 import { odkrycia } from '../../atlas/odkrycia';
 import { TABLICE } from '../../atlas/tablice';
+import { zLiczbami } from '../../atlas/okno';
+import { ATLAS as A } from '../../nastawy/wyglad/atlas';
+import { RAMA } from '../../nastawy/wyglad/ozdoby';
 
 /**
  * Atlas z menu: te same tablice, co w grze — tylko te, które już odkryłeś.
@@ -34,12 +37,13 @@ export class EkranBestiariusza implements Ekran {
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     tloSadzy(ctx, w, h, teraz);
     this.tajemnica.brzegi(ctx, { x: 0, y: 0, w, h }, 0.5 + 0.5 * Math.sin(teraz * 0.0006));
-    this.okno.margines = Math.max(12, Math.min(34, w * 0.024)) + 18;
+    this.okno.margines = Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc)) + 18;
     this.okno.rysuj(ctx, w, h, teraz, false);
-    ramaRyciny(ctx, w, h, 1, w < 700 ? 'Atlas' : 'Atlas trzewi · tablice ras, rytów i praw góry', w < 700 ? `odkryte ${odkrycia.ile} z ${TABLICE.length}` : `odkryte ${odkrycia.ile} z ${TABLICE.length} · kółko przewija · esc zamyka`);
+    const waski = w < A.waskiPonizej;
+    ramaRyciny(ctx, w, h, 1, waski ? A.ramaGoraWaski : A.ramaGora, zLiczbami(waski ? A.ramaDolWaski : A.ramaDol, odkrycia.ile, TABLICE.length));
   }
 
-  kolko(e: WheelEvent): void { this.okno.kolko(e.deltaY * 0.7); }
+  kolko(e: WheelEvent): void { this.okno.kolko(e.deltaY * A.przewinKolko); }
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
     if (faza === 'dol') { this.start = { x: e.clientX, y: e.clientY }; this.ostatniY = e.clientY; this.przeciaga = false; return; }

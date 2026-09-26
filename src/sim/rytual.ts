@@ -2,6 +2,8 @@ import type { Sim } from './sim';
 import { T, PASSABLE } from './tiles';
 import { Race } from './races';
 import { Job, wyslijDoRdzenia } from './creatures';
+import { RYTUAL as R, PIELGRZYMKA as P } from '../nastawy/rytual';
+import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 
 export interface StanRytualu {
   /** Postęp nacji, która jest najbliżej przebicia — tylko do pokazania graczowi. */
@@ -16,11 +18,8 @@ export interface StanRytualu {
   skorupa: number;
 }
 
-const PROMIEN = 16;      // modlitwa pod skorupą liczy się w tym promieniu od rdzenia
-
-const POTRZEBA = 3;      // tylu wiernych naraz, żeby kamień w ogóle drgnął
-/** Ilu pielgrzymów naraz wysyła jedna nacja. Reszta zostaje w domu i je. */
-export const PIELGRZYMOW = 5;
+/** Ilu pielgrzymów naraz wysyła jedna nacja (patrz nastawy/rytual.ts). */
+export const PIELGRZYMOW = P.maxPielgrzymow;
 
 /**
  * Rytuał otwarcia rdzenia. Skorupa jest nie do rozkucia — pęka wyłącznie pod modlitwą,
@@ -39,8 +38,8 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
 
   for (const c of sim.creatures) {
     if (c.dead || c.race === Race.HUMAN) continue;
-    if (Math.abs(c.x - w.coreX) > PROMIEN || Math.abs(c.y - w.coreY) > PROMIEN) continue;
-    if (c.devotion < 0.35) continue;
+    if (Math.abs(c.x - w.coreX) > R.promien || Math.abs(c.y - w.coreY) > R.promien) continue;
+    if (c.devotion < R.minOddanie) continue;
     const n = (liczniki.get(c.clan) ?? 0) + 1;
     liczniki.set(c.clan, n);
     const k = kierunek.get(c.clan) ?? [0, 0];
@@ -53,27 +52,27 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
   // naraz, ich pęknięcia się sumowały i trzy klany tej samej krwi otwierały rdzeń
   // w pięć minut, zamiast w długiej, bronionej warcie.
   for (const [id, n] of liczniki) {
-    if (n < POTRZEBA || id !== najlepszy) continue;
+    if (n < R.potrzebaWiernych || id !== najlepszy) continue;
     const klan = sim.clans[id];
     // nacja, której ktoś właśnie klęczy pod skorupą, z definicji nie jest martwa;
     // flaga potrafi zostać po przepisaniu ludzi między klanami i mroziła rytuał na zawsze
     if (!klan) continue;
     if (klan.dead && n > 0) klan.dead = false;
     // każde kolejne pęknięcie idzie oporniej — skorupa nie ma puścić w dwie minuty
-    const opor = 1 + klan.pekniecia * 0.18;
+    const opor = 1 + klan.pekniecia * R.oporNaPekniecie;
     const przed = klan.rytual;
     // Zegar rytuału: przy czterech wiernych i pełnym oddaniu całe pięć pęknięć
     // zajmuje około dziesięciu–piętnastu minut nieprzerwanej warty.
-    const laska = sim.lagodna ? 1.3 : 1;
+    const laska = sim.lagodna ? R.laskawaMnoznik : 1;
     // na początku partii skorupa jest twardsza — wygrana w pięć minut nie jest wygraną
-    const wczesnie = 0.35 + 0.65 * Math.min(1, sim.tick / (7200 * 12));
-    klan.rytual = Math.min(1, klan.rytual + 0.0004 * laska * wczesnie * (Math.min(6, n) / 3) * (0.6 + klan.devotion) / opor);
+    const wczesnie = R.wczesnieOd + (1 - R.wczesnieOd) * Math.min(1, sim.tick / (TIKOW_NA_MINUTE * R.wczesnieMinut));
+    klan.rytual = Math.min(1, klan.rytual + R.tempo * laska * wczesnie * (Math.min(R.maxWiernychLiczonych, n) / R.normaWiernych) * (R.podstawaOddania + klan.devotion) / opor);
 
-    if (przed < 0.08 && klan.rytual >= 0.08) {
-      sim.gdzie(w.coreX, w.coreY - 14)
+    if (przed < R.kronikaStart && klan.rytual >= R.kronikaStart) {
+      sim.gdzie(w.coreX, w.przedsionekY)
         .log(`${klan.name} zeszli pod twój rdzeń i nie chcą odejść. Modlą się do kamienia.`, 'wiara', `rytual-start${id}`);
-    } else if (przed < 0.55 && klan.rytual >= 0.55) {
-      sim.gdzie(w.coreX, w.coreY - 14)
+    } else if (przed < R.kronikaPolowa && klan.rytual >= R.kronikaPolowa) {
+      sim.gdzie(w.coreX, w.przedsionekY)
         .log('Modlitwa pod skorupą nie cichnie. Kamień zaczyna się rysować.', 'otchlan', `rytual-pol${id}`);
     }
 
@@ -98,14 +97,14 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
   // Czy droga naprawdę stoi otworem — sprawdzamy mapę, nie licznik pęknięć. Licznik
   // kłamał: skorupa kruszyła się wszerz, a gra już wysyłała ludzi na lity kamień.
   // (bez względu na to, skąd wzięło się przejście — zawał, woda czy pęknięcia)
-  if (!stan.otwarta && sim.tick % 60 === 0 && drogaDoRdzenia(sim)) {
+  if (!stan.otwarta && sim.tick % R.sprawdzDrogeCo === 0 && drogaDoRdzenia(sim)) {
     stan.otwarta = true;
     sim.gdzie(w.coreX, w.coreY - 6).log('Droga do rdzenia stoi otworem.', 'koniec', 'skorupa-otwarta');
   }
 
   // Po przebiciu skorupy do środka schodzą wyłącznie wierni tej nacji, która kuła.
   // Przypadkowy przechodzień nie porzuca swoich spraw, żeby wejść do cudzego boga.
-  if (stan.otwarta && sim.tick % 20 === 0) {
+  if (stan.otwarta && sim.tick % R.zejscieCo === 0) {
     // kto prowadzi: nacja, która kuła, a gdy nikt nie kuł — ta z najliczniejszą wartą
     const prowadzi = sim.clans[stan.klan >= 0 ? stan.klan : najlepszy];
     // schodzą wierni tej nacji — o wejściu decyduje ich własna wiara, nie średnia z domu
@@ -113,12 +112,12 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
       for (const c of sim.creatures) {
         if (c.dead || c.race === Race.HUMAN) continue;
         // schodzą wierni prowadzącej nacji — albo każdy, kto wierzy całym sobą
-        if (c.clan !== prowadzi.id && c.devotion <= 0.8) continue;
-        if (c.devotion <= 0.7 && prowadzi.devotion <= 0.55) continue;
-        if (Math.hypot(c.x - w.coreX, c.y - w.coreY) > 22) continue;
+        if (c.clan !== prowadzi.id && c.devotion <= R.zejscieObcyOddanie) continue;
+        if (c.devotion <= R.uwolnienieWlasne && prowadzi.devotion <= R.uwolnienieNacja) continue;
+        if (Math.hypot(c.x - w.coreX, c.y - w.coreY) > R.zejscieZasieg) continue;
         // (już schodzi — chyba że nie dostał drogi, bo w tym tiku zabrakło na nią czasu)
         if (c.job === Job.DIG && c.jx === w.coreX && c.jy === w.coreY && c.droga) break;
-        if (wyslijDoRdzenia(sim, c, 1500)) break;
+        if (wyslijDoRdzenia(sim, c, R.zejscieTikow)) break;
       }
     }
   }
@@ -135,7 +134,7 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
 export function kamienNadRdzeniem(sim: Sim): number {
   const w = sim.world;
   let n = 0;
-  for (let y = w.coreY - 16; y <= w.coreY; y++) {
+  for (let y = w.coreY - R.kolumnaSkorupy; y <= w.coreY; y++) {
     if (w.tile[w.idx(w.coreX, y)] === T.STONE) n++;
   }
   return n;
@@ -147,15 +146,15 @@ export function kamienNadRdzeniem(sim: Sim): number {
  */
 export function drogaDoRdzenia(sim: Sim): boolean {
   const w = sim.world;
-  const x0 = w.coreX - 24, x1 = w.coreX + 24;
-  const y0 = w.coreY - 30, y1 = Math.min(w.h - 1, w.coreY + 24);
+  const x0 = w.coreX - R.drogaPudloX, x1 = w.coreX + R.drogaPudloX;
+  const y0 = w.coreY - R.drogaPudloGora, y1 = Math.min(w.h - 1, w.coreY + R.drogaPudloDol);
   const widziane = new Set<number>();
   // start ze wszystkich stron poza skorupą, nie tylko z przedsionka nad nią — wierni
   // spod rdzenia i z boku też mają wejście, jeśli skorupa pękła w ich stronę
   const kolejka: number[] = [];
   for (let y = Math.max(0, y0); y <= y1; y++) {
     for (let x = Math.max(0, x0); x <= Math.min(w.w - 1, x1); x++) {
-      if (Math.abs(x - w.coreX) <= 17 && Math.abs(y - w.coreY) <= 17) continue;
+      if (Math.abs(x - w.coreX) <= R.drogaStartPozaPromieniem && Math.abs(y - w.coreY) <= R.drogaStartPozaPromieniem) continue;
       const i = w.idx(x, y);
       if (PASSABLE[w.tile[i]] === 1) kolejka.push(i);
     }
@@ -189,7 +188,7 @@ export function pielgrzymowKlanu(sim: Sim, clanId: number): number {
   // pielgrzym przestawał być pielgrzymem, a na jego miejsce schodził następny
   for (const c of sim.creatures) {
     if (c.dead || c.clan !== clanId) continue;
-    if (c.job === Job.PIELGRZYM || (Math.abs(c.x - w.coreX) < 20 && Math.abs(c.y - (w.coreY - 8)) < 16)) n++;
+    if (c.job === Job.PIELGRZYM || (Math.abs(c.x - w.coreX) < P.wartaPudloX && Math.abs(c.y - (w.coreY - P.wartaNadRdzeniem)) < P.wartaPudloY)) n++;
   }
   return n;
 }
@@ -198,8 +197,8 @@ export function pielgrzymowKlanu(sim: Sim, clanId: number): number {
 export function policzJedzeniePrzedsionka(sim: Sim): number {
   const w = sim.world;
   let n = 0;
-  for (let y = w.coreY - 26; y <= w.coreY - 2; y++) {
-    for (let x = w.coreX - 12; x <= w.coreX + 12; x++) {
+  for (let y = w.coreY - P.jedzenieOd; y <= w.coreY - P.jedzenieDo; y++) {
+    for (let x = w.coreX - P.jedzeniePolSzerokosci; x <= w.coreX + P.jedzeniePolSzerokosci; x++) {
       if (!w.inb(x, y) || !w.suchaStrefa(x, y)) continue;
       const t = w.tile[w.idx(x, y)];
       if (t === T.FUNGUS || t === T.BONES) n++;
@@ -219,8 +218,8 @@ type Strona = 'gora' | 'dol' | 'lewo' | 'prawo';
 function otworzSkorupe(sim: Sim, stan: StanRytualu, strona: Strona = 'gora'): void {
   const w = sim.world;
   const przed = kamienNadRdzeniem(sim);
-  for (const d of [0, -1, 1, -2, 2]) {
-    for (let r = 16; r >= 0; r--) {
+  for (const d of R.kolumnyPekniec) {
+    for (let r = R.glebokoscPekniecia; r >= 0; r--) {
       const x = strona === 'lewo' ? w.coreX - r : strona === 'prawo' ? w.coreX + r : w.coreX + d;
       const y = strona === 'gora' ? w.coreY - r : strona === 'dol' ? w.coreY + r : w.coreY + d;
       if (!w.inb(x, y)) continue;

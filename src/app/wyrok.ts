@@ -1,5 +1,6 @@
 import type { Sim } from '../sim/sim';
 import { Race, RACES, RACE_COUNT, odmien } from '../sim/races';
+import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 
 /**
  * Wyrok po partii: dlaczego to się tak skończyło i jedna rada na następny raz.
@@ -16,7 +17,7 @@ export interface Wyrok {
 export function wyrok(sim: Sim): Wyrok {
   const e = sim.ending ?? 'sen';
   const [rodzaj] = e.split(':');
-  const minut = Math.max(1, Math.round(sim.tick / 7200));
+  const minut = Math.max(1, Math.round(sim.tick / TIKOW_NA_MINUTE));
   let zywych = 0;
   for (let r = 0; r < RACE_COUNT; r++) if (r !== Race.MYCELIUM && r !== Race.HUMAN) zywych += sim.popByRace[r];
   const oddanie = sim.clans.reduce((m, k) => Math.max(m, k.devotion), 0);

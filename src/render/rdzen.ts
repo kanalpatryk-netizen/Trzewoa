@@ -2,6 +2,7 @@ import type { Sim } from '../sim/sim';
 import type { Camera } from './camera';
 import { T } from '../sim/tiles';
 import { glif } from './tajemnica';
+import { RDZEN_WYGLAD as RW } from '../nastawy/wyglad/rdzen';
 
 /**
  * Rdzeń i jego skorupa jako cel gry, nie kolorowy kafel. Skorupa to ciosane bloki
@@ -29,21 +30,21 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
   const px = (x: number) => cam.toScreenX(x), py = (y: number) => cam.toScreenY(y);
   const kamien = (x: number, y: number) => w.inb(x, y) && w.tile[w.idx(x, y)] === T.STONE;
   ctx.lineWidth = Math.max(1, z * 0.12);
-  for (let y = w.coreY - 12; y <= w.coreY + 12; y++) {
-    for (let x = w.coreX - 12; x <= w.coreX + 12; x++) {
+  for (let y = w.coreY - RW.skorupaZasieg; y <= w.coreY + RW.skorupaZasieg; y++) {
+    for (let x = w.coreX - RW.skorupaZasieg; x <= w.coreX + RW.skorupaZasieg; x++) {
       if (!kamien(x, y)) continue;
       const x0 = px(x), y0 = py(y);
       // ciemny blok z ukośną fakturą ciosu
-      ctx.fillStyle = 'rgba(34,26,24,0.72)';
+      ctx.fillStyle = RW.blok;
       ctx.fillRect(x0, y0, z, z);
       if (z >= 5) {
-        ctx.strokeStyle = 'rgba(150,120,96,0.22)';
+        ctx.strokeStyle = RW.blokFaktura;
         ctx.beginPath();
         ctx.moveTo(x0 + z * 0.2, y0 + z * 0.9); ctx.lineTo(x0 + z * 0.9, y0 + z * 0.2);
         ctx.stroke();
       }
       // obrzeże: jasna krawędź tam, gdzie kamień się kończy
-      ctx.strokeStyle = 'rgba(214,176,128,0.55)';
+      ctx.strokeStyle = RW.blokObrzeze;
       ctx.beginPath();
       if (!kamien(x, y - 1)) { ctx.moveTo(x0, y0); ctx.lineTo(x0 + z, y0); }
       if (!kamien(x, y + 1)) { ctx.moveTo(x0, y0 + z); ctx.lineTo(x0 + z, y0 + z); }
@@ -51,12 +52,12 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
       if (!kamien(x + 1, y)) { ctx.moveTo(x0 + z, y0); ctx.lineTo(x0 + z, y0 + z); }
       ctx.stroke();
       // co któryś blok ma wyryty znak — skorupa jest napisana, nie tylko twarda
-      if (z >= 7 && ((x * 7 + y * 13) & 7) === 0) {
+      if (z >= RW.znakiOdZoom && ((x * 7 + y * 13) & 7) === 0) {
         ctx.save();
         ctx.translate(x0 + z / 2, y0 + z / 2);
         ctx.scale(z * 0.3, z * 0.3);
         ctx.lineWidth = 1.2 / (z * 0.3);
-        ctx.strokeStyle = 'rgba(226,160,110,0.45)';
+        ctx.strokeStyle = RW.znak;
         ctx.stroke(glif(x * 31 + y, 2));
         ctx.restore();
       }
@@ -64,9 +65,9 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
   }
 
   // --- latarnia: szeroka poświata, widoczna z daleka i przy małym przybliżeniu
-  const Rh = Math.max(44, z * 11);
+  const Rh = Math.max(RW.latarnia.min, z * RW.latarnia.naZoom);
   const halo = ctx.createRadialGradient(sx, sy, 0, sx, sy, Rh);
-  const moc = otwarta ? 0.6 : 0.42;
+  const moc = otwarta ? RW.mocOtwarty : RW.mocZamkniety;
   halo.addColorStop(0, `rgba(255,120,80,${moc + 0.12 * uderz})`);
   halo.addColorStop(0.35, `rgba(200,50,40,${(moc * 0.5) + 0.06 * uderz})`);
   halo.addColorStop(1, 'rgba(120,20,20,0)');
@@ -77,12 +78,13 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
 
   // --- promienie: cienkie smugi od serca ku wieńcowi, pulsujące z tętnem
   ctx.globalCompositeOperation = 'lighter';
-  ctx.strokeStyle = `rgba(255,150,100,${0.12 + 0.18 * uderz})`;
+  ctx.strokeStyle = `rgba(255,150,100,${RW.promienAlfa + RW.promienTetno * uderz})`;
   ctx.lineWidth = Math.max(1, z * 0.18);
   ctx.beginPath();
-  for (let i = 0; i < 12; i++) {
-    const a = (i / 12) * Math.PI * 2 + teraz * 0.00004;
-    const d0 = Math.max(13, z * 3) * 1.1, d1 = Math.max(13, z * 3) * (1.7 + 0.25 * (i % 3));
+  const Rs = Math.max(RW.serce.min, z * RW.serce.naZoom);
+  for (let i = 0; i < RW.promieni; i++) {
+    const a = (i / RW.promieni) * Math.PI * 2 + teraz * 0.00004;
+    const d0 = Rs * 1.1, d1 = Rs * (1.7 + 0.25 * (i % 3));
     ctx.moveTo(sx + Math.cos(a) * d0, sy + Math.sin(a) * d0);
     ctx.lineTo(sx + Math.cos(a) * d1, sy + Math.sin(a) * d1);
   }
@@ -90,24 +92,24 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
   ctx.globalCompositeOperation = 'source-over';
 
   // --- serce z kamienia: ośmiokąt ciosany, żyły i jasny środek
-  const R = Math.max(13, z * 3) * (1 + 0.06 * uderz);
+  const R = Rs * (1 + RW.puchniecie * uderz);
   rysujSerce(ctx, sx, sy, R, uderz, otwarta);
 
   // --- wieniec: tyle ogniw, ile pęknięć trzeba; zapalone = pęknięte
   const potrzeba = Math.max(1, Math.max(r.skorupa, r.pekniecia + (otwarta ? 0 : 1)));
   const zrobione = otwarta ? potrzeba : Math.min(potrzeba, r.pekniecia);
-  const Rw = Math.max(R * 1.9, z * 6.2);
+  const Rw = Math.max(R * RW.wieniec, z * RW.wieniecNaZoom);
   const obrot = teraz * 0.00008;
   for (let i = 0; i < potrzeba; i++) {
     const a0 = obrot + (i / potrzeba) * Math.PI * 2 + 0.08, a1 = obrot + ((i + 1) / potrzeba) * Math.PI * 2 - 0.08;
     const lit = i < zrobione;
-    ctx.strokeStyle = lit ? `rgba(255,208,130,${0.75 + 0.25 * uderz})` : 'rgba(214,190,160,0.28)';
+    ctx.strokeStyle = lit ? `rgba(${RW.ogniwoZapalone},${0.75 + 0.25 * uderz})` : RW.ogniwoZgaszone;
     ctx.lineWidth = lit ? Math.max(2, z * 0.3) : Math.max(1, z * 0.14);
     ctx.beginPath(); ctx.arc(sx, sy, Rw, a0, a1); ctx.stroke();
   }
   // znaki na wieńcu, obracające się powoli w przeciwną stronę
-  if (Rw > 30) {
-    const n = 12;
+  if (Rw > RW.znakiWiencaOd) {
+    const n = RW.znakowWienca;
     for (let i = 0; i < n; i++) {
       const a = -obrot * 1.6 + (i / n) * Math.PI * 2;
       const gr = Math.max(3, z * 0.55);
@@ -122,12 +124,12 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
     }
   }
   // podpis — cel gry nazwany wprost, póki kamera jest blisko
-  if (z >= 4) {
+  if (z >= RW.podpisOdZoom) {
     const rozm = Math.max(12, Math.min(18, z * 1.2));
     ctx.font = `italic ${rozm}px "Trzewia Tekst", Georgia, serif`;
     ctx.textAlign = 'center';
-    const tekst = otwarta ? 'rdzeń otwarty — wierni schodzą'
-      : r.pekniecia > 0 ? `skorupa pęka: ${r.pekniecia} z ${potrzeba}` : 'twój rdzeń — tu cię uwolnią';
+    const tekst = otwarta ? RW.podpisOtwarty
+      : r.pekniecia > 0 ? RW.podpisPeka.replace('{ile}', String(r.pekniecia)).replace('{z}', String(potrzeba)) : RW.podpisZamkniety;
     const ty = sy + Rw + rozm * 2.4;
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(10,7,6,0.85)';
@@ -140,8 +142,8 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
 
 /** Tętno rdzenia 0..1: podwójne uderzenie „bum-bum" i pauza, wspólne dla gry i menu. */
 export function tetnoRdzenia(teraz: number): number {
-  const f = (teraz % 1600) / 1600;
-  return Math.max(0, 1 - Math.abs(f - 0.08) * 14) + 0.7 * Math.max(0, 1 - Math.abs(f - 0.26) * 14);
+  const f = (teraz % RW.tetnoMs) / RW.tetnoMs;
+  return Math.max(0, 1 - Math.abs(f - RW.uderzenie1) * 14) + RW.sila2 * Math.max(0, 1 - Math.abs(f - RW.uderzenie2) * 14);
 }
 
 /** Serce z kamienia: ciosany ośmiokąt, żyły, kreska cienia i jasne obrzeże. */
@@ -155,10 +157,10 @@ export function rysujSerce(ctx: CanvasRenderingContext2D, sx: number, sy: number
   }
   kanty.closePath();
   const wnetrze = ctx.createRadialGradient(sx - R * 0.25, sy - R * 0.3, R * 0.05, sx, sy, R);
-  wnetrze.addColorStop(0, otwarta ? '#fff0c8' : '#ffd2a6');
-  wnetrze.addColorStop(0.3, otwarta ? '#f2a04a' : '#e2553c');
-  wnetrze.addColorStop(0.75, '#7a1618');
-  wnetrze.addColorStop(1, '#2a0808');
+  wnetrze.addColorStop(0, otwarta ? RW.serceJasneOtwarte : RW.serceJasne);
+  wnetrze.addColorStop(0.3, otwarta ? RW.serceZarOtwarte : RW.serceZar);
+  wnetrze.addColorStop(0.75, RW.serceCiemne);
+  wnetrze.addColorStop(1, RW.serceBrzeg);
   ctx.fillStyle = wnetrze;
   ctx.fill(kanty);
   // żyły: kilka pękniętych linii od środka, jaśniejące z uderzeniem

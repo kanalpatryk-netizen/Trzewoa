@@ -1,5 +1,6 @@
 import type { Sim } from '../sim/sim';
 import type { Race } from '../sim/races';
+import { MOCE } from '../nastawy/moce';
 import { cost, affordable, kafleKsztaltu, shape, seed, sign, whisper, taint, type Verb } from './powers';
 
 /** Jeden zamiar wydany w pauzie: co, gdzie i ile już zarezerwowano. */
@@ -52,11 +53,11 @@ export class Rozkazy {
               : 'Nie da się tego zrobić w tym miejscu.';
         }
         // pociągnięcie po tym samym miejscu nie mnoży rozkazów
-        if (this.lista.some((o) => o.czasownik === 'ksztaltuj' && o.narzedzie === r.narzedzie && Math.hypot(o.x - r.x, o.y - r.y) < 1.2)) return '';
+        if (this.lista.some((o) => o.czasownik === 'ksztaltuj' && o.narzedzie === r.narzedzie && Math.hypot(o.x - r.x, o.y - r.y) < MOCE.planOdstepKsztalt)) return '';
         break;
       case 'zasiej':
         if (!w.inb(r.x, r.y)) return 'Poza górą.';
-        if (this.lista.some((o) => o.czasownik === 'zasiej' && o.narzedzie === r.narzedzie && Math.hypot(o.x - r.x, o.y - r.y) < 1.6)) return '';
+        if (this.lista.some((o) => o.czasownik === 'zasiej' && o.narzedzie === r.narzedzie && Math.hypot(o.x - r.x, o.y - r.y) < MOCE.planOdstepZasiew)) return '';
         break;
       case 'znak':
         if (this.lista.some((o) => o.czasownik === 'znak' && Math.hypot(o.x - r.x, o.y - r.y) < 3)) return 'Tu już stoi twój Znak.';

@@ -8,6 +8,11 @@ import { BARWA, rgba } from '../../render/palette';
 import { SERIF, tloSadzy, kreska } from '../../render/ink';
 import { hasSave } from '../../core/save';
 import { ustawienia } from '../../core/settings-store';
+import { MENU as M } from '../../nastawy/wyglad/menu';
+import { RAMA } from '../../nastawy/wyglad/ozdoby';
+
+/** Wewnętrzny odstęp od ramy (piksele). */
+const marginesRamy = (w: number): number => Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc));
 
 interface Pozycja { id: string; etykieta: string; opis: string; aktywna: () => boolean; }
 
@@ -26,17 +31,17 @@ export class EkranMenu implements Ekran {
   private wejscieOd = 0;
   private tajemnica = new Tajemnica();
   private frontyspis = new Frontyspis();
-  private pylki = Array.from({ length: 44 }, (_, i) => ({
+  private pylki = Array.from({ length: M.pylkow }, (_, i) => ({
     x: (i * 137.5) % 1, y: (i * 61.8) % 1, v: 0.2 + ((i * 29) % 10) / 22, r: 0.6 + ((i * 17) % 10) / 9,
   }));
 
   private pozycje: Pozycja[] = [
-    { id: 'wroc', etykieta: 'Wróć do góry', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś', aktywna: () => this.trwaGra() },
-    { id: 'nowa', etykieta: 'Obudź się', opis: 'nowa góra, nowi mieszkańcy, nowa legenda', aktywna: () => true },
-    { id: 'wczytaj', etykieta: 'Wróć tam, gdzie byłeś', opis: 'ostatni zapis stanu góry', aktywna: () => hasSave() },
-    { id: 'samouczek', etykieta: 'Naucz się być górą', opis: 'cztery plansze wstępu i dziesięć krótkich lekcji — palec pokazuje, gdzie kliknąć', aktywna: () => true },
-    { id: 'bestiariusz', etykieta: 'Atlas', opis: 'tablice ras i praw góry — odkrywasz je, grając', aktywna: () => true },
-    { id: 'ustawienia', etykieta: 'Ustawienia', opis: 'dźwięk, obraz, świat i wszystkie klawisze', aktywna: () => true },
+    { id: 'wroc', ...M.pozycje.wroc, aktywna: () => this.trwaGra() },
+    { id: 'nowa', ...M.pozycje.nowa, aktywna: () => true },
+    { id: 'wczytaj', ...M.pozycje.wczytaj, aktywna: () => hasSave() },
+    { id: 'samouczek', ...M.pozycje.samouczek, aktywna: () => true },
+    { id: 'bestiariusz', ...M.pozycje.bestiariusz, aktywna: () => true },
+    { id: 'ustawienia', ...M.pozycje.ustawienia, aktywna: () => true },
   ];
 
   constructor(private app: Kontekst) {}
@@ -59,17 +64,17 @@ export class EkranMenu implements Ekran {
   krok(): void { /* rycina żyje własnym zegarem */ }
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
-    const wejscie = Math.min(1, (teraz - this.wejscieOd) / 900);
+    const wejscie = Math.min(1, (teraz - this.wejscieOd) / M.wejscieMs);
     const ruch = ustawienia.oddech && !ustawienia.ograniczRuch;
     const czas = ruch ? teraz : 0;
     tloSadzy(ctx, w, h, czas);
-    const waski = w < 700;
+    const waski = w < M.waskiPonizej;
     if (waski) this.ukladWaski(ctx, w, h, czas, wejscie);
     else this.ukladSzeroki(ctx, w, h, czas, wejscie);
     // patyna i rytowana ciemność na brzegach — ta sama, co na płycie w grze
     this.tajemnica.brzegi(ctx, { x: 0, y: 0, w, h }, ruch ? 0.5 + 0.5 * Math.sin(teraz * 0.0006) : 0.5);
     this.kurz(ctx, w, h, czas);
-    ramaRyciny(ctx, w, h, wejscie, waski ? 'Trzewia' : 'Trzewia · anatomia góry, która śni', waski ? 'Tab. I' : 'Tab. I — przekrój góry z rdzeniem');
+    ramaRyciny(ctx, w, h, wejscie, waski ? M.ramaGoraWaski : M.ramaGora, waski ? M.ramaDolWaski : M.ramaDol);
     this.stopka(ctx, w, h, teraz, wejscie);
   }
 
@@ -78,7 +83,7 @@ export class EkranMenu implements Ekran {
     for (const p of this.pylki) {
       const y = ((p.y + (teraz * 0.000012 * p.v)) % 1);
       const x = ((p.x + Math.sin(teraz * 0.00008 + p.y * 9) * 0.01) % 1 + 1) % 1;
-      ctx.fillStyle = rgba(BARWA.atrament, 0.05 + 0.07 * Math.abs(Math.sin(teraz * 0.001 + p.x * 12)));
+      ctx.fillStyle = rgba(BARWA.atrament, M.pylekAlfa + M.pylekMigotanie * Math.abs(Math.sin(teraz * 0.001 + p.x * 12)));
       ctx.beginPath();
       ctx.arc(x * w, (1 - y) * h, p.r, 0, Math.PI * 2);
       ctx.fill();
@@ -88,30 +93,29 @@ export class EkranMenu implements Ekran {
 
   /** Szeroki ekran: kartusz u góry, spis po lewej, przekrój góry po prawej. */
   private ukladSzeroki(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, wejscie: number): void {
-    const m = Math.max(12, Math.min(34, w * 0.024)) + 14;
+    const m = marginesRamy(w) + 14;
     // przekrój góry: prawa część, od kartusza do dolnej ramy
-    const fx = w * 0.4, fy = h * 0.27, fw = w - fx - m - w * 0.01, fh = h - fy - m - 4;
-    this.frontyspis.rysuj(ctx, fx, fy, fw, fh, teraz, 0.95 * wejscie, true);
+    const fx = w * M.przekrojX, fy = h * M.przekrojY, fw = w - fx - m - w * 0.01, fh = h - fy - m - 4;
+    this.frontyspis.rysuj(ctx, fx, fy, fw, fh, teraz, M.przekrojAlfa * wejscie, true);
 
-    const rt = Math.max(46, Math.min(104, Math.min(w / 11, h / 6)));
-    kartusz(ctx, w / 2, h * 0.16 + rt * 0.4, 'TRZEWIA', rt, wejscie, '',
-      'Nie grasz bogiem, który rządzi podziemiem. Grasz podziemiem.');
+    const rt = Math.max(M.tytulRozmiar.min, Math.min(M.tytulRozmiar.max, Math.min(w / 11, h / 6)));
+    kartusz(ctx, w / 2, h * M.tytulY + rt * 0.4, M.tytul, rt, wejscie, '', M.podtytul);
 
     this.trafienia = [];
-    const lewy = m + w * 0.05;
-    const rozmiar = Math.max(17, Math.min(26, Math.min(w / 48, h / 28)));
-    const odstep = rozmiar * 1.95;
-    const start = Math.max(h * 0.36, Math.min(h * 0.42, h * 0.8 - this.pozycje.length * odstep));
+    const lewy = m + w * M.spisOdLewej;
+    const rozmiar = Math.max(M.spisRozmiar.min, Math.min(M.spisRozmiar.max, Math.min(w / 48, h / 28)));
+    const odstep = rozmiar * M.spisOdstep;
+    const start = Math.max(h * M.spisOd, Math.min(h * M.spisDo, h * 0.8 - this.pozycje.length * odstep));
     // spis wejść jak spis tablic: numer, znak, tytuł
     ctx.save();
     ctx.textBaseline = 'alphabetic';
     for (let i = 0; i < this.pozycje.length; i++) {
       const p = this.pozycje[i];
       const dostepna = p.aktywna();
-      const wejscieP = Math.max(0.35, Math.min(1, (performance.now() - this.wejscieOd - 120 - i * 70) / 320));
+      const wejscieP = Math.max(0.35, Math.min(1, (performance.now() - this.wejscieOd - 120 - i * M.pozycjaOpoznienie) / M.pozycjaCzas));
       const y = start + i * odstep;
       const wybrane = i === this.wybrana;
-      const alfa = (dostepna ? 1 : 0.32) * wejscieP;
+      const alfa = (dostepna ? 1 : M.alfaNieaktywnej) * wejscieP;
       // numer rzymski
       ctx.font = `${rozmiar * 0.62}px ${SERIF}`;
       ctx.textAlign = 'right';
@@ -144,12 +148,13 @@ export class EkranMenu implements Ekran {
     const yOpis = start + this.pozycje.length * odstep;
     przerywnik(ctx, lewy + w * 0.14, yOpis - rozmiar * 0.5, w * 0.26, wejscie);
     if (wyb) {
-      ctx.font = `italic ${Math.max(14, Math.min(18, w / 72))}px ${SERIF}`;
+      const ro = Math.max(M.opisRozmiar.min, Math.min(M.opisRozmiar.max, w / 72));
+      ctx.font = `italic ${ro}px ${SERIF}`;
       ctx.fillStyle = rgba(BARWA.atrament, 0.9 * wejscie);
-      this.akapit(ctx, wyb.opis, lewy, yOpis + rozmiar * 0.6, w * 0.3, Math.max(14, Math.min(18, w / 72)) * 1.4);
+      this.akapit(ctx, wyb.opis, lewy, yOpis + rozmiar * 0.6, w * M.opisSzerokosc, ro * M.opisInterlinia);
       if (!ustawienia.samouczekZrobiony) {
         ctx.fillStyle = rgba(BARWA.zarBlady, 0.7 * wejscie);
-        ctx.fillText('Pierwszy raz? Zacznij od samouczka.', lewy, yOpis + rozmiar * 2.7);
+        ctx.fillText(M.zachetaSamouczek, lewy, yOpis + rozmiar * 2.7);
       }
     }
     ctx.restore();
@@ -157,27 +162,27 @@ export class EkranMenu implements Ekran {
 
   /** Telefon: kartusz u góry, spis pośrodku, przekrój góry przygaszony u dołu. */
   private ukladWaski(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, wejscie: number): void {
-    const m = Math.max(12, Math.min(34, w * 0.024)) + 12;
-    this.frontyspis.rysuj(ctx, m, h * 0.58, w - m * 2, h * 0.4 - m, teraz, 0.55 * wejscie, false);
+    const m = marginesRamy(w) + 12;
+    this.frontyspis.rysuj(ctx, m, h * M.przekrojWaskiY, w - m * 2, h * (1 - M.przekrojWaskiY - 0.02) - m, teraz, M.przekrojWaskiAlfa * wejscie, false);
     const zaslona = ctx.createLinearGradient(0, h * 0.25, 0, h * 0.8);
     zaslona.addColorStop(0, 'rgba(11,8,7,0.2)');
     zaslona.addColorStop(0.6, 'rgba(11,8,7,0.8)');
     zaslona.addColorStop(1, 'rgba(11,8,7,0.2)');
     ctx.fillStyle = zaslona;
     ctx.fillRect(0, h * 0.25, w, h * 0.55);
-    kartusz(ctx, w / 2, h * 0.15, 'TRZEWIA', Math.max(28, Math.min(56, (w - m * 2) / 9.6)), wejscie, 'anatomia góry',
-      'Grasz podziemiem.');
+    kartusz(ctx, w / 2, h * M.tytulWaskiY, M.tytul, Math.max(M.tytulWaskiRozmiar.min, Math.min(M.tytulWaskiRozmiar.max, (w - m * 2) / 9.6)), wejscie,
+      M.nadtytulWaski, M.podtytulWaski);
     this.trafienia = [];
     const rozmiar = Math.max(16, Math.min(w / 17, h / 32));
-    const odstep = rozmiar * 2.05;
-    const start = h * 0.33;
+    const odstep = rozmiar * M.spisOdstepWaski;
+    const start = h * M.spisWaskiY;
     ctx.save();
     for (let i = 0; i < this.pozycje.length; i++) {
       const p = this.pozycje[i];
       const dostepna = p.aktywna();
       const y = start + i * odstep;
       const wybrane = i === this.wybrana;
-      const alfa = (dostepna ? 1 : 0.32) * wejscie;
+      const alfa = (dostepna ? 1 : M.alfaNieaktywnej) * wejscie;
       ctx.font = `${rozmiar}px ${SERIF}`;
       ctx.textAlign = 'center';
       const szer = ctx.measureText(p.etykieta).width;
@@ -219,17 +224,17 @@ export class EkranMenu implements Ekran {
   private stopka(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, alfa: number): void {
     ctx.save();
     ctx.textAlign = 'center';
-    if (this.komunikat && teraz - this.komunikatOd < 8000) {
+    if (this.komunikat && teraz - this.komunikatOd < M.komunikatMs) {
       ctx.font = `italic ${Math.max(14, w / 64)}px ${SERIF}`;
-      ctx.fillStyle = rgba(BARWA.zarBlady, 0.9 * Math.min(1, (8000 - (teraz - this.komunikatOd)) / 900));
+      ctx.fillStyle = rgba(BARWA.zarBlady, 0.9 * Math.min(1, (M.komunikatMs - (teraz - this.komunikatOd)) / 900));
       ctx.fillText(this.komunikat, w / 2, h * 0.9);
     }
-    if (w >= 700) {
+    if (w >= M.waskiPonizej) {
       ctx.font = `italic ${Math.max(12, w / 110)}px ${SERIF}`;
       ctx.fillStyle = rgba(BARWA.atramentCichy, 0.5 * alfa);
       ctx.textAlign = 'left';
-      const m = Math.max(12, Math.min(34, w * 0.024)) + 22;
-      ctx.fillText('strzałki i enter · albo po prostu dotknij', m + w * 0.02, h - m - 4);
+      const m = marginesRamy(w) + 22;
+      ctx.fillText(M.podpowiedz, m + w * 0.02, h - m - 4);
     }
     ctx.restore();
   }

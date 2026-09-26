@@ -1,4 +1,5 @@
 import { Sim } from '../../sim/sim';
+import { GORA } from '../../nastawy/gora';
 import { Camera } from '../../render/camera';
 import { Engraver } from '../../render/engrave';
 import { drawParticles } from '../../render/overlay';
@@ -169,7 +170,7 @@ export class EkranGry implements Ekran {
 
   nowaGra(ziarno = (Math.random() * 1e9) | 0): void {
     this.sim = new Sim(ziarno);
-    if (ustawienia.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += 100; }
+    if (ustawienia.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += GORA.laskawaKrew; }
     this.ui.verb = null; this.ui.tool = null; this.ui.selected = null;
     this.cam.zoom = 14;
     this.doSerca(true);

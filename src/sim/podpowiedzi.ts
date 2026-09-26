@@ -2,6 +2,7 @@ import type { Sim } from './sim';
 import { Race, RACES, odmien } from './races';
 import { T } from './tiles';
 import { aktualnyPlan } from './pielgrzymka';
+import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
 
 export interface Podpowiedz { tekst: string; cel?: { x: number; y: number; r: number; tekst: string }; waga: number; }
 
@@ -73,20 +74,20 @@ export function podpowiedz(sim: Sim): Podpowiedz {
 
   // 6. rytuał: jedyna droga do końca gry musi być widoczna, gdy staje się możliwa
   const najwierniejszy = sim.clans.filter((k) => !k.dead && k.pop > 2).sort((a, b) => b.devotion - a.devotion)[0];
-  if (sim.rytual.postep > 0.02 || sim.rytual.wierni >= 3) {
+  if (sim.rytual.postep > 0.02 || sim.rytual.wierni >= RYTUAL.potrzebaWiernych) {
     kandydaci.push({
       tekst: 'Twoi wierni kują pod skorupą rdzenia. Nie przeszkadzaj im — i nie daj im umrzeć z głodu.',
-      cel: { x: sim.world.coreX, y: sim.world.coreY - 14, r: 7, tekst: 'rytuał' },
+      cel: { x: sim.world.coreX, y: sim.world.przedsionekY, r: 7, tekst: 'rytuał' },
       waga: 85,
     });
-  } else if (najwierniejszy && najwierniejszy.devotion > 0.6) {     // próg pielgrzymki
+  } else if (najwierniejszy && najwierniejszy.devotion > PIELGRZYMKA.oddanieNacji) {     // próg pielgrzymki
     // Warta pod rdzeniem żyje z tego, co rośnie przy przedsionku. Z grzybem schodzi
     // i bez drogi powrotnej; drogę do domu można jej wydrążyć, ale nie trzeba.
     const w = sim.world;
-    if (sim.jedzeniePrzedsionka < 3) {
+    if (sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku) {
       kandydaci.push({
         tekst: `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. Zasiej grzyb przy przedsionku — z nim ich warta przeżyje pod skorupą.`,
-        cel: { x: w.coreX, y: w.coreY - 14, r: 7, tekst: 'zasiej tu grzyb' },
+        cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'zasiej tu grzyb' },
         waga: 65,
       });
     } else {
@@ -101,7 +102,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
       } else {
         kandydaci.push({
           tekst: `${najwierniejszy.name} schodzą pod twój rdzeń. Pilnuj, żeby grzyb przy przedsionku nie zniknął.`,
-          cel: { x: w.coreX, y: w.coreY - 14, r: 7, tekst: 'przedsionek' },
+          cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'przedsionek' },
           waga: 35,
         });
       }

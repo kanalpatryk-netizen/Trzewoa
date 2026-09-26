@@ -6,6 +6,8 @@ import { BARWA, rgba } from '../../render/palette';
 import { SERIF, tloSadzy, kreska } from '../../render/ink';
 import { Tajemnica } from '../../render/tajemnica';
 import { ramaRyciny, kartusz, naglowekDzialu } from '../../render/ozdoby';
+import { EKRAN_USTAWIEN as U } from '../../nastawy/wyglad/ustawienia';
+import { RAMA } from '../../nastawy/wyglad/ozdoby';
 
 type Wiersz =
   | { typ: 'naglowek'; tekst: string }
@@ -86,14 +88,14 @@ export class EkranUstawien implements Ekran {
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     tloSadzy(ctx, w, h, teraz);
     this.tajemnica.brzegi(ctx, { x: 0, y: 0, w, h }, 0.5 + 0.5 * Math.sin(teraz * 0.0006));
-    const m = Math.max(12, Math.min(34, w * 0.024)) + 14;
-    const rt = Math.max(24, Math.min(44, w / 26));
-    kartusz(ctx, w / 2, m + rt * 1.15, 'USTAWIENIA', rt, 1);
+    const m = Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc)) + 14;
+    const rt = Math.max(U.tytulRozmiar.min, Math.min(U.tytulRozmiar.max, w / 26));
+    kartusz(ctx, w / 2, m + rt * 1.15, U.tytul, rt, 1);
 
     const gora = m + rt * 2.2;
     const dol = h - m - 6;
     this.wysokoscListy = dol - gora;
-    const szer = Math.min(880, w - m * 2 - 36);
+    const szer = Math.min(U.maxSzerokosc, w - m * 2 - 36);
     const x = (w - szer) / 2;
 
     ctx.save();
@@ -104,14 +106,14 @@ export class EkranUstawien implements Ekran {
     this.trafienia = [];
     this.pozycjeWierszy = [];
     let y = gora - this.przewiniecie;
-    const podstawa = Math.max(15, Math.min(19, w / 62));
-    this.dlSuwaka = szer < 480 ? 58 : 86;
+    const podstawa = Math.max(U.podstawa.min, Math.min(U.podstawa.max, w / 62));
+    this.dlSuwaka = szer < 480 ? U.suwakWaski : U.suwak;
     let dzial = 0;
 
     for (let i = 0; i < this.wiersze.length; i++) {
       const wiersz = this.wiersze[i];
       const linie = wiersz.typ === 'naglowek' ? 1 : this.linieOpisu(ctx, wiersz, szer, podstawa).length;
-      const wysokosc = wiersz.typ === 'naglowek' ? podstawa * 3.1 : podstawa * (3.05 + (linie - 1) * 0.85);
+      const wysokosc = wiersz.typ === 'naglowek' ? podstawa * U.wysokoscNaglowka : podstawa * (U.wysokoscWiersza + (linie - 1) * U.nastepnaLinia);
       this.pozycjeWierszy.push({ y: y + this.przewiniecie - gora, h: wysokosc });
       if (wiersz.typ === 'naglowek') dzial++;
       if (y + wysokosc > gora - 40 && y < dol + 40) this.rysujWiersz(ctx, wiersz, x, y, szer, podstawa, i === this.wybrany, teraz, dzial, i);
@@ -134,18 +136,18 @@ export class EkranUstawien implements Ekran {
       const t = this.przewiniecie / (calkowita - this.wysokoscListy);
       const dl = Math.max(40, this.wysokoscListy * (this.wysokoscListy / calkowita));
       const sx = Math.min(x + szer + 26, w - m - 2), sy = gora + t * (this.wysokoscListy - dl);
-      ctx.strokeStyle = rgba(BARWA.atrament, 0.15);
+      ctx.strokeStyle = rgba(BARWA.atrament, U.szynaAlfa);
       ctx.lineWidth = 1;
       ctx.beginPath(); ctx.moveTo(sx, gora); ctx.lineTo(sx, gora + this.wysokoscListy); ctx.stroke();
-      ctx.strokeStyle = rgba(BARWA.zarBlady, 0.5);
+      ctx.strokeStyle = rgba(BARWA.zarBlady, U.uchwytAlfa);
       ctx.lineWidth = 2;
       ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx, sy + dl); ctx.stroke();
-      ctx.fillStyle = rgba(BARWA.zarBlady, 0.8);
+      ctx.fillStyle = rgba(BARWA.zarBlady, U.rombAlfa);
       ctx.beginPath(); ctx.moveTo(sx, sy + dl / 2 - 5); ctx.lineTo(sx + 4, sy + dl / 2); ctx.lineTo(sx, sy + dl / 2 + 5); ctx.lineTo(sx - 4, sy + dl / 2); ctx.closePath(); ctx.fill();
     }
 
-    ramaRyciny(ctx, w, h, 1, w < 700 ? '' : 'Ustawienia · jak góra ma śnić',
-      this.czekamNa ? 'naciśnij klawisz, który ma to robić · esc anuluje' : (w < 700 ? 'esc wraca' : 'P albo esc wraca do menu · kółko przewija'));
+    const waski = w < U.waskiPonizej;
+    ramaRyciny(ctx, w, h, 1, waski ? '' : U.ramaGora, this.czekamNa ? U.czekamNaKlawisz : (waski ? U.ramaDolWaski : U.ramaDol));
   }
 
   private rysujWiersz(ctx: CanvasRenderingContext2D, wiersz: Wiersz, x: number, y: number, szer: number, podstawa: number, wybrany: boolean, teraz: number, dzial: number, i: number): void {
@@ -155,14 +157,14 @@ export class EkranUstawien implements Ekran {
     }
     const srodek = y + podstawa * 1.55;
     const linie = this.linieOpisu(ctx, wiersz, szer, podstawa);
-    const wys = podstawa * (3 + (linie.length - 1) * 0.85);
+    const wys = podstawa * (3 + (linie.length - 1) * U.nastepnaLinia);
     // kropkowana linia pod wierszem, jak w spisie treści
     ctx.fillStyle = rgba(BARWA.atrament, 0.12);
     for (let dx = 0; dx < szer; dx += 6) ctx.fillRect(x + dx, y + wys - 1, 1.2, 1.2);
     if (wybrany) {
       const g = ctx.createLinearGradient(x - 14, 0, x + szer + 14, 0);
-      g.addColorStop(0, 'rgba(60,42,30,0.55)');
-      g.addColorStop(1, 'rgba(60,42,30,0.08)');
+      g.addColorStop(0, `rgba(60,42,30,${U.zaznaczenieOd})`);
+      g.addColorStop(1, `rgba(60,42,30,${U.zaznaczenieDo})`);
       ctx.fillStyle = g;
       ctx.fillRect(x - 14, y + 3, szer + 28, wys - podstawa * 0.15);
       // klamry po bokach, jak zaznaczenie rylcem na marginesie
@@ -180,12 +182,12 @@ export class EkranUstawien implements Ekran {
     ctx.font = `${podstawa}px ${SERIF}`;
     ctx.fillStyle = rgba(wybrany ? BARWA.atramentMocny : BARWA.atrament, 0.95);
     ctx.fillText(wiersz.etykieta, x, y + podstawa * 1.35);
-    ctx.font = `italic ${podstawa * 0.72}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.atramentCichy, 0.75);
+    ctx.font = `italic ${podstawa * U.opisRozmiar}px ${SERIF}`;
+    ctx.fillStyle = rgba(BARWA.atramentCichy, U.opisAlfa);
     linie.forEach((l, k) => ctx.fillText(l, x, y + podstawa * (2.45 + k * 0.85)));
 
     const px = x + szer;
-    const swiezy = this.blysk.i === i ? Math.max(0, 1 - (teraz - this.blysk.od) / 500) : 0;
+    const swiezy = this.blysk.i === i ? Math.max(0, 1 - (teraz - this.blysk.od) / U.blyskMs) : 0;
     ctx.textBaseline = 'middle';
 
     if (wiersz.typ === 'przelacznik') {
@@ -193,7 +195,7 @@ export class EkranUstawien implements Ekran {
       const on = wiersz.czytaj();
       ctx.font = `${podstawa * 0.95}px ${SERIF}`;
       ctx.textAlign = 'right';
-      const tw = ctx.measureText('tak').width, nw = ctx.measureText('nie').width;
+      const tw = ctx.measureText(U.tak).width, nw = ctx.measureText(U.nie).width;
       const xTak = px, xNie = px - tw - podstawa * 1.3;
       const owal = (cx: number, szerokosc: number) => {
         ctx.strokeStyle = rgba(BARWA.zarBlady, 0.7 + 0.3 * swiezy);
@@ -204,9 +206,9 @@ export class EkranUstawien implements Ekran {
       };
       if (on) owal(xTak - tw / 2, tw); else owal(xNie - nw / 2, nw);
       ctx.fillStyle = rgba(on ? BARWA.zarBlady : BARWA.atramentCichy, on ? 1 : 0.35);
-      ctx.fillText('tak', xTak, srodek);
+      ctx.fillText(U.tak, xTak, srodek);
       ctx.fillStyle = rgba(!on ? BARWA.atramentMocny : BARWA.atramentCichy, !on ? 0.95 : 0.35);
-      ctx.fillText('nie', xNie, srodek);
+      ctx.fillText(U.nie, xNie, srodek);
       ctx.fillStyle = rgba(BARWA.atramentCichy, 0.4);
       ctx.fillText('·', xNie + podstawa * 0.62, srodek);
     } else if (wiersz.typ === 'suwak') {
@@ -306,8 +308,8 @@ export class EkranUstawien implements Ekran {
   /** Ile miejsca po prawej zajmuje kontrolka wiersza — opis nie może w nią wejść. */
   private szerKontrolki(ctx: CanvasRenderingContext2D, wiersz: Wiersz, podstawa: number): number {
     if (wiersz.typ === 'suwak') return this.dlSuwaka + 64;
-    if (wiersz.typ === 'przelacznik') return podstawa * 4.4;
-    if (wiersz.typ === 'klawisz') return podstawa * 4;
+    if (wiersz.typ === 'przelacznik') return podstawa * U.przelacznikSzer;
+    if (wiersz.typ === 'klawisz') return podstawa * U.klawiszSzer;
     ctx.font = `${podstawa * 0.95}px ${SERIF}`;
     if (wiersz.typ === 'wybor') return Math.max(...wiersz.opcje.map((o) => ctx.measureText(o).width)) + podstawa * 2.6;
     if (wiersz.typ === 'akcja' && wiersz.przycisk) return ctx.measureText(wiersz.przycisk).width + 30;
@@ -318,7 +320,7 @@ export class EkranUstawien implements Ekran {
   private linieOpisu(ctx: CanvasRenderingContext2D, wiersz: Wiersz, szer: number, podstawa: number): string[] {
     if (wiersz.typ === 'naglowek') return [];
     const dost = Math.max(80, szer - this.szerKontrolki(ctx, wiersz, podstawa) - 12);
-    ctx.font = `italic ${podstawa * 0.72}px ${SERIF}`;
+    ctx.font = `italic ${podstawa * U.opisRozmiar}px ${SERIF}`;
     const wynik: string[] = [];
     let biezaca = '';
     for (const slowo of wiersz.opis.split(' ')) {

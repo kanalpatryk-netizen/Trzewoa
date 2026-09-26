@@ -2,6 +2,7 @@ import { Sim } from '../sim/sim';
 import { T, PASSABLE } from '../sim/tiles';
 import { Race, RACES, odmien } from '../sim/races';
 import { Creature, Thought } from '../sim/creatures';
+import { KOSZTY, MOCE, SKAZY } from '../nastawy/moce';
 
 export type Verb = 'ksztaltuj' | 'zasiej' | 'szept' | 'znak' | 'skaz';
 
@@ -40,13 +41,9 @@ export const TOOLS: Record<Verb, Tool[]> = {
 
 /** Ile kosztuje. Gracz nigdy nie widzi liczby — tylko to, czy ryt się rozjarza. */
 export function cost(verb: Verb, tool: string): { krew: number; wiara: number; otchlan: number } {
-  switch (verb) {
-    case 'ksztaltuj': return { krew: tool === 'zar' ? 14 : tool === 'woda' ? 10 : 6, wiara: 0, otchlan: 0 };
-    case 'zasiej': return { krew: tool === 'trucizna' ? 6 : 8, wiara: tool === 'grzyb' ? 0 : 4, otchlan: tool === 'trucizna' ? 12 : 0 };
-    case 'szept': return { krew: 0, wiara: tool === 'prorok' ? 18 : 5, otchlan: 0 };
-    case 'znak': return { krew: 0, wiara: 45, otchlan: 0 };
-    case 'skaz': return { krew: 90, wiara: 0, otchlan: 55 };
-  }
+  // cennik jest w nastawy/moce.ts; nieznane narzędzie kosztuje tyle, co pierwsze z listy
+  const cennik = KOSZTY[verb];
+  return { ...(cennik[tool] ?? Object.values(cennik)[0]) };
 }
 
 /** Czy stać cię na to — z odliczeniem tego, co już zarezerwowały rozkazy z pauzy. */
@@ -69,7 +66,7 @@ function pay(sim: Sim, verb: Verb, tool: string): boolean {
  * Wspólne dla wykonania i dla planu w pauzie — szkic nie może obiecywać czegoś,
  * czego wykonanie potem nie zrobi.
  */
-export function kafleKsztaltu(sim: Sim, tool: string, tx: number, ty: number, radius = 1.6): number[] | null {
+export function kafleKsztaltu(sim: Sim, tool: string, tx: number, ty: number, radius = MOCE.ksztaltPromien): number[] | null {
   const w = sim.world;
   if (!w.inb(tx, ty)) return null;
   const r = Math.ceil(radius);
@@ -92,7 +89,7 @@ export function kafleKsztaltu(sim: Sim, tool: string, tx: number, ty: number, ra
 }
 
 /** Kształtowanie — drążysz, zawalasz, wpuszczasz wodę albo otwierasz żyłę gorąca. */
-export function shape(sim: Sim, tool: string, tx: number, ty: number, radius = 1.6): boolean {
+export function shape(sim: Sim, tool: string, tx: number, ty: number, radius = MOCE.ksztaltPromien): boolean {
   const w = sim.world;
   // Najpierw sprawdzamy, czy jest co robić — inaczej narzędzie brało zapłatę
   // i nie zmieniało niczego, co wyglądało jak zepsuta mechanika.
@@ -113,11 +110,11 @@ export function shape(sim: Sim, tool: string, tx: number, ty: number, radius = 1
       case 'woda':
         // żyła pęka także w litej skale — inaczej woda działała tylko w korytarzu
         if (PASSABLE[w.tile[i]] !== 1 && w.tile[i] !== T.STONE) w.tile[i] = T.AIR;
-        if (PASSABLE[w.tile[i]] === 1) { w.water[i] = 8; w.magma[i] = 0; }
+        if (PASSABLE[w.tile[i]] === 1) { w.water[i] = MOCE.plynPoziom; w.magma[i] = 0; }
         break;
       case 'zar':
         if (PASSABLE[w.tile[i]] !== 1 && w.tile[i] !== T.STONE) w.tile[i] = T.AIR;
-        if (PASSABLE[w.tile[i]] === 1) { w.magma[i] = 8; w.water[i] = 0; }
+        if (PASSABLE[w.tile[i]] === 1) { w.magma[i] = MOCE.plynPoziom; w.water[i] = 0; }
         break;
     }
   }
@@ -134,7 +131,8 @@ export function seed(sim: Sim, tool: string, tx: number, ty: number): boolean {
   const w = sim.world;
   if (!w.inb(tx, ty)) return false;
   if (!pay(sim, 'zasiej', tool)) return false;
-  const r = 2;
+  const r = MOCE.zasiewPromien;
+  const szansa = MOCE.zasiewSzansa;
   for (let dy = -r; dy <= r; dy++) {
     for (let dx = -r; dx <= r; dx++) {
       const x = tx + dx, y = ty + dy;
@@ -144,10 +142,10 @@ export function seed(sim: Sim, tool: string, tx: number, ty: number): boolean {
       // skorupy rdzenia, ołtarza i kuźni nie da się przemienić — ruda na skorupie była
       // furtką: potem wystarczyło ją wydrążyć i rytuał tracił sens
       const twarde = w.tile[i] === T.CORE || w.tile[i] === T.STONE || w.tile[i] === T.SHRINE || w.tile[i] === T.FORGE;
-      if (tool === 'ruda' && solid && !twarde && sim.rng.chance(0.6)) w.tile[i] = T.ORE;
-      if (tool === 'grzyb' && !solid && sim.rng.chance(0.5)) w.tile[i] = T.FUNGUS;
-      if (tool === 'kosci' && !solid && sim.rng.chance(0.5)) w.tile[i] = T.BONES;
-      if (tool === 'trucizna' && solid && !twarde && sim.rng.chance(0.5)) w.tile[i] = T.CRYSTAL;
+      if (tool === 'ruda' && solid && !twarde && sim.rng.chance(szansa.ruda)) w.tile[i] = T.ORE;
+      if (tool === 'grzyb' && !solid && sim.rng.chance(szansa.grzyb)) w.tile[i] = T.FUNGUS;
+      if (tool === 'kosci' && !solid && sim.rng.chance(szansa.kosci)) w.tile[i] = T.BONES;
+      if (tool === 'trucizna' && solid && !twarde && sim.rng.chance(szansa.trucizna)) w.tile[i] = T.CRYSTAL;
       w.oznaczSlad(x, y, 1, sim.tick);
     }
   }
@@ -181,17 +179,17 @@ export function sign(sim: Sim, tool: string, tx: number, ty: number): boolean {
   for (const c of sim.creatures) {
     if (c.dead) continue;
     const d = Math.hypot(c.x - tx, c.y - ty);
-    if (d > 26) continue;
+    if (d > MOCE.znakZasieg) continue;
     seen.add(c.clan);
     if (tool === 'objawienie') {
-      c.devotion = Math.min(1, c.devotion + 0.35);
-      c.fear *= 0.4;
-      sim.clans[c.clan].devotion = Math.min(1, sim.clans[c.clan].devotion + 0.12);
+      c.devotion = Math.min(1, c.devotion + MOCE.objawienieOddanie);
+      c.fear *= MOCE.objawienieStrach;
+      sim.clans[c.clan].devotion = Math.min(1, sim.clans[c.clan].devotion + MOCE.objawienieNacja);
     } else {
       c.fear = 1;
       c.thought = Thought.FLEE_UP;
       c.jt = 0;
-      sim.clans[c.clan].devotion = Math.max(0, sim.clans[c.clan].devotion - 0.04);
+      sim.clans[c.clan].devotion = Math.max(0, sim.clans[c.clan].devotion - MOCE.panikaNacja);
     }
   }
   sim.efekt(tx + 0.5, ty + 0.5, 'cud');
@@ -208,10 +206,10 @@ export function applyTaintEffect(race: Race, tool: string): void {
   const d = RACES[race];
   switch (tool) {
     // każda skaza ma cenę płaconą przez pokolenia, nie tylko zysk
-    case 'plodnosc': d.breedRate *= 2.4; d.lifespan *= 0.75; d.metabolism *= 1.45; break;
-    case 'zadza': d.strength *= 1.7; d.eatsMeat = true; d.fearGain *= 0.5; d.faithGain *= 0.35; break;
-    case 'slepota': d.speed *= 0.72; d.faithGain *= 2.2; d.digPower *= 1.2; break;
-    case 'kamien': d.maxHp *= 1.6; d.speed *= 0.8; d.digPower *= 0.6; d.metabolism *= 1.2; break;
+    case 'plodnosc': { const s = SKAZY.plodnosc; d.breedRate *= s.plodnosc; d.lifespan *= s.dlugoscZycia; d.metabolism *= s.metabolizm; break; }
+    case 'zadza': { const s = SKAZY.zadza; d.strength *= s.sila; d.eatsMeat = true; d.fearGain *= s.strach; d.faithGain *= s.wiara; break; }
+    case 'slepota': { const s = SKAZY.slepota; d.speed *= s.szybkosc; d.faithGain *= s.wiara; d.digPower *= s.kopanie; break; }
+    case 'kamien': { const s = SKAZY.kamien; d.maxHp *= s.zdrowie; d.speed *= s.szybkosc; d.digPower *= s.kopanie; d.metabolism *= s.metabolizm; break; }
   }
 }
 
