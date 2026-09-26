@@ -5,6 +5,8 @@ import { Verb, TOOLS, affordable, cost, whisper, taint } from '../powers/powers'
 import { SERIF, creatureName, creatureNameCelownik } from '../render/overlay';
 import { Plate } from '../render/plate';
 import { rysujStany } from '../render/stany';
+import { rysujPostac } from '../render/figury';
+import { ramaKarty } from '../render/ozdoby';
 import { klawisze, nazwaKlawisza } from '../core/keybinds';
 import type { Rozkazy } from '../powers/rozkazy';
 
@@ -96,6 +98,7 @@ export class Ui {
       const v = VERBS[i];
       const { x, y } = this.pozycjaRytu(i);
       const ready = TOOLS[v.id].some((t) => affordable(sim, v.id, t.id));
+      this.oprawaRytu(ctx, x, y, v, this.verb === v.id, ready, time);
       this.rune(ctx, x, y, this.gs, v.id, this.verb === v.id, ready, time);
       this.hits.push({ x, y, hw: this.gs * 0.8, hh: this.gap * 0.45, kind: 'verb', verb: v.id });
       if (Math.abs(this.pointer.x - x) <= this.gs * 0.9 && Math.abs(this.pointer.y - y) <= this.gap * 0.45) {
@@ -105,7 +108,7 @@ export class Ui {
     if (opisRytu) this.podpisRytu(ctx, sim, opisRytu.i, opisRytu.v, opisRytu.ready);
 
     if (this.verb && !(this.selected && !this.selected.dead)) this.drawTools(ctx, sim);
-    if (this.selected && !this.selected.dead) this.drawCard(ctx, sim, this.selected);
+    if (this.selected && !this.selected.dead) this.drawCard(ctx, sim, this.selected, time);
 
     if (time - this.flashAt < 2600 && this.flash) {
       const a = Math.min(1, (2600 - (time - this.flashAt)) / 1000);
@@ -117,7 +120,7 @@ export class Ui {
       const pol = Math.min(this.plate.w / 2 - 8, ctx.measureText(this.flash).width / 2 + 10);
       const x = Math.max(this.plate.x + pol, Math.min(this.plate.x + this.plate.w - pol, this.pointer.x));
       // górny pasek płyty należy do drogi do wolności — komunikat nie może go zasłaniać
-      const y = Math.max(this.plate.y + (this.plate.waski ? 84 : 52), this.pointer.y - size * 1.4);
+      const y = Math.max(this.plate.y + (this.plate.waski ? 100 : 70), this.pointer.y - size * 1.4);
       ctx.lineWidth = 3;
       ctx.strokeStyle = `rgba(10,7,6,${a * 0.85})`;
       ctx.strokeText(this.flash, x, y);
@@ -149,12 +152,8 @@ export class Ui {
       ctx.measureText('prawy przycisk — tablica').width * 0.8) + size * 1.4;
     const wys = size * 5.1;
     const px = Math.min(x + this.gs * 0.9, this.plate.x - 6);
-    const py = Math.max(this.plate.y + 4, y - wys / 2);
-    ctx.fillStyle = 'rgba(12,9,8,0.92)';
-    ctx.fillRect(px, py, szer, wys);
-    ctx.strokeStyle = 'rgba(206,190,158,0.5)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(px + 2.5, py + 2.5, szer - 5, wys - 5);
+    const py = Math.max(this.plate.y + 10, y - wys / 2);
+    ramaKarty(ctx, px, py, szer, wys, 1, '', ready);
     ctx.textAlign = 'left';
     ctx.fillStyle = 'rgba(244,230,202,0.97)';
     ctx.fillText(linie[0], px + size * 0.7, py + size * 1.15);
@@ -258,74 +257,161 @@ export class Ui {
     ctx.strokeStyle = on ? `rgba(248,228,186,${0.9 + glow * 0.1})` : `rgba(214,198,168,${glow})`;
     ctx.lineWidth = s * 0.1;
     path(); ctx.stroke();
+    ctx.restore();
+  }
+
+  /**
+   * Oprawa rytu: podwójny pierścień wyryty w marginesie, nazwa pod spodem i klawisz
+   * w rogu. Wybrany ryt ma złoty pierścień i ciemniejsze dno; ryt, na który cię nie stać,
+   * jest ledwie zarysowany.
+   */
+  private oprawaRytu(ctx: CanvasRenderingContext2D, x: number, y: number, v: { id: Verb; label: string }, on: boolean, ready: boolean, time: number): void {
+    const s = this.gs;
+    const r = s * 0.7;
+    ctx.save();
     if (on) {
-      ctx.strokeStyle = 'rgba(240,214,160,0.4)';
-      ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.arc(0, 0, s * 0.68, 0, Math.PI * 2); ctx.stroke();
+      const g = ctx.createRadialGradient(x, y, r * 0.2, x, y, r * 1.5);
+      g.addColorStop(0, 'rgba(240,190,110,0.18)');
+      g.addColorStop(1, 'rgba(240,190,110,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(x - r * 1.5, y - r * 1.5, r * 3, r * 3);
+    }
+    ctx.fillStyle = on ? 'rgba(30,20,14,0.95)' : 'rgba(16,12,10,0.8)';
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.lineWidth = on ? 1.5 : 1;
+    ctx.strokeStyle = on ? `rgba(240,200,130,${0.85 + 0.15 * Math.sin(time * 0.004)})` : `rgba(207,194,166,${ready ? 0.42 : 0.14})`;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = `rgba(207,194,166,${on ? 0.35 : ready ? 0.16 : 0.06})`;
+    ctx.beginPath(); ctx.arc(x, y, r + 3.5, 0, Math.PI * 2); ctx.stroke();
+    // nazwa pod rytem — tylko gdy jest na nią miejsce między rytami
+    const rozm = Math.max(10, Math.min(13, s * 0.36));
+    // podpis mieści się, gdy między pierścieniami zostaje miejsce na jedną linijkę
+    const zPodpisem = !this.dwieKolumny && this.gap >= (r + 3.5) * 2 + rozm + 6;
+    if (zPodpisem) {
+      ctx.font = `italic ${rozm}px ${SERIF}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = on ? 'rgba(244,214,160,0.95)' : `rgba(207,194,166,${ready ? 0.62 : 0.3})`;
+      ctx.fillText(v.label.toLowerCase(), x, y + r + 5, this.plate.left - 6);
+    }
+    // klawisz w rogu — na dotyku klawiatury nie ma, więc tylko na szerokim ekranie
+    if (!this.plate.waski) {
+      const rozm = Math.max(9, s * 0.26);
+      ctx.font = `${rozm}px ${SERIF}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const kx = x + r * 0.78, ky = y - r * 0.78;
+      ctx.fillStyle = 'rgba(11,8,7,1)';
+      ctx.beginPath(); ctx.arc(kx, ky, rozm * 0.75, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = `rgba(207,194,166,${ready ? 0.35 : 0.12})`;
+      ctx.stroke();
+      ctx.fillStyle = `rgba(207,194,166,${ready ? 0.75 : 0.3})`;
+      ctx.fillText(nazwaKlawisza(klawisze[v.id]), kx, ky + 0.5);
     }
     ctx.restore();
   }
 
-  /** Karta z bestiariusza. Jedyny moment, gdy widzisz kogoś jako kogoś. */
-  private drawCard(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature): void {
+  /**
+   * Karta mieszkańca. Jedyny moment, gdy widzisz kogoś jako kogoś: jego sylwetka w niszy
+   * jak na tablicy atlasu, imię, ród i to, czym akurat żyje — a pod spodem myśli do szeptu.
+   */
+  private drawCard(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, time: number): void {
     const p = this.plate;
-    const cw = Math.min(348, p.w * 0.46), ch = Math.min(272, p.h * 0.66);
-    const x = Math.max(p.x + 8, Math.min(p.x + p.w - cw - 10, p.x + p.w - cw - 10));
-    const y = Math.max(p.y + 8, Math.min(p.y + p.h - ch - 8, p.y + p.h / 2 - ch / 2));
-    ctx.save();
-    ctx.fillStyle = 'rgba(14,10,9,0.94)';
-    ctx.fillRect(x, y, cw, ch);
-    ctx.strokeStyle = 'rgba(200,182,150,0.55)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x + 4.5, y + 4.5, cw - 9, ch - 9);
-
-    const px = x + cw * 0.23, py = y + ch * 0.32, r = Math.min(cw, ch) * 0.15;
-    ctx.strokeStyle = 'rgba(228,214,188,0.9)';
-    ctx.lineWidth = 1.3;
-    ctx.beginPath();
-    ctx.ellipse(px, py, r * 0.78, r, 0, 0, Math.PI * 2);
-    ctx.stroke();
-    for (let i = 0; i < 16; i++) {
-      const t = i / 16;
-      ctx.beginPath();
-      ctx.moveTo(px - r * 0.8 + t * r * 0.5, py - r + t * r * 1.7);
-      ctx.lineTo(px + r * 0.8 - t * r * 0.3, py - r * 0.6 + t * r * 1.5);
-      ctx.strokeStyle = `rgba(228,214,188,${0.08 + 0.18 * Math.abs(Math.sin(i * 1.7 + c.id))})`;
-      ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.moveTo(px, py + r); ctx.lineTo(px, py + r * 1.9);
-    ctx.strokeStyle = 'rgba(228,214,188,0.75)';
-    ctx.stroke();
-
+    const cw = Math.min(360, p.w * (p.waski ? 0.94 : 0.46)), ch = Math.min(290, p.h * 0.7);
+    const x = p.waski ? p.x + (p.w - cw) / 2 : p.x + p.w - cw - 12;
+    // wąsko karta schodzi pod wstęgę drogi do wolności, szeroko wstęga jest w lewym rogu
+    const y = Math.max(p.y + (p.waski ? 90 : 14), Math.min(p.y + p.h - ch - 8, p.y + p.h / 2 - ch / 2));
     const clan = sim.clans[c.clan];
+    ctx.save();
+    ramaKarty(ctx, x, y, cw, ch, 1, 'mieszkaniec góry');
+
+    // nisza z sylwetką: łuk, kreskowana skała za plecami, podłoga
+    const nw = cw * 0.3, nh = ch * 0.5;
+    const nx = x + 16, ny = y + 18;
+    const nisza = new Path2D();
+    nisza.moveTo(nx, ny + nh);
+    nisza.lineTo(nx, ny + nw / 2);
+    nisza.arc(nx + nw / 2, ny + nw / 2, nw / 2, Math.PI, 0);
+    nisza.lineTo(nx + nw, ny + nh);
+    nisza.closePath();
+    ctx.fillStyle = 'rgba(22,16,13,1)';
+    ctx.fill(nisza);
+    ctx.save();
+    ctx.clip(nisza);
+    ctx.strokeStyle = 'rgba(207,194,166,0.08)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let d = -nh; d < nw + nh; d += 5) { ctx.moveTo(nx + d, ny + nh); ctx.lineTo(nx + d + nh, ny); }
+    ctx.stroke();
+    const blask = ctx.createRadialGradient(nx + nw / 2, ny + nh * 0.55, 2, nx + nw / 2, ny + nh * 0.55, nw * 0.7);
+    blask.addColorStop(0, 'rgba(230,200,150,0.14)');
+    blask.addColorStop(1, 'rgba(230,200,150,0)');
+    ctx.fillStyle = blask;
+    ctx.fillRect(nx, ny, nw, nh);
+    ctx.translate(nx + nw / 2, ny + nh - 6);
+    rysujPostac(ctx, sim, c, nh * 0.62, time);
+    ctx.restore();
+    ctx.strokeStyle = 'rgba(214,196,160,0.6)';
+    ctx.lineWidth = 1.1;
+    ctx.stroke(nisza);
+    ctx.beginPath(); ctx.moveTo(nx - 4, ny + nh + 0.5); ctx.lineTo(nx + nw + 4, ny + nh + 0.5); ctx.stroke();
+
+    // imię, ród, życie
+    const tx = nx + nw + 16, tw = x + cw - 16 - tx;
     ctx.textAlign = 'left';
-    ctx.fillStyle = 'rgba(242,228,202,0.96)';
-    ctx.font = `${Math.max(16, cw * 0.082)}px ${SERIF}`;
-    ctx.fillText(creatureName(c), x + cw * 0.42, y + ch * 0.22);
-    ctx.fillStyle = 'rgba(208,194,170,0.82)';
-    ctx.font = `italic ${Math.max(14, cw * 0.056)}px ${SERIF}`;
-    wrap(ctx, `${RACES[c.race].name}, ${clan.name}. ${lifeLine(c, sim)}`, x + cw * 0.42, y + ch * 0.32, cw * 0.52, cw * 0.075);
+    ctx.textBaseline = 'alphabetic';
+    let rozmImienia = Math.max(16, Math.min(24, cw * 0.075));
+    ctx.font = `${rozmImienia}px ${SERIF}`;
+    const imie = creatureName(c);
+    if (ctx.measureText(imie).width > tw) { rozmImienia *= tw / ctx.measureText(imie).width; ctx.font = `${rozmImienia}px ${SERIF}`; }
+    ctx.fillStyle = 'rgba(242,228,202,0.97)';
+    ctx.fillText(imie, tx, ny + rozmImienia * 0.9);
+    const rozm = Math.max(12, Math.min(15, cw * 0.043));
+    ctx.font = `${rozm * 0.82}px ${SERIF}`;
+    ctx.fillStyle = 'rgba(224,168,96,0.85)';
+    ctx.fillText(`${RACES[c.race].name.toUpperCase()} · ${clan.name}`, tx, ny + rozmImienia * 0.9 + rozm * 1.5, tw);
+    ctx.font = `italic ${rozm}px ${SERIF}`;
+    ctx.fillStyle = 'rgba(208,194,170,0.86)';
+    wrap(ctx, lifeLine(c, sim), tx, ny + rozmImienia * 0.9 + rozm * 3.1, tw, rozm * 1.3);
 
-    rysujStany(ctx, c, x + cw * 0.26, y + ch * 0.56, Math.max(13, cw * 0.062));
+    // stany w prawej kolumnie, na wysokości podłogi niszy
+    const sStan = Math.max(11, Math.min(14, cw * 0.036));
+    // odstęp tak, żeby podpisy (głód, wiara, obłęd) się nie zlewały
+    rysujStany(ctx, c, tx + sStan, ny + nh - sStan * 1.6, sStan, Math.max(sStan * 2.1, 34));
 
+    // myśli do szeptu: przerywnik, podpis i cztery słowa w klamrach
+    const yM = y + ch * 0.76;
+    ctx.strokeStyle = 'rgba(207,194,166,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + 18, yM - rozm * 1.4); ctx.lineTo(x + cw - 18, yM - rozm * 1.4); ctx.stroke();
+    ctx.font = `${rozm * 0.72}px ${SERIF}`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = 'rgba(224,168,96,0.8)';
+    const napisSzeptu = 'S Z E P N I J   M U';
+    const sw = ctx.measureText(napisSzeptu).width;
+    ctx.fillStyle = 'rgba(11,8,7,1)';
+    ctx.fillRect(x + cw / 2 - sw / 2 - 8, yM - rozm * 1.4 - rozm * 0.5, sw + 16, rozm);
+    ctx.fillStyle = 'rgba(224,168,96,0.8)';
+    ctx.fillText(napisSzeptu, x + cw / 2, yM - rozm * 1.15);
     const tools = TOOLS.szept;
-    const size = Math.max(14, cw * 0.062);
+    const size = Math.max(13, Math.min(17, cw * 0.05));
     ctx.font = `${size}px ${SERIF}`;
     for (let k = 0; k < tools.length; k++) {
       const bx = x + cw * (k % 2 === 0 ? 0.28 : 0.72);
-      const by = y + ch * 0.8 + Math.floor(k / 2) * size * 2.1;
+      const by = yM + Math.floor(k / 2) * size * 1.9;
       const ok = affordable(sim, 'szept', tools[k].id);
       ctx.textAlign = 'center';
       ctx.fillStyle = ok ? 'rgba(240,226,198,0.96)' : 'rgba(146,134,118,0.5)';
       ctx.fillText(tools[k].label, bx, by);
-      ctx.strokeStyle = ok ? 'rgba(200,180,140,0.45)' : 'rgba(120,110,96,0.2)';
+      const hw = ctx.measureText(tools[k].label).width / 2 + size * 0.6;
+      ctx.strokeStyle = ok ? 'rgba(224,168,96,0.55)' : 'rgba(120,110,96,0.25)';
       ctx.lineWidth = 1;
-      const hw = ctx.measureText(tools[k].label).width / 2 + size * 0.4;
       ctx.beginPath();
-      ctx.moveTo(bx - hw, by + size * 0.35); ctx.lineTo(bx + hw, by + size * 0.35);
+      ctx.moveTo(bx - hw + 4, by - size * 0.85); ctx.lineTo(bx - hw, by - size * 0.85); ctx.lineTo(bx - hw, by + size * 0.3); ctx.lineTo(bx - hw + 4, by + size * 0.3);
+      ctx.moveTo(bx + hw - 4, by - size * 0.85); ctx.lineTo(bx + hw, by - size * 0.85); ctx.lineTo(bx + hw, by + size * 0.3); ctx.lineTo(bx + hw - 4, by + size * 0.3);
       ctx.stroke();
-      this.hits.push({ x: bx, y: by - size * 0.3, hw, hh: size, kind: 'thought', tool: tools[k].id });
+      this.hits.push({ x: bx, y: by - size * 0.3, hw, hh: size * 0.9, kind: 'thought', tool: tools[k].id });
     }
     ctx.restore();
   }

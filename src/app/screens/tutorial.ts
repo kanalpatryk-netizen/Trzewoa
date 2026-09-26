@@ -8,6 +8,7 @@ import type { Cel } from '../../render/znaczniki';
 import type { AkcjaPrzycisku } from '../../render/przyciski';
 import { BARWA, rgba } from '../../render/palette';
 import { SERIF, panel, akapit, linieAkapitu } from '../../render/ink';
+import { ramaKarty } from '../../render/ozdoby';
 import { obszarKrwi, obszarOtchlani, obszarWiary, obszarSpisu, type Obszar } from '../../render/plate';
 import { ustaw, ustawienia } from '../../core/settings-store';
 import { TOOLS } from '../../powers/powers';
@@ -782,7 +783,8 @@ export class EkranSamouczka implements Ekran {
     // róg, który nie zasłania celu
     const m = p.waski ? 8 : 14;
     const rogi: [number, number][] = p.waski
-      ? [[p.x + m, p.y + m], [p.x + m, p.y + p.h - wys - m]]
+      // wąsko: pod progiem Znaku i klepsydrą tempa w górnym pasie płyty
+      ? [[p.x + m, p.y + 38], [p.x + m, p.y + p.h - wys - m]]
       : [[p.x + p.w - szer - m, p.y + m], [p.x + p.w - szer - m, p.y + p.h - wys - m], [p.x + m, p.y + m], [p.x + m, p.y + p.h - wys - m]];
     let [x, y] = rogi[0];
     if (cel) {
@@ -793,7 +795,7 @@ export class EkranSamouczka implements Ekran {
     }
     const karta = { x, y, w: szer, h: wys };
     this.pola.karta = karta;
-    panel(ctx, x, y, szer, wys, 0.95);
+    ramaKarty(ctx, x, y, szer, wys, 1, `samouczek · rozdział ${this.idx + 1} z ${this.rozdzialy.length}`, true);
     if (this.blysk > 0) {
       ctx.strokeStyle = rgba(BARWA.zarBlady, this.blysk * 0.9);
       ctx.lineWidth = 2;
@@ -804,9 +806,7 @@ export class EkranSamouczka implements Ekran {
     const lx = x + 20;
     let yy = y + 20 + rozm * 0.7;
     ctx.textAlign = 'left';
-    ctx.font = `${Math.max(13, rozm * 0.68)}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.atramentCichy, 0.95);
-    ctx.fillText(`ROZDZIAŁ ${this.idx + 1} Z ${this.rozdzialy.length}`, lx, yy);
+    // numer rozdziału stoi na zakładce ramy; tu zostają kropki postępu
     const n = this.rozdzialy.length, kr = Math.max(3, rozm * 0.2), krok = kr * 3.2;
     for (let i = 0; i < n; i++) {
       const kx = x + szer - 20 - (n - 1 - i) * krok, ky = yy - rozm * 0.25;

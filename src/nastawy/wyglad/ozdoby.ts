@@ -68,3 +68,17 @@ export const NAGLOWEK_DZIALU = {
   /** Rozstrzelenie liter (× rozmiar). */
   rozstrzelenie: 0.22,
 };
+
+/** Karty w grze (stworzenie, podpis rytu, samouczek) i etykiety działów marginesu. */
+export const KARTA = {
+  /** Krycie tła karty. */
+  tlo: 0.95,
+  /** Krycie linii zewnętrznej, wewnętrznej i rogów. */
+  linia: 0.55, liniaWew: 0.22, rogi: 0.6,
+  /** Odstęp linii wewnętrznej (i wielkość kwadratów w rogach), px. */
+  wciecie: 5,
+  /** Tytuł na zakładce: rozmiar liter i krycie. */
+  tytulRozmiar: 11, tytulAlfa: 0.85,
+  /** Etykiety działów na marginesie („spis ras”, „otchłań”…): rozmiar i krycie. */
+  etykietaRozmiar: 10, etykietaAlfa: 0.7,
+};

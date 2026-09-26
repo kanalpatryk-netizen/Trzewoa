@@ -1,7 +1,7 @@
 import { BARWA, rgba } from './palette';
 import { SERIF, SERIF_TYTUL, kreska } from './ink';
 import { glif } from './tajemnica';
-import { RAMA, KARTUSZ, PRZERYWNIK, NAGLOWEK_DZIALU } from '../nastawy/wyglad/ozdoby';
+import { RAMA, KARTUSZ, PRZERYWNIK, NAGLOWEK_DZIALU, KARTA } from '../nastawy/wyglad/ozdoby';
 
 /**
  * Ozdoby wspólne dla ekranów poza grą: rama ryciny z podziałką i napisami na marginesie,
@@ -286,4 +286,70 @@ export function rzymska(n: number): string {
   let s = '';
   for (const [v, z] of t) while (n >= v) { s += z; n -= v; }
   return s;
+}
+
+/**
+ * Rama karty w grze: ciemny papier, podwójna linia, rogi z rozetami i — jeśli podany —
+ * tytuł rozstrzelonymi kapitalikami na zakładce przerywającej górną linię. Ta sama
+ * rodzina co rama ryciny w menu, tylko w skali karty.
+ */
+export function ramaKarty(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, alfa = 1, tytul = '', akcent = false): void {
+  const K = KARTA;
+  ctx.save();
+  ctx.fillStyle = rgba(BARWA.sadza, K.tlo * alfa);
+  ctx.fillRect(x, y, w, h);
+  // cień pod kartą — leży na płycie, nie jest w nią wklejona
+  ctx.strokeStyle = `rgba(0,0,0,${0.5 * alfa})`;
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x + 3, y + h + 1.5); ctx.lineTo(x + w + 1.5, y + h + 1.5); ctx.lineTo(x + w + 1.5, y + 3); ctx.stroke();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = rgba(akcent ? BARWA.zarBlady : BARWA.atrament, K.linia * alfa);
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  ctx.strokeStyle = rgba(BARWA.atrament, K.liniaWew * alfa);
+  ctx.strokeRect(x + K.wciecie + 0.5, y + K.wciecie + 0.5, w - K.wciecie * 2 - 1, h - K.wciecie * 2 - 1);
+  const d = K.wciecie;
+  ctx.strokeStyle = rgba(akcent ? BARWA.zarBlady : BARWA.atramentMocny, K.rogi * alfa);
+  for (const [cx, cy] of [[x, y], [x + w - d, y], [x, y + h - d], [x + w - d, y + h - d]] as const) {
+    ctx.fillStyle = rgba(BARWA.sadza, alfa);
+    ctx.fillRect(cx, cy, d, d);
+    ctx.strokeRect(cx + 0.5, cy + 0.5, d - 1, d - 1);
+    ctx.beginPath(); ctx.arc(cx + d / 2, cy + d / 2, d * 0.18, 0, Math.PI * 2); ctx.stroke();
+  }
+  if (tytul) {
+    const r = K.tytulRozmiar;
+    ctx.font = `${r}px ${SERIF}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const t = tytul.toUpperCase();
+    const odst = r * 0.32;
+    const tw = [...t].reduce((a, l) => a + ctx.measureText(l).width, 0) + odst * (t.length - 1);
+    const pol = Math.min(tw / 2 + r, w / 2 - d * 2);
+    ctx.fillStyle = rgba(BARWA.sadza, alfa);
+    ctx.fillRect(x + w / 2 - pol, y - r * 0.6, pol * 2, r * 1.2);
+    ctx.fillStyle = rgba(akcent ? BARWA.zarBlady : BARWA.atrament, K.tytulAlfa * alfa);
+    rozstrzel(ctx, t, x + w / 2, y + 0.5, odst);
+    ctx.fillStyle = rgba(BARWA.zarBlady, 0.7 * alfa);
+    for (const s of [-1, 1]) {
+      const rx = x + w / 2 + s * (pol - r * 0.35);
+      ctx.beginPath(); ctx.moveTo(rx, y - 2.5); ctx.lineTo(rx + 2.5, y); ctx.lineTo(rx, y + 2.5); ctx.lineTo(rx - 2.5, y); ctx.closePath(); ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+/** Mały napis-etykieta działu na marginesie płyty: rozstrzelone kapitaliki i kreska. */
+export function etykietaMarginesu(ctx: CanvasRenderingContext2D, tekst: string, x: number, y: number, szer: number, alfa = 1): void {
+  const r = KARTA.etykietaRozmiar;
+  ctx.save();
+  ctx.font = `${r}px ${SERIF}`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = rgba(BARWA.zarBlady, KARTA.etykietaAlfa * alfa);
+  const tw = rozstrzel(ctx, tekst.toUpperCase(), x, y, r * 0.3);
+  if (szer > tw + r * 2) {
+    ctx.strokeStyle = rgba(BARWA.atrament, 0.2 * alfa);
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(x + tw + r * 0.8, y + 0.5); ctx.lineTo(x + szer, y + 0.5); ctx.stroke();
+  }
+  ctx.restore();
 }

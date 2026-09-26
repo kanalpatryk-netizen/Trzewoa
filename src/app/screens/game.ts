@@ -1,6 +1,7 @@
 import { Sim, resetRaces } from '../../sim/sim';
 import { GORA } from '../../nastawy/gora';
 import { KAMERA, TEMPO } from '../../nastawy/sterowanie';
+import { ATLAS } from '../../nastawy/wyglad/atlas';
 import { Camera } from '../../render/camera';
 import { Engraver } from '../../render/engrave';
 import { drawParticles } from '../../render/overlay';
@@ -423,7 +424,10 @@ export class EkranGry implements Ekran {
     if (!this.nasluch && teraz - this.ostatnieOdkrywanie > 500) { this.ostatnieOdkrywanie = teraz; this.odkrywaj(); }
     // nowa tablica otwiera się sama — najwyżej jedna na pół minuty i nigdy na kryzys
     // pierwsza prawdziwa partia zaczyna się od celu: tablica drogi do wolności
-    if (!this.nasluch && !odkrycia.zna('droga') && this.sim.tick > 90 && !this.atlas.otwarte && !this.sim.ending) {
+    // tablica celu nie wyskakuje w pierwszej sekundzie — gracz najpierw widzi swoją górę;
+    // czeka też, aż nie trzyma rytu i nie maluje
+    if (!this.nasluch && !odkrycia.zna('droga') && this.sim.tick > ATLAS.drogaPoTikach && !this.atlas.otwarte && !this.sim.ending
+        && !this.painting && this.ui.verb === null) {
       odkrycia.odkryj('droga', false);
       odkrycia.niezobaczone = Math.max(0, odkrycia.niezobaczone - 1);
       this.atlas.otworzTablice('droga', true);

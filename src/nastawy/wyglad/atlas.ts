@@ -16,6 +16,8 @@ export const ATLAS = {
   ramaGora: 'Atlas trzewi · tablice ras, rytów i praw góry', ramaGoraWaski: 'Atlas',
   ramaDol: 'odkryte {ile} z {z} · kółko przewija · esc zamyka', ramaDolWaski: 'odkryte {ile} z {z}',
   waskiPonizej: 700,
+  /** Tablica „Droga do wolności” otwiera się sama po tylu tikach nowej gry (przy domyślnym tempie 2× i 60 klatkach: 2400 ≈ 20 s). */
+  drogaPoTikach: 2400,
 
   // ----------------------------------------------------------------- układ
   /** Przyciemnienie świata pod oknem w grze. */

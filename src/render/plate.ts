@@ -132,15 +132,27 @@ export function drawCensus(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh
   const jag = (t: number, seed: number) => Math.sin(t * 37.1 + seed) * (h * 0.09) + Math.sin(t * 11.3 + seed * 2) * (h * 0.06);
 
   ctx.save();
+  etykietaPionowa(ctx, 'ludy', x0 - 16, y + h / 2);
+  // cienkie linie stropu i spągu — wstęga ma ramę jak wszystko inne na marginesie
+  ctx.strokeStyle = `${INK}0.18)`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x0, y - h * 0.25 + 0.5); ctx.lineTo(x1, y - h * 0.25 + 0.5);
+  ctx.moveTo(x0, y + h * 1.25 + 0.5); ctx.lineTo(x1, y + h * 1.25 + 0.5);
+  ctx.moveTo(x0 + 0.5, y - h * 0.25 - 3); ctx.lineTo(x0 + 0.5, y + h * 1.25 + 3);
+  ctx.moveTo(x1 - 0.5, y - h * 0.25 - 3); ctx.lineTo(x1 - 0.5, y + h * 1.25 + 3);
+  ctx.stroke();
   if (total > 0) {
     let cx = x0;
+    // grzybnia dostaje swój kawałek z tej samej szerokości — wcześniej doklejała się
+    // za pełną wstęgą i wchodziła na Otchłań obok
+    const udzialGrzybni = Math.min(0.22, sim.popByRace[Race.MYCELIUM] / Math.max(1, total + sim.popByRace[Race.MYCELIUM])) * 0.8;
+    const szerRas = (x1 - x0) * (1 - udzialGrzybni);
     for (let r = 0; r < RACE_COUNT; r++) {
       const grzyb = r === Race.MYCELIUM;
-      const share = grzyb
-        ? Math.min(0.22, sim.popByRace[r] / Math.max(1, total + sim.popByRace[r]))
-        : sim.popByRace[r] / total;
+      const share = grzyb ? udzialGrzybni / 0.8 : sim.popByRace[r] / total;
       if (share <= 0.001) continue;
-      const bw = (x1 - x0) * share * (grzyb ? 0.8 : 1);
+      const bw = grzyb ? (x1 - x0) * udzialGrzybni : szerRas * share;
       const raw = RACES[r].color;
       const col = [(206 + raw[0]) / 2 | 0, (192 + raw[1]) / 2 | 0, (166 + raw[2]) / 2 | 0];
       const ang = 0.35 + r * 0.5;
@@ -239,6 +251,11 @@ export function drawCrack(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vw:
   }
 
   ctx.save();
+  // podpis organu nad jego lewym końcem
+  ctx.font = `9px ${SERIF}`;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(224,168,96,0.6)';
+  ctx.fillText('K R E W', cx0, base - maxH - 4);
   ctx.beginPath();
   ctx.moveTo(cx0, base);
   for (const [x, y] of top) ctx.lineTo(x, y);
@@ -292,17 +309,51 @@ function prog(ctx: CanvasRenderingContext2D, x1: number, x2: number, y: number, 
   ctx.restore();
 }
 
+/** Pionowy podpis działu na lewym marginesie: rozstrzelone kapitaliki czytane od dołu. */
+function etykietaPionowa(ctx: CanvasRenderingContext2D, tekst: string, x: number, yc: number): void {
+  ctx.save();
+  ctx.translate(x, yc);
+  ctx.rotate(-Math.PI / 2);
+  ctx.font = `9px ${SERIF}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(224,168,96,0.6)';
+  ctx.fillText(tekst.toUpperCase().split('').join(' '), 0, 0);
+  ctx.restore();
+}
+
 /** Otchłań jako osobny znak: tyle ciebie jest teraz nieznane. */
 export function drawOtchlan(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number): void {
   const udzial = Math.max(0, Math.min(1, sim.world.unknown / (sim.world.w * sim.world.h)));
   // na wąskim ekranie kwadrat Otchłani wchodził w podpisy nacji — schodzi pod spis
   const { x, y, h: bok } = obszarOtchlani(p, vh);
   ctx.save();
-  ctx.strokeStyle = `${INK}0.45)`;
+  // studnia: ciemna, w podwójnej ramie; nieznane wypełnia ją bladą kreską od dna —
+  // im więcej ciebie zapomniane, tym wyżej sięga
+  ctx.fillStyle = 'rgba(8,6,6,1)';
+  ctx.fillRect(x, y, bok, bok);
+  const poziom = y + bok * (1 - udzial);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x + 2, poziom, bok - 4, y + bok - 2 - poziom); ctx.clip();
+  ctx.fillStyle = 'rgba(232,230,238,0.16)';
+  ctx.fillRect(x, poziom, bok, bok);
+  ctx.strokeStyle = 'rgba(232,230,238,0.6)';
   ctx.lineWidth = 1;
-  ctx.strokeRect(x, y, bok, bok);
-  ctx.fillStyle = 'rgba(214,208,192,0.85)';
-  ctx.fillRect(x + 1, y + bok * (1 - udzial) + 1, bok - 2, bok * udzial - 2);
+  ctx.beginPath();
+  for (let d = -bok; d < bok * 2; d += 3) { ctx.moveTo(x + d, y + bok); ctx.lineTo(x + d + bok, y); }
+  ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(232,230,238,0.85)';
+  ctx.beginPath(); ctx.moveTo(x + 2, poziom + 0.5); ctx.lineTo(x + bok - 2, poziom + 0.5); ctx.stroke();
+  ctx.strokeStyle = `${INK}0.55)`;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, bok - 1, bok - 1);
+  ctx.strokeStyle = `${INK}0.2)`;
+  ctx.strokeRect(x - 2.5, y - 2.5, bok + 5, bok + 5);
+  // nacięcie progu Skazy na ścianie studni
+  const progS = y + bok * (1 - Math.min(1, 55 / Math.max(1, sim.world.w * sim.world.h * 0.0035)));
+  ctx.strokeStyle = sim.otchlan >= 55 ? 'rgba(246,216,142,0.9)' : `${INK}0.35)`;
+  ctx.beginPath(); ctx.moveTo(x - 5, progS); ctx.lineTo(x + 3, progS); ctx.stroke();
   ctx.font = `italic ${Math.max(13, bok * 0.3)}px ${SERIF}`;
   ctx.fillStyle = `${INK}0.9)`;
   ctx.textAlign = 'left';
@@ -410,6 +461,7 @@ export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim,
   const lines3 = (yBase - bandTop) / 3 / 1.4;
   const size = Math.max(14, Math.min(Math.min(22, vw / 46), lines3));
   const x = p.x;
+  if (sim.chronicle.length) etykietaPionowa(ctx, 'kronika', x - 16, (bandTop + yBase) / 2);
   // na telefonie kronika dzieli dolny margines z Otchłanią — nie może na nią wchodzić
   const maxW = p.waski ? p.w - obszarOtchlani(p, vh).w - 14 : p.w * 0.58;
   ctx.save();
