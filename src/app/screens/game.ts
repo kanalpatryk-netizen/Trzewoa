@@ -1,4 +1,4 @@
-import { Sim } from '../../sim/sim';
+import { Sim, resetRaces } from '../../sim/sim';
 import { GORA } from '../../nastawy/gora';
 import { KAMERA, TEMPO } from '../../nastawy/sterowanie';
 import { Camera } from '../../render/camera';
@@ -169,8 +169,25 @@ export class EkranGry implements Ekran {
     this.rozmiar(this.app.w, this.app.h);
   }
 
-  nowaGra(ziarno = (Math.random() * 1e9) | 0): void {
-    this.sim = new Sim(ziarno);
+  /**
+   * Góry wygenerowane z wyprzedzeniem (na ekranie ładowania) — klucz to ziarno,
+   * -1 to „dowolna nowa”. Generowanie świata to najdłuższa chwila w całej grze.
+   */
+  private zapas = new Map<number, Sim>();
+
+  /** Generuje górę teraz, żeby „Obudź się” (albo samouczek) nie czekały. */
+  przygotuj(ziarno?: number): void {
+    const klucz = ziarno ?? -1;
+    if (!this.zapas.has(klucz)) this.zapas.set(klucz, new Sim(ziarno ?? ((Math.random() * 1e9) | 0)));
+  }
+
+  nowaGra(ziarno?: number): void {
+    const klucz = ziarno ?? -1;
+    const gotowa = this.zapas.get(klucz);
+    this.zapas.delete(klucz);
+    // przygotowana góra powstała wcześniej — rasy wracają do stanu sprzed skaz z poprzedniej partii
+    if (gotowa && gotowa.tick === 0) resetRaces();
+    this.sim = gotowa && gotowa.tick === 0 ? gotowa : new Sim(ziarno ?? ((Math.random() * 1e9) | 0));
     if (ustawienia.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += GORA.laskawaKrew; }
     this.ui.verb = null; this.ui.tool = null; this.ui.selected = null;
     this.cam.zoom = KAMERA.start;
@@ -627,7 +644,9 @@ export class EkranGry implements Ekran {
     ctx.font = `italic ${Math.max(14, this.plate.left * 0.2)}px "Trzewia Tekst", Georgia, serif`;
     ctx.fillStyle = 'rgba(206,192,166,0.4)';
     ctx.textAlign = 'left';
-    ctx.fillText('P', x + 24, y + 16);
+    // podpowiedź klawisza po lewej stronie znaku i tylko przy szerokim marginesie —
+    // obok znaku wchodziła na ramę płyty
+    if (!this.plate.waski && this.plate.left >= 90) { ctx.textAlign = 'right'; ctx.fillText('P', x - 6, y + 16); }
     ctx.restore();
     ctx.save();
     ctx.strokeStyle = `rgba(206,192,166,${0.45 + 0.15 * Math.sin(teraz * 0.0016)})`;

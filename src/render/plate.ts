@@ -2,6 +2,7 @@ import { Sim } from '../sim/sim';
 import { RACES, RACE_COUNT, Race, odmien } from '../sim/races';
 import { SERIF } from './overlay';
 import { ustawienia } from '../core/settings-store';
+import { lewaKrawedzPrzyciskow } from './przyciski';
 
 export interface Plate { x: number; y: number; w: number; h: number; left: number; bottom: number; right: number; top: number; waski: boolean; }
 
@@ -34,9 +35,17 @@ export function obszarKrwi(p: Plate, vh: number): Obszar {
 /** Kwadrat Otchłani razem z podpisem. */
 export function obszarOtchlani(p: Plate, vh: number): Obszar {
   const bok = Math.max(26, Math.min(46, p.bottom * (p.waski ? 0.16 : 0.28)));
-  const x = p.waski ? p.x + p.w - bok * 3.4 : p.x + p.w * 0.5;
+  // szerokość z podpisem („stać cię na Skazę”) — podpis nie może wyjść poza płytę
+  const w = bok + 6 + Math.max(13, bok * 0.3) * 7.8;
+  // wąsko: przy prawej krawędzi płyty; szeroko: w połowie, ale nigdy na przyciskach
+  const x = p.waski ? p.x + p.w - w : Math.min(p.x + p.w * 0.5, lewaKrawedzPrzyciskow(p) - w - 14);
   const y = vh - p.bottom + p.bottom * (p.waski ? 0.4 : 0.14);
-  return { x, y, w: bok * (p.waski ? 3.3 : 4.6), h: bok };
+  return { x, y, w, h: bok };
+}
+
+/** Szerokość wstęgi spisu ras — kończy się przed Otchłanią. */
+function szerokoscSpisu(p: Plate, vh: number): number {
+  return p.waski ? p.w * 0.78 : Math.max(p.w * 0.25, Math.min(p.w * 0.46, obszarOtchlani(p, vh).x - p.x - 16));
 }
 
 /** Pasmo dymu Wiary pod górną krawędzią płyty. */
@@ -48,7 +57,7 @@ export function obszarWiary(p: Plate): Obszar {
 export function obszarSpisu(p: Plate, vh: number): Obszar {
   const y = vh - p.bottom + p.bottom * (p.waski ? 0.12 : 0.17);
   const h = Math.max(12, p.bottom * (p.waski ? 0.09 : 0.11));
-  return { x: p.x, y: y - h * 0.4, w: p.w * (p.waski ? 0.78 : 0.46), h: h * 2.4 };
+  return { x: p.x, y: y - h * 0.4, w: szerokoscSpisu(p, vh), h: h * 2.4 };
 }
 
 export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number, oddech = 0.5): void {
@@ -119,7 +128,7 @@ export function drawCensus(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh
   // górne pasmo marginesu należy do spisu; kronika zaczyna się dopiero pod nim
   const y = vh - p.bottom + p.bottom * (p.waski ? 0.12 : 0.17);
   const h = Math.max(12, p.bottom * (p.waski ? 0.09 : 0.11));
-  const x0 = p.x, x1 = p.x + p.w * (p.waski ? 0.78 : 0.46);
+  const x0 = p.x, x1 = p.x + szerokoscSpisu(p, vh);
   const jag = (t: number, seed: number) => Math.sin(t * 37.1 + seed) * (h * 0.09) + Math.sin(t * 11.3 + seed * 2) * (h * 0.06);
 
   ctx.save();

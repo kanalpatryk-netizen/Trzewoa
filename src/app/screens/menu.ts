@@ -9,10 +9,13 @@ import { SERIF, tloSadzy, kreska } from '../../render/ink';
 import { hasSave } from '../../core/save';
 import { ustawienia } from '../../core/settings-store';
 import { MENU as M } from '../../nastawy/wyglad/menu';
-import { RAMA } from '../../nastawy/wyglad/ozdoby';
+import { RAMA, KARTUSZ } from '../../nastawy/wyglad/ozdoby';
 
 /** Wewnętrzny odstęp od ramy (piksele). */
 const marginesRamy = (w: number): number => Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc));
+/** Gdzie kończy się podtytuł pod wstęgą tytułu (te same proporcje co w kartuszu). */
+const dolPodtytulu = (yTytul: number, rt: number): number =>
+  yTytul - rt * 0.95 + rt * KARTUSZ.wysokosc + Math.max(KARTUSZ.podtytul.min, rt * KARTUSZ.podtytul.czesc) * (KARTUSZ.podtytul.odstep + 0.4);
 
 interface Pozycja { id: string; etykieta: string; opis: string; aktywna: () => boolean; }
 
@@ -68,7 +71,8 @@ export class EkranMenu implements Ekran {
     const ruch = ustawienia.oddech && !ustawienia.ograniczRuch;
     const czas = ruch ? teraz : 0;
     tloSadzy(ctx, w, h, czas);
-    const waski = w < M.waskiPonizej;
+    // układ pionowy także na tablecie trzymanym pionowo — szeroki wciskał spis w róg
+    const waski = w < M.waskiPonizej || h > w * M.pionowyOd;
     if (waski) this.ukladWaski(ctx, w, h, czas, wejscie);
     else this.ukladSzeroki(ctx, w, h, czas, wejscie);
     // patyna i rytowana ciemność na brzegach — ta sama, co na płycie w grze
@@ -94,18 +98,31 @@ export class EkranMenu implements Ekran {
   /** Szeroki ekran: kartusz u góry, spis po lewej, przekrój góry po prawej. */
   private ukladSzeroki(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, wejscie: number): void {
     const m = marginesRamy(w) + 14;
-    // przekrój góry: prawa część, od kartusza do dolnej ramy
-    const fx = w * M.przekrojX, fy = h * M.przekrojY, fw = w - fx - m - w * 0.01, fh = h - fy - m - 4;
+    const rt = Math.max(M.tytulRozmiar.min, Math.min(M.tytulRozmiar.max, Math.min(w / 11, h / 6)));
+    const yTytul = h * M.tytulY + rt * 0.4;
+    const podDol = dolPodtytulu(yTytul, rt);
+    // przekrój góry: prawa część, od podtytułu do dolnej ramy — nigdy pod napisem
+    const fx = w * M.przekrojX, fy = Math.max(h * M.przekrojY, podDol + 6), fw = w - fx - m - w * 0.01, fh = h - fy - m - 4;
     this.frontyspis.rysuj(ctx, fx, fy, fw, fh, teraz, M.przekrojAlfa * wejscie, true);
 
-    const rt = Math.max(M.tytulRozmiar.min, Math.min(M.tytulRozmiar.max, Math.min(w / 11, h / 6)));
-    kartusz(ctx, w / 2, h * M.tytulY + rt * 0.4, M.tytul, rt, wejscie, '', M.podtytul);
+    kartusz(ctx, w / 2, yTytul, M.tytul, rt, wejscie, '', M.podtytul);
 
     this.trafienia = [];
     const lewy = m + w * M.spisOdLewej;
-    const rozmiar = Math.max(M.spisRozmiar.min, Math.min(M.spisRozmiar.max, Math.min(w / 48, h / 28)));
-    const odstep = rozmiar * M.spisOdstep;
-    const start = Math.max(h * M.spisOd, Math.min(h * M.spisDo, h * 0.8 - this.pozycje.length * odstep));
+    // spis, opis i zachęta mieszczą się między podtytułem a podpowiedzią na dole;
+    // na niskim ekranie spis gęstnieje, a potem pismo maleje — nic nie wchodzi na nic
+    const n = this.pozycje.length;
+    const ro = Math.max(M.opisRozmiar.min, Math.min(M.opisRozmiar.max, w / 72));
+    const dol = h - m - 22;
+    let rozmiar = Math.max(M.spisRozmiar.min, Math.min(M.spisRozmiar.max, Math.min(w / 48, h / 28)));
+    let odstep = rozmiar * M.spisOdstep;
+    const opisH = () => rozmiar * 0.6 + ro * M.opisInterlinia * 2 + (ustawienia.samouczekZrobiony ? 0 : ro * 1.6);
+    let start = Math.max(h * M.spisOd, podDol + rozmiar * 1.3, Math.min(h * M.spisDo, h * 0.8 - n * odstep));
+    for (let k = 0; k < 12 && start + n * odstep + opisH() > dol; k++) {
+      if (odstep > rozmiar * 1.55) odstep = Math.max(rozmiar * 1.55, (dol - opisH() - start) / n);
+      else { rozmiar *= 0.94; odstep = rozmiar * 1.55; }
+      start = Math.max(podDol + rozmiar * 1.3, Math.min(start, dol - opisH() - n * odstep));
+    }
     // spis wejść jak spis tablic: numer, znak, tytuł
     ctx.save();
     ctx.textBaseline = 'alphabetic';
@@ -148,13 +165,12 @@ export class EkranMenu implements Ekran {
     const yOpis = start + this.pozycje.length * odstep;
     przerywnik(ctx, lewy + w * 0.14, yOpis - rozmiar * 0.5, w * 0.26, wejscie);
     if (wyb) {
-      const ro = Math.max(M.opisRozmiar.min, Math.min(M.opisRozmiar.max, w / 72));
       ctx.font = `italic ${ro}px ${SERIF}`;
       ctx.fillStyle = rgba(BARWA.atrament, 0.9 * wejscie);
-      this.akapit(ctx, wyb.opis, lewy, yOpis + rozmiar * 0.6, w * M.opisSzerokosc, ro * M.opisInterlinia);
+      const ostatnia = this.akapit(ctx, wyb.opis, lewy, yOpis + rozmiar * 0.6, w * M.opisSzerokosc, ro * M.opisInterlinia);
       if (!ustawienia.samouczekZrobiony) {
         ctx.fillStyle = rgba(BARWA.zarBlady, 0.7 * wejscie);
-        ctx.fillText(M.zachetaSamouczek, lewy, yOpis + rozmiar * 2.7);
+        ctx.fillText(M.zachetaSamouczek, lewy, ostatnia + ro * 1.5);
       }
     }
     ctx.restore();
@@ -163,19 +179,30 @@ export class EkranMenu implements Ekran {
   /** Telefon: kartusz u góry, spis pośrodku, przekrój góry przygaszony u dołu. */
   private ukladWaski(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, wejscie: number): void {
     const m = marginesRamy(w) + 12;
-    this.frontyspis.rysuj(ctx, m, h * M.przekrojWaskiY, w - m * 2, h * (1 - M.przekrojWaskiY - 0.02) - m, teraz, M.przekrojWaskiAlfa * wejscie, false);
-    const zaslona = ctx.createLinearGradient(0, h * 0.25, 0, h * 0.8);
-    zaslona.addColorStop(0, 'rgba(11,8,7,0.2)');
-    zaslona.addColorStop(0.6, 'rgba(11,8,7,0.8)');
-    zaslona.addColorStop(1, 'rgba(11,8,7,0.2)');
-    ctx.fillStyle = zaslona;
-    ctx.fillRect(0, h * 0.25, w, h * 0.55);
-    kartusz(ctx, w / 2, h * M.tytulWaskiY, M.tytul, Math.max(M.tytulWaskiRozmiar.min, Math.min(M.tytulWaskiRozmiar.max, (w - m * 2) / 9.6)), wejscie,
-      M.nadtytulWaski, M.podtytulWaski);
+    const rt = Math.max(M.tytulWaskiRozmiar.min, Math.min(M.tytulWaskiRozmiar.max, (w - m * 2) / 9.6));
+    const yTytul = h * M.tytulWaskiY;
+    const podDol = dolPodtytulu(yTytul, rt);
+    // układ liczony z góry na dół: tytuł, spis, opis — przekrój dostaje tylko to, co zostanie
+    const n = this.pozycje.length;
+    const r = Math.max(14, Math.min(20, w / 28));
+    let rozmiar = Math.max(16, Math.min(26, w / 17, h / 32));
+    let odstep = rozmiar * M.spisOdstepWaski;
+    const opisH = r * 1.2 + r * 1.35 * 2;
+    let start = Math.max(h * M.spisWaskiY, podDol + rozmiar * 1.4);
+    const dol = h - m - 16;
+    for (let k = 0; k < 12 && start + n * odstep + opisH > dol; k++) {
+      if (odstep > rozmiar * 1.6) odstep = Math.max(rozmiar * 1.6, (dol - opisH - start) / n);
+      else { rozmiar *= 0.94; odstep = rozmiar * 1.6; }
+      start = Math.max(podDol + rozmiar * 1.4, Math.min(start, dol - opisH - n * odstep));
+    }
+    // przekrój góry pod opisem, jeśli jest na niego miejsce
+    ctx.font = `italic ${r}px ${SERIF}`;
+    const yOpisu = start + n * odstep + r * 1.2;
+    const liniiOpisu = this.linie(ctx, this.pozycje[this.wybrana]?.opis ?? '', w * 0.8);
+    const fy = yOpisu + r * 1.35 * Math.max(0, liniiOpisu - 1) + r * 1.2;
+    if (h - m - fy > 90) this.frontyspis.rysuj(ctx, m, fy, w - m * 2, h - m - fy, teraz, M.przekrojWaskiAlfa * wejscie, false);
+    kartusz(ctx, w / 2, yTytul, M.tytul, rt, wejscie, M.nadtytulWaski, M.podtytulWaski);
     this.trafienia = [];
-    const rozmiar = Math.max(16, Math.min(w / 17, h / 32));
-    const odstep = rozmiar * M.spisOdstepWaski;
-    const start = h * M.spisWaskiY;
     ctx.save();
     for (let i = 0; i < this.pozycje.length; i++) {
       const p = this.pozycje[i];
@@ -202,7 +229,6 @@ export class EkranMenu implements Ekran {
     if (wyb) {
       const yo = start + this.pozycje.length * odstep;
       przerywnik(ctx, w / 2, yo - rozmiar * 0.4, w * 0.5, wejscie);
-      const r = Math.max(14, w / 28);
       ctx.font = `italic ${r}px ${SERIF}`;
       ctx.textAlign = 'center';
       ctx.fillStyle = rgba(BARWA.atrament, 0.9 * wejscie);
@@ -211,7 +237,8 @@ export class EkranMenu implements Ekran {
     ctx.restore();
   }
 
-  private akapit(ctx: CanvasRenderingContext2D, tekst: string, x: number, y: number, maxW: number, lh: number, wyr: CanvasTextAlign = 'left'): void {
+  /** Akapit łamany do szerokości; zwraca linię bazową ostatniego wiersza. */
+  private akapit(ctx: CanvasRenderingContext2D, tekst: string, x: number, y: number, maxW: number, lh: number, wyr: CanvasTextAlign = 'left'): number {
     ctx.textAlign = wyr;
     let linia = '', yy = y;
     for (const s of tekst.split(' ')) {
@@ -219,6 +246,17 @@ export class EkranMenu implements Ekran {
       if (ctx.measureText(test).width > maxW && linia) { ctx.fillText(linia, x, yy); linia = s; yy += lh; } else linia = test;
     }
     if (linia) ctx.fillText(linia, x, yy);
+    return yy;
+  }
+
+  /** Ile wierszy zajmie akapit przy bieżącym kroju. */
+  private linie(ctx: CanvasRenderingContext2D, tekst: string, maxW: number): number {
+    let linia = '', n = tekst ? 1 : 0;
+    for (const s of tekst.split(' ')) {
+      const test = linia ? `${linia} ${s}` : s;
+      if (ctx.measureText(test).width > maxW && linia) { n++; linia = s; } else linia = test;
+    }
+    return n;
   }
 
   private stopka(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, alfa: number): void {
@@ -229,7 +267,7 @@ export class EkranMenu implements Ekran {
       ctx.fillStyle = rgba(BARWA.zarBlady, 0.9 * Math.min(1, (M.komunikatMs - (teraz - this.komunikatOd)) / 900));
       ctx.fillText(this.komunikat, w / 2, h * 0.9);
     }
-    if (w >= M.waskiPonizej) {
+    if (w >= M.waskiPonizej && h <= w * M.pionowyOd) {
       ctx.font = `italic ${Math.max(12, w / 110)}px ${SERIF}`;
       ctx.fillStyle = rgba(BARWA.atramentCichy, 0.5 * alfa);
       ctx.textAlign = 'left';

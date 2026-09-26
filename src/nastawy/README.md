@@ -21,6 +21,8 @@ komentarz: co robi, w jakich jednostkach i w którą stronę działa.
 | wymiary góry, jaskinie, rudy, woda, magma | `swiat.ts` | `SWIAT` |
 | rozmiar skorupy, komory, przedsionka | `swiat.ts` | `RDZEN` |
 | kamera, przybliżenie, najwyższe tempo | `sterowanie.ts` | `KAMERA`, `TEMPO` |
+| jak interfejs dopasowuje się do ekranu (najmniejszy ekran logiczny, skala) | `ekran.ts` | `EKRAN` |
+| ekran ładowania: napisy, minimalny czas | `ekran.ts` | `LADOWANIE` |
 | muzyka, pogłos, głośność gestów | `dzwiek.ts` | `MUZYKA`, `MIKSER`, `GESTY`, `REZONANS` |
 | kolory całej gry | `barwy.ts` | `BARWA` |
 | napisy i układ menu | `wyglad/menu.ts` | `MENU` |

@@ -17,6 +17,12 @@ export interface Przycisk {
  * z klawiatury — pauza, tempo, zapiski, klucz, powrót kamery, zapis — ma tu swój znak,
  * bo na dotyku klawiatury nie ma wcale.
  */
+/** Lewa krawędź rzędu przycisków na szerokim ekranie — obok niego układa się Otchłań. */
+export function lewaKrawedzPrzyciskow(p: Plate): number {
+  const r = Math.max(22, Math.min(26, p.w * 0.02));
+  return p.x + p.w - r * 2.3 * 7 - r * 1.2 - r;
+}
+
 export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; zapiski: boolean; legenda: boolean; tempo: number; noweTablice?: number }): Przycisk[] {
   const wszystkie: { akcja: AkcjaPrzycisku; etykieta: string; wlaczony?: boolean }[] = [
     { akcja: 'pauza', etykieta: stan.pauza ? 'wznów' : 'pauza', wlaczony: stan.pauza },

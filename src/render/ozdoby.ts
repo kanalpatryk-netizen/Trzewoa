@@ -97,6 +97,23 @@ export function ramaRyciny(ctx: CanvasRenderingContext2D, w: number, h: number, 
   ctx.restore();
 }
 
+/** Pełna szerokość kartusza (ze zwojami) dla danego napisu i rozmiaru — do sprawdzania, czy się zmieści. */
+export function szerokoscKartusza(ctx: CanvasRenderingContext2D, tekst: string, rozmiar: number): number {
+  const K = KARTUSZ;
+  ctx.save();
+  ctx.font = `${K.waga} ${rozmiar}px ${SERIF_TYTUL}`;
+  const litery = [...tekst];
+  const szer = litery.reduce((a, l) => a + ctx.measureText(l).width, 0) + rozmiar * K.rozstrzelenie * (litery.length - 1);
+  ctx.restore();
+  return szer + rozmiar * K.poszerzenie + rozmiar * K.wysokosc * 1.1;
+}
+
+/** Największy rozmiar tytułu (nie większy niż `rozmiar`), przy którym kartusz zmieści się w `maxSzer`. */
+export function dopasujKartusz(ctx: CanvasRenderingContext2D, tekst: string, rozmiar: number, maxSzer: number): number {
+  const s = szerokoscKartusza(ctx, tekst, rozmiar);
+  return s <= maxSzer ? rozmiar : Math.max(12, rozmiar * maxSzer / s);
+}
+
 /**
  * Kartusz: pas pergaminu zwinięty na końcach, na którym stoi tytuł.
  * Zwraca szerokość napisu (do ozdobników pod spodem).
@@ -184,8 +201,18 @@ export function przerywnik(ctx: CanvasRenderingContext2D, x: number, y: number, 
 export function naglowekDzialu(ctx: CanvasRenderingContext2D, tekst: string, x: number, y: number, szer: number, rozmiar: number, alfa: number, ziarno: number, prawy = ''): void {
   ctx.save();
   ctx.textBaseline = 'middle';
-  // glif działu w kółku
   const N = NAGLOWEK_DZIALU;
+  // wąsko: pismo maleje, aż napis, dopisek i odrobina kreski zmieszczą się w szerokości
+  for (let k = 0; k < 10; k++) {
+    ctx.font = `${rozmiar}px ${SERIF}`;
+    const t = tekst.toUpperCase();
+    const tw = [...t].reduce((a, l) => a + ctx.measureText(l).width, 0) + rozmiar * N.rozstrzelenie * (t.length - 1);
+    ctx.font = `italic ${rozmiar * 0.85}px ${SERIF}`;
+    const pw = prawy ? ctx.measureText(prawy).width + rozmiar : 0;
+    if (rozmiar * N.kolko * N.wciecie + tw + pw + rozmiar * 1.6 <= szer || rozmiar < 9) break;
+    rozmiar *= 0.92;
+  }
+  // glif działu w kółku
   const r = rozmiar * N.kolko;
   ctx.strokeStyle = rgba(BARWA.zarBlady, N.alfaKolka * alfa);
   ctx.lineWidth = 1;

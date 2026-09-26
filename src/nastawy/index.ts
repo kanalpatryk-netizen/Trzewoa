@@ -11,6 +11,7 @@ export { RYTUAL, PIELGRZYMKA, PLAN_DROGI } from './rytual';
 export { STWORZENIA } from './stworzenia';
 export { KOSZTY, MOCE, SKAZY } from './moce';
 export { KAMERA, TEMPO } from './sterowanie';
+export { EKRAN, LADOWANIE } from './ekran';
 export { MUZYKA, REZONANS, MIKSER, GESTY } from './dzwiek';
 export { BARWA, ATRAMENT_GLEBI } from './barwy';
 export { RAMA, KARTUSZ, PRZERYWNIK, NAGLOWEK_DZIALU } from './wyglad/ozdoby';

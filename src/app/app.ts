@@ -6,6 +6,7 @@ import { Gesty } from '../core/gesty';
 import { mikser } from '../core/mikser';
 import { akcjaDlaKlawisza } from '../core/keybinds';
 import { ustawienia, ekran } from '../core/settings-store';
+import { EKRAN } from '../nastawy/ekran';
 
 /**
  * Pętla i przełącznik ekranów. Trzyma jedno miejsce, w którym dzieje się czas,
@@ -52,20 +53,24 @@ export class App implements Kontekst {
 
   /**
    * Gra liczy wszystko w pikselach logicznych: do ekranu 1366×820 to po prostu piksele,
-   * na większym cały obraz — płyta, napisy, ryty — rośnie proporcjonalnie. Gracz może
-   * to jeszcze powiększyć albo zmniejszyć w ustawieniach.
+   * na większym cały obraz — płyta, napisy, ryty — rośnie proporcjonalnie. Na małym
+   * ekranie skala spada tak, żeby logiczny ekran miał co najmniej minimum z nastaw
+   * (nastawy/ekran.ts) — wtedy każdy układ się mieści i nic na siebie nie nachodzi.
    */
-  private przelicz(): void {
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
+  przelicz(): void {
+    const E = EKRAN;
+    const dpr = Math.min(E.maxDpr, window.devicePixelRatio || 1);
     // karta bez kompozycji potrafi zgłosić zerowy rozmiar — wtedy trzymamy sensowny domyślny
-    const cssW = Math.max(320, innerWidth || 1280);
+    const cssW = Math.max(240, innerWidth || 1280);
     const cssH = Math.max(240, innerHeight || 720);
-    // telefon: odrobinę większe pismo; duży monitor: cały obraz rośnie z ekranem
-    const auto = cssW < 520 ? 1.1 : Math.max(1, Math.min(2.4, Math.min(cssW / 1366, cssH / 820)));
+    // duży monitor: cały obraz rośnie z ekranem
+    const auto = Math.max(1, Math.min(E.maxPowiekszenie, Math.min(cssW / E.wzorzecW, cssH / E.wzorzecH)));
     this.mnoznik = ustawienia.wielkoscUI || 1;
-    // logiczny ekran nie może zejść poniżej 320×240 — tyle potrzebuje najwęższy układ
-    const skala = Math.min(auto * this.mnoznik, cssW / 320, cssH / 240);
-    ekran.skala = Math.max(0.5, skala);
+    // mały ekran: skala zaskakuje w dół, aż logiczny ekran osiągnie minimum
+    const pion = cssH >= cssW;
+    const minW = pion ? E.pionMinW : E.poziomMinW, minH = pion ? E.pionMinH : E.poziomMinH;
+    const skala = Math.min(auto * this.mnoznik, cssW / minW, cssH / minH);
+    ekran.skala = Math.max(E.minSkala, skala);
     this.cssW = cssW; this.cssH = cssH;
     this.w = cssW / ekran.skala;
     this.h = cssH / ekran.skala;

@@ -32,6 +32,8 @@ export const MENU = {
   // ----------------------------------------------------------------- układ
   /** Poniżej tej szerokości (px) menu przechodzi w układ telefonu. */
   waskiPonizej: 700,
+  /** …albo gdy ekran jest wyższy niż szeroki o tyle razy (tablet w pionie). */
+  pionowyOd: 1.15,
   /** Szeroki: przekrój góry zaczyna się na tej części szerokości i wysokości… */
   przekrojX: 0.4, przekrojY: 0.27,
   /** …i ma takie krycie. */

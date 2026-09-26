@@ -2,7 +2,7 @@ import { tablica, TABLICE } from './tablice';
 import { odkrycia } from './odkrycia';
 import { rysujTablice, rysujAtlas, wPolu, type PoleTablicy } from '../render/tablica';
 import { SERIF } from '../render/ink';
-import { kartusz } from '../render/ozdoby';
+import { kartusz, dopasujKartusz } from '../render/ozdoby';
 import { BARWA, rgba } from '../render/palette';
 import { ATLAS as A } from '../nastawy/wyglad/atlas';
 
@@ -77,7 +77,10 @@ export class OknoAtlasu {
       const aw = Math.min(A.maxSiatka, w - this.margines * 2);
       const x = (w - aw) / 2;
       const gora = this.margines + rozm * 0.6;
-      const rt = Math.max(A.tytulRozmiar.min, Math.min(A.tytulRozmiar.max, w / 24));
+      // tytuł nie może wejść na „zamknij ×” po prawej — na wąskim ekranie maleje
+      ctx.font = `italic ${rozm * 0.85}px ${SERIF}`;
+      const zwMiejsce = ctx.measureText(A.zamknij).width + 16;
+      const rt = dopasujKartusz(ctx, A.tytul, Math.max(A.tytulRozmiar.min, Math.min(A.tytulRozmiar.max, w / 24)), (aw / 2 - zwMiejsce) * 2);
       kartusz(ctx, w / 2, gora + rt * 1.05, A.tytul, rt, 1);
       // postęp: kreska z kropką na każdą tablicę, zapełnione — odkryte
       const py = gora + rt * 1.7;
@@ -89,9 +92,13 @@ export class OknoAtlasu {
         ctx.beginPath(); ctx.arc(px, py, zna ? 2.4 : 1.6, 0, Math.PI * 2); ctx.fill();
       }
       ctx.textAlign = 'center';
-      ctx.font = `italic ${rozm * 0.85}px ${SERIF}`;
+      const postep = zLiczbami(A.postep, odkrycia.ile, TABLICE.length);
+      let rp = rozm * 0.85;
+      ctx.font = `italic ${rp}px ${SERIF}`;
+      const pw0 = ctx.measureText(postep).width;
+      if (pw0 > aw - 8) { rp *= (aw - 8) / pw0; ctx.font = `italic ${rp}px ${SERIF}`; }
       ctx.fillStyle = rgba(BARWA.atramentCichy, 0.9);
-      ctx.fillText(zLiczbami(A.postep, odkrycia.ile, TABLICE.length), w / 2, py + rozm * 1.3);
+      ctx.fillText(postep, w / 2, py + rozm * 1.3);
       const y = py + rozm * 2;
       const r = rysujAtlas(ctx, x, y, aw, h - y - (this.margines > 16 ? this.margines : rozm * 2), this.przewin, teraz, this.kursor);
       this.maxPrzewin = r.maxPrzewin;

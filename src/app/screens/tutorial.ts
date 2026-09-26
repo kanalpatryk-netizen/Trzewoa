@@ -77,6 +77,9 @@ const tekstZ = (t: Tekst, s: EkranSamouczka): string => typeof t === 'function' 
  * Wcześniej było dwanaście filmów do przeczytania i polecenia w rodzaju „drugi ryt
  * po lewej", a ryt był już wybrany za gracza, więc kliknięcie go odznaczało.
  */
+/** Samouczek zawsze toczy się w tej samej górze — lekcje wskazują jej konkretne miejsca. */
+const ZIARNO_SAMOUCZKA = 20260921;
+
 export class EkranSamouczka implements Ekran {
   nazwa = 'samouczek';
   gra: EkranGry;
@@ -429,8 +432,11 @@ export class EkranSamouczka implements Ekran {
     this.gra.nasluch = (z) => this.aktualizuj(z);
   }
 
+  /** Góra samouczka generowana z wyprzedzeniem (ekran ładowania). */
+  przygotuj(): void { this.gra.przygotuj(ZIARNO_SAMOUCZKA); }
+
   wejdz(): void {
-    this.gra.nowaGra(20260921);
+    this.gra.nowaGra(ZIARNO_SAMOUCZKA);
     this.gra.sim.spokojnySwiat = true;      // stały świat: żadnych zaraz i najazdów w trakcie nauki
     this.gra.sim.nakarmSwiat();             // i pełna spiżarnia, żeby nauka nie była patrzeniem na głód
     const dom = this.gniazdoGoblinow();
