@@ -141,10 +141,13 @@ export function seed(sim: Sim, tool: string, tx: number, ty: number): boolean {
       if (!w.inb(x, y) || dx * dx + dy * dy > r * r) continue;
       const i = w.idx(x, y);
       const solid = PASSABLE[w.tile[i]] !== 1;
-      if (tool === 'ruda' && solid && w.tile[i] !== T.CORE && sim.rng.chance(0.6)) w.tile[i] = T.ORE;
+      // skorupy rdzenia, ołtarza i kuźni nie da się przemienić — ruda na skorupie była
+      // furtką: potem wystarczyło ją wydrążyć i rytuał tracił sens
+      const twarde = w.tile[i] === T.CORE || w.tile[i] === T.STONE || w.tile[i] === T.SHRINE || w.tile[i] === T.FORGE;
+      if (tool === 'ruda' && solid && !twarde && sim.rng.chance(0.6)) w.tile[i] = T.ORE;
       if (tool === 'grzyb' && !solid && sim.rng.chance(0.5)) w.tile[i] = T.FUNGUS;
       if (tool === 'kosci' && !solid && sim.rng.chance(0.5)) w.tile[i] = T.BONES;
-      if (tool === 'trucizna' && solid && sim.rng.chance(0.5)) w.tile[i] = T.CRYSTAL;
+      if (tool === 'trucizna' && solid && !twarde && sim.rng.chance(0.5)) w.tile[i] = T.CRYSTAL;
       w.oznaczSlad(x, y, 1, sim.tick);
     }
   }

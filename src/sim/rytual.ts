@@ -33,6 +33,8 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
   const w = sim.world;
   if (stan.skorupa === 0) stan.skorupa = kamienNadRdzeniem(sim);   // grubość nietkniętej skorupy
   const liczniki = new Map<number, number>();
+  // gdzie się modlą: suma przesunięć od rdzenia — skorupa pęka w ich stronę
+  const kierunek = new Map<number, [number, number]>();
   let najlepszy = -1, ilu = 0;
 
   for (const c of sim.creatures) {
@@ -41,6 +43,9 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
     if (c.devotion < 0.35) continue;
     const n = (liczniki.get(c.clan) ?? 0) + 1;
     liczniki.set(c.clan, n);
+    const k = kierunek.get(c.clan) ?? [0, 0];
+    k[0] += c.x - (w.coreX + 0.5); k[1] += c.y - (w.coreY + 0.5);
+    kierunek.set(c.clan, k);
     if (n > ilu) { ilu = n; najlepszy = c.clan; }
   }
 
@@ -77,7 +82,11 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
       klan.pekniecia++;
       stan.pekniecia++;
       stan.klan = id;                  // to ta nacja kuje; to jej ludzie wejdą do środka
-      otworzSkorupe(sim, stan);
+      // Skorupa pęka od strony, z której się modlą. Wcześniej zawsze od góry, więc nacja
+      // mieszkająca pod rdzeniem albo obok niego kruszyła kamień i nigdy nie mogła wejść.
+      const [kx, ky] = kierunek.get(id) ?? [0, -1];
+      const strona: Strona = Math.abs(ky) >= Math.abs(kx) ? (ky < 0 ? 'gora' : 'dol') : (kx < 0 ? 'lewo' : 'prawo');
+      otworzSkorupe(sim, stan, strona);
       // sprawdzamy drożność od razu po pęknięciu, żeby wierni nie czekali na tik kontrolny
       if (!stan.otwarta && drogaDoRdzenia(sim)) {
         stan.otwarta = true;
@@ -88,24 +97,27 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
 
   // Czy droga naprawdę stoi otworem — sprawdzamy mapę, nie licznik pęknięć. Licznik
   // kłamał: skorupa kruszyła się wszerz, a gra już wysyłała ludzi na lity kamień.
-  if (stan.pekniecia > 0 && !stan.otwarta && sim.tick % 20 === 0 && drogaDoRdzenia(sim)) {
+  // (bez względu na to, skąd wzięło się przejście — zawał, woda czy pęknięcia)
+  if (!stan.otwarta && sim.tick % 60 === 0 && drogaDoRdzenia(sim)) {
     stan.otwarta = true;
     sim.gdzie(w.coreX, w.coreY - 6).log('Droga do rdzenia stoi otworem.', 'koniec', 'skorupa-otwarta');
   }
 
   // Po przebiciu skorupy do środka schodzą wyłącznie wierni tej nacji, która kuła.
   // Przypadkowy przechodzień nie porzuca swoich spraw, żeby wejść do cudzego boga.
-  if (stan.otwarta && sim.tick % 20 === 0 && stan.klan >= 0) {
-    const prowadzi = sim.clans[stan.klan];
+  if (stan.otwarta && sim.tick % 20 === 0) {
+    // kto prowadzi: nacja, która kuła, a gdy nikt nie kuł — ta z najliczniejszą wartą
+    const prowadzi = sim.clans[stan.klan >= 0 ? stan.klan : najlepszy];
     // schodzą wierni tej nacji — o wejściu decyduje ich własna wiara, nie średnia z domu
     if (prowadzi) {
       for (const c of sim.creatures) {
-        if (c.dead || c.race === Race.HUMAN || c.clan !== stan.klan) continue;
+        if (c.dead || c.race === Race.HUMAN) continue;
+        // schodzą wierni prowadzącej nacji — albo każdy, kto wierzy całym sobą
+        if (c.clan !== prowadzi.id && c.devotion <= 0.8) continue;
         if (c.devotion <= 0.7 && prowadzi.devotion <= 0.55) continue;
         if (Math.hypot(c.x - w.coreX, c.y - w.coreY) > 22) continue;
         // (już schodzi — chyba że nie dostał drogi, bo w tym tiku zabrakło na nią czasu)
         if (c.job === Job.DIG && c.jx === w.coreX && c.jy === w.coreY && c.droga) break;
-        // bez drogi nie wysyłamy: szedłby na przełaj w skorupę, której nie da się rozkuć
         if (wyslijDoRdzenia(sim, c, 1500)) break;
       }
     }
@@ -136,14 +148,14 @@ export function kamienNadRdzeniem(sim: Sim): number {
 export function drogaDoRdzenia(sim: Sim): boolean {
   const w = sim.world;
   const x0 = w.coreX - 24, x1 = w.coreX + 24;
-  const y0 = w.coreY - 30, y1 = Math.min(w.h - 1, w.coreY + 12);
+  const y0 = w.coreY - 30, y1 = Math.min(w.h - 1, w.coreY + 24);
   const widziane = new Set<number>();
-  // start z całego przedsionka, nie z jednego kafla: ten jeden potrafi być zasypany
-  // ziemią i wtedy sprawdzenie na zawsze mówiło „zamknięte"
+  // start ze wszystkich stron poza skorupą, nie tylko z przedsionka nad nią — wierni
+  // spod rdzenia i z boku też mają wejście, jeśli skorupa pękła w ich stronę
   const kolejka: number[] = [];
-  for (let y = w.coreY - 18; y <= w.coreY - 10; y++) {
-    for (let x = w.coreX - 5; x <= w.coreX + 5; x++) {
-      if (!w.inb(x, y)) continue;
+  for (let y = Math.max(0, y0); y <= y1; y++) {
+    for (let x = Math.max(0, x0); x <= Math.min(w.w - 1, x1); x++) {
+      if (Math.abs(x - w.coreX) <= 17 && Math.abs(y - w.coreY) <= 17) continue;
       const i = w.idx(x, y);
       if (PASSABLE[w.tile[i]] === 1) kolejka.push(i);
     }
@@ -202,13 +214,15 @@ export function policzJedzeniePrzedsionka(sim: Sim): number {
  * Wcześniej pętle były odwrotnie i skorupa kruszyła się wszerz: pięć rzędów po pięć
  * kafli to było dwadzieścia pięć pęknięć, a gra już po piątym wysyłała ludzi na kamień.
  */
-function otworzSkorupe(sim: Sim, stan: StanRytualu): void {
+type Strona = 'gora' | 'dol' | 'lewo' | 'prawo';
+
+function otworzSkorupe(sim: Sim, stan: StanRytualu, strona: Strona = 'gora'): void {
   const w = sim.world;
   const przed = kamienNadRdzeniem(sim);
-  for (const dx of [0, -1, 1, -2, 2]) {
-    const x = w.coreX + dx;
+  for (const d of [0, -1, 1, -2, 2]) {
     for (let r = 16; r >= 0; r--) {
-      const y = w.coreY - r;
+      const x = strona === 'lewo' ? w.coreX - r : strona === 'prawo' ? w.coreX + r : w.coreX + d;
+      const y = strona === 'gora' ? w.coreY - r : strona === 'dol' ? w.coreY + r : w.coreY + d;
       if (!w.inb(x, y)) continue;
       const i = w.idx(x, y);
       if (w.tile[i] !== T.STONE) continue;
