@@ -18,8 +18,6 @@ export interface StanRytualu {
   skorupa: number;
 }
 
-/** Ilu pielgrzymów naraz wysyła jedna nacja (patrz nastawy/rytual.ts). */
-export const PIELGRZYMOW = P.maxPielgrzymow;
 
 /**
  * Rytuał otwarcia rdzenia. Skorupa jest nie do rozkucia — pęka wyłącznie pod modlitwą,

@@ -8,6 +8,7 @@ import { EkranBestiariusza } from './app/screens/bestiariusz';
 import { ustawienia } from './core/settings-store';
 import { mikser } from './core/mikser';
 import { zaladujKroje } from './render/fonts';
+import * as nastawy from './nastawy';
 
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
 const app = new App(canvas);
@@ -36,6 +37,8 @@ if (import.meta.env.DEV) {
   step: (n = 1) => { for (let i = 0; i < n; i++) gra.sim.step(); },
   klatka: () => app.rysujRaz(),
   mikser,
+  /** Wszystkie pokrętła gry — zmiana tu działa od razu (patrz src/nastawy/README.md). */
+  nastawy,
 };
 
 (window as any).shot = async (name = 'shot') => {

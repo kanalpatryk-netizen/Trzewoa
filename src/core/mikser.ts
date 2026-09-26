@@ -1,3 +1,5 @@
+import { MIKSER as MX } from '../nastawy/dzwiek';
+
 /**
  * Jedna przestrzeń dźwięku dla całej gry. Muzyka i rezonans świata płyną wspólną
  * szyną, którą pauza przytłumia — czas stoi, więc góra brzmi jak zza ściany.
@@ -26,16 +28,16 @@ class Mikser {
     this.ctx = ctx;
 
     const ogranicznik = ctx.createDynamicsCompressor();
-    ogranicznik.threshold.value = -10;
-    ogranicznik.knee.value = 8;
-    ogranicznik.ratio.value = 6;
-    ogranicznik.attack.value = 0.005;
-    ogranicznik.release.value = 0.25;
+    ogranicznik.threshold.value = MX.ogranicznikProg;
+    ogranicznik.knee.value = MX.ogranicznikKolano;
+    ogranicznik.ratio.value = MX.ogranicznikStosunek;
+    ogranicznik.attack.value = MX.ogranicznikAtak;
+    ogranicznik.release.value = MX.ogranicznikZwolnienie;
     ogranicznik.connect(ctx.destination);
     // cała gra o kilka decybeli głośniej niż kiedyś — zapas zjadało dudnienie, którego
     // telefon i tak nie gra; szczyty łapie ogranicznik
     const wzmocnienie = ctx.createGain();
-    wzmocnienie.gain.value = 1.6;
+    wzmocnienie.gain.value = MX.wzmocnienie;
     wzmocnienie.connect(ogranicznik);
 
     this.przyciszenie = ctx.createGain();
@@ -55,7 +57,7 @@ class Mikser {
     this.gesty.connect(wzmocnienie);
 
     const splot = ctx.createConvolver();
-    splot.buffer = jaskinia(ctx, 3.4);
+    splot.buffer = jaskinia(ctx, MX.poglos);
     splot.connect(this.tlumik);
     this.poglos = ctx.createGain();
     this.poglos.connect(splot);
@@ -79,15 +81,15 @@ class Mikser {
     if (!this.ctx || ile === this.zawieszenie) return;
     this.zawieszenie = ile;
     const t = this.ctx.currentTime;
-    const hz = 16000 * Math.pow(420 / 16000, Math.max(0, Math.min(1, ile)));
+    const hz = 16000 * Math.pow(MX.pauzaFiltr / 16000, Math.max(0, Math.min(1, ile)));
     this.tlumik.frequency.cancelScheduledValues(t);
     this.tlumik.frequency.setTargetAtTime(hz, t, ile > 0 ? 0.3 : 0.18);
     this.swiat.gain.cancelScheduledValues(t);
-    this.swiat.gain.setTargetAtTime(1 - ile * 0.35, t, 0.4);
+    this.swiat.gain.setTargetAtTime(1 - ile * MX.pauzaCiszej, t, 0.4);
   }
 
   /** Ostrzeżenie przygasza całą resztę na chwilę, żeby było je słychać i na telefonie. */
-  przycisz(sekundy: number, doPoziomu = 0.35): void {
+  przycisz(sekundy: number, doPoziomu = MX.przyciszenie): void {
     if (!this.ctx) return;
     const t = this.ctx.currentTime;
     const g = this.przyciszenie.gain;

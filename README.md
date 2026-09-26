@@ -123,7 +123,14 @@ src/
   sim/            world, sim, creatures, races, tiles
   powers/         pięć czasowników
   ui/             ryty, karta bestiariusza w grze
+  nastawy/        WSZYSTKIE pokrętła gry: balans, rytuał, stworzenia, moce, świat,
+                  dźwięk, kamera, kolory i wygląd ekranów — z opisem każdej wartości
 ```
+
+**Chcesz coś zmienić w balansie, wyglądzie albo dźwięku?** Zacznij od
+[`src/nastawy/README.md`](src/nastawy/README.md) — tabela „chcę zmienić… → plik → obiekt”.
+Kod gry nie trzyma własnych liczb, tylko odwołuje się do nastaw po nazwie. W `npm run dev`
+można je zmieniać na żywo z konsoli: `__trzewia.nastawy.RYTUAL.tempo = 0.001`.
 
 ### Obraz
 

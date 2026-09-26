@@ -1,5 +1,6 @@
 import { ustawienia } from './settings-store';
 import { mikser } from './mikser';
+import { MUZYKA as M } from '../nastawy/dzwiek';
 
 /**
  * Muzyka gry. Nie melodia z pierwszego planu — powolny akord kamienia, po którym
@@ -10,40 +11,16 @@ import { mikser } from './mikser';
  */
 type Scena = 'menu' | 'gra' | 'samouczek' | 'koniec';
 
-const SKALA = [0, 1, 3, 5, 7, 8, 10];          // półtony frygijskie
-const BAZA = 146.83;                            // D3
+// skala, akordy, głośności i tempo są w nastawy/dzwiek.ts
+const SKALA = M.skala;
+const BAZA = M.podstawa;
 
 interface Akord { stopnie: number[]; bas: number; }
 
-const PROGRESJA: Record<Scena, Akord[]> = {
-  menu: [
-    { stopnie: [0, 2, 4], bas: -12 },
-    { stopnie: [0, 3, 5], bas: -12 },
-    { stopnie: [-2, 1, 3], bas: -14 },
-    { stopnie: [0, 2, 5], bas: -12 },
-  ],
-  samouczek: [
-    { stopnie: [0, 2, 4], bas: -12 },
-    { stopnie: [1, 3, 5], bas: -11 },
-    { stopnie: [0, 2, 4], bas: -12 },
-    { stopnie: [-1, 2, 4], bas: -13 },
-  ],
-  gra: [
-    { stopnie: [0, 2, 4], bas: -12 },
-    { stopnie: [-2, 0, 3], bas: -14 },
-    { stopnie: [1, 3, 5], bas: -11 },
-    { stopnie: [0, 2, 6], bas: -12 },
-    { stopnie: [-3, -1, 2], bas: -15 },
-  ],
-  koniec: [
-    { stopnie: [0, 3, 5], bas: -12 },
-    { stopnie: [-2, 1, 3], bas: -14 },
-  ],
-};
+const PROGRESJA: Record<Scena, Akord[]> = M.progresja;
 
-/** Udział muzyki we wspólnej głośności i poziom akordów — wyrównane po pomiarze. */
-const GLOSNOSC = 0.85;
-const PAD = 0.4;
+const GLOSNOSC = M.glosnosc;
+const PAD = M.akordy;
 
 function czestotliwosc(stopien: number): number {
   const oktawa = Math.floor(stopien / SKALA.length);
@@ -78,7 +55,7 @@ export class Muzyka {
     this.padGain.connect(this.master);
 
     this.gra = true;
-    this.master.gain.exponentialRampToValueAtTime(Math.max(0.0002, ustawienia.glosnosc * GLOSNOSC), ctx.currentTime + 3);
+    this.master.gain.exponentialRampToValueAtTime(Math.max(0.0002, ustawienia.glosnosc * GLOSNOSC), ctx.currentTime + M.narastanie);
     this.timer = window.setInterval(() => this.planuj(), 250);
     void this.timer;
     this.nastepnyAkord = ctx.currentTime + 0.2;
@@ -128,7 +105,7 @@ export class Muzyka {
     const ctx = this.ctx;
     if (!ctx || !this.gra) return;
     const teraz = ctx.currentTime;
-    const dlugosc = this.scena === 'gra' ? 13 - this.napiecie * 4 : 11;
+    const dlugosc = this.scena === 'gra' ? M.akordGra - this.napiecie * M.skrotNapiecia : M.akordInne;
 
     if (teraz + 0.5 > this.nastepnyAkord) {
       const lista = PROGRESJA[this.scena];
@@ -139,13 +116,13 @@ export class Muzyka {
     }
 
     if (teraz > this.nastepnyDzwon) {
-      const przerwa = (this.scena === 'menu' ? 9 : 6) + Math.random() * 7 - this.napiecie * 3;
-      this.nastepnyDzwon = teraz + Math.max(2.5, przerwa);
+      const przerwa = (this.scena === 'menu' ? M.dzwonMenu : M.dzwonGra) + Math.random() * M.dzwonRozrzut - this.napiecie * M.dzwonNapiecie;
+      this.nastepnyDzwon = teraz + Math.max(M.dzwonMinPrzerwa, przerwa);
       if (this.scena !== 'koniec' || Math.random() < 0.5) {
         const lista = PROGRESJA[this.scena];
         const akord = lista[(this.krokAkordu - 1 + lista.length) % lista.length];
         const stopien = akord.stopnie[(Math.random() * akord.stopnie.length) | 0] + 7;
-        this.dzwon(teraz + 0.05, czestotliwosc(stopien), 0.12 + Math.random() * 0.06);
+        this.dzwon(teraz + 0.05, czestotliwosc(stopien), M.dzwonGlos + Math.random() * M.dzwonGlosRozrzut);
       }
     }
   }
@@ -157,23 +134,23 @@ export class Muzyka {
   private zagrajAkord(kiedy: number, dlugosc: number, akord: Akord): void {
     const ctx = this.ctx!;
     const wejscie = dlugosc * 0.45, wyjscie = dlugosc * 0.55;
-    const szczyt = 520 + this.napiecie * 520;
+    const szczyt = M.filtrSzczyt + this.napiecie * M.filtrNapiecie;
     akord.stopnie.forEach((st, i) => {
       const o = ctx.createOscillator();
       const g = ctx.createGain();
       const f = ctx.createBiquadFilter();
       o.type = 'sawtooth';
       o.frequency.value = czestotliwosc(st);
-      o.detune.value = (Math.random() - 0.5) * 12;
+      o.detune.value = (Math.random() - 0.5) * M.odstrojenie;
       f.type = 'lowpass';
       f.Q.value = 0.9;
-      f.frequency.setValueAtTime(260, kiedy);
+      f.frequency.setValueAtTime(M.filtrOd, kiedy);
       f.frequency.linearRampToValueAtTime(szczyt, kiedy + wejscie);
-      f.frequency.exponentialRampToValueAtTime(240, kiedy + wejscie + wyjscie);
+      f.frequency.exponentialRampToValueAtTime(M.filtrDo, kiedy + wejscie + wyjscie);
       g.gain.setValueAtTime(0.0001, kiedy);
-      g.gain.exponentialRampToValueAtTime(0.07 + Math.random() * 0.03, kiedy + wejscie);
+      g.gain.exponentialRampToValueAtTime(M.akordGlos + Math.random() * M.akordRozrzut, kiedy + wejscie);
       g.gain.exponentialRampToValueAtTime(0.0001, kiedy + wejscie + wyjscie);
-      const p = mikser.panorama((i - 1) * 0.55);
+      const p = mikser.panorama((i - 1) * M.rozstaw);
       o.connect(f); f.connect(g); g.connect(p); p.connect(this.padGain);
       o.start(kiedy); o.stop(kiedy + dlugosc + 0.3);
     });
@@ -184,7 +161,7 @@ export class Muzyka {
     bas.type = 'triangle';
     bas.frequency.value = czestotliwosc(akord.bas + 7);
     bg.gain.setValueAtTime(0.0001, kiedy);
-    bg.gain.exponentialRampToValueAtTime(0.12, kiedy + wejscie * 0.6);
+    bg.gain.exponentialRampToValueAtTime(M.bas, kiedy + wejscie * 0.6);
     bg.gain.exponentialRampToValueAtTime(0.0001, kiedy + dlugosc);
     bas.connect(bg); bg.connect(this.master);
     bas.start(kiedy); bas.stop(kiedy + dlugosc + 0.3);
@@ -199,8 +176,8 @@ export class Muzyka {
     const g = ctx.createGain();
     const f = ctx.createBiquadFilter();
     nosna.type = 'sine'; nosna.frequency.value = hz;
-    mod.type = 'sine'; mod.frequency.value = hz * 2.76;      // nieharmoniczny — stąd metal
-    modG.gain.value = hz * 1.4;
+    mod.type = 'sine'; mod.frequency.value = hz * M.dzwonMetal;      // nieharmoniczny — stąd metal
+    modG.gain.value = hz * M.dzwonModulacja;
     mod.connect(modG); modG.connect(nosna.frequency);
     f.type = 'bandpass'; f.frequency.value = hz * 1.6; f.Q.value = 1.4;
     g.gain.setValueAtTime(0.0001, kiedy);
@@ -209,7 +186,7 @@ export class Muzyka {
     // dzwon stoi gdzieś w głębi — raz z lewej, raz z prawej, zawsze z echem korytarzy
     const p = mikser.panorama((Math.random() - 0.5) * 1.1);
     const s = ctx.createGain();
-    s.gain.value = 0.55;
+    s.gain.value = M.dzwonPoglos;
     nosna.connect(f); f.connect(g); g.connect(p); p.connect(this.master);
     g.connect(s); s.connect(mikser.poglos);
     nosna.start(kiedy); nosna.stop(kiedy + ogon + 0.5);

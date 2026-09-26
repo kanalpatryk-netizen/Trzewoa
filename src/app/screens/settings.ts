@@ -8,6 +8,7 @@ import { Tajemnica } from '../../render/tajemnica';
 import { ramaRyciny, kartusz, naglowekDzialu } from '../../render/ozdoby';
 import { EKRAN_USTAWIEN as U } from '../../nastawy/wyglad/ustawienia';
 import { RAMA } from '../../nastawy/wyglad/ozdoby';
+import { TEMPO } from '../../nastawy/sterowanie';
 
 type Wiersz =
   | { typ: 'naglowek'; tekst: string }
@@ -61,7 +62,7 @@ export class EkranUstawien implements Ekran {
       { typ: 'wybor', etykieta: 'Góra', opis: 'łaskawa wolniej zasypia i daje więcej krwi — dla nowej gry', opcje: ['łaskawa', 'surowa'], czytaj: () => ustawienia.trudnosc, zmien: (v) => ustaw('trudnosc', v as typeof ustawienia.trudnosc) },
       { typ: 'wybor', etykieta: 'Auto-pauza', opis: 'gra sama zatrzymuje czas, gdy trzeba decydować', opcje: ['kryzysy', 'wszystko', 'wyłączona'], czytaj: () => ustawienia.autoPauza, zmien: (v) => ustaw('autoPauza', v as typeof ustawienia.autoPauza) },
       { typ: 'wybor', etykieta: 'Nowe tablice', opis: 'przy pierwszym spotkaniu tablica atlasu otwiera się sama', opcje: ['pokazuj', 'tylko w atlasie'], czytaj: () => ustawienia.tablice, zmien: (v) => ustaw('tablice', v as typeof ustawienia.tablice) },
-      { typ: 'suwak', etykieta: 'Tempo czasu', opis: 'ile tików świata przypada na klatkę', min: 1, max: 8, krok: 1, czytaj: () => ustawienia.tempo, zmien: (v) => ustaw('tempo', v), format: (v) => `${v}×` },
+      { typ: 'suwak', etykieta: 'Tempo czasu', opis: 'ile tików świata przypada na klatkę', min: 1, max: TEMPO.max, krok: 1, czytaj: () => ustawienia.tempo, zmien: (v) => ustaw('tempo', v), format: (v) => `${v}×` },
       { typ: 'przelacznik', etykieta: 'Kamera za życiem', opis: 'sama wraca tam, gdzie jest najgęściej — dopóki jej nie chwycisz', czytaj: () => ustawienia.kameraZaZyciem, zmien: (v) => ustaw('kameraZaZyciem', v) },
       { typ: 'przelacznik', etykieta: 'Automatyczne przybliżanie', opis: 'kamera sama dobiera skalę do wielkości kolonii', czytaj: () => ustawienia.autoZoom, zmien: (v) => ustaw('autoZoom', v) },
       { typ: 'przelacznik', etykieta: 'Autozapis', opis: 'stan góry co minutę do pamięci przeglądarki', czytaj: () => ustawienia.autozapis, zmien: (v) => ustaw('autozapis', v) },

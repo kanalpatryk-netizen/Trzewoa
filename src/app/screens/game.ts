@@ -1,5 +1,6 @@
 import { Sim } from '../../sim/sim';
 import { GORA } from '../../nastawy/gora';
+import { KAMERA, TEMPO } from '../../nastawy/sterowanie';
 import { Camera } from '../../render/camera';
 import { Engraver } from '../../render/engrave';
 import { drawParticles } from '../../render/overlay';
@@ -172,7 +173,7 @@ export class EkranGry implements Ekran {
     this.sim = new Sim(ziarno);
     if (ustawienia.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += GORA.laskawaKrew; }
     this.ui.verb = null; this.ui.tool = null; this.ui.selected = null;
-    this.cam.zoom = 14;
+    this.cam.zoom = KAMERA.start;
     this.doSerca(true);
     this.dirty = true;
   }
@@ -184,7 +185,7 @@ export class EkranGry implements Ekran {
     if (!serce) { this.ui.say('Nie ma już do kogo wracać.', this.sim.tick); return; }
     this.cam.x = this.camTarget.x = serce.x;
     this.cam.y = this.camTarget.y = serce.y;
-    this.cam.zoom = Math.max(this.cam.minZoom, Math.min(16, Math.min(this.cam.vw / (serce.w + 26), this.cam.vh / (serce.h + 18))));
+    this.cam.zoom = Math.max(this.cam.minZoom, Math.min(KAMERA.powrotMaxZoom, Math.min(this.cam.vw / (serce.w + KAMERA.zapasX), this.cam.vh / (serce.h + KAMERA.zapasY))));
     this.cam.clamp(this.sim.world.w, this.sim.world.h);
     this.ui.say('Wracasz do swoich.', this.sim.tick);
     this.nasluch?.({ typ: 'kamera', rodzaj: 'powrot' });
@@ -222,7 +223,7 @@ export class EkranGry implements Ekran {
   rozmiar(w: number, h: number): void {
     this.plate = computePlate(w, h);
     this.cam.vw = this.plate.w; this.cam.vh = this.plate.h;
-    this.cam.minZoom = Math.max(3, this.plate.w / this.sim.world.w);
+    this.cam.minZoom = Math.max(KAMERA.minNaDuzymEkranie, this.plate.w / this.sim.world.w);
     if (this.cam.zoom < this.cam.minZoom) this.cam.zoom = this.cam.minZoom;
     this.cam.clamp(this.sim.world.w, this.sim.world.h);
     this.eng.resize(this.plate.w, this.plate.h);
@@ -301,7 +302,7 @@ export class EkranGry implements Ekran {
     this.nasluch?.({ typ: 'pauza', stoi: true });
     this.ui.selected = null;
     if (a.cel) {
-      this.pokazMiejsce(a.cel.x, a.cel.y, Math.max(this.cam.zoom, 10));
+      this.pokazMiejsce(a.cel.x, a.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
       // karta sytuacji stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
       this.cam.y = this.camTarget.y = a.cel.y - (this.plate.h * 0.2) / this.cam.zoom;
       this.cam.clamp(this.sim.world.w, this.sim.world.h);
@@ -379,12 +380,12 @@ export class EkranGry implements Ekran {
       if (ustawienia.kameraZaZyciem && !this.recznaKamera && !wRobocie && this.sim.tick % 4 === 0) {
         const serce = this.sim.heartOfLife();
         if (serce) {
-          this.camTarget.x += (serce.x - this.camTarget.x) * 0.05;
-          this.camTarget.y += (serce.y - this.camTarget.y) * 0.05;
-          this.cam.drift(this.camTarget.x, this.camTarget.y, 0.05);
+          this.camTarget.x += (serce.x - this.camTarget.x) * KAMERA.podazanie;
+          this.camTarget.y += (serce.y - this.camTarget.y) * KAMERA.podazanie;
+          this.cam.drift(this.camTarget.x, this.camTarget.y, KAMERA.podazanie);
           if (ustawienia.autoZoom) {
-            const fit = Math.min(this.cam.vw / (serce.w + 26), this.cam.vh / (serce.h + 18));
-            this.cam.zoom += (Math.max(this.cam.minZoom, Math.min(20, fit)) - this.cam.zoom) * 0.04;
+            const fit = Math.min(this.cam.vw / (serce.w + KAMERA.zapasX), this.cam.vh / (serce.h + KAMERA.zapasY));
+            this.cam.zoom += (Math.max(this.cam.minZoom, Math.min(KAMERA.autoMaxZoom, fit)) - this.cam.zoom) * KAMERA.dopasowanie;
           }
           this.cam.clamp(this.sim.world.w, this.sim.world.h);
         }
@@ -803,7 +804,7 @@ export class EkranGry implements Ekran {
       // podpowiedź z miejscem: dotknięcie wiezie tam kamerę
       const rr = this.radaRect;
       if (rr && this.rada?.cel && e.clientX >= rr.x && e.clientX <= rr.x + rr.w && e.clientY >= rr.y && e.clientY <= rr.y + rr.h) {
-        this.pokazMiejsce(this.rada.cel.x, this.rada.cel.y, Math.max(this.cam.zoom, 10));
+        this.pokazMiejsce(this.rada.cel.x, this.rada.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
         this.cel = this.rada.cel;
         return;
       }
@@ -816,7 +817,7 @@ export class EkranGry implements Ekran {
       for (const t of this.trafieniaZapiskow) {
         if (e.clientX < t.x || e.clientX > t.x + t.w || e.clientY < t.y || e.clientY > t.y + t.h) continue;
         this.zapiski = false;
-        this.pokazMiejsce(t.wpis.x! + 0.5, t.wpis.y! + 0.5, Math.max(this.cam.zoom, 10));
+        this.pokazMiejsce(t.wpis.x! + 0.5, t.wpis.y! + 0.5, Math.max(this.cam.zoom, KAMERA.pokazZoom));
         return;
       }
       this.zapiski = false;
@@ -942,7 +943,7 @@ export class EkranGry implements Ekran {
     }
     const bx = this.cam.toWorldX(e.clientX - this.plate.x), by = this.cam.toWorldY(e.clientY - this.plate.y);
     this.przejmijKamere();
-    this.cam.zoom *= e.deltaY < 0 ? 1.25 : 1 / 1.25;        // większy krok — mniej kręcenia
+    this.cam.zoom *= e.deltaY < 0 ? KAMERA.krokKolka : 1 / KAMERA.krokKolka;        // większy krok — mniej kręcenia
     this.cam.clamp(this.sim.world.w, this.sim.world.h);
     this.cam.x += bx - this.cam.toWorldX(e.clientX - this.plate.x);
     this.cam.y += by - this.cam.toWorldY(e.clientY - this.plate.y);
@@ -962,7 +963,7 @@ export class EkranGry implements Ekran {
     switch (akcja) {
       case 'menu': this.app.idz('menu'); break;
       case 'pauza': this.ustawPauze(!this.pauza); break;
-      case 'szybciej': ustawienia.tempo = Math.min(8, ustawienia.tempo + 1); this.nasluch?.({ typ: 'tempo' }); break;
+      case 'szybciej': ustawienia.tempo = Math.min(TEMPO.max, ustawienia.tempo + 1); this.nasluch?.({ typ: 'tempo' }); break;
       case 'wolniej': ustawienia.tempo = Math.max(1, ustawienia.tempo - 1); this.nasluch?.({ typ: 'tempo' }); break;
       case 'zapis': ui.say(this.zapisujAuto && saveToStorage(sim) ? 'Zapisane.' : 'Nie tutaj.', sim.tick); break;
       case 'wczytaj': {
@@ -980,8 +981,8 @@ export class EkranGry implements Ekran {
       case 'legenda': this.legenda = !this.legenda; break;
       case 'zapiski': this.zapiski = !this.zapiski; this.przewinZapiskow = 0; break;
       case 'kamera': this.doMieszkancow(); break;
-      case 'przyblizenie': this.cam.zoom = Math.min(this.cam.maxZoom, this.cam.zoom * 1.15); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
-      case 'oddalenie': this.cam.zoom = Math.max(this.cam.minZoom, this.cam.zoom / 1.15); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
+      case 'przyblizenie': this.cam.zoom = Math.min(this.cam.maxZoom, this.cam.zoom * KAMERA.krokKlawisza); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
+      case 'oddalenie': this.cam.zoom = Math.max(this.cam.minZoom, this.cam.zoom / KAMERA.krokKlawisza); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
       case 'ksztaltuj': case 'zasiej': case 'szept': case 'znak': case 'skaz': this.wybierzCzasownik(akcja); break;
       case 'narzedzie1': case 'narzedzie2': case 'narzedzie3': case 'narzedzie4': this.wybierzNarzedzie(Number(akcja.slice(-1)) - 1); break;
       default: break;

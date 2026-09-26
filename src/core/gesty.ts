@@ -1,8 +1,11 @@
 import { mikser } from './mikser';
 import { ustawienia } from './settings-store';
+import { GESTY } from '../nastawy/dzwiek';
 
 /** Pentatonika od D — kaskada wykonanego planu wspina się po niej, nigdy nie fałszuje. */
-const KASKADA = [293.66, 349.23, 392, 440, 523.25, 587.33, 698.46, 783.99];
+const KASKADA = GESTY.kaskada;
+/** Głośność i odstępy każdego gestu — nastawy/dzwiek.ts. */
+const V = GESTY.glosnosc, ODS = GESTY.odstepMs;
 
 /**
  * Dźwięki gestów: każdy zamiar gracza zostawia ślad w uchu, zanim cokolwiek się stanie.
@@ -121,33 +124,33 @@ export class Gesty {
 
   /** Wybór rytu, narzędzia, przycisku — cichy stuk palca w drewno. */
   klik(): void {
-    if (!this.gotowe || !this.wolno('klik', 60)) return;
-    this.stuk(this.ctx!.currentTime, 660, 0.3, 0.05, 0, 0.05);
+    if (!this.gotowe || !this.wolno('klik', ODS.klik)) return;
+    this.stuk(this.ctx!.currentTime, 660, 0.3 * V.klik, 0.05, 0, 0.05);
   }
 
   /** Rozkaz naszkicowany w pauzie: rylec rysuje kreskę. */
   szkic(): void {
-    if (!this.gotowe || !this.wolno('szkic', 85)) return;
+    if (!this.gotowe || !this.wolno('szkic', ODS.szkic)) return;
     const t = this.ctx!.currentTime;
     const pan = (Math.random() - 0.5) * 0.5;
-    this.rylec(t, 0.08 + Math.random() * 0.04, 4200, 2000 + Math.random() * 600, 1.1, pan);
-    this.stuk(t, 1400, 0.12, 0.03, pan, 0);
+    this.rylec(t, 0.08 + Math.random() * 0.04, 4200, 2000 + Math.random() * 600, 1.1 * V.szkic, pan);
+    this.stuk(t, 1400, 0.12 * V.szkic, 0.03, pan, 0);
   }
 
   /** Szkic skreślony: dwa szybkie pociągnięcia w poprzek. */
   skresl(wszystko = false): void {
-    if (!this.gotowe || !this.wolno('skresl', 90)) return;
+    if (!this.gotowe || !this.wolno('skresl', ODS.skresl)) return;
     const t = this.ctx!.currentTime;
-    this.rylec(t, 0.1, 1500, 3200, 0.9, -0.2);
-    this.rylec(t + 0.09, wszystko ? 0.3 : 0.12, 3200, 1200, 0.8, 0.2);
+    this.rylec(t, 0.1, 1500, 3200, 0.9 * V.skresl, -0.2);
+    this.rylec(t + 0.09, wszystko ? 0.3 : 0.12, 3200, 1200, 0.8 * V.skresl, 0.2);
   }
 
   /** Nie wyszło: głuchy stuk, jak pięść w skałę, która nie ustąpiła. */
   odmowa(): void {
-    if (!this.gotowe || !this.wolno('odmowa', 280)) return;
+    if (!this.gotowe || !this.wolno('odmowa', ODS.odmowa)) return;
     const t = this.ctx!.currentTime;
-    this.kamien(t, 150, 0.28, 0.18, 0, 0.1);
-    this.kamien(t + 0.1, 118, 0.16, 0.22, 0, 0.1);
+    this.kamien(t, 150, 0.28 * V.odmowa, 0.18, 0, 0.1);
+    this.kamien(t + 0.1, 118, 0.16 * V.odmowa, 0.22, 0, 0.1);
   }
 
   /**
@@ -159,13 +162,13 @@ export class Gesty {
     const t = this.ctx!.currentTime;
     if (stoi) {
       if (!bezUderzenia) {
-        this.kamien(t, 72, 0.34, 0.5, 0, 0.6);
-        this.rylec(t, 0.5, 1600, 260, 0.14, 0, 0.3);
+        this.kamien(t, 72, 0.34 * V.pauza, 0.5, 0, 0.6);
+        this.rylec(t, 0.5, 1600, 260, 0.14 * V.pauza, 0, 0.3);
       }
       this.tonPauzy(true);
     } else {
-      this.rylec(t, 0.5, 280, 2400, 0.18, 0, 0.3);
-      this.kamien(t + 0.05, 104, 0.16, 0.3, 0, 0.4);
+      this.rylec(t, 0.5, 280, 2400, 0.18 * V.pauza, 0, 0.3);
+      this.kamien(t + 0.05, 104, 0.16 * V.pauza, 0.3, 0, 0.4);
       this.tonPauzy(false);
     }
   }
@@ -190,7 +193,7 @@ export class Gesty {
     if (this.ton || !this.gotowe) return;
     const g = ctx.createGain();
     g.gain.setValueAtTime(0.0001, t);
-    g.gain.setTargetAtTime(0.028, t + 0.4, 1.4);
+    g.gain.setTargetAtTime(0.028 * V.tonPauzy, t + 0.4, 1.4);
     const wyj = this.wyjscie(0, 0.6);
     const lfo = ctx.createOscillator();
     const lfoG = ctx.createGain();
@@ -221,10 +224,10 @@ export class Gesty {
     const n = Math.min(8, udane);
     for (let i = 0; i < n; i++) {
       const pan = n > 1 ? -0.5 + i / (n - 1) : 0;
-      this.stuk(t + i * 0.075, KASKADA[i], 0.1, 0.22, pan, 0.35);
+      this.stuk(t + i * 0.075, KASKADA[i], 0.1 * V.wykonanie, 0.22, pan, 0.35);
     }
-    if (n) this.dzwon(t + n * 0.075, KASKADA[Math.min(7, n)] / 2, 0.08, 2.4, 0, 0.6);
-    for (let i = 0; i < Math.min(3, nieudane); i++) this.kamien(t + n * 0.075 + 0.12 + i * 0.1, 130, 0.16, 0.2, 0, 0.1);
+    if (n) this.dzwon(t + n * 0.075, KASKADA[Math.min(7, n)] / 2, 0.08 * V.wykonanie, 2.4, 0, 0.6);
+    for (let i = 0; i < Math.min(3, nieudane); i++) this.kamien(t + n * 0.075 + 0.12 + i * 0.1, 130, 0.16 * V.wykonanie, 0.2, 0, 0.1);
   }
 
   /**
@@ -236,24 +239,25 @@ export class Gesty {
     const t = this.ctx!.currentTime;
     if (kryzys) {
       mikser.przycisz(2.6);
-      this.kamien(t, 58, 0.4, 0.6, 0, 0.7);
-      this.dzwon(t + 0.02, 146.83, 0.34, 5, -0.25, 0.7);
-      this.dzwon(t + 0.05, 155.56, 0.22, 4.5, 0.25, 0.7);
-      this.dzwon(t + 0.9, 293.66, 0.12, 3.5, 0, 0.6);
+      const k = V.alarmKryzys;
+      this.kamien(t, 58, 0.4 * k, 0.6, 0, 0.7);
+      this.dzwon(t + 0.02, 146.83, 0.34 * k, 5, -0.25, 0.7);
+      this.dzwon(t + 0.05, 155.56, 0.22 * k, 4.5, 0.25, 0.7);
+      this.dzwon(t + 0.9, 293.66, 0.12 * k, 3.5, 0, 0.6);
     } else {
       mikser.przycisz(1.6, 0.55);
-      this.dzwon(t, 293.66, 0.2, 3.5, -0.15, 0.6);
-      this.dzwon(t + 0.32, 440, 0.13, 3, 0.15, 0.6);
+      this.dzwon(t, 293.66, 0.2 * V.alarmWydarzenie, 3.5, -0.15, 0.6);
+      this.dzwon(t + 0.32, 440, 0.13 * V.alarmWydarzenie, 3, 0.15, 0.6);
     }
   }
 
   /** Karta atlasu: szelest papieru — trzy krótkie tarcia. */
   kartka(): void {
-    if (!this.gotowe || !this.wolno('kartka', 150)) return;
+    if (!this.gotowe || !this.wolno('kartka', ODS.kartka)) return;
     const t = this.ctx!.currentTime;
-    this.rylec(t, 0.06, 5200, 3600, 0.55, -0.2, 0.05);
-    this.rylec(t + 0.05, 0.1, 3800, 6000, 0.7, 0.1, 0.05);
-    this.rylec(t + 0.13, 0.14, 6000, 2800, 0.4, 0.25, 0.08);
+    this.rylec(t, 0.06, 5200, 3600, 0.55 * V.kartka, -0.2, 0.05);
+    this.rylec(t + 0.05, 0.1, 3800, 6000, 0.7 * V.kartka, 0.1, 0.05);
+    this.rylec(t + 0.13, 0.14, 6000, 2800, 0.4 * V.kartka, 0.25, 0.08);
   }
 
   /** Nowa tablica: kartka i dwa jasne dzwonki — odkrycie, nie alarm. */
@@ -261,7 +265,7 @@ export class Gesty {
     if (!this.gotowe) return;
     const t = this.ctx!.currentTime;
     this.kartka();
-    this.dzwon(t + 0.12, 587.33, 0.1, 2.6, -0.2, 0.6);
-    this.dzwon(t + 0.3, 880, 0.08, 2.8, 0.2, 0.6);
+    this.dzwon(t + 0.12, 587.33, 0.1 * V.tablica, 2.6, -0.2, 0.6);
+    this.dzwon(t + 0.3, 880, 0.08 * V.tablica, 2.8, 0.2, 0.6);
   }
 }

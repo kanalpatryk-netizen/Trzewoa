@@ -1,8 +1,9 @@
 import { ustawienia } from './settings-store';
 import { mikser } from './mikser';
+import { REZONANS } from '../nastawy/dzwiek';
 
-/** Udział rezonansu we wspólnej głośności — wyrównany z muzyką po pomiarze poziomów. */
-const GLOSNOSC = 0.55;
+/** Udział rezonansu we wspólnej głośności — nastawy/dzwiek.ts. */
+const GLOSNOSC = REZONANS.glosnosc;
 
 /**
  * Nie ma muzyki. Jest rezonans: niski dźwięk kamienia, który zmienia wysokość
