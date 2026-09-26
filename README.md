@@ -10,7 +10,7 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 |---|---|
 | **Menu** | powrót do trwającej gry, nowa góra, samouczek, bestiariusz, ustawienia — wszystko rysowane tą samą kreską, co świat |
 | **Samouczek** | 10 krótkich rozdziałów z listą czynności do odhaczenia; palec wskazuje dokładnie ryt, słowo, przycisk albo miejsce na płycie |
-| **Atlas** | 23 tablice z ryciną i opisem: sześć ras, pięć rytów, trzy zasoby i dziewięć praw góry — odkrywanych w trakcie gry |
+| **Atlas** | 24 tablice z ryciną i opisem: sześć ras, pięć rytów, trzy zasoby i dziesięć praw góry — odkrywanych w trakcie gry |
 | **Ustawienia** | dźwięk, obraz, świat oraz **pełna lista sterowania z przypisywaniem klawiszy** |
 | **Rozgrywka** | przekrój góry 176×240, sześć sposobów istnienia, pięć czasowników, trzy zasoby, przypływy, zapis stanu |
 | **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś — i wyrokiem: dlaczego tak się skończyło, jak daleko zaszła droga do wolności i jedna rada na następny raz |

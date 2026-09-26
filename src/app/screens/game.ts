@@ -281,6 +281,8 @@ export class EkranGry implements Ekran {
     if (sim.sen > 0.05) odkrycia.odkryj('sen');
     if (sim.tideTick >= 0) odkrycia.odkryj('przyplyw');
     if (sim.rytual.pekniecia > 0 || sim.world.ever[sim.world.idx(sim.world.coreX, sim.world.coreY)]) odkrycia.odkryj('rdzen');
+    // skorupę odkrywa się, gdy ktoś zacznie się przy niej modlić albo gdy pęknie
+    if (sim.rytual.wierni >= 1 || sim.rytual.pekniecia > 0) odkrycia.odkryj('skorupa');
     if (sim.tick > 1500) cicho('krew');
     if (sim.wiara > 15) cicho('wiara');
     if (sim.tick > 4000) cicho('otchlan');

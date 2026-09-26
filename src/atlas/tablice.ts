@@ -296,6 +296,43 @@ function drogaWolnosci({ ctx, w, h, t }: Plotno): void {
   ctx.restore();
 }
 
+/** Skorupa: rdzeń w komorze, kamienny pierścień, rysa w stronę trzech klęczących. */
+function skorupa({ ctx, w, h, t }: Plotno): void {
+  ctx.save();
+  ctx.fillStyle = '#0d0a09';
+  ctx.fillRect(0, 0, w, h);
+  const cx = w / 2, cy = h * 0.55, R = h * 0.36;
+  // kamień skorupy: gruby pierścień kreskowany
+  const pier = new Path2D();
+  pier.arc(cx, cy, R, 0, Math.PI * 2);
+  pier.arc(cx, cy, R * 0.55, 0, Math.PI * 2, true);
+  ctx.fillStyle = 'rgba(58,48,40,0.95)';
+  ctx.fill(pier, 'evenodd');
+  kreskuj(ctx, pier, 0.8, 4, rgba(BARWA.atrament, 0.28), 1);
+  // rdzeń w komorze
+  const g = ctx.createRadialGradient(cx, cy, 1, cx, cy, R * 0.45);
+  g.addColorStop(0, 'rgba(236,96,64,0.95)');
+  g.addColorStop(1, 'rgba(236,96,64,0)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.45, 0, Math.PI * 2); ctx.fill();
+  // rysa: pęknięcia od góry w stronę rdzenia, kolejne kafle wypadają
+  const post = 0.5 + 0.5 * Math.sin(t * 0.0008);
+  ctx.strokeStyle = 'rgba(250,206,130,0.9)';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  const dl = R * 0.45 * post;
+  ctx.moveTo(cx, cy - R); ctx.lineTo(cx - 3, cy - R + dl * 0.4); ctx.lineTo(cx + 2, cy - R + dl * 0.75); ctx.lineTo(cx, cy - R + dl);
+  ctx.stroke();
+  // trzej wierni nad skorupą
+  ctx.fillStyle = rgba(BARWA.atramentMocny, 0.9);
+  for (const dx of [-0.13, 0, 0.13]) {
+    const x = cx + w * dx, y = cy - R - h * 0.06;
+    ctx.beginPath(); ctx.arc(x, y - 5, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(x - 2.5, y - 2, 5, 7);
+  }
+  ctx.restore();
+}
+
 /** Pismo w skale: blok litej skały z żarzącymi się znakami, które gasną w smudze światła. */
 function pismo({ ctx, w, h, t }: Plotno): void {
   ctx.save();
@@ -453,14 +490,20 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'droga', grupa: 'prawa', nazwa: 'Droga do wolności', lacina: 'Via liberationis',
-    opis: 'Wygrywasz, gdy wierni przebiją skorupę rdzenia i uklękną przy nim. Po kolei: ktoś musi się modlić (wiara); jedna nacja musi uwierzyć mocno — Znak przy jej gnieździe (oddanie); przy przedsionku pod rdzeniem musi rosnąć grzyb, żeby jej warta przeżyła na dole (droga); warta modli się pod skorupą, aż kamień pęknie (skorupa).',
+    opis: 'Wygrywasz, gdy wierni przebiją skorupę rdzenia i uklękną przy nim. Po kolei: ktoś musi się modlić (wiara); jedna nacja musi uwierzyć mocno — Znak przy jej gnieździe (oddanie); przy przedsionku pod rdzeniem musi rosnąć grzyb, żeby jej warta przeżyła na dole (droga); warta modli się przy rdzeniu, aż skorupa pęknie (skorupa); potem wierni sami wchodzą do środka. Szczegóły: tablice Skorupa i Rdzeń.',
     kiedy: 'Kroki widać w lewym górnym rogu płyty. Po drodze nie daj górze zasnąć: nikt nie może wymrzeć ani zjeść reszty.',
     rycina: drogaWolnosci,
   },
   {
+    id: 'skorupa', grupa: 'prawa', nazwa: 'Skorupa rdzenia', lacina: 'Testa cordis',
+    opis: 'Kamień wokół rdzenia — nie wydrążysz go ani nie zawalisz. Pęka tylko pod modlitwą: gdy przy rdzeniu (do 16 kafli) stoi naraz co najmniej trzech wiernych jednej nacji, każdy z oddaniem od 35%. Postęp zostaje przy nacji. Każde pęknięcie wyjmuje jeden kafel od strony, z której się modlą — góra, dół albo bok; zwykle trzeba ich około pięciu, każde idzie wolniej od poprzedniego.',
+    kiedy: 'Trzymaj trzech i więcej razem, najedzonych i wierzących. Postęp widać na plakietce: „skorupa 2/5". Prorok dzieli wartę — nie teraz.',
+    rycina: skorupa,
+  },
+  {
     id: 'rdzen', grupa: 'prawa', nazwa: 'Rdzeń', lacina: 'Cor montis',
-    opis: 'Bije na dnie, zamknięty w skorupie, której nie rozkuje żaden kilof. Pęka tylko pod modlitwą wiernych. Kto dojdzie do środka — uklęknie i cię uwolni albo zabije.',
-    kiedy: 'Prowadź do niego jedną wierną nację: Znak, grzyb przy przedsionku, droga w obie strony.',
+    opis: 'Gdy przez skorupę prowadzi przejście, wierni sami schodzą do środka — nie musisz ich prowadzić. Kto dotknie rdzenia albo wejdzie do pustej komory wokół niego, kończy grę: wierzący (nacja ponad 55% albo on sam ponad 70%) cię uwalnia, bezbożny zabija.',
+    kiedy: 'Pilnuj przejścia: nie zalewaj go i nie zawalaj, a bezbożnych trzymaj od niego z dala.',
     rycina: cala(rysujGore),
   },
   {
