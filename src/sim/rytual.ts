@@ -18,6 +18,8 @@ export interface StanRytualu {
   otwarta: boolean;
   /** Ile kafli skorupy stało w środkowej kolumnie na początku — do kamieni milowych. */
   skorupa: number;
+  /** Strona, z której pęka skorupa — ustala ją pierwsze pęknięcie. */
+  strona?: Strona;
 }
 
 
@@ -87,9 +89,13 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
       stan.klan = id;                  // to ta nacja kuje; to jej ludzie wejdą do środka
       // Skorupa pęka od strony, z której się modlą. Wcześniej zawsze od góry, więc nacja
       // mieszkająca pod rdzeniem albo obok niego kruszyła kamień i nigdy nie mogła wejść.
-      const [kx, ky] = kierunek.get(id) ?? [0, -1];
-      const strona: Strona = Math.abs(ky) >= Math.abs(kx) ? (ky < 0 ? 'gora' : 'dol') : (kx < 0 ? 'lewo' : 'prawo');
-      otworzSkorupe(sim, stan, strona);
+      // Kolejne pęknięcia idą tą samą drogą co pierwsze: gdy każde szło w stronę, z której
+      // akurat się modlono, skorupa miała po dwa niedokończone szyby i nie puszczała nigdzie.
+      if (!stan.strona) {
+        const [kx, ky] = kierunek.get(id) ?? [0, -1];
+        stan.strona = Math.abs(ky) >= Math.abs(kx) ? (ky < 0 ? 'gora' : 'dol') : (kx < 0 ? 'lewo' : 'prawo');
+      }
+      otworzSkorupe(sim, stan, stan.strona);
       // sprawdzamy drożność od razu po pęknięciu, żeby wierni nie czekali na tik kontrolny
       if (!stan.otwarta && drogaDoRdzenia(sim)) {
         stan.otwarta = true;
@@ -278,7 +284,7 @@ export function policzJedzeniePrzedsionka(sim: Sim): number {
  * Wcześniej pętle były odwrotnie i skorupa kruszyła się wszerz: pięć rzędów po pięć
  * kafli to było dwadzieścia pięć pęknięć, a gra już po piątym wysyłała ludzi na kamień.
  */
-type Strona = 'gora' | 'dol' | 'lewo' | 'prawo';
+export type Strona = 'gora' | 'dol' | 'lewo' | 'prawo';
 
 function otworzSkorupe(sim: Sim, stan: StanRytualu, strona: Strona = 'gora'): void {
   const w = sim.world;
