@@ -1,0 +1,6 @@
+# gra wkładana do aplikacji przy budowaniu (npm run pack w android/)
+app/src/main/assets/
+.gradle/
+build/
+app/build/
+local.properties

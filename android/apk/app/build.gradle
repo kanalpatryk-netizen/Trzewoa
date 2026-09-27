@@ -1,0 +1,42 @@
+plugins {
+    id 'com.android.application'
+}
+
+// numer wersji: z automatu GitHuba (kolejne budowanie = wyższy numer, instaluje się jako aktualizacja)
+def numer = (System.getenv('NUMER_WERSJI') ?: '1').toInteger()
+
+android {
+    namespace 'pl.trzewia.gra'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'pl.trzewia.gra'
+        minSdk 24
+        targetSdk 34
+        versionCode numer
+        versionName "0.1.${numer}"
+    }
+
+    // Klucz TESTOWY z repozytorium — ten sam przy każdym budowaniu, więc nowa wersja
+    // instaluje się na starą. Do sklepu Google Play trzeba by własnego, tajnego klucza.
+    signingConfigs {
+        testowy {
+            storeFile file('../trzewia-test.keystore')
+            storePassword 'trzewia'
+            keyAlias 'trzewia'
+            keyPassword 'trzewia'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.testowy
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

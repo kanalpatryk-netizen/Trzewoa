@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ciemne tło od pierwszej klatki, bez paska tytułu — jak ekran ładowania gry -->
+    <style name="Pelny" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@color/sadza</item>
+        <item name="android:statusBarColor">@color/sadza</item>
+        <item name="android:navigationBarColor">@color/sadza</item>
+    </style>
+    <color name="sadza">#0D0908</color>
+    <color name="rdzen">#C2503C</color>
+    <color name="atrament">#D8C8A8</color>
+</resources>

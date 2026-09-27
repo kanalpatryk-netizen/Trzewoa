@@ -1,0 +1,10 @@
+// Trzewia — aplikacja na Androida: okno WebView z grą zbudowaną z folderu android/ (npm run pack).
+pluginManagement {
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories { google(); mavenCentral() }
+}
+rootProject.name = 'Trzewia'
+include ':app'

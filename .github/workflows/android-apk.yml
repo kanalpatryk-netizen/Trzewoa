@@ -1,0 +1,84 @@
+# Aplikacja na Androida (APK) do pobrania.
+#
+# Buduje grę z folderu android/ w jeden plik, wkłada ją do aplikacji (android/apk/ — okno WebView)
+# i wystawia gotowy Trzewia.apk w wydaniu „Trzewia na Androida (APK)”:
+#   https://github.com/<właściciel>/<repozytorium>/releases/download/android-apk/Trzewia.apk
+# Rusza po każdej zmianie w android/ (w main i na gałęziach claude/…) albo ręcznie z zakładki Actions.
+name: Aplikacja na Androida
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - 'android/**'
+      - '.github/workflows/android-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: android/package-lock.json
+
+      - name: Gra w jeden plik
+        working-directory: android
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm run pack
+          mkdir -p apk/app/src/main/assets
+          cp trzewia.html apk/app/src/main/assets/index.html
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Budowa APK
+        working-directory: android/apk
+        env:
+          NUMER_WERSJI: ${{ github.run_number }}
+        run: |
+          gradle --no-daemon assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ../../Trzewia.apk
+          ls -la ../../Trzewia.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Trzewia-apk
+          path: Trzewia.apk
+
+      - name: Wydanie „Trzewia na Androida (APK)”
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notatki.md <<NOTATKI
+          **Instalacja:** pobierz \`Trzewia.apk\` (niżej, w sekcji *Assets*) na telefonie i otwórz.
+          Android zapyta o zgodę na instalację z tego źródła (przeglądarka / Pliki) — zgódź się, potem „Zainstaluj”.
+
+          Wersja testowa 0.1.${{ github.run_number }} z gałęzi \`${GITHUB_REF_NAME}\`, commit ${GITHUB_SHA::7}.
+          Podpisana kluczem testowym — kolejne wersje instalują się na poprzednią (zapis gry zostaje).
+          NOTATKI
+          gh release delete android-apk --cleanup-tag --yes || true
+          gh release create android-apk Trzewia.apk \
+            --target "$GITHUB_SHA" \
+            --title "Trzewia na Androida (APK)" \
+            --notes-file notatki.md \
+            --prerelease
