@@ -1,5 +1,5 @@
 /**
- * Test nakładania interfejsu: na ośmiu rozmiarach ekranu otwiera grę i samouczek,
+ * Test nakładania interfejsu: na rozmiarach telefonów i tabletów otwiera grę i samouczek,
  * zbiera prostokąty elementów (obszaryHud) i zgłasza każde przecięcie.
  *
  *   npm run dev                      (w drugim oknie)
@@ -12,7 +12,8 @@ try { ({ chromium } = await import('playwright-core')); } catch {
   console.error('Brak playwright-core: npm i -D playwright-core'); process.exit(2);
 }
 const ADRES = process.argv[2] || 'http://localhost:5180/';
-const ROZMIARY = [[360, 640], [390, 844], [844, 390], [667, 375], [768, 1024], [1024, 600], [1280, 720], [1920, 1080]];
+// wersja Android: telefony pionowo i poziomo (widoczny obszar Chrome) oraz tablety
+const ROZMIARY = [[360, 640], [360, 664], [390, 844], [412, 839], [412, 915], [640, 360], [740, 360], [844, 390], [915, 360], [768, 1024], [1024, 600]];
 const ZAPAS = 1;   // px — styk krawędziami to jeszcze nie nakładanie
 
 const przecina = (a, b) => a.x + ZAPAS < b.x + b.w && b.x + ZAPAS < a.x + a.w && a.y + ZAPAS < b.y + b.h && b.y + ZAPAS < a.y + a.h;

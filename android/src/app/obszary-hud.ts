@@ -39,7 +39,7 @@ export function zbierzObszaryHud(d: {
   dodaj('otchlan', obszarOtchlani(p, vh));
   if (ustawienia.spisRas) dodaj('spis', obszarSpisu(p, vh));
   dodaj('krew', obszarKrwi(p, vh));
-  if (ustawienia.skalaGlebokosci && !p.waski) dodaj('minimapa', obszarMinimapy(p));
+  if (ustawienia.skalaGlebokosci && !p.waski && !p.niski) dodaj('minimapa', obszarMinimapy(p));
   dodaj('droga', d.droga);
   dodaj('rada', d.rada);
   return out;

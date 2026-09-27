@@ -3,9 +3,13 @@ import { RACES, RACE_COUNT, Race, odmien } from '../sim/races';
 import { SERIF } from './overlay';
 import { ustawienia } from '../core/settings-store';
 import { lewaKrawedzPrzyciskow } from './przyciski';
-import { EKRAN } from '../nastawy/ekran';
+import { EKRAN, TELEFON } from '../nastawy/ekran';
 
-export interface Plate { x: number; y: number; w: number; h: number; left: number; bottom: number; right: number; top: number; waski: boolean; }
+/**
+ * `waski` — telefon (albo tablet) trzymany pionowo; `niski` — telefon trzymany poziomo.
+ * Oba to układy telefonu z nastaw TELEFON; gdy oba są fałszywe, to układ szerokiego ekranu.
+ */
+export interface Plate { x: number; y: number; w: number; h: number; left: number; bottom: number; right: number; top: number; waski: boolean; niski: boolean; }
 
 /**
  * Rysunek ma ramę jak rycina w atlasie: świat siedzi na płycie, a wszystko, co nie
@@ -14,12 +18,19 @@ export interface Plate { x: number; y: number; w: number; h: number; left: numbe
 export function computePlate(vw: number, vh: number): Plate {
   // telefon w pionie (i tablet w pionie): inny podział marginesów — na szerokim układzie
   // pod płytą brakowało miejsca na spis, Otchłań i osiem przycisków naraz
-  const waski = vw < EKRAN.waskiPonizej || (vw < EKRAN.pionowyTabletPonizej && vh > vw * EKRAN.pionowyOd);
-  const left = waski ? 46 : Math.max(58, Math.min(104, vw * 0.075));
-  const right = waski ? 20 : Math.max(58, Math.min(104, vw * 0.075));
-  const top = Math.max(34, Math.min(72, vh * 0.07));
-  const bottom = waski ? Math.max(150, Math.min(240, vh * 0.28)) : Math.max(132, Math.min(206, vh * 0.26));
-  return { x: left, y: top, w: Math.max(80, vw - left - right), h: Math.max(80, vh - top - bottom), left, right, top, bottom, waski };
+  // ekran szerszy niż wyższy nigdy nie dostaje układu pionowego — mały telefon trzymany
+  // poziomo (640×360) dostawał kolumnę na ryty i rząd przycisków pod płytą wysoką na 130 px
+  const pion = vh > vw;
+  const waski = pion
+    ? vw < EKRAN.pionowyTabletPonizej || vh > vw * EKRAN.pionowyOd
+    : vw < EKRAN.waskiPonizej && vh >= TELEFON.niskiPonizej;
+  const niski = !waski && !pion && vh < TELEFON.niskiPonizej;
+  const T = waski ? TELEFON.pion : niski ? TELEFON.poziom : null;
+  const left = T ? T.lewo : Math.max(58, Math.min(104, vw * 0.075));
+  const right = T ? T.prawo : Math.max(58, Math.min(104, vw * 0.075));
+  const top = T ? T.gora : Math.max(34, Math.min(72, vh * 0.07));
+  const bottom = T ? T.dol : Math.max(132, Math.min(206, vh * 0.26));
+  return { x: left, y: top, w: Math.max(80, vw - left - right), h: Math.max(80, vh - top - bottom), left, right, top, bottom, waski, niski };
 }
 
 const INK = 'rgba(206,192,166,';
@@ -27,28 +38,63 @@ const INK = 'rgba(206,192,166,';
 /** Prostokąt na ekranie — samouczek wskazuje nim organy w ramie. */
 export interface Obszar { x: number; y: number; w: number; h: number; }
 
+/**
+ * Dolny margines telefonu — wszystko liczone od górnej krawędzi marginesu (dół płyty):
+ * pionowo rząd przycisków, spis ras, a na dole krew i Otchłań obok siebie;
+ * poziomo jeden cienki pasek: spis, Otchłań, krew.
+ */
+const TEL = {
+  pion: { spisY: 82, spisH: 12, rzadY: 122, otchlanBok: 34 },
+  poziom: { spisY: 17, spisH: 9, otchlanBok: 24, spisCzesc: 0.46 },
+};
+
 /** Rysa Krwi pod płytą. */
 export function obszarKrwi(p: Plate, vh: number): Obszar {
-  const cx0 = p.waski ? p.x : p.x + p.w * 0.6;
-  const base = p.waski ? vh - p.bottom * 0.04 : vh - p.bottom * 0.1;
-  const maxH = p.waski ? p.bottom * 0.16 : p.bottom * 0.34;
+  const mt = vh - p.bottom;
+  if (p.waski) {
+    // obok Otchłani, w dolnym rzędzie marginesu
+    const o = obszarOtchlani(p, vh);
+    const y = mt + TEL.pion.rzadY + 10;
+    return { x: p.x + 28, y, w: o.x - p.x - 28 - 16, h: vh - 8 - y };
+  }
+  if (p.niski) {
+    const o = obszarOtchlani(p, vh);
+    const x = o.x + o.w + 14;
+    // napis „KREW” nad rysą nie może wejść na ramę płyty
+    return { x, y: mt + 22, w: p.x + p.w - x, h: p.bottom - 28 };
+  }
+  const cx0 = p.x + p.w * 0.6;
+  const base = vh - p.bottom * 0.1;
+  const maxH = p.bottom * 0.34;
   return { x: cx0, y: base - maxH, w: p.x + p.w - cx0, h: maxH };
 }
 
 /** Kwadrat Otchłani razem z podpisem. */
 export function obszarOtchlani(p: Plate, vh: number): Obszar {
-  const bok = Math.max(26, Math.min(46, p.bottom * (p.waski ? 0.16 : 0.28)));
+  const mt = vh - p.bottom;
+  if (p.waski) {
+    const bok = TEL.pion.otchlanBok;
+    const w = bok + 6 + 13 * 7.8;
+    return { x: p.x + p.w - w, y: mt + TEL.pion.rzadY + 4, w, h: bok };
+  }
+  if (p.niski) {
+    const bok = TEL.poziom.otchlanBok;
+    const w = bok + 6 + 12 * 5.2;
+    return { x: p.x + p.w * TEL.poziom.spisCzesc + 18, y: mt + 12, w, h: bok };
+  }
+  const bok = Math.max(26, Math.min(46, p.bottom * 0.28));
   // szerokość z podpisem („stać cię na Skazę”) — podpis nie może wyjść poza płytę
   const w = bok + 6 + Math.max(13, bok * 0.3) * 7.8;
-  // wąsko: przy prawej krawędzi płyty; szeroko: w połowie, ale nigdy na przyciskach
-  const x = p.waski ? p.x + p.w - w : Math.min(p.x + p.w * 0.5, lewaKrawedzPrzyciskow(p) - w - 14);
-  const y = vh - p.bottom + p.bottom * (p.waski ? 0.4 : 0.14);
+  // szeroko: w połowie, ale nigdy na przyciskach
+  const x = Math.min(p.x + p.w * 0.5, lewaKrawedzPrzyciskow(p) - w - 14);
+  const y = vh - p.bottom + p.bottom * 0.14;
   return { x, y, w, h: bok };
 }
 
 /** Szerokość wstęgi spisu ras — kończy się przed Otchłanią. */
 function szerokoscSpisu(p: Plate, vh: number): number {
-  return p.waski ? p.w * 0.78 : Math.max(p.w * 0.25, Math.min(p.w * 0.46, obszarOtchlani(p, vh).x - p.x - 16));
+  if (p.niski) return p.w * TEL.poziom.spisCzesc;
+  return p.waski ? p.w - 28 : Math.max(p.w * 0.25, Math.min(p.w * 0.46, obszarOtchlani(p, vh).x - p.x - 16));
 }
 
 /** Pasmo dymu Wiary pod górną krawędzią płyty. */
@@ -58,9 +104,16 @@ export function obszarWiary(p: Plate): Obszar {
 
 /** Wstęga warstw — spis ras. */
 export function obszarSpisu(p: Plate, vh: number): Obszar {
-  const y = vh - p.bottom + p.bottom * (p.waski ? 0.12 : 0.17);
-  const h = Math.max(12, p.bottom * (p.waski ? 0.09 : 0.11));
+  const { y, h } = pasmoSpisu(p, vh);
   return { x: p.x, y: y - h * 0.4, w: szerokoscSpisu(p, vh), h: h * 2.4 };
+}
+
+/** Górna krawędź i grubość wstęgi spisu. */
+function pasmoSpisu(p: Plate, vh: number): { y: number; h: number } {
+  const mt = vh - p.bottom;
+  if (p.waski) return { y: mt + TEL.pion.spisY, h: TEL.pion.spisH };
+  if (p.niski) return { y: mt + TEL.poziom.spisY, h: TEL.poziom.spisH };
+  return { y: mt + p.bottom * 0.17, h: Math.max(12, p.bottom * 0.11) };
 }
 
 export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number, oddech = 0.5): void {
@@ -129,13 +182,14 @@ export function drawCensus(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh
   let total = 0;
   for (let r = 0; r < RACE_COUNT; r++) if (r !== Race.MYCELIUM) total += sim.popByRace[r];
   // górne pasmo marginesu należy do spisu; kronika zaczyna się dopiero pod nim
-  const y = vh - p.bottom + p.bottom * (p.waski ? 0.12 : 0.17);
-  const h = Math.max(12, p.bottom * (p.waski ? 0.09 : 0.11));
-  const x0 = p.x, x1 = p.x + szerokoscSpisu(p, vh);
+  const { y, h } = pasmoSpisu(p, vh);
+  const telefon = p.waski || p.niski;
+  const x0 = p.x + (p.waski ? 28 : 0), x1 = x0 + szerokoscSpisu(p, vh);
   const jag = (t: number, seed: number) => Math.sin(t * 37.1 + seed) * (h * 0.09) + Math.sin(t * 11.3 + seed * 2) * (h * 0.06);
 
   ctx.save();
-  etykietaPionowa(ctx, 'ludy', x0 - 16, y + h / 2);
+  // na telefonie pionowo lewy margines to kolumna rytów — etykieta wchodzi w pas nad krwią
+  if (!p.niski) etykietaPionowa(ctx, 'ludy', x0 - 16, y + h / 2);
   // cienkie linie stropu i spągu — wstęga ma ramę jak wszystko inne na marginesie
   ctx.strokeStyle = `${INK}0.18)`;
   ctx.lineWidth = 1;
@@ -188,7 +242,7 @@ export function drawCensus(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh
         ctx.stroke();
       }
 
-      if (bw > 14) {
+      if (bw > 14 && !p.niski) {                    // poziomo nad wstęgą jest już rama płyty
         ctx.save();
         ctx.translate(cx + bw / 2, y - h * 0.62);
         ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},0.95)`;
@@ -199,7 +253,7 @@ export function drawCensus(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh
         ctx.restore();
       }
       // nazwa nacji wprost pod jej warstwą — spis przestaje być paskiem kolorów
-      const podpisRasy = Math.max(12, Math.min(h * 0.78, p.w * 0.024));
+      const podpisRasy = telefon ? 12 : Math.max(12, Math.min(h * 0.78, p.w * 0.024));
       ctx.font = `${r === Race.MYCELIUM ? "italic " : ""}${podpisRasy}px ${SERIF}`;
       const etykieta = RACES[r].short;
       if (bw > ctx.measureText(etykieta).width + 8) {
@@ -210,6 +264,8 @@ export function drawCensus(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh
       cx += bw;
     }
   }
+  // na telefonie zdanie o dominacji zabierało miejsce płycie — jest w radzie i w atlasie
+  if (telefon) { ctx.restore(); return; }
   ctx.fillStyle = `${INK}0.86)`;
   const rozmiarPodpisu = Math.max(14, Math.min(h * 0.86, p.w * 0.042));
   ctx.font = `italic ${rozmiarPodpisu}px ${SERIF}`;
@@ -360,8 +416,14 @@ export function drawOtchlan(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, v
   ctx.font = `italic ${Math.max(13, bok * 0.3)}px ${SERIF}`;
   ctx.fillStyle = `${INK}0.9)`;
   ctx.textAlign = 'left';
-  ctx.fillText('otchłań', x + bok + 6, y + bok * 0.55);
-  ctx.fillText(sim.otchlan >= 55 ? 'stać cię na Skazę' : 'za mało na Skazę', x + bok + 6, y + bok * 0.95);
+  if (p.niski) {
+    // poziomo pasek ma jedną linijkę wysokości
+    ctx.font = `italic 12px ${SERIF}`;
+    ctx.fillText(sim.otchlan >= 55 ? 'otchłań · Skaza' : 'otchłań', x + bok + 6, y + bok * 0.66);
+  } else {
+    ctx.fillText('otchłań', x + bok + 6, y + bok * 0.55);
+    ctx.fillText(sim.otchlan >= 55 ? 'stać cię na Skazę' : 'za mało na Skazę', x + bok + 6, y + bok * 0.95);
+  }
   ctx.restore();
 }
 
@@ -458,6 +520,8 @@ export function drawEyelid(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, te
  * ani na spis ras, ani na szczelinę — cztery elementy w jednym rogu wyglądały jak awaria.
  */
 export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vw: number, vh: number): void {
+  // na telefonie nie ma na nią miejsca pod płytą — cała kronika jest pod przyciskiem zapisków
+  if (p.waski || p.niski) return;
   // pasmo kroniki: dolne 46% marginesu, nic innego tam nie wchodzi
   const bandTop = vh - p.bottom * (p.waski ? 0.72 : 0.46);
   const yBase = vh - p.bottom * (p.waski ? 0.3 : 0.05);

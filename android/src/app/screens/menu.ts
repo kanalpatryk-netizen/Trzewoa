@@ -8,6 +8,7 @@ import { BARWA, rgba } from '../../render/palette';
 import { SERIF, tloSadzy, kreska } from '../../render/ink';
 import { hasSave } from '../../core/save';
 import { ustawienia } from '../../core/settings-store';
+import { TELEFON } from '../../nastawy/ekran';
 import { MENU as M } from '../../nastawy/wyglad/menu';
 import { RAMA, KARTUSZ } from '../../nastawy/wyglad/ozdoby';
 
@@ -72,7 +73,9 @@ export class EkranMenu implements Ekran {
     const czas = ruch ? teraz : 0;
     tloSadzy(ctx, w, h, czas);
     // układ pionowy także na tablecie trzymanym pionowo — szeroki wciskał spis w róg
-    const waski = w < M.waskiPonizej || h > w * M.pionowyOd;
+    // (telefon trzymany poziomo, np. 640×360, zostaje przy układzie szerokim — pionowy spis
+    // nie mieścił się w 360 px wysokości)
+    const waski = h > w * M.pionowyOd || (w < M.waskiPonizej && h >= w);
     if (waski) this.ukladWaski(ctx, w, h, czas, wejscie);
     else this.ukladSzeroki(ctx, w, h, czas, wejscie);
     // patyna i rytowana ciemność na brzegach — ta sama, co na płycie w grze
@@ -98,25 +101,41 @@ export class EkranMenu implements Ekran {
   /** Szeroki ekran: kartusz u góry, spis po lewej, przekrój góry po prawej. */
   private ukladSzeroki(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, wejscie: number): void {
     const m = marginesRamy(w) + 14;
-    const rt = Math.max(M.tytulRozmiar.min, Math.min(M.tytulRozmiar.max, Math.min(w / 11, h / 6)));
+    // telefon poziomo: mniejszy tytuł, żeby spis zmieścił się pod nim w dużym piśmie
+    const rt = h < TELEFON.niskiPonizej ? Math.min(34, h / 10)
+      : Math.max(M.tytulRozmiar.min, Math.min(M.tytulRozmiar.max, Math.min(w / 11, h / 6)));
     const yTytul = h * M.tytulY + rt * 0.4;
     const podDol = dolPodtytulu(yTytul, rt);
     // przekrój góry: prawa część, od podtytułu do dolnej ramy — nigdy pod napisem
-    const fx = w * M.przekrojX, fy = Math.max(h * M.przekrojY, podDol + 6), fw = w - fx - m - w * 0.01, fh = h - fy - m - 4;
+    // telefon poziomo: przekrój zaczyna się dopiero za spisem — przy 640 px wąski spis wchodził na górę
+    const niskiEkran = h < TELEFON.niskiPonizej;
+    let fx = w * M.przekrojX;
+    if (niskiEkran) {
+      ctx.save();
+      ctx.font = `${M.spisRozmiar.min + 2}px ${SERIF}`;
+      const najdluzsza = Math.max(...this.pozycje.map((p) => ctx.measureText(p.etykieta).width));
+      ctx.restore();
+      fx = Math.max(fx, m + (M.spisRozmiar.min + 2) * 2.6 + najdluzsza + 24);
+    }
+    const fy = Math.max(h * M.przekrojY, podDol + 6), fw = w - fx - m - w * 0.01, fh = h - fy - m - 4;
     this.frontyspis.rysuj(ctx, fx, fy, fw, fh, teraz, M.przekrojAlfa * wejscie, true);
 
     kartusz(ctx, w / 2, yTytul, M.tytul, rt, wejscie, '', M.podtytul);
 
     this.trafienia = [];
-    const lewy = m + w * M.spisOdLewej;
+    // (numer rzymski stoi dwa pisma w lewo od tytułu — nie może wyjść poza ramę)
+    const lewy = Math.max(m + w * M.spisOdLewej, m + (M.spisRozmiar.min + 2) * 2.4);
     // spis, opis i zachęta mieszczą się między podtytułem a podpowiedzią na dole;
     // na niskim ekranie spis gęstnieje, a potem pismo maleje — nic nie wchodzi na nic
     const n = this.pozycje.length;
     const ro = Math.max(M.opisRozmiar.min, Math.min(M.opisRozmiar.max, w / 72));
     const dol = h - m - 22;
-    let rozmiar = Math.max(M.spisRozmiar.min, Math.min(M.spisRozmiar.max, Math.min(w / 48, h / 28)));
+    // TELEFON poziomo: bez opisu pod spisem — pozycje dostają całą wysokość i duże pismo,
+    // bo to one są celem dotyku (opis wybranej i tak mówi tablica po wejściu)
+    const niski = h < TELEFON.niskiPonizej;
+    let rozmiar = niski ? M.spisRozmiar.min + 2 : Math.max(M.spisRozmiar.min, Math.min(M.spisRozmiar.max, Math.min(w / 48, h / 28)));
     let odstep = rozmiar * M.spisOdstep;
-    const opisH = () => rozmiar * 0.6 + ro * M.opisInterlinia * 2 + (ustawienia.samouczekZrobiony ? 0 : ro * 1.6);
+    const opisH = () => niski ? 0 : rozmiar * 0.6 + ro * M.opisInterlinia * 2 + (ustawienia.samouczekZrobiony ? 0 : ro * 1.6);
     let start = Math.max(h * M.spisOd, podDol + rozmiar * 1.3, Math.min(h * M.spisDo, h * 0.8 - n * odstep));
     for (let k = 0; k < 12 && start + n * odstep + opisH() > dol; k++) {
       if (odstep > rozmiar * 1.55) odstep = Math.max(rozmiar * 1.55, (dol - opisH() - start) / n);
@@ -161,8 +180,9 @@ export class EkranMenu implements Ekran {
       this.trafienia.push({ x: lewy - rozmiar * 2.4, y: y - rozmiar * 1.1, w: Math.max(320, w * 0.32), h: rozmiar * 1.8, i });
     }
     // opis wybranej pozycji pod spisem, oddzielony przerywnikiem
-    const wyb = this.pozycje[this.wybrana];
+    const wyb = niski ? undefined : this.pozycje[this.wybrana];
     const yOpis = start + this.pozycje.length * odstep;
+    if (niski) { ctx.restore(); return; }
     przerywnik(ctx, lewy + w * 0.14, yOpis - rozmiar * 0.5, w * 0.26, wejscie);
     if (wyb) {
       ctx.font = `italic ${ro}px ${SERIF}`;

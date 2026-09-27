@@ -4,7 +4,6 @@ import { RACES, Race } from '../sim/races';
 import { PIELGRZYMKA } from '../nastawy/rytual';
 import { SERIF } from './ink';
 import { ramaKarty } from './ozdoby';
-import { miejsceKlepsydry } from './tempo';
 
 /**
  * Droga do wolności: pięć kroków do Uwolnienia w jednej linii na brzegu płyty.
@@ -78,10 +77,10 @@ export interface ObszarDrogi { x: number; y: number; w: number; h: number; linia
 
 export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, teraz: number): ObszarDrogi {
   const { kroki, biezacy } = krokiDrogi(sim);
-  const rozm = p.waski ? 11 : Math.max(12, Math.min(14, p.w / 90));
-  // wąsko: od lewej krawędzi płyty do klepsydry w prawym górnym rogu — nie pod nią
-  const k = miejsceKlepsydry(p);
-  const szer = p.waski ? Math.min(k.x - k.s * 1.2 - (p.x + 8), 330) : Math.max(300, Math.min(440, p.w * 0.38));
+  const telefon = p.waski || p.niski;
+  // na telefonie większe litery — 11 px było nie do przeczytania
+  const rozm = telefon ? 13 : Math.max(12, Math.min(14, p.w / 90));
+  const szer = p.waski ? p.w - 16 : p.niski ? Math.min(460, p.w * 0.55) : Math.max(300, Math.min(440, p.w * 0.38));
   // „teraz:” łamane do szerokości ramy — na telefonie zwykle w dwóch linijkach
   const co = terazDrogi(sim);
   ctx.save();
@@ -91,8 +90,8 @@ export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, si
   const wysToru = rozm * 3.3;
   const wys = wysToru + linieTeraz.length * rozm * 1.15 + rozm * 0.5;
   const x0 = p.waski ? p.x + 8 : p.x + 12;
-  // wąsko: pod progiem Znaku i klepsydrą, które zajmują górny pas płyty
-  const y0 = p.waski ? p.y + 46 : p.y + 12;
+  // TELEFON: na dole płyty — u góry, pod powierzchnią, mieszkają ludy i wstęga je zasłaniała
+  const y0 = telefon ? p.y + p.h - wys - 10 : p.y + 12;
   ramaKarty(ctx, x0, y0, szer, wys, 0.92, 'droga do wolności', true);
 
   const n = kroki.length;

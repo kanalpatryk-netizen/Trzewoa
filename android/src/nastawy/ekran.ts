@@ -12,10 +12,16 @@ export const EKRAN = {
   wzorzecW: 1366, wzorzecH: 820,
   /** Na dużym monitorze obraz rośnie najwyżej tyle razy. */
   maxPowiekszenie: 2.4,
-  /** Najmniejszy ekran logiczny w pionie (telefon trzymany pionowo). */
-  pionMinW: 400, pionMinH: 720,
-  /** Najmniejszy ekran logiczny w poziomie (telefon poziomo, mały laptop). */
-  poziomMinW: 1000, poziomMinH: 560,
+  /**
+   * Najmniejszy ekran logiczny w pionie (telefon trzymany pionowo). WERSJA ANDROID:
+   * telefon rysuje 1:1 — na komputerze minimum 400×720 zmniejszało wszystko na małych telefonach.
+   */
+  pionMinW: 360, pionMinH: 600,
+  /**
+   * Najmniejszy ekran logiczny w poziomie. WERSJA ANDROID: telefon trzymany poziomo ma
+   * własny, zwarty układ (TELEFON.poziom), więc nie ściskamy go do 1000×560 (było 64% rozmiaru).
+   */
+  poziomMinW: 640, poziomMinH: 330,
   /** Poniżej tej skali już nie schodzimy — tekst stałby się nieczytelny. */
   minSkala: 0.55,
   /** Najwyższa gęstość pikseli, w jakiej rysujemy (więcej = ostrzej, ale wolniej). */
@@ -24,6 +30,22 @@ export const EKRAN = {
   waskiPonizej: 700,
   /** …a także ekran w pionie (wyższy niż szerszy × pionowyOd) węższy niż to — tablet. */
   pionowyTabletPonizej: 1000, pionowyOd: 1.15,
+};
+
+/**
+ * TELEFON — układ ekranu gry na telefonie (tylko wersja Android).
+ * Marginesy wokół płyty w pikselach logicznych; płyta dostaje całą resztę.
+ */
+export const TELEFON = {
+  /** Ekran szerszy niż wyższy i logicznie niższy niż to — układ „telefon poziomo”. */
+  niskiPonizej: 520,
+  /**
+   * Telefon pionowo: u góry rada, z lewej kolumna rytów, pod płytą rząd przycisków,
+   * spis ras i pasek z krwią i Otchłanią. Przyciski nie leżą już na płycie.
+   */
+  pion: { gora: 58, lewo: 50, prawo: 8, dol: 168, przyciskR: 22 },
+  /** Telefon poziomo: z lewej ryty, z prawej kolumna przycisków, pod płytą jeden cienki pasek. */
+  poziom: { gora: 30, lewo: 60, prawo: 56, dol: 46, przyciskR: 20 },
 };
 
 /**

@@ -564,8 +564,10 @@ export class EkranGry implements Ekran {
     drawEyelid(ctx, plate, sim, teraz);
     drawFrame(ctx, plate, teraz, oddech);
     // w samouczku cel gry dochodzi dopiero na końcu — linia kroków by tylko rozpraszała
-    this.drogaRect = !this.nasluch && !sim.ending ? rysujDrogeDoWolnosci(ctx, plate, sim, teraz) : null;
-    if (ustawienia.skalaGlebokosci && !plate.waski) rysujMinimape(ctx, sim, cam, plate, teraz);
+    // na telefonie wstęga leży na dole płyty, tam gdzie baner pauzy — w pauzie ustępuje mu miejsca
+    const banerNaDole = (plate.waski || plate.niski) && this.pauza;
+    this.drogaRect = !this.nasluch && !sim.ending && !banerNaDole ? rysujDrogeDoWolnosci(ctx, plate, sim, teraz) : null;
+    if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) rysujMinimape(ctx, sim, cam, plate, teraz);
     if (ustawienia.spisRas) drawCensus(ctx, plate, sim, h);
     drawOtchlan(ctx, plate, sim, h);
     drawCrack(ctx, plate, sim, w, h, teraz);
@@ -578,8 +580,8 @@ export class EkranGry implements Ekran {
     const podPrzyciskiem = przyciskPod(this.przyciski, this.ui.pointer.x, this.ui.pointer.y);
     rysujPrzyciski(ctx, this.przyciski, podPrzyciskiem?.akcja ?? null, teraz);
     this.ui.plan = this.pauza ? this.rozkazy : null;
-    // na wąskim ekranie przyciski leżą na dole płyty — baner siada nad nimi
-    const nadPrzyciskami = plate.waski && this.przyciski.length ? this.przyciski[0].r * 3 : 0;
+    // (na telefonie przyciski są już pod płytą — baner nie musi ich omijać)
+    const nadPrzyciskami = 0;
     this.polaBanera = this.pauza && !this.zapiski && !sim.ending
       ? rysujBanerPauzy(ctx, plate, sim, this.rozkazy.ile, teraz, nadPrzyciskami) : [];
     this.polaAlarmu = this.alarm && this.pauza && !this.zapiski ? rysujAlarm(ctx, plate, this.alarm, teraz) : [];
@@ -607,8 +609,9 @@ export class EkranGry implements Ekran {
       const rozmiar = Math.max(15, Math.min(20, w / 66));
       ctx.font = `italic ${rozmiar}px "Trzewia Tekst", Georgia, serif`;
       // na wąskim ekranie zdanie nie mieści się w jednej linii i wychodziło poza płytę
-      const maxW = plate.w - (plate.waski ? 16 : 40);
-      const linie = lamiTekst(ctx, this.rada.tekst, maxW, 2);
+      // telefon poziomo: jedna linijka, z dala od klepsydry w prawym rogu
+      const maxW = plate.w - (plate.waski ? 16 : plate.niski ? 140 : 40);
+      const linie = lamiTekst(ctx, this.rada.tekst, maxW, plate.niski ? 1 : 2);
       const podstawa = plate.y - plate.top * 0.28 - (linie.length - 1) * rozmiar * 1.15;
       ctx.lineWidth = 3;
       const nad = this.radaRect && this.ui.pointer.x >= this.radaRect.x && this.ui.pointer.x <= this.radaRect.x + this.radaRect.w
@@ -882,7 +885,7 @@ export class EkranGry implements Ekran {
 
     if (faza === 'dol') {
       // tylko gdy pasek naprawdę jest na ekranie — ukryty przerzucał kamerę po kliknięciu w pustkę
-      const mm = ustawienia.skalaGlebokosci && !this.plate.waski ? miejsceZMinimapy(sim, this.plate, e.clientX, e.clientY) : null;
+      const mm = ustawienia.skalaGlebokosci && !this.plate.waski && !this.plate.niski ? miejsceZMinimapy(sim, this.plate, e.clientX, e.clientY) : null;
       if (mm) {
         this.przejmijKamere();
         this.cam.x = this.camTarget.x = mm[0];

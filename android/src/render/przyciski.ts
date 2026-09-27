@@ -1,5 +1,6 @@
 import type { Plate } from './plate';
 import { SERIF } from './ink';
+import { TELEFON } from '../nastawy/ekran';
 
 export type AkcjaPrzycisku = 'pauza' | 'wolniej' | 'szybciej' | 'zapiski' | 'atlas' | 'legenda' | 'kamera' | 'zapis';
 
@@ -36,16 +37,33 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
   ];
   // telefon: klucz i ręczny zapis zostają pod klawiszami — zapis i tak dzieje się sam,
   // a osiem znaków na wąskiej płycie nachodziło na siebie
-  const lista = p.waski ? wszystkie.filter((b) => b.akcja !== 'legenda' && b.akcja !== 'zapis') : wszystkie;
+  const lista = p.waski || p.niski ? wszystkie.filter((b) => b.akcja !== 'legenda' && b.akcja !== 'zapis') : wszystkie;
   const n = lista.length;
+  // TELEFON pionowo: rząd pod płytą (przyciski nie zasłaniają już świata);
+  // poziomo: kolumna w prawym marginesie
+  if (p.waski) {
+    const r = Math.min(TELEFON.pion.przyciskR, (p.w + p.left - 16) / n * 0.42);
+    const odstep = (p.w + p.left - 16) / n;
+    const x0 = 8 + odstep / 2;
+    const y = p.y + p.h + 12 + r;
+    return lista.map((z, i) => ({ ...z, x: x0 + i * odstep, y, r }));
+  }
+  if (p.niski) {
+    const odstep = (p.h + 12) / n;
+    const r = Math.min(TELEFON.poziom.przyciskR, odstep * 0.42);
+    const x = p.x + p.w + p.right / 2 + 2;
+    const y0 = p.y - 6 + odstep / 2;
+    return lista.map((z, i) => ({ ...z, x, y: y0 + i * odstep, r }));
+  }
   // na wąskim ekranie pasek idzie na sam dół, bo margines pod płytą zajmuje spis warstw;
   // 44 px to minimalne pole dotyku — ale znaki nie mogą na siebie wchodzić
   const odstepW = (p.w - 12) / n;
-  const r = p.waski ? Math.min(26, odstepW * 0.46) : Math.max(22, Math.min(26, p.w * 0.02));
-  const odstep = p.waski ? odstepW : r * 2.3;
-  const y = p.waski ? p.y + p.h - r * 1.5 : Math.min(vh - r * 1.6, p.y + p.h + r * 1.8);
-  const x0 = p.waski ? p.x + (p.w - odstep * (n - 1)) / 2 : p.x + p.w - odstep * (n - 1) - r * 1.2;
-  return lista.map((z, i) => ({ ...z, x: x0 + i * odstep, y, r, naPlycie: p.waski }));
+  const r = Math.max(22, Math.min(26, p.w * 0.02));
+  const odstep = r * 2.3;
+  const y = Math.min(vh - r * 1.6, p.y + p.h + r * 1.8);
+  const x0 = p.x + p.w - odstep * (n - 1) - r * 1.2;
+  void odstepW;
+  return lista.map((z, i) => ({ ...z, x: x0 + i * odstep, y, r }));
 }
 
 export function rysujPrzyciski(ctx: CanvasRenderingContext2D, lista: Przycisk[], podKursorem: AkcjaPrzycisku | null, teraz: number): void {
