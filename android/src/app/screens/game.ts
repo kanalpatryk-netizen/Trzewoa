@@ -16,13 +16,13 @@ import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
-import { aktualnyPlan } from '../../sim/pielgrzymka';
+import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujDrogeDoWolnosci, type ObszarDrogi } from '../../render/droga';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
-import { computePlate, drawFrame, drawCensus, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOtchlan, type Plate } from '../../render/plate';
+import { computePlate, drawFrame, drawCensus, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
 import { shape, seed, sign, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
@@ -119,7 +119,7 @@ export class EkranGry implements Ekran {
   pauza = false;
   /** Stan z poprzedniej klatki, z którego różnicy biorą się dźwięki gestów. */
   private slad: { pauza: boolean; zawies: number; plan: number; verb: string | null; tool: string | null; karta: number; strona: string } | null = null;
-  /** Samouczek zatrzymuje świat bez pauzy — żeby szept i skaza działały od razu, a nie szły do planu. */
+  /** Samouczek zatrzymuje świat bez pauzy — żeby szept działał od razu, a nie szedł do planu. */
   wstrzymane = false;
   /** Rozkazy wydane w pauzie: czekają jako szkice, dzieją się po puszczeniu czasu. */
   rozkazy = new Rozkazy();
@@ -317,7 +317,8 @@ export class EkranGry implements Ekran {
     if (sim.rytual.wierni >= 1 || sim.rytual.pekniecia > 0) odkrycia.odkryj('skorupa');
     if (sim.tick > 1500) cicho('krew');
     if (sim.wiara > 15) cicho('wiara');
-    if (sim.tick > 4000) cicho('otchlan');
+    // wiara to serce drogi do wygranej — jej tablica wyskakuje sama przy pierwszej modlitwie
+    if (sim.prayers > 0 && sim.tick > 600) odkrycia.odkryj('oddanie');
     if (sim.tick > 7000) cicho('pamiec');
     if (this.ui.verb) cicho(`ryt-${this.ui.verb}`);
     if (this.pauza) cicho('pauza');
@@ -582,7 +583,7 @@ export class EkranGry implements Ekran {
     this.drogaRect = !this.nasluch && !sim.ending && !banerNaDole ? rysujDrogeDoWolnosci(ctx, plate, sim, teraz) : null;
     if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) rysujMinimape(ctx, sim, cam, plate, teraz);
     if (ustawienia.spisRas) drawCensus(ctx, plate, sim, h);
-    drawOtchlan(ctx, plate, sim, h);
+    drawOddanie(ctx, plate, sim, h);
     drawCrack(ctx, plate, sim, w, h, teraz);
     if (ustawienia.kronika) drawChronicle(ctx, plate, sim, w, h);
     this.ui.draw(ctx, sim, teraz);
@@ -607,7 +608,7 @@ export class EkranGry implements Ekran {
       const linie = [
         `wiara ${Math.round(sim.wiara)}`,
         `krew ${Math.round(sim.krew)}`,
-        `otchłań ${Math.round(sim.otchlan)}`,
+        `oddanie ${Math.round((najwierniejsza(sim)?.devotion ?? 0) * 100)}%`,
         `żywych ${sim.creatures.reduce((n, c) => n + (c.dead ? 0 : 1), 0)}`,
         `dominacja ${(sim.dominance * 100) | 0}%`,
         `tik ${sim.tick}`,
@@ -772,9 +773,7 @@ export class EkranGry implements Ekran {
       this.kosztPociagniecia.otchlan += Math.max(0, przedOtchlan - sim.otchlan);
     }
     if (udane) {
-      // skaza w pauzie też jest tylko zamiarem — zgłaszamy rozkaz, nie czyn
-      if (this.pauza && ui.verb === 'skaz') this.nasluch?.({ typ: 'rozkaz', czasownik: ui.verb, narzedzie: ui.tool });
-      else this.nasluch?.({ typ: 'moc', czasownik: ui.verb, narzedzie: ui.tool });
+      this.nasluch?.({ typ: 'moc', czasownik: ui.verb, narzedzie: ui.tool });
     }
     this.dirty = true;
   }
@@ -994,7 +993,7 @@ export class EkranGry implements Ekran {
 
   /** Który ryt leży pod palcem (albo null). */
   private rytPod(x: number, y: number): string | null {
-    for (const v of ['ksztaltuj', 'zasiej', 'szept', 'znak', 'skaz']) {
+    for (const v of ['ksztaltuj', 'zasiej', 'szept', 'znak']) {
       const m = this.ui.miejsce('verb', v);
       if (m && Math.abs(x - m.x) <= m.hw && Math.abs(y - m.y) <= m.hh) return v;
     }
@@ -1076,7 +1075,7 @@ export class EkranGry implements Ekran {
       case 'kamera': this.doMieszkancow(); break;
       case 'przyblizenie': this.cam.zoom = Math.min(this.cam.maxZoom, this.cam.zoom * KAMERA.krokKlawisza); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
       case 'oddalenie': this.cam.zoom = Math.max(this.cam.minZoom, this.cam.zoom / KAMERA.krokKlawisza); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
-      case 'ksztaltuj': case 'zasiej': case 'szept': case 'znak': case 'skaz': this.wybierzCzasownik(akcja); break;
+      case 'ksztaltuj': case 'zasiej': case 'szept': case 'znak': this.wybierzCzasownik(akcja); break;
       case 'narzedzie1': case 'narzedzie2': case 'narzedzie3': case 'narzedzie4': this.wybierzNarzedzie(Number(akcja.slice(-1)) - 1); break;
       default: break;
     }

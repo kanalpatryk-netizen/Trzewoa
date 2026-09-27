@@ -90,7 +90,7 @@ export class EkranUstawien implements Ekran {
       { typ: 'akcja', etykieta: 'Dotknięcie rytu', opis: 'wybiera czasownik; drugie dotknięcie go odkłada i puszcza czas', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'W pauzie', opis: 'rozkazy czekają jako szkice; dotknięcie szkicu bez rytu w ręku go skreśla', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'Klepsydra', opis: 'dotknięcie klepsydry nad płytą zatrzymuje i puszcza czas', wykonaj: () => {} },
-      { typ: 'akcja', etykieta: 'Dotknięcie stworzenia', opis: 'przy Szepcie otwiera kartę, przy Skazie zmienia krew rasy', wykonaj: () => {} },
+      { typ: 'akcja', etykieta: 'Dotknięcie stworzenia', opis: 'przy Szepcie otwiera kartę mieszkańca z myślami do szeptu', wykonaj: () => {} },
     ];
   }
 

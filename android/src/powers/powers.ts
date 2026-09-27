@@ -1,10 +1,11 @@
 import { Sim } from '../sim/sim';
 import { T, PASSABLE } from '../sim/tiles';
-import { Race, RACES, odmien } from '../sim/races';
+import { Race, RACES } from '../sim/races';
 import { Creature, Thought } from '../sim/creatures';
 import { KOSZTY, MOCE, SKAZY } from '../nastawy/moce';
+import { odswiezPlan } from '../sim/pielgrzymka';
 
-export type Verb = 'ksztaltuj' | 'zasiej' | 'szept' | 'znak' | 'skaz';
+export type Verb = 'ksztaltuj' | 'zasiej' | 'szept' | 'znak';
 
 export interface Tool { id: string; label: string; hint: string; }
 
@@ -19,23 +20,15 @@ export const TOOLS: Record<Verb, Tool[]> = {
     { id: 'ruda', label: 'ruda', hint: 'będą się o nią bić' },
     { id: 'grzyb', label: 'grzyb', hint: 'jedzenie, które rośnie samo' },
     { id: 'kosci', label: 'kości', hint: 'padlina i pamięć' },
-    { id: 'trucizna', label: 'trucizna', hint: 'kryształ, co miesza w głowie' },
   ],
   szept: [
-    { id: 'kop', label: 'kop w dół', hint: 'niech zejdzie głębiej, niż powinien' },
-    { id: 'zabij', label: 'zabij swoich', hint: 'schizma zaczyna się od jednego noża' },
-    { id: 'prorok', label: 'prorokuj', hint: 'zrób z niego proroka' },
-    { id: 'uciekaj', label: 'uciekaj', hint: 'strach rozchodzi się sam' },
+    { id: 'modl', label: 'módl się', hint: 'idzie pod twój rdzeń i modli się tam' },
+    { id: 'prorok', label: 'prorokuj', hint: 'odchodzi z wiernymi i zakłada nową nację' },
+    { id: 'uciekaj', label: 'uciekaj', hint: 'ucieka w górę, z dala od niebezpieczeństwa' },
   ],
   znak: [
     { id: 'objawienie', label: 'objawienie', hint: 'wszyscy widzą; oddanie rośnie' },
     { id: 'panika', label: 'panika', hint: 'wszyscy widzą; uciekają' },
-  ],
-  skaz: [
-    { id: 'plodnosc', label: 'płodność', hint: 'więcej dzieci, krótsze życie, większy głód' },
-    { id: 'zadza', label: 'żądza krwi', hint: 'silniejsi i nieustraszeni — ale przestają się modlić' },
-    { id: 'slepota', label: 'ślepota', hint: 'wolniejsi, wierzą mocniej, kopią głębiej' },
-    { id: 'kamien', label: 'kamienna skóra', hint: 'twardsi, ciężsi, gorzej kopią i więcej jedzą' },
   ],
 };
 
@@ -145,7 +138,6 @@ export function seed(sim: Sim, tool: string, tx: number, ty: number): boolean {
       if (tool === 'ruda' && solid && !twarde && sim.rng.chance(szansa.ruda)) w.tile[i] = T.ORE;
       if (tool === 'grzyb' && !solid && sim.rng.chance(szansa.grzyb)) w.tile[i] = T.FUNGUS;
       if (tool === 'kosci' && !solid && sim.rng.chance(szansa.kosci)) w.tile[i] = T.BONES;
-      if (tool === 'trucizna' && solid && !twarde && sim.rng.chance(szansa.trucizna)) w.tile[i] = T.CRYSTAL;
       w.oznaczSlad(x, y, 1, sim.tick);
     }
   }
@@ -155,17 +147,19 @@ export function seed(sim: Sim, tool: string, tx: number, ty: number): boolean {
 }
 
 const THOUGHTS: Record<string, Thought> = {
-  kop: Thought.DIG_DOWN, zabij: Thought.KILL_KIN, prorok: Thought.PROPHESY, uciekaj: Thought.FLEE_UP,
+  modl: Thought.PRAY_CORE, prorok: Thought.PROPHESY, uciekaj: Thought.FLEE_UP,
 };
 
-/** Szept — najtańszy i najprecyzyjniejszy. Tak robi się proroków i zdrajców. */
+/** Szept — najtańszy i najprecyzyjniejszy. Tak wysyła się wiernych pod rdzeń i robi proroków. */
 export function whisper(sim: Sim, tool: string, c: Creature): boolean {
   if (!pay(sim, 'szept', tool)) return false;
   c.thought = THOUGHTS[tool] ?? Thought.NONE;
   c.jt = 0;
   if (tool === 'uciekaj') c.fear = 1;
-  const napis = tool === 'kop' ? 'kop w dół' : tool === 'zabij' ? 'zabij swoich' : tool === 'prorok' ? 'prorokuj' : 'uciekaj';
+  const napis = TOOLS.szept.find((t) => t.id === tool)?.label ?? tool;
   sim.efekt(c.x, c.y, 'mysl', napis);
+  // wysłany pod rdzeń musi mieć czym iść — plan drogi liczymy od razu, a nie za dziesięć sekund
+  if (tool === 'modl') odswiezPlan(sim);
   sim.spark(c.x, c.y - 0.5, 'pray');
   return true;
 }
@@ -184,13 +178,18 @@ export function sign(sim: Sim, tool: string, tx: number, ty: number): boolean {
     if (tool === 'objawienie') {
       c.devotion = Math.min(1, c.devotion + MOCE.objawienieOddanie);
       c.fear *= MOCE.objawienieStrach;
-      sim.clans[c.clan].devotion = Math.min(1, sim.clans[c.clan].devotion + MOCE.objawienieNacja);
     } else {
       c.fear = 1;
       c.thought = Thought.FLEE_UP;
       c.jt = 0;
-      sim.clans[c.clan].devotion = Math.max(0, sim.clans[c.clan].devotion - MOCE.panikaNacja);
     }
+  }
+  // Nacja dostaje (albo traci) oddanie raz — nie raz za każdego, kto widział. Liczone od
+  // widzów jedno objawienie przy gnieździe czternastu goblinów dawało od razu 100%,
+  // a panika zerowała wiarę całego ludu; nie dało się z tego nic zrozumieć.
+  for (const id of seen) {
+    const k = sim.clans[id];
+    k.devotion = tool === 'objawienie' ? Math.min(1, k.devotion + MOCE.objawienieNacja) : Math.max(0, k.devotion - MOCE.panikaNacja);
   }
   sim.efekt(tx + 0.5, ty + 0.5, 'cud');
   for (let i = 0; i < 8; i++) sim.spark(tx + 0.5, ty + 0.5, 'pray');
@@ -201,7 +200,10 @@ export function sign(sim: Sim, tool: string, tx: number, ty: number): boolean {
   return true;
 }
 
-/** Sama zmiana krwi, bez kosztu — używa jej też wczytywanie zapisu. */
+/**
+ * Zmiana krwi gatunku. Wersja na telefon nie ma już rytu „Skaź”, ale stare zapisy
+ * mogą nosić skazy — wczytywanie odtwarza je tą funkcją.
+ */
 export function applyTaintEffect(race: Race, tool: string): void {
   const d = RACES[race];
   switch (tool) {
@@ -211,21 +213,4 @@ export function applyTaintEffect(race: Race, tool: string): void {
     case 'slepota': { const s = SKAZY.slepota; d.speed *= s.szybkosc; d.faithGain *= s.wiara; d.digPower *= s.kopanie; break; }
     case 'kamien': { const s = SKAZY.kamien; d.maxHp *= s.zdrowie; d.speed *= s.szybkosc; d.digPower *= s.kopanie; d.metabolism *= s.metabolizm; break; }
   }
-}
-
-/** Skażenie — zmieniasz krew gatunku na pokolenia. Nieodwracalne. */
-export function taint(sim: Sim, tool: string, race: Race): boolean {
-  if (sim.taints[race].includes(tool)) return false;
-  if (!pay(sim, 'skaz', tool)) return false;
-  applyTaintEffect(race, tool);
-  sim.taints[race].push(tool);
-  for (const c of sim.creatures) {
-    if (c.race !== race || c.dead) continue;
-    sim.efekt(c.x, c.y, 'skaza');
-    break;
-  }
-  const d = RACES[race];
-  for (const c of sim.creatures) if (c.race === race && !c.dead) c.hp = Math.min(c.hp, d.maxHp);
-  sim.log(`Skaziłeś krew: ${d.name} ${odmien(d.id, 'już nigdy nie będzie taki, jak był', 'już nigdy nie będą tacy, jak byli')}.`, 'krew');
-  return true;
 }

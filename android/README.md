@@ -23,6 +23,28 @@ zmienia się tylko to, jak gra wygląda i jak się jej dotyka.
 | **Ekran** | nie gaśnie w trakcie partii i samouczka |
 | **Kronika i minimapa** | schowane — kronika jest pod przyciskiem zapisków, płytę przesuwa się palcem |
 
+## Prostsza mechanika
+
+Na telefonie gra ma mniej rzeczy do ogarnięcia, a droga do wygranej przez wiarę jest łatwiejsza
+i wytłumaczona wprost:
+
+| Co | Na komputerze | Na telefonie |
+|---|---|---|
+| **Ryty** | pięć: Kształtuj, Zasiej, Szepcz, Znak, Skaź | cztery — bez **Skaź** (zmiany krwi gatunku) |
+| **Zasoby** | Krew, Wiara, Otchłań | Krew i Wiara; w miejscu Otchłani **studnia oddania** |
+| **Zasiew** | ruda, grzyb, kości, trucizna | ruda, grzyb, kości |
+| **Szept** | kop w dół, zabij swoich, prorokuj, uciekaj | **módl się**, prorokuj, uciekaj |
+| **Módl się** | — | wysyła wiernego od razu pod rdzeń; trzech z jednej nacji kruszy skorupę |
+| **Pielgrzymka** | od 60% oddania nacji | od 50% |
+| **Objawienie** | 45 Wiary | 30 Wiary, +20% oddania nacji (raz na nację, nie za każdego widza) |
+| **Wejście do rdzenia** | nacja ponad 55% albo wierny ponad 70% | nacja ponad 45% albo wierny ponad 60% |
+| **Stygnięcie oddania** | 0.004 | 0.002 — wiara wolniej gaśnie sama |
+| **Samouczek** | rozdział „Zmień im krew” | rozdziały „Poślij wiernego” i „Wiara i modlitwa” |
+| **Atlas** | — | tablica „Oddanie i modlitwa”, wyskakuje przy pierwszej modlitwie |
+
+Studnia oddania (dolna rama) pokazuje oddanie najwierniejszej nacji, a kreska na niej — próg,
+od którego nacja sama wysyła wartę pod rdzeń.
+
 ## Gdzie to jest w kodzie
 
 - nastawy telefonu: [`src/nastawy/ekran.ts`](src/nastawy/ekran.ts) (`EKRAN`, `TELEFON`) i

@@ -52,32 +52,32 @@ export const SCENY: Record<string, Scena> = {
     id: 'narzedzia', tytul: 'Czym działasz',
     rysunek: rysujOrgany,
     linie: [
-      'Masz pięć rytów: Kształtuj skałę, Zasiej jedzenie i rudę, Szepnij komuś myśl, postaw Znak, Skaź całą krew.',
-      'Płacisz Krwią, która przybywa z każdą śmiercią, Wiarą z modlitw i Otchłanią z zapomnienia.',
+      'Masz cztery ryty: Kształtuj skałę, Zasiej jedzenie i rudę, Szepnij komuś myśl, postaw Znak.',
+      'Płacisz Krwią, która przybywa z każdą śmiercią, i Wiarą, która przybywa z każdą modlitwą.',
       'Klepsydra zatrzymuje czas: w pauzie planujesz rozkazy, a dzieją się naraz, gdy puścisz. Gra sama staje przy kryzysach.',
       'Nad płytą zawsze stoi jedno zdanie — co teraz najpilniejsze. A w rogu płyty widać, ile zostało do wolności. Zaraz pokażę ci wszystko palcem.',
     ],
   },
 
   pamiec: {
-    id: 'pamiec', tytul: 'Ciemność i Otchłań',
+    id: 'pamiec', tytul: 'Ciemność',
     rysunek: rysujPamiec,
     linie: [
       'Wiesz o sobie tylko tyle, ile wiedzą ci, którzy w tobie chodzą.',
       'Tam, gdzie ktoś właśnie jest, rysunek ma pełną kreskę. Tam, gdzie ktoś był — blaknie i pokazuje stan sprzed pokoleń, nie dzisiejszy.',
-      'Tam, gdzie nie ma nikogo, nie ma nawet kreski — sama ciemność. To Otchłań: twój trzeci zasób, ten, którego nie widać.',
-      'Otchłań rośnie, gdy zapominają i giną. Wydanie jej zasklepia kawałek nieznanego — na zawsze.',
+      'Tam, gdzie nie ma nikogo, nie ma nawet kreski — sama ciemność.',
+      'Drąż im drogi, a będą chodzić dalej. Im dalej chodzą, tym więcej o sobie widzisz.',
     ],
   },
 
   zasoby: {
-    id: 'zasoby', tytul: 'Trzy zasoby',
+    id: 'zasoby', tytul: 'Wiara, krew i oddanie',
     rysunek: rysujOrgany,
     linie: [
       'Nie ma pasków ani liczb. Zasoby są rzeczami, które widzisz w ramie obrazu.',
       'Wiara zbiera się pod sklepieniem jak dym ofiarny. Bierze się z modlitwy przy ołtarzach i kuźniach, a najwięcej z ofiary, którą składają sami.',
       'Krew podnosi się w szczelinie u dołu. Płaci ci ją każda śmierć w twoich trzewiach — cudza wojna jest twoim dochodem.',
-      'Otchłań nie ma wskaźnika, bo jest tą ciemnością. Im więcej o tobie zapomnieli, tym więcej jej masz.',
+      'Złota studnia w ramie to oddanie: jak mocno wierzy w ciebie najwierniejsza nacja. Gdy przekroczy kreskę, jej wierni sami zejdą pod twój rdzeń.',
     ],
   },
 

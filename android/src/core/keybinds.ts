@@ -1,7 +1,7 @@
 /** Wszystkie akcje gry z przypisanymi klawiszami. Gracz może je zmienić w ustawieniach. */
 export type Akcja =
   | 'pauza' | 'szybciej' | 'wolniej' | 'zapis' | 'wczytaj' | 'menu'
-  | 'ksztaltuj' | 'zasiej' | 'szept' | 'znak' | 'skaz'
+  | 'ksztaltuj' | 'zasiej' | 'szept' | 'znak'
   | 'narzedzie1' | 'narzedzie2' | 'narzedzie3' | 'narzedzie4'
   | 'kamera' | 'przyblizenie' | 'oddalenie' | 'odNowa' | 'legenda' | 'zapiski';
 
@@ -13,10 +13,9 @@ export const AKCJE: OpisAkcji[] = [
   { akcja: 'szybciej', nazwa: 'Szybciej', opis: 'więcej tików na klatkę — pokolenia lecą prędzej' },
   { akcja: 'wolniej', nazwa: 'Wolniej', opis: 'mniej tików na klatkę' },
   { akcja: 'ksztaltuj', nazwa: 'Kształtuj', opis: 'drążysz, zawalasz, wpuszczasz wodę i żar' },
-  { akcja: 'zasiej', nazwa: 'Zasiej', opis: 'ruda, grzyb, kości, trucizna' },
+  { akcja: 'zasiej', nazwa: 'Zasiej', opis: 'ruda, grzyb, kości' },
   { akcja: 'szept', nazwa: 'Szepcz', opis: 'jedna myśl w jedną głowę' },
   { akcja: 'znak', nazwa: 'Znak', opis: 'jawny cud widziany przez wszystkich' },
-  { akcja: 'skaz', nazwa: 'Skaź', opis: 'zmiana krwi gatunku na pokolenia' },
   { akcja: 'narzedzie1', nazwa: 'Narzędzie I', opis: 'pierwsze narzędzie wybranego czasownika' },
   { akcja: 'narzedzie2', nazwa: 'Narzędzie II', opis: 'drugie narzędzie' },
   { akcja: 'narzedzie3', nazwa: 'Narzędzie III', opis: 'trzecie narzędzie' },
@@ -33,7 +32,7 @@ export const AKCJE: OpisAkcji[] = [
 
 const DOMYSLNE: Record<Akcja, string> = {
   menu: 'Escape', pauza: ' ', szybciej: '+', wolniej: '-',
-  ksztaltuj: '1', zasiej: '2', szept: '3', znak: '4', skaz: '5',
+  ksztaltuj: '1', zasiej: '2', szept: '3', znak: '4',
   narzedzie1: 'q', narzedzie2: 'w', narzedzie3: 'e', narzedzie4: 'r',
   kamera: 'c', przyblizenie: ']', oddalenie: '[',
   zapis: 'z', wczytaj: 'x', odNowa: 'n', legenda: 'l', zapiski: 'k',

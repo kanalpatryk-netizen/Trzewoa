@@ -4,6 +4,9 @@ import { SERIF } from './overlay';
 import { ustawienia } from '../core/settings-store';
 import { lewaKrawedzPrzyciskow } from './przyciski';
 import { EKRAN, TELEFON } from '../nastawy/ekran';
+import { PIELGRZYMKA } from '../nastawy/rytual';
+import { najwierniejsza } from '../sim/pielgrzymka';
+import { cost } from '../powers/powers';
 
 /**
  * `waski` — telefon (albo tablet) trzymany pionowo; `niski` — telefon trzymany poziomo.
@@ -40,25 +43,25 @@ export interface Obszar { x: number; y: number; w: number; h: number; }
 
 /**
  * Dolny margines telefonu — wszystko liczone od górnej krawędzi marginesu (dół płyty):
- * pionowo rząd przycisków, spis ras, a na dole krew i Otchłań obok siebie;
- * poziomo jeden cienki pasek: spis, Otchłań, krew.
+ * pionowo rząd przycisków, spis ras, a na dole krew i oddanie obok siebie;
+ * poziomo jeden cienki pasek: spis, oddanie, krew.
  */
 const TEL = {
-  pion: { spisY: 82, spisH: 12, rzadY: 122, otchlanBok: 34 },
-  poziom: { spisY: 17, spisH: 9, otchlanBok: 24, spisCzesc: 0.46 },
+  pion: { spisY: 82, spisH: 12, rzadY: 122, oddanieBok: 34 },
+  poziom: { spisY: 17, spisH: 9, oddanieBok: 24, spisCzesc: 0.46 },
 };
 
 /** Rysa Krwi pod płytą. */
 export function obszarKrwi(p: Plate, vh: number): Obszar {
   const mt = vh - p.bottom;
   if (p.waski) {
-    // obok Otchłani, w dolnym rzędzie marginesu
-    const o = obszarOtchlani(p, vh);
+    // obok studni oddania, w dolnym rzędzie marginesu
+    const o = obszarOddania(p, vh);
     const y = mt + TEL.pion.rzadY + 10;
     return { x: p.x + 28, y, w: o.x - p.x - 28 - 16, h: vh - 8 - y };
   }
   if (p.niski) {
-    const o = obszarOtchlani(p, vh);
+    const o = obszarOddania(p, vh);
     const x = o.x + o.w + 14;
     // napis „KREW” nad rysą nie może wejść na ramę płyty
     return { x, y: mt + 22, w: p.x + p.w - x, h: p.bottom - 28 };
@@ -69,32 +72,32 @@ export function obszarKrwi(p: Plate, vh: number): Obszar {
   return { x: cx0, y: base - maxH, w: p.x + p.w - cx0, h: maxH };
 }
 
-/** Kwadrat Otchłani razem z podpisem. */
-export function obszarOtchlani(p: Plate, vh: number): Obszar {
+/** Studnia oddania razem z podpisem (na komputerze w tym miejscu stoi Otchłań). */
+export function obszarOddania(p: Plate, vh: number): Obszar {
   const mt = vh - p.bottom;
   if (p.waski) {
-    const bok = TEL.pion.otchlanBok;
-    const w = bok + 6 + 13 * 7.8;
+    const bok = TEL.pion.oddanieBok;
+    const w = bok + 6 + 18 * 6.6;
     return { x: p.x + p.w - w, y: mt + TEL.pion.rzadY + 4, w, h: bok };
   }
   if (p.niski) {
-    const bok = TEL.poziom.otchlanBok;
-    const w = bok + 6 + 12 * 5.2;
+    const bok = TEL.poziom.oddanieBok;
+    const w = bok + 6 + 13 * 5.6;
     return { x: p.x + p.w * TEL.poziom.spisCzesc + 18, y: mt + 12, w, h: bok };
   }
   const bok = Math.max(26, Math.min(46, p.bottom * 0.28));
-  // szerokość z podpisem („stać cię na Skazę”) — podpis nie może wyjść poza płytę
-  const w = bok + 6 + Math.max(13, bok * 0.3) * 7.8;
+  // szerokość z podpisem („pielgrzymka od 50%”) — podpis nie może wyjść poza płytę
+  const w = bok + 6 + Math.max(13, bok * 0.3) * 9;
   // szeroko: w połowie, ale nigdy na przyciskach
   const x = Math.min(p.x + p.w * 0.5, lewaKrawedzPrzyciskow(p) - w - 14);
   const y = vh - p.bottom + p.bottom * 0.14;
   return { x, y, w, h: bok };
 }
 
-/** Szerokość wstęgi spisu ras — kończy się przed Otchłanią. */
+/** Szerokość wstęgi spisu ras — kończy się przed studnią oddania. */
 function szerokoscSpisu(p: Plate, vh: number): number {
   if (p.niski) return p.w * TEL.poziom.spisCzesc;
-  return p.waski ? p.w - 28 : Math.max(p.w * 0.25, Math.min(p.w * 0.46, obszarOtchlani(p, vh).x - p.x - 16));
+  return p.waski ? p.w - 28 : Math.max(p.w * 0.25, Math.min(p.w * 0.46, obszarOddania(p, vh).x - p.x - 16));
 }
 
 /** Pasmo dymu Wiary pod górną krawędzią płyty. */
@@ -326,8 +329,6 @@ export function drawCrack(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vw:
 
   ctx.clip();
   const surface = base - Math.max(2, level * maxH);
-  const progKrwi = 90 / PELNA;                    // tyle trzeba na Skazę — stąd nacięcie
-  prog(ctx, cx0 - 26, cx0 - 6, base - progKrwi * maxH, sim.krew >= 90, '');
   const g = ctx.createLinearGradient(0, surface, 0, base);
   g.addColorStop(0, 'rgba(104,22,20,0.88)');
   g.addColorStop(1, 'rgba(26,4,5,0.96)');
@@ -381,48 +382,58 @@ function etykietaPionowa(ctx: CanvasRenderingContext2D, tekst: string, x: number
   ctx.restore();
 }
 
-/** Otchłań jako osobny znak: tyle ciebie jest teraz nieznane. */
-export function drawOtchlan(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number): void {
-  const udzial = Math.max(0, Math.min(1, sim.world.unknown / (sim.world.w * sim.world.h)));
-  // na wąskim ekranie kwadrat Otchłani wchodził w podpisy nacji — schodzi pod spis
-  const { x, y, h: bok } = obszarOtchlani(p, vh);
+/**
+ * Oddanie najwierniejszej nacji — w miejscu, gdzie na komputerze stoi Otchłań.
+ * Studnia napełnia się złotem od dna, a nacięcie na ścianie to próg, od którego nacja
+ * sama wysyła wartę pod rdzeń. Bez tego oddanie było liczbą, której nikt nie widział,
+ * a „dlaczego nikt nie idzie pod rdzeń” — zagadką.
+ */
+export function drawOddanie(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number): void {
+  const klan = najwierniejsza(sim);
+  const oddanie = klan ? klan.devotion : 0;
+  const prog = PIELGRZYMKA.oddanieNacji;
+  const dosc = oddanie >= prog;
+  const { x, y, h: bok } = obszarOddania(p, vh);
   ctx.save();
-  // studnia: ciemna, w podwójnej ramie; nieznane wypełnia ją bladą kreską od dna —
-  // im więcej ciebie zapomniane, tym wyżej sięga
   ctx.fillStyle = 'rgba(8,6,6,1)';
   ctx.fillRect(x, y, bok, bok);
-  const poziom = y + bok * (1 - udzial);
+  const poziom = y + bok * (1 - Math.max(0, Math.min(1, oddanie)));
   ctx.save();
   ctx.beginPath(); ctx.rect(x + 2, poziom, bok - 4, y + bok - 2 - poziom); ctx.clip();
-  ctx.fillStyle = 'rgba(232,230,238,0.16)';
+  ctx.fillStyle = dosc ? 'rgba(246,216,142,0.34)' : 'rgba(232,206,150,0.18)';
   ctx.fillRect(x, poziom, bok, bok);
-  ctx.strokeStyle = 'rgba(232,230,238,0.6)';
+  ctx.strokeStyle = dosc ? 'rgba(246,216,142,0.8)' : 'rgba(232,206,150,0.5)';
   ctx.lineWidth = 1;
   ctx.beginPath();
   for (let d = -bok; d < bok * 2; d += 3) { ctx.moveTo(x + d, y + bok); ctx.lineTo(x + d + bok, y); }
   ctx.stroke();
   ctx.restore();
-  ctx.strokeStyle = 'rgba(232,230,238,0.85)';
+  ctx.strokeStyle = 'rgba(246,226,176,0.9)';
   ctx.beginPath(); ctx.moveTo(x + 2, poziom + 0.5); ctx.lineTo(x + bok - 2, poziom + 0.5); ctx.stroke();
   ctx.strokeStyle = `${INK}0.55)`;
   ctx.lineWidth = 1;
   ctx.strokeRect(x + 0.5, y + 0.5, bok - 1, bok - 1);
   ctx.strokeStyle = `${INK}0.2)`;
   ctx.strokeRect(x - 2.5, y - 2.5, bok + 5, bok + 5);
-  // nacięcie progu Skazy na ścianie studni
-  const progS = y + bok * (1 - Math.min(1, 55 / Math.max(1, sim.world.w * sim.world.h * 0.0035)));
-  ctx.strokeStyle = sim.otchlan >= 55 ? 'rgba(246,216,142,0.9)' : `${INK}0.35)`;
-  ctx.beginPath(); ctx.moveTo(x - 5, progS); ctx.lineTo(x + 3, progS); ctx.stroke();
+  // nacięcie progu pielgrzymki: przez całą studnię, żeby było widać, ile brakuje
+  const progY = y + bok * (1 - prog);
+  ctx.strokeStyle = dosc ? 'rgba(246,216,142,0.95)' : 'rgba(246,216,142,0.6)';
+  ctx.setLineDash([2, 2]);
+  ctx.beginPath(); ctx.moveTo(x - 5, progY); ctx.lineTo(x + bok, progY); ctx.stroke();
+  ctx.setLineDash([]);
+  const ile = `${Math.round(oddanie * 100)}%`;
+  const dopisek = !klan ? 'nikt nie wierzy' : dosc ? 'idą pod rdzeń' : `pielgrzymka od ${Math.round(prog * 100)}%`;
   ctx.font = `italic ${Math.max(13, bok * 0.3)}px ${SERIF}`;
   ctx.fillStyle = `${INK}0.9)`;
   ctx.textAlign = 'left';
   if (p.niski) {
     // poziomo pasek ma jedną linijkę wysokości
     ctx.font = `italic 12px ${SERIF}`;
-    ctx.fillText(sim.otchlan >= 55 ? 'otchłań · Skaza' : 'otchłań', x + bok + 6, y + bok * 0.66);
+    ctx.fillText(`oddanie ${ile}`, x + bok + 6, y + bok * 0.66);
   } else {
-    ctx.fillText('otchłań', x + bok + 6, y + bok * 0.55);
-    ctx.fillText(sim.otchlan >= 55 ? 'stać cię na Skazę' : 'za mało na Skazę', x + bok + 6, y + bok * 0.95);
+    ctx.fillText(`oddanie ${ile}`, x + bok + 6, y + bok * 0.55);
+    ctx.fillStyle = dosc ? 'rgba(246,216,142,0.95)' : `${INK}0.7)`;
+    ctx.fillText(dopisek, x + bok + 6, y + bok * 0.95);
   }
   ctx.restore();
 }
@@ -432,8 +443,9 @@ export function drawSmoke(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, tim
   const faith = Math.min(1, sim.wiara / 120);
   // na wąskim ekranie klepsydra siedzi w prawym górnym rogu płyty — próg Wiary
   // schodzi wtedy na lewą stronę, żeby napisy się nie nakładały
-  if (p.waski) prog(ctx, p.x + 16, p.x + 66, p.y + 16, sim.wiara >= 45, 'Znak');
-  else prog(ctx, p.x + p.w - 120, p.x + p.w - 60, p.y + 14, sim.wiara >= 45, 'Znak');
+  const naZnak = sim.wiara >= cost('znak', 'objawienie').wiara;
+  if (p.waski) prog(ctx, p.x + 16, p.x + 66, p.y + 16, naZnak, 'Znak');
+  else prog(ctx, p.x + p.w - 120, p.x + p.w - 60, p.y + 14, naZnak, 'Znak');
   if (faith < 0.01) return;
   ctx.save();
   ctx.beginPath();
@@ -529,8 +541,8 @@ export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim,
   const size = Math.max(14, Math.min(Math.min(22, vw / 46), lines3));
   const x = p.x;
   if (sim.chronicle.length) etykietaPionowa(ctx, 'kronika', x - 16, (bandTop + yBase) / 2);
-  // na telefonie kronika dzieli dolny margines z Otchłanią — nie może na nią wchodzić
-  const maxW = p.waski ? p.w - obszarOtchlani(p, vh).w - 14 : p.w * 0.58;
+  // na telefonie kronika dzieli dolny margines ze studnią oddania — nie może na nią wchodzić
+  const maxW = p.waski ? p.w - obszarOddania(p, vh).w - 14 : p.w * 0.58;
   ctx.save();
   ctx.textAlign = 'left';
   const lines = sim.chronicle.slice(-3);

@@ -3,6 +3,7 @@ import { RACES } from './races';
 import { PASSABLE, T } from './tiles';
 import { WORLD_W, WORLD_H } from './world';
 import { wolny, stoi, uchwyt, nadOgniem } from './droga';
+import { Job } from './creatures';
 import { PLAN_DROGI } from '../nastawy/rytual';
 
 /**
@@ -136,10 +137,30 @@ export function najwierniejsza(sim: Sim): Sim['clans'][number] | null {
  * kiedy akurat zapyta o niego ekran. Gdy skorupa otwarta, planu nie ma.
  */
 export function odswiezPlan(sim: Sim): void {
+  if (sim.rytual.otwarta) { sim.planDrogi = null; return; }
+  // Nacja, której ludzi posłałeś szeptem „módl się”, dostaje plan od razu — bez czekania,
+  // aż cała uwierzy. Inaczej wysłani szli na przełaj i stawali na pierwszej ścianie.
+  const wyslani = klanWyslanych(sim);
+  if (wyslani) { sim.planDrogi = planujDroge(sim, wyslani.id); return; }
   const klan = najwierniejsza(sim);
   // plan rusza, gdy nacja jest gotowa na pielgrzymkę — wcześniej drążenie tylko psuło gniazda
-  if (!klan || klan.devotion < PLAN_DROGI.oddanieNacji || klan.pop < PLAN_DROGI.minNacja || sim.rytual.otwarta) { sim.planDrogi = null; return; }
+  if (!klan || klan.devotion < PLAN_DROGI.oddanieNacji || klan.pop < PLAN_DROGI.minNacja) { sim.planDrogi = null; return; }
   sim.planDrogi = planujDroge(sim, klan.id);
+}
+
+/** Nacja z największą liczbą pielgrzymów w drodze (z szeptu albo z własnej wiary) — albo null. */
+function klanWyslanych(sim: Sim): Sim['clans'][number] | null {
+  const ilu = new Map<number, number>();
+  for (const c of sim.creatures) {
+    if (c.dead || c.job !== Job.PIELGRZYM) continue;
+    ilu.set(c.clan, (ilu.get(c.clan) ?? 0) + 1);
+  }
+  let best: Sim['clans'][number] | null = null, n = 0;
+  for (const [id, k] of ilu) {
+    const klan = sim.clans[id];
+    if (klan && !klan.dead && k > n) { best = klan; n = k; }
+  }
+  return best;
 }
 
 /** Plan do pokazania graczowi: bez przeliczania, a już wydrążone kafle odpadają z listy. */

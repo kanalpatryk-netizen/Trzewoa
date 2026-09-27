@@ -1,16 +1,14 @@
 import type { Sim } from '../sim/sim';
-import type { Race } from '../sim/races';
 import { MOCE } from '../nastawy/moce';
-import { cost, affordable, kafleKsztaltu, shape, seed, sign, whisper, taint, type Verb } from './powers';
+import { cost, affordable, kafleKsztaltu, shape, seed, sign, whisper, type Verb } from './powers';
 
 /** Jeden zamiar wydany w pauzie: co, gdzie i ile już zarezerwowano. */
 export interface Rozkaz {
   czasownik: Verb;
   narzedzie: string;
   x: number; y: number;
-  /** Szept: kto ma usłyszeć. Skaza: czyją krwią zaczyna się zmiana. */
+  /** Szept: kto ma usłyszeć. */
   kto?: number;
-  rasa?: Race;
   koszt: { krew: number; wiara: number; otchlan: number };
 }
 
@@ -65,13 +63,6 @@ export class Rozkazy {
       case 'szept':
         // jedna myśl na głowę — nowa zastępuje starą
         this.lista.filter((o) => o.czasownik === 'szept' && o.kto === r.kto).forEach((o) => this.usun(sim, o));
-        break;
-      case 'skaz':
-        if (r.rasa === undefined) return 'Tej krwi nie sięgniesz.';
-        if (sim.taints[r.rasa].includes(r.narzedzie)
-          || this.lista.some((o) => o.czasownik === 'skaz' && o.rasa === r.rasa && o.narzedzie === r.narzedzie)) {
-          return 'Tę skazę ta krew już nosi.';
-        }
         break;
     }
     const k = cost(r.czasownik, r.narzedzie);
@@ -140,7 +131,6 @@ export class Rozkazy {
           udane = !!c && !c.dead && whisper(sim, o.narzedzie, c);
           break;
         }
-        case 'skaz': udane = o.rasa !== undefined && taint(sim, o.narzedzie, o.rasa); break;
       }
       wyniki.push({ rozkaz: o, udane });
     }

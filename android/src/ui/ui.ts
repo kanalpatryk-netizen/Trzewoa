@@ -1,7 +1,7 @@
 import { Sim } from '../sim/sim';
-import { Race, RACES } from '../sim/races';
+import { RACES } from '../sim/races';
 import { Creature, Job } from '../sim/creatures';
-import { Verb, TOOLS, affordable, cost, whisper, taint } from '../powers/powers';
+import { Verb, TOOLS, affordable, cost, whisper } from '../powers/powers';
 import { SERIF, creatureName, creatureNameCelownik } from '../render/overlay';
 import { Plate } from '../render/plate';
 import { rysujStany } from '../render/stany';
@@ -16,10 +16,9 @@ interface Hit { x: number; y: number; hw: number; hh: number; kind: 'verb' | 'to
 /** Co ryt robi — jedno zdanie w podpisie pod kursorem. */
 const SKUTKI: Record<Verb, string> = {
   ksztaltuj: 'drąż, zawal, wpuść wodę albo żar',
-  zasiej: 'grzyb, ruda, kości albo trucizna',
-  szept: 'jedna myśl w jedną głowę',
+  zasiej: 'grzyb, ruda albo kości',
+  szept: 'jedna myśl w jedną głowę: módl się, prorokuj, uciekaj',
   znak: 'jawny cud: oddanie albo panika',
-  skaz: 'zmiana krwi całego gatunku',
 };
 
 /** Dolna krawędź znaku menu, liczona od górnej krawędzi płyty (patrz EkranGry.menuRect). */
@@ -30,7 +29,6 @@ const VERBS: { id: Verb; label: string }[] = [
   { id: 'zasiej', label: 'Zasiej' },
   { id: 'szept', label: 'Szepcz' },
   { id: 'znak', label: 'Znak' },
-  { id: 'skaz', label: 'Skaź' },
 ];
 
 /** Ryty wykute na lewym marginesie płyty; nazwy narzędzi wypisane u góry. Nic nie leży na skale. */
@@ -48,7 +46,7 @@ export class Ui {
   pointer = { x: 0, y: 0 };
   /** Myśl właśnie szepnięta z karty — gra zgłasza ją samouczkowi i czyści. */
   ostatniaMysl: string | null = null;
-  /** W pauzie myśli i skazy nie dzieją się od razu — idą do planu i czekają na czas. */
+  /** W pauzie myśli nie dzieją się od razu — idą do planu i czekają na czas. */
   plan: Rozkazy | null = null;
 
   private dwieKolumny = false;
@@ -157,7 +155,6 @@ export class Ui {
     const czesci: string[] = [];
     if (c.wiara) czesci.push(`${c.wiara} wiary`);
     if (c.krew) czesci.push(`${c.krew} krwi`);
-    if (c.otchlan) czesci.push(`${c.otchlan} otchłani`);
     const linie = [STEROWANIE.pokazKlawisze ? `${nazwa}  ·  ${klawisz}` : nazwa, czesci.length ? `od ${czesci.join(', ')}` : 'nic nie kosztuje'];
     const oTablicy = STEROWANIE.pokazKlawisze ? 'prawy przycisk — tablica' : 'przytrzymaj — tablica';
     const skutek = SKUTKI[v];
@@ -305,12 +302,6 @@ export class Ui {
             ctx.moveTo(Math.cos(a) * u * 0.45, Math.sin(a) * u * 0.45);
             ctx.lineTo(Math.cos(a) * u * 1.25, Math.sin(a) * u * 1.25);
           }
-          break;
-        case 'skaz':
-          ctx.moveTo(-u * 0.8, -u * 1.1);
-          ctx.bezierCurveTo(u, -u * 0.5, -u, u * 0.5, u * 0.8, u * 1.1);
-          ctx.moveTo(u * 0.8, -u * 1.1);
-          ctx.bezierCurveTo(-u, -u * 0.5, u, u * 0.5, -u * 0.8, u * 1.1);
           break;
       }
     };
@@ -516,18 +507,6 @@ export class Ui {
 
   touchCreature(sim: Sim, c: Creature): boolean {
     if (this.verb === 'szept') { this.selected = c; return true; }
-    if (this.verb === 'skaz' && this.tool) {
-      if (c.race === Race.HUMAN || c.race === Race.MYCELIUM) { this.say('Tej krwi nie sięgniesz.', sim.tick); return true; }
-      if (this.plan) {
-        const powod = this.plan.zaplanuj(sim, { czasownik: 'skaz', narzedzie: this.tool, x: c.x, y: c.y, kto: c.id, rasa: c.race });
-        if (powod === null) this.say(`Skaza ${RACES[c.race].nazwaDopelniacz} czeka na czas.`, sim.tick);
-        else if (powod) this.say(powod, sim.tick);
-        return powod === null;
-      }
-      if (taint(sim, this.tool, c.race)) this.say(`Krew ${RACES[c.race].nazwaDopelniacz} zmieniona na zawsze.`, sim.tick);
-      else this.say('Nie stać cię albo już to zrobiłeś.', sim.tick);
-      return true;
-    }
     return false;
   }
 
@@ -537,7 +516,6 @@ export class Ui {
     const parts: string[] = [];
     if (c.krew > sim.krew) parts.push('krwi');
     if (c.wiara > sim.wiara) parts.push('wiary');
-    if (c.otchlan > sim.otchlan) parts.push('otchłani');
     return parts.length ? `Brakuje ${parts.join(' i ')}.` : '';
   }
 }

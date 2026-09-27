@@ -18,7 +18,11 @@ export enum Job {
 }
 
 /** Myśl, którą wkładasz stworzeniu do głowy. Znika, gdy zostanie wykonana. */
-export enum Thought { NONE = 0, DIG_DOWN, KILL_KIN, PROPHESY, FLEE_UP, BREED }
+export enum Thought {
+  NONE = 0, DIG_DOWN, KILL_KIN, PROPHESY, FLEE_UP, BREED,
+  /** Szept „módl się”: idzie pod skorupę rdzenia i modli się tam jak pielgrzym. */
+  PRAY_CORE,
+}
 
 export interface Creature {
   id: number;
@@ -327,6 +331,17 @@ function pickJob(sim: Sim, c: Creature): void {
         c.job = Job.FLEE; c.jx = c.x + sim.rng.range(-K.szeptUciekajWBok, K.szeptUciekajWBok); c.jy = Math.max(2, c.y - K.szeptUciekajWGore); c.jt = K.szeptUciekajTikow; return;
       case Thought.BREED:
         c.job = Job.BREED; c.jt = K.szeptPlodzTikow; c.thought = Thought.NONE; return;
+      case Thought.PRAY_CORE:
+        c.thought = Thought.NONE;
+        // Trole i ludzie nie czczą nikogo — szept przepada, jak u każdego, kto nie umie wierzyć
+        if (d.faithGain <= 0 || c.race === Race.TROLL || c.race === Race.HUMAN) break;
+        // szept daje mu wiarę, jakiej nacja jeszcze nie ma: pod rdzeniem jego modlitwa się liczy,
+        // a gdy skorupa puści, wejdzie do środka jako wierny
+        c.devotion = Math.max(c.devotion, P.szeptOddanie);
+        c.job = Job.PIELGRZYM;
+        c.jx = w.coreX + sim.rng.int(P.rozrzutCelu * 2 + 1) - P.rozrzutCelu;
+        c.jy = w.przedsionekY;
+        c.jt = P.wyprawaTikow; c.dig = 0; return;
     }
   }
 

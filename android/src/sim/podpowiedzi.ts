@@ -55,7 +55,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
 
   // 3. senność
   if (sim.sen > 0.25) {
-    kandydaci.push({ tekst: 'Zasypiasz. Potrzebujesz konfliktu: prorok w dużym klanie zrobi rozłam.', waga: 90 });
+    kandydaci.push({ tekst: 'Zasypiasz. Jedna nacja zjada resztę — szepnij komuś z niej „prorokuj”, a klan pęknie na dwa.', waga: 90 });
   }
 
   // 4. głód powszechny
@@ -112,9 +112,9 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   // 6b. droga do wolności, krok „oddanie": nikt jeszcze nie wierzy dość mocno
   const duzeWierne = sim.clans.filter((k) => !k.dead && k.pop >= 8 && RACES[k.race].faithGain > 0)
     .sort((a, b) => b.devotion - a.devotion)[0];
-  if (sim.tick > 3000 && sim.rytual.pekniecia === 0 && duzeWierne && duzeWierne.devotion <= 0.6) {
+  if (sim.tick > 3000 && sim.rytual.pekniecia === 0 && duzeWierne && duzeWierne.devotion <= PIELGRZYMKA.oddanieNacji) {
     kandydaci.push({
-      tekst: `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe.`,
+      tekst: `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij trzem z nich „módl się”.`,
       cel: { x: duzeWierne.hx, y: duzeWierne.hy, r: 5, tekst: duzeWierne.name },
       waga: 25,
     });

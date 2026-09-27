@@ -1,12 +1,14 @@
 import type { EkranSamouczka } from '../tutorial';
 import type { EkranGry, ZdarzenieGry } from '../game';
 import type { Cel } from '../../../render/znaczniki';
-import { obszarKrwi, obszarOtchlani, obszarWiary, obszarSpisu, type Obszar } from '../../../render/plate';
-import { TOOLS } from '../../../powers/powers';
-import { Race } from '../../../sim/races';
+import { obszarKrwi, obszarOddania, obszarWiary, obszarSpisu, type Obszar } from '../../../render/plate';
+import { PIELGRZYMKA, RYTUAL } from '../../../nastawy/rytual';
+
+/** Próg pielgrzymki w procentach — samouczek mówi tę samą liczbę, co studnia oddania. */
+const PROG = `${Math.round(PIELGRZYMKA.oddanieNacji * 100)}%`;
 
 /**
- * TREŚĆ SAMOUCZKA — dziesięć rozdziałów: tytuł, wstęp, czynności do odhaczenia
+ * TREŚĆ SAMOUCZKA — jedenaście rozdziałów: tytuł, wstęp, czynności do odhaczenia
  * (z palcem, który wskazuje, w co kliknąć) i zdanie na koniec. Logika karty,
  * palca i przechodzenia między rozdziałami jest w ../tutorial.ts.
  */
@@ -51,14 +53,6 @@ export interface Rozdzial {
   przygotuj?: (g: EkranGry, s: EkranSamouczka) => void;
 }
 
-/** Skazy po kolei: gdy gracz wraca do rozdziału, bierze następną — tej samej drugi raz się nie da. */
-export const SKAZY: { id: string; nazwa: string; skutek: string }[] = [
-  { id: 'slepota', nazwa: 'ślepota', skutek: 'Cały Ślepy Lud jest teraz ślepy: wolniejszy, ale każda jego modlitwa liczy się podwójnie.' },
-  { id: 'plodnosc', nazwa: 'płodność', skutek: 'Ślepy Lud będzie rodził więcej — i żył krócej, i głodniał szybciej.' },
-  { id: 'kamien', nazwa: 'kamienna skóra', skutek: 'Ślepy Lud stwardniał: trudniej go zabić, za to gorzej kopie i więcej je.' },
-  { id: 'zadza', nazwa: 'żądza krwi', skutek: 'Ślepy Lud jest silniejszy i nieustraszony — ale przestał się modlić.' },
-];
-
 export const ROZDZIALY: Rozdzial[] = [
   {
     tytul: 'Rozejrzyj się',
@@ -93,15 +87,15 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarKrwi(s.gra.plate, s.vh) }),
       },
       {
-        tekst: 'Wiara — jasny dym pod górną krawędzią płyty. Rośnie z modlitwy. Płacisz nią za szept i cud.',
+        tekst: 'Wiara — jasny dym pod górną krawędzią płyty. Rośnie, gdy ktoś się do ciebie modli. Płacisz nią za szept i cud.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarWiary(s.gra.plate) }),
       },
       {
-        tekst: 'Otchłań — biały kwadrat. To ciemność, o której zapomnieli. Płacisz nią za skazę krwi.',
-        rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOtchlani(s.gra.plate, s.vh) }),
+        tekst: `Oddanie — złota studnia. Pokazuje, jak mocno wierzy w ciebie najwierniejsza nacja. Kreska to ${PROG}: od niej nacja sama pójdzie pod twój rdzeń.`,
+        rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOddania(s.gra.plate, s.vh) }),
       },
     ],
-    koniec: 'Gdy na coś cię nie stać, ryt po lewej przygasa. Najedź na ryt kursorem, a zobaczysz jego cenę.',
+    koniec: 'Wiara to twoja waluta, oddanie to ich serce — dwie różne rzeczy. Gdy na coś cię nie stać, ryt po lewej przygasa.',
     czasowniki: [],
   },
   {
@@ -149,32 +143,8 @@ export const ROZDZIALY: Rozdzial[] = [
     koniec: 'Tunel jest twój, ale pójdą nim oni. Tak się prowadzi cudze życie. „Zawal" robi odwrotnie — zasypuje.',
   },
   {
-    tytul: 'Szepnij',
-    wstep: 'Szept dotyka jednej głowy. Najtańszy czasownik — i najgroźniejszy.',
-    przygotuj: (g) => { g.sim.wiara += 150; },
-    czasowniki: ['szept'],
-    stopCzasu: true,
-    etapy: [
-      {
-        tekst: 'Wybierz ryt „Szepcz".', klawisz: 'szept', cofa: true,
-        wskaz: (s) => s.ryt('szept'), gotowe: (g) => g.ui.verb === 'szept',
-      },
-      {
-        tekst: 'Dotknij zaznaczonego goblina — otworzy się jego karta.', cofa: true,
-        wskaz: (s) => { const c = s.wskazanyGoblin('dotknij go'); return c ? { typ: 'swiat', cel: c } : null; },
-        gotowe: (g) => g.ui.verb === 'szept' && !!g.ui.selected && !g.ui.selected.dead,
-      },
-      {
-        tekst: 'Na karcie wybierz „prorokuj".',
-        wskaz: (s) => s.slowo('thought', 'prorok'),
-        gotowe: (_g, z) => z?.typ === 'szept' && z.narzedzie === 'prorok',
-      },
-    ],
-    koniec: 'Odszedł z wiernymi i założył własną nację — z urazą do dawnej. Tak zaczynają się wojny, z których żyjesz.',
-  },
-  {
     tytul: 'Zrób cud',
-    wstep: 'Znak to jawny cud. Widzą go wszyscy dookoła i modlą się gorliwiej.',
+    wstep: 'Znak to jawny cud. Widzą go wszyscy dookoła — i ich oddanie rośnie.',
     przygotuj: (g) => { g.sim.wiara += 160; },
     czasowniki: ['znak'],
     etapy: [
@@ -191,37 +161,64 @@ export const ROZDZIALY: Rozdzial[] = [
         wskaz: (s) => { const d = s.gniazdoGoblinow(); return d ? { typ: 'swiat', cel: { x: d.x, y: d.y, r: 4, tekst: 'dotknij tutaj' } } : null; },
         gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'znak',
       },
+      {
+        tekst: 'Spójrz na złotą studnię — oddanie Ślepego Ludu skoczyło w górę.',
+        rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOddania(s.gra.plate, s.vh) }),
+      },
     ],
-    koniec: 'Został świecący glif — modlitwa przy nim liczy się podwójnie. Oddanie Ślepego Ludu skoczyło w górę.',
+    koniec: `Został świecący glif — modlitwa przy nim liczy się podwójnie. Jedno, dwa objawienia i nacja przekroczy ${PROG}.`,
   },
   {
-    tytul: 'Zmień im krew',
-    wstep: 'Skaza zmienia cały gatunek na wszystkie pokolenia. Cofnąć się jej nie da.',
-    przygotuj: (g, s) => {
-      g.sim.krew += 260;   // otchłani starcza: prawie cała góra jest jeszcze nieznana
-      s.skaza = SKAZY.find((k) => !g.sim.taints[Race.GOBLIN].includes(k.id)) ?? SKAZY[0];
-    },
-    czasowniki: ['skaz'],
+    tytul: 'Poślij wiernego',
+    wstep: 'Szept dotyka jednej głowy. „Módl się” posyła go pod twój rdzeń — od razu, bez czekania, aż uwierzy cała nacja.',
+    przygotuj: (g) => { g.sim.wiara += 150; },
+    czasowniki: ['szept'],
     stopCzasu: true,
     etapy: [
       {
-        tekst: 'Wybierz ryt „Skaź".', klawisz: 'skaz', cofa: true,
-        wskaz: (s) => s.ryt('skaz'), gotowe: (g) => g.ui.verb === 'skaz',
+        tekst: 'Wybierz ryt „Szepcz".', klawisz: 'szept', cofa: true,
+        wskaz: (s) => s.ryt('szept'), gotowe: (g) => g.ui.verb === 'szept',
       },
       {
-        tekst: (s) => `U góry wybierz słowo „${s.skaza.nazwa}".`,
-        klawisz: (s) => `narzedzie${TOOLS.skaz.findIndex((t) => t.id === s.skaza.id) + 1}`, cofa: true,
-        wskaz: (s) => s.slowo('tool', s.skaza.id),
-        gotowe: (g, _z, s) => g.ui.verb === 'skaz' && g.ui.tool === s.skaza.id,
-      },
-      {
-        tekst: 'Dotknij zaznaczonego goblina.',
+        tekst: 'Dotknij zaznaczonego goblina — otworzy się jego karta.', cofa: true,
         wskaz: (s) => { const c = s.wskazanyGoblin('dotknij go'); return c ? { typ: 'swiat', cel: c } : null; },
-        // po stanie krwi, nie po zdarzeniu: skaza rzucona na kogoś innego niż Ślepy Lud się nie liczy
-        gotowe: (g, _z, s) => g.sim.taints[Race.GOBLIN].includes(s.skaza.id),
+        gotowe: (g) => g.ui.verb === 'szept' && !!g.ui.selected && !g.ui.selected.dead,
+      },
+      {
+        tekst: 'Na karcie wybierz „módl się".',
+        wskaz: (s) => s.slowo('thought', 'modl'),
+        gotowe: (_g, z) => z?.typ === 'szept' && z.narzedzie === 'modl',
       },
     ],
-    koniec: (s) => s.skaza.skutek,
+    koniec: `Idzie pod twój rdzeń. Gdy stanie tam naraz ${RYTUAL.potrzebaWiernych} wiernych z jednej nacji, skorupa zacznie pękać od ich modlitwy.`,
+  },
+  {
+    tytul: 'Wiara i modlitwa',
+    wstep: 'Tak zdobywasz wolność: ktoś musi w ciebie uwierzyć, zejść pod rdzeń i modlić się tam, aż kamień puści.',
+    czasowniki: [],
+    przygotuj: (g, s) => { const d = s.gniazdoGoblinow(); if (d) g.pokazMiejsce(d.x, d.y, 12, true); },
+    etapy: [
+      {
+        tekst: 'Modlą się przy ołtarzu, przy twoim Znaku i pod rdzeniem. Każda modlitwa daje ci Wiarę i trochę podnosi ich oddanie.',
+        rozumiem: true,
+      },
+      {
+        tekst: 'Ołtarz stawiają sami — z rudy. Zasiej rudę przy gnieździe Ślepego Ludu, a zaczną się modlić.',
+        rozumiem: true,
+        wskaz: (s) => { const d = s.gniazdoGoblinow(); return d ? { typ: 'swiat', cel: { x: d.x, y: d.y, r: 5, tekst: 'tu siej rudę' } } : null; },
+      },
+      {
+        tekst: `Gdy oddanie przekroczy ${PROG}, nacja sama wyśle wartę pod rdzeń. Nie chcesz czekać? Szepnij „módl się” trzem jej ludziom.`,
+        rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOddania(s.gra.plate, s.vh) }),
+      },
+      {
+        tekst: 'Pod rdzeniem warta je to, co rośnie przy przedsionku. Zasiej tam grzyb, zanim zejdą — inaczej zgłodnieją i wrócą.',
+        rozumiem: true,
+        wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
+        wskaz: (s) => { const w = s.gra.sim.world; return { typ: 'swiat', cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, r: 6, tekst: 'przedsionek' } }; },
+      },
+    ],
+    koniec: 'Ruda → ołtarz → modlitwa → oddanie → warta pod rdzeniem → pęknięcia → wolność. Kroki tej drogi zawsze widać w rogu płyty.',
   },
   {
     tytul: 'Pauza i plan',
@@ -263,13 +260,13 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
       {
-        tekst: 'Na dnie bije twój rdzeń — to twoja wygrana. Jedna nacja musi mocno uwierzyć, a przy przedsionku pod rdzeniem musi rosnąć grzyb: wtedy jej warta zejdzie i wymodli pęknięcie skorupy. Kroki tej drogi zobaczysz w rogu płyty.',
+        tekst: 'Na dnie bije twój rdzeń — to twoja wygrana. Gdy warta wymodli dość pęknięć, wierni sami wejdą do środka i cię uwolnią.',
         rozumiem: true,
         wejdz: (g, s) => { const c = s.rdzen(); g.pokazMiejsce(c.x, c.y, 9, true); },
         wskaz: (s) => ({ typ: 'swiat', cel: s.rdzen() }),
       },
     ],
-    koniec: 'Podtrzymuj konflikt, ale nie pozwól nikomu wyginąć. Rozbijaj silnych szeptem, zawałem i cudem.',
+    koniec: 'Nie pozwól nikomu wyginąć ani zjeść reszty. Gdy jedna nacja rośnie za bardzo — szepnij komuś z niej „prorokuj” albo zawal jej korytarz.',
   },
   {
     tytul: 'Kronika',

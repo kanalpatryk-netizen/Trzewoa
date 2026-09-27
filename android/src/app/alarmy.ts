@@ -163,7 +163,7 @@ export class Straznik {
         'krucjata': ['Z powierzchni schodzą ludzie', 'Nie mieszkają w tobie — biorą rudę i wracają. Po drodze zabijają.', 'Zawał odetnie im drogę; ich śmierci to twoja krew.'],
         'zalanie': ['Woda znalazła szczelinę', 'Górne korytarze toną. Kto nie pływa, zginie.', 'Zawal przejście między wodą a gniazdem.'],
         'zaraza': ['Zaraza w twoich trzewiach', 'Najciaśniejsza krew choruje najciężej.', 'Nic nie musisz — zaraza sama wyrównuje wstęgę.'],
-        'żyła szaleństwa': ['Żyła szaleństwa w głębi', 'Kto tam kopie, wraca inny — czasem trolem.', 'Szept „kop w dół” komuś głęboko da ci trola.'],
+        'żyła szaleństwa': ['Żyła szaleństwa w głębi', 'Kto tam kopie, wraca inny — czasem trolem.', 'Trzymaj swoich z dala od głębi — kto kopie za nisko, wraca trolem.'],
       };
       const o = opis[t];
       if (o) return { rodzaj: `przyplyw-${t}`, kryzys: false, tytul: o[0], tekst: o[1], rada: o[2], cel };

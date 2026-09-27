@@ -117,8 +117,8 @@ export const LUDY = {
   oddanieStart: { slepyLud: 0.45, zuzlowcy: 0.3, inni: 0.08 },
   /** Do takiego oddania nacja wraca sama („natura”): Ślepy Lud / Żużlowcy / reszta. */
   oddanieNatura: { slepyLud: 0.4, zuzlowcy: 0.3, inni: 0.08 },
-  /** Jak szybko oddanie wraca do natury (co 90 tików, ułamek różnicy). */
-  stygniecie: 0.004,
+  /** Jak szybko oddanie wraca do natury (co 90 tików, ułamek różnicy). Na telefonie wolniej niż 0.004 na komputerze. */
+  stygniecie: 0.002,
   /** Urazy między nacjami wygasają o tyle co 90 tików. */
   urazyWygasaja: 0.004,
   /** Odcień nacji losowany w tym zakresie ±. */

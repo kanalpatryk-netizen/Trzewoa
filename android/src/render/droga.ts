@@ -1,7 +1,9 @@
 import type { Plate } from './plate';
 import type { Sim } from '../sim/sim';
 import { RACES, Race } from '../sim/races';
-import { PIELGRZYMKA } from '../nastawy/rytual';
+import { PIELGRZYMKA, RYTUAL } from '../nastawy/rytual';
+import { Job } from '../sim/creatures';
+import { cost } from '../powers/powers';
 import { SERIF } from './ink';
 import { ramaKarty } from './ozdoby';
 
@@ -18,10 +20,14 @@ export function krokiDrogi(sim: Sim): { kroki: KrokDrogi[]; biezacy: number } {
     oddanie = Math.max(oddanie, k.devotion);
   }
   const r = sim.rytual;
-  const wiara = sim.wiara >= 45 || sim.prayers > 0;
-  const wierza = oddanie > 0.6 || r.pekniecia > 0;
+  const prog = PIELGRZYMKA.oddanieNacji;
+  const wiara = sim.wiara >= cost('znak', 'objawienie').wiara || sim.prayers > 0;
+  // posłani szeptem „módl się” też są wiarą, która schodzi pod rdzeń
+  let poslani = 0;
+  for (const c of sim.creatures) if (!c.dead && c.job === Job.PIELGRZYM) poslani++;
+  const wierza = oddanie > prog || r.pekniecia > 0 || poslani >= RYTUAL.potrzebaWiernych;
   let powrot = false;
-  for (const k of sim.clans) if (!k.dead && k.devotion > 0.6 && k.powrotOk) powrot = true;
+  for (const k of sim.clans) if (!k.dead && k.devotion > prog && k.powrotOk) powrot = true;
   const droga = r.pekniecia > 0 || r.wierni >= 3 || (wierza && (sim.jedzeniePrzedsionka >= 3 || powrot));
   const potrzeba = Math.max(r.pekniecia + (r.otwarta ? 0 : 1), r.skorupa);
   const kroki: KrokDrogi[] = [
@@ -55,7 +61,7 @@ export function terazDrogi(sim: Sim): Teraz {
     }
     case 'oddanie':
       return najw
-        ? { tekst: `Postaw Znak (objawienie) przy gnieździe: ${najw.name} — ${Math.round(najw.devotion * 100)}% z ${Math.round(PIELGRZYMKA.oddanieNacji * 100)}% oddania.`, cel: gniazdo(najw) }
+        ? { tekst: `Postaw Znak (objawienie) przy gnieździe: ${najw.name} — ${Math.round(najw.devotion * 100)}% z ${Math.round(PIELGRZYMKA.oddanieNacji * 100)}% oddania. Albo szepnij „módl się” trzem z nich.`, cel: gniazdo(najw) }
         : { tekst: 'Żadna nacja nie jest dość liczna, by w ciebie uwierzyć. Nakarm którąś.' };
     case 'droga':
       return sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku
@@ -87,8 +93,10 @@ export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, si
   ctx.font = `italic ${rozm * 0.9}px ${SERIF}`;
   const linieTeraz = lamLinie(ctx, `teraz: ${co.tekst}`, szer - 20).slice(0, 3);
   ctx.restore();
-  const wysToru = rozm * 3.3;
-  const wys = wysToru + linieTeraz.length * rozm * 1.15 + rozm * 0.5;
+  // podpisy węzłów („oddanie 45%”) stykały się z pierwszą linijką „teraz:” — na telefonie tor jest wyższy
+  const wysToru = rozm * (telefon ? 3.8 : 3.3);
+  // „pokaż ›” dostaje własny wiersz: przy dłuższej radzie wchodziło na jej koniec
+  const wys = wysToru + linieTeraz.length * rozm * 1.15 + rozm * (co.cel ? 1.2 : 0.5);
   const x0 = p.waski ? p.x + 8 : p.x + 12;
   // TELEFON: na dole płyty — u góry, pod powierzchnią, mieszkają ludy i wstęga je zasłaniała
   const y0 = telefon ? p.y + p.h - wys - 10 : p.y + 12;

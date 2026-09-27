@@ -86,9 +86,9 @@ export const RYTUAL = {
 
   // ------------------------------------------------------ wejście i wyrok
   /** Nacja wchodzi „jako wierni”, jeśli jej średnie oddanie przekracza to… */
-  uwolnienieNacja: 0.55,
+  uwolnienieNacja: 0.45,
   /** …albo jeśli wchodzący sam wierzy mocniej niż to. Inaczej wejście = śmierć boga. */
-  uwolnienieWlasne: 0.7,
+  uwolnienieWlasne: 0.6,
   /** Dotknięcie rdzenia: stworzenie w tym kwadracie od środka sprawdza sąsiednie kafle. */
   dotykZasieg: 4,
 };
@@ -100,8 +100,8 @@ export const PIELGRZYMKA = {
   minPielgrzymow: 3,
   /** Pielgrzymów najwyżej taka część nacji. */
   czescNacji: 0.3,
-  /** Nacja musi mieć tyle oddania, żeby w ogóle wysyłać pielgrzymów. */
-  oddanieNacji: 0.6,
+  /** Nacja musi mieć tyle oddania, żeby w ogóle wysyłać pielgrzymów (wersja na telefon: niżej niż 0.6 na komputerze). */
+  oddanieNacji: 0.5,
   /** Pielgrzym sam musi mieć tyle oddania… */
   oddanieWlasne: 0.45,
   /** …i być najedzony (głód poniżej tego). */
@@ -116,6 +116,8 @@ export const PIELGRZYMKA = {
   szansa: 0.06, szansaBliskosc: 0.3,
   /** Bonus za bliskość znika w tej odległości od przedsionka. */
   zasiegBliskosci: 90,
+  /** Szept „módl się”: wysłany ma co najmniej tyle własnego oddania (dość, by wejść do rdzenia). */
+  szeptOddanie: 0.8,
   /** Pielgrzym w drodze nie porzuca wyprawy przez tyle tików. */
   wyprawaTikow: 7000,
   /** Pielgrzym, który zszedł z planu drogi, wraca na niego, jeśli kreska jest najwyżej tyle kafli dalej. */
@@ -164,8 +166,8 @@ export const PIELGRZYMKA = {
 export const PLAN_DROGI = {
   /** Ile kosztuje przekopanie kafla skały względem przejścia korytarzem. */
   kosztSkaly: 6,
-  /** Plan liczony dla nacji o oddaniu co najmniej tyle… */
-  oddanieNacji: 0.6,
+  /** Plan liczony dla nacji o oddaniu co najmniej tyle… (ten sam próg co pielgrzymka) */
+  oddanieNacji: 0.5,
   /** …i liczącej co najmniej tylu. */
   minNacja: 8,
   /** Plan jest przeliczany najwyżej co tyle tików. */

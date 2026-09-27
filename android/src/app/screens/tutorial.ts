@@ -14,7 +14,7 @@ import { odkrycia } from '../../atlas/odkrycia';
 import { T, PASSABLE } from '../../sim/tiles';
 import { Race } from '../../sim/races';
 import { STEROWANIE } from '../../nastawy/sterowanie';
-import { ROZDZIALY, SKAZY, type Rozdzial, type Wskazanie, type Gest, type Tekst } from './samouczek/rozdzialy';
+import { ROZDZIALY, type Rozdzial, type Wskazanie, type Gest, type Tekst } from './samouczek/rozdzialy';
 
 
 interface Pole { x: number; y: number; w: number; h: number; }
@@ -52,8 +52,6 @@ export class EkranSamouczka implements Ekran {
   kamStart = { x: 0, y: 0, zoom: 1 };
   /** Stworzenie wskazane w rozdziale — śledzimy je, zamiast szukać co klatkę nowego. */
   private wskazaneId = -1;
-  /** Skaza, której uczy rozdział — pierwsza jeszcze nienałożona na Ślepy Lud. */
-  skaza = SKAZY[0];
   /** Miejsca na płycie liczone raz na etap — pierścień nie może skakać za tłumem. */
   private celeEtapow = new Map<number, Wskazanie | null>();
   /** Wysokość ekranu — organy w ramie liczą się od dołu. */
@@ -132,7 +130,7 @@ export class EkranSamouczka implements Ekran {
     return null;
   }
 
-  /** Jeden goblin do szeptu i skazy — ten sam przez cały rozdział. */
+  /** Jeden goblin do szeptu — ten sam przez cały rozdział. */
   wskazanyGoblin(tekst: string): Cel | null {
     const sim = this.gra.sim;
     let c = sim.creatures.find((o) => o.id === this.wskazaneId && !o.dead);
@@ -302,8 +300,8 @@ export class EkranSamouczka implements Ekran {
   private koniecNauki(): void {
     ustaw('samouczekZrobiony', true);
     // co pokazał samouczek, to trafia do atlasu — bez wyskakujących tablic
-    for (const id of ['rasa-0', 'ryt-ksztaltuj', 'ryt-zasiej', 'ryt-szept', 'ryt-znak', 'ryt-skaz',
-      'krew', 'wiara', 'otchlan', 'pamiec', 'sen', 'rdzen', 'prorok', 'pauza']) odkrycia.odkryj(id, false);
+    for (const id of ['rasa-0', 'ryt-ksztaltuj', 'ryt-zasiej', 'ryt-szept', 'ryt-znak',
+      'krew', 'wiara', 'oddanie', 'pamiec', 'sen', 'rdzen', 'prorok', 'pauza']) odkrycia.odkryj(id, false);
     this.faza = 'final';
     const g = this.gra;
     g.dozwolone = new Set();

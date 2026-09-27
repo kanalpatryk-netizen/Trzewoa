@@ -25,7 +25,7 @@ writeFileSync(wejscie, `
 import { Sim } from ${src('sim/sim.ts')};
 import { Race, RACE_COUNT } from ${src('sim/races.ts')};
 import { T } from ${src('sim/tiles.ts')};
-import { shape, seed, sign } from ${src('powers/powers.ts')};
+import { shape, seed, sign, whisper } from ${src('powers/powers.ts')};
 import { Job } from ${src('sim/creatures.ts')};
 import { aktualnyPlan } from ${src('sim/pielgrzymka.ts')};
 
@@ -111,23 +111,29 @@ function ruchGracza(sim: any) {
     // Prządkom ktoś słaby w pobliżu i kości
     const przadka = sim.creatures.find((c: any) => !c.dead && c.race === Race.SPINNER);
     if (przadka && sim.krew > 90) seed(sim, 'kosci', Math.round(przadka.x) + 2, Math.round(przadka.y));
-    // trole biorą się z głębi: szept „kop w dół" do kogoś, kto już jest nisko
-    if (sim.popByRace[Race.TROLL] < 4 && sim.wiara > 60) {
-      const gleboki = sim.creatures.find((c: any) => !c.dead && c.race !== Race.HUMAN
-        && c.race !== Race.TROLL && w.depth(c.y) > 0.6);
-      if (gleboki) { gleboki.thought = 1; gleboki.jt = 0; sim.wiara -= 5; }
-    }
   }
   // monokulturę rozbija się prorokiem: nowa nacja tej samej krwi od razu ma urazę do starej
   if (sim.dominance > 0.72 && sim.wiara > 40 && sim.tick % 1800 === 0) {
     const klan = sim.clans.filter((k: any) => !k.dead && k.race === sim.domRace && k.pop > 14)
       .sort((a: any, b: any) => b.pop - a.pop)[0];
     const glos = klan && sim.creatures.find((c: any) => !c.dead && c.clan === klan.id && !c.prophet);
-    if (glos) { glos.thought = 3; glos.jt = 0; sim.wiara -= 18; }
+    if (glos) whisper(sim, 'prorok', glos);
   }
-  if (sim.dominance > 0.9 && sim.popByRace[sim.domRace] > 25 && sim.wiara > 40 && sim.tick % 900 === 0) {
-    const ofiara = sim.creatures.find((c: any) => !c.dead && c.race === sim.domRace);
-    if (ofiara) { ofiara.thought = 2; ofiara.jt = 0; sim.wiara -= 5; }
+
+  // 3b. szept „módl się”: gdy przy przedsionku rośnie grzyb, gracz posyła trzech wiernych
+  // z najwierniejszej nacji pod rdzeń — tak, jak uczy samouczek
+  if (sim.tick % 600 === 0 && !sim.rytual.otwarta && sim.jedzeniePrzedsionka >= 3 && sim.wiara >= 8) {
+    const klan = sim.clans.filter((k: any) => !k.dead && k.pop >= 6 && k.race !== Race.TROLL && k.race !== Race.HUMAN && k.race !== Race.MYCELIUM)
+      .sort((a: any, b: any) => b.devotion - a.devotion)[0];
+    if (klan) {
+      let idzie = 0;
+      for (const c of sim.creatures) if (!c.dead && c.clan === klan.id && c.job === Job.PIELGRZYM) idzie++;
+      for (const c of sim.creatures) {
+        if (idzie >= 3 || sim.wiara < 8) break;
+        if (c.dead || c.clan !== klan.id || c.job === Job.PIELGRZYM || c.hunger > 0.35) continue;
+        if (whisper(sim, 'modl', c)) idzie++;
+      }
+    }
   }
 
   // 5. droga pielgrzymów: warta żyje z grzybu przy przedsionku (krok 2) — gracz nie

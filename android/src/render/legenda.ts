@@ -30,7 +30,7 @@ const POZYCJE: Pozycja[] = [
     rysuj: (c, x, y, s) => { c.strokeStyle = 'rgba(240,206,150,0.95)'; c.lineWidth = 1.6; c.strokeRect(x - s * 0.25, y - s * 0.25, s * 0.5, s * 0.5); c.beginPath(); c.moveTo(x, y - s * 0.25); c.lineTo(x, y - s * 0.45); c.stroke(); },
   },
   {
-    nazwa: 'Czysta ciemność', opis: 'Otchłań: miejsca, o których nikt nie pamięta',
+    nazwa: 'Czysta ciemność', opis: 'miejsca, o których nikt nie pamięta',
     rysuj: (c, x, y, s) => { c.fillStyle = 'rgba(150,143,128,0.9)'; c.beginPath(); c.moveTo(x - s * 0.4, y - s * 0.3); c.lineTo(x + s * 0.35, y - s * 0.35); c.lineTo(x + s * 0.4, y + s * 0.3); c.lineTo(x - s * 0.3, y + s * 0.35); c.closePath(); c.fill(); },
   },
   {

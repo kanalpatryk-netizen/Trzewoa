@@ -94,15 +94,14 @@ export function rysujRozkazy(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camer
       ctx.stroke();
       podpis(etykieta(o), px, py - u * 1.6, kol);
     } else {
-      // szept i skaza celują w jedno stworzenie — pierścień idzie za nim
+      // szept celuje w jedno stworzenie — pierścień idzie za nim
       const r = Math.max(14, z * 1.4);
       ctx.setLineDash([4, 4]);
       ctx.lineWidth = 1.6;
-      ctx.strokeStyle = o.czasownik === 'skaz' ? 'rgba(214,96,86,0.95)' : 'rgba(226,214,250,0.95)';
+      ctx.strokeStyle = 'rgba(226,214,250,0.95)';
       ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]);
-      const tekst = o.czasownik === 'skaz' ? `skaza: ${etykieta(o)}` : `„${etykieta(o)}”`;
-      podpis(tekst, px, py - r - 6, o.czasownik === 'skaz' ? [224, 120, 104] : [230, 220, 250]);
+      podpis(`„${etykieta(o)}”`, px, py - r - 6, [230, 220, 250]);
     }
   }
   ctx.restore();
