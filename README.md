@@ -4,6 +4,24 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 
 **Nie grasz bogiem, który rządzi podziemiem — grasz podziemiem, a ono jest głodne.**
 
+## ⬇️ Zagraj
+
+### [**Pobierz grę — `trzewia.html`**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia.html)
+
+1. Kliknij link wyżej — pobierze się jeden plik (ok. 440 kB).
+2. Otwórz go w przeglądarce (Chrome, Firefox, Edge, Safari) — zwykle wystarczy dwuklik.
+3. Graj. Bez instalacji, bez konta, działa też bez internetu. Postęp zapisuje się w przeglądarce.
+
+Link zawsze daje najnowszą wersję: po każdej zmianie w gałęzi `main` automat
+([`.github/workflows/gra.yml`](.github/workflows/gra.yml)) buduje grę od nowa i podmienia plik
+w [wydaniach](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest).
+Gdyby link jeszcze nie działał, otwórz [`trzewia.html` w repozytorium](https://github.com/kanalpatryk-netizen/Trzewoa/blob/main/trzewia.html)
+i kliknij przycisk **Download raw file** (strzałka w dół nad plikiem).
+
+> Plik `artifact.html` to starsza wersja — do grania służy `trzewia.html`.
+
+Kod źródłowy i uruchomienie dla programistów: sekcja [Uruchomienie](#uruchomienie) niżej.
+
 ## Co jest w grze
 
 | Warstwa | Zawartość |
@@ -151,7 +169,11 @@ Pielgrzymi schodzą pod rdzeń tylko wtedy, gdy spod niego da się wrócić do g
 
 ## Uruchomienie
 
+Potrzebny [Node.js](https://nodejs.org) 18 lub nowszy.
+
 ```bash
+git clone https://github.com/kanalpatryk-netizen/Trzewoa.git
+cd Trzewoa
 npm install
 npm run dev     # http://localhost:5180
 npm run pack    # trzewia.html — jeden plik, działa z file://
@@ -164,6 +186,7 @@ npm test               # świat + skorupa (szybkie, kończą się błędem, gdy 
 npm run test:swiat     # 100 gór: przedsionek pod rdzeniem ma być suchy
 npm run test:skorupa   # 12 gór z wymuszoną wartą: droga po ≤8 pęknięciach i Uwolnienie
 npm run test:balans    # pomiar długości partii bez gracza i z automatem (kilka minut)
+npm run test:nakladanie  # przy działającym npm run dev: czy interfejs nie nachodzi na siebie na 8 rozmiarach ekranu
 ```
 
 ## Czego świadomie nie ma
