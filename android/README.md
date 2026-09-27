@@ -23,6 +23,19 @@ zmienia się tylko to, jak gra wygląda i jak się jej dotyka.
 | **Ekran** | nie gaśnie w trakcie partii i samouczka |
 | **Kronika i minimapa** | schowane — kronika jest pod przyciskiem zapisków, płytę przesuwa się palcem |
 
+## Zapisane wersje
+
+Każda zapisana wersja ma własne wydanie z plikiem APK, które zostaje na stałe
+(lista w `.github/workflows/android-wersje.yml`):
+
+| Wersja | Co w niej jest | APK |
+|---|---|---|
+| **v1** | pierwsza wersja na telefon: układ ekranu, dotyk, pełny ekran; mechanika jak na komputerze | [`Trzewia-v1.apk`](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/v1/Trzewia-v1.apk) |
+| **v2** | prostsza mechanika i wytłumaczona wiara (niżej) | [`Trzewia-v2.apk`](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/v2/Trzewia-v2.apk) |
+
+Najnowsza wersja z gałęzi jest zawsze pod
+[`android-apk/Trzewia.apk`](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/android-apk/Trzewia.apk).
+
 ## Prostsza mechanika
 
 Na telefonie gra ma mniej rzeczy do ogarnięcia, a droga do wygranej przez wiarę jest łatwiejsza

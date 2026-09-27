@@ -1,0 +1,107 @@
+# Zapisane wersje aplikacji na Androida: każda ma własny tag (v1, v2, …) i własne wydanie
+# z plikiem Trzewia-vN.apk, które zostaje na stałe — w odróżnieniu od „android-apk”,
+# które zawsze pokazuje najnowszą wersję z gałęzi.
+#
+# Nowa wersja = nowy wiersz w macierzy niżej (nazwa, commit i numer). Wersje, które już
+# mają wydanie, są pomijane — nic nie jest budowane ani nadpisywane drugi raz.
+name: Zapisane wersje na Androida
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - '.github/workflows/android-wersje.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  wersja:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # v1 — pierwsza wersja na telefon: układ ekranu, dotyk, pełny ekran, APK
+          - wersja: v1
+            commit: cc0a0f67173d65f61eab2de58d490b6256d47d60
+            numer: 1
+            opis: 'Pierwsza wersja na telefon: układ ekranu pod telefon, dotyk, pełny ekran, przycisk „wstecz”. Mechanika jak na komputerze (pięć rytów, Skaza, Otchłań).'
+          # v2 — prostsza mechanika i wytłumaczona wiara
+          - wersja: v2
+            commit: 8539cb1079efcd0a19d82dd1ed6a12405e4a152c
+            numer: 2
+            opis: 'Prostsza mechanika: cztery ryty (bez Skazy, Otchłani i trucizny), szept „módl się”, łatwiejsza wiara, studnia oddania, nowe rozdziały samouczka o wierze.'
+    steps:
+      - name: Czy ta wersja już jest zapisana
+        id: jest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${{ matrix.wersja }}" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "Wydanie ${{ matrix.wersja }} już istnieje — pomijam."
+            echo "juz=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.jest.outputs.juz != '1'
+        with:
+          ref: ${{ matrix.commit }}
+
+      - uses: actions/setup-node@v4
+        if: steps.jest.outputs.juz != '1'
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: android/package-lock.json
+
+      - name: Gra w jeden plik
+        if: steps.jest.outputs.juz != '1'
+        working-directory: android
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm run pack
+          mkdir -p apk/app/src/main/assets
+          cp trzewia.html apk/app/src/main/assets/index.html
+
+      - uses: actions/setup-java@v4
+        if: steps.jest.outputs.juz != '1'
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.jest.outputs.juz != '1'
+        with:
+          gradle-version: '8.9'
+
+      - name: Budowa APK
+        if: steps.jest.outputs.juz != '1'
+        working-directory: android/apk
+        env:
+          NUMER_WERSJI: ${{ matrix.numer }}
+        run: |
+          gradle --no-daemon assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk "../../Trzewia-${{ matrix.wersja }}.apk"
+
+      - name: Wydanie ${{ matrix.wersja }}
+        if: steps.jest.outputs.juz != '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          COMMIT: ${{ matrix.commit }}
+        run: |
+          cat > notatki.md <<NOTATKI
+          ${{ matrix.opis }}
+
+          **Instalacja:** pobierz \`Trzewia-${{ matrix.wersja }}.apk\` (niżej, w sekcji *Assets*) na telefonie i otwórz.
+          Wersja aplikacji 0.1.${{ matrix.numer }}, commit ${COMMIT::7}. Starsza wersja nie zainstaluje się
+          na nowszą — najpierw odinstaluj aplikację (zapis gry przepadnie).
+          NOTATKI
+          gh release create "${{ matrix.wersja }}" "Trzewia-${{ matrix.wersja }}.apk" \
+            --target "${{ matrix.commit }}" \
+            --title "Trzewia na Androida ${{ matrix.wersja }}" \
+            --notes-file notatki.md \
+            --latest=false \
+            --repo "$GITHUB_REPOSITORY"
