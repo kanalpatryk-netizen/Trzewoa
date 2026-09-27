@@ -27,6 +27,7 @@ import { Race, RACE_COUNT } from ${src('sim/races.ts')};
 import { T } from ${src('sim/tiles.ts')};
 import { shape, seed, sign } from ${src('powers/powers.ts')};
 import { Job } from ${src('sim/creatures.ts')};
+import { aktualnyPlan } from ${src('sim/pielgrzymka.ts')};
 
 const NA_MINUTE = 7200;
 
@@ -53,12 +54,39 @@ function ruchGracza(sim: any) {
     if (klan) shape(sim, 'zawal', klan.hx + 1, klan.hy);
   }
 
+  // 1b. najazd z powierzchni: alarm radzi „Zawał odetnie im drogę” — gracz zawala
+  // najeźdźcę idącego na gniazdo, ale nie tam, gdzie stoi ktoś swój (zawał zabija najbliższego)
+  if (sim.krew > 20) {
+    const ludzie = sim.creatures.filter((c: any) => !c.dead && c.race === Race.HUMAN);
+    for (const h of ludzie) {
+      let blisko = false, idzie = false;
+      for (const c of sim.creatures) {
+        if (c.dead || c.race === Race.HUMAN) continue;
+        const d = Math.hypot(c.x - h.x, c.y - h.y);
+        if (d < 3.5) { blisko = true; break; }
+        if (d < 20) idzie = true;
+      }
+      if (idzie && !blisko) { shape(sim, 'zawal', Math.round(h.x), Math.round(h.y)); break; }
+    }
+  }
+
   // 2. droga pielgrzymów: grzyb w przedsionku, żeby warta miała co jeść
   if (sim.tick % 900 === 0 && sim.krew > 120) {
     for (let k = 0; k < 6; k++) {
       const x = w.coreX + ((k % 5) - 2) * 2;
       const y = w.coreY - 14 + (k < 3 ? 1 : 2);
       seed(sim, 'grzyb', x, y);
+    }
+  }
+
+  // 2b. złota kreska: gra podpowiada „wydrąż korytarz wzdłuż złotej kreski” i wskazuje
+  // kafel od strony gniazda — gracz drąży tam, pociągnięcie po pociągnięciu. Ale najpierw
+  // karmi: drążenie za ostatnią Krew głodziło górę, a pusta góra zasypia
+  if (sim.krew > 70) {
+    const plan = aktualnyPlan(sim);
+    if (plan && plan.kopac.length) {
+      const i = plan.kopac[plan.kopac.length - 1];
+      shape(sim, 'draz', i % w.w, (i / w.w) | 0);
     }
   }
 

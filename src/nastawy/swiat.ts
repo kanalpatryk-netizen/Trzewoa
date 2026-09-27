@@ -105,7 +105,7 @@ export const RDZEN = {
   nadDnem: 14,
   /** Skorupa z nieprzekopywalnego kamienia: promienie elipsy (poziomy, pionowy). */
   skorupaX: 14, skorupaY: 11,
-  /** Komora wokół rdzenia wewnątrz skorupy. */
+  /** Komora wokół rdzenia wewnątrz skorupy. Kto przez otwartą skorupę stanie w komorze, dotarł do rdzenia. */
   komoraX: 8.5, komoraY: 4.5,
   /** Promień samego rdzenia. */
   promien: 2.6,

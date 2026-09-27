@@ -16,6 +16,7 @@ import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
+import { aktualnyPlan } from '../../sim/pielgrzymka';
 import { rysujDrogeDoWolnosci, type ObszarDrogi } from '../../render/droga';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
@@ -528,7 +529,7 @@ export class EkranGry implements Ekran {
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
     // droga pielgrzymów: szkic tego, co trzeba wydrążyć, żeby wierni zeszli pod rdzeń
-    const plan = sim.planDrogi;
+    const plan = aktualnyPlan(sim);
     if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
       rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, this.ui.verb === 'ksztaltuj' || this.rada?.cel?.tekst === 'drąż tutaj');
     }

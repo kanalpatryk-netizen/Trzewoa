@@ -1,7 +1,7 @@
 import type { Sim } from './sim';
 import { T, PASSABLE } from './tiles';
 import { Race, RACES } from './races';
-import { pielgrzymowKlanu } from './rytual';
+import { pielgrzymowKlanu, wKomorze } from './rytual';
 import { STWORZENIA as K } from '../nastawy/stworzenia';
 import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { LUDY } from '../nastawy/gora';
@@ -229,8 +229,7 @@ export function stepCreature(sim: Sim, c: Creature): void {
   // Komora wokół rdzenia jest pusta i szeroka: kto przez otwartą skorupę wejdzie do niej,
   // doszedł. Wcześniej warta wchodziła od dołu i stała na dnie komory, bo w pustej
   // przestrzeni nie ma się czego chwycić, żeby podciągnąć się do samego rdzenia.
-  if (wolnoWejsc && sim.rytual.otwarta && Math.abs(c.x - (w.coreX + 0.5)) <= RYTUAL.komoraX && Math.abs(c.y - (w.coreY + 0.5)) <= RYTUAL.komoraY
-      && w.passable(Math.floor(c.x), Math.floor(c.y))) {
+  if (wolnoWejsc && sim.rytual.otwarta && wKomorze(sim, Math.floor(c.x), Math.floor(c.y))) {
     sim.reachCore(c); return;
   }
 
@@ -701,6 +700,39 @@ function doEat(sim: Sim, c: Creature): void {
 }
 
 /**
+ * Krok pielgrzyma po planie drogi (plan idzie od przedsionka do gniazda, więc pielgrzym
+ * idzie nim od końca). Skałę na drodze kuje. Zwraca false, gdy plan mu nie pomoże —
+ * jest za daleko od kreski albo kreska prowadzi przez coś nie do ruszenia.
+ */
+function idzPlanem(sim: Sim, c: Creature, sciezka: number[]): boolean {
+  const w = sim.world;
+  const tx = Math.floor(c.x), ty = Math.floor(c.y);
+  const k = sciezka.lastIndexOf(w.idx(tx, ty));
+  if (k < 0) {
+    // zszedł z kreski (spadł, ominął wodę) — wraca do najbliższego jej kafla, jeśli jest blisko
+    let best = -1, bd = P.planZasieg + 1;
+    for (let j = 0; j < sciezka.length; j++) {
+      const i = sciezka[j];
+      const d = Math.abs((i % w.w) - tx) + Math.abs(((i / w.w) | 0) - ty);
+      if (d < bd) { bd = d; best = j; }
+    }
+    if (best < 0) return false;
+    walkTo(sim, c, sciezka[best] % w.w, (sciezka[best] / w.w) | 0);
+    return true;
+  }
+  if (k === 0) return false;
+  const nast = sciezka[k - 1];
+  const nx = nast % w.w, ny = (nast / w.w) | 0;
+  if (w.solid(nx, ny)) {
+    if (w.hardness(nx, ny) <= 0) return false;
+    digTile(sim, c, nx, ny);
+    return true;
+  }
+  krok(sim, c, nast);
+  return true;
+}
+
+/**
  * Droga pod rdzeń. Po drodze wygryzają sobie tunel w skale, ale w samą skorupę
  * nie ruszą — ta pęka tylko od tego, że stoją pod nią i się modlą (patrz rytual.ts).
  * Wiara ich w tym miejscu podkarmia, inaczej żaden kult nie dotrwałby do końca.
@@ -714,7 +746,14 @@ function doPielgrzym(sim: Sim, c: Creature): void {
     if (c.hunger > P.glodWraca) { c.job = Job.WANDER; c.jt = 0; c.jx = sim.clans[c.clan].hx; c.jy = sim.clans[c.clan].hy; return; }
   }
   const wPrzedsionku = Math.abs(c.x - w.coreX) < P.przedsionekX && Math.abs(c.y - w.przedsionekY) < P.przedsionekY;
-  if (!wPrzedsionku) { walkTo(sim, c, c.jx, c.jy); return; }
+  if (!wPrzedsionku) {
+    // swoja nacja ma plan drogi — idzie nim i sama przekopuje skałę po drodze; na przełaj
+    // pielgrzymi szli prosto w dół i stawali na pierwszym jeziorze nad rdzeniem
+    const plan = sim.planDrogi;
+    if (plan && plan.klan === c.clan && idzPlanem(sim, c, plan.sciezka)) return;
+    walkTo(sim, c, c.jx, c.jy);
+    return;
+  }
   // Dopiero na miejscu widać, czy skorupa już puściła — i liczy się faktyczna droga,
   // nie licznik pęknięć. Wtedy pielgrzym przestaje być pielgrzymem: schodzi do rdzenia.
   if (sim.rytual.otwarta && (sim.clans[c.clan].devotion > RYTUAL.uwolnienieNacja || c.devotion > RYTUAL.uwolnienieWlasne)
@@ -754,8 +793,10 @@ function powrotSpodRdzenia(sim: Sim, c: Creature, clan: Sim['clans'][number]): b
 export function wyslijDoRdzenia(sim: Sim, c: Creature, jt: number): boolean {
   const w = sim.world;
   c.job = Job.DIG; c.jx = w.coreX; c.jy = w.coreY; c.jt = jt; c.dig = 0;
-  const droga = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - w.coreX) <= 3 && Math.abs(y - w.coreY) <= 3
-    && (w.get(x, y + 1) === T.CORE || w.get(x - 1, y) === T.CORE || w.get(x + 1, y) === T.CORE || w.get(x, y - 1) === T.CORE), RYTUAL.zejscieLimitDrogi);
+  // cel: sam rdzeń albo — gdy skorupa otwarta — komora wokół niego (wejście do niej to już dotarcie;
+  // od dołu i z boku do wiszącego w komorze rdzenia nie ma się jak podciągnąć)
+  const droga = szukajDrogi(sim, c, (_i, x, y) => (sim.rytual.otwarta && wKomorze(sim, x, y)) || (Math.abs(x - w.coreX) <= 3 && Math.abs(y - w.coreY) <= 3
+    && (w.get(x, y + 1) === T.CORE || w.get(x - 1, y) === T.CORE || w.get(x + 1, y) === T.CORE || w.get(x, y - 1) === T.CORE)), RYTUAL.zejscieLimitDrogi);
   c.droga = droga ?? undefined; c.drogaI = 0;
   return true;
 }

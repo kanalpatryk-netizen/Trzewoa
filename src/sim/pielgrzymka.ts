@@ -131,18 +131,21 @@ export function najwierniejsza(sim: Sim): Sim['clans'][number] | null {
 }
 
 /**
- * Plan dla najwierniejszej nacji, liczony najwyżej raz na kilkaset tików. Gdy droga
- * już istnieje (nic do kopania) albo rytuał trwa, plan jest pusty.
+ * Plan dla najwierniejszej nacji. Liczy go sama symulacja, w stałym rytmie
+ * (co PLAN_DROGI.odswiezCo tików) — idą nim pielgrzymi, więc nie może zależeć od tego,
+ * kiedy akurat zapyta o niego ekran. Gdy skorupa otwarta, planu nie ma.
  */
-export function aktualnyPlan(sim: Sim): PlanDrogi | null {
+export function odswiezPlan(sim: Sim): void {
   const klan = najwierniejsza(sim);
   // plan rusza, gdy nacja jest gotowa na pielgrzymkę — wcześniej drążenie tylko psuło gniazda
-  if (!klan || klan.devotion < PLAN_DROGI.oddanieNacji || klan.pop < PLAN_DROGI.minNacja || sim.rytual.otwarta) { sim.planDrogi = null; return null; }
-  const stary = sim.planDrogi;
-  if (stary && stary.klan === klan.id && sim.tick - stary.tick < PLAN_DROGI.odswiezCo) {
-    stary.kopac = stary.kopac.filter((i) => doKopania(sim.world.tile[i]));
-    return stary;
-  }
+  if (!klan || klan.devotion < PLAN_DROGI.oddanieNacji || klan.pop < PLAN_DROGI.minNacja || sim.rytual.otwarta) { sim.planDrogi = null; return; }
   sim.planDrogi = planujDroge(sim, klan.id);
-  return sim.planDrogi;
+}
+
+/** Plan do pokazania graczowi: bez przeliczania, a już wydrążone kafle odpadają z listy. */
+export function aktualnyPlan(sim: Sim): PlanDrogi | null {
+  const p = sim.planDrogi;
+  if (!p) return null;
+  p.kopac = p.kopac.filter((i) => doKopania(sim.world.tile[i]));
+  return p;
 }

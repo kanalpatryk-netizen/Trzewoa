@@ -1,9 +1,11 @@
 import type { Sim } from './sim';
-import { T, PASSABLE } from './tiles';
+import { T } from './tiles';
 import { Race } from './races';
 import { Job, wyslijDoRdzenia } from './creatures';
+import { wolny, stoi, uchwyt, nadOgniem } from './droga';
 import { RYTUAL as R, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
+import { RDZEN } from '../nastawy/swiat';
 
 export interface StanRytualu {
   /** Postęp nacji, która jest najbliżej przebicia — tylko do pokazania graczowi. */
@@ -16,6 +18,8 @@ export interface StanRytualu {
   otwarta: boolean;
   /** Ile kafli skorupy stało w środkowej kolumnie na początku — do kamieni milowych. */
   skorupa: number;
+  /** Strona, z której pęka skorupa — ustala ją pierwsze pęknięcie. */
+  strona?: Strona;
 }
 
 
@@ -49,7 +53,9 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
   // Kuje jedna nacja — ta, której wiernych jest pod skorupą najwięcej. Gdy kuły wszystkie
   // naraz, ich pęknięcia się sumowały i trzy klany tej samej krwi otwierały rdzeń
   // w pięć minut, zamiast w długiej, bronionej warcie.
+  // gdy droga już stoi otworem, kamień nie ma po co dalej pękać (ani sypać Wiarą)
   for (const [id, n] of liczniki) {
+    if (stan.otwarta) break;
     if (n < R.potrzebaWiernych || id !== najlepszy) continue;
     const klan = sim.clans[id];
     // nacja, której ktoś właśnie klęczy pod skorupą, z definicji nie jest martwa;
@@ -83,9 +89,13 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
       stan.klan = id;                  // to ta nacja kuje; to jej ludzie wejdą do środka
       // Skorupa pęka od strony, z której się modlą. Wcześniej zawsze od góry, więc nacja
       // mieszkająca pod rdzeniem albo obok niego kruszyła kamień i nigdy nie mogła wejść.
-      const [kx, ky] = kierunek.get(id) ?? [0, -1];
-      const strona: Strona = Math.abs(ky) >= Math.abs(kx) ? (ky < 0 ? 'gora' : 'dol') : (kx < 0 ? 'lewo' : 'prawo');
-      otworzSkorupe(sim, stan, strona);
+      // Kolejne pęknięcia idą tą samą drogą co pierwsze: gdy każde szło w stronę, z której
+      // akurat się modlono, skorupa miała po dwa niedokończone szyby i nie puszczała nigdzie.
+      if (!stan.strona) {
+        const [kx, ky] = kierunek.get(id) ?? [0, -1];
+        stan.strona = Math.abs(ky) >= Math.abs(kx) ? (ky < 0 ? 'gora' : 'dol') : (kx < 0 ? 'lewo' : 'prawo');
+      }
+      otworzSkorupe(sim, stan, stan.strona);
       // sprawdzamy drożność od razu po pęknięciu, żeby wierni nie czekali na tik kontrolny
       if (!stan.otwarta && drogaDoRdzenia(sim)) {
         stan.otwarta = true;
@@ -108,16 +118,23 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
     // kto prowadzi: nacja, która kuła, a gdy nikt nie kuł — ta z najliczniejszą wartą
     const prowadzi = sim.clans[stan.klan >= 0 ? stan.klan : najlepszy];
     // schodzą wierni tej nacji — o wejściu decyduje ich własna wiara, nie średnia z domu
+    // Kilku naraz i nie w kółko tego samego: wcześniej pętla kończyła się na pierwszym
+    // chętnym, więc jeden wierny zamknięty w kieszeni skały dostawał rozkaz co dwadzieścia
+    // tików, a cała reszta warty stała pod otwartą skorupą do końca gry.
     if (prowadzi) {
+      let idzie = 0, prob = 0;
       for (const c of sim.creatures) {
+        if (idzie >= R.zejscieNaRaz || prob >= R.zejscieProb) break;
         if (c.dead || c.race === Race.HUMAN) continue;
         // schodzą wierni prowadzącej nacji — albo każdy, kto wierzy całym sobą
         if (c.clan !== prowadzi.id && c.devotion <= R.zejscieObcyOddanie) continue;
         if (c.devotion <= R.uwolnienieWlasne && prowadzi.devotion <= R.uwolnienieNacja) continue;
         if (Math.hypot(c.x - w.coreX, c.y - w.coreY) > R.zejscieZasieg) continue;
-        // (już schodzi — chyba że nie dostał drogi, bo w tym tiku zabrakło na nią czasu)
-        if (c.job === Job.DIG && c.jx === w.coreX && c.jy === w.coreY && c.droga) break;
-        if (wyslijDoRdzenia(sim, c, R.zejscieTikow)) break;
+        // już schodzi wyznaczoną drogą
+        if (c.job === Job.DIG && c.jx === w.coreX && c.jy === w.coreY && c.droga) { idzie++; continue; }
+        prob++;
+        wyslijDoRdzenia(sim, c, R.zejscieTikow);
+        if (c.droga) idzie++;
       }
     }
   }
@@ -141,40 +158,94 @@ export function kamienNadRdzeniem(sim: Sim): number {
 }
 
 /**
- * Czy z przedsionka da się przejść do rdzenia. Rozlewanie się po przejezdnych kaflach
- * w pudle wokół rdzenia — tanie, bo liczone najwyżej co dwadzieścia tików.
+ * Czy kafel leży w pustej komorze wokół rdzenia — wejście tam kończy drogę wiernych.
+ * Ta sama elipsa, którą świat wycina przy tworzeniu (RDZEN.komoraX/Y). Wcześniej było
+ * to pudło sięgające w głąb skorupy, więc szyb, który jeszcze nie przebił się do komory,
+ * już liczył się jako wejście.
+ */
+export function wKomorze(sim: Sim, x: number, y: number): boolean {
+  const w = sim.world;
+  const dx = (x - w.coreX) / RDZEN.komoraX, dy = (y - w.coreY) / RDZEN.komoraY;
+  return dx * dx + dy * dy <= 1 && w.passable(x, y);
+}
+
+/**
+ * Czy spoza skorupy da się DOJŚĆ do rdzenia — tą samą fizyką, którą mają stworzenia:
+ * po podłodze się chodzi, przy ścianie wspina, z krawędzi spada. Wcześniej wystarczało,
+ * że powietrze łączy się z rdzeniem, więc pęknięcie od dołu, którego wylot wisiał nad
+ * jaskinią, ogłaszało „drogę otworem”, a wierni stali pod nim do końca gry.
+ * Liczone najwyżej co kilkadziesiąt tików, w pudle wokół rdzenia.
  */
 export function drogaDoRdzenia(sim: Sim): boolean {
-  const w = sim.world;
-  const x0 = w.coreX - R.drogaPudloX, x1 = w.coreX + R.drogaPudloX;
-  const y0 = w.coreY - R.drogaPudloGora, y1 = Math.min(w.h - 1, w.coreY + R.drogaPudloDol);
+  const w = sim.world, W = w.w;
+  const x0 = Math.max(0, w.coreX - R.drogaPudloX), x1 = Math.min(W - 1, w.coreX + R.drogaPudloX);
+  const y0 = Math.max(0, w.coreY - R.drogaPudloGora), y1 = Math.min(w.h - 1, w.coreY + R.drogaPudloDol);
+  const wPudle = (x: number, y: number) => x >= x0 && x <= x1 && y >= y0 && y <= y1;
   const widziane = new Set<number>();
-  // start ze wszystkich stron poza skorupą, nie tylko z przedsionka nad nią — wierni
-  // spod rdzenia i z boku też mają wejście, jeśli skorupa pękła w ich stronę
   const kolejka: number[] = [];
-  for (let y = Math.max(0, y0); y <= y1; y++) {
-    for (let x = Math.max(0, x0); x <= Math.min(w.w - 1, x1); x++) {
+  const dodaj = (j: number) => { if (!widziane.has(j)) { widziane.add(j); kolejka.push(j); } };
+  // start ze wszystkich stron poza skorupą — wierni spod rdzenia i z boku też mają
+  // wejście, jeśli skorupa pękła w ich stronę i da się do wylotu dojść
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
       if (Math.abs(x - w.coreX) <= R.drogaStartPozaPromieniem && Math.abs(y - w.coreY) <= R.drogaStartPozaPromieniem) continue;
       const i = w.idx(x, y);
-      if (PASSABLE[w.tile[i]] === 1) kolejka.push(i);
+      if (wolny(sim, i, false)) dodaj(i);
     }
   }
-  if (!kolejka.length) return false;
-  while (kolejka.length) {
-    const i = kolejka.pop()!;
-    if (widziane.has(i)) continue;
-    widziane.add(i);
-    const x = i % w.w, y = (i / w.w) | 0;
-    if (x < x0 || x > x1 || y < y0 || y > y1) continue;
-    const t = w.tile[i];
-    if (t === T.CORE) return true;
-    if (PASSABLE[t] !== 1) continue;
-    if (x > 0) kolejka.push(i - 1);
-    if (x < w.w - 1) kolejka.push(i + 1);
-    if (y > 0) kolejka.push(i - w.w);
-    if (y < w.h - 1) kolejka.push(i + w.w);
+  // cel jak przy wejściu (creatures.ts): kto stanie w komorze wokół rdzenia, ten doszedł
+  const przyRdzeniu = (x: number, y: number) => wKomorze(sim, x, y) ||
+    w.get(x, y + 1) === T.CORE || w.get(x, y - 1) === T.CORE || w.get(x - 1, y) === T.CORE || w.get(x + 1, y) === T.CORE;
+  for (let k = 0; k < kolejka.length; k++) {
+    const i = kolejka[k];
+    const x = i % W, y = (i / W) | 0;
+    if (przyRdzeniu(x, y)) return true;
+    const naPodlodze = stoi(sim, x, y);
+    const wisi = !naPodlodze && uchwyt(sim, x, y);
+    // spada, dopóki nie ma na czym stanąć ani czego się złapać
+    if (!naPodlodze && y + 1 <= y1 && wolny(sim, i + W, false)) dodaj(i + W);
+    if (!naPodlodze && !wisi) continue;
+    if (y - 1 >= y0 && wolny(sim, i - W, false) && uchwyt(sim, x, y - 1)) dodaj(i - W);
+    for (const dx of [-1, 1]) {
+      const nx = x + dx;
+      if (!wPudle(nx, y)) continue;
+      const j = i + dx;
+      if (!wolny(sim, j, false)) continue;
+      const tamStoi = stoi(sim, nx, y);
+      if (wisi && !tamStoi) continue;            // z wiszenia tylko na półkę
+      if (!tamStoi && nadOgniem(sim, nx, y)) continue;
+      dodaj(j);
+    }
   }
   return false;
+}
+
+/** Na czym może osiąść okruch skorupy: pustka, grzybnia, kości, sieć — nigdy ołtarz ani gniazdo. */
+const OSYPISKO_NA: Record<number, boolean> = { [T.AIR]: true, [T.FUNGUS]: true, [T.BONES]: true, [T.WEB]: true };
+
+/**
+ * Wylot pęknięcia od dołu albo z boku bywa zawieszony nad jaskinią. Okruchy skorupy
+ * osypują się pod nim w ścianę, po której da się wspiąć z podłogi do szybu —
+ * inaczej nacja, która wykuła przejście, nie mogłaby z niego skorzystać.
+ */
+function podeprzyjWylot(sim: Sim, x: number, y: number): void {
+  const w = sim.world;
+  for (let yy = y + 1; yy <= y + R.osypiskoMax && w.inb(x, yy); yy++) {
+    if (!wolny(sim, w.idx(x, yy), false) || stoi(sim, x, yy)) return;
+    if (uchwyt(sim, x, yy)) continue;
+    let postawiony = false;
+    for (const dx of [-1, 1]) {
+      const nx = x + dx;
+      if (!w.inb(nx, yy) || !OSYPISKO_NA[w.tile[w.idx(nx, yy)]]) continue;
+      // nie zasypujemy nikogo żywcem
+      if (sim.creatures.some((c) => !c.dead && Math.floor(c.x) === nx && Math.floor(c.y) === yy)) continue;
+      // kamień skorupy: tego nikt nie rozkopie, więc wejście nie zniknie pod kilofami
+      w.set(nx, yy, T.STONE);
+      postawiony = true;
+      break;
+    }
+    if (!postawiony) return;
+  }
 }
 
 /**
@@ -213,7 +284,7 @@ export function policzJedzeniePrzedsionka(sim: Sim): number {
  * Wcześniej pętle były odwrotnie i skorupa kruszyła się wszerz: pięć rzędów po pięć
  * kafli to było dwadzieścia pięć pęknięć, a gra już po piątym wysyłała ludzi na kamień.
  */
-type Strona = 'gora' | 'dol' | 'lewo' | 'prawo';
+export type Strona = 'gora' | 'dol' | 'lewo' | 'prawo';
 
 function otworzSkorupe(sim: Sim, stan: StanRytualu, strona: Strona = 'gora'): void {
   const w = sim.world;
@@ -228,6 +299,7 @@ function otworzSkorupe(sim: Sim, stan: StanRytualu, strona: Strona = 'gora'): vo
       w.tile[i] = T.AIR;
       w.oznaczSlad(x, y, 2, sim.tick);
       sim.efekt(x + 0.5, y + 0.5, 'zawal');
+      if (strona !== 'gora') podeprzyjWylot(sim, x, y);
 
       // Kronika dostaje pierwszy raz i kamienie milowe — nie dwadzieścia pięć tych
       // samych zdań pod rząd.

@@ -3,7 +3,7 @@
  * zbiera prostokąty elementów (obszaryHud) i zgłasza każde przecięcie.
  *
  *   npm run dev                      (w drugim oknie)
- *   npm run test:nakladanie          [adres, domyślnie http://localhost:5173/]
+ *   npm run test:nakladanie          [adres, domyślnie http://localhost:5180/]
  *
  * Wymaga playwright-core i Chromium (ścieżka w CHROMIUM albo domyślna Playwrighta).
  */
@@ -11,7 +11,7 @@ let chromium;
 try { ({ chromium } = await import('playwright-core')); } catch {
   console.error('Brak playwright-core: npm i -D playwright-core'); process.exit(2);
 }
-const ADRES = process.argv[2] || 'http://localhost:5173/';
+const ADRES = process.argv[2] || 'http://localhost:5180/';
 const ROZMIARY = [[360, 640], [390, 844], [844, 390], [667, 375], [768, 1024], [1024, 600], [1280, 720], [1920, 1080]];
 const ZAPAS = 1;   // px — styk krawędziami to jeszcze nie nakładanie
 
