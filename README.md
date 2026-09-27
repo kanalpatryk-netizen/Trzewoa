@@ -6,19 +6,25 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 
 ## ⬇️ Zagraj
 
-### [**Pobierz grę — `trzewia.html`**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia.html)
+| | Pobierz | |
+|---|---|---|
+| 💻 **Komputer** | [**`trzewia.html`**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia.html) | mysz i klawiatura |
+| 📱 **Android** | [**`trzewia-android.html`**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-android.html) | dotyk, ekran telefonu |
 
-1. Kliknij link wyżej — pobierze się jeden plik (ok. 440 kB).
-2. Otwórz go w przeglądarce (Chrome, Firefox, Edge, Safari) — zwykle wystarczy dwuklik.
+1. Kliknij plik dla swojego urządzenia — pobierze się jeden plik (ok. 440 kB).
+2. Otwórz go w przeglądarce. Na komputerze wystarczy dwuklik; na telefonie otwórz go w Chrome
+   (Chrome → ⋮ → Pobrane → plik).
 3. Graj. Bez instalacji, bez konta, działa też bez internetu. Postęp zapisuje się w przeglądarce.
 
-Link zawsze daje najnowszą wersję: po każdej zmianie w gałęzi `main` automat
-([`.github/workflows/gra.yml`](.github/workflows/gra.yml)) buduje grę od nowa i podmienia plik
+Linki zawsze dają najnowszą wersję: po każdej zmianie w gałęzi `main` automat
+([`.github/workflows/gra.yml`](.github/workflows/gra.yml)) buduje obie wersje od nowa i podmienia pliki
 w [wydaniach](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest).
-Gdyby link jeszcze nie działał, otwórz [`trzewia.html` w repozytorium](https://github.com/kanalpatryk-netizen/Trzewoa/blob/main/trzewia.html)
+Gdyby link jeszcze nie działał, otwórz plik w repozytorium —
+[`pc/trzewia.html`](https://github.com/kanalpatryk-netizen/Trzewoa/blob/main/pc/trzewia.html) albo
+[`android/trzewia.html`](https://github.com/kanalpatryk-netizen/Trzewoa/blob/main/android/trzewia.html) —
 i kliknij przycisk **Download raw file** (strzałka w dół nad plikiem).
 
-> Plik `artifact.html` to starsza wersja — do grania służy `trzewia.html`.
+> Plik `artifact.html` to starsza wersja — do grania służą pliki wyżej.
 
 Kod źródłowy i uruchomienie dla programistów: sekcja [Uruchomienie](#uruchomienie) niżej.
 
@@ -126,7 +132,16 @@ Drugi koniec to sen: gdy jedna krew zje resztę, przestajesz być komukolwiek po
 
 ## Jak to jest zrobione
 
-Czysty TypeScript, Canvas 2D, zero zależności w runtime. Kod rozbity na małe moduły:
+Czysty TypeScript, Canvas 2D, zero zależności w runtime.
+
+Gra ma dwie wersje, każda to pełny, samodzielny projekt:
+
+| Folder | Wersja |
+|---|---|
+| [`pc/`](pc) | na komputer — mysz, klawiatura, duży ekran |
+| [`android/`](android) | na telefon — ta sama gra, dopasowywana do dotyku i małego ekranu |
+
+W obu folderach kod jest rozbity na te same małe moduły:
 
 ```
 src/
@@ -146,7 +161,7 @@ src/
 ```
 
 **Chcesz coś zmienić w balansie, wyglądzie albo dźwięku?** Zacznij od
-[`src/nastawy/README.md`](src/nastawy/README.md) — tabela „chcę zmienić… → plik → obiekt”.
+[`pc/src/nastawy/README.md`](pc/src/nastawy/README.md) (albo tym samym plikiem w `android/`) — tabela „chcę zmienić… → plik → obiekt”.
 Kod gry nie trzyma własnych liczb, tylko odwołuje się do nastaw po nazwie. W `npm run dev`
 można je zmieniać na żywo z konsoli: `__trzewia.nastawy.RYTUAL.tempo = 0.001`.
 
@@ -173,13 +188,15 @@ Potrzebny [Node.js](https://nodejs.org) 18 lub nowszy.
 
 ```bash
 git clone https://github.com/kanalpatryk-netizen/Trzewoa.git
-cd Trzewoa
+cd Trzewoa/pc          # albo: cd Trzewoa/android
 npm install
 npm run dev     # http://localhost:5180
 npm run pack    # trzewia.html — jeden plik, działa z file://
 ```
 
 ## Testy
+
+W folderze `pc/` albo `android/`:
 
 ```bash
 npm test               # świat + skorupa (szybkie, kończą się błędem, gdy coś pękło)

@@ -1,9 +1,11 @@
 # Gra do pobrania jednym kliknięciem.
 #
-# Po każdej zmianie w gałęzi main automat buduje grę w jeden plik (trzewia.html)
-# i wystawia go jako wydanie „Trzewia — najnowsza wersja”. Link
-#   https://github.com/<właściciel>/<repozytorium>/releases/latest/download/trzewia.html
-# zawsze pobiera najświeższą grę. Można też uruchomić ręcznie: Actions → „Gra do pobrania” → Run workflow.
+# Po każdej zmianie w gałęzi main automat buduje obie wersje gry — każdą w jeden plik —
+# i wystawia je jako wydanie „Trzewia — najnowsza wersja”:
+#   trzewia.html          — na komputer (folder pc/)
+#   trzewia-android.html  — na telefon z Androidem (folder android/)
+# Linki …/releases/latest/download/<plik> zawsze pobierają najświeższą grę.
+# Można też uruchomić ręcznie: Actions → „Gra do pobrania” → Run workflow.
 name: Gra do pobrania
 
 on:
@@ -28,30 +30,43 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: |
+            pc/package-lock.json
+            android/package-lock.json
 
-      - name: Instalacja
-        run: npm ci
+      - name: Komputer — budowa
+        working-directory: pc
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm run pack
 
-      - name: Sprawdzenie typów
-        run: npx tsc --noEmit
-
-      - name: Budowa jednego pliku
-        run: npm run pack
+      - name: Android — budowa
+        working-directory: android
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm run pack
+          mv trzewia.html trzewia-android.html
 
       - name: Wydanie „najnowsza wersja”
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          rozmiar=$(( $(stat -c %s trzewia.html) / 1024 ))
+          kb() { echo $(( $(stat -c %s "$1") / 1024 )); }
           cat > notatki.md <<EOF
-          **Jak zagrać:** pobierz \`trzewia.html\` (niżej, w sekcji *Assets*) i otwórz go w przeglądarce — dwuklik wystarczy.
-          Jeden plik, ${rozmiar} kB. Bez instalacji, działa też bez internetu.
+          **Jak zagrać:** pobierz plik (niżej, w sekcji *Assets*) i otwórz go w przeglądarce.
+
+          - \`trzewia.html\` — na komputer ($(kb pc/trzewia.html) kB)
+          - \`trzewia-android.html\` — na telefon z Androidem ($(kb android/trzewia-android.html) kB)
+
+          Jeden plik, bez instalacji, działa też bez internetu.
 
           Zbudowane z commita ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d)).
           EOF
-          # jedno stałe wydanie, podmieniane przy każdej zmianie — link /releases/latest/download/ się nie zmienia
+          # jedno stałe wydanie, podmieniane przy każdej zmianie — linki /releases/latest/download/ się nie zmieniają
           gh release delete gra --cleanup-tag --yes || true
-          gh release create gra trzewia.html \
+          gh release create gra pc/trzewia.html android/trzewia-android.html \
             --target "$GITHUB_SHA" \
             --title "Trzewia — najnowsza wersja" \
             --notes-file notatki.md \
