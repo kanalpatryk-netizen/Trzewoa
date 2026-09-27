@@ -54,7 +54,7 @@ export const SCENY: Record<string, Scena> = {
     linie: [
       'Masz pięć rytów: Kształtuj skałę, Zasiej jedzenie i rudę, Szepnij komuś myśl, postaw Znak, Skaź całą krew.',
       'Płacisz Krwią, która przybywa z każdą śmiercią, Wiarą z modlitw i Otchłanią z zapomnienia.',
-      'Spacja zatrzymuje czas: w pauzie planujesz rozkazy, a dzieją się naraz, gdy puścisz. Gra sama staje przy kryzysach.',
+      'Klepsydra zatrzymuje czas: w pauzie planujesz rozkazy, a dzieją się naraz, gdy puścisz. Gra sama staje przy kryzysach.',
       'Nad płytą zawsze stoi jedno zdanie — co teraz najpilniejsze. A w rogu płyty widać, ile zostało do wolności. Zaraz pokażę ci wszystko palcem.',
     ],
   },

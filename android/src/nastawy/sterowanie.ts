@@ -28,3 +28,15 @@ export const TEMPO = {
   /** Najwyższe tempo czasu (tików na klatkę). */
   max: 8,
 };
+
+/** STEROWANIE PALCEM — tylko wersja Android (na telefonie nie ma klawiatury ani myszy). */
+export const STEROWANIE = {
+  /** Podpowiedzi klawiszy: cyfry przy rytach, „esc”, „P”, klawisze w samouczku i w ustawieniach. */
+  pokazKlawisze: false,
+  /** Przytrzymanie palca na rycie (ms) otwiera jego tablicę w atlasie — zamiast prawego przycisku. */
+  przytrzymanieMs: 520,
+  /** Palec, który przesunął się dalej niż tyle px, przewija listę zamiast w nią stukać. */
+  progPrzewijania: 10,
+  /** Po wybraniu rytu jego opis (co robi, ile kosztuje) wisi przy nim tyle ms — nie ma „najechania”. */
+  opisRytuMs: 2600,
+};

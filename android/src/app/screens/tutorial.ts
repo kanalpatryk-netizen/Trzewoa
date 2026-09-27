@@ -13,6 +13,7 @@ import { ustaw, ustawienia } from '../../core/settings-store';
 import { odkrycia } from '../../atlas/odkrycia';
 import { T, PASSABLE } from '../../sim/tiles';
 import { Race } from '../../sim/races';
+import { STEROWANIE } from '../../nastawy/sterowanie';
 import { ROZDZIALY, SKAZY, type Rozdzial, type Wskazanie, type Gest, type Tekst } from './samouczek/rozdzialy';
 
 
@@ -463,8 +464,9 @@ export class EkranSamouczka implements Ekran {
       ctx.beginPath(); ctx.arc(cx + 40, my, r, 0, Math.PI * 2); ctx.stroke();
       ctx.fillText(k > 0 ? '−' : '+', cx + 40, my + 6);
       ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,7,6,0.8)';
-      ctx.strokeText('kółko myszy · dwa palce', cx, cy + 52);
-      ctx.fillText('kółko myszy · dwa palce', cx, cy + 52);
+      const gest = STEROWANIE.pokazKlawisze ? 'kółko myszy · dwa palce' : 'dwa palce';
+      ctx.strokeText(gest, cx, cy + 52);
+      ctx.fillText(gest, cx, cy + 52);
     }
     ctx.restore();
   }
@@ -472,7 +474,8 @@ export class EkranSamouczka implements Ekran {
   private opisKlawisza(t: Tekst | undefined): string {
     if (!t) return '';
     const k = tekstZ(t, this);
-    if (AKCJE_KLAWISZY.has(k)) return `klawisz ${nazwaKlawisza(klawisze[k as Akcja])}`;
+    // na telefonie nie ma klawiatury — skrót klawiszowy znika, zostaje tylko opis gestu
+    if (AKCJE_KLAWISZY.has(k)) return STEROWANIE.pokazKlawisze ? `klawisz ${nazwaKlawisza(klawisze[k as Akcja])}` : '';
     return k;
   }
 
@@ -504,7 +507,7 @@ export class EkranSamouczka implements Ekran {
     let wys = 20 + rozm * 3.65 + lWstep * rozm * 1.15;
     for (let i = 0; i < r.etapy.length; i++) {
       wys += lEtapy[i] * lhE;
-      if (i === cur && r.etapy[i].klawisz) wys += rozm * 1.0;
+      if (i === cur && this.opisKlawisza(r.etapy[i].klawisz)) wys += rozm * 1.0;
     }
     if (this.zrobiony) wys += rozm * 0.6 + lKoniec * rozm * 1.3;
     wys += glowny ? rozm * 3.1 : rozm * 2.5;
@@ -589,7 +592,7 @@ export class EkranSamouczka implements Ekran {
       ctx.fillStyle = zrob ? rgba(BARWA.atramentCichy, 0.8) : biezacy ? rgba(BARWA.atramentMocny, 1) : rgba(BARWA.atramentCichy, 0.6);
       akapit(ctx, tekstZ(e.tekst, this), ex, yy, wew - rozm * 1.4, lhE);
       yy += (lEtapy[i] - 1) * lhE;
-      if (biezacy && e.klawisz) {
+      if (biezacy && this.opisKlawisza(e.klawisz)) {
         yy += rozm * 1.0;
         ctx.font = `italic ${rozm * 0.78}px ${SERIF}`;
         ctx.fillStyle = rgba(BARWA.atramentCichy, 0.95);
@@ -643,7 +646,7 @@ export class EkranSamouczka implements Ekran {
     }
     ctx.font = `italic ${Math.max(12, rozm * 0.66)}px ${SERIF}`;
     ctx.fillStyle = rgba(BARWA.atramentCichy, 0.55);
-    ctx.fillText('esc — wyjście z samouczka', lx, y + wys - rozm * 0.45);
+    ctx.fillText(STEROWANIE.pokazKlawisze ? 'esc — wyjście z samouczka' : '≡ w rogu — wyjście z samouczka', lx, y + wys - rozm * 0.45);
     // zwiń — karta chowa się do paska, gdy zasłania płytę (póki krok nie jest zaliczony)
     this.pola.zwin = null;
     if (!this.zrobiony) {
@@ -714,7 +717,7 @@ export class EkranSamouczka implements Ekran {
   private rysujFinal(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     const rozm = Math.max(16, Math.min(22, w / 56));
     const szer = Math.min(560, w - 32);
-    const tekst = `Umiesz już wszystko, czego trzeba na początek. Nad płytą zawsze stoi jedno zdanie: co teraz najpilniejsze — kliknij je, a kamera pojedzie na miejsce. Rasy, przypływy, woda, żar i zawały — resztę odkryjesz sam. Klawisz ${nazwaKlawisza(klawisze.legenda)} pokazuje klucz do ryciny, a w atlasie czekają już pierwsze tablice — kolejne odkryjesz, grając.`;
+    const tekst = `Umiesz już wszystko, czego trzeba na początek. Nad płytą zawsze stoi jedno zdanie: co teraz najpilniejsze — dotknij go, a kamera pojedzie na miejsce. Rasy, przypływy, woda, żar i zawały — resztę odkryjesz sam. W atlasie (przycisk z księgą) czekają już pierwsze tablice — kolejne odkryjesz, grając.`;
     ctx.save();
     ctx.fillStyle = 'rgba(6,4,3,0.55)';
     ctx.fillRect(0, 0, w, h);
@@ -758,7 +761,10 @@ export class EkranSamouczka implements Ekran {
   // ---------------------------------------------------------------- wejście
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
-    if (this.faza === 'scena') { if (faza === 'dol') this.film.dalej(); return; }
+    if (this.faza === 'scena') {
+      if (faza === 'dol') { if (this.film.trafiaPomin(e.clientX, e.clientY)) this.film.pomin(); else this.film.dalej(); }
+      return;
+    }
     const x = e.clientX, y = e.clientY;
     if (this.faza === 'final') {
       if (faza !== 'dol') return;

@@ -18,15 +18,15 @@ export const MENU = {
   /** Zachęta dla nowych graczy pod opisem pozycji. */
   zachetaSamouczek: 'Pierwszy raz? Zacznij od samouczka.',
   /** Podpowiedź sterowania w lewym dolnym rogu (tylko szeroki ekran). */
-  podpowiedz: 'strzałki i enter · albo po prostu dotknij',
+  podpowiedz: '',   // Android: nic — na komputerze „strzałki i enter · albo po prostu dotknij”
   /** Pozycje spisu: etykieta i opis pod spisem. Kolejność = kolejność na ekranie. */
   pozycje: {
     wroc: { etykieta: 'Wróć do góry', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś' },
     nowa: { etykieta: 'Obudź się', opis: 'nowa góra, nowi mieszkańcy, nowa legenda' },
     wczytaj: { etykieta: 'Wróć tam, gdzie byłeś', opis: 'ostatni zapis stanu góry' },
-    samouczek: { etykieta: 'Naucz się być górą', opis: 'cztery plansze wstępu i dziesięć krótkich lekcji — palec pokazuje, gdzie kliknąć' },
+    samouczek: { etykieta: 'Naucz się być górą', opis: 'cztery plansze wstępu i dziesięć krótkich lekcji — palec pokazuje, gdzie dotknąć' },
     bestiariusz: { etykieta: 'Atlas', opis: 'tablice ras i praw góry — odkrywasz je, grając' },
-    ustawienia: { etykieta: 'Ustawienia', opis: 'dźwięk, obraz, świat i wszystkie klawisze' },
+    ustawienia: { etykieta: 'Ustawienia', opis: 'dźwięk, obraz i świat' },
   },
 
   // ----------------------------------------------------------------- układ

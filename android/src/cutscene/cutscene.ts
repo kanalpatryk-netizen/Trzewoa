@@ -80,6 +80,15 @@ export class Cutscenka {
     this.zamykanie = 1;
   }
 
+  /** Prostokąt napisu „pomiń” (px logiczne) — ekran sprawdza, czy dotknięcie w niego trafiło. */
+  polePomin: { x: number; y: number; w: number; h: number } | null = null;
+
+  /** Czy dotknięcie trafiło w „pomiń”. */
+  trafiaPomin(x: number, y: number): boolean {
+    const p = this.polePomin;
+    return !!p && x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h;
+  }
+
   pomin(): void {
     if (!this.scena) return;
     this.kolejka = [];
@@ -199,7 +208,15 @@ export class Cutscenka {
     ctx.font = `italic ${Math.max(12, w / 82)}px ${SERIF}`;
     ctx.fillStyle = rgba(BARWA.atramentCichy, 0.45 + 0.2 * Math.sin(teraz * 0.003));
     ctx.textAlign = 'center';
-    ctx.fillText(this.razem > 1 ? 'dotknij, żeby czytać dalej  ·  P albo esc pomija cały wstęp' : 'dotknij, żeby czytać dalej  ·  P albo esc pomija', w / 2, h * 0.975);
+    ctx.fillText('dotknij, żeby czytać dalej', w / 2, h * 0.975);
+    // pominięcie palcem — na telefonie nie ma „P” ani „esc”
+    ctx.font = `italic 17px ${SERIF}`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = rgba(BARWA.zarBlady, 0.85 * alfa);
+    const napis = this.razem > 1 ? 'pomiń wstęp ›' : 'pomiń ›';
+    const tw = ctx.measureText(napis).width;
+    ctx.fillText(napis, w - 24, 34);
+    this.polePomin = { x: w - 24 - tw - 14, y: 34 - 26, w: tw + 28, h: 44 };
     ctx.restore();
   }
 }

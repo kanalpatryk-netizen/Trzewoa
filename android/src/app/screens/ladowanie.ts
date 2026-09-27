@@ -6,6 +6,7 @@ import { ramaRyciny, kartusz, dopasujKartusz } from '../../render/ozdoby';
 import { rysujSerce, tetnoRdzenia } from '../../render/rdzen';
 import { ekran } from '../../core/settings-store';
 import { LADOWANIE as L } from '../../nastawy/ekran';
+import { pelnyEkran } from '../../core/android';
 
 /** Jeden krok ładowania: napis dla gracza i robota (może być asynchroniczna). */
 export interface Etap { nazwa: string; zrob: () => void | Promise<void>; }
@@ -62,7 +63,10 @@ export class EkranLadowania implements Ekran {
   klawisz(): void { this.obudz(); }
 
   private obudz(): void {
-    if (this.zrobione >= this.etapy.length && !this.blad) this.obudzony = true;
+    if (this.zrobione >= this.etapy.length && !this.blad && !this.obudzony) {
+      this.obudzony = true;
+      pelnyEkran();                              // to dotknięcie jest gestem, na który przeglądarka pozwala
+    }
   }
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {

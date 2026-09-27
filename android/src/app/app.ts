@@ -7,6 +7,7 @@ import { mikser } from '../core/mikser';
 import { akcjaDlaKlawisza } from '../core/keybinds';
 import { ustawienia, ekran } from '../core/settings-store';
 import { EKRAN } from '../nastawy/ekran';
+import { Wstecz, NieGasnij } from '../core/android';
 
 /**
  * Pętla i przełącznik ekranów. Trzyma jedno miejsce, w którym dzieje się czas,
@@ -24,6 +25,9 @@ export class App implements Kontekst {
   private aktywny: Ekran | null = null;
   private ostatnia = performance.now();
   private dzwiekRuszyl = false;
+  /** Android: systemowy „wstecz” trafia do gry, a ekran nie gaśnie w trakcie partii. */
+  private wstecz = new Wstecz(() => this.naWstecz());
+  private nieGasnij = new NieGasnij();
 
   constructor(public canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d', { alpha: false })!;
@@ -47,6 +51,15 @@ export class App implements Kontekst {
     this.aktywny = nowy;
     nowy.rozmiar?.(this.w, this.h);
     nowy.wejdz?.(dane);
+    this.wstecz.uzbroj(nazwa !== 'menu' && nazwa !== 'ladowanie');
+    this.nieGasnij.ustaw(nazwa === 'gra' || nazwa === 'samouczek');
+  }
+
+  /** „Wstecz” telefonu = Esc: każdy ekran wie, co wtedy zamknąć albo dokąd wrócić. */
+  private naWstecz(): void {
+    this.aktywny?.klawisz?.(akcjaDlaKlawisza('Escape'), new KeyboardEvent('keydown', { key: 'Escape' }));
+    const n = this.aktywny?.nazwa;
+    this.wstecz.uzbroj(n !== 'menu' && n !== 'ladowanie');
   }
 
   get aktywnyEkran(): Ekran | null { return this.aktywny; }

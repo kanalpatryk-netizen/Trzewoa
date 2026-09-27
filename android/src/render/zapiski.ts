@@ -47,7 +47,7 @@ export function rysujZapiski(
   ctx.font = `italic ${Math.max(14, szer / 52)}px ${SERIF}`;
   ctx.fillStyle = 'rgba(206,192,166,0.7)';
   ctx.textAlign = 'right';
-  ctx.fillText('kliknij wpis, by tam spojrzeć', x + szer - 26, y + 20 + tytul);
+  ctx.fillText('dotknij wpisu, by tam spojrzeć', x + szer - 26, y + 20 + tytul);
 
   const rozmiar = Math.max(14, Math.min(18, szer / 44));
   const lh = rozmiar * 1.62;

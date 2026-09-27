@@ -1,6 +1,6 @@
 import { Sim, resetRaces } from '../../sim/sim';
 import { GORA } from '../../nastawy/gora';
-import { KAMERA, TEMPO } from '../../nastawy/sterowanie';
+import { KAMERA, TEMPO, STEROWANIE } from '../../nastawy/sterowanie';
 import { ATLAS } from '../../nastawy/wyglad/atlas';
 import { Camera } from '../../render/camera';
 import { Engraver } from '../../render/engrave';
@@ -45,6 +45,9 @@ import type { Ekran } from '../screen';
 import type { Kontekst } from '../context';
 
 /** Łamie zdanie na co najwyżej `ile` linii; ostatnia dostaje wielokropek, gdy nie starczy. */
+/** Najmniejsze pole dotyku (px logiczne) — przyciski banera i alarmu rysują się mniejsze, trafia się w tyle. */
+const POLE_PALCA = 44;
+
 function lamiTekst(ctx: CanvasRenderingContext2D, tekst: string, maxW: number, ile: number): string[] {
   if (ctx.measureText(tekst).width <= maxW) return [tekst];
   const slowa = tekst.split(' ');
@@ -121,6 +124,8 @@ export class EkranGry implements Ekran {
   /** Rozkazy wydane w pauzie: czekają jako szkice, dzieją się po puszczeniu czasu. */
   rozkazy = new Rozkazy();
   private polaBanera: PoleBanera[] = [];
+  /** Palec trzymany na rycie: po STEROWANIE.przytrzymanieMs otwiera się tablica (zamiast prawego przycisku). */
+  private przytrzymanie: { id: number; v: string; sx: number; sy: number; od: number; verb: Verb | null; tool: string | null } | null = null;
   /** Podpowiedź nad płytą jako odnośnik do miejsca, o którym mówi. */
   private radaRect: { x: number; y: number; w: number; h: number } | null = null;
   /** Linia „droga do wolności" na brzegu płyty — kliknięcie otwiera jej tablicę. */
@@ -382,6 +387,13 @@ export class EkranGry implements Ekran {
   }
 
   krok(_dt: number, teraz: number): void {
+    // palec przytrzymany na rycie: tablica rytu, a wybór z dotknięcia się cofa — to nie był wybór
+    const pt = this.przytrzymanie;
+    if (pt && performance.now() - pt.od > STEROWANIE.przytrzymanieMs) {
+      this.przytrzymanie = null;
+      this.ui.verb = pt.verb; this.ui.tool = pt.tool;
+      this.otworzTabliceRytu(pt.v);
+    }
     // plan wykonuje się także wtedy, gdy pauzę zdjęło coś innego niż przycisk
     if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
     this.sluchaj();
@@ -565,7 +577,8 @@ export class EkranGry implements Ekran {
     drawFrame(ctx, plate, teraz, oddech);
     // w samouczku cel gry dochodzi dopiero na końcu — linia kroków by tylko rozpraszała
     // na telefonie wstęga leży na dole płyty, tam gdzie baner pauzy — w pauzie ustępuje mu miejsca
-    const banerNaDole = (plate.waski || plate.niski) && this.pauza;
+    // (także gdy trzymasz ryt — dół płyty zajmuje wtedy opis narzędzia — i gdy otwarta jest karta mieszkańca)
+    const banerNaDole = (plate.waski || plate.niski) && (this.pauza || this.ui.verb !== null || !!this.ui.selected);
     this.drogaRect = !this.nasluch && !sim.ending && !banerNaDole ? rysujDrogeDoWolnosci(ctx, plate, sim, teraz) : null;
     if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) rysujMinimape(ctx, sim, cam, plate, teraz);
     if (ustawienia.spisRas) drawCensus(ctx, plate, sim, h);
@@ -672,7 +685,7 @@ export class EkranGry implements Ekran {
     ctx.textAlign = 'left';
     // podpowiedź klawisza po lewej stronie znaku i tylko przy szerokim marginesie —
     // obok znaku wchodziła na ramę płyty
-    if (!this.plate.waski && this.plate.left >= 90) { ctx.textAlign = 'right'; ctx.fillText('P', x - 6, y + 16); }
+    if (STEROWANIE.pokazKlawisze && !this.plate.waski && this.plate.left >= 90) { ctx.textAlign = 'right'; ctx.fillText('P', x - 6, y + 16); }
     ctx.restore();
     ctx.save();
     ctx.strokeStyle = `rgba(206,192,166,${0.45 + 0.15 * Math.sin(teraz * 0.0016)})`;
@@ -796,25 +809,30 @@ export class EkranGry implements Ekran {
     if (this.atlas.otwarte) {
       if (faza === 'dol') this.atlas.dotyk(e.clientX, e.clientY);
       else this.atlas.ruch(e.clientX, e.clientY);
+      // palec, który położono jeszcze przed otwarciem atlasu (przytrzymanie rytu), podnosi się
+      // już nad atlasem — bez tego zostawał na liście i następne stuknięcie było „drugim palcem”
+      if (faza === 'gora') { this.pointers.delete(e.pointerId); this.pinch = 0; this.srodekPinch = null; this.painting = false; }
       this.dirty = true;
       return;
     }
+    // przytrzymanie palca na rycie otwiera jego tablicę (patrz krok()) — ruch albo puszczenie je przerywa
+    if (faza === 'dol' && e.button !== 2) {
+      const v = this.rytPod(e.clientX, e.clientY);
+      this.przytrzymanie = v ? { id: e.pointerId, v, sx: e.clientX, sy: e.clientY, od: performance.now(), verb: ui.verb, tool: ui.tool } : null;
+    } else if (this.przytrzymanie?.id === e.pointerId
+      && (faza === 'gora' || Math.hypot(e.clientX - this.przytrzymanie.sx, e.clientY - this.przytrzymanie.sy) > STEROWANIE.progPrzewijania)) {
+      this.przytrzymanie = null;
+    }
     // prawy przycisk na rycie otwiera jego tablicę
     if (faza === 'dol' && e.button === 2) {
-      for (const v of ['ksztaltuj', 'zasiej', 'szept', 'znak', 'skaz']) {
-        const m = ui.miejsce('verb', v);
-        if (m && Math.abs(e.clientX - m.x) <= m.hw && Math.abs(e.clientY - m.y) <= m.hh) {
-          odkrycia.odkryj(`ryt-${v}`, false);
-          this.atlas.otworzTablice(`ryt-${v}`);
-          return;
-        }
-      }
+      const v = this.rytPod(e.clientX, e.clientY);
+      if (v) { this.otworzTabliceRytu(v); return; }
     }
 
     if (faza === 'dol' && !this.zapiski) {
       // karta sytuacji: planuj (zostaje pauza), puść czas, nie zatrzymuj przy tym
       for (const b of this.polaAlarmu) {
-        if (Math.abs(e.clientX - b.x) > b.w / 2 || Math.abs(e.clientY - b.y) > b.h / 2) continue;
+        if (Math.abs(e.clientX - b.x) > b.w / 2 || Math.abs(e.clientY - b.y) > Math.max(b.h / 2, POLE_PALCA / 2)) continue;
         if (b.akcja === 'pusc') this.ustawPauze(false);
         else if (b.akcja === 'tablica' && this.alarm?.tablica) {
           odkrycia.odkryj(this.alarm.tablica, false);
@@ -831,7 +849,7 @@ export class EkranGry implements Ekran {
       }
       // baner pauzy: cofnij, skreśl wszystko, puść czas
       for (const b of this.polaBanera) {
-        if (Math.abs(e.clientX - b.x) > b.w / 2 || Math.abs(e.clientY - b.y) > b.h / 2) continue;
+        if (Math.abs(e.clientX - b.x) > b.w / 2 + 4 || Math.abs(e.clientY - b.y) > Math.max(b.h / 2, POLE_PALCA / 2)) continue;
         if (b.akcja === 'cofnij') { if (this.rozkazy.cofnij(sim)) ui.say('Skreślone.', sim.tick); }
         else if (b.akcja === 'skresl') { this.rozkazy.skreslWszystkie(sim); ui.say('Plan pusty.', sim.tick); }
         else this.ustawPauze(false);
@@ -974,6 +992,20 @@ export class EkranGry implements Ekran {
     if (!p.moved && p.przycisk !== 2 && !sim.ending && ui.verb && ui.verb !== 'ksztaltuj' && ui.verb !== 'zasiej' && this.naPlycie(p.sx, p.sy)) this.uzyj(p.sx, p.sy);
   }
 
+  /** Który ryt leży pod palcem (albo null). */
+  private rytPod(x: number, y: number): string | null {
+    for (const v of ['ksztaltuj', 'zasiej', 'szept', 'znak', 'skaz']) {
+      const m = this.ui.miejsce('verb', v);
+      if (m && Math.abs(x - m.x) <= m.hw && Math.abs(y - m.y) <= m.hh) return v;
+    }
+    return null;
+  }
+
+  private otworzTabliceRytu(v: string): void {
+    odkrycia.odkryj(`ryt-${v}`, false);
+    this.atlas.otworzTablice(`ryt-${v}`);
+  }
+
   /** Ten sam skutek, co klawisz — tylko że da się w to kliknąć palcem. */
   private przyciskWcisniety(b: Przycisk): void {
     switch (b.akcja) {
@@ -1015,7 +1047,14 @@ export class EkranGry implements Ekran {
     // Enter przy karcie sytuacji: „planuj" — karta znika, czas dalej stoi
     if (this.alarm && _e?.key === 'Enter') { this.alarm = null; return; }
     switch (akcja) {
-      case 'menu': this.app.idz('menu'); break;
+      case 'menu':
+        // „wstecz” telefonu (i Esc): najpierw zamyka to, co otwarte — dopiero potem menu
+        if (this.zapiski) { this.zapiski = false; break; }
+        if (ui.selected) { ui.selected = null; break; }
+        if (this.alarm) { this.alarm = null; break; }
+        if (ui.verb) { ui.verb = null; ui.tool = null; break; }
+        this.app.idz('menu');
+        break;
       case 'pauza': this.ustawPauze(!this.pauza); break;
       case 'szybciej': ustawienia.tempo = Math.min(TEMPO.max, ustawienia.tempo + 1); this.nasluch?.({ typ: 'tempo' }); break;
       case 'wolniej': ustawienia.tempo = Math.max(1, ustawienia.tempo - 1); this.nasluch?.({ typ: 'tempo' }); break;

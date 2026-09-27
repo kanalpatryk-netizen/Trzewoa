@@ -5,10 +5,11 @@ import { ustawienia, ustaw, DOMYSLNE, zapiszUstawienia, jakoscAuto } from '../..
 import { BARWA, rgba } from '../../render/palette';
 import { SERIF, tloSadzy, kreska } from '../../render/ink';
 import { Tajemnica } from '../../render/tajemnica';
-import { ramaRyciny, kartusz, naglowekDzialu } from '../../render/ozdoby';
+import { ramaRyciny, kartusz, naglowekDzialu, dopasujKartusz } from '../../render/ozdoby';
 import { EKRAN_USTAWIEN as U } from '../../nastawy/wyglad/ustawienia';
 import { RAMA } from '../../nastawy/wyglad/ozdoby';
-import { TEMPO } from '../../nastawy/sterowanie';
+import { TEMPO, STEROWANIE } from '../../nastawy/sterowanie';
+import { pelnyEkran, wyjdzZPelnegoEkranu } from '../../core/android';
 
 type Wiersz =
   | { typ: 'naglowek'; tekst: string }
@@ -22,6 +23,10 @@ type Wiersz =
 export class EkranUstawien implements Ekran {
   nazwa = 'ustawienia';
   private wiersze: Wiersz[] = [];
+  /** Palec na liście: skąd ruszył i czy już przewija. */
+  private palec: { id: number; y0: number; p0: number; ruszyl: boolean } | null = null;
+  /** Przycisk „‹ menu” w lewym górnym rogu — na telefonie nie ma klawisza Esc. */
+  private wstecz: { x: number; y: number; w: number; h: number } | null = null;
   private wybrany = 1;
   private przewiniecie = 0;
   private czekamNa: Akcja | null = null;
@@ -48,13 +53,14 @@ export class EkranUstawien implements Ekran {
       { typ: 'przelacznik', etykieta: 'Dźwięki gestów', opis: 'szkic rozkazu, pauza, ostrzeżenia, karty atlasu', czytaj: () => ustawienia.efekty, zmien: (v) => { ustaw('efekty', v); this.app.gesty.start(); this.app.gesty.odswiezGlosnosc(); if (v) this.app.gesty.klik(); } },
 
       { typ: 'naglowek', tekst: 'Obraz' },
+      { typ: 'przelacznik', etykieta: 'Pełny ekran', opis: 'bez paska przeglądarki; „wstecz” telefonu zamyka go', czytaj: () => ustawienia.pelnyEkran, zmien: (v) => { ustaw('pelnyEkran', v); if (v) pelnyEkran(); else wyjdzZPelnegoEkranu(); } },
       { typ: 'suwak', etykieta: 'Wielkość obrazu', opis: 'napisy, ryty i płyta — ponad dopasowanie do ekranu', min: 0.8, max: 1.6, krok: 0.1, czytaj: () => ustawienia.wielkoscUI, zmien: (v) => ustaw('wielkoscUI', Math.round(v * 10) / 10), format: (v) => `${Math.round(v * 100)}%` },
       { typ: 'wybor', etykieta: 'Jakość ryciny', opis: 'ostra — pełna, szybka — połowa, auto — sama tanieje', opcje: ['auto', 'ostra', 'szybka'], czytaj: () => ustawienia.jakosc, zmien: (v) => { jakoscAuto.taniej = false; ustaw('jakosc', v as typeof ustawienia.jakosc); } },
       { typ: 'suwak', etykieta: 'Siła kreskowania', opis: 'ile atramentu wchodzi w skałę', min: 0.75, max: 1.35, krok: 0.05, czytaj: () => ustawienia.kontrast, zmien: (v) => ustaw('kontrast', v), format: (v) => `${Math.round(v * 100)}%` },
       { typ: 'suwak', etykieta: 'Wielkość mieszkańców', opis: 'sylwetki w kaflach', min: 0.7, max: 2.2, krok: 0.1, czytaj: () => ustawienia.wielkoscSylwetek, zmien: (v) => ustaw('wielkoscSylwetek', v), format: (v) => `${v.toFixed(1)}×` },
       { typ: 'przelacznik', etykieta: 'Oddech kamienia', opis: 'powolne falowanie całego rysunku', czytaj: () => ustawienia.oddech, zmien: (v) => ustaw('oddech', v) },
       { typ: 'przelacznik', etykieta: 'Ogranicz ruch', opis: 'wycisza drgania obrazu, dym i wiercenie się sylwetek', czytaj: () => ustawienia.ograniczRuch, zmien: (v) => ustaw('ograniczRuch', v) },
-      { typ: 'przelacznik', etykieta: 'Kronika', opis: 'linijki zdarzeń w dolnym marginesie', czytaj: () => ustawienia.kronika, zmien: (v) => ustaw('kronika', v) },
+      // (bez przełącznika kroniki — na telefonie kronika jest tylko w zapiskach)
       { typ: 'przelacznik', etykieta: 'Spis ras', opis: 'wstęga warstw — najważniejszy wskaźnik w grze', czytaj: () => ustawienia.spisRas, zmien: (v) => ustaw('spisRas', v) },
       { typ: 'przelacznik', etykieta: 'Skala głębokości', opis: 'karby na prawym marginesie', czytaj: () => ustawienia.skalaGlebokosci, zmien: (v) => ustaw('skalaGlebokosci', v) },
 
@@ -67,16 +73,20 @@ export class EkranUstawien implements Ekran {
       { typ: 'przelacznik', etykieta: 'Automatyczne przybliżanie', opis: 'kamera sama dobiera skalę do wielkości kolonii', czytaj: () => ustawienia.autoZoom, zmien: (v) => ustaw('autoZoom', v) },
       { typ: 'przelacznik', etykieta: 'Autozapis', opis: 'stan góry co minutę do pamięci przeglądarki', czytaj: () => ustawienia.autozapis, zmien: (v) => ustaw('autozapis', v) },
 
-      { typ: 'naglowek', tekst: 'Sterowanie' },
-      ...AKCJE.map((a) => ({ typ: 'klawisz' as const, akcja: a.akcja, etykieta: a.nazwa, opis: a.opis })),
-      { typ: 'akcja', etykieta: 'Przywróć domyślne klawisze', opis: 'wraca do układu z pierwszego uruchomienia', wykonaj: () => przywrocDomyslne(), przycisk: 'przywróć' },
+      // klawisze tylko tam, gdzie jest klawiatura (wersja Android: STEROWANIE.pokazKlawisze = false)
+      ...(STEROWANIE.pokazKlawisze ? [
+        { typ: 'naglowek' as const, tekst: 'Sterowanie' },
+        ...AKCJE.map((a) => ({ typ: 'klawisz' as const, akcja: a.akcja, etykieta: a.nazwa, opis: a.opis })),
+        { typ: 'akcja' as const, etykieta: 'Przywróć domyślne klawisze', opis: 'wraca do układu z pierwszego uruchomienia', wykonaj: () => przywrocDomyslne(), przycisk: 'przywróć' },
+      ] : [{ typ: 'naglowek' as const, tekst: 'Od nowa' }]),
       { typ: 'akcja', etykieta: 'Przywróć domyślne ustawienia', opis: 'dźwięk, obraz i świat od nowa', wykonaj: () => { Object.assign(ustawienia, DOMYSLNE, { samouczekZrobiony: ustawienia.samouczekZrobiony }); zapiszUstawienia(); }, przycisk: 'przywróć' },
 
       { typ: 'akcja', etykieta: 'Samouczek od nowa', opis: 'odblokowuje podpowiedź w menu i pozwala przejść wszystko jeszcze raz', wykonaj: () => ustaw('samouczekZrobiony', false), przycisk: 'od nowa' },
 
-      { typ: 'naglowek', tekst: 'Mysz i dotyk' },
-      { typ: 'akcja', etykieta: 'Przeciągnięcie', opis: 'przesuwa kamerę; przy wybranym czasowniku maluje', wykonaj: () => {} },
-      { typ: 'akcja', etykieta: 'Kółko / szczypanie', opis: 'przybliża i oddala', wykonaj: () => {} },
+      { typ: 'naglowek', tekst: 'Dotyk' },
+      { typ: 'akcja', etykieta: 'Przeciągnięcie', opis: 'przesuwa płytę; przy Kształtuj i Zasiej maluje — wtedy płytę przesuwają dwa palce', wykonaj: () => {} },
+      { typ: 'akcja', etykieta: 'Dwa palce', opis: 'rozsunięte przybliżają, zsunięte oddalają', wykonaj: () => {} },
+      { typ: 'akcja', etykieta: 'Przytrzymanie rytu', opis: 'otwiera jego tablicę w atlasie', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'Dotknięcie rytu', opis: 'wybiera czasownik; drugie dotknięcie go odkłada i puszcza czas', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'W pauzie', opis: 'rozkazy czekają jako szkice; dotknięcie szkicu bez rytu w ręku go skreśla', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'Klepsydra', opis: 'dotknięcie klepsydry nad płytą zatrzymuje i puszcza czas', wykonaj: () => {} },
@@ -90,8 +100,19 @@ export class EkranUstawien implements Ekran {
     tloSadzy(ctx, w, h, teraz);
     this.tajemnica.brzegi(ctx, { x: 0, y: 0, w, h }, 0.5 + 0.5 * Math.sin(teraz * 0.0006));
     const m = Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc)) + 14;
-    const rt = Math.max(U.tytulRozmiar.min, Math.min(U.tytulRozmiar.max, w / 26));
+    // tytuł zostawia po bokach miejsce na „‹ menu” — na wąskim telefonie wchodził na przycisk
+    const rt = dopasujKartusz(ctx, U.tytul, Math.max(U.tytulRozmiar.min, Math.min(U.tytulRozmiar.max, w / 26)), w - 2 * (m + 96));
     kartusz(ctx, w / 2, m + rt * 1.15, U.tytul, rt, 1);
+    // powrót do menu palcem
+    ctx.save();
+    ctx.font = `italic 17px ${SERIF}`;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle = rgba(BARWA.zarBlady, 0.9);
+    const tw = ctx.measureText(U.wstecz).width;
+    ctx.fillText(U.wstecz, m + 4, m + rt * 1.15);
+    ctx.restore();
+    this.wstecz = { x: m - 8, y: m + rt * 1.15 - 22, w: tw + 24, h: 44 };
 
     const gora = m + rt * 2.2;
     const dol = h - m - 6;
@@ -349,8 +370,32 @@ export class EkranUstawien implements Ekran {
     else if (wiersz.typ === 'akcja') { wiersz.wykonaj(); this.zbuduj(); }
   }
 
+  /**
+   * Palec: przeciągnięcie przewija listę, a wiersz przełącza się dopiero po puszczeniu
+   * bez ruchu. Wcześniej wiersz przełączał się już przy dotknięciu — i przewinąć listę
+   * dało się tylko kółkiem myszy, więc na telefonie dół ustawień był nieosiągalny.
+   */
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
-    if (faza !== 'dol') return;
+    if (faza === 'dol') {
+      const b = this.wstecz;
+      if (b && e.clientX >= b.x && e.clientX <= b.x + b.w && e.clientY >= b.y && e.clientY <= b.y + b.h) {
+        this.app.gesty.klik();
+        this.app.idz('menu');
+        return;
+      }
+      this.palec = { id: e.pointerId, y0: e.clientY, p0: this.przewiniecie, ruszyl: false };
+      return;
+    }
+    const p = this.palec;
+    if (!p || p.id !== e.pointerId) return;
+    if (faza === 'ruch') {
+      const dy = e.clientY - p.y0;
+      if (Math.abs(dy) > STEROWANIE.progPrzewijania) p.ruszyl = true;
+      if (p.ruszyl) this.przewiniecie = Math.max(0, Math.min(this.maxPrzewin, p.p0 - dy));
+      return;
+    }
+    this.palec = null;
+    if (p.ruszyl) return;
     const traf = this.trafienia.filter((t) => e.clientX >= t.x && e.clientX <= t.x + t.w && e.clientY >= t.y && e.clientY <= t.y + t.h);
     if (!traf.length) return;
     const strefowy = traf.find((t) => t.strefa);

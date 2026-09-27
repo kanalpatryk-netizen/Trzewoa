@@ -25,6 +25,8 @@ export interface Settings {
   trudnosc: 'łaskawa' | 'surowa';
   /** Mnożnik wielkości całego obrazu ponad automatyczne dopasowanie do ekranu. */
   wielkoscUI: number;
+  /** Android: gra wchodzi na pełny ekran po „dotknij, aby się obudzić”. */
+  pelnyEkran: boolean;
 }
 
 export const DOMYSLNE: Settings = {
@@ -49,6 +51,7 @@ export const DOMYSLNE: Settings = {
   tablice: 'pokazuj',
   trudnosc: 'łaskawa',
   wielkoscUI: 1,
+  pelnyEkran: true,
 };
 
 /**

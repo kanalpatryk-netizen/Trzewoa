@@ -9,8 +9,10 @@ export const EKRAN_USTAWIEN = {
   // ------------------------------------------------------------------ napisy
   tytul: 'USTAWIENIA',
   ramaGora: 'Ustawienia · jak góra ma śnić',
-  ramaDol: 'P albo esc wraca do menu · kółko przewija',
-  ramaDolWaski: 'esc wraca',
+  ramaDol: 'przeciągnij palcem, żeby przewijać',   // Android (na komputerze: klawisze i kółko)
+  ramaDolWaski: 'przeciągnij, żeby przewijać',
+  /** Przycisk powrotu w lewym górnym rogu. */
+  wstecz: '‹ menu',
   czekamNaKlawisz: 'naciśnij klawisz, który ma to robić · esc anuluje',
   /** Słowa przełącznika. */
   nie: 'nie', tak: 'tak',
@@ -23,11 +25,11 @@ export const EKRAN_USTAWIEN = {
   /** Najszersza lista (px). */
   maxSzerokosc: 880,
   /** Rozmiar etykiety wiersza: ekran / 62 (min–max). */
-  podstawa: { min: 15, max: 19 },
+  podstawa: { min: 16, max: 19 },   // Android: min 16 (na komputerze 15)
   /** Wysokość wiersza i nagłówka działu (× podstawa) i dodatek na każdą kolejną linię opisu. */
   wysokoscWiersza: 3.05, wysokoscNaglowka: 3.1, nastepnaLinia: 0.85,
   /** Opis pod etykietą: rozmiar (× podstawa) i krycie. */
-  opisRozmiar: 0.72, opisAlfa: 0.75,
+  opisRozmiar: 0.8, opisAlfa: 0.8,   // Android: większe i jaśniejsze (na komputerze 0.72 i 0.75)
 
   // -------------------------------------------------------------- kontrolki
   /** Długość linijki suwaka (px): wąski ekran (< 480 px listy) / szeroki. */

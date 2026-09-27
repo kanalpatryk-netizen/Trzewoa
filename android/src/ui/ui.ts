@@ -9,6 +9,7 @@ import { rysujPostac } from '../render/figury';
 import { ramaKarty } from '../render/ozdoby';
 import { klawisze, nazwaKlawisza } from '../core/keybinds';
 import type { Rozkazy } from '../powers/rozkazy';
+import { STEROWANIE } from '../nastawy/sterowanie';
 
 interface Hit { x: number; y: number; hw: number; hh: number; kind: 'verb' | 'tool' | 'thought'; verb?: Verb; tool?: string; }
 
@@ -51,6 +52,8 @@ export class Ui {
   plan: Rozkazy | null = null;
 
   private dwieKolumny = false;
+  /** Kiedy ostatnio wybrano ryt — na telefonie jego opis wisi przez chwilę (STEROWANIE.opisRytuMs). */
+  private opisRytuOd = -1e9;
 
   layout(plate: Plate, vw: number): void {
     this.plate = plate; this.vw = vw;
@@ -111,7 +114,10 @@ export class Ui {
       this.oprawaRytu(ctx, x, y, v, this.verb === v.id, ready, time);
       this.rune(ctx, x, y, this.gs, v.id, this.verb === v.id, ready, time);
       this.hits.push({ x, y, hw: this.gs * 0.8, hh: this.gap * 0.45, kind: 'verb', verb: v.id });
-      if (Math.abs(this.pointer.x - x) <= this.gs * 0.9 && Math.abs(this.pointer.y - y) <= this.gap * 0.45) {
+      if (STEROWANIE.pokazKlawisze) {
+        if (Math.abs(this.pointer.x - x) <= this.gs * 0.9 && Math.abs(this.pointer.y - y) <= this.gap * 0.45) opisRytu = { i, v: v.id, ready };
+      } else if (this.verb === v.id && time - this.opisRytuOd < STEROWANIE.opisRytuMs) {
+        // palec nie „najeżdża” — opis pokazuje się na chwilę po wybraniu rytu i znika sam
         opisRytu = { i, v: v.id, ready };
       }
     }
@@ -152,14 +158,15 @@ export class Ui {
     if (c.wiara) czesci.push(`${c.wiara} wiary`);
     if (c.krew) czesci.push(`${c.krew} krwi`);
     if (c.otchlan) czesci.push(`${c.otchlan} otchłani`);
-    const linie = [`${nazwa}  ·  ${klawisz}`, czesci.length ? `od ${czesci.join(', ')}` : 'nic nie kosztuje'];
+    const linie = [STEROWANIE.pokazKlawisze ? `${nazwa}  ·  ${klawisz}` : nazwa, czesci.length ? `od ${czesci.join(', ')}` : 'nic nie kosztuje'];
+    const oTablicy = STEROWANIE.pokazKlawisze ? 'prawy przycisk — tablica' : 'przytrzymaj — tablica';
     const skutek = SKUTKI[v];
 
     const size = Math.max(14, Math.min(18, this.vw / 72));
     ctx.save();
     ctx.font = `${size}px ${SERIF}`;
     const szer = Math.max(...linie.map((l) => ctx.measureText(l).width), ctx.measureText(skutek).width * 0.9,
-      ctx.measureText('prawy przycisk — tablica').width * 0.8) + size * 1.4;
+      ctx.measureText(oTablicy).width * 0.8) + size * 1.4;
     const wys = size * 5.1;
     const px = Math.min(x + this.gs * 0.9, this.plate.x - 6);
     const py = Math.max(this.plate.y + 10, y - wys / 2);
@@ -175,12 +182,59 @@ export class Ui {
     ctx.fillText(skutek, px + size * 0.7, py + size * 3.45);
     ctx.font = `italic ${size * 0.72}px ${SERIF}`;
     ctx.fillStyle = 'rgba(170,156,132,0.8)';
-    ctx.fillText('prawy przycisk — tablica', px + size * 0.7, py + size * 4.5);
+    ctx.fillText(oTablicy, px + size * 0.7, py + size * 4.5);
+    ctx.restore();
+  }
+
+  /**
+   * TELEFON: narzędzia jako duże pola nad płytą, na całą szerokość — wyryte słowa
+   * w 14 px trafiało się palcem przez przypadek. Co robi wybrane, mówi linijka na dole płyty.
+   */
+  private drawToolsTelefon(ctx: CanvasRenderingContext2D, sim: Sim): void {
+    const tools = TOOLS[this.verb!];
+    const p = this.plate;
+    const niski = p.niski;
+    const h = niski ? 26 : 36, y0 = niski ? 2 : 10;
+    // poziomo klepsydra (z napisem „czas sączy się”) stoi w górnym marginesie po prawej — pola kończą się przed nią
+    const x0 = p.x, szer = p.w - (niski ? 170 : 0);
+    const odstep = 8;
+    const pw = (szer - odstep * (tools.length - 1)) / tools.length;
+    const size = niski ? 15 : 17;
+    ctx.save();
+    ctx.font = `${size}px ${SERIF}`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    for (let k = 0; k < tools.length; k++) {
+      const ok = affordable(sim, this.verb!, tools[k].id);
+      const on = this.tool === tools[k].id;
+      const x = x0 + k * (pw + odstep);
+      ctx.fillStyle = on ? 'rgba(58,40,24,0.95)' : 'rgba(12,9,8,0.9)';
+      ctx.fillRect(x, y0, pw, h);
+      ctx.lineWidth = on ? 1.6 : 1;
+      ctx.strokeStyle = on ? 'rgba(240,216,168,0.95)' : ok ? 'rgba(206,192,166,0.55)' : 'rgba(146,134,118,0.3)';
+      ctx.strokeRect(x + 0.5, y0 + 0.5, pw - 1, h - 1);
+      ctx.fillStyle = on ? 'rgba(248,234,204,0.99)' : ok ? 'rgba(216,204,180,0.92)' : 'rgba(146,134,118,0.5)';
+      ctx.fillText(tools[k].label, x + pw / 2, y0 + h / 2 + 1, pw - 8);
+      this.hits.push({ x: x + pw / 2, y: y0 + h / 2, hw: pw / 2 + odstep / 2, hh: h / 2 + 4, kind: 'tool', verb: this.verb!, tool: tools[k].id });
+    }
+    // w pauzie dół płyty należy do banera „czas stoi”
+    if (this.plan) { ctx.restore(); return; }
+    const t = tools.find((z) => z.id === this.tool);
+    ctx.font = `italic 14px ${SERIF}`;
+    ctx.textBaseline = 'alphabetic';
+    const opis = t ? `${t.hint} — świat zwalnia, póki trzymasz znak` : 'świat zwalnia, póki trzymasz znak';
+    const yo = p.y + p.h - 12;
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(10,7,6,0.85)';
+    ctx.strokeText(opis, p.x + p.w / 2, yo, p.w - 16);
+    ctx.fillStyle = 'rgba(226,212,184,0.9)';
+    ctx.fillText(opis, p.x + p.w / 2, yo, p.w - 16);
     ctx.restore();
   }
 
   /** Narzędzia jako wyryte słowa w górnym marginesie — żadnych szarych pigułek. */
   private drawTools(ctx: CanvasRenderingContext2D, sim: Sim): void {
+    if (this.plate.waski || this.plate.niski) { this.drawToolsTelefon(ctx, sim); return; }
     const tools = TOOLS[this.verb!];
     const size = Math.max(14, Math.min(20, this.vw / 62));
     ctx.font = `${size}px ${SERIF}`;
@@ -306,7 +360,7 @@ export class Ui {
       ctx.fillText(v.label.toLowerCase(), x, y + r + 5, this.plate.left - 6);
     }
     // klawisz w rogu — na dotyku klawiatury nie ma, więc tylko na szerokim ekranie
-    if (!this.plate.waski) {
+    if (STEROWANIE.pokazKlawisze && !this.plate.waski) {
       const rozm = Math.max(9, s * 0.26);
       ctx.font = `${rozm}px ${SERIF}`;
       ctx.textAlign = 'center';
@@ -409,7 +463,9 @@ export class Ui {
     ctx.font = `${size}px ${SERIF}`;
     for (let k = 0; k < tools.length; k++) {
       const bx = x + cw * (k % 2 === 0 ? 0.28 : 0.72);
-      const by = yM + Math.floor(k / 2) * size * 1.9;
+      // telefon: rzędy dalej od siebie, żeby palec trafiał w jedną myśl, nie w dwie
+      const telefon = this.plate.waski || this.plate.niski;
+      const by = yM + Math.floor(k / 2) * size * (telefon ? 2.4 : 1.9);
       const ok = affordable(sim, 'szept', tools[k].id);
       ctx.textAlign = 'center';
       ctx.fillStyle = ok ? 'rgba(240,226,198,0.96)' : 'rgba(146,134,118,0.5)';
@@ -421,7 +477,8 @@ export class Ui {
       ctx.moveTo(bx - hw + 4, by - size * 0.85); ctx.lineTo(bx - hw, by - size * 0.85); ctx.lineTo(bx - hw, by + size * 0.3); ctx.lineTo(bx - hw + 4, by + size * 0.3);
       ctx.moveTo(bx + hw - 4, by - size * 0.85); ctx.lineTo(bx + hw, by - size * 0.85); ctx.lineTo(bx + hw, by + size * 0.3); ctx.lineTo(bx + hw - 4, by + size * 0.3);
       ctx.stroke();
-      this.hits.push({ x: bx, y: by - size * 0.3, hw, hh: size * 0.9, kind: 'thought', tool: tools[k].id });
+      // na telefonie trafia się w całą połowę karty, nie w samo słowo
+      this.hits.push({ x: bx, y: by - size * 0.3, hw: telefon ? Math.max(hw, cw * 0.21) : hw, hh: telefon ? size * 1.15 : size * 0.9, kind: 'thought', tool: tools[k].id });
     }
     ctx.restore();
   }
@@ -433,6 +490,7 @@ export class Ui {
       this.flash = '';                                  // stary komunikat nie może wisieć po zmianie
       if (h.kind === 'verb') {
         this.verb = this.verb === h.verb ? null : h.verb!;
+        if (this.verb) this.opisRytuOd = performance.now();
         this.tool = this.verb ? TOOLS[this.verb][0].id : null;
         this.selected = null;
       } else if (h.kind === 'tool') {

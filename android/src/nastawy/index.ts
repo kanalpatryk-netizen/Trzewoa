@@ -10,7 +10,7 @@ export { GORA, LUDY, ZASIEDLENIE, PRZYPLYWY } from './gora';
 export { RYTUAL, PIELGRZYMKA, PLAN_DROGI } from './rytual';
 export { STWORZENIA } from './stworzenia';
 export { KOSZTY, MOCE, SKAZY } from './moce';
-export { KAMERA, TEMPO } from './sterowanie';
+export { KAMERA, TEMPO, STEROWANIE } from './sterowanie';
 export { EKRAN, JAKOSC, LADOWANIE, TELEFON } from './ekran';
 export { MUZYKA, REZONANS, MIKSER, GESTY } from './dzwiek';
 export { BARWA, ATRAMENT_GLEBI } from './barwy';

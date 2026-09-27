@@ -67,15 +67,15 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g, s) => { const d = s.gniazdoGoblinow(); if (d) g.pokazMiejsce(d.x, d.y, 14, true); },
     etapy: [
       {
-        tekst: 'Przeciągnij płytę, żeby się rozejrzeć.', klawisz: 'mysz albo palec', gest: 'przeciagnij',
+        tekst: 'Przeciągnij płytę, żeby się rozejrzeć.', klawisz: 'palcem', gest: 'przeciagnij',
         gotowe: (g, z, s) => z?.typ === 'kamera' && Math.hypot(g.cam.x - s.kamStart.x, g.cam.y - s.kamStart.y) > 3,
       },
       {
-        tekst: 'Przybliż i oddal widok.', klawisz: 'kółko myszy, dwa palce albo [ ]', gest: 'kolko',
+        tekst: 'Przybliż i oddal widok.', klawisz: 'rozsuń albo zsuń dwa palce', gest: 'kolko',
         gotowe: (g, z, s) => z?.typ === 'kamera' && z.rodzaj === 'zoom' && Math.abs(Math.log(g.cam.zoom / s.kamStart.zoom)) > 0.25,
       },
       {
-        tekst: 'Kliknij „wróć do swoich" — kamera znajdzie mieszkańców.', klawisz: 'kamera',
+        tekst: 'Dotknij „wróć do swoich" (oko pod płytą) — kamera znajdzie mieszkańców.', klawisz: 'kamera',
         wskaz: (s) => s.przycisk('kamera'),
         gotowe: (_g, z) => z?.typ === 'kamera' && z.rodzaj === 'powrot',
       },
@@ -160,8 +160,8 @@ export const ROZDZIALY: Rozdzial[] = [
         wskaz: (s) => s.ryt('szept'), gotowe: (g) => g.ui.verb === 'szept',
       },
       {
-        tekst: 'Kliknij zaznaczonego goblina — otworzy się jego karta.', cofa: true,
-        wskaz: (s) => { const c = s.wskazanyGoblin('kliknij go'); return c ? { typ: 'swiat', cel: c } : null; },
+        tekst: 'Dotknij zaznaczonego goblina — otworzy się jego karta.', cofa: true,
+        wskaz: (s) => { const c = s.wskazanyGoblin('dotknij go'); return c ? { typ: 'swiat', cel: c } : null; },
         gotowe: (g) => g.ui.verb === 'szept' && !!g.ui.selected && !g.ui.selected.dead,
       },
       {
@@ -187,8 +187,8 @@ export const ROZDZIALY: Rozdzial[] = [
         wskaz: (s) => s.slowo('tool', 'objawienie'), gotowe: (g) => g.ui.verb === 'znak' && g.ui.tool === 'objawienie',
       },
       {
-        tekst: 'Kliknij płytę przy gnieździe.',
-        wskaz: (s) => { const d = s.gniazdoGoblinow(); return d ? { typ: 'swiat', cel: { x: d.x, y: d.y, r: 4, tekst: 'kliknij tutaj' } } : null; },
+        tekst: 'Dotknij płyty przy gnieździe.',
+        wskaz: (s) => { const d = s.gniazdoGoblinow(); return d ? { typ: 'swiat', cel: { x: d.x, y: d.y, r: 4, tekst: 'dotknij tutaj' } } : null; },
         gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'znak',
       },
     ],
@@ -215,8 +215,8 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (g, _z, s) => g.ui.verb === 'skaz' && g.ui.tool === s.skaza.id,
       },
       {
-        tekst: 'Kliknij zaznaczonego goblina.',
-        wskaz: (s) => { const c = s.wskazanyGoblin('kliknij go'); return c ? { typ: 'swiat', cel: c } : null; },
+        tekst: 'Dotknij zaznaczonego goblina.',
+        wskaz: (s) => { const c = s.wskazanyGoblin('dotknij go'); return c ? { typ: 'swiat', cel: c } : null; },
         // po stanie krwi, nie po zdarzeniu: skaza rzucona na kogoś innego niż Ślepy Lud się nie liczy
         gotowe: (g, _z, s) => g.sim.taints[Race.GOBLIN].includes(s.skaza.id),
       },
@@ -230,7 +230,7 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g) => { g.sim.krew += 60; },
     etapy: [
       {
-        tekst: 'Zatrzymaj czas — spacją, klepsydrą albo tym przyciskiem.', klawisz: 'pauza',
+        tekst: 'Zatrzymaj czas — klepsydrą albo tym przyciskiem.', klawisz: 'pauza',
         wskaz: (s) => s.przycisk('pauza'), gotowe: (g) => g.pauza,
       },
       {
@@ -282,10 +282,10 @@ export const ROZDZIALY: Rozdzial[] = [
         wskaz: (s) => s.przycisk('zapiski'), gotowe: (g) => g.zapiski,
       },
       {
-        tekst: 'Zamknij je — kliknij gdziekolwiek.',
+        tekst: 'Zamknij je — dotknij gdziekolwiek.',
         gotowe: (g) => !g.zapiski,
       },
     ],
-    koniec: 'Tu gra spisuje twoją legendę. Kliknięcie we wpis przenosi wzrok tam, gdzie to się stało.',
+    koniec: 'Tu gra spisuje twoją legendę. Dotknięcie wpisu przenosi wzrok tam, gdzie to się stało.',
   },
 ];
