@@ -61,6 +61,8 @@ export const RYTUAL = {
   drogaStartPozaPromieniem: 17,
   /** …i obejmuje pudło: tyle w bok, w górę i w dół. */
   drogaPudloX: 24, drogaPudloGora: 30, drogaPudloDol: 24,
+  /** Pod wylotem pęknięcia od dołu okruchy osypują się w ścianę do wspinaczki — najwyżej tyle kafli w dół. */
+  osypiskoMax: 16,
   /** Kamień liczony w kolumnie nad rdzeniem (do kamieni milowych) — od tylu kafli. */
   kolumnaSkorupy: 16,
 
@@ -71,6 +73,10 @@ export const RYTUAL = {
   zejscieZasieg: 22,
   /** Obcy (spoza prowadzącej nacji) schodzi, jeśli jego oddanie przekracza to. */
   zejscieObcyOddanie: 0.8,
+  /** Tylu wiernych naraz schodzi do rdzenia wyznaczoną drogą… */
+  zejscieNaRaz: 3,
+  /** …a na jedną kontrolę szukamy drogi najwyżej dla tylu nowych. */
+  zejscieProb: 4,
   /** Budżet tików na zejście wysłanego wiernego. */
   zejscieTikow: 1500,
   /** Budżet tików na zejście pielgrzyma, który sam zauważył otwartą skorupę. */
@@ -85,8 +91,6 @@ export const RYTUAL = {
   uwolnienieWlasne: 0.7,
   /** Dotknięcie rdzenia: stworzenie w tym kwadracie od środka sprawdza sąsiednie kafle. */
   dotykZasieg: 4,
-  /** Wejście do komory przez otwartą skorupę: tyle kafli w poziomie i w pionie od środka. */
-  komoraX: 8, komoraY: 7,
 };
 
 export const PIELGRZYMKA = {
@@ -114,6 +118,8 @@ export const PIELGRZYMKA = {
   zasiegBliskosci: 90,
   /** Pielgrzym w drodze nie porzuca wyprawy przez tyle tików. */
   wyprawaTikow: 7000,
+  /** Pielgrzym, który zszedł z planu drogi, wraca na niego, jeśli kreska jest najwyżej tyle kafli dalej. */
+  planZasieg: 8,
   /** Cel w przedsionku rozrzucony o ± tyle kafli w poziomie. */
   rozrzutCelu: 3,
   /** „W przedsionku” = w takim prostokącie od jego środka (pół szerokości, pół wysokości). */
