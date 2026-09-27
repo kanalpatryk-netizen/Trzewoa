@@ -1,7 +1,9 @@
+import { KAMERA } from '../nastawy/sterowanie';
+
 /** Kamera w kaflach; zoom to liczba pikseli na kafel. */
 export class Camera {
   x = 0; y = 0; zoom = 6;
-  minZoom = 2.5; maxZoom = 26;
+  minZoom = KAMERA.min; maxZoom = KAMERA.max;
   constructor(public vw: number, public vh: number) {}
 
   /** Miękkie dojście do celu — kamera ma iść za tym, co się dzieje, nie stać w miejscu. */

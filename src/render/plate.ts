@@ -2,6 +2,8 @@ import { Sim } from '../sim/sim';
 import { RACES, RACE_COUNT, Race, odmien } from '../sim/races';
 import { SERIF } from './overlay';
 import { ustawienia } from '../core/settings-store';
+import { lewaKrawedzPrzyciskow } from './przyciski';
+import { EKRAN } from '../nastawy/ekran';
 
 export interface Plate { x: number; y: number; w: number; h: number; left: number; bottom: number; right: number; top: number; waski: boolean; }
 
@@ -10,7 +12,9 @@ export interface Plate { x: number; y: number; w: number; h: number; left: numbe
  * jest górą — ryty, kronika, organy — leży na marginesie. Nic nie przykrywa skały.
  */
 export function computePlate(vw: number, vh: number): Plate {
-  const waski = vw < 700;                     // telefon w pionie: inny podział marginesów
+  // telefon w pionie (i tablet w pionie): inny podział marginesów — na szerokim układzie
+  // pod płytą brakowało miejsca na spis, Otchłań i osiem przycisków naraz
+  const waski = vw < EKRAN.waskiPonizej || (vw < EKRAN.pionowyTabletPonizej && vh > vw * EKRAN.pionowyOd);
   const left = waski ? 46 : Math.max(58, Math.min(104, vw * 0.075));
   const right = waski ? 20 : Math.max(58, Math.min(104, vw * 0.075));
   const top = Math.max(34, Math.min(72, vh * 0.07));
@@ -20,10 +24,50 @@ export function computePlate(vw: number, vh: number): Plate {
 
 const INK = 'rgba(206,192,166,';
 
-export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number): void {
+/** Prostokąt na ekranie — samouczek wskazuje nim organy w ramie. */
+export interface Obszar { x: number; y: number; w: number; h: number; }
+
+/** Rysa Krwi pod płytą. */
+export function obszarKrwi(p: Plate, vh: number): Obszar {
+  const cx0 = p.waski ? p.x : p.x + p.w * 0.6;
+  const base = p.waski ? vh - p.bottom * 0.04 : vh - p.bottom * 0.1;
+  const maxH = p.waski ? p.bottom * 0.16 : p.bottom * 0.34;
+  return { x: cx0, y: base - maxH, w: p.x + p.w - cx0, h: maxH };
+}
+
+/** Kwadrat Otchłani razem z podpisem. */
+export function obszarOtchlani(p: Plate, vh: number): Obszar {
+  const bok = Math.max(26, Math.min(46, p.bottom * (p.waski ? 0.16 : 0.28)));
+  // szerokość z podpisem („stać cię na Skazę”) — podpis nie może wyjść poza płytę
+  const w = bok + 6 + Math.max(13, bok * 0.3) * 7.8;
+  // wąsko: przy prawej krawędzi płyty; szeroko: w połowie, ale nigdy na przyciskach
+  const x = p.waski ? p.x + p.w - w : Math.min(p.x + p.w * 0.5, lewaKrawedzPrzyciskow(p) - w - 14);
+  const y = vh - p.bottom + p.bottom * (p.waski ? 0.4 : 0.14);
+  return { x, y, w, h: bok };
+}
+
+/** Szerokość wstęgi spisu ras — kończy się przed Otchłanią. */
+function szerokoscSpisu(p: Plate, vh: number): number {
+  return p.waski ? p.w * 0.78 : Math.max(p.w * 0.25, Math.min(p.w * 0.46, obszarOtchlani(p, vh).x - p.x - 16));
+}
+
+/** Pasmo dymu Wiary pod górną krawędzią płyty. */
+export function obszarWiary(p: Plate): Obszar {
+  return { x: p.x, y: p.y, w: p.w, h: Math.max(30, p.h * 0.13) };
+}
+
+/** Wstęga warstw — spis ras. */
+export function obszarSpisu(p: Plate, vh: number): Obszar {
+  const y = vh - p.bottom + p.bottom * (p.waski ? 0.12 : 0.17);
+  const h = Math.max(12, p.bottom * (p.waski ? 0.09 : 0.11));
+  return { x: p.x, y: y - h * 0.4, w: szerokoscSpisu(p, vh), h: h * 2.4 };
+}
+
+export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number, oddech = 0.5): void {
   ctx.save();
   ctx.lineWidth = 1;
-  ctx.strokeStyle = `${INK}0.45)`;
+  // rama oddycha razem z rdzeniem — ledwie, ale całość przestaje być martwym prostokątem
+  ctx.strokeStyle = `${INK}${0.4 + 0.1 * oddech})`;
   ctx.strokeRect(p.x - 6.5, p.y - 6.5, p.w + 13, p.h + 13);
   ctx.strokeStyle = `${INK}0.18)`;
   ctx.strokeRect(p.x - 10.5, p.y - 10.5, p.w + 21, p.h + 21);
@@ -35,6 +79,32 @@ export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number)
     ctx.beginPath();
     ctx.moveTo(cx + sx * n, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy + sy * n);
     ctx.stroke();
+    // zwój w rogu zewnętrznej ramy: trzewia zwinięte w ślimak
+    const ox = cx - sx * 4.5, oy = cy - sy * 4.5;
+    ctx.beginPath();
+    for (let i = 0; i <= 28; i++) {
+      const t = i / 28;
+      const k = t * Math.PI * 3.2 + (sx > 0 ? 0 : Math.PI) * (sy > 0 ? 1 : -1);
+      const r = 0.6 + t * 3.6;
+      const x = ox + Math.cos(k) * r * sx, y = oy + Math.sin(k) * r * sy;
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.strokeStyle = `${INK}0.34)`;
+    ctx.stroke();
+    ctx.strokeStyle = `${INK}0.5)`;
+  }
+  // pionowe oko w lewej ramie: przerwa w zewnętrznej linii, powieka i źrenica, która
+  // oddycha razem z rdzeniem (pod płytą wchodziło na znaki spisu ras)
+  if (!p.waski) {
+    const ex = p.x - 10.5, ey = p.y + p.h / 2;
+    ctx.fillStyle = '#0b0807';
+    ctx.fillRect(ex - 3, ey - 13, 6, 26);
+    ctx.strokeStyle = `${INK}0.42)`;
+    ctx.beginPath();
+    ctx.moveTo(ex, ey - 10); ctx.quadraticCurveTo(ex + 6, ey, ex, ey + 10); ctx.quadraticCurveTo(ex - 6, ey, ex, ey - 10);
+    ctx.stroke();
+    ctx.fillStyle = `rgba(200,70,48,${0.35 + 0.45 * oddech})`;
+    ctx.beginPath(); ctx.ellipse(ex, ey, 0.9 + 0.3 * oddech, 1.8 + 0.6 * oddech, 0, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }
@@ -61,19 +131,31 @@ export function drawCensus(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh
   // górne pasmo marginesu należy do spisu; kronika zaczyna się dopiero pod nim
   const y = vh - p.bottom + p.bottom * (p.waski ? 0.12 : 0.17);
   const h = Math.max(12, p.bottom * (p.waski ? 0.09 : 0.11));
-  const x0 = p.x, x1 = p.x + p.w * (p.waski ? 0.78 : 0.46);
+  const x0 = p.x, x1 = p.x + szerokoscSpisu(p, vh);
   const jag = (t: number, seed: number) => Math.sin(t * 37.1 + seed) * (h * 0.09) + Math.sin(t * 11.3 + seed * 2) * (h * 0.06);
 
   ctx.save();
+  etykietaPionowa(ctx, 'ludy', x0 - 16, y + h / 2);
+  // cienkie linie stropu i spągu — wstęga ma ramę jak wszystko inne na marginesie
+  ctx.strokeStyle = `${INK}0.18)`;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(x0, y - h * 0.25 + 0.5); ctx.lineTo(x1, y - h * 0.25 + 0.5);
+  ctx.moveTo(x0, y + h * 1.25 + 0.5); ctx.lineTo(x1, y + h * 1.25 + 0.5);
+  ctx.moveTo(x0 + 0.5, y - h * 0.25 - 3); ctx.lineTo(x0 + 0.5, y + h * 1.25 + 3);
+  ctx.moveTo(x1 - 0.5, y - h * 0.25 - 3); ctx.lineTo(x1 - 0.5, y + h * 1.25 + 3);
+  ctx.stroke();
   if (total > 0) {
     let cx = x0;
+    // grzybnia dostaje swój kawałek z tej samej szerokości — wcześniej doklejała się
+    // za pełną wstęgą i wchodziła na Otchłań obok
+    const udzialGrzybni = Math.min(0.22, sim.popByRace[Race.MYCELIUM] / Math.max(1, total + sim.popByRace[Race.MYCELIUM])) * 0.8;
+    const szerRas = (x1 - x0) * (1 - udzialGrzybni);
     for (let r = 0; r < RACE_COUNT; r++) {
       const grzyb = r === Race.MYCELIUM;
-      const share = grzyb
-        ? Math.min(0.22, sim.popByRace[r] / Math.max(1, total + sim.popByRace[r]))
-        : sim.popByRace[r] / total;
+      const share = grzyb ? udzialGrzybni / 0.8 : sim.popByRace[r] / total;
       if (share <= 0.001) continue;
-      const bw = (x1 - x0) * share * (grzyb ? 0.8 : 1);
+      const bw = grzyb ? (x1 - x0) * udzialGrzybni : szerRas * share;
       const raw = RACES[r].color;
       const col = [(206 + raw[0]) / 2 | 0, (192 + raw[1]) / 2 | 0, (166 + raw[2]) / 2 | 0];
       const ang = 0.35 + r * 0.5;
@@ -156,10 +238,9 @@ export function drawCrack(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vw:
   // skala liniowa: przy logarytmicznej „krwi masz dość" wyglądało na pół misy
   const PELNA = 300;
   const level = Math.min(1, sim.krew / PELNA);
-  const cx0 = p.waski ? p.x : p.x + p.w * 0.6;
-  const cx1 = p.x + p.w;
-  const base = p.waski ? vh - p.bottom * 0.04 : vh - p.bottom * 0.1;
-  const maxH = p.waski ? p.bottom * 0.16 : p.bottom * 0.34;   // rysa, nie wykres słupkowy
+  // rysa, nie wykres słupkowy — geometria wspólna z samouczkiem
+  const o = obszarKrwi(p, vh);
+  const cx0 = o.x, cx1 = o.x + o.w, base = o.y + o.h, maxH = o.h;
 
   // obrys rysy: postrzępiona góra, końce zbiegające się w szpic
   const segs = 22;
@@ -173,6 +254,11 @@ export function drawCrack(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vw:
   }
 
   ctx.save();
+  // podpis organu nad jego lewym końcem
+  ctx.font = `9px ${SERIF}`;
+  ctx.textAlign = 'left';
+  ctx.fillStyle = 'rgba(224,168,96,0.6)';
+  ctx.fillText('K R E W', cx0, base - maxH - 4);
   ctx.beginPath();
   ctx.moveTo(cx0, base);
   for (const [x, y] of top) ctx.lineTo(x, y);
@@ -226,19 +312,51 @@ function prog(ctx: CanvasRenderingContext2D, x1: number, x2: number, y: number, 
   ctx.restore();
 }
 
+/** Pionowy podpis działu na lewym marginesie: rozstrzelone kapitaliki czytane od dołu. */
+function etykietaPionowa(ctx: CanvasRenderingContext2D, tekst: string, x: number, yc: number): void {
+  ctx.save();
+  ctx.translate(x, yc);
+  ctx.rotate(-Math.PI / 2);
+  ctx.font = `9px ${SERIF}`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillStyle = 'rgba(224,168,96,0.6)';
+  ctx.fillText(tekst.toUpperCase().split('').join(' '), 0, 0);
+  ctx.restore();
+}
+
 /** Otchłań jako osobny znak: tyle ciebie jest teraz nieznane. */
 export function drawOtchlan(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number): void {
   const udzial = Math.max(0, Math.min(1, sim.world.unknown / (sim.world.w * sim.world.h)));
-  const bok = Math.max(26, Math.min(46, p.bottom * (p.waski ? 0.16 : 0.28)));
   // na wąskim ekranie kwadrat Otchłani wchodził w podpisy nacji — schodzi pod spis
-  const x = p.waski ? p.x + p.w - bok * 3.4 : p.x + p.w * 0.56;
-  const y = vh - p.bottom + p.bottom * (p.waski ? 0.4 : 0.14);
+  const { x, y, h: bok } = obszarOtchlani(p, vh);
   ctx.save();
-  ctx.strokeStyle = `${INK}0.45)`;
+  // studnia: ciemna, w podwójnej ramie; nieznane wypełnia ją bladą kreską od dna —
+  // im więcej ciebie zapomniane, tym wyżej sięga
+  ctx.fillStyle = 'rgba(8,6,6,1)';
+  ctx.fillRect(x, y, bok, bok);
+  const poziom = y + bok * (1 - udzial);
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x + 2, poziom, bok - 4, y + bok - 2 - poziom); ctx.clip();
+  ctx.fillStyle = 'rgba(232,230,238,0.16)';
+  ctx.fillRect(x, poziom, bok, bok);
+  ctx.strokeStyle = 'rgba(232,230,238,0.6)';
   ctx.lineWidth = 1;
-  ctx.strokeRect(x, y, bok, bok);
-  ctx.fillStyle = 'rgba(214,208,192,0.85)';
-  ctx.fillRect(x + 1, y + bok * (1 - udzial) + 1, bok - 2, bok * udzial - 2);
+  ctx.beginPath();
+  for (let d = -bok; d < bok * 2; d += 3) { ctx.moveTo(x + d, y + bok); ctx.lineTo(x + d + bok, y); }
+  ctx.stroke();
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(232,230,238,0.85)';
+  ctx.beginPath(); ctx.moveTo(x + 2, poziom + 0.5); ctx.lineTo(x + bok - 2, poziom + 0.5); ctx.stroke();
+  ctx.strokeStyle = `${INK}0.55)`;
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x + 0.5, y + 0.5, bok - 1, bok - 1);
+  ctx.strokeStyle = `${INK}0.2)`;
+  ctx.strokeRect(x - 2.5, y - 2.5, bok + 5, bok + 5);
+  // nacięcie progu Skazy na ścianie studni
+  const progS = y + bok * (1 - Math.min(1, 55 / Math.max(1, sim.world.w * sim.world.h * 0.0035)));
+  ctx.strokeStyle = sim.otchlan >= 55 ? 'rgba(246,216,142,0.9)' : `${INK}0.35)`;
+  ctx.beginPath(); ctx.moveTo(x - 5, progS); ctx.lineTo(x + 3, progS); ctx.stroke();
   ctx.font = `italic ${Math.max(13, bok * 0.3)}px ${SERIF}`;
   ctx.fillStyle = `${INK}0.9)`;
   ctx.textAlign = 'left';
@@ -346,7 +464,9 @@ export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim,
   const lines3 = (yBase - bandTop) / 3 / 1.4;
   const size = Math.max(14, Math.min(Math.min(22, vw / 46), lines3));
   const x = p.x;
-  const maxW = p.w * (p.waski ? 0.98 : 0.58);
+  if (sim.chronicle.length) etykietaPionowa(ctx, 'kronika', x - 16, (bandTop + yBase) / 2);
+  // na telefonie kronika dzieli dolny margines z Otchłanią — nie może na nią wchodzić
+  const maxW = p.waski ? p.w - obszarOtchlani(p, vh).w - 14 : p.w * 0.58;
   ctx.save();
   ctx.textAlign = 'left';
   const lines = sim.chronicle.slice(-3);
@@ -356,7 +476,8 @@ export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim,
     const age = sim.tick - e.tick;
     // koniec świata nie znika po chwili; zwykły ruch tak
     const zycie = e.kind === 'koniec' ? 12000 : e.kind === 'krew' || e.kind === 'otchlan' ? 6000 : 3400;
-    const fade = Math.max(0.16, 1 - age / zycie) * (1 - back * 0.26);
+    // starsze linijki cichną, ale nie znikają — dawniej gasły do ledwie widocznej szarości
+    const fade = Math.max(0.34, 1 - age / zycie) * (1 - back * 0.2);
     const y = yBase - back * size * 1.4;
     ctx.font = `${back === 0 ? '' : 'italic '}${size * (back === 0 ? 1 : 0.84)}px ${SERIF}`;
     let text = e.text;

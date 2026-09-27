@@ -9,34 +9,71 @@ Sandbox boga osadzony w podziemiu, w całości 2D, w konwencji XIX-wiecznej ryci
 | Warstwa | Zawartość |
 |---|---|
 | **Menu** | powrót do trwającej gry, nowa góra, samouczek, bestiariusz, ustawienia — wszystko rysowane tą samą kreską, co świat |
-| **Samouczek** | 13 kroków i 12 scen: przerywnik z własną ryciną, po nim jedno konkretne zadanie na tę samą mechanikę |
-| **Bestiariusz** | stała karta wiedzy: pięć czasowników z kosztami, sześć ras ze sposobem istnienia, trzy zasoby, przypływy i zakończenia. Liczby brane wprost z kodu, więc nie zdezaktualizują się |
+| **Samouczek** | 10 krótkich rozdziałów z listą czynności do odhaczenia; palec wskazuje dokładnie ryt, słowo, przycisk albo miejsce na płycie |
+| **Atlas** | 24 tablice z ryciną i opisem: sześć ras, pięć rytów, trzy zasoby i dziesięć praw góry — odkrywanych w trakcie gry |
 | **Ustawienia** | dźwięk, obraz, świat oraz **pełna lista sterowania z przypisywaniem klawiszy** |
 | **Rozgrywka** | przekrój góry 176×240, sześć sposobów istnienia, pięć czasowników, trzy zasoby, przypływy, zapis stanu |
-| **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś |
-| **Dźwięk** | rezonans świata (kucie, modlitwa, ton zależny od głębokości) i osobna warstwa muzyki — powolne akordy frygijskie i uderzenia w metal, wszystko syntezowane w locie |
+| **Kronika** | ekran końcowy ze spisaną legendą tego, czym byłeś — i wyrokiem: dlaczego tak się skończyło, jak daleko zaszła droga do wolności i jedna rada na następny raz |
+| **Rycina** | brzegi płyty gęstnieją rytowaną kreską i oddychają razem z rdzeniem (tym samym rytmem, którym dudni skała); patyna starej odbitki, zwoje w rogach ramy i pionowe oko; skala głębokości w nieznanym piśmie; w skale, do której nikt nie zajrzał, żarzą się znaki — gasną, gdy dojdzie do nich światło, a w pauzie widać je wyraźniej. W menu obraca się astrolabium podziemia |
+| **Dźwięk** | rezonans świata (kucie, modlitwa, ton zależny od głębokości), muzyka — powolne akordy frygijskie i uderzenia w metal — oraz dźwięki gestów: rylec szkicu rozkazu, kamień pauzy, kaskada wykonanego planu, dzwony ostrzeżeń, szelest kart atlasu. Wszystko syntezowane w locie, przez wspólny pogłos jaskini; w pauzie góra brzmi jak zza ściany |
 
-## Samouczek — sześć poleceń, nie wykład
+## Jak się wygrywa
 
-Każdy krok to jedna rzecz do zrobienia, z **podświetlonym miejscem na planszy**,
-gotowym narzędziem w ręku i zdaniem o tym, co się właśnie stało:
+Wygrywasz, gdy wierni przebiją skorupę rdzenia i uklękną przy nim (**Uwolnienie**). W lewym górnym rogu
+płyty stoi plakietka **Droga do wolności** z pięcioma krokami — bieżący się żarzy, zrobione są przekreślone,
+kliknięcie otwiera tablicę z całą drogą (otwiera się też sama na początku pierwszej partii):
 
-1. **Znajdź swoich mieszkańców** — kamera dowozi do gniazda, przy nim stoi imię nacji
-2. **Popatrz, jak rysunek sam się dopisuje** — pamięć i ciemność
-3. **Trzy organy w ramie obrazu** — Krew, Wiara, Otchłań
-4. **Nakarm ich** — zasiej grzyb w zaznaczonym miejscu
-5. **Otwórz im drogę** — wydrąż korytarz w zaznaczonej skale
-6. **Kto jeszcze w tobie mieszka** — sześć sposobów istnienia
-7. **Zrób proroka** — dotknij zaznaczonego stworzenia i wybierz myśl (czas stoi)
-8. **Zrób jawny cud** — Znak przy gnieździe
-9. **Zmień im krew** — Skaź na zaznaczonym stworzeniu (czas stoi)
-10. **Przetrzymaj przypływ** — z powierzchni schodzą ludzie
-11. **To jest twój rdzeń** — skorupa, rytuał i oba zakończenia
-12. **Popatrz na wstęgę warstw** — spis ras i zasypianie
-13. **Otwórz zapiski** — cała kronika pod `K`
+1. **wiara** — ktoś się do ciebie modli (ruda przy Ślepym Ludzie → ołtarz);
+2. **oddanie** — jedna nacja wierzy mocno (Znak przy jej gnieździe);
+3. **droga** — przy przedsionku pod rdzeniem rośnie grzyb: wtedy najwyżej pięciu wiernych schodzi na wartę
+   i przeżyje na dole. Jeśli spod rdzenia nie ma drogi do gniazda, gra rysuje złotą kreską korytarz,
+   który można wydrążyć — nie trzeba;
+4. **skorupa** — warta modli się, aż kamień pęknie (licznik pęknięć przy kroku);
+5. **wolność**.
 
-Nic nie przełącza się samo: krok kończy dopiero **„Dalej →"**. Dwa kroki z celowaniem
-zatrzymują czas, żeby stworzenie nie uciekło spod pierścienia.
+Przegrywasz, gdy góra zaśnie: z pustki albo gdy jedna krew zje resztę. **Łaskawa góra** (domyślna,
+Ustawienia → Świat → Góra) zasypia wolniej, daje więcej krwi na start i szybszy rytuał — na pierwsze
+partie. Po przegranej kronika mówi, dlaczego, jak daleko zaszła droga i co zrobić następnym razem.
+
+## Pauza taktyczna
+
+Jak w Baldur's Gate: czas można zatrzymać (spacja, klepsydra albo przycisk pod płytą) i w zatrzymanym
+świecie wydawać rozkazy. Każdy rysuje się jako **szkic rylcem** i rezerwuje koszt; wszystkie dzieją się
+naraz, gdy puścisz czas. Szkic skreśla dotknięcie bez rytu w ręku albo „cofnij" na banerze pauzy.
+
+**Auto-pauza** zatrzymuje świat w chwilach, w których trzeba decydować: nacja wymiera, jedna krew bierze
+górę, zaczyna się sen, pęka skorupa rdzenia albo przychodzi przypływ. Kamera jedzie na miejsce, a karta
+sytuacji mówi, co się stało i **co możesz z tym zrobić**. Poziom (kryzysy / wszystko / wyłączona) w ustawieniach.
+
+## Atlas tablic
+
+Każda rasa, ryt, zasób i prawo góry ma swoją **tablicę** jak plansza z dawnego atlasu: u góry rycina,
+pod nią nazwa, łaciński podpis, opis i jedno zdanie — **kiedy tego użyć**. Tablice odkrywa się, grając
+(rasę, gdy pierwszy raz stanie w kadrze; prawo, gdy pierwszy raz zadziała), a ważne otwierają się same
+przy pierwszym spotkaniu. Atlas jest pod przyciskiem z księgą, w menu, na karcie sytuacji („tablica")
+i pod prawym przyciskiem na rycie. Odkrycia pamiętane są między partiami.
+
+## Samouczek — robisz, nie czytasz
+
+Jedna krótka scena na wejście, potem dziesięć rozdziałów. Każdy ma **listę czynności
+z odhaczaniem**, a bieżąca czynność jest **wskazana palcem**: reszta ekranu przygasa,
+od karty biegnie strzałka do rytu, słowa u góry, przycisku albo miejsca na płycie.
+Przy każdej czynności stoi też jej klawisz.
+
+1. **Rozejrzyj się** — przeciągnij płytę, przybliż, wróć do swoich
+2. **Czym płacisz** — Krew, Wiara i Otchłań wskazane w ramie obrazu
+3. **Nakarm ich** — ryt Zasiej → słowo „grzyb" → przeciągnij po zaznaczonym miejscu
+4. **Otwórz drogę** — ryt Kształtuj → „drąż" → przeciągnij po skale
+5. **Szepnij** — ryt Szepcz → kliknij goblina → „prorokuj" na jego karcie (czas stoi)
+6. **Zrób cud** — ryt Znak → „objawienie" → klik przy gnieździe
+7. **Zmień im krew** — ryt Skaź → „ślepota" → klik w goblina (czas stoi)
+8. **Czas** — pauza, wznowienie, przyspieszenie
+9. **Jak to się kończy** — wstęga warstw, zasypianie i rdzeń
+10. **Kronika** — otwórz i zamknij zapiski
+
+Odznaczenie rytu cofa do odpowiedniej czynności, a kto zrobi coś szybciej, niż
+kazano, ma to zaliczone. Rozdział można pominąć albo wrócić do poprzedniego.
+Na końcu jednym kliknięciem zaczyna się prawdziwa gra.
 
 W zwykłej rozgrywce nad płytą stoi **jedno zdanie podpowiedzi** czytane ze stanu świata
 („Żużlowcy są o krok od wygaśnięcia — otwórz im żar"), a miejsce, o którym mówi,
@@ -80,13 +117,20 @@ src/
   cutscene/       odtwarzacz scen + scenariusz
     art/          jedna rycina na plik (gora, pamiec, zyly, ziarno, szept,
                   znak, krew, spis, kronika, organy, rasy, przyplyw)
-  core/           rng, audio (rezonans), music, save, settings-store, keybinds
+  core/           rng, audio (rezonans), music, gesty, mikser, save, settings-store, keybinds
   render/         engrave (sitodruk kreskowania), plate (rama i organy),
                   overlay (sylwetki, cząsteczki), bloom, shafts, ink, palette, camera
   sim/            world, sim, creatures, races, tiles
   powers/         pięć czasowników
   ui/             ryty, karta bestiariusza w grze
+  nastawy/        WSZYSTKIE pokrętła gry: balans, rytuał, stworzenia, moce, świat,
+                  dźwięk, kamera, kolory i wygląd ekranów — z opisem każdej wartości
 ```
+
+**Chcesz coś zmienić w balansie, wyglądzie albo dźwięku?** Zacznij od
+[`src/nastawy/README.md`](src/nastawy/README.md) — tabela „chcę zmienić… → plik → obiekt”.
+Kod gry nie trzyma własnych liczb, tylko odwołuje się do nastaw po nazwie. W `npm run dev`
+można je zmieniać na żywo z konsoli: `__trzewia.nastawy.RYTUAL.tempo = 0.001`.
 
 ### Obraz
 
@@ -101,12 +145,25 @@ src/
 
 Ekologia zamiast balansu: pojemność każdej rasy wynika z jej sposobu istnienia (grzyb i padlina, liczba kuźni, liczba cudzych dzieci, szaleństwo głębi), a jej przekroczenie bije w głód kwadratem nadmiaru. Dzięki temu Ślepy Lud faluje w cyklu boomu i załamania zamiast rosnąć w nieskończoność, a dominacja trzyma się przedziału 0,34–0,66 przez 40 tysięcy tików.
 
+**Sen** przychodzi z monokultury albo z pustki. Budzi z niego tylko wojna, którą sam rozpętałeś: każda śmierć w walce z udziałem nacji założonej przez twojego proroka cofa powiekę — także gdy obie strony są tej samej krwi. Wojny toczone bez ciebie nie budzą.
+
+Pielgrzymi schodzą pod rdzeń tylko wtedy, gdy spod niego da się wrócić do gniazda; zeskok do wielkiej jaskini byłby drogą w jedną stronę. Wąski szyb wydrążony przez gracza wystarczy — po jego ścianach da się wspiąć.
+
 ## Uruchomienie
 
 ```bash
 npm install
 npm run dev     # http://localhost:5180
 npm run pack    # trzewia.html — jeden plik, działa z file://
+```
+
+## Testy
+
+```bash
+npm test               # świat + skorupa (szybkie, kończą się błędem, gdy coś pękło)
+npm run test:swiat     # 100 gór: przedsionek pod rdzeniem ma być suchy
+npm run test:skorupa   # 12 gór z wymuszoną wartą: droga po ≤8 pęknięciach i Uwolnienie
+npm run test:balans    # pomiar długości partii bez gracza i z automatem (kilka minut)
 ```
 
 ## Czego świadomie nie ma

@@ -1,5 +1,5 @@
 import { Sim } from '../sim/sim';
-import { Creature, peekNextId, setNextId } from '../sim/creatures';
+import type { Creature } from '../sim/creatures';
 import { applyTaintEffect } from '../powers/powers';
 
 /**
@@ -29,12 +29,13 @@ export function serialize(sim: Sim): string {
     v: VERSION,
     seed: sim.seed,
     tick: sim.tick,
-    wiara: sim.wiara, krew: sim.krew, sen: sim.sen, rytual: sim.rytual,
+    wiara: sim.wiara, krew: sim.krew, sen: sim.sen, rytual: sim.rytual, lagodna: sim.lagodna,
     fungusBudget: sim.fungusBudget, nextTide: sim.nextTide, ending: sim.ending, przybyszow: sim.przybyszow,
-    taints: sim.taints, nextId: peekNextId(), allForges: sim.allForges,
+    taints: sim.taints, nextId: sim.nextId, allForges: sim.allForges,
     chronicle: sim.chronicle.slice(-120),
     clans: sim.clans.map((c) => ({ ...c, grudge: [...c.grudge] })),
-    creatures: sim.creatures.filter((c) => !c.dead),
+    // droga to rachunek na chwilę — po wczytaniu i tak wyznaczy się na nowo
+    creatures: sim.creatures.filter((c) => !c.dead).map((c) => ({ ...c, droga: undefined, drogaI: undefined })),
     tile: toB64(w.tile), water: toB64(w.water), magma: toB64(w.magma),
     mem: toB64(w.mem), ever: toB64(w.ever), lastSeen: toB64(w.lastSeen), slad: toB64(w.slad),
   });
@@ -53,13 +54,13 @@ export function restore(json: string): Sim | null {
 
   sim.tick = data.tick;
   sim.wiara = data.wiara; sim.krew = data.krew; sim.sen = data.sen;
+  sim.lagodna = !!data.lagodna;
   if (data.rytual) sim.rytual = { ...sim.rytual, ...data.rytual };   // stare zapisy nie znają nowych pól
   sim.fungusBudget = data.fungusBudget; sim.nextTide = data.nextTide; sim.ending = data.ending ?? null;
   sim.przybyszow = data.przybyszow ?? 0;
   sim.taints = data.taints;
   sim.allForges = data.allForges ?? [];
   sim.chronicle = data.chronicle ?? [];
-  setNextId(data.nextId ?? 1);
 
   sim.clans = data.clans.map((c: any) => ({
     ...c, grudge: new Map<number, number>(c.grudge),
@@ -67,6 +68,10 @@ export function restore(json: string): Sim | null {
   }));
   sim.creatures = data.creatures as Creature[];
   sim.byId = new Map(sim.creatures.map((c) => [c.id, c]));
+  // numer nie może wrócić do już zajętego — inaczej nowe stworzenie nadpisze stare w byId
+  let maxId = 0;
+  for (const c of sim.creatures) if (c.id > maxId) maxId = c.id;
+  sim.nextId = Math.max(data.nextId ?? 1, maxId + 1);
   sim.target.clear();
   sim.particles.length = 0;
 

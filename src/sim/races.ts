@@ -35,21 +35,21 @@ export const RACES: RaceDef[] = [
   {
     id: Race.GOBLIN, name: 'Ślepy Lud', nazwaDopelniacz: 'Ślepego Ludu', short: 'gobliny', dopelniacz: 'goblinów', mnoga: false, color: [116, 158, 84],
     maxHp: 10, speed: 0.115, digPower: 1.0, strength: 2, breedRate: 0.085, lifespan: 6000,
-    faithGain: 1.0, fearGain: 1.4, metabolism: 1.05, eatsMeat: true, swims: false, size: 1,
+    faithGain: 1.0, fearGain: 1.4, metabolism: 0.8, eatsMeat: true, swims: false, size: 1,
   },
   {
     id: Race.DWARF, name: 'Żużlowcy', nazwaDopelniacz: 'Żużlowców', short: 'żużlowcy', dopelniacz: 'żużlowców', mnoga: true, color: [196, 132, 70],
-    maxHp: 22, speed: 0.085, digPower: 2.7, strength: 5, breedRate: 0.03, lifespan: 30000,
+    maxHp: 22, speed: 0.085, digPower: 2.7, strength: 5, breedRate: 0.03, lifespan: 45000,
     faithGain: 0.45, fearGain: 0.5, metabolism: 0.3, eatsMeat: false, swims: false, size: 1.2,
   },
   {
     id: Race.TROLL, name: 'Trole', nazwaDopelniacz: 'Troli', short: 'trole', dopelniacz: 'trolów', mnoga: true, color: [126, 96, 150],
-    maxHp: 70, speed: 0.07, digPower: 2.6, strength: 16, breedRate: 0.012, lifespan: 20000,
+    maxHp: 70, speed: 0.07, digPower: 2.6, strength: 16, breedRate: 0.012, lifespan: 60000,
     faithGain: 0.08, fearGain: 0.15, metabolism: 0.3, eatsMeat: true, swims: true, size: 2,
   },
   {
     id: Race.SPINNER, name: 'Prządki', nazwaDopelniacz: 'Prządek', short: 'prządki', dopelniacz: 'prządek', mnoga: true, color: [206, 196, 226],
-    maxHp: 16, speed: 0.135, digPower: 0.7, strength: 6, breedRate: 0.02, lifespan: 24000,
+    maxHp: 22, speed: 0.135, digPower: 0.7, strength: 6, breedRate: 0.02, lifespan: 40000,
     faithGain: 0.3, fearGain: 0.35, metabolism: 0.42, eatsMeat: true, swims: false, size: 1.1,
   },
   {

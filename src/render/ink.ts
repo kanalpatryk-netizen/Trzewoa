@@ -1,4 +1,5 @@
 import { BARWA, rgba } from './palette';
+import { KARTA } from '../nastawy/wyglad/ozdoby';
 
 import { KROJ, KROJ_TYTUL } from './fonts';
 
@@ -80,25 +81,27 @@ export function naciecie(ctx: CanvasRenderingContext2D, x: number, y: number, sz
 
 /** Panel z poszarpanym brzegiem — karta wsunięta w kamień, nie okno dialogowe. */
 export function panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, alfa = 0.94): void {
+  // ta sama rama co karty w grze i ramy menu: podwójna linia i rogi z rozetami
+  const K = KARTA;
   ctx.save();
-  ctx.beginPath();
-  const krok = 22;
-  const szarp = (i: number, os: number) => Math.sin(i * 1.7 + os) * 2.2;
-  ctx.moveTo(x, y);
-  for (let i = 0; i * krok < w; i++) ctx.lineTo(x + i * krok, y + szarp(i, 0));
-  ctx.lineTo(x + w, y);
-  for (let i = 0; i * krok < h; i++) ctx.lineTo(x + w + szarp(i, 2), y + i * krok);
-  ctx.lineTo(x + w, y + h);
-  for (let i = 0; i * krok < w; i++) ctx.lineTo(x + w - i * krok, y + h + szarp(i, 4));
-  ctx.lineTo(x, y + h);
-  for (let i = 0; i * krok < h; i++) ctx.lineTo(x + szarp(i, 6), y + h - i * krok);
-  ctx.closePath();
-  ctx.fillStyle = rgba('#0d0a09', alfa);
-  ctx.fill();
-  ctx.fill();                 // druga warstwa: papier ma kryć, a nie przepuszczać skałę
-  ctx.strokeStyle = rgba(BARWA.atrament, 0.5);
+  ctx.fillStyle = rgba('#0d0a09', Math.min(1, alfa + 0.03));
+  ctx.fillRect(x, y, w, h);
+  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(x + 3, y + h + 1.5); ctx.lineTo(x + w + 1.5, y + h + 1.5); ctx.lineTo(x + w + 1.5, y + 3); ctx.stroke();
   ctx.lineWidth = 1;
-  ctx.stroke();
+  ctx.strokeStyle = rgba(BARWA.atrament, K.linia);
+  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+  ctx.strokeStyle = rgba(BARWA.atrament, K.liniaWew);
+  const d = K.wciecie;
+  ctx.strokeRect(x + d + 0.5, y + d + 0.5, w - d * 2 - 1, h - d * 2 - 1);
+  ctx.strokeStyle = rgba(BARWA.atramentMocny, K.rogi);
+  for (const [cx, cy] of [[x, y], [x + w - d, y], [x, y + h - d], [x + w - d, y + h - d]] as const) {
+    ctx.fillStyle = '#0d0a09';
+    ctx.fillRect(cx, cy, d, d);
+    ctx.strokeRect(cx + 0.5, cy + 0.5, d - 1, d - 1);
+    ctx.beginPath(); ctx.arc(cx + d / 2, cy + d / 2, d * 0.18, 0, Math.PI * 2); ctx.stroke();
+  }
   ctx.restore();
 }
 

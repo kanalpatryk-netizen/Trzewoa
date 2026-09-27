@@ -6,7 +6,7 @@ import { SERIF } from './ink';
  * Rysowane jako wypełniające się znaki — kropla, płomień, spirala — bo karta
  * ma być kartą z bestiariusza, a nie tabelką z liczbami.
  */
-export function rysujStany(ctx: CanvasRenderingContext2D, c: Creature, x: number, y: number, s: number): void {
+export function rysujStany(ctx: CanvasRenderingContext2D, c: Creature, x: number, y: number, s: number, odstep = s * 2.1): void {
   const pola: { etykieta: string; v: number; barwa: [number, number, number]; ksztalt: 'kropla' | 'plomien' | 'spirala' }[] = [
     { etykieta: 'głód', v: Math.min(1, c.hunger), barwa: [214, 120, 96], ksztalt: 'kropla' },
     { etykieta: 'wiara', v: Math.min(1, c.devotion), barwa: [238, 214, 160], ksztalt: 'plomien' },
@@ -15,7 +15,7 @@ export function rysujStany(ctx: CanvasRenderingContext2D, c: Creature, x: number
 
   for (let i = 0; i < pola.length; i++) {
     const p = pola[i];
-    const cx = x + i * s * 2.1;
+    const cx = x + i * odstep;
     ctx.save();
     ctx.translate(cx, y);
     const sciezka = () => {

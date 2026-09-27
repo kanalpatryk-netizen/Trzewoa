@@ -1,6 +1,8 @@
 import type { Sim } from './sim';
 import { Race, RACES, odmien } from './races';
 import { T } from './tiles';
+import { aktualnyPlan } from './pielgrzymka';
+import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
 
 export interface Podpowiedz { tekst: string; cel?: { x: number; y: number; r: number; tekst: string }; waga: number; }
 
@@ -72,24 +74,49 @@ export function podpowiedz(sim: Sim): Podpowiedz {
 
   // 6. rytuał: jedyna droga do końca gry musi być widoczna, gdy staje się możliwa
   const najwierniejszy = sim.clans.filter((k) => !k.dead && k.pop > 2).sort((a, b) => b.devotion - a.devotion)[0];
-  if (sim.rytual.postep > 0.02 || sim.rytual.wierni >= 3) {
+  if (sim.rytual.postep > 0.02 || sim.rytual.wierni >= RYTUAL.potrzebaWiernych) {
     kandydaci.push({
       tekst: 'Twoi wierni kują pod skorupą rdzenia. Nie przeszkadzaj im — i nie daj im umrzeć z głodu.',
-      cel: { x: sim.world.coreX, y: sim.world.coreY - 14, r: 7, tekst: 'rytuał' },
+      cel: { x: sim.world.coreX, y: sim.world.przedsionekY, r: 7, tekst: 'rytuał' },
       waga: 85,
     });
-  } else if (najwierniejszy && najwierniejszy.devotion > 0.55) {
-    // droga jest robotą gracza: pielgrzymka przez pięćdziesiąt kafli litej skały
-    // nie dojdzie nigdy, choćby wierzyli najmocniej
+  } else if (najwierniejszy && najwierniejszy.devotion > PIELGRZYMKA.oddanieNacji) {     // próg pielgrzymki
+    // Warta pod rdzeniem żyje z tego, co rośnie przy przedsionku. Z grzybem schodzi
+    // i bez drogi powrotnej; drogę do domu można jej wydrążyć, ale nie trzeba.
     const w = sim.world;
-    let zasypane = 0;
-    for (let y = najwierniejszy.hy; y < w.coreY - 14; y++) if (!w.passable(w.coreX, y)) zasypane++;
+    if (sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku) {
+      kandydaci.push({
+        tekst: `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. Zasiej grzyb przy przedsionku — z nim ich warta przeżyje pod skorupą.`,
+        cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'zasiej tu grzyb' },
+        waga: 65,
+      });
+    } else {
+      const plan = najwierniejszy.powrotOk === false ? aktualnyPlan(sim) : null;
+      if (plan && plan.kopac.length) {
+        const i = plan.kopac[plan.kopac.length - 1];
+        kandydaci.push({
+          tekst: `${sim.clans[plan.klan].name} schodzą pod rdzeń. Jeśli chcesz, żeby wracali do gniazda, wydrąż korytarz wzdłuż złotej kreski.`,
+          cel: { x: (i % w.w) + 0.5, y: ((i / w.w) | 0) + 0.5, r: 3, tekst: 'drąż tutaj' },
+          waga: 35,
+        });
+      } else {
+        kandydaci.push({
+          tekst: `${najwierniejszy.name} schodzą pod twój rdzeń. Pilnuj, żeby grzyb przy przedsionku nie zniknął.`,
+          cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'przedsionek' },
+          waga: 35,
+        });
+      }
+    }
+  }
+
+  // 6b. droga do wolności, krok „oddanie": nikt jeszcze nie wierzy dość mocno
+  const duzeWierne = sim.clans.filter((k) => !k.dead && k.pop >= 8 && RACES[k.race].faithGain > 0)
+    .sort((a, b) => b.devotion - a.devotion)[0];
+  if (sim.tick > 3000 && sim.rytual.pekniecia === 0 && duzeWierne && duzeWierne.devotion <= 0.6) {
     kandydaci.push({
-      tekst: zasypane > 8
-        ? `${najwierniejszy.name} wierzą dość mocno, by zejść pod rdzeń — ale nie mają którędy. Wydrąż im szyb w dół do przedsionka.`
-        : `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. Pilnuj im drogi i zasiej grzyb przy przedsionku.`,
-      cel: { x: sim.world.coreX, y: sim.world.coreY - 14, r: 7, tekst: 'przedsionek' },
-      waga: 55,
+      tekst: `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe.`,
+      cel: { x: duzeWierne.hx, y: duzeWierne.hy, r: 5, tekst: duzeWierne.name },
+      waga: 25,
     });
   }
 

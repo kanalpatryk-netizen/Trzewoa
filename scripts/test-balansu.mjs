@@ -48,7 +48,7 @@ function ruchGracza(sim: any) {
     seed(sim, 'grzyb', Math.round(najgorszy.x), Math.round(najgorszy.y));
   }
   if (sim.dominance > 0.85 && sim.krew > 220 && sim.tick % 1200 === 0) {
-    const klan = sim.clans.filter((k: any) => !k.dead && k.race === sim.domRace && k.pop > 8)
+    const klan = sim.clans.filter((k: any) => !k.dead && k.race === sim.domRace && k.pop > 15)
       .sort((a: any, b: any) => b.pop - a.pop)[0];
     if (klan) shape(sim, 'zawal', klan.hx + 1, klan.hy);
   }
@@ -75,7 +75,10 @@ function ruchGracza(sim: any) {
     const zuzel = sim.creatures.find((c: any) => !c.dead && c.race === Race.DWARF);
     if (zuzel && sim.krew > 120) {
       seed(sim, 'ruda', Math.round(zuzel.x) + 2, Math.round(zuzel.y));
-      if (sim.krew > 260) shape(sim, 'zar', Math.round(zuzel.x) + 6, Math.round(zuzel.y) + 4);
+      // żar tylko tym, którzy nie mają ciepła — lany co chwilę obok kuźni wypalał ich do nogi
+      if (sim.krew > 260 && sim.tick % 3600 === 0 && !sim.goraco(Math.round(zuzel.x), Math.round(zuzel.y))) {
+        shape(sim, 'zar', Math.round(zuzel.x) + 6, Math.round(zuzel.y) + 4);
+      }
     }
     // Prządkom ktoś słaby w pobliżu i kości
     const przadka = sim.creatures.find((c: any) => !c.dead && c.race === Race.SPINNER);
@@ -87,20 +90,20 @@ function ruchGracza(sim: any) {
       if (gleboki) { gleboki.thought = 1; gleboki.jt = 0; sim.wiara -= 5; }
     }
   }
-  if (sim.dominance > 0.85 && sim.wiara > 40 && sim.tick % 900 === 0) {
+  // monokulturę rozbija się prorokiem: nowa nacja tej samej krwi od razu ma urazę do starej
+  if (sim.dominance > 0.72 && sim.wiara > 40 && sim.tick % 1800 === 0) {
+    const klan = sim.clans.filter((k: any) => !k.dead && k.race === sim.domRace && k.pop > 14)
+      .sort((a: any, b: any) => b.pop - a.pop)[0];
+    const glos = klan && sim.creatures.find((c: any) => !c.dead && c.clan === klan.id && !c.prophet);
+    if (glos) { glos.thought = 3; glos.jt = 0; sim.wiara -= 18; }
+  }
+  if (sim.dominance > 0.9 && sim.popByRace[sim.domRace] > 25 && sim.wiara > 40 && sim.tick % 900 === 0) {
     const ofiara = sim.creatures.find((c: any) => !c.dead && c.race === sim.domRace);
     if (ofiara) { ofiara.thought = 2; ofiara.jt = 0; sim.wiara -= 5; }
   }
 
-  // 5. szyb do przedsionka: gracz kopie go sam, kafel po kaflu, gdy ma krew
-  if (sim.krew > 90) {
-    const najwierniejszy = sim.clans.filter((k: any) => !k.dead && k.pop > 2)
-      .sort((a: any, b: any) => b.devotion - a.devotion)[0];
-    const startY = najwierniejszy ? najwierniejszy.hy : 40;
-    for (let y = startY; y < w.coreY - 14; y++) {
-      if (!w.passable(w.coreX, y)) { shape(sim, 'draz', w.coreX, y); break; }
-    }
-  }
+  // 5. droga pielgrzymów: warta żyje z grzybu przy przedsionku (krok 2) — gracz nie
+  // musi drążyć korytarza; pielgrzymi sami przekopią się w dół
 }
 
 export function pomiar(ziaren: number, maksMinut: number) {
@@ -108,8 +111,9 @@ export function pomiar(ziaren: number, maksMinut: number) {
   for (let z = 0; z < ziaren; z++) {
     for (const zGraczem of [false, true]) {
       const sim: any = new Sim(z * 104729 + 17);
+      // spis ras powstaje dopiero w pierwszym kroku — liczony przed nim był pusty
+      // i test nigdy nie widział żadnej wymarłej rasy
       const rasyNaStarcie = new Set<number>();
-      for (let r = 0; r < RACE_COUNT; r++) if (r !== Race.MYCELIUM && sim.popByRace[r] > 0) rasyNaStarcie.add(r);
       let rasyWymarle = 0, klanyWymarle = 0;
       const znikle = new Set<number>();
       const wymarleRasy: { rasa: number; minuta: number }[] = [];
@@ -118,6 +122,7 @@ export function pomiar(ziaren: number, maksMinut: number) {
       let i = 0;
       for (; i < maks && !sim.ending; i++) {
         sim.step();
+        if (i === 0) for (let r = 0; r < RACE_COUNT; r++) if (r !== Race.MYCELIUM && sim.popByRace[r] > 0) rasyNaStarcie.add(r);
         if (zGraczem && i % 60 === 0) ruchGracza(sim);
         if (i % 600 === 0) {
           for (const r of rasyNaStarcie) {
@@ -130,6 +135,7 @@ export function pomiar(ziaren: number, maksMinut: number) {
         if (i % 1000 === 0) populacja.push(sim.creatures.reduce((n: number, c: any) => n + (c.dead ? 0 : 1), 0));
       }
       klanyWymarle = sim.clans.filter((k: any) => k.dead).length;
+      const zywi = sim.creatures.filter((c: any) => !c.dead).length;
       wyniki.push({
         ziarno: z, gracz: zGraczem,
         koniec: sim.ending ?? 'brak (limit)',
@@ -137,14 +143,15 @@ export function pomiar(ziaren: number, maksMinut: number) {
         pekniecia: sim.rytual.pekniecia,
         najlepszyRytual: +Math.max(0, ...sim.clans.map((k: any) => k.rytual)).toFixed(2),
         rasyWymarle, klanyWymarle, klanowRazem: sim.clans.length,
-        zywi: sim.creatures.filter((c: any) => !c.dead).length,
+        zywi,
         dominacja: +sim.dominance.toFixed(2),
         przybyszow: sim.przybyszow,
         wymarleRasy,
         populacja,
         // dlaczego się skończyło: sen z pustki czy sen z monokultury
+        // (garstka ocalałych z jednej krwi to pustka, choć dominacja wychodzi 1)
         powod: sim.ending === 'sen'
-          ? (sim.dominance > 0.8 ? 'sen/monokultura' : 'sen/pustka')
+          ? (zywi >= 10 && sim.dominance > 0.8 ? 'sen/monokultura' : 'sen/pustka')
           : (sim.ending ?? 'limit'),
       });
     }

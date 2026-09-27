@@ -1,7 +1,7 @@
 import type { Plate } from './plate';
 import { SERIF } from './ink';
 
-export type AkcjaPrzycisku = 'pauza' | 'wolniej' | 'szybciej' | 'zapiski' | 'legenda' | 'kamera' | 'zapis';
+export type AkcjaPrzycisku = 'pauza' | 'wolniej' | 'szybciej' | 'zapiski' | 'atlas' | 'legenda' | 'kamera' | 'zapis';
 
 export interface Przycisk {
   akcja: AkcjaPrzycisku;
@@ -17,22 +17,34 @@ export interface Przycisk {
  * z klawiatury — pauza, tempo, zapiski, klucz, powrót kamery, zapis — ma tu swój znak,
  * bo na dotyku klawiatury nie ma wcale.
  */
-export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; zapiski: boolean; legenda: boolean; tempo: number }): Przycisk[] {
-  // na wąskim ekranie pasek idzie na sam dół, bo margines pod płytą zajmuje spis warstw
-  // 44 px to minimalne pole dotyku; promień 22 daje dokładnie tyle
-  const r = p.waski ? Math.max(22, Math.min(26, p.w * 0.052)) : Math.max(22, Math.min(26, p.w * 0.02));
-  const odstep = p.waski ? Math.min(r * 2.4, (p.w - r) / 7) : r * 2.5;
-  const y = p.waski ? p.y + p.h - r * 1.5 : Math.min(vh - r * 1.6, p.y + p.h + r * 1.8);
-  const x0 = p.waski ? p.x + (p.w - odstep * 6) / 2 : p.x + p.w - odstep * 6.3;
-  const lista: { akcja: AkcjaPrzycisku; etykieta: string; wlaczony?: boolean }[] = [
+/** Lewa krawędź rzędu przycisków na szerokim ekranie — obok niego układa się Otchłań. */
+export function lewaKrawedzPrzyciskow(p: Plate): number {
+  const r = Math.max(22, Math.min(26, p.w * 0.02));
+  return p.x + p.w - r * 2.3 * 7 - r * 1.2 - r;
+}
+
+export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; zapiski: boolean; legenda: boolean; tempo: number; noweTablice?: number }): Przycisk[] {
+  const wszystkie: { akcja: AkcjaPrzycisku; etykieta: string; wlaczony?: boolean }[] = [
     { akcja: 'pauza', etykieta: stan.pauza ? 'wznów' : 'pauza', wlaczony: stan.pauza },
     { akcja: 'wolniej', etykieta: 'wolniej' },
     { akcja: 'szybciej', etykieta: `szybciej (×${stan.tempo})` },
     { akcja: 'kamera', etykieta: 'wróć do swoich' },
     { akcja: 'zapiski', etykieta: 'zapiski', wlaczony: stan.zapiski },
+    { akcja: 'atlas', etykieta: stan.noweTablice ? `atlas — nowe tablice: ${stan.noweTablice}` : 'atlas', wlaczony: !!stan.noweTablice },
     { akcja: 'legenda', etykieta: 'klucz', wlaczony: stan.legenda },
     { akcja: 'zapis', etykieta: 'zapisz' },
   ];
+  // telefon: klucz i ręczny zapis zostają pod klawiszami — zapis i tak dzieje się sam,
+  // a osiem znaków na wąskiej płycie nachodziło na siebie
+  const lista = p.waski ? wszystkie.filter((b) => b.akcja !== 'legenda' && b.akcja !== 'zapis') : wszystkie;
+  const n = lista.length;
+  // na wąskim ekranie pasek idzie na sam dół, bo margines pod płytą zajmuje spis warstw;
+  // 44 px to minimalne pole dotyku — ale znaki nie mogą na siebie wchodzić
+  const odstepW = (p.w - 12) / n;
+  const r = p.waski ? Math.min(26, odstepW * 0.46) : Math.max(22, Math.min(26, p.w * 0.02));
+  const odstep = p.waski ? odstepW : r * 2.3;
+  const y = p.waski ? p.y + p.h - r * 1.5 : Math.min(vh - r * 1.6, p.y + p.h + r * 1.8);
+  const x0 = p.waski ? p.x + (p.w - odstep * (n - 1)) / 2 : p.x + p.w - odstep * (n - 1) - r * 1.2;
   return lista.map((z, i) => ({ ...z, x: x0 + i * odstep, y, r, naPlycie: p.waski }));
 }
 
@@ -105,6 +117,13 @@ function znak(ctx: CanvasRenderingContext2D, akcja: AkcjaPrzycisku, u: number, t
       ctx.moveTo(-u * 0.8, -u); ctx.lineTo(u * 0.8, -u);
       ctx.moveTo(-u * 0.8, -u * 0.2); ctx.lineTo(u * 0.5, -u * 0.2);
       ctx.moveTo(-u * 0.8, u * 0.6); ctx.lineTo(u * 0.8, u * 0.6);
+      break;
+    case 'atlas':                          // otwarta księga: dwie karty i grzbiet
+      ctx.moveTo(0, -u * 0.7); ctx.lineTo(0, u * 0.9);
+      ctx.moveTo(0, -u * 0.7); ctx.quadraticCurveTo(-u * 0.5, -u, -u, -u * 0.75); ctx.lineTo(-u, u * 0.7);
+      ctx.quadraticCurveTo(-u * 0.5, u * 0.5, 0, u * 0.9);
+      ctx.moveTo(0, -u * 0.7); ctx.quadraticCurveTo(u * 0.5, -u, u, -u * 0.75); ctx.lineTo(u, u * 0.7);
+      ctx.quadraticCurveTo(u * 0.5, u * 0.5, 0, u * 0.9);
       break;
     case 'legenda':                        // klucz
       ctx.arc(-u * 0.35, 0, u * 0.42, 0, Math.PI * 2);

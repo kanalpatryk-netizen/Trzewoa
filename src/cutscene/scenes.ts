@@ -11,6 +11,7 @@ import { rysujKronike } from './art/kronika';
 import { rysujOrgany } from './art/organy';
 import { rysujRasy } from './art/rasy';
 import { rysujPrzyplyw } from './art/przyplyw';
+import { rysujCel } from './art/cel';
 
 /** Scenariusz wprowadzenia. Każda scena tłumaczy jedną regułę i pokazuje jej obraz. */
 export const SCENY: Record<string, Scena> = {
@@ -18,10 +19,43 @@ export const SCENY: Record<string, Scena> = {
     id: 'kimJestes', tytul: 'Kim jesteś',
     rysunek: rysujGore,
     linie: [
-      'Nie jesteś bogiem, który rządzi podziemiem. Jesteś podziemiem.',
-      'Korytarze są twoimi żyłami, jaskinie płucami, a rdzeń na dnie bije, dopóki ktoś o tobie pamięta.',
-      'Rasy, które w tobie mieszkają, są pasożytami. Żywisz się tym, że o tobie myślą: ich modlitwą, ich strachem i ich śmiercią.',
-      'Dlatego nie wolno ci pozwolić, żeby któraś z nich wygrała.',
+      'Nie jesteś bogiem, który rządzi podziemiem. Jesteś podziemiem — górą, która śni.',
+      'Korytarze są twoimi żyłami, jaskinie płucami, a na samym dnie bije rdzeń: twoje serce, zamknięte w kamieniu.',
+      'W tobie mieszkają rasy. Żywisz się tym, że o tobie myślą: ich modlitwą, ich strachem i ich śmiercią.',
+      'Nie rozkazujesz im. Zmieniasz skałę, w której żyją, i szepczesz im do głów — a one robią resztę.',
+    ],
+  },
+
+  cel: {
+    id: 'cel', tytul: 'Jak się uwolnić',
+    rysunek: rysujCel,
+    linie: [
+      'Twój rdzeń jest uwięziony w skorupie. Nie rozkuje jej żaden kilof i żadna twoja moc.',
+      'Pęka tylko od modlitwy. Najpierw jedna nacja musi uwierzyć w ciebie mocno — Znak przy jej gnieździe pomaga.',
+      'Potem trzech jej wiernych musi stanąć przy samym rdzeniu i modlić się, aż kamień pęknie — kafel po kaflu, zwykle pięć razy.',
+      'Gdy skorupa się otworzy, wierni sami zejdą do środka. Kto wierzy i dotknie rdzenia — uwalnia cię. To jest wygrana.',
+    ],
+  },
+
+  zagrozenie: {
+    id: 'zagrozenie', tytul: 'Jak przegrać',
+    rysunek: rysujSpis,
+    linie: [
+      'Pod płytą leży wstęga: każda rasa ma w niej swoje pasmo.',
+      'Gdy jedna krew zjada resztę, zwycięzcy przestają się bać i przestają o tobie myśleć. Gdy wszyscy giną — nie ma kto myśleć.',
+      'Wtedy z góry i z dołu zsuwa się powieka. Gdy się zamknie, zasypiasz — i to jest koniec.',
+      'Dlatego karm słabych, osłabiaj silnych i pilnuj, żeby w tobie zawsze ktoś żył. A w tym czasie prowadź jedną nację do rdzenia.',
+    ],
+  },
+
+  narzedzia: {
+    id: 'narzedzia', tytul: 'Czym działasz',
+    rysunek: rysujOrgany,
+    linie: [
+      'Masz pięć rytów: Kształtuj skałę, Zasiej jedzenie i rudę, Szepnij komuś myśl, postaw Znak, Skaź całą krew.',
+      'Płacisz Krwią, która przybywa z każdą śmiercią, Wiarą z modlitw i Otchłanią z zapomnienia.',
+      'Spacja zatrzymuje czas: w pauzie planujesz rozkazy, a dzieją się naraz, gdy puścisz. Gra sama staje przy kryzysach.',
+      'Nad płytą zawsze stoi jedno zdanie — co teraz najpilniejsze. A w rogu płyty widać, ile zostało do wolności. Zaraz pokażę ci wszystko palcem.',
     ],
   },
 
@@ -141,7 +175,7 @@ export const SCENY: Record<string, Scena> = {
     rysunek: rysujKronike,
     linie: [
       'Gra przez cały czas pisze. Jedna linijka na dole mówi, co się właśnie stało i jak oni to nazwali.',
-      'Wygranej nie ma. Są trzy końce: zaśnięcie, albo ktoś dokopie się do twojego rdzenia i uklęknie, albo dokopie się i nie uklęknie.',
+      'Są trzy końce: zaśnięcie, albo ktoś dojdzie do twojego rdzenia i uklęknie — to wolność — albo dojdzie i nie uklęknie.',
       'W każdym z nich zostaje po tobie kronika — spisana legenda tego, czym byłeś dla tych, którzy w tobie mieszkali.',
       'To jest twój wynik. Teraz zejdź i zobacz, co z tobą zrobią.',
     ],

@@ -1,11 +1,13 @@
 import { Rng, Noise } from '../core/rng';
 import { T, PASSABLE, HARDNESS } from './tiles';
+import { SWIAT, RDZEN } from '../nastawy/swiat';
+import { GORA } from '../nastawy/gora';
 
-export const WORLD_W = 176;
-export const WORLD_H = 240;
-export const SURFACE_Y = 14;
+export const WORLD_W = SWIAT.szerokosc;
+export const WORLD_H = SWIAT.wysokosc;
+export const SURFACE_Y = SWIAT.powierzchnia;
 /** Po tylu tikach bez niczyjego spojrzenia rysunek rozpada się w pusty papier. */
-export const MEM_SPAN = 9000;
+export const MEM_SPAN = SWIAT.pamiecTikow;
 
 /** Góra: kafle, woda, magma i pamięć o tym, gdzie ktokolwiek dotarł. */
 export class World {
@@ -35,7 +37,9 @@ export class World {
   /** Kafli, o których nikt teraz nie pamięta — to jest Otchłań, cała i jedyna. */
   unknown = 0;
   coreX = (WORLD_W / 2) | 0;
-  coreY = WORLD_H - 14;
+  coreY = WORLD_H - RDZEN.nadDnem;
+  /** Środek przedsionka — jaskini nad skorupą, w której modli się warta. */
+  get przedsionekY(): number { return this.coreY - RDZEN.przedsionekNad; }
   private flip = false;
 
   constructor(seed: number) {
@@ -58,48 +62,49 @@ export class World {
 
   private generate(): void {
     const { w, h, noise, rng, tile } = this;
+    const S = SWIAT;
 
     for (let x = 0; x < w; x++) {
-      const sh = SURFACE_Y + Math.round(noise.fbm(x * 0.06, 0.5, 3) * 8 - 4);
+      const sh = SURFACE_Y + Math.round(noise.fbm(x * 0.06, 0.5, 3) * (S.falowaniePowierzchni * 2) - S.falowaniePowierzchni);
       this.surface[x] = sh;
       for (let y = 0; y < h; y++) {
         const i = y * w + x;
         if (y < sh) { tile[i] = T.SKY; continue; }
         const d = this.depth(y);
-        tile[i] = y < sh + 6 ? T.SOIL : (d < 0.22 && rng.chance(0.4) ? T.SOIL : T.ROCK);
+        tile[i] = y < sh + S.gruboscZiemi ? T.SOIL : (d < S.ziemiaDoGlebokosci && rng.chance(S.szansaNaZiemie) ? T.SOIL : T.ROCK);
       }
     }
 
     // Jaskinie: dwie warstwy szumu, im głębiej tym rzadsze, ale większe.
     for (let y = SURFACE_Y; y < h - 4; y++) {
       const d = this.depth(y);
-      const thr = 0.50 + 0.10 * Math.sin(d * 9) - d * 0.04;
+      const thr = S.jaskinie.prog + S.jaskinie.falowanie * Math.sin(d * 9) - d * S.jaskinie.ubytekWGlebi;
       for (let x = 1; x < w - 1; x++) {
         const n = noise.fbm(x * 0.045, y * 0.055, 4);
         const n2 = noise.fbm(200 + x * 0.02, 90 + y * 0.03, 2);
-        if (n > thr && n2 > 0.4) tile[y * w + x] = T.AIR;
+        if (n > thr && n2 > S.jaskinie.progDrugi) tile[y * w + x] = T.AIR;
       }
     }
 
     // Komory: kilkanaście wielkich pustek, tam siadają gniazda.
-    for (let k = 0; k < 26; k++) {
+    for (let k = 0; k < S.komory.ile; k++) {
       const cx = rng.int(w - 20) + 10;
       const cy = SURFACE_Y + 8 + rng.int(h - SURFACE_Y - 30);
-      const rx = rng.range(5, 13), ry = rng.range(4, 9);
+      const rx = rng.range(S.komory.szerokoscOd, S.komory.szerokoscDo), ry = rng.range(S.komory.wysokoscOd, S.komory.wysokoscDo);
       this.ellipse(cx, cy, rx, ry, T.AIR);
     }
 
     // Wejścia z powierzchni — stamtąd przychodzą śmiałkowie.
-    for (let k = 0; k < 5; k++) {
+    for (let k = 0; k < S.wejscia.ile; k++) {
       const x = 12 + rng.int(w - 24);
       let y = SURFACE_Y - 4;
       let cx = x;
-      while (y < h * 0.4) {
+      while (y < h * S.wejscia.doGlebokosci) {
         this.ellipse(cx, y, rng.range(1.4, 2.6), 1.8, T.AIR);
         y += 2;
         cx += rng.int(3) - 1;
         if (cx < 3 || cx > w - 4) cx = x;
-        if (rng.chance(0.06)) break;
+        if (rng.chance(S.wejscia.szansaUrwania)) break;
       }
     }
 
@@ -110,39 +115,39 @@ export class World {
         const i = y * w + x;
         if (tile[i] !== T.ROCK && tile[i] !== T.SOIL) continue;
         const v = noise.fbm(500 + x * 0.14, 300 + y * 0.10, 3);
-        if (v > 0.70 - d * 0.10 && rng.chance(0.30 + d * 0.5)) tile[i] = T.ORE;
-        else if (d > 0.62 && v > 0.74 && rng.chance(d * 0.45)) tile[i] = T.CRYSTAL;
+        if (v > S.rudy.prog - d * S.rudy.latwiejWGlebi && rng.chance(S.rudy.szansa + d * S.rudy.szansaWGlebi)) tile[i] = T.ORE;
+        else if (d > S.rudy.krysztalyOd && v > S.rudy.krysztalyProg && rng.chance(d * S.rudy.krysztalySzansa)) tile[i] = T.CRYSTAL;
       }
     }
 
     // Woda: kilka zbiorników w górnej połowie.
-    for (let k = 0; k < 9; k++) {
+    for (let k = 0; k < S.woda.ile; k++) {
       const cx = 8 + rng.int(w - 16);
-      const cy = SURFACE_Y + 10 + rng.int((h * 0.55) | 0);
-      const r = rng.range(3, 8);
+      const cy = SURFACE_Y + 10 + rng.int((h * S.woda.doGlebokosci) | 0);
+      const r = rng.range(S.woda.promienOd, S.woda.promienDo);
       this.blob(cx, cy, r, (i) => { if (PASSABLE[tile[i]] === 1) this.water[i] = 8; });
     }
 
     // Magma: dno góry.
-    for (let k = 0; k < 10; k++) {
+    for (let k = 0; k < S.magma.ile; k++) {
       const cx = 6 + rng.int(w - 12);
-      const cy = ((h * 0.74) | 0) + rng.int((h * 0.22) | 0);
-      this.ellipse(cx, cy, rng.range(4, 11), rng.range(2, 5), T.AIR);
-      this.blob(cx, cy, 7, (i) => { if (PASSABLE[tile[i]] === 1) this.magma[i] = 8; });
+      const cy = ((h * S.magma.od) | 0) + rng.int((h * S.magma.pas) | 0);
+      this.ellipse(cx, cy, rng.range(S.magma.szerokoscOd, S.magma.szerokoscDo), rng.range(S.magma.wysokoscOd, S.magma.wysokoscDo), T.AIR);
+      this.blob(cx, cy, S.magma.promien, (i) => { if (PASSABLE[tile[i]] === 1) this.magma[i] = 8; });
     }
 
     // Rdzeń — ty. Zamknięty w skorupie, której nikt nie przekopie:
     // wejście otwiera dopiero rytuał wielu wiernych, nie jeden zdeterminowany goblin.
-    this.ellipse(this.coreX, this.coreY, 14, 11, T.STONE);
-    this.ellipse(this.coreX, this.coreY, 8.5, 4.5, T.AIR);
-    this.ellipse(this.coreX, this.coreY, 2.6, 2.6, T.CORE);
+    this.ellipse(this.coreX, this.coreY, RDZEN.skorupaX, RDZEN.skorupaY, T.STONE);
+    this.ellipse(this.coreX, this.coreY, RDZEN.komoraX, RDZEN.komoraY, T.AIR);
+    this.ellipse(this.coreX, this.coreY, RDZEN.promien, RDZEN.promien, T.CORE);
     // przedsionek nad skorupą: tam schodzą ci, którzy chcą cię znaleźć
-    this.ellipse(this.coreX, this.coreY - 14, 6, 4, T.AIR);
+    this.ellipse(this.coreX, this.przedsionekY, RDZEN.przedsionekX, RDZEN.przedsionekY, T.AIR);
     this.osuszPrzedsionek();
 
     // Zejście się osypuje, zanim gracz spojrzy — świat ma startować stabilny.
-    for (let k = 0; k < 160; k++) this.tickSoil(k);
-    for (let k = 0; k < 220; k++) this.tickFluids(k);
+    for (let k = 0; k < S.osypywanieNaStart; k++) this.tickSoil(k);
+    for (let k = 0; k < S.splywanieNaStart; k++) this.tickFluids(k);
 
     this.unknown = this.w * this.h;
   }
@@ -152,8 +157,8 @@ export class World {
    * a krawędź strefy dostaje próg, przez który ciecze nie przepływają.
    */
   private osuszPrzedsionek(): void {
-    const px = this.coreX, py = this.coreY - 14;
-    const R = 12;
+    const px = this.coreX, py = this.przedsionekY;
+    const R = RDZEN.suchaStrefa;
     for (let y = py - R; y <= py + R; y++) {
       for (let x = px - R; x <= px + R; x++) {
         if (!this.inb(x, y)) continue;
@@ -163,14 +168,14 @@ export class World {
         this.magma[i] = 0;
         this.water[i] = 0;
         if (this.tile[i] === T.CRYSTAL) this.tile[i] = T.ROCK;
-        if (d > R - 1.5) this.prog[i] = 1;          // pierścień progu na obrzeżu strefy
+        if (d > R - RDZEN.progSuchejStrefy) this.prog[i] = 1;          // pierścień progu na obrzeżu strefy
       }
     }
   }
 
   /** Czy kafel leży w suchej strefie przedsionka — tam nie wolno lać ani wody, ani ognia. */
   suchaStrefa(x: number, y: number): boolean {
-    return Math.hypot(x - this.coreX, y - (this.coreY - 14)) <= 12;
+    return Math.hypot(x - this.coreX, y - this.przedsionekY) <= RDZEN.suchaStrefa;
   }
 
   private ellipse(cx: number, cy: number, rx: number, ry: number, t: number): void {
@@ -301,7 +306,7 @@ export class World {
     let done = 0, guard = 0;
     while (done < tiles && guard++ < 400) {
       const cx = rng.int(this.w), cy = rng.int(this.h);
-      const r = 8;
+      const r = GORA.zasklepianiePromien;
       for (let y = Math.max(0, cy - r); y <= Math.min(this.h - 1, cy + r) && done < tiles; y++) {
         for (let x = Math.max(0, cx - r); x <= Math.min(this.w - 1, cx + r) && done < tiles; x++) {
           const dx = x - cx, dy = y - cy;
