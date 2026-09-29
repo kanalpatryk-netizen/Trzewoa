@@ -11,7 +11,18 @@ export function pelnyEkran(): void {
   if (!ustawienia.pelnyEkran) return;
   const el = document.documentElement as HTMLElement & { requestFullscreen?: (o?: FullscreenOptions) => Promise<void> };
   if (document.fullscreenElement || !el.requestFullscreen) return;
-  el.requestFullscreen({ navigationUI: 'hide' }).catch(() => { /* np. osadzona ramka — gramy bez pełnego ekranu */ });
+  el.requestFullscreen({ navigationUI: 'hide' })
+    .then(() => zablokujPoziom())
+    .catch(() => { /* np. osadzona ramka — gramy bez pełnego ekranu */ });
+}
+
+/**
+ * Gra na telefonie idzie poziomo. Aplikacja wymusza to sama (AndroidManifest: sensorLandscape);
+ * w przeglądarce obrót da się zablokować dopiero w pełnym ekranie — i nie wszędzie.
+ */
+function zablokujPoziom(): void {
+  const o = screen.orientation as ScreenOrientation & { lock?: (k: string) => Promise<void> };
+  o?.lock?.('landscape').catch(() => { /* przeglądarka nie pozwala — trudno */ });
 }
 
 export function wyjdzZPelnegoEkranu(): void {

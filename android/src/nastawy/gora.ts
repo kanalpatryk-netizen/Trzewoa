@@ -9,6 +9,11 @@ export const GORA = {
   /** Z tyloma zasobami zaczynasz. */
   startWiara: 30,
   startKrew: 60,
+  /**
+   * WERSJA ANDROID: zasoby widać jako liczby, więc mają górny limit — inaczej po kilku minutach
+   * gracz miał dziesiątki tysięcy Wiary i każdy wybór na karcie wydarzenia był darmowy.
+   */
+  wiaraMax: 200, krewMax: 250,
   /** Tryb „łaskawa góra”: tyle Krwi więcej na start. */
   laskawaKrew: 100,
 
@@ -52,13 +57,13 @@ export const GORA = {
 
   // --------------------------------------------------------- śmierć i krew
   /** Śmierć daje tyle Krwi × rozmiar rasy. */
-  krewZaSmierc: 4,
+  krewZaSmierc: 3,
   /** Śmierć karmi grzybnię: tyle kafli wzrostu × rozmiar rasy. */
   grzybniaZaSmierc: 1.5,
 
   // ------------------------------------------------------------- modlitwa
   /** Modlitwa daje Wiarę: wiaraRasy × oddanie × to × mnożnik miejsca. */
-  modlitwaWiara: 0.05,
+  modlitwaWiara: 0.005,
   /** Mnożnik modlitwy przy rdzeniu i przy twoim znaku. */
   modlitwaPrzyRdzeniu: 3, modlitwaPrzyZnaku: 2,
   /** Modlitwa podsyca oddanie nacji: to × wiaraRasy × (1 − oddanie) / max(`modlitwaNaGlowe`, liczebność). */

@@ -54,14 +54,14 @@ export function rysujRozkazy(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camer
     const px = sx(x), py = sy(y);
     if (px < -80 || py < -80 || px > cam.vw + 80 || py > cam.vh + 80) continue;
 
-    if (o.czasownik === 'ksztaltuj' || o.czasownik === 'zasiej') {
-      const r = (o.czasownik === 'ksztaltuj' ? 1.6 : 2) * z;
+    if (o.czasownik === 'zasiej') {
+      const r = 2 * z;
       ctx.setLineDash([Math.max(3, z * 0.35), Math.max(3, z * 0.3)]);
       ctx.lineWidth = Math.max(1.4, z * 0.1);
       ctx.strokeStyle = `${k}0.95)`;
       ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke();
       ctx.setLineDash([]);
-      // wnętrze szkicu: kreskowanie w kierunku narzędzia — drążenie ukośnie, zawał na krzyż
+      // wnętrze szkicu: ukośne kreskowanie
       ctx.save();
       ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.clip();
       ctx.strokeStyle = `${k}0.35)`;
@@ -70,7 +70,6 @@ export function rysujRozkazy(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camer
       ctx.beginPath();
       for (let d = -r * 2; d < r * 2; d += krok) {
         ctx.moveTo(px + d - r, py - r); ctx.lineTo(px + d + r, py + r);
-        if (o.narzedzie === 'zawal' || o.narzedzie === 'trucizna') { ctx.moveTo(px + d + r, py - r); ctx.lineTo(px + d - r, py + r); }
       }
       ctx.stroke();
       ctx.restore();

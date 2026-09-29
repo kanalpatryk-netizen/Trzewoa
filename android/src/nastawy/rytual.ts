@@ -137,7 +137,7 @@ export const PIELGRZYMKA = {
   /** Na miejscu: wiara karmi — tyle głodu ubywa na tik. */
   modlitwaKarmi: 0.00018,
   /** Na miejscu: tyle Wiary na tik dla gracza (× mnożnik dochodu). */
-  modlitwaWiara: 0.0025,
+  modlitwaWiara: 0.001,
   /** Co ile tików pielgrzym może pokazać dymek myśli i z jaką szansą. */
   mysliCo: 24, mysliSzansa: 0.3,
   /** Co ile tików (wg id) pielgrzym sprawdza, czy skorupa już otwarta. */
@@ -172,4 +172,9 @@ export const PLAN_DROGI = {
   minNacja: 8,
   /** Plan jest przeliczany najwyżej co tyle tików. */
   odswiezCo: 600,
+  /**
+   * WERSJA ANDROID: gracz nie drąży — góra sama otwiera drogę wiernym, póki ktoś nią idzie:
+   * jeden kafel skały ze złotej kreski co tyle tików (od strony gniazda).
+   */
+  drazenieCo: 24,
 };

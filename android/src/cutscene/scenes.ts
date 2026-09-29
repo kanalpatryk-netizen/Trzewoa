@@ -52,10 +52,9 @@ export const SCENY: Record<string, Scena> = {
     id: 'narzedzia', tytul: 'Czym działasz',
     rysunek: rysujOrgany,
     linie: [
-      'Masz cztery ryty: Kształtuj skałę, Zasiej jedzenie i rudę, Szepnij komuś myśl, postaw Znak.',
-      'Płacisz Krwią, która przybywa z każdą śmiercią, i Wiarą, która przybywa z każdą modlitwą.',
-      'Klepsydra zatrzymuje czas: w pauzie planujesz rozkazy, a dzieją się naraz, gdy puścisz. Gra sama staje przy kryzysach.',
-      'Nad płytą zawsze stoi jedno zdanie — co teraz najpilniejsze. A w rogu płyty widać, ile zostało do wolności. Zaraz pokażę ci wszystko palcem.',
+      'Masz trzy ryty: Nakarm, Szepnij i Cud. Płacisz Krwią (z każdej śmierci) i Wiarą (z każdej modlitwy).',
+      'Co chwilę coś się dzieje — najazd, zaraza, głód, prorok. Czas wtedy staje, a ty wybierasz, co z tym zrobić.',
+      'U dołu płyty zawsze widać, co teraz zrobić, żeby zbliżyć się do wolności. Zaraz pokażę ci wszystko palcem.',
     ],
   },
 

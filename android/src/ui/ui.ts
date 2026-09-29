@@ -15,20 +15,18 @@ interface Hit { x: number; y: number; hw: number; hh: number; kind: 'verb' | 'to
 
 /** Co ryt robi — jedno zdanie w podpisie pod kursorem. */
 const SKUTKI: Record<Verb, string> = {
-  ksztaltuj: 'drąż, zawal, wpuść wodę albo żar',
-  zasiej: 'grzyb, ruda albo kości',
-  szept: 'jedna myśl w jedną głowę: módl się, prorokuj, uciekaj',
-  znak: 'jawny cud: oddanie albo panika',
+  zasiej: 'przeciągnij palcem — wyrośnie grzyb, którym się najedzą',
+  szept: 'dotknij mieszkańca: „módl się” albo „prorokuj”',
+  znak: 'dotknij przy gnieździe — ich oddanie rośnie',
 };
 
 /** Dolna krawędź znaku menu, liczona od górnej krawędzi płyty (patrz EkranGry.menuRect). */
 const ZNAK_MENU_DOL = 40;
 
 const VERBS: { id: Verb; label: string }[] = [
-  { id: 'ksztaltuj', label: 'Kształtuj' },
-  { id: 'zasiej', label: 'Zasiej' },
-  { id: 'szept', label: 'Szepcz' },
-  { id: 'znak', label: 'Znak' },
+  { id: 'zasiej', label: 'Nakarm' },
+  { id: 'szept', label: 'Szepnij' },
+  { id: 'znak', label: 'Cud' },
 ];
 
 /** Ryty wykute na lewym marginesie płyty; nazwy narzędzi wypisane u góry. Nic nie leży na skale. */
@@ -111,7 +109,7 @@ export class Ui {
       const ready = TOOLS[v.id].some((t) => affordable(sim, v.id, t.id));
       this.oprawaRytu(ctx, x, y, v, this.verb === v.id, ready, time);
       this.rune(ctx, x, y, this.gs, v.id, this.verb === v.id, ready, time);
-      this.hits.push({ x, y, hw: this.gs * 0.8, hh: this.gap * 0.45, kind: 'verb', verb: v.id });
+      this.hits.push({ x, y, hw: Math.max(this.gs * 1.15, 26), hh: Math.max(Math.min(this.gap * 0.5, this.gs * 1.15), 24), kind: 'verb', verb: v.id });
       if (STEROWANIE.pokazKlawisze) {
         if (Math.abs(this.pointer.x - x) <= this.gs * 0.9 && Math.abs(this.pointer.y - y) <= this.gap * 0.45) opisRytu = { i, v: v.id, ready };
       } else if (this.verb === v.id && time - this.opisRytuOd < STEROWANIE.opisRytuMs) {
@@ -201,7 +199,8 @@ export class Ui {
     ctx.font = `${size}px ${SERIF}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (let k = 0; k < tools.length; k++) {
+    // jedno narzędzie nie potrzebuje paska — ryt od razu je trzyma, a opis stoi na dole płyty
+    for (let k = 0; tools.length > 1 && k < tools.length; k++) {
       const ok = affordable(sim, this.verb!, tools[k].id);
       const on = this.tool === tools[k].id;
       const x = x0 + k * (pw + odstep);
@@ -219,7 +218,7 @@ export class Ui {
     const t = tools.find((z) => z.id === this.tool);
     ctx.font = `italic 14px ${SERIF}`;
     ctx.textBaseline = 'alphabetic';
-    const opis = t ? `${t.hint} — świat zwalnia, póki trzymasz znak` : 'świat zwalnia, póki trzymasz znak';
+    const opis = t ? `${t.hint} — świat zwalnia, póki trzymasz ryt` : 'świat zwalnia, póki trzymasz ryt';
     const yo = p.y + p.h - 12;
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(10,7,6,0.85)';
@@ -279,10 +278,6 @@ export class Ui {
       ctx.beginPath();
       const u = s * 0.34;
       switch (id) {
-        case 'ksztaltuj':
-          ctx.moveTo(-u, -u); ctx.lineTo(0, u); ctx.lineTo(u, -u);
-          ctx.moveTo(0, u); ctx.lineTo(0, u * 1.5);
-          break;
         case 'zasiej':
           ctx.moveTo(0, -u * 1.2); ctx.lineTo(0, u * 0.4);
           ctx.moveTo(0, u * 0.4); ctx.lineTo(-u, u * 1.3);

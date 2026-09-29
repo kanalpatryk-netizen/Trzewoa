@@ -57,18 +57,18 @@ export function terazDrogi(sim: Sim): Teraz {
   switch (kroki[biezacy]?.nazwa) {
     case 'wiara': {
       const lud = sim.clans.filter((k) => !k.dead && k.race === Race.GOBLIN && k.pop > 0).sort((a, b) => b.pop - a.pop)[0];
-      return { tekst: 'Zasiej rudę przy Ślepym Ludzie — postawią ołtarz i zaczną się modlić.', cel: lud ? gniazdo(lud) : undefined };
+      return { tekst: 'Zrób Cud przy Ślepym Ludzie — przy nim zaczną się modlić.', cel: lud ? gniazdo(lud) : undefined };
     }
     case 'oddanie':
       return najw
-        ? { tekst: `Postaw Znak (objawienie) przy gnieździe: ${najw.name} — ${Math.round(najw.devotion * 100)}% z ${Math.round(PIELGRZYMKA.oddanieNacji * 100)}% oddania. Albo szepnij „módl się” trzem z nich.`, cel: gniazdo(najw) }
+        ? { tekst: `Zrób Cud przy gnieździe: ${najw.name} — ${Math.round(najw.devotion * 100)}% z ${Math.round(PIELGRZYMKA.oddanieNacji * 100)}% oddania. Albo szepnij „módl się” trzem z nich.`, cel: gniazdo(najw) }
         : { tekst: 'Żadna nacja nie jest dość liczna, by w ciebie uwierzyć. Nakarm którąś.' };
     case 'droga':
       return sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku
-        ? { tekst: 'Zasiej grzyb przy przedsionku nad rdzeniem — z nim warta przeżyje na dole.', cel: przedsionek }
-        : { tekst: `${najw ? najw.name : 'Wierni'} ruszą pod rdzeń. Możesz wydrążyć im prostszą drogę.`, cel: przedsionek };
+        ? { tekst: 'Nakarm przedsionek nad rdzeniem (grzyb) — z nim warta przeżyje na dole.', cel: przedsionek }
+        : { tekst: `${najw ? najw.name : 'Wierni'} ruszą pod rdzeń i sami przekopią się w dół.`, cel: przedsionek };
     case 'skorupa':
-      return { tekst: `Wierni kują skorupę (${sim.rytual.pekniecia} pęknięć). Pilnuj grzybu przy przedsionku.`, cel: przedsionek };
+      return { tekst: `Wierni kują skorupę (${sim.rytual.pekniecia} pęknięć). Pilnuj, żeby przy przedsionku było co jeść.`, cel: przedsionek };
     default:
       return { tekst: 'Skorupa otwarta — wierni schodzą do rdzenia.', cel: { x: w.coreX, y: w.coreY, r: 5, tekst: 'rdzeń' } };
   }

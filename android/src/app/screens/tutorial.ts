@@ -342,6 +342,11 @@ export class EkranSamouczka implements Ekran {
     this.vh = h;
     this.gra.rysuj(ctx, w, h, teraz);
     if (this.faza === 'final') { this.rysujFinal(ctx, w, h, teraz); return; }
+    // karta wydarzenia ma pierwszeństwo: karta samouczka chowa się, póki gracz nie wybierze
+    if (this.gra.sim.wydarzenia.biezace) {
+      this.pola = { dalej: null, wstecz: null, pomin: null, karta: null, graj: null, menu: null, zwin: null };
+      return;
+    }
     const cur = this.biezacyEtap;
     const etap = !this.zrobiony && cur >= 0 ? this.rozdzial.etapy[cur] : null;
     const wsk = etap ? this.wskazanie(cur) : null;
@@ -485,42 +490,77 @@ export class EkranSamouczka implements Ekran {
     if (this.zwinieta) return this.rysujPasek(ctx, w, teraz);
     const r = this.rozdzial;
     const p = this.gra.plate;
-    const rozm = Math.max(15, Math.min(20, w / 62));
-    const szer = p.waski ? p.w - 16 : Math.min(440, Math.max(300, p.w * 0.4));
+    // na telefonie w poziomie karta jest szersza — w wąskiej kolumnie tekst szedł w tyle
+    // linijek, że karta wychodziła poza ekran razem z „Rozumiem” i „pomiń”
+    const szer = p.waski ? p.w - 16 : p.niski ? Math.min(560, Math.max(320, p.w * 0.56)) : Math.min(440, Math.max(300, p.w * 0.4));
     const wew = szer - 40;
     const cur = this.biezacyEtap;
-    const lhE = rozm * 1.28;
-
-    // wysokość liczona przed rysowaniem
-    ctx.save();
-    ctx.font = `italic ${rozm * 0.86}px ${SERIF}`;
-    const lWstep = linieAkapitu(ctx, r.wstep, wew);
-    ctx.font = `${rozm * 0.95}px ${SERIF}`;
-    const lEtapy = r.etapy.map((e) => linieAkapitu(ctx, tekstZ(e.tekst, this), wew - rozm * 1.4));
-    ctx.font = `${rozm}px ${SERIF}`;
+    const m = p.waski ? 8 : p.niski ? 6 : 14;
+    const maxWys = p.waski ? p.h - 38 - m : p.h - 2 * m;
     const koniec = tekstZ(r.koniec, this);
-    const lKoniec = this.zrobiony ? linieAkapitu(ctx, koniec, wew) : 0;
     const glowny = this.zrobiony ? (this.idx === this.rozdzialy.length - 1 ? 'Zakończ →' : 'Dalej →')
       : cur >= 0 && r.etapy[cur].rozumiem ? 'Rozumiem →' : '';
-    let wys = 20 + rozm * 3.65 + lWstep * rozm * 1.15;
-    for (let i = 0; i < r.etapy.length; i++) {
-      wys += lEtapy[i] * lhE;
-      if (i === cur && this.opisKlawisza(r.etapy[i].klawisz)) wys += rozm * 1.0;
+
+    // Wysokość liczona przed rysowaniem. Karta MUSI zmieścić się na płycie: najpierw
+    // mniejsze litery, a gdy to nie wystarcza — tryb zwarty, w którym widać tylko bieżącą
+    // czynność (albo, po zaliczeniu, samo podsumowanie). Przyciski zawsze zostają na karcie.
+    const zmierz = (rz: number, zwarta: boolean) => {
+      ctx.save();
+      ctx.font = `italic ${rz * 0.86}px ${SERIF}`;
+      const lWstep = zwarta ? 0 : linieAkapitu(ctx, r.wstep, wew);
+      ctx.font = `${rz * 0.95}px ${SERIF}`;
+      const lEtapy = r.etapy.map((e) => linieAkapitu(ctx, tekstZ(e.tekst, this), wew - rz * 1.4));
+      ctx.font = `${rz}px ${SERIF}`;
+      const lKoniec = this.zrobiony ? linieAkapitu(ctx, koniec, wew) : 0;
+      ctx.restore();
+      const widoczne = zwarta ? (this.zrobiony ? [] : [Math.max(0, cur)]) : r.etapy.map((_e, i) => i);
+      let h = 20 + rz * 3.65 + lWstep * rz * 1.15 - (zwarta ? rz * 0.35 : 0);
+      for (const i of widoczne) {
+        h += lEtapy[i] * rz * 1.28;
+        if (i === cur && this.opisKlawisza(r.etapy[i].klawisz)) h += rz * 1.0;
+      }
+      if (this.zrobiony) h += rz * 0.6 + lKoniec * rz * 1.3;
+      h += glowny ? rz * 3.1 : rz * 2.5;
+      return { rozm: rz, zwarta, lWstep, lEtapy, lKoniec, widoczne, wys: h };
+    };
+    const bazowy = Math.max(p.niski ? 13 : 15, Math.min(20, w / 62));
+    let uklad = zmierz(bazowy, false);
+    szukaj: for (const zwarta of [false, true]) {
+      for (let rz = bazowy; rz >= 11; rz -= 1) {
+        uklad = zmierz(rz, zwarta);
+        if (uklad.wys <= maxWys) break szukaj;
+      }
     }
-    if (this.zrobiony) wys += rozm * 0.6 + lKoniec * rozm * 1.3;
-    wys += glowny ? rozm * 3.1 : rozm * 2.5;
+    const { rozm, lWstep, lEtapy, widoczne, zwarta } = uklad;
+    const wys = Math.min(uklad.wys, Math.max(maxWys, rozm * 6));
+    const lhE = rozm * 1.28;
 
     // róg, który nie zasłania celu
-    const m = p.waski ? 8 : 14;
     const rogi: [number, number][] = p.waski
       // wąsko: pod progiem Znaku i klepsydrą tempa w górnym pasie płyty
       ? [[p.x + m, p.y + 38], [p.x + m, p.y + p.h - wys - m]]
       : [[p.x + p.w - szer - m, p.y + m], [p.x + p.w - szer - m, p.y + p.h - wys - m], [p.x + m, p.y + m], [p.x + m, p.y + p.h - wys - m]];
     let [x, y] = rogi[0];
     if (cel) {
+      // róg, który najmniej zasłania cel (zwykle wcale)
+      const zakrycie = (rx: number, ry: number) =>
+        Math.max(0, Math.min(rx + szer, cel.x + cel.w + 20) - Math.max(rx, cel.x - 20))
+        * Math.max(0, Math.min(ry + wys, cel.y + cel.h + 20) - Math.max(ry, cel.y - 20));
+      let najmniej = Infinity;
       for (const [rx, ry] of rogi) {
-        const koliduje = rx < cel.x + cel.w + 20 && rx + szer > cel.x - 20 && ry < cel.y + cel.h + 20 && ry + wys > cel.y - 20;
-        if (!koliduje) { x = rx; y = ry; break; }
+        const z = zakrycie(rx, ry);
+        if (z < najmniej) { najmniej = z; x = rx; y = ry; }
+        if (z === 0) break;
+      }
+      // Karta w poziomie zajmuje ponad pół płyty — cel na środku leżał pod nią w każdym rogu
+      // i nie dało się w niego trafić. Wtedy płyta odsuwa się tak, żeby cel stanął obok karty.
+      const g = this.gra;
+      if (najmniej > 0 && g.cel) {
+        const p2 = g.plate;
+        const wolnyX = x > p2.x + p2.w / 2 - szer / 2 ? (p2.x + x) / 2 : (x + szer + p2.x + p2.w) / 2;
+        const dx = (cel.x + cel.w / 2 - wolnyX) / g.cam.zoom;
+        g.cam.x += dx; g.camTarget.x += dx;
+        g.cam.clamp(g.sim.world.w, g.sim.world.h);
       }
     }
     const karta = { x, y, w: szer, h: wys };
@@ -550,13 +590,15 @@ export class EkranSamouczka implements Ekran {
     ctx.fillStyle = rgba(BARWA.atramentMocny, 0.98);
     ctx.fillText(r.tytul, lx, yy);
     yy += rozm * 1.05;
-    ctx.font = `italic ${rozm * 0.86}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.atrament, 0.78);
-    akapit(ctx, r.wstep, lx, yy, wew, rozm * 1.15);
-    yy += lWstep * rozm * 1.15 + rozm * 0.35;
+    if (!zwarta) {
+      ctx.font = `italic ${rozm * 0.86}px ${SERIF}`;
+      ctx.fillStyle = rgba(BARWA.atrament, 0.78);
+      akapit(ctx, r.wstep, lx, yy, wew, rozm * 1.15);
+      yy += lWstep * rozm * 1.15 + rozm * 0.35;
+    }
 
-    // lista czynności
-    for (let i = 0; i < r.etapy.length; i++) {
+    // lista czynności (w trybie zwartym tylko bieżąca)
+    for (const i of widoczne) {
       const e = r.etapy[i];
       const zrob = this.zaliczoneEtapy[i];
       const biezacy = i === cur;

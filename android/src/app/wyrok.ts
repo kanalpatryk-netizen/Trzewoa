@@ -47,14 +47,14 @@ export function wyrok(sim: Sim): Wyrok {
   if (zywych < 14 && sim.dominance < 0.8) {
     return {
       przyczyna: 'Góra opustoszała — nie został prawie nikt, kto by o tobie myślał.',
-      rada: 'Karm tych, których jest mało: grzyb przy gnieździe, kości Prządkom, żar Żużlowcom. Pusta góra zasypia w kilka minut.',
+      rada: 'Karm tych, których jest mało, a na kartach „wymierają” wybieraj ratunek. Pusta góra zasypia w kilka minut.',
       etap,
     };
   }
   const nazwa = RACES[sim.domRace]?.name ?? 'Jedna krew';
   return {
     przyczyna: `${nazwa} ${odmien(sim.domRace, 'zjadł', 'zjedli')} resztę. Z jedną krwią w trzewiach nie ma komu się bać.`,
-    rada: 'Gdy wstęga pod płytą robi się jednego koloru, zawal im korytarz albo szepnij prorokowi w dużym klanie — i dokarmiaj pozostałe rasy, zanim wymrą.',
+    rada: 'Gdy wstęga pod płytą robi się jednego koloru, wysłuchaj ich proroka albo skieruj na nich najazd czy powódź — i dokarmiaj pozostałe rasy, zanim wymrą.',
     etap,
   };
 }

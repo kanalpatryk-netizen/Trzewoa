@@ -48,7 +48,7 @@ export const DOMYSLNE: Settings = {
   autozapis: true,
   samouczekZrobiony: false,
   autoPauza: 'kryzysy',
-  tablice: 'pokazuj',
+  tablice: 'tylko w atlasie',
   trudnosc: 'łaskawa',
   wielkoscUI: 1,
   pelnyEkran: true,

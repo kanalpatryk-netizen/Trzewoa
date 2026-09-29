@@ -25,94 +25,55 @@ writeFileSync(wejscie, `
 import { Sim } from ${src('sim/sim.ts')};
 import { Race, RACE_COUNT } from ${src('sim/races.ts')};
 import { T } from ${src('sim/tiles.ts')};
-import { shape, seed, sign, whisper } from ${src('powers/powers.ts')};
+import { seed, sign, whisper } from ${src('powers/powers.ts')};
+import { rozstrzygnij } from ${src('sim/wydarzenia.ts')};
 import { Job } from ${src('sim/creatures.ts')};
 import { aktualnyPlan } from ${src('sim/pielgrzymka.ts')};
 
 const NA_MINUTE = 7200;
 
-/** Rozsądny gracz: nie optymalny, tylko taki, który rozumie zasady. */
+/**
+ * Rozsądny gracz wersji na telefon: odpowiada na karty wydarzeń tak, jak radzi zdrowy rozsądek
+ * (pole `rozsadny` karty), karmi głodnych grzybem, stawia Cud przy najwierniejszych
+ * i szepcze „módl się”, gdy przy przedsionku jest co jeść. Nie drąży i nie zawala — tego
+ * w tej wersji nie ma.
+ */
 function ruchGracza(sim: any) {
   const w = sim.world;
+  sim.wydarzenia.gracz = true;
+
+  // 0. karta wydarzenia: rozsądny wybór, a gdy go nie stać — domyślny
+  const e = sim.wydarzenia.biezace;
+  if (e) {
+    if (rozstrzygnij(sim, e.rozsadny) !== null) rozstrzygnij(sim, e.domyslny);
+    return;
+  }
 
   // 1. głodujący dostają grzyb pod nogi (ale nie dominująca rasa — tę się nie dokarmia)
   let najgorszy: any = null;
   for (const c of sim.creatures) {
-    if (c.dead || c.race === Race.HUMAN) continue;
+    if (c.dead || c.race === Race.HUMAN || c.race === Race.DWARF) continue;
     if (c.hunger < 0.6) continue;
     if (c.race === sim.domRace && sim.dominance > 0.7) continue;
     if (!najgorszy || c.hunger > najgorszy.hunger) najgorszy = c;
   }
-  // Dokarmiamy tylko tych, których jest mało — dosypywanie zwycięzcy to prosta droga
-  // do monokultury, a masowe zawały wyludniają górę i usypiają ją z pustki.
   if (najgorszy && sim.krew > 40 && najgorszy.race !== sim.domRace) {
     seed(sim, 'grzyb', Math.round(najgorszy.x), Math.round(najgorszy.y));
   }
-  if (sim.dominance > 0.85 && sim.krew > 220 && sim.tick % 1200 === 0) {
-    const klan = sim.clans.filter((k: any) => !k.dead && k.race === sim.domRace && k.pop > 15)
-      .sort((a: any, b: any) => b.pop - a.pop)[0];
-    if (klan) shape(sim, 'zawal', klan.hx + 1, klan.hy);
-  }
-
-  // 1b. najazd z powierzchni: alarm radzi „Zawał odetnie im drogę” — gracz zawala
-  // najeźdźcę idącego na gniazdo, ale nie tam, gdzie stoi ktoś swój (zawał zabija najbliższego)
-  if (sim.krew > 20) {
-    const ludzie = sim.creatures.filter((c: any) => !c.dead && c.race === Race.HUMAN);
-    for (const h of ludzie) {
-      let blisko = false, idzie = false;
-      for (const c of sim.creatures) {
-        if (c.dead || c.race === Race.HUMAN) continue;
-        const d = Math.hypot(c.x - h.x, c.y - h.y);
-        if (d < 3.5) { blisko = true; break; }
-        if (d < 20) idzie = true;
-      }
-      if (idzie && !blisko) { shape(sim, 'zawal', Math.round(h.x), Math.round(h.y)); break; }
-    }
-  }
 
   // 2. droga pielgrzymów: grzyb w przedsionku, żeby warta miała co jeść
-  if (sim.tick % 900 === 0 && sim.krew > 120) {
-    for (let k = 0; k < 6; k++) {
-      const x = w.coreX + ((k % 5) - 2) * 2;
-      const y = w.coreY - 14 + (k < 3 ? 1 : 2);
-      seed(sim, 'grzyb', x, y);
-    }
+  if (sim.tick % 900 === 0 && sim.krew > 60 && sim.jedzeniePrzedsionka < 3) {
+    for (let k = 0; k < 4; k++) seed(sim, 'grzyb', w.coreX + (k - 2) * 3, w.przedsionekY);
   }
 
-  // 2b. złota kreska: gra podpowiada „wydrąż korytarz wzdłuż złotej kreski” i wskazuje
-  // kafel od strony gniazda — gracz drąży tam, pociągnięcie po pociągnięciu. Ale najpierw
-  // karmi: drążenie za ostatnią Krew głodziło górę, a pusta góra zasypia
-  if (sim.krew > 70) {
-    const plan = aktualnyPlan(sim);
-    if (plan && plan.kopac.length) {
-      const i = plan.kopac[plan.kopac.length - 1];
-      shape(sim, 'draz', i % w.w, (i / w.w) | 0);
-    }
-  }
-
-  // 3. Znak przy dominującej rasie — oddanie rośnie, a z nim rytuał
+  // 3. Cud przy najwierniejszych — oddanie rośnie, a z nim rytuał
   if (sim.wiara >= 60 && sim.tick % 1200 === 0) {
     const klan = sim.clans.filter((k: any) => !k.dead && k.pop > 2)
       .sort((a: any, b: any) => b.devotion - a.devotion)[0];
-    if (klan) sign(sim, 'objawienie', klan.hx, klan.hy);
+    if (klan && klan.devotion < 0.7) sign(sim, 'objawienie', klan.hx, klan.hy);
   }
 
-  // 4. przeciw monokulturze hoduje się inne rasy, nie tylko bije dominującą
-  if (sim.tick % 400 === 0) {
-    // Żużlowcom ruda i żar przy kuźni
-    const zuzel = sim.creatures.find((c: any) => !c.dead && c.race === Race.DWARF);
-    if (zuzel && sim.krew > 120) {
-      seed(sim, 'ruda', Math.round(zuzel.x) + 2, Math.round(zuzel.y));
-      // żar tylko tym, którzy nie mają ciepła — lany co chwilę obok kuźni wypalał ich do nogi
-      if (sim.krew > 260 && sim.tick % 3600 === 0 && !sim.goraco(Math.round(zuzel.x), Math.round(zuzel.y))) {
-        shape(sim, 'zar', Math.round(zuzel.x) + 6, Math.round(zuzel.y) + 4);
-      }
-    }
-    // Prządkom ktoś słaby w pobliżu i kości
-    const przadka = sim.creatures.find((c: any) => !c.dead && c.race === Race.SPINNER);
-    if (przadka && sim.krew > 90) seed(sim, 'kosci', Math.round(przadka.x) + 2, Math.round(przadka.y));
-  }
-  // monokulturę rozbija się prorokiem: nowa nacja tej samej krwi od razu ma urazę do starej
+  // 4. monokulturę rozbija się prorokiem
   if (sim.dominance > 0.72 && sim.wiara > 40 && sim.tick % 1800 === 0) {
     const klan = sim.clans.filter((k: any) => !k.dead && k.race === sim.domRace && k.pop > 14)
       .sort((a: any, b: any) => b.pop - a.pop)[0];
@@ -120,8 +81,7 @@ function ruchGracza(sim: any) {
     if (glos) whisper(sim, 'prorok', glos);
   }
 
-  // 3b. szept „módl się”: gdy przy przedsionku rośnie grzyb, gracz posyła trzech wiernych
-  // z najwierniejszej nacji pod rdzeń — tak, jak uczy samouczek
+  // 5. szept „módl się”: gdy przy przedsionku rośnie grzyb, trzech wiernych idzie pod rdzeń
   if (sim.tick % 600 === 0 && !sim.rytual.otwarta && sim.jedzeniePrzedsionka >= 3 && sim.wiara >= 8) {
     const klan = sim.clans.filter((k: any) => !k.dead && k.pop >= 6 && k.race !== Race.TROLL && k.race !== Race.HUMAN && k.race !== Race.MYCELIUM)
       .sort((a: any, b: any) => b.devotion - a.devotion)[0];
@@ -135,9 +95,6 @@ function ruchGracza(sim: any) {
       }
     }
   }
-
-  // 5. droga pielgrzymów: warta żyje z grzybu przy przedsionku (krok 2) — gracz nie
-  // musi drążyć korytarza; pielgrzymi sami przekopią się w dół
 }
 
 export function pomiar(ziaren: number, maksMinut: number) {

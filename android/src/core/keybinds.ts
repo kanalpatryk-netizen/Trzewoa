@@ -1,7 +1,7 @@
 /** Wszystkie akcje gry z przypisanymi klawiszami. Gracz może je zmienić w ustawieniach. */
 export type Akcja =
   | 'pauza' | 'szybciej' | 'wolniej' | 'zapis' | 'wczytaj' | 'menu'
-  | 'ksztaltuj' | 'zasiej' | 'szept' | 'znak'
+  | 'zasiej' | 'szept' | 'znak'
   | 'narzedzie1' | 'narzedzie2' | 'narzedzie3' | 'narzedzie4'
   | 'kamera' | 'przyblizenie' | 'oddalenie' | 'odNowa' | 'legenda' | 'zapiski';
 
@@ -12,10 +12,9 @@ export const AKCJE: OpisAkcji[] = [
   { akcja: 'pauza', nazwa: 'Pauza i plan', opis: 'czas staje; rozkazy wydane w pauzie dzieją się naraz po jej zdjęciu' },
   { akcja: 'szybciej', nazwa: 'Szybciej', opis: 'więcej tików na klatkę — pokolenia lecą prędzej' },
   { akcja: 'wolniej', nazwa: 'Wolniej', opis: 'mniej tików na klatkę' },
-  { akcja: 'ksztaltuj', nazwa: 'Kształtuj', opis: 'drążysz, zawalasz, wpuszczasz wodę i żar' },
-  { akcja: 'zasiej', nazwa: 'Zasiej', opis: 'ruda, grzyb, kości' },
-  { akcja: 'szept', nazwa: 'Szepcz', opis: 'jedna myśl w jedną głowę' },
-  { akcja: 'znak', nazwa: 'Znak', opis: 'jawny cud widziany przez wszystkich' },
+  { akcja: 'zasiej', nazwa: 'Nakarm', opis: 'grzyb tam, gdzie mieszkają' },
+  { akcja: 'szept', nazwa: 'Szepnij', opis: 'módl się albo prorokuj — jednej głowie' },
+  { akcja: 'znak', nazwa: 'Cud', opis: 'objawienie — oddanie nacji rośnie' },
   { akcja: 'narzedzie1', nazwa: 'Narzędzie I', opis: 'pierwsze narzędzie wybranego czasownika' },
   { akcja: 'narzedzie2', nazwa: 'Narzędzie II', opis: 'drugie narzędzie' },
   { akcja: 'narzedzie3', nazwa: 'Narzędzie III', opis: 'trzecie narzędzie' },
@@ -32,7 +31,7 @@ export const AKCJE: OpisAkcji[] = [
 
 const DOMYSLNE: Record<Akcja, string> = {
   menu: 'Escape', pauza: ' ', szybciej: '+', wolniej: '-',
-  ksztaltuj: '1', zasiej: '2', szept: '3', znak: '4',
+  zasiej: '1', szept: '2', znak: '3',
   narzedzie1: 'q', narzedzie2: 'w', narzedzie3: 'e', narzedzie4: 'r',
   kamera: 'c', przyblizenie: ']', oddalenie: '[',
   zapis: 'z', wczytaj: 'x', odNowa: 'n', legenda: 'l', zapiski: 'k',

@@ -24,15 +24,18 @@ import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki'
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
 import { computePlate, drawFrame, drawCensus, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
-import { shape, seed, sign, TOOLS, type Verb } from '../../powers/powers';
+import { seed, sign, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
 import { rysujRozkazy, rysujBanerPauzy, type PoleBanera } from '../../render/rozkazy';
 import { miejsceKlepsydry } from '../../render/tempo';
 import { zbierzObszaryHud, type ObszarHud } from '../obszary-hud';
 import { Straznik, type Alarm } from '../alarmy';
 import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
+import { rysujWydarzenie, type PoleWyboru } from '../../render/wydarzenie';
+import { rozstrzygnij, type Wydarzenie } from '../../sim/wydarzenia';
 import { OknoAtlasu } from '../../atlas/okno';
 import { odkrycia } from '../../atlas/odkrycia';
+import { SERIF } from '../../render/ink';
 import { tablica } from '../../atlas/tablice';
 import { Race } from '../../sim/races';
 import { Job } from '../../sim/creatures';
@@ -76,6 +79,7 @@ export type ZdarzenieGry =
   | { typ: 'rozkaz'; czasownik: string; narzedzie: string }
   | { typ: 'pauza'; stoi: boolean }
   | { typ: 'tempo' }
+  | { typ: 'wydarzenie'; rodzaj: string; wybor: string }
   | { typ: 'koniec'; opis: string };
 
 /** Ekran rozgrywki: świat, płyta, organy i ryty. Samouczek nakłada się na niego z góry. */
@@ -105,7 +109,7 @@ export class EkranGry implements Ekran {
   /** Samouczek gra na własnej górze i nie ma prawa nadpisać zapisu gracza. */
   zapisujAuto = true;
 
-  private camTarget = { x: 0, y: 0 };
+  camTarget = { x: 0, y: 0 };
   private dirty = true;
   /** Kamera z chwili ostatniego przerysowania ryciny. */
   private rysKam = [NaN, NaN, NaN];
@@ -134,6 +138,9 @@ export class EkranGry implements Ekran {
   private straznik = new Straznik();
   alarm: Alarm | null = null;
   private polaAlarmu: PoleAlarmu[] = [];
+  /** Pola wyborów na karcie wydarzenia i karta, którą już pokazano (żeby nie podnosić jej co klatkę). */
+  private polaWydarzenia: PoleWyboru[] = [];
+  private pokazaneWydarzenie: Wydarzenie | null = null;
   /** Atlas tablic — okno nad płytą; świat stoi, póki jest otwarte. */
   atlas = new OknoAtlasu();
   private ostatniaTablica = -1e9;
@@ -147,7 +154,6 @@ export class EkranGry implements Ekran {
   private przyciski: Przycisk[] = [];
   /** Gracz przejął kamerę — automat wraca po C albo po chwili bezruchu. */
   recznaKamera = false;
-  private recznaOd = 0;
   private ostatnieKlikniecie: { x: number; y: number } | null = null;
   private indeksWTlumie = 0;
   private pointers = new Map<number, { x: number; y: number; sx: number; sy: number; moved: boolean; interfejs: boolean; przycisk: number }>();
@@ -227,7 +233,10 @@ export class EkranGry implements Ekran {
     const odsuniecie = !obokKarty || this.plate.waski ? 0 : (this.plate.w * 0.17) / this.cam.zoom;
     this.cam.x = this.camTarget.x = x + odsuniecie;
     // na wąskim ekranie karta leży u góry, więc cel schodzi poniżej środka
-    this.cam.y = this.camTarget.y = y - (obokKarty && this.plate.waski ? this.plate.h * 0.12 / this.cam.zoom : 0);
+    // na telefonie dół płyty zajmuje wstęga drogi — cel siada w górnej części, nie pod nią
+    const telefon = this.plate.waski || this.plate.niski;
+    this.cam.y = this.camTarget.y = y + (telefon ? this.plate.h * 0.14 / this.cam.zoom : 0)
+      - (obokKarty && this.plate.waski ? this.plate.h * 0.12 / this.cam.zoom : 0);
     this.przejmijKamere();
     this.cam.clamp(this.sim.world.w, this.sim.world.h);
     this.dirty = true;
@@ -236,7 +245,6 @@ export class EkranGry implements Ekran {
   /** Gracz chwyta kamerę: automat milczy, ale tylko przez chwilę (patrz krok()). */
   przejmijKamere(): void {
     this.recznaKamera = true;
-    this.recznaOd = performance.now();
   }
 
   private doSerca(natychmiast = false): void {
@@ -279,6 +287,7 @@ export class EkranGry implements Ekran {
 
   /** Przełącza pauzę; puszczenie czasu wykonuje plan. */
   ustawPauze(stoi: boolean): void {
+    if (!stoi && this.sim.wydarzenia.biezace) { this.ui.say('Najpierw wybierz, co zrobisz.', this.sim.tick); return; }
     if (!stoi) this.alarm = null;
     if (this.pauza === stoi) return;
     this.pauza = stoi;
@@ -311,7 +320,6 @@ export class EkranGry implements Ekran {
     if (prorok) odkrycia.odkryj('prorok');
     if (pielgrzym) odkrycia.odkryj('pielgrzymka');
     if (sim.sen > 0.05) odkrycia.odkryj('sen');
-    if (sim.tideTick >= 0) odkrycia.odkryj('przyplyw');
     if (sim.rytual.pekniecia > 0 || sim.world.ever[sim.world.idx(sim.world.coreX, sim.world.coreY)]) odkrycia.odkryj('rdzen');
     // skorupę odkrywa się, gdy ktoś zacznie się przy niej modlić albo gdy pęknie
     if (sim.rytual.wierni >= 1 || sim.rytual.pekniecia > 0) odkrycia.odkryj('skorupa');
@@ -324,6 +332,69 @@ export class EkranGry implements Ekran {
     if (this.pauza) cicho('pauza');
     // pismo w skale: kiedy czas stoi, a znaki świecą — albo gdy ktoś długo na nie patrzy
     if (this.znakowWidac >= 2 && (this.pauza || sim.tick > 6000)) cicho('pismo');
+  }
+
+  /** Karta wydarzenia: czas staje, kamera jedzie na miejsce, dzwon. Czeka na wybór. */
+  private podniesWydarzenie(e: Wydarzenie): void {
+    this.pokazaneWydarzenie = e;
+    this.alarm = null;
+    this.pauza = true;
+    this.nasluch?.({ typ: 'pauza', stoi: true });
+    this.ui.selected = null;
+    this.ui.verb = null; this.ui.tool = null;
+    this.painting = false;
+    if (e.cel) {
+      this.pokazMiejsce(e.cel.x, e.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+      // karta stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
+      this.cam.y = this.camTarget.y = e.cel.y - (this.plate.h * 0.25) / this.cam.zoom;
+      this.cam.clamp(this.sim.world.w, this.sim.world.h);
+    }
+    odkrycia.odkryj('wydarzenia', false);
+    if (ustawienia.efekty) this.app.gesty.alarm(true);
+    else this.app.dzwiek.toll();
+    this.dirty = true;
+  }
+
+  /** Wybór na karcie wydarzenia. */
+  private wybierzWydarzenie(i: number): void {
+    const e = this.sim.wydarzenia.biezace;
+    if (!e) return;
+    const powod = rozstrzygnij(this.sim, i);
+    if (powod) { this.ui.say(powod, this.sim.tick); this.app.gesty.odmowa(); return; }
+    this.nasluch?.({ typ: 'wydarzenie', rodzaj: e.rodzaj, wybor: e.wybory[i].id });
+    this.pokazaneWydarzenie = null;
+    this.polaWydarzenia = [];
+    this.ustawPauze(false);
+    this.dirty = true;
+  }
+
+  /** Pasek zasobów nad płytą (telefon): wiara, krew i oddanie najwierniejszej nacji — liczbami. */
+  private rysujZasoby(ctx: CanvasRenderingContext2D, plate: Plate, w: number): void {
+    const { sim } = this;
+    const najw = najwierniejsza(sim);
+    const czesci: [string, string, string][] = [
+      ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(236,214,160,1)'],
+      ['krew', `${Math.floor(sim.krew)}`, 'rgba(226,120,100,1)'],
+      ['oddanie', `${Math.round((najw?.devotion ?? 0) * 100)}%`, 'rgba(246,216,142,1)'],
+    ];
+    ctx.save();
+    const rozm = Math.max(14, Math.min(18, w / 26));
+    const y = plate.niski ? plate.y - plate.top * 0.3 : plate.y - plate.top * 0.34;
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'left';
+    // szerokość całości, żeby wyśrodkować (w poziomie — z dala od klepsydry po prawej)
+    const kaw = (t: string, f: string) => { ctx.font = f; return ctx.measureText(t).width; };
+    const fE = `italic ${rozm * 0.82}px ${SERIF}`, fL = `${rozm * 1.05}px ${SERIF}`;
+    const odst = rozm * 1.3;
+    const szer = czesci.reduce((s, [e, l]) => s + kaw(e + ' ', fE) + kaw(l, fL), 0) + odst * (czesci.length - 1);
+    let x = plate.niski ? plate.x + 10 : plate.x + (plate.w - szer) / 2;
+    for (const [e, l, kol] of czesci) {
+      ctx.font = fE; ctx.fillStyle = 'rgba(190,178,156,0.9)';
+      ctx.fillText(e + ' ', x, y); x += kaw(e + ' ', fE);
+      ctx.font = fL; ctx.fillStyle = kol;
+      ctx.fillText(l, x, y); x += kaw(l, fL) + odst;
+    }
+    ctx.restore();
   }
 
   private podniesAlarm(a: Alarm): void {
@@ -407,13 +478,12 @@ export class EkranGry implements Ekran {
       }
       for (let i = 0; i < kroki; i++) this.sim.step();
       this.dirty = true;
-      if (this.recznaKamera && performance.now() - this.recznaOd > 20000) {
-        this.recznaKamera = false;                     // oddajemy kamerę światu, zamiast blokować ją na zawsze
-      }
+      // WERSJA ANDROID: kamera przejęta palcem albo „pokaż” zostaje tam, gdzie ją zostawiłeś —
+      // dawniej po 20 sekundach sama wracała „za życiem” i cel rady uciekał spod ekranu.
+      // Z powrotem za mieszkańcami prowadzi przycisk z okiem.
       // kiedy gracz trzyma czasownik albo maluje, kamera musi stać: inaczej tunel
       // ucieka spod kursora i drąży się w zupełnie innym miejscu
       const wRobocie = this.painting || this.ui.verb !== null || this.pointers.size > 0;
-      if (wRobocie) this.recznaOd = performance.now();
       if (ustawienia.kameraZaZyciem && !this.recznaKamera && !wRobocie && this.sim.tick % 4 === 0) {
         const serce = this.sim.heartOfLife();
         if (serce) {
@@ -428,6 +498,8 @@ export class EkranGry implements Ekran {
         }
       }
       if (this.sim.senDzwon) { this.sim.senDzwon = false; this.app.dzwiek.toll(); }
+      const wyd = this.sim.wydarzenia.biezace;
+      if (wyd && wyd !== this.pokazaneWydarzenie) this.podniesWydarzenie(wyd);
       // auto-pauza: przy chwilach, w których trzeba decydować, świat staje sam
       if (!this.nasluch) {
         const a = this.straznik.sprawdz(this.sim, ustawienia.autoPauza);
@@ -447,12 +519,11 @@ export class EkranGry implements Ekran {
     // czeka też, aż nie trzyma rytu i nie maluje
     if (!this.nasluch && !odkrycia.zna('droga') && this.sim.tick > ATLAS.drogaPoTikach && !this.atlas.otwarte && !this.sim.ending
         && !this.painting && this.ui.verb === null) {
+      // WERSJA ANDROID: tablica trafia do atlasu po cichu — wyskakując sama, zasłaniała
+      // pierwszą kartę wydarzenia i wyglądała jak zawieszona gra. Kroki drogi widać na wstędze.
       odkrycia.odkryj('droga', false);
-      odkrycia.niezobaczone = Math.max(0, odkrycia.niezobaczone - 1);
-      this.atlas.otworzTablice('droga', true);
-      this.app.gesty.tablica();
     }
-    if (!this.nasluch && odkrycia.kolejka.length && !this.atlas.otwarte && !this.alarm && !this.zapiski
+    if (!this.nasluch && odkrycia.kolejka.length && !this.atlas.otwarte && !this.alarm && !this.zapiski && !this.sim.wydarzenia.biezace
         && !this.sim.ending && this.sim.tick > 1200 && teraz - this.ostatniaTablica > 30000) {
       const id = odkrycia.kolejka.shift()!;
       this.ostatniaTablica = teraz;
@@ -541,10 +612,10 @@ export class EkranGry implements Ekran {
     rysujRdzen(ctx, sim, cam, teraz);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
-    // droga pielgrzymów: szkic tego, co trzeba wydrążyć, żeby wierni zeszli pod rdzeń
+    // droga pielgrzymów: którędy wierni zejdą pod rdzeń (przekopują ją sami — gracz nie drąży)
     const plan = aktualnyPlan(sim);
     if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
-      rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, this.ui.verb === 'ksztaltuj' || this.rada?.cel?.tekst === 'drąż tutaj');
+      rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, false);
     }
     rysujZarys(ctx, sim, cam, teraz);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
@@ -596,9 +667,11 @@ export class EkranGry implements Ekran {
     this.ui.plan = this.pauza ? this.rozkazy : null;
     // (na telefonie przyciski są już pod płytą — baner nie musi ich omijać)
     const nadPrzyciskami = 0;
-    this.polaBanera = this.pauza && !this.zapiski && !sim.ending
+    const wyd = sim.wydarzenia.biezace;
+    this.polaBanera = this.pauza && !this.zapiski && !sim.ending && !wyd
       ? rysujBanerPauzy(ctx, plate, sim, this.rozkazy.ile, teraz, nadPrzyciskami) : [];
-    this.polaAlarmu = this.alarm && this.pauza && !this.zapiski ? rysujAlarm(ctx, plate, this.alarm, teraz) : [];
+    this.polaAlarmu = this.alarm && this.pauza && !this.zapiski && !wyd ? rysujAlarm(ctx, plate, this.alarm, teraz) : [];
+    this.polaWydarzenia = wyd && !this.zapiski && !sim.ending ? rysujWydarzenie(ctx, plate, sim, wyd, teraz) : [];
     this.znakMenu(ctx, teraz);
     if (this.liczby) {
       ctx.save();
@@ -617,7 +690,13 @@ export class EkranGry implements Ekran {
       ctx.restore();
     }
     if (this.legenda) rysujLegende(ctx, plate, w);
-    if (this.rada && !this.ui.verb && !this.legenda && !this.alarm && !this.atlas.otwarte) {
+    const telefon = plate.waski || plate.niski;
+    if (telefon && !this.ui.verb && !this.legenda && !this.atlas.otwarte) {
+      // WERSJA ANDROID: nad płytą stoją zasoby jako liczby, a nie druga rada. Jedna instrukcja
+      // naraz — „teraz:” na wstędze drogi; dawniej dwie rady mówiły co innego.
+      this.rysujZasoby(ctx, plate, w);
+      this.radaRect = null;
+    } else if (this.rada && !this.ui.verb && !this.legenda && !this.alarm && !this.atlas.otwarte) {
       ctx.save();
       ctx.textAlign = 'center';
       const rozmiar = Math.max(15, Math.min(20, w / 66));
@@ -728,7 +807,7 @@ export class EkranGry implements Ekran {
       this.malowane.add(klucz);
     }
     // w pauzie nic nie dzieje się od razu: skała, ziarno i Znak idą do planu jako szkic
-    if (this.pauza && (ui.verb === 'ksztaltuj' || ui.verb === 'zasiej' || ui.verb === 'znak')) {
+    if (this.pauza && (ui.verb === 'zasiej' || ui.verb === 'znak')) {
       const powod = this.rozkazy.zaplanuj(sim, { czasownik: ui.verb as Verb, narzedzie: ui.tool, x: wx, y: wy });
       if (powod === null) this.nasluch?.({ typ: 'rozkaz', czasownik: ui.verb, narzedzie: ui.tool });
       else if (powod && !this.painting) { ui.say(powod, sim.tick); this.app.gesty.odmowa(); }
@@ -737,8 +816,7 @@ export class EkranGry implements Ekran {
     }
     const przedKrew = sim.krew, przedWiara = sim.wiara, przedOtchlan = sim.otchlan;
     let udane = false;
-    if (ui.verb === 'ksztaltuj') udane = shape(sim, ui.tool, wx, wy);
-    else if (ui.verb === 'zasiej') udane = seed(sim, ui.tool, wx, wy);
+    if (ui.verb === 'zasiej') udane = seed(sim, ui.tool, wx, wy);
     else if (ui.verb === 'znak') { udane = sign(sim, ui.tool, wx, wy); if (udane) this.app.dzwiek.toll(); }
     else {
       const wx = this.cam.toWorldX(x - this.plate.x), wy = this.cam.toWorldY(y - this.plate.y);
@@ -756,14 +834,8 @@ export class EkranGry implements Ekran {
         this.app.gesty.odmowa();
       }
     }
-    if (!udane && (ui.verb === 'ksztaltuj' || ui.verb === 'zasiej' || ui.verb === 'znak')) {
-      const brak = ui.hintCost(sim);
-      const [cx, cy] = this.swiatPod(x, y);
-      const powod = brak || ((ui.tool === 'woda' || ui.tool === 'zar') && sim.world.suchaStrefa(cx, cy)
-        ? 'Nie tutaj. To jedyna sucha droga do twojego rdzenia.'
-        : ui.tool === 'zawal' ? 'Tu nie ma czego zawalić — celuj w pustkę.'
-        : ui.tool === 'draz' ? 'Tu nie ma czego drążyć — celuj w skałę.'
-        : 'Nie da się tego zrobić w tym miejscu.');
+    if (!udane && (ui.verb === 'zasiej' || ui.verb === 'znak')) {
+      const powod = ui.hintCost(sim) || 'Nie da się tego zrobić w tym miejscu.';
       ui.say(powod, sim.tick);
       this.app.gesty.odmowa();
     }
@@ -828,6 +900,14 @@ export class EkranGry implements Ekran {
       if (v) { this.otworzTabliceRytu(v); return; }
     }
 
+    if (faza === 'dol' && !this.zapiski && this.polaWydarzenia.length) {
+      // karta wydarzenia: dotknięcie wyboru go wykonuje; dotknięcie reszty karty nic nie robi,
+      // a poza kartą można przesuwać płytę i patrzeć, o czym mowa
+      const b = this.polaWydarzenia.find((q) => e.clientX >= q.x && e.clientX <= q.x + q.w && e.clientY >= q.y && e.clientY <= q.y + q.h);
+      if (b) { this.wybierzWydarzenie(b.i); return; }
+      const g = this.polaWydarzenia[0], d = this.polaWydarzenia[this.polaWydarzenia.length - 1];
+      if (e.clientX >= g.x - 20 && e.clientX <= g.x + g.w + 20 && e.clientY >= this.plate.y && e.clientY <= d.y + d.h + 30) return;
+    }
     if (faza === 'dol' && !this.zapiski) {
       // karta sytuacji: planuj (zostaje pauza), puść czas, nie zatrzymuj przy tym
       for (const b of this.polaAlarmu) {
@@ -933,7 +1013,7 @@ export class EkranGry implements Ekran {
       }
       if (ui.selected) { ui.selected = null; if (wpis) wpis.interfejs = true; return; }
       if (!this.naPlycie(e.clientX, e.clientY)) return;
-      if ((ui.verb === 'ksztaltuj' || ui.verb === 'zasiej') && e.button !== 2) {
+      if (ui.verb === 'zasiej' && e.button !== 2) {
         this.painting = true;
         this.malowane.clear();
         this.kosztPociagniecia = { krew: 0, wiara: 0, otchlan: 0 };
@@ -988,12 +1068,12 @@ export class EkranGry implements Ekran {
       const o = this.rozkazy.pod(sim, wx, wy);
       if (o) { this.rozkazy.skresl(sim, o); ui.say('Skreślone. Koszt wrócił.', sim.tick); this.dirty = true; return; }
     }
-    if (!p.moved && p.przycisk !== 2 && !sim.ending && ui.verb && ui.verb !== 'ksztaltuj' && ui.verb !== 'zasiej' && this.naPlycie(p.sx, p.sy)) this.uzyj(p.sx, p.sy);
+    if (!p.moved && p.przycisk !== 2 && !sim.ending && ui.verb && ui.verb !== 'zasiej' && this.naPlycie(p.sx, p.sy)) this.uzyj(p.sx, p.sy);
   }
 
   /** Który ryt leży pod palcem (albo null). */
   private rytPod(x: number, y: number): string | null {
-    for (const v of ['ksztaltuj', 'zasiej', 'szept', 'znak']) {
+    for (const v of ['zasiej', 'szept', 'znak']) {
       const m = this.ui.miejsce('verb', v);
       if (m && Math.abs(x - m.x) <= m.hw && Math.abs(y - m.y) <= m.hh) return v;
     }
@@ -1075,7 +1155,7 @@ export class EkranGry implements Ekran {
       case 'kamera': this.doMieszkancow(); break;
       case 'przyblizenie': this.cam.zoom = Math.min(this.cam.maxZoom, this.cam.zoom * KAMERA.krokKlawisza); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
       case 'oddalenie': this.cam.zoom = Math.max(this.cam.minZoom, this.cam.zoom / KAMERA.krokKlawisza); this.cam.clamp(sim.world.w, sim.world.h); this.nasluch?.({ typ: 'kamera', rodzaj: 'zoom' }); this.dirty = true; break;
-      case 'ksztaltuj': case 'zasiej': case 'szept': case 'znak': this.wybierzCzasownik(akcja); break;
+      case 'zasiej': case 'szept': case 'znak': this.wybierzCzasownik(akcja); break;
       case 'narzedzie1': case 'narzedzie2': case 'narzedzie3': case 'narzedzie4': this.wybierzNarzedzie(Number(akcja.slice(-1)) - 1); break;
       default: break;
     }

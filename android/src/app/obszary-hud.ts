@@ -31,7 +31,7 @@ export function zbierzObszaryHud(d: {
   // klepsydra tak, jak ją widać: znak i podpis „×2” po lewej (pole dotyku jest większe)
   const k = miejsceKlepsydry(p);
   dodaj('klepsydra', { x: k.x - k.s * 1.9, y: k.y - k.s * 0.6, w: k.s * 2.5, h: k.s * 1.2 });
-  for (const id of ['ksztaltuj', 'zasiej', 'szept', 'znak']) {
+  for (const id of ['zasiej', 'szept', 'znak']) {
     const m = d.ui.miejsce('verb', id);
     if (m) dodaj(`ryt:${id}`, { x: m.x - m.hw, y: m.y - m.hh, w: m.hw * 2, h: m.hh * 2 });
   }

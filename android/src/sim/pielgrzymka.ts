@@ -170,3 +170,26 @@ export function aktualnyPlan(sim: Sim): PlanDrogi | null {
   p.kopac = p.kopac.filter((i) => doKopania(sim.world.tile[i]));
   return p;
 }
+
+/**
+ * Góra drąży drogę swoim wiernym (wersja na telefon nie ma rytu drążenia): póki ktoś z nacji
+ * z planu idzie pod rdzeń, co `PLAN_DROGI.drazenieCo` tików znika jeden kafel skały ze złotej
+ * kreski — od strony gniazda, więc korytarz rośnie przed pielgrzymami.
+ */
+export function drazDrogeWiernym(sim: Sim): void {
+  const p = sim.planDrogi;
+  if (!p || sim.rytual.otwarta) return;
+  let idzie = false;
+  for (const c of sim.creatures) if (!c.dead && c.clan === p.klan && c.job === Job.PIELGRZYM) { idzie = true; break; }
+  if (!idzie) return;
+  const w = sim.world;
+  while (p.kopac.length) {
+    const i = p.kopac.pop()!;
+    if (!doKopania(w.tile[i])) continue;
+    w.tile[i] = T.AIR;
+    const x = i % w.w, y = (i / w.w) | 0;
+    w.oznaczSlad(x, y, 1, sim.tick);
+    if (sim.rng.chance(0.25)) sim.spark(x + 0.5, y + 0.5, 'dust');
+    return;
+  }
+}

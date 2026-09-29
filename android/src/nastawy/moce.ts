@@ -5,25 +5,15 @@
  * tylko to, czy ryt się rozjarza — więc te wartości ustawiają rytm gry.
  */
 export const KOSZTY = {
-  ksztaltuj: {
-    draz: { krew: 6, wiara: 0, otchlan: 0 },
-    zawal: { krew: 6, wiara: 0, otchlan: 0 },
-    woda: { krew: 10, wiara: 0, otchlan: 0 },
-    zar: { krew: 14, wiara: 0, otchlan: 0 },
-  },
   zasiej: {
-    ruda: { krew: 8, wiara: 4, otchlan: 0 },
     grzyb: { krew: 8, wiara: 0, otchlan: 0 },
-    kosci: { krew: 8, wiara: 4, otchlan: 0 },
   },
   szept: {
     modl: { krew: 0, wiara: 8, otchlan: 0 },
     prorok: { krew: 0, wiara: 18, otchlan: 0 },
-    uciekaj: { krew: 0, wiara: 5, otchlan: 0 },
   },
   znak: {
     objawienie: { krew: 0, wiara: 30, otchlan: 0 },
-    panika: { krew: 0, wiara: 30, otchlan: 0 },
   },
 } as Record<string, Record<string, { krew: number; wiara: number; otchlan: number }>>;
 

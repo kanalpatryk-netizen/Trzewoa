@@ -1,6 +1,6 @@
 import type { Sim } from '../sim/sim';
 import { MOCE } from '../nastawy/moce';
-import { cost, affordable, kafleKsztaltu, shape, seed, sign, whisper, type Verb } from './powers';
+import { cost, affordable, seed, sign, whisper, type Verb } from './powers';
 
 /** Jeden zamiar wydany w pauzie: co, gdzie i ile już zarezerwowano. */
 export interface Rozkaz {
@@ -42,17 +42,6 @@ export class Rozkazy {
     const w = sim.world;
     if (!affordable(sim, r.czasownik, r.narzedzie)) return 'Nie stać cię — część zasobów trzyma już plan.';
     switch (r.czasownik) {
-      case 'ksztaltuj':
-        if (!kafleKsztaltu(sim, r.narzedzie, r.x, r.y)) {
-          return r.narzedzie === 'zawal' ? 'Tu nie ma czego zawalić — celuj w pustkę.'
-            : r.narzedzie === 'draz' ? 'Tu nie ma czego drążyć — celuj w skałę.'
-            : (r.narzedzie === 'woda' || r.narzedzie === 'zar') && w.suchaStrefa(r.x, r.y)
-              ? 'Nie tutaj. To jedyna sucha droga do twojego rdzenia.'
-              : 'Nie da się tego zrobić w tym miejscu.';
-        }
-        // pociągnięcie po tym samym miejscu nie mnoży rozkazów
-        if (this.lista.some((o) => o.czasownik === 'ksztaltuj' && o.narzedzie === r.narzedzie && Math.hypot(o.x - r.x, o.y - r.y) < MOCE.planOdstepKsztalt)) return '';
-        break;
       case 'zasiej':
         if (!w.inb(r.x, r.y)) return 'Poza górą.';
         if (this.lista.some((o) => o.czasownik === 'zasiej' && o.narzedzie === r.narzedzie && Math.hypot(o.x - r.x, o.y - r.y) < MOCE.planOdstepZasiew)) return '';
@@ -123,7 +112,6 @@ export class Rozkazy {
       this.usun(sim, o);
       let udane = false;
       switch (o.czasownik) {
-        case 'ksztaltuj': udane = shape(sim, o.narzedzie, o.x, o.y); break;
         case 'zasiej': udane = seed(sim, o.narzedzie, o.x, o.y); break;
         case 'znak': udane = sign(sim, o.narzedzie, o.x, o.y); break;
         case 'szept': {

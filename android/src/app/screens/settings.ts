@@ -84,7 +84,7 @@ export class EkranUstawien implements Ekran {
       { typ: 'akcja', etykieta: 'Samouczek od nowa', opis: 'odblokowuje podpowiedź w menu i pozwala przejść wszystko jeszcze raz', wykonaj: () => ustaw('samouczekZrobiony', false), przycisk: 'od nowa' },
 
       { typ: 'naglowek', tekst: 'Dotyk' },
-      { typ: 'akcja', etykieta: 'Przeciągnięcie', opis: 'przesuwa płytę; przy Kształtuj i Zasiej maluje — wtedy płytę przesuwają dwa palce', wykonaj: () => {} },
+      { typ: 'akcja', etykieta: 'Przeciągnięcie', opis: 'przesuwa płytę; przy rycie Nakarm maluje jedzenie — wtedy płytę przesuwają dwa palce', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'Dwa palce', opis: 'rozsunięte przybliżają, zsunięte oddalają', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'Przytrzymanie rytu', opis: 'otwiera jego tablicę w atlasie', wykonaj: () => {} },
       { typ: 'akcja', etykieta: 'Dotknięcie rytu', opis: 'wybiera czasownik; drugie dotknięcie go odkłada i puszcza czas', wykonaj: () => {} },

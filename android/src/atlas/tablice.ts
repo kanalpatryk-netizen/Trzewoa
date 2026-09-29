@@ -7,7 +7,6 @@ import { BARWA, rgba } from '../render/palette';
 import { kreskuj, kropkuj, pseudo, type Plotno } from '../cutscene/art/common';
 import { rysujGore } from '../cutscene/art/gora';
 import { rysujPamiec } from '../cutscene/art/pamiec';
-import { rysujZyly } from '../cutscene/art/zyly';
 import { rysujZiarno } from '../cutscene/art/ziarno';
 import { rysujSzept } from '../cutscene/art/szept';
 import { rysujZnak } from '../cutscene/art/znak';
@@ -419,29 +418,22 @@ export const TABLICE: Tablica[] = [
   },
   // ryty
   {
-    id: 'ryt-ksztaltuj', grupa: 'ryty', nazwa: 'Kształtuj', lacina: 'Formatio saxi',
-    opis: 'Ruszasz samą skałę: drążysz przejście, zawalasz strop, wpuszczasz wodę albo otwierasz żar. Magma wpuszczona do wody zastyga w kamień na zawsze.',
-    kiedy: 'Drąż drogę do rudy albo do sąsiada. Zawalaj, gdy ktoś bierze górę.',
-    koszt: `drążenie ${kosztSlowami('ksztaltuj', 'draz')}, żar ${kosztSlowami('ksztaltuj', 'zar')}`,
-    rycina: cala(rysujZyly),
-  },
-  {
-    id: 'ryt-zasiej', grupa: 'ryty', nazwa: 'Zasiej', lacina: 'Semen causae',
+    id: 'ryt-zasiej', grupa: 'ryty', nazwa: 'Nakarm', lacina: 'Semen causae',
     opis: 'Nie rozkazujesz, dokąd iść — kładziesz w skale powód. Grzyb to jedzenie, ruda to materiał na ołtarze i kuźnie, kości są padliną, która też karmi.',
     kiedy: 'Siej przy tych, których jest najmniej. Dosypywanie zwycięzcy przybliża sen.',
     koszt: `grzyb ${kosztSlowami('zasiej', 'grzyb')}, ruda ${kosztSlowami('zasiej', 'ruda')}`,
     rycina: cala(rysujZiarno),
   },
   {
-    id: 'ryt-szept', grupa: 'ryty', nazwa: 'Szepcz', lacina: 'Susurrus',
-    opis: 'Dotykasz jednej głowy. „Módl się” posyła go pod twój rdzeń: idzie tam jako wierny i modli się pod skorupą. „Prorokuj” odrywa go z garstką wiernych w nową nację. „Uciekaj” wypędza go w górę, z dala od zagrożenia.',
+    id: 'ryt-szept', grupa: 'ryty', nazwa: 'Szepnij', lacina: 'Susurrus',
+    opis: 'Dotykasz jednej głowy. „Módl się” posyła go pod twój rdzeń: idzie tam jako wierny i modli się pod skorupą. „Prorokuj” odrywa go z garstką wiernych w nową nację.',
     kiedy: 'Trzech wysłanych „módl się” z jednej nacji wystarczy, żeby skorupa zaczęła pękać. Prorok rozbija nację, która zjada resztę.',
     koszt: `módl się ${kosztSlowami('szept', 'modl')}, prorok ${kosztSlowami('szept', 'prorok')}`,
     rycina: cala(rysujSzept),
   },
   {
-    id: 'ryt-znak', grupa: 'ryty', nazwa: 'Znak', lacina: 'Signum manifestum',
-    opis: 'Jawny cud widziany w promieniu dwudziestu sześciu kafli. Objawienie podnosi oddanie i gasi strach, panika rozgania. Zostaje glif — modlitwa przy nim liczy się podwójnie.',
+    id: 'ryt-znak', grupa: 'ryty', nazwa: 'Cud', lacina: 'Signum manifestum',
+    opis: 'Jawny cud widziany w promieniu dwudziestu sześciu kafli. Podnosi oddanie nacji i gasi strach. Zostaje świecący glif — modlitwa przy nim liczy się podwójnie.',
     kiedy: 'Stawiaj przy gnieździe nacji, którą chcesz doprowadzić do rdzenia. Jedno, dwa objawienia i sama wyśle wartę.',
     koszt: kosztSlowami('znak', 'objawienie'),
     rycina: cala(rysujZnak),
@@ -449,69 +441,69 @@ export const TABLICE: Tablica[] = [
   // zasoby
   {
     id: 'krew', grupa: 'zasoby', nazwa: 'Krew', lacina: 'Sanguis',
-    opis: 'Czerwona rysa pod płytą. Płaci ci ją każda śmierć w twoich trzewiach — cudza wojna jest twoim dochodem.',
-    kiedy: 'Wydajesz ją na kształtowanie skały i zasiew.',
+    opis: 'Liczba nad płytą i czerwona rysa pod nią. Płaci ci ją każda śmierć w twoich trzewiach — cudza wojna jest twoim dochodem. Mieści się jej najwyżej 250.',
+    kiedy: 'Wydajesz ją na jedzenie (ryt Nakarm) i na wybory na kartach wydarzeń.',
     rycina: cala(rysujOrgany),
   },
   {
     id: 'wiara', grupa: 'zasoby', nazwa: 'Wiara', lacina: 'Fides',
-    opis: 'Dym ofiarny pod sklepieniem płyty — twój zapas. Rośnie za każdym razem, gdy ktoś się do ciebie modli: przy ołtarzu, kuźni, twoim Znaku, a najmocniej pod rdzeniem. Nie myl jej z oddaniem: Wiara to twoja waluta, oddanie to to, jak mocno wierzy nacja.',
-    kiedy: 'Płacisz nią za szept i Znak. Nacięcie „Znak" u góry płyty mówi, kiedy cię stać. Więcej w tablicy Oddanie i modlitwa.',
+    opis: 'Liczba nad płytą — twój zapas. Rośnie za każdym razem, gdy ktoś się do ciebie modli: przy ołtarzu, kuźni, twoim Cudzie, a najmocniej pod rdzeniem. Mieści się jej najwyżej 200. Nie myl jej z oddaniem: Wiara to twoja waluta, oddanie to to, jak mocno wierzy nacja.',
+    kiedy: 'Płacisz nią za szept, Cud i wybory na kartach wydarzeń. Więcej w tablicy Oddanie i modlitwa.',
     rycina: cala(rysujOrgany),
   },
   // prawa góry
   {
     id: 'pamiec', grupa: 'prawa', nazwa: 'Pamięć', lacina: 'Memoria',
     opis: 'Widzisz siebie tylko tam, gdzie ktoś jest albo był. Gdzie nikt nie chodzi, rysunek blaknie i pokazuje stan sprzed pokoleń, a potem ciemność.',
-    kiedy: 'Drąż drogi, żeby chodzili dalej — wtedy więcej o sobie zobaczysz.',
+    kiedy: 'Im dalej chodzą twoi mieszkańcy, tym więcej o sobie widzisz.',
     rycina: cala(rysujPamiec),
   },
   {
     id: 'sen', grupa: 'prawa', nazwa: 'Sen', lacina: 'Somnus',
     opis: 'Jedyna przegrana. Przychodzi z monokultury albo z pustki: powieka schodzi z góry i z dołu płyty. Budzi cię tylko wojna, którą sam rozpętałeś.',
-    kiedy: 'Gdy wstęga warstw zaczyna mieć jeden kolor — rozbijaj ją prorokiem albo zawałem.',
+    kiedy: 'Gdy wstęga warstw zaczyna mieć jeden kolor — wysłuchaj proroka tej nacji albo skieruj na nią najazd czy powódź.',
     rycina: cala(rysujSpis),
   },
   {
     id: 'prorok', grupa: 'prawa', nazwa: 'Prorok', lacina: 'Propheta',
-    opis: 'Szept „prorokuj" odrywa od nacji jednego z garstką wiernych. Nowa nacja od razu ma urazę do dawnej — a wojny z twojego szeptu cofają sen.',
+    opis: 'Szept „prorokuj" albo karta „prorok” odrywa od nacji jednego z garstką wiernych. Nowa nacja od razu ma urazę do dawnej — a wojny z twojego szeptu cofają sen.',
     kiedy: 'Najlepiej w największej nacji zwycięskiej krwi.',
     rycina: prorok,
   },
   {
     id: 'droga', grupa: 'prawa', nazwa: 'Droga do wolności', lacina: 'Via liberationis',
-    opis: `Wygrywasz, gdy wierni przebiją skorupę rdzenia i uklękną przy nim. Po kolei: ktoś musi się modlić (wiara); jedna nacja musi uwierzyć na ${proc(PIELGRZYMKA.oddanieNacji)} — Znak przy jej gnieździe (oddanie) — albo sam poślesz trzech jej ludzi szeptem „módl się”; przy przedsionku pod rdzeniem musi rosnąć grzyb, żeby warta przeżyła na dole (droga); warta modli się przy rdzeniu, aż skorupa pęknie (skorupa); potem wierni sami wchodzą do środka.`,
-    kiedy: 'Kroki widać w lewym górnym rogu płyty. Po drodze nie daj górze zasnąć: nikt nie może wymrzeć ani zjeść reszty.',
+    opis: `Wygrywasz, gdy wierni przebiją skorupę rdzenia i uklękną przy nim. Po kolei: ktoś musi się modlić (wiara); jedna nacja musi uwierzyć na ${proc(PIELGRZYMKA.oddanieNacji)} — Cud przy jej gnieździe (oddanie) — albo sam poślesz trzech jej ludzi szeptem „módl się” lub kartą wydarzenia; przy przedsionku pod rdzeniem musi rosnąć grzyb, żeby warta przeżyła na dole (droga); warta modli się przy rdzeniu, aż skorupa pęknie (skorupa); potem wierni sami wchodzą do środka.`,
+    kiedy: 'Kroki widać na wstędze u dołu płyty. Po drodze nie daj górze zasnąć: nikt nie może wymrzeć ani zjeść reszty.',
     rycina: drogaWolnosci,
   },
   {
     id: 'skorupa', grupa: 'prawa', nazwa: 'Skorupa rdzenia', lacina: 'Testa cordis',
-    opis: `Kamień wokół rdzenia — nie wydrążysz go ani nie zawalisz. Pęka tylko pod modlitwą: gdy przy rdzeniu (do 16 kafli) stoi naraz co najmniej trzech wiernych jednej nacji, każdy z oddaniem od ${proc(RYTUAL.minOddanie)}. Postęp zostaje przy nacji. Każde pęknięcie wyjmuje jeden kafel od strony, z której się modlą — góra, dół albo bok; zwykle trzeba ich około pięciu, każde idzie wolniej od poprzedniego.`,
+    opis: `Kamień wokół rdzenia — nie da się go rozkuć. Pęka tylko pod modlitwą: gdy przy rdzeniu (do 16 kafli) stoi naraz co najmniej trzech wiernych jednej nacji, każdy z oddaniem od ${proc(RYTUAL.minOddanie)}. Postęp zostaje przy nacji. Każde pęknięcie wyjmuje jeden kafel od strony, z której się modlą — góra, dół albo bok; zwykle trzeba ich około pięciu, każde idzie wolniej od poprzedniego.`,
     kiedy: 'Trzymaj trzech i więcej razem, najedzonych i wierzących. Postęp widać na plakietce: „skorupa 2/5". Prorok dzieli wartę — nie teraz.',
     rycina: skorupa,
   },
   {
     id: 'rdzen', grupa: 'prawa', nazwa: 'Rdzeń', lacina: 'Cor montis',
     opis: `Gdy przez skorupę prowadzi przejście, wierni sami schodzą do środka — nie musisz ich prowadzić. Kto dotknie rdzenia albo wejdzie do pustej komory wokół niego, kończy grę: wierzący (nacja ponad ${proc(RYTUAL.uwolnienieNacja)} albo on sam ponad ${proc(RYTUAL.uwolnienieWlasne)}) cię uwalnia, bezbożny zabija.`,
-    kiedy: 'Pilnuj przejścia: nie zalewaj go i nie zawalaj, a bezbożnych trzymaj od niego z dala.',
+    kiedy: 'Wierni muszą zdążyć pierwsi: karm wartę i nie wpuszczaj pod rdzeń obcych.',
     rycina: cala(rysujGore),
   },
   {
     id: 'oddanie', grupa: 'prawa', nazwa: 'Oddanie i modlitwa', lacina: 'Devotio',
-    opis: `Każda nacja ma oddanie: od 0 do 100%, jak mocno w ciebie wierzy — widać je na karcie mieszkańca i na wstędze drogi. Ślepy Lud zaczyna od ${proc(LUDY.oddanieStart.slepyLud)}, inni prawie od zera. Kto wierzy, ten się modli: przy ołtarzu (stawiają go z rudy, którą zasiejesz), przy twoim Znaku i pod rdzeniem. Każda modlitwa daje ci Wiarę i trochę podnosi oddanie. Najszybciej podniesie je Znak „objawienie” przy gnieździe. Przy ${proc(PIELGRZYMKA.oddanieNacji)} nacja sama wyśle wartę pod rdzeń.`,
-    kiedy: 'Najprościej: zasiej rudę przy Ślepym Ludzie (ołtarz), postaw objawienie przy ich gnieździe, zasiej grzyb przy przedsionku — i szepnij „módl się” trzem z nich.',
+    opis: `Każda nacja ma oddanie: od 0 do 100%, jak mocno w ciebie wierzy — widać je nad płytą, w złotej studni i na karcie mieszkańca. Ślepy Lud zaczyna od ${proc(LUDY.oddanieStart.slepyLud)}, inni prawie od zera. Kto wierzy, ten się modli: przy ołtarzu (stawiają go z rudy — daj im ją, gdy karta zapyta), przy twoim Cudzie i pod rdzeniem. Każda modlitwa daje ci Wiarę i trochę podnosi oddanie. Najszybciej podniesie je Cud przy gnieździe. Przy ${proc(PIELGRZYMKA.oddanieNacji)} nacja sama wyśle wartę pod rdzeń.`,
+    kiedy: 'Najprościej: Cud przy gnieździe Ślepego Ludu, Nakarm przy przedsionku — i szepnij „módl się” trzem z nich (albo wybierz „poślij pod rdzeń” na karcie).',
     rycina: pielgrzymka,
   },
   {
     id: 'pielgrzymka', grupa: 'prawa', nazwa: 'Pielgrzymka', lacina: 'Peregrinatio',
     opis: `Gdy oddanie nacji przekroczy ${proc(PIELGRZYMKA.oddanieNacji)}, najwyżej pięciu najwierniejszych samo schodzi pod rdzeń i modli się pod skorupą — o ile przy przedsionku jest co jeść albo spod rdzenia da się wrócić do gniazda. Nie chcesz czekać? Szepnij „módl się” — wysłany idzie od razu, bez względu na wiarę swojej nacji.`,
-    kiedy: 'Zasiej grzyb przy przedsionku — gdzie nie ma przejścia, wierni przekopią się sami. Jeśli chcesz, żeby wracali do gniazda, wydrąż im korytarz wzdłuż złotej kreski.',
+    kiedy: 'Nakarm przedsionek — drogę wierni przekopią sami, złota kreska pokazuje którędy.',
     rycina: pielgrzymka,
   },
   {
-    id: 'przyplyw', grupa: 'prawa', nazwa: 'Przypływ', lacina: 'Aestus',
-    opis: 'Co jakiś czas coś wchodzi z zewnątrz: woda, zaraza, żyła szaleństwa albo ludzie. Gdy góra pustoszeje, nowe plemię schodzi samo.',
-    kiedy: 'Przypływu nie zatrzymasz. Zdecyduj, kto po nim zostanie.',
+    id: 'wydarzenia', grupa: 'prawa', nazwa: 'Wydarzenia', lacina: 'Aestus',
+    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, powódź, zaraza, głód, prorok, kłótnia nacji, żyła rudy, prośba o znak. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku.',
+    kiedy: 'Nie ma złych kart — są złe chwile. Gdy jedna krew bierze górę, kieruj na nią klęski; gdy ktoś wymiera, ratuj go; gdy nacja chce zejść pod rdzeń, poślij ją.',
     rycina: cala(rysujPrzyplyw),
   },
   {

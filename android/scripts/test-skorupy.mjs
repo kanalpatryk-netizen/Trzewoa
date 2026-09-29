@@ -24,6 +24,8 @@ export function sprawdz(ile: number) {
   const wyniki: any[] = [];
   for (let z = 0; z < ile; z++) {
     const sim: any = new Sim(z * 31337 + 7);
+    // test mechaniki skorupy — karty wydarzeń (z domyślnymi wyborami) tylko by go zaszumiły
+    sim.wydarzenia.nastepne = Infinity;
     for (let i = 0; i < 400; i++) sim.step();
     const skorupa = kamienNadRdzeniem(sim);
 

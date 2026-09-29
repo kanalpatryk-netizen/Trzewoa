@@ -5,9 +5,10 @@ import { Race, RACES, RACE_COUNT, clanName } from './races';
 import { Creature, Job, Thought, makeCreature, stepCreature } from './creatures';
 import type { Efekt, RodzajEfektu } from '../render/efekty';
 import { tikRytualu, type StanRytualu } from './rytual';
-import { odswiezPlan, type PlanDrogi } from './pielgrzymka';
+import { odswiezPlan, drazDrogeWiernym, type PlanDrogi } from './pielgrzymka';
 import { policzJedzeniePrzedsionka } from './rytual';
 import { nowyTik } from './droga';
+import { tikWydarzen, nowyStanWydarzen, kartaPlemienia, type StanWydarzen } from './wydarzenia';
 import { RYTUAL, PIELGRZYMKA, PLAN_DROGI } from '../nastawy/rytual';
 import { GORA as G, LUDY as L, ZASIEDLENIE as Z, PRZYPLYWY as PP } from '../nastawy/gora';
 import { SWIAT } from '../nastawy/swiat';
@@ -119,6 +120,8 @@ export class Sim {
   senDzwon = false;
   /** Postęp kruszenia skorupy rdzenia — koniec gry wymaga kultu, nie jednego kilofa. */
   rytual: StanRytualu = { postep: 0, klan: -1, wierni: 0, pekniecia: 0, otwarta: false, skorupa: 0 };
+  /** Karty wydarzeń (patrz wydarzenia.ts) — główny sposób grania na telefonie. */
+  wydarzenia: StanWydarzen = nowyStanWydarzen();
   /** Plan drogi pielgrzymów (patrz pielgrzymka.ts) — pamięć podręczna, nie stan gry. */
   planDrogi: PlanDrogi | null = null;
   lastTide = '';
@@ -836,19 +839,12 @@ export class Sim {
     // sporo czasu, a po kilkunastu partiach góra zostaje sama i po prostu zasypia.
     if (alive < PP.pustkaPonizej && this.tick > this.lastSettlers + PP.osadnicyOdstep && this.przybyszow < PP.maxPrzybyszow && !this.ending) {
       this.settlers();
+      const nowy = this.clans[this.clans.length - 1];
+      if (nowy && !nowy.dead) kartaPlemienia(this, nowy);
       return;
     }
-    if (this.tick < this.nextTide || this.ending) return;
-    this.nextTide = this.tick + PP.odstep + this.rng.int(PP.rozrzut);
-    // gdy jedna krew zjada resztę, góra sama ściąga obcych — inaczej każda partia
-    // kończyła się tą samą monokulturą i zaśnięciem
-    if (this.dominance > PP.obcyOdDominacji && this.tick > this.lastSettlers + PP.osadnicyOdstep && this.przybyszow < PP.maxPrzybyszow
-        && this.rng.chance(PP.obcySzansa) && this.obcyLud()) return;
-    const roll = this.rng.int(4);
-    if (roll === 0) this.humanRaid();
-    else if (roll === 1) this.flood();
-    else if (roll === 2) this.plague();
-    else this.madVein();
+    // WERSJA ANDROID: najazdy, powodzie, zarazy i żyły szaleństwa przychodzą jako karty
+    // wydarzeń z wyborem (wydarzenia.ts) — zanim uderzą, gracz decyduje, co z nimi zrobić
   }
 
   /** Nowe plemię schodzi w pustą górę. To nie litość — to głód, który cię karmi. */
@@ -1009,7 +1005,7 @@ export class Sim {
    * obóz Żużlowców albo Prządek zabijał własnych mieszkańców. Prządki i Trole dostają kości,
    * Żużlowcy nic — oni żyją z ognia.
    */
-  private zapasy(klan: Clan, ile: number): void {
+  zapasy(klan: Clan, ile: number): void {
     if (klan.race === Race.DWARF || klan.race === Race.HUMAN) return;
     const w = this.world;
     const kafel = klan.race === Race.GOBLIN ? T.FUNGUS : T.BONES;
@@ -1056,10 +1052,13 @@ export class Sim {
     }
   }
 
-  humanRaid(): void {
+  /** Najazd z powierzchni; `nadX` — schodzą nad tym miejscem (karta wydarzenia „poprowadź ich”). */
+  humanRaid(nadX?: number): void {
     const w = this.world;
-    let x = 8 + this.rng.int(w.w - 16), y = SURFACE_Y - 2;
-    for (let k = 0; k < 40 && !w.passable(x, y); k++) { x = 8 + this.rng.int(w.w - 16); }
+    let x = nadX ?? 8 + this.rng.int(w.w - 16), y = SURFACE_Y - 2;
+    for (let k = 0; k < 40 && !w.passable(x, y); k++) {
+      x = nadX !== undefined ? Math.max(8, Math.min(w.w - 9, nadX + this.rng.int(21) - 10)) : 8 + this.rng.int(w.w - 16);
+    }
     const clan = this.newClan(Race.HUMAN, x, y);
     const n = PP.ludzieIlu + this.rng.int(PP.ludzieRozrzut);
     for (let i = 0; i < n; i++) this.spawn(Race.HUMAN, clan.id, x + this.rng.int(6) - 3, y);
@@ -1067,12 +1066,13 @@ export class Sim {
     this.gdzie(clan.hx, clan.hy).log(`Z powierzchni zeszli ludzie: ${clan.name}. Szukają rudy i sławy.`, 'swiat');
   }
 
-  flood(): void {
+  /** Powódź; `nadX` — woda płynie nad tym miejscem (karta wydarzenia „skieruj ją”). */
+  flood(nadX?: number): void {
     const w = this.world;
     // świeże plemiona mają spokój: zalanie gniazda w pierwszej minucie to nie dramat, tylko bug
     const swiezi = this.clans.filter((k) => !k.dead && this.tick - k.founded < PP.swiezeTikow);
-    let x = 6 + this.rng.int(w.w - 12);
-    for (let k = 0; k < 24 && swiezi.some((s) => Math.abs(s.hx - x) < PP.powodzOdstep); k++) x = 6 + this.rng.int(w.w - 12);
+    let x = nadX ?? 6 + this.rng.int(w.w - 12);
+    for (let k = 0; nadX === undefined && k < 24 && swiezi.some((s) => Math.abs(s.hx - x) < PP.powodzOdstep); k++) x = 6 + this.rng.int(w.w - 12);
     for (let k = 0; k < PP.powodzProby; k++) {
       const xx = Math.max(1, Math.min(w.w - 2, x + this.rng.int(9) - 4));
       const yy = SURFACE_Y + this.rng.int(PP.powodzGlebokosc);
@@ -1262,8 +1262,12 @@ export class Sim {
     if (this.tick % RYTUAL.coIleTikow === 0) tikRytualu(this, this.rytual);
     if (this.tick % PIELGRZYMKA.jedzenieCo === 0) this.jedzeniePrzedsionka = policzJedzeniePrzedsionka(this);
     if (this.tick % PLAN_DROGI.odswiezCo === 0) odswiezPlan(this);
+    if (this.tick % PLAN_DROGI.drazenieCo === 0) drazDrogeWiernym(this);
     this.census();
     this.tides();
+    tikWydarzen(this);
+    if (this.wiara > G.wiaraMax) this.wiara = G.wiaraMax;
+    if (this.krew > G.krewMax) this.krew = G.krewMax;
   }
 }
 

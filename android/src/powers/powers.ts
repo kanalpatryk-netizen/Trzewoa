@@ -5,30 +5,26 @@ import { Creature, Thought } from '../sim/creatures';
 import { KOSZTY, MOCE, SKAZY } from '../nastawy/moce';
 import { odswiezPlan } from '../sim/pielgrzymka';
 
-export type Verb = 'ksztaltuj' | 'zasiej' | 'szept' | 'znak';
+/**
+ * Trzy ryty wersji na telefon: Nakarm (grzyb), Szepnij (jedna myśl w jedną głowę)
+ * i Cud (objawienie). Resztę — obronę, rudę, zarazy, powodzie — przynoszą karty wydarzeń
+ * (sim/wydarzenia.ts), na które odpowiadasz wyborem.
+ * Wewnętrzne nazwy zostały po dawnych rytach: „zasiej” to Nakarm, „znak” to Cud.
+ */
+export type Verb = 'zasiej' | 'szept' | 'znak';
 
 export interface Tool { id: string; label: string; hint: string; }
 
 export const TOOLS: Record<Verb, Tool[]> = {
-  ksztaltuj: [
-    { id: 'draz', label: 'drąż', hint: 'skała ustępuje' },
-    { id: 'zawal', label: 'zawal', hint: 'strop wraca na miejsce' },
-    { id: 'woda', label: 'woda', hint: 'żyła wodna pęka' },
-    { id: 'zar', label: 'żar', hint: 'otwierasz gorąco' },
-  ],
   zasiej: [
-    { id: 'ruda', label: 'ruda', hint: 'będą się o nią bić' },
-    { id: 'grzyb', label: 'grzyb', hint: 'jedzenie, które rośnie samo' },
-    { id: 'kosci', label: 'kości', hint: 'padlina i pamięć' },
+    { id: 'grzyb', label: 'grzyb', hint: 'jedzenie, które rośnie samo — przeciągnij tam, gdzie mieszkają' },
   ],
   szept: [
     { id: 'modl', label: 'módl się', hint: 'idzie pod twój rdzeń i modli się tam' },
     { id: 'prorok', label: 'prorokuj', hint: 'odchodzi z wiernymi i zakłada nową nację' },
-    { id: 'uciekaj', label: 'uciekaj', hint: 'ucieka w górę, z dala od niebezpieczeństwa' },
   ],
   znak: [
-    { id: 'objawienie', label: 'objawienie', hint: 'wszyscy widzą; oddanie rośnie' },
-    { id: 'panika', label: 'panika', hint: 'wszyscy widzą; uciekają' },
+    { id: 'objawienie', label: 'objawienie', hint: 'wszyscy dookoła widzą cud; ich oddanie rośnie' },
   ],
 };
 
@@ -55,75 +51,13 @@ function pay(sim: Sim, verb: Verb, tool: string): boolean {
 }
 
 /**
- * Kafle, które kształtowanie by zmieniło, albo null, gdy nie ma tu nic do zrobienia.
- * Wspólne dla wykonania i dla planu w pauzie — szkic nie może obiecywać czegoś,
- * czego wykonanie potem nie zrobi.
+ * Zasiew. Gracz sieje tylko grzyb (ryt Nakarm); ruda i kości przychodzą z kart wydarzeń,
+ * które płacą same — wtedy `zaplac` jest fałszem.
  */
-export function kafleKsztaltu(sim: Sim, tool: string, tx: number, ty: number, radius = MOCE.ksztaltPromien): number[] | null {
-  const w = sim.world;
-  if (!w.inb(tx, ty)) return null;
-  const r = Math.ceil(radius);
-  const kafle: number[] = [];
-  for (let dy = -r; dy <= r; dy++) {
-    for (let dx = -r; dx <= r; dx++) {
-      if (dx * dx + dy * dy > radius * radius) continue;
-      const x = tx + dx, y = ty + dy;
-      if (!w.inb(x, y)) continue;
-      const i = w.idx(x, y);
-      if (w.tile[i] === T.CORE) continue;
-      kafle.push(i);
-    }
-  }
-  // sucha strefa wokół przedsionka: ani wody, ani żaru — to jedyna droga do rdzenia
-  if ((tool === 'woda' || tool === 'zar') && w.suchaStrefa(tx, ty)) return null;
-  if (tool === 'zawal' && !kafle.some((i) => PASSABLE[w.tile[i]] === 1)) return null;
-  if (tool === 'draz' && !kafle.some((i) => PASSABLE[w.tile[i]] !== 1 && w.tile[i] !== T.STONE)) return null;
-  return kafle.length ? kafle : null;
-}
-
-/** Kształtowanie — drążysz, zawalasz, wpuszczasz wodę albo otwierasz żyłę gorąca. */
-export function shape(sim: Sim, tool: string, tx: number, ty: number, radius = MOCE.ksztaltPromien): boolean {
-  const w = sim.world;
-  // Najpierw sprawdzamy, czy jest co robić — inaczej narzędzie brało zapłatę
-  // i nie zmieniało niczego, co wyglądało jak zepsuta mechanika.
-  const kafle = kafleKsztaltu(sim, tool, tx, ty, radius);
-  if (!kafle) return false;
-  if (!pay(sim, 'ksztaltuj', tool)) return false;
-
-  for (const i of kafle) {
-    const sx = i % w.w, sy = (i / w.w) | 0;
-    w.oznaczSlad(sx, sy, tool === 'zawal' ? 2 : 1, sim.tick);
-    switch (tool) {
-      case 'draz':
-        if (w.tile[i] !== T.STONE) w.tile[i] = T.AIR;
-        break;
-      case 'zawal':
-        if (PASSABLE[w.tile[i]] === 1) { w.tile[i] = T.SOIL; w.water[i] = 0; w.magma[i] = 0; }
-        break;
-      case 'woda':
-        // żyła pęka także w litej skale — inaczej woda działała tylko w korytarzu
-        if (PASSABLE[w.tile[i]] !== 1 && w.tile[i] !== T.STONE) w.tile[i] = T.AIR;
-        if (PASSABLE[w.tile[i]] === 1) { w.water[i] = MOCE.plynPoziom; w.magma[i] = 0; }
-        break;
-      case 'zar':
-        if (PASSABLE[w.tile[i]] !== 1 && w.tile[i] !== T.STONE) w.tile[i] = T.AIR;
-        if (PASSABLE[w.tile[i]] === 1) { w.magma[i] = MOCE.plynPoziom; w.water[i] = 0; }
-        break;
-    }
-  }
-  if (tool === 'zawal') {
-    const victim = sim.nearestCreature(tx, ty, radius + 1, () => true);
-    if (victim) sim.kill(victim, 'pod zawałem', 'zawał');
-  }
-  sim.efekt(tx + 0.5, ty + 0.5, tool === 'zawal' ? 'zawal' : 'kopniecie');
-  for (let i = 0; i < 4; i++) sim.spark(tx + 0.5, ty + 0.5, tool === 'zar' ? 'ember' : 'dust');
-  return true;
-}
-
-export function seed(sim: Sim, tool: string, tx: number, ty: number): boolean {
+export function seed(sim: Sim, tool: string, tx: number, ty: number, zaplac = true): boolean {
   const w = sim.world;
   if (!w.inb(tx, ty)) return false;
-  if (!pay(sim, 'zasiej', tool)) return false;
+  if (zaplac && !pay(sim, 'zasiej', tool)) return false;
   const r = MOCE.zasiewPromien;
   const szansa = MOCE.zasiewSzansa;
   for (let dy = -r; dy <= r; dy++) {

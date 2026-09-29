@@ -24,7 +24,7 @@ export const MENU = {
     wroc: { etykieta: 'Wróć do góry', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś' },
     nowa: { etykieta: 'Obudź się', opis: 'nowa góra, nowi mieszkańcy, nowa legenda' },
     wczytaj: { etykieta: 'Wróć tam, gdzie byłeś', opis: 'ostatni zapis stanu góry' },
-    samouczek: { etykieta: 'Naucz się być górą', opis: 'cztery plansze wstępu i dziesięć krótkich lekcji — palec pokazuje, gdzie dotknąć' },
+    samouczek: { etykieta: 'Naucz się być górą', opis: 'cztery plansze wstępu i osiem krótkich lekcji — palec pokazuje, gdzie dotknąć' },
     bestiariusz: { etykieta: 'Atlas', opis: 'tablice ras i praw góry — odkrywasz je, grając' },
     ustawienia: { etykieta: 'Ustawienia', opis: 'dźwięk, obraz i świat' },
   },
