@@ -91,10 +91,10 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
       // mieszkająca pod rdzeniem albo obok niego kruszyła kamień i nigdy nie mogła wejść.
       // Kolejne pęknięcia idą tą samą drogą co pierwsze: gdy każde szło w stronę, z której
       // akurat się modlono, skorupa miała po dwa niedokończone szyby i nie puszczała nigdzie.
-      if (!stan.strona) {
-        const [kx, ky] = kierunek.get(id) ?? [0, -1];
-        stan.strona = Math.abs(ky) >= Math.abs(kx) ? (ky < 0 ? 'gora' : 'dol') : (kx < 0 ? 'lewo' : 'prawo');
-      }
+      // WERSJA ANDROID: zawsze od góry. Przedsionek, jedzenie warty i droga, którą góra drąży
+      // wiernym, są nad rdzeniem, w suchej strefie. Pęknięcie od dołu albo z boku prowadziło
+      // w głębię pełną magmy: wlewała się do komory, a skorupa pękała dwadzieścia razy na nic.
+      if (!stan.strona) stan.strona = 'gora';
       otworzSkorupe(sim, stan, stan.strona);
       // sprawdzamy drożność od razu po pęknięciu, żeby wierni nie czekali na tik kontrolny
       if (!stan.otwarta && drogaDoRdzenia(sim)) {
