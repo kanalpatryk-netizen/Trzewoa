@@ -764,7 +764,10 @@ export class Sim {
     // góra z sześcioma mieszkańcami budziła się w nieskończoność, bo „nikt nie górował".
     // Góra o kilkunastu mieszkańcach jeszcze żyje — usypia dopiero naprawdę pusta.
     const pustka = total < G.senPustkaPonizej ? 1 - total / G.senPustkaPonizej : 0;
-    const rosnie = (G.senOdMonokultury * nadmiar + G.senOdPustki * pustka) * (this.lagodna ? G.laskawaSen : 1);
+    // WERSJA ANDROID: kto modli się pod twoim rdzeniem, ten cię budzi — warta nie może
+    // uśpić góry tylko dlatego, że jej lud jest liczny (tak kończyły się partie o krok od wygranej)
+    const warta = this.rytual.wierni >= RYTUAL.potrzebaWiernych && !this.rytual.otwarta ? 0 : 1;
+    const rosnie = (G.senOdMonokultury * nadmiar * warta + G.senOdPustki * pustka) * (this.lagodna ? G.laskawaSen : 1);
     this.sen = Math.max(0, Math.min(1, this.sen + (rosnie > 0 ? rosnie : -G.senCofaSie)));
     // sen ma być słyszalny, a nie tylko widoczny na krawędziach płyty
     for (const prog of G.senProgi) {

@@ -460,7 +460,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'sen', grupa: 'prawa', nazwa: 'Sen', lacina: 'Somnus',
-    opis: 'Jedyna przegrana. Przychodzi z monokultury albo z pustki: powieka schodzi z góry i z dołu płyty. Budzi cię tylko wojna, którą sam rozpętałeś.',
+    opis: 'Jedyna przegrana. Przychodzi z monokultury albo z pustki: powieka schodzi z góry i z dołu płyty. Budzi cię wojna, którą sam rozpętałeś — i warta, która modli się pod twoim rdzeniem.',
     kiedy: 'Gdy wstęga warstw zaczyna mieć jeden kolor — wysłuchaj proroka tej nacji albo skieruj na nią najazd czy powódź.',
     rycina: cala(rysujSpis),
   },
