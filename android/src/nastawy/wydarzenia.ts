@@ -43,6 +43,8 @@ export const WYDARZENIA = {
   ratunek: 15, ratunekJedzenia: 14,
   /** Nowe plemię: nakarmienie (Krew). */
   plemieNakarm: 10, plemieJedzenia: 12,
+  /** Pierwsza krew (dwie nacje zaczynają wojnę): rozdzielenie (Krew — tej, której nie przeleją) i na ile tików rozejm. */
+  wojnaRozdziel: 15, wojnaPokoj: 14400,
 
   // -------------------------------------------------------------- warunki
   /** Głód: karta, gdy głoduje taka część nacji liczącej co najmniej `glodMinNacja`. */
@@ -55,6 +57,10 @@ export const WYDARZENIA = {
   wartaOddanie: 0.4, wartaMinNacja: 6,
   /** Obcy lud: tylko przy takiej dominacji jednej krwi. */
   obcyOdDominacji: 0.74,
+  /** Pierwsza krew: ta sama para nie wraca z kartą przez tyle tików; karty wojen nie częściej niż co `wojnaPo`. */
+  wojnaCisza: 28800, wojnaPo: 5400,
+  /** Pierwsza krew: rozsądnie rozdzielić, gdy słabsza krew liczy tylu albo mniej. */
+  wojnaChronPonizej: 10,
   /** Wymieranie: rasa ma tylu albo mniej, a miała co najmniej `wymieraSzczyt`. */
   wymieraPonizej: 3, wymieraSzczyt: 7,
 };

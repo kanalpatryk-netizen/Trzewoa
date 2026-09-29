@@ -6,6 +6,7 @@ import { STWORZENIA as K } from '../nastawy/stworzenia';
 import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { LUDY } from '../nastawy/gora';
 import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog } from './droga';
+import { zglosWojne } from './wydarzenia';
 
 export enum Job {
   WANDER, DIG, EAT, PRAY, BUILD, FIGHT, FLEE, BREED, HAUL, SLAVE, DESCEND, RAID, SACRIFICE,
@@ -97,7 +98,7 @@ export function stepCreature(sim: Sim, c: Creature): void {
   // --- głód i wiek
   // zatłoczenie bije w głód natychmiast: nadmiar nie chudnie powoli, tylko pada
   const over = sim.crowding[c.race] - 1;
-  const press = over > 0 ? 1 + over * over * K.glodOdTloku : 1;
+  const press = over > 0 ? Math.min(K.glodOdTlokuMax, 1 + over * over * K.glodOdTloku) : 1;
   // w samouczku góra trawi wolniej: nauka nie może polegać na patrzeniu, jak wszyscy mrą
   c.hunger += K.glodNaTik * d.metabolism * (1 + c.mad * K.glodOdSzalenstwa) * press * (sim.spokojnySwiat ? K.glodWSamouczku : 1);
   // Żużlowcy żywią się tym, co wypluwa ogień — przy gorącu głód im nie doskwiera
@@ -350,7 +351,7 @@ function pickJob(sim: Sim, c: Creature): void {
   // każda rasa ma własny sposób na głód; bez tego wszystkie poza Ślepym Ludem wymierały
   if (c.hunger > (c.race === Race.DWARF ? K.glodZuzlowcow : K.glodInnych)) {
     if (c.race === Race.TROLL && c.hunger > K.trolZasypiaOd) {
-      const prey = sim.spokojnySwiat || sim.rozejm ? null : sim.nearestCreature(c.x, c.y, K.trolOfiaraZasieg, (o) => o.id !== c.id && o.race !== Race.TROLL);
+      const prey = sim.spokojnySwiat || sim.rozejm ? null : sim.nearestCreature(c.x, c.y, K.trolOfiaraZasieg, (o) => o.id !== c.id && o.race !== Race.TROLL && !sim.pokojMiedzy(c.clan, o.clan));
       if (!prey) { c.job = Job.SLEEP; c.jt = K.trolSpiTikow; return; }
     }
     if (c.race === Race.DWARF) {
@@ -365,7 +366,7 @@ function pickJob(sim: Sim, c: Creature): void {
       if (slave) { c.job = Job.DRAIN; sim.target.set(c.id, slave.id); c.jt = K.przadkaTikow; return; }
       // głodna Prządka poluje — nie czeka, aż ktoś sam na nią wpadnie
       const ofiara = sim.nearestCreature(c.x, c.y, K.przadkaPoluje, (o) => o.race !== Race.SPINNER && o.race !== Race.TROLL
-        && o.clan !== c.clan && !o.slave && RACES[o.race].strength < K.przadkaSilaOfiary);
+        && o.clan !== c.clan && !o.slave && RACES[o.race].strength < K.przadkaSilaOfiary && !sim.pokojMiedzy(c.clan, o.clan));
       if (ofiara) { c.job = Job.SLAVE; sim.target.set(c.id, ofiara.id); c.jt = K.przadkaTikow; return; }
     }
   }
@@ -395,7 +396,7 @@ function pickJob(sim: Sim, c: Creature): void {
     sim.foodMiss++;
     if (d.eatsMeat && !sim.spokojnySwiat && !sim.rozejm) {
       // głód najpierw pcha na obcych; po swoich sięga się dopiero na skraju śmierci
-      const prey = sim.nearestCreature(c.x, c.y, K.polowanieZasieg, (o) => o.id !== c.id && o.clan !== c.clan && (o.race !== c.race || c.hunger > K.kanibalizmOd))
+      const prey = sim.nearestCreature(c.x, c.y, K.polowanieZasieg, (o) => o.id !== c.id && o.clan !== c.clan && (o.race !== c.race || c.hunger > K.kanibalizmOd) && !sim.pokojMiedzy(c.clan, o.clan))
         ?? (c.hunger > K.glodSlepy ? sim.nearestCreature(c.x, c.y, K.polowanieZasieg, (o) => o.id !== c.id) : null);
       if (prey) { c.job = Job.FIGHT; sim.target.set(c.id, prey.id); c.jt = K.polowanieTikow; return; }
     }
@@ -848,9 +849,12 @@ function doFight(sim: Sim, c: Creature): void {
     foe.fear = Math.min(1, foe.fear + K.walkaStrach);
     sim.spark(foe.x, foe.y, 'hit');
     if (foe.hp <= 0) {
+      // pierwsza krew: dotąd żadna z nacji nie miała do drugiej urazy — to początek wojny
+      const pierwsza = c.clan !== foe.clan && !(sim.clans[c.clan].grudge.get(foe.clan) ?? 0) && !(sim.clans[foe.clan]?.grudge.get(c.clan) ?? 0);
       sim.kill(foe, `z ręki ${sim.clans[c.clan].name}`, 'walka');
       if (RACES[c.race].eatsMeat) c.hunger = Math.max(0, c.hunger - K.zjadaOfiare);
       sim.feud(c.clan, foe.clan);
+      if (pierwsza) zglosWojne(sim, c.clan, foe.clan, foe.x, foe.y);
       sim.wojnaBudzi(c.clan, foe.clan);
     }
   } else if (dist > K.walkaGubi) { sim.target.delete(c.id); c.jt = 0; }

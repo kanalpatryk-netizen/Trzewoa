@@ -22,7 +22,7 @@ export const SCENY: Record<string, Scena> = {
       'Nie jesteś bogiem, który rządzi podziemiem. Jesteś podziemiem — górą, która śni.',
       'Korytarze są twoimi żyłami, jaskinie płucami, a na samym dnie bije rdzeń: twoje serce, zamknięte w kamieniu.',
       'W tobie mieszkają rasy. Żywisz się tym, że o tobie myślą: ich modlitwą, ich strachem i ich śmiercią.',
-      'Nie rozkazujesz im. Zmieniasz skałę, w której żyją, i szepczesz im do głów — a one robią resztę.',
+      'Nie rozkazujesz im. Karmisz ich, szepczesz im do głów i decydujesz, co ich spotka — a one robią resztę.',
     ],
   },
 

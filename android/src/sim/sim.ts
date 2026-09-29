@@ -8,7 +8,7 @@ import { tikRytualu, type StanRytualu } from './rytual';
 import { odswiezPlan, drazDrogeWiernym, type PlanDrogi } from './pielgrzymka';
 import { policzJedzeniePrzedsionka } from './rytual';
 import { nowyTik } from './droga';
-import { tikWydarzen, nowyStanWydarzen, kartaPlemienia, type StanWydarzen } from './wydarzenia';
+import { tikWydarzen, nowyStanWydarzen, kartaPlemienia, paraNacji, type StanWydarzen } from './wydarzenia';
 import { RYTUAL, PIELGRZYMKA, PLAN_DROGI } from '../nastawy/rytual';
 import { GORA as G, LUDY as L, ZASIEDLENIE as Z, PRZYPLYWY as PP } from '../nastawy/gora';
 import { SWIAT } from '../nastawy/swiat';
@@ -420,6 +420,7 @@ export class Sim {
     if (this.rozejm) return false;
     if (b.race === Race.HUMAN || a.race === Race.HUMAN) return b.race !== a.race;
     if (a.clan === b.clan) return false;
+    if (this.pokojMiedzy(a.clan, b.clan)) return false;
     if (a.race === b.race) {
       const g = this.clans[a.clan].grudge.get(b.clan) ?? 0;
       return g > L.urazaWojnaSwoich;       // swoi biją się dopiero, gdy jest o co
@@ -431,6 +432,14 @@ export class Sim {
     // ginęła przy pierwszym spotkaniu z dużą, a rasa wymierała w kilka minut
     return (this.clans[a.clan].grudge.get(b.clan) ?? 0) > 0
       || this.rng.chance(L.bojkaSzansa * Math.min(1, this.clans[b.clan].pop / L.bojkaPelnaOd));
+  }
+
+  /** Rozejm między dwiema nacjami z karty „pierwsza krew” („rozdziel ich”). */
+  pokojMiedzy(a: number, b: number): boolean {
+    const p = this.wydarzenia.pokoj;
+    if (p.size === 0) return false;
+    const t = p.get(paraNacji(a, b));
+    return t !== undefined && t > this.tick;
   }
 
   /**

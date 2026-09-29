@@ -59,11 +59,25 @@ export interface StanWydarzen {
   ile: number;
   /** Tik, w którym rozstrzygnięto ostatnią kartę. */
   koniec: number;
+  /** Pierwsza krew między dwiema nacjami — czeka na swoją kartę. */
+  wojna: { a: number; b: number; x: number; y: number } | null;
+  /** Kiedy była ostatnia karta wojny. */
+  ostatniaWojna: number;
+  /** Para nacji → do którego tiku nie pytać o nią znowu. */
+  ciszaWojen: Map<number, number>;
+  /** Para nacji → do którego tiku trwa rozejm („rozdziel ich”). */
+  pokoj: Map<number, number>;
 }
 
 export function nowyStanWydarzen(): StanWydarzen {
-  return { biezace: null, nastepne: W.pierwsze, ostatnie: '', gracz: false, szczyt: [0, 0, 0, 0, 0, 0], ile: 0, koniec: -1e9 };
+  return {
+    biezace: null, nastepne: W.pierwsze, ostatnie: '', gracz: false, szczyt: [0, 0, 0, 0, 0, 0], ile: 0, koniec: -1e9,
+    wojna: null, ostatniaWojna: -1e9, ciszaWojen: new Map(), pokoj: new Map(),
+  };
 }
+
+/** Klucz pary nacji (bez kolejności). */
+export const paraNacji = (a: number, b: number): number => (a < b ? a * 65536 + b : b * 65536 + a);
 
 // ---------------------------------------------------------------- pomocnicze
 
@@ -185,7 +199,7 @@ function kandydaci(sim: Sim, st: StanWydarzen): { waga: number; zbuduj: Budownic
   const duza = (dom && dom.pop >= W.prorokMinNacja ? dom : null) ?? zywe(sim).filter((k) => k.pop >= W.prorokMinNacja && RACES[k.race].faithGain > 0).sort((a, b) => b.pop - a.pop)[0];
   if (duza) out.push({ rodzaj: 'prorok', waga: naDom ? 5 : 2, zbuduj: () => {
     const wybory = [
-      wybor('wysluchaj', 'Wysłuchaj go', 'Odejdzie z wiernymi i założy nową nację. Będzie wojna — a wojna cię budzi.', 0, W.prorokWysluchaj),
+      wybor('wysluchaj', 'Wysłuchaj go', 'Odejdzie z częścią wiernych i założy nową nację. Będzie wojna — a sen się cofnie.', 0, W.prorokWysluchaj),
       wybor('ucisz', 'Ucisz go', `Nacja zostanie w całości i uwierzy mocniej (+${Math.round(W.prorokUciszOddanie * 100)}%).`),
     ];
     const rozsadny = duza.race === sim.domRace && sim.dominance > 0.6 ? 0 : 1;
@@ -273,6 +287,13 @@ export function tikWydarzen(sim: Sim): void {
     if (!st.gracz && sim.tick - st.biezace.od > W.bezGraczaPo) rozstrzygnij(sim, st.biezace.domyslny);
     return;
   }
+  if (sim.tick % 900 === 0) for (const [k, t] of st.pokoj) if (t <= sim.tick) st.pokoj.delete(k);
+  // Pierwsza krew nie czeka na kolejkę: wojna rozstrzyga się w minutę, a potem nie ma już kogo ratować.
+  if (st.wojna && sim.tick - st.ostatniaWojna >= W.wojnaPo) {
+    const wj = st.wojna;
+    st.wojna = null;
+    if (kartaWojny(sim, wj)) return;
+  }
   // Karty pilne: głód całej nacji i ginąca krew nie czekają na swoją kolej — inaczej karta
   // przychodziła, gdy po nacji zostały już tylko kości.
   if (sim.tick < st.nastepne) {
@@ -336,8 +357,51 @@ export function rozstrzygnij(sim: Sim, i: number): string | null {
   sim.log(`${e.tytul}. Wybrałeś: ${w.tekst.toLowerCase()}.`, 'swiat');
   st.biezace = null;
   st.koniec = sim.tick;
-  st.nastepne = sim.tick + W.odstep + sim.rng.int(W.rozrzut);
+  // karta wojny przychodzi poza kolejką — nie przesuwa zwykłych kart (inaczej wojny je wypierały)
+  if (e.rodzaj !== 'wojna') st.nastepne = sim.tick + W.odstep + sim.rng.int(W.rozrzut);
   return null;
+}
+
+/**
+ * Pierwsza śmierć w walce między nacjami, które dotąd nie miały do siebie urazy (creatures.ts).
+ * Najazdy ludzi mają własną kartę; wojny, które gracz sam rozpętał, mają ciszę.
+ */
+export function zglosWojne(sim: Sim, a: number, b: number, x: number, y: number): void {
+  const st = sim.wydarzenia;
+  if (sim.spokojnySwiat || sim.ending || st.wojna || a === b) return;
+  const A = sim.clans[a], B = sim.clans[b];
+  if (!A || !B || A.race === Race.HUMAN || B.race === Race.HUMAN) return;
+  if ((st.ciszaWojen.get(paraNacji(a, b)) ?? -1) > sim.tick) return;
+  st.wojna = { a, b, x, y };
+}
+
+function kartaWojny(sim: Sim, wj: { a: number; b: number; x: number; y: number }): boolean {
+  const st = sim.wydarzenia;
+  const A = sim.clans[wj.a], B = sim.clans[wj.b];
+  if (!A || !B || A.dead || B.dead || A.pop <= 0 || B.pop <= 0) return false;
+  // uraza zdążyła wygasnąć — nie ma już wojny, o którą pytać
+  if (!(A.grudge.get(B.id) ?? 0) && !(B.grudge.get(A.id) ?? 0)) return false;
+  st.ciszaWojen.set(paraNacji(A.id, B.id), sim.tick + W.wojnaCisza);
+  st.ostatniaWojna = sim.tick;
+  const minut = Math.round(W.wojnaPokoj / 7200);
+  const wybory = [
+    wybor('rozdziel', 'Rozdziel ich', `Zapomną urazę i przez ${minut} min nie tkną się nawzajem.`, W.wojnaRozdziel),
+    wybor('niech', 'Niech walczą', 'Każda śmierć to twoja krew. Ale gdy słabsi wyginą, jedna krew zje resztę — a to sen.'),
+  ];
+  const slabsi = sim.popByRace[A.race] <= sim.popByRace[B.race] ? A : B;
+  const silniejsi = slabsi === A ? B : A;
+  const wiodaca = najwierniejsza(sim);
+  const chron = sim.popByRace[slabsi.race] <= W.wojnaChronPonizej
+    || (!!wiodaca && (wiodaca.id === A.id || wiodaca.id === B.id))
+    || (silniejsi.race === sim.domRace && sim.dominance > 0.5);
+  st.biezace = {
+    rodzaj: 'wojna', tytul: `Pierwsza krew: ${A.name} i ${B.name}`,
+    tekst: `Padł pierwszy trup. Po jednej stronie ${nazwaNacji(A)}, po drugiej ${nazwaNacji(B)}. Będą się mścić, aż uraza wygaśnie albo jedni wyginą.`,
+    wybory, domyslny: 1, rozsadny: chron && stac(sim, wybory[0]) ? 0 : 1,
+    cel: { x: wj.x, y: wj.y, tekst: 'pierwsza krew' }, od: sim.tick, klan: A.id, klan2: B.id,
+  };
+  st.ile++;
+  return true;
 }
 
 /** Karta wymuszona z zewnątrz — nowe plemię zeszło w pustą górę. */
@@ -432,6 +496,19 @@ function wykonaj(sim: Sim, e: Wydarzenie, id: string): void {
       }
       break;
     case 'plemie:karm': if (klan) sim.zapasy(klan, W.plemieJedzenia); break;
+    case 'wojna:rozdziel':
+      if (klan && klan2) {
+        klan.grudge.delete(klan2.id); klan2.grudge.delete(klan.id);
+        sim.wydarzenia.pokoj.set(paraNacji(klan.id, klan2.id), sim.tick + W.wojnaPokoj);
+        // kto właśnie gonił wroga z drugiej nacji, opuszcza ręce
+        for (const c of sim.creatures) {
+          if (c.dead || (c.clan !== klan.id && c.clan !== klan2.id)) continue;
+          const t = sim.creatureById(sim.target.get(c.id) ?? -1);
+          if (t && t.clan !== c.clan && (t.clan === klan.id || t.clan === klan2.id)) { sim.target.delete(c.id); c.jt = 0; }
+        }
+        if (e.cel) sim.efekt(e.cel.x, e.cel.y, 'cud');
+      }
+      break;
   }
 }
 

@@ -389,31 +389,31 @@ export const TABLICE: Tablica[] = [
   {
     id: 'rasa-1', grupa: 'rasy', nazwa: 'Żużlowcy', lacina: 'Fabri scoriae',
     opis: 'Nie rodzą się — wykuwa się ich w kuźni z trzech bryłek rudy. Żyją z ciepła ognia i giną, gdy kuźnia wygaśnie. Obłęd głębi ima się ich słabiej niż innych.',
-    kiedy: 'Zasiej rudę przy ich kuźni. Gdy nie mają ciepła, otwórz żar obok — nigdy pod nogami.',
+    kiedy: 'Gdy odsłoni się ruda, daj ją Żużlowcom — wykują z niej nowych kowali. Grzyba nie jedzą: żyją z ciepła kuźni.',
     rycina: postac(Race.DWARF, 'kopie'),
   },
   {
     id: 'rasa-2', grupa: 'rasy', nazwa: 'Trole', lacina: 'Qui nimis fodit',
     opis: 'Trolem nikt się nie rodzi — zostaje nim ten, kto kopał za głęboko i wrócił inny. Silny, powolny, nie czci nikogo. Głodny poluje, a gdy nie ma na kogo, zasypia w skale.',
-    kiedy: 'Trzymaj ludzi z dala od najgłębszych korytarzy — tam rodzą się trole.',
+    kiedy: 'Rodzą się z szaleńców — przy karcie żyły szaleństwa „zostaw” daje nowych trolów, „zasklep” ich nie da.',
     rycina: postac(Race.TROLL, 'stoi', 0.95),
   },
   {
     id: 'rasa-3', grupa: 'rasy', nazwa: 'Prządki', lacina: 'Textrices servorum',
     opis: 'Nie podbijają — przejmują. Biorą słabszych w jarzmo, przerabiają cudze dzieci na swoje, a głodne wysysają tych, których wzięły. Rosną wyłącznie cudzym kosztem.',
-    kiedy: 'Potrzebują sąsiadów słabszych od siebie. Kości przy gnieździe przetrzymają głód.',
+    kiedy: 'Potrzebują sąsiadów słabszych od siebie. Nakarm je, gdy głodują; gdy zaczną wojnę, karta „pierwsza krew” pozwoli ich rozdzielić.',
     rycina: postac(Race.SPINNER, 'stoi', 0.8),
   },
   {
     id: 'rasa-4', grupa: 'rasy', nazwa: 'Ludzie', lacina: 'Advenae superni',
     opis: 'Nie mieszkają w tobie. Schodzą z powierzchni po rudę i sławę, zabierają, co znajdą, i wracają na górę. Nie liczą się do wstęgi warstw.',
-    kiedy: 'Zawał odetnie im drogę, a każda ich śmierć to twoja krew.',
+    kiedy: 'Gdy przyjdzie karta najazdu: zawal wejście, wpuść ich albo poprowadź na najliczniejszych. Każda ich śmierć to twoja krew.',
     rycina: postac(Race.HUMAN, 'idzie'),
   },
   {
     id: 'rasa-5', grupa: 'rasy', nazwa: 'Grzybnia', lacina: 'Caro in fungum',
     opis: 'Nie ma jednostek i nie czci cię wcale. Rośnie ze zwłok — każda śmierć to paliwo na kilka kafli. Obcym parzy stopy, Ślepemu Ludowi daje jeść.',
-    kiedy: 'Wyrasta sama po każdej rzezi. Gdzie jej za dużo, wytnie ją zawał albo woda.',
+    kiedy: 'Wyrasta sama po każdej rzezi. Gdzie jej za dużo, zmyje ją powódź z karty wydarzenia.',
     rycina: grzybnia,
   },
   // ryty
@@ -502,8 +502,8 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'wydarzenia', grupa: 'prawa', nazwa: 'Wydarzenia', lacina: 'Aestus',
-    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, powódź, zaraza, głód, prorok, kłótnia nacji, żyła rudy, prośba o znak. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku.',
-    kiedy: 'Nie ma złych kart — są złe chwile. Gdy jedna krew bierze górę, kieruj na nią klęski; gdy ktoś wymiera, ratuj go; gdy nacja chce zejść pod rdzeń, poślij ją.',
+    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, powódź, zaraza, głód, prorok, kłótnia nacji, żyła rudy, prośba o znak. Gdy dwie nacje zaczynają wojnę, karta „pierwsza krew” przychodzi od razu. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku.',
+    kiedy: 'Nie ma złych kart — są złe chwile. Gdy jedna krew bierze górę, kieruj na nią klęski; gdy ktoś wymiera albo ginie w wojnie, ratuj go; gdy nacja chce zejść pod rdzeń, poślij ją.',
     rycina: cala(rysujPrzyplyw),
   },
   {

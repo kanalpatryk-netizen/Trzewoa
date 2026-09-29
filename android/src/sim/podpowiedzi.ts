@@ -28,12 +28,12 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     // podpowiedź każe wysyłać w otchłań kogoś z samej powierzchni
     const glebocy = sim.creatures.some((c) => !c.dead && c.race !== Race.HUMAN
       && c.race !== Race.TROLL && sim.world.depth(c.y) > 0.5);
-    const rada = r === Race.DWARF ? 'Otwórz im żar blisko gniazda, żeby mieli przy czym żyć.'
-      : r === Race.SPINNER ? 'Zasiej kości albo dowiedź im kogoś słabszego — żywią się cudzym.'
+    // WERSJA ANDROID: tylko to, co gracz ma — Nakarm, Szepnij, Cud i wybory na kartach
+    const rada = r === Race.DWARF ? 'Żyją z ognia kuźni — gdy odsłoni się ruda, daj ją im, a wykują nowych.'
       : r === Race.TROLL ? (glebocy
-          ? 'Szepnij „kop w dół" komuś, kto już siedzi głęboko — trole biorą się z głębi.'
-          : 'Najpierw wydrąż komuś drogę w dół; trole biorą się dopiero z głębi.')
-      : 'Zasiej grzyb w ich jaskini.';
+          ? 'Trole rodzą się z szaleńców w głębi — przy żyle szaleństwa wybierz „zostaw”.'
+          : 'Trole rodzą się z szaleńców w głębi; ktoś musi tam najpierw zejść.')
+      : 'Nakarm ich — przeciągnij palcem po ich jaskini.';
     kandydaci.push({
       tekst: `${nazwa} ${odmien(r, 'jest', 'są')} o krok od wygaśnięcia. ${rada}`,
       cel: klan ? { x: klan.hx, y: klan.hy, r: 5, tekst: nazwa } : undefined,
@@ -47,7 +47,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     const nazwa = RACES[sim.domRace].name;
     const klan = sim.clans.filter((k) => !k.dead && k.race === sim.domRace && k.pop > 0).sort((a, b) => b.pop - a.pop)[0];
     kandydaci.push({
-      tekst: `${nazwa} ${odmien(sim.domRace, 'bierze', 'biorą')} górę. Zawal im korytarz, wpuść wodę albo szepnij komuś „zabij swoich".`,
+      tekst: `${nazwa} ${odmien(sim.domRace, 'bierze', 'biorą')} górę. Szepnij komuś z nich „prorokuj” — nacja pęknie na dwie. Klęski z kart kieruj na nich.`,
       cel: klan ? { x: klan.hx, y: klan.hy, r: 5, tekst: nazwa } : undefined,
       waga: 80 + sim.dominance * 20,
     });
@@ -62,14 +62,14 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   let glodni = 0, zywi = 0;
   for (const c of sim.creatures) { if (c.dead) continue; zywi++; if (c.hunger > 0.7) glodni++; }
   if (zywi > 0 && glodni / zywi > 0.45) {
-    kandydaci.push({ tekst: 'Większość twoich mieszkańców głoduje. Zasiej grzyb albo kości tam, gdzie mieszkają.', waga: 70 });
+    kandydaci.push({ tekst: 'Większość twoich mieszkańców głoduje. Nakarm ich — przeciągnij palcem tam, gdzie mieszkają.', waga: 70 });
   }
 
   // 5. Wiara wysycha — brak ołtarzy
   let oltarze = 0;
   for (const t of sim.world.tile) if (t === T.SHRINE || t === T.GLYPH) oltarze++;
   if (sim.wiara < 40 && oltarze < 2 && zywi > 6) {
-    kandydaci.push({ tekst: 'Nikt się do ciebie nie modli. Zasiej rudę przy Ślepym Ludzie — z niej postawią ołtarz.', waga: 60 });
+    kandydaci.push({ tekst: 'Nikt się do ciebie nie modli. Zrób Cud przy gnieździe, a gdy odsłoni się ruda — daj ją Ślepemu Ludowi na ołtarz.', waga: 60 });
   }
 
   // 6. rytuał: jedyna droga do końca gry musi być widoczna, gdy staje się możliwa
@@ -86,8 +86,8 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     const w = sim.world;
     if (sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku) {
       kandydaci.push({
-        tekst: `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. Zasiej grzyb przy przedsionku — z nim ich warta przeżyje pod skorupą.`,
-        cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'zasiej tu grzyb' },
+        tekst: `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. Nakarm przedsionek nad rdzeniem — z tym jedzeniem ich warta przeżyje pod skorupą.`,
+        cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'nakarm tutaj' },
         waga: 65,
       });
     } else {

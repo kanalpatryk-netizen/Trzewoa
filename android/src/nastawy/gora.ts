@@ -230,11 +230,11 @@ export const ZASIEDLENIE = {
   /** Prządki: w tej odległości (od–do) w bok od drugiej nacji Ślepego Ludu. */
   przadki: { ilu: 5, od: 0.3, do: 0.5, bokOd: 24, bokRozrzut: 14 },
   /** Część zastanego pokolenia jest dorosła: wiek losowy do tej części życia. */
-  dorosliDo: 0.45,
+  dorosliDo: 0.3,
   /** Znana okolica gniazda na start: promień i ile dodatkowych plam wiedzy. */
   wiedzaPromien: 16, wiedzaPlam: 6, wiedzaPlamaPromien: 7,
   /** Spiżarnia na start: tyle kafli jedzenia przy każdym gnieździe. */
-  spizarnia: 12,
+  spizarnia: 28,
   /** Nakarmienie świata (samouczek): jedzenia na gniazdo, zapas grzybni, maks. głód. */
   nakarmJedzenie: 26, nakarmGrzybnia: 240, nakarmGlod: 0.12,
 };

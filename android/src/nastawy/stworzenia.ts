@@ -34,8 +34,8 @@ export const STWORZENIA = {
   glodNaTik: 0.0003,
   /** Szaleństwo przyspiesza głód: × (1 + szaleństwo × to). */
   glodOdSzalenstwa: 0.5,
-  /** Przeludnienie bije w głód: × (1 + nadmiar² × to). */
-  glodOdTloku: 3,
+  /** Przeludnienie bije w głód: × (1 + nadmiar² × to), ale najwyżej × `glodOdTlokuMax`. */
+  glodOdTloku: 3, glodOdTlokuMax: 2,
   /** W samouczku (spokojny świat) głód rośnie tylko w takim ułamku. */
   glodWSamouczku: 0.35,
   /** Żużlowcy przy ogniu: ciepło kuźni sięga tylu kafli… */
@@ -46,8 +46,11 @@ export const STWORZENIA = {
   cieploKarmi: 0.0035,
   /** Powyżej takiego głodu stworzenie traci zdrowie… */
   glodZabija: 1,
-  /** …tyle na tik. */
-  glodObrazenia: 0.6,
+  /**
+   * …tyle na tik. WERSJA ANDROID: wolniej niż 0,6 na komputerze — głód przerzedza nację
+   * stopniowo, zamiast kłaść ją całą w kilka sekund, i zostawia czas na kartę „głodują”.
+   */
+  glodObrazenia: 0.12,
   /** Najedzony (głód poniżej tego) powoli się leczy… */
   najedzonyLeczy: 0.5,
   /** …o tyle zdrowia na tik. */

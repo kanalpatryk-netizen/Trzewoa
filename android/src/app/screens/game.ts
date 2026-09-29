@@ -376,6 +376,8 @@ export class EkranGry implements Ekran {
       ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(236,214,160,1)'],
       ['krew', `${Math.floor(sim.krew)}`, 'rgba(226,120,100,1)'],
       ['oddanie', `${Math.floor((najw?.devotion ?? 0) * 100)}%`, 'rgba(246,216,142,1)'],
+      // sen to jedyna przegrana — karty o nim mówią, więc musi być widać, ile go jest
+      ['sen', `${Math.floor(sim.sen * 100)}%`, sim.sen >= 0.5 ? 'rgba(236,120,100,1)' : sim.sen > 0 ? 'rgba(170,190,220,1)' : 'rgba(150,146,140,0.9)'],
     ];
     ctx.save();
     const rozm = Math.max(14, Math.min(18, w / 26));
@@ -691,9 +693,10 @@ export class EkranGry implements Ekran {
     }
     if (this.legenda) rysujLegende(ctx, plate, w);
     const telefon = plate.waski || plate.niski;
-    if (telefon && !this.ui.verb && !this.legenda && !this.atlas.otwarte) {
+    if (telefon && !this.legenda && !this.atlas.otwarte) {
       // WERSJA ANDROID: nad płytą stoją zasoby jako liczby, a nie druga rada. Jedna instrukcja
-      // naraz — „teraz:” na wstędze drogi; dawniej dwie rady mówiły co innego.
+      // naraz — „teraz:” na wstędze drogi; dawniej dwie rady mówiły co innego. Widać je także
+      // z wybranym rytem — wtedy są najbardziej potrzebne (czy stać mnie na Cud?).
       this.rysujZasoby(ctx, plate, w);
       this.radaRect = null;
     } else if (this.rada && !this.ui.verb && !this.legenda && !this.alarm && !this.atlas.otwarte) {

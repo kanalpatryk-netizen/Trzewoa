@@ -444,8 +444,9 @@ export function drawSmoke(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, tim
   // na wąskim ekranie klepsydra siedzi w prawym górnym rogu płyty — próg Wiary
   // schodzi wtedy na lewą stronę, żeby napisy się nie nakładały
   const naZnak = sim.wiara >= cost('znak', 'objawienie').wiara;
-  if (p.waski) prog(ctx, p.x + 16, p.x + 66, p.y + 16, naZnak, 'Cud');
-  else prog(ctx, p.x + p.w - 120, p.x + p.w - 60, p.y + 14, naZnak, 'Cud');
+  // TELEFON: nad płytą stoi „wiara N”, a ryt Cudu świeci, gdy stać — kreska z podpisem „Cud”
+  // w rogu wyglądała jak nazwa wybranego rytu (przy Nakarm też pisała „Cud”)
+  if (!p.waski && !p.niski) prog(ctx, p.x + p.w - 120, p.x + p.w - 60, p.y + 14, naZnak, 'Cud');
   if (faith < 0.01) return;
   ctx.save();
   ctx.beginPath();
