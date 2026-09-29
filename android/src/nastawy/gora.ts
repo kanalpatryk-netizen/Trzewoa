@@ -119,9 +119,9 @@ export const LUDY = {
   /** Górny limit liczebności nacji: Ślepy Lud / Żużlowcy / Prządki / reszta. */
   limitNacji: { slepyLud: 60, zuzlowcy: 34, przadki: 20, inni: 8 },
   /** Oddanie nowej nacji: Ślepy Lud / Żużlowcy / reszta. */
-  oddanieStart: { slepyLud: 0.45, zuzlowcy: 0.3, inni: 0.08 },
+  oddanieStart: { slepyLud: 0.5, zuzlowcy: 0.3, inni: 0.08 },
   /** Do takiego oddania nacja wraca sama („natura”): Ślepy Lud / Żużlowcy / reszta. */
-  oddanieNatura: { slepyLud: 0.4, zuzlowcy: 0.3, inni: 0.08 },
+  oddanieNatura: { slepyLud: 0.45, zuzlowcy: 0.3, inni: 0.08 },
   /** Jak szybko oddanie wraca do natury (co 90 tików, ułamek różnicy). Na telefonie wolniej niż 0.004 na komputerze. */
   stygniecie: 0.002,
   /** Urazy między nacjami wygasają o tyle co 90 tików. */

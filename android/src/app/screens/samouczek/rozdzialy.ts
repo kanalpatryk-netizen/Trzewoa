@@ -143,7 +143,7 @@ export const ROZDZIALY: Rozdzial[] = [
         wskaz: (s) => s.ryt('szept'), gotowe: (g) => g.ui.verb === 'szept',
       },
       {
-        tekst: 'Dotknij zaznaczonego goblina.', cofa: true,
+        tekst: 'Dotknij zaznaczonego mieszkańca.', cofa: true,
         wskaz: (s) => { const c = s.wskazanyGoblin('dotknij go'); return c ? { typ: 'swiat', cel: c } : null; },
         gotowe: (g) => g.ui.verb === 'szept' && !!g.ui.selected && !g.ui.selected.dead,
       },

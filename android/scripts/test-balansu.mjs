@@ -67,7 +67,7 @@ function ruchGracza(sim: any) {
   }
 
   // 3. Cud przy najwierniejszych — oddanie rośnie, a z nim rytuał
-  if (sim.wiara >= 60 && sim.tick % 1200 === 0) {
+  if (sim.wiara >= 35 && sim.tick % 1200 === 0) {
     const klan = sim.clans.filter((k: any) => !k.dead && k.pop > 2)
       .sort((a: any, b: any) => b.devotion - a.devotion)[0];
     if (klan && klan.devotion < 0.7) sign(sim, 'objawienie', klan.hx, klan.hy);

@@ -392,7 +392,7 @@ export function drawOddanie(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, v
   const klan = najwierniejsza(sim);
   const oddanie = klan ? klan.devotion : 0;
   const prog = PIELGRZYMKA.oddanieNacji;
-  const dosc = oddanie >= prog;
+  const dosc = oddanie > prog;
   const { x, y, h: bok } = obszarOddania(p, vh);
   ctx.save();
   ctx.fillStyle = 'rgba(8,6,6,1)';
@@ -421,7 +421,7 @@ export function drawOddanie(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, v
   ctx.setLineDash([2, 2]);
   ctx.beginPath(); ctx.moveTo(x - 5, progY); ctx.lineTo(x + bok, progY); ctx.stroke();
   ctx.setLineDash([]);
-  const ile = `${Math.round(oddanie * 100)}%`;
+  const ile = `${Math.floor(oddanie * 100)}%`;
   const dopisek = !klan ? 'nikt nie wierzy' : dosc ? 'idą pod rdzeń' : `pielgrzymka od ${Math.round(prog * 100)}%`;
   ctx.font = `italic ${Math.max(13, bok * 0.3)}px ${SERIF}`;
   ctx.fillStyle = `${INK}0.9)`;

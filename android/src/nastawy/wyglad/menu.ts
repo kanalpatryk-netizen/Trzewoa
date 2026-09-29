@@ -21,10 +21,10 @@ export const MENU = {
   podpowiedz: '',   // Android: nic — na komputerze „strzałki i enter · albo po prostu dotknij”
   /** Pozycje spisu: etykieta i opis pod spisem. Kolejność = kolejność na ekranie. */
   pozycje: {
-    wroc: { etykieta: 'Wróć do góry', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś' },
-    nowa: { etykieta: 'Obudź się', opis: 'nowa góra, nowi mieszkańcy, nowa legenda' },
-    wczytaj: { etykieta: 'Wróć tam, gdzie byłeś', opis: 'ostatni zapis stanu góry' },
-    samouczek: { etykieta: 'Naucz się być górą', opis: 'cztery plansze wstępu i osiem krótkich lekcji — palec pokazuje, gdzie dotknąć' },
+    wroc: { etykieta: 'Graj dalej', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś' },
+    nowa: { etykieta: 'Nowa gra', opis: 'nowa góra, nowi mieszkańcy, nowa legenda' },
+    wczytaj: { etykieta: 'Wczytaj zapis', opis: 'ostatni zapis stanu góry' },
+    samouczek: { etykieta: 'Samouczek', opis: 'dwie plansze wstępu i osiem krótkich lekcji — palec pokazuje, gdzie dotknąć' },
     bestiariusz: { etykieta: 'Atlas', opis: 'tablice ras i praw góry — odkrywasz je, grając' },
     ustawienia: { etykieta: 'Ustawienia', opis: 'dźwięk, obraz i świat' },
   },
@@ -50,7 +50,7 @@ export const MENU = {
   spisOdstep: 1.95, spisOdstepWaski: 2.05,
   /** Szeroki: spis zaczyna się między tymi częściami wysokości. */
   spisOd: 0.36, spisDo: 0.42,
-  /** Krycie pozycji nieaktywnej (np. „Wróć do góry” bez trwającej gry). */
+  /** Krycie pozycji nieaktywnej (np. „Graj dalej” bez trwającej gry). */
   alfaNieaktywnej: 0.32,
   /** Opis: szerokość akapitu (× szerokość), rozmiar (min–max), interlinia. */
   opisSzerokosc: 0.3, opisRozmiar: { min: 14, max: 18 }, opisInterlinia: 1.4,

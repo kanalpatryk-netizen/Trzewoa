@@ -28,7 +28,7 @@ export const RYTUAL = {
    * WIĘCEJ = szybsza wygrana. Przy 4 wiernych i pełnym oddaniu 5 pęknięć to
    * ok. 10–15 minut warty.
    */
-  tempo: 0.0004,
+  tempo: 0.0007,
   /** Co ile tików liczy się postęp rytuału. */
   coIleTikow: 5,
   /** Oddanie nacji dodaje się do tej podstawy: tempo × (podstawa + oddanie). */

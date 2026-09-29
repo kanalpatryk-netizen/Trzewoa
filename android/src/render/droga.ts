@@ -32,7 +32,7 @@ export function krokiDrogi(sim: Sim): { kroki: KrokDrogi[]; biezacy: number } {
   const potrzeba = Math.max(r.pekniecia + (r.otwarta ? 0 : 1), r.skorupa);
   const kroki: KrokDrogi[] = [
     { nazwa: 'wiara', zrobiony: wiara },
-    { nazwa: 'oddanie', zrobiony: wierza, dopisek: !wierza && oddanie > 0 ? `${Math.round(oddanie * 100)}%` : undefined },
+    { nazwa: 'oddanie', zrobiony: wierza, dopisek: !wierza && oddanie > 0 ? `${Math.floor(oddanie * 100)}%` : undefined },
     { nazwa: 'droga', zrobiony: droga },
     { nazwa: 'skorupa', zrobiony: r.otwarta, dopisek: r.pekniecia > 0 && !r.otwarta ? `${r.pekniecia}/${potrzeba}` : undefined },
     { nazwa: 'wolność', zrobiony: !!sim.ending && sim.ending.startsWith('uwolnienie') },
@@ -61,7 +61,7 @@ export function terazDrogi(sim: Sim): Teraz {
     }
     case 'oddanie':
       return najw
-        ? { tekst: `Zrób Cud przy gnieździe: ${najw.name} — ${Math.round(najw.devotion * 100)}% z ${Math.round(PIELGRZYMKA.oddanieNacji * 100)}% oddania. Albo szepnij „módl się” trzem z nich.`, cel: gniazdo(najw) }
+        ? { tekst: `Zrób Cud przy gnieździe: ${najw.name} — wierzą na ${Math.floor(najw.devotion * 100)}%, potrzeba ponad ${Math.round(PIELGRZYMKA.oddanieNacji * 100)}%. Albo szepnij „módl się” trzem z nich.`, cel: gniazdo(najw) }
         : { tekst: 'Żadna nacja nie jest dość liczna, by w ciebie uwierzyć. Nakarm którąś.' };
     case 'droga':
       return sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku

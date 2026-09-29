@@ -172,8 +172,8 @@ export class EkranSamouczka implements Ekran {
     this.app.muzyka.ustawScene('samouczek');
     this.idx = 0;
     this.faza = 'scena';
-    // wstęp: kim jesteś, jak wygrać, jak przegrać, czym działasz — potem rozdziały z palcem
-    this.film.odtworzListe([SCENY.kimJestes, SCENY.cel, SCENY.zagrozenie, SCENY.narzedzia], () => this.zacznijRozdzial(0));
+    // wstęp: kim jesteś i czym działasz (cel i przegraną tłumaczą ostatnie rozdziały) — potem rozdziały z palcem
+    this.film.odtworzListe([SCENY.kimJestes, SCENY.narzedzia], () => this.zacznijRozdzial(0));
   }
 
   rozmiar(w: number, h: number): void { this.vh = h; this.gra.rozmiar(w, h); }

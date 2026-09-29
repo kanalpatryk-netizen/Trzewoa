@@ -14,7 +14,7 @@ export class EkranKroniki implements Ekran {
   private trafienia: { x: number; y: number; w: number; h: number; id: string }[] = [];
   private wybrana = 0;
   private opcje = [
-    { id: 'nowa', etykieta: 'Obudź się gdzie indziej' },
+    { id: 'nowa', etykieta: 'Nowa gra' },
     { id: 'menu', etykieta: 'Wróć do menu' },
   ];
 

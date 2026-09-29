@@ -193,7 +193,7 @@ export class EkranGry implements Ekran {
    */
   private zapas = new Map<number, Sim>();
 
-  /** Generuje górę teraz, żeby „Obudź się” (albo samouczek) nie czekały. */
+  /** Generuje górę teraz, żeby „Nowa gra” (albo samouczek) nie czekały. */
   przygotuj(ziarno?: number): void {
     const klucz = ziarno ?? -1;
     if (!this.zapas.has(klucz)) this.zapas.set(klucz, new Sim(ziarno ?? ((Math.random() * 1e9) | 0)));
@@ -375,7 +375,7 @@ export class EkranGry implements Ekran {
     const czesci: [string, string, string][] = [
       ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(236,214,160,1)'],
       ['krew', `${Math.floor(sim.krew)}`, 'rgba(226,120,100,1)'],
-      ['oddanie', `${Math.round((najw?.devotion ?? 0) * 100)}%`, 'rgba(246,216,142,1)'],
+      ['oddanie', `${Math.floor((najw?.devotion ?? 0) * 100)}%`, 'rgba(246,216,142,1)'],
     ];
     ctx.save();
     const rozm = Math.max(14, Math.min(18, w / 26));

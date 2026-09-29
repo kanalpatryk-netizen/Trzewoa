@@ -33,7 +33,7 @@ export interface RaceDef {
 
 export const RACES: RaceDef[] = [
   {
-    id: Race.GOBLIN, name: 'Ślepy Lud', nazwaDopelniacz: 'Ślepego Ludu', short: 'gobliny', dopelniacz: 'goblinów', mnoga: false, color: [116, 158, 84],
+    id: Race.GOBLIN, name: 'Ślepy Lud', nazwaDopelniacz: 'Ślepego Ludu', short: 'ślepy lud', dopelniacz: 'Ślepego Ludu', mnoga: false, color: [116, 158, 84],
     maxHp: 10, speed: 0.115, digPower: 1.0, strength: 2, breedRate: 0.085, lifespan: 6000,
     faithGain: 1.0, fearGain: 1.4, metabolism: 0.8, eatsMeat: true, swims: false, size: 1,
   },
