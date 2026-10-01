@@ -24,7 +24,7 @@ Samouczek pokazuje wszystko palcem.
 
 ## Wersje
 
-Starsze wersje na Androida: [v1](https://github.com/kanalpatryk-netizen/Trzewoa/releases/tag/v1) ·
+Zapisane wersje na Androida: [v1](https://github.com/kanalpatryk-netizen/Trzewoa/releases/tag/v1) ·
 [v2](https://github.com/kanalpatryk-netizen/Trzewoa/releases/tag/v2) ·
 [v3](https://github.com/kanalpatryk-netizen/Trzewoa/releases/tag/v3).
 Co się zmieniło: [CHANGELOG](CHANGELOG.md).
