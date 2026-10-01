@@ -100,12 +100,18 @@ export function rysujPrzyciski(ctx: CanvasRenderingContext2D, lista: Przycisk[],
   const opis = lista.find((b) => b.akcja === podKursorem);
   if (opis) {
     ctx.textAlign = 'center';
-    ctx.font = `italic ${Math.max(14, opis.r * 0.95)}px ${SERIF}`;
+    const rozm = Math.max(14, opis.r * 0.95);
+    ctx.font = `italic ${rozm}px ${SERIF}`;
+    // podpis przycisku przy samym brzegu ekranu („wznów” w prawym rogu) wychodził poza ekran
+    const szerEkranu = ctx.canvas.width / (ctx.getTransform().a || 1);
+    const pol = ctx.measureText(opis.etykieta).width / 2 + 6;
+    const lx = Math.max(pol, Math.min(szerEkranu - pol, opis.x));
+    const ly = Math.max(rozm + 2, opis.y - opis.r * 1.7);
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(10,7,6,0.85)';
-    ctx.strokeText(opis.etykieta, opis.x, opis.y - opis.r * 1.7);
+    ctx.strokeText(opis.etykieta, lx, ly);
     ctx.fillStyle = 'rgba(240,226,198,0.97)';
-    ctx.fillText(opis.etykieta, opis.x, opis.y - opis.r * 1.7);
+    ctx.fillText(opis.etykieta, lx, ly);
   }
   ctx.restore();
 }

@@ -130,7 +130,8 @@ export class EkranKroniki implements Ekran {
       ctx.font = `${e.kind === 'koniec' ? 'italic ' : ''}${rozmiar}px ${SERIF}`;
       const kolor = e.kind === 'krew' ? '120,34,28' : e.kind === 'wiara' ? '104,74,26' : e.kind === 'otchlan' ? '70,72,88' : '46,38,32';
       ctx.fillStyle = `rgba(${kolor},${0.92 * alfa})`;
-      ctx.fillText(e.text, kw * 0.08, kh * 0.2 + i * rozmiar * 1.75);
+      // na niskim ekranie pierwsza linijka wchodziła na kreskę pod „KRONIKA”
+      ctx.fillText(e.text, kw * 0.08, Math.max(kh * 0.2, kh * 0.135 + rozmiar * 1.3) + i * rozmiar * 1.75);
     });
 
     // pieczęć: odcisk zamiast podpisu

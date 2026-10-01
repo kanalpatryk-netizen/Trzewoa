@@ -31,15 +31,15 @@ export function wyrok(sim: Sim): Wyrok {
   if (rodzaj === 'uwolnienie') {
     return {
       przyczyna: 'Wierni przebili skorupę i uklękli przy rdzeniu.',
-      rada: sim.lagodna ? 'Następnym razem spróbuj surowej góry (Ustawienia → Świat → Góra).'
-        : 'Następnym razem spróbuj szybciej — i tak, żeby nikt nie wymarł po drodze.',
+      rada: sim.lagodna ? 'Spróbuj surowej góry (Ustawienia → Świat → Góra).'
+        : 'Spróbuj szybciej — i tak, żeby nikt nie wymarł po drodze.',
       etap,
     };
   }
   if (rodzaj === 'smierc') {
     return {
       przyczyna: 'Do rdzenia doszli ci, którzy się nie modlili.',
-      rada: 'Pilnuj, kto stoi pod skorupą: przepędzaj bezbożnych zawałem i stawiaj Znak przy swoich wiernych.',
+      rada: 'Pilnuj, kto stoi pod skorupą: posyłaj tam swoich wiernych szeptem „módl się” i rób Cud przy ich gnieździe.',
       etap,
     };
   }
