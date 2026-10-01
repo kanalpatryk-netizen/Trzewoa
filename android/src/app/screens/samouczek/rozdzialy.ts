@@ -153,7 +153,7 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'szept' && z.narzedzie === 'modl',
       },
     ],
-    koniec: `Idzie pod twój rdzeń. Gdy stanie tam ${RYTUAL.potrzebaWiernych} wiernych z jednej nacji, skorupa zacznie pękać od ich modlitwy.`,
+    koniec: `Idzie pod twój rdzeń. Gdy stanie tam ${RYTUAL.potrzebaWiernych} wiernych, skorupa zacznie pękać od ich modlitwy.`,
   },
   {
     tytul: 'Wydarzenia',

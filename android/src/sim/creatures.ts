@@ -236,7 +236,10 @@ export function stepCreature(sim: Sim, c: Creature): void {
   // Wchodzi tylko nacja, która skuła skorupę, albo taka, która wierzy dość, by cię uwolnić.
   // Obcy — Trol z głębi, Żużlowiec za ciepłem — musi rdzeń wykuć, a to trwa: przypadkowy
   // przechodzień nie kończy gry śmiercią sekundę po tym, jak warta otworzyła drogę.
-  const wolnoWejsc = c.clan === sim.rytual.klan || sim.clans[c.clan].devotion > RYTUAL.uwolnienieNacja || c.devotion > RYTUAL.uwolnienieWlasne;
+  // WERSJA ANDROID: wchodzi tylko ten, kto wierzy — sama przynależność do nacji, która kuła,
+  // nie wystarcza. Niewierzący z tej nacji kończył grę przegraną tuż po otwarciu skorupy,
+  // a gracz nie miał czym go powstrzymać.
+  const wolnoWejsc = sim.clans[c.clan].devotion > RYTUAL.uwolnienieNacja || c.devotion > RYTUAL.uwolnienieWlasne;
   if (wolnoWejsc && Math.abs(c.x - w.coreX) <= RYTUAL.dotykZasieg && Math.abs(c.y - w.coreY) <= RYTUAL.dotykZasieg) {
     const cx = Math.round(c.x), cy = Math.round(c.y);
     for (const [dx, dy] of [[0, 0], [0, 1], [0, -1], [1, 0], [-1, 0]]) {

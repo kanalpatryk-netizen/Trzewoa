@@ -1,7 +1,7 @@
 /**
  * RYTUAŁ, PIELGRZYMKA I WEJŚCIE DO RDZENIA — droga do wygranej.
  *
- * Jak to działa: wierni jednej nacji schodzą pod skorupę rdzenia (pielgrzymka),
+ * Jak to działa: wierni schodzą pod skorupę rdzenia (pielgrzymka),
  * modlą się tam (rytuał), a każde „pełne” odmodlenie wykuwa jedno pęknięcie
  * w skorupie. Gdy przez pęknięcia prowadzi droga, wierni schodzą do rdzenia —
  * i jeśli wierzą dość mocno, gra kończy się Uwolnieniem.
@@ -15,7 +15,7 @@ export const RYTUAL = {
   promien: 16,
   /** Minimalne własne oddanie wiernego, żeby jego modlitwa się liczyła. */
   minOddanie: 0.35,
-  /** Tylu wiernych jednej nacji naraz pod skorupą, żeby kamień w ogóle drgnął. */
+  /** Tylu wiernych naraz pod skorupą (z dowolnych nacji — kuje ta, której jest najwięcej), żeby kamień w ogóle drgnął. */
   potrzebaWiernych: 3,
   /** Więcej wiernych przyspiesza — ale najwyżej do tylu. */
   maxWiernychLiczonych: 6,

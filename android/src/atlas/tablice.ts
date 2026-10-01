@@ -427,7 +427,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'ryt-szept', grupa: 'ryty', nazwa: 'Szepnij', lacina: 'Susurrus',
     opis: 'Dotykasz jednej głowy. „Módl się” posyła go pod twój rdzeń: idzie tam jako wierny i modli się pod skorupą. „Prorokuj” odrywa go z garstką wiernych w nową nację.',
-    kiedy: 'Trzech wysłanych „módl się” z jednej nacji wystarczy, żeby skorupa zaczęła pękać. Prorok rozbija nację, która zjada resztę.',
+    kiedy: 'Trzech wysłanych „módl się” wystarczy, żeby skorupa zaczęła pękać. Prorok rozbija nację, która zjada resztę.',
     koszt: `módl się ${kosztSlowami('szept', 'modl')}, prorok ${kosztSlowami('szept', 'prorok')}`,
     rycina: cala(rysujSzept),
   },
@@ -478,7 +478,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'skorupa', grupa: 'prawa', nazwa: 'Skorupa rdzenia', lacina: 'Testa cordis',
-    opis: `Kamień wokół rdzenia — nie da się go rozkuć. Pęka tylko pod modlitwą: gdy przy rdzeniu (do 16 kafli) stoi naraz co najmniej trzech wiernych jednej nacji, każdy z oddaniem od ${proc(RYTUAL.minOddanie)}. Postęp zostaje przy nacji. Każde pęknięcie wyjmuje jeden kafel od góry, od strony przedsionka; zwykle trzeba ich około pięciu, każde idzie wolniej od poprzedniego.`,
+    opis: `Kamień wokół rdzenia — nie da się go rozkuć. Pęka tylko pod modlitwą: gdy przy rdzeniu (do 16 kafli) stoi naraz co najmniej trzech wiernych (z dowolnych nacji), każdy z oddaniem od ${proc(RYTUAL.minOddanie)}. Kuje nacja, której jest tam najwięcej — jej postęp zostaje przy niej. Każde pęknięcie wyjmuje jeden kafel od góry, od strony przedsionka; zwykle trzeba ich około pięciu, każde idzie wolniej od poprzedniego.`,
     kiedy: 'Trzymaj trzech i więcej razem, najedzonych i wierzących. Postęp widać na plakietce: „skorupa 2/5". Prorok dzieli wartę — nie teraz.',
     rycina: skorupa,
   },

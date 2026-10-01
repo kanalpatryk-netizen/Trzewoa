@@ -382,7 +382,6 @@ function kartaWojny(sim: Sim, wj: { a: number; b: number; x: number; y: number }
   // uraza zdążyła wygasnąć — nie ma już wojny, o którą pytać
   if (!(A.grudge.get(B.id) ?? 0) && !(B.grudge.get(A.id) ?? 0)) return false;
   st.ciszaWojen.set(paraNacji(A.id, B.id), sim.tick + W.wojnaCisza);
-  st.ostatniaWojna = sim.tick;
   const minut = Math.round(W.wojnaPokoj / 7200);
   const wybory = [
     wybor('rozdziel', 'Rozdziel ich', `Zapomną urazę i przez ${minut} min nie tkną się nawzajem.`, W.wojnaRozdziel),
@@ -394,10 +393,14 @@ function kartaWojny(sim: Sim, wj: { a: number; b: number; x: number; y: number }
   const chron = sim.popByRace[slabsi.race] <= W.wojnaChronPonizej
     || (!!wiodaca && (wiodaca.id === A.id || wiodaca.id === B.id))
     || (silniejsi.race === sim.domRace && sim.dominance > 0.5);
+  // karta tylko wtedy, gdy wojna czymś grozi — inaczej przychodziła co dwie minuty
+  // i zawsze z tą samą odpowiedzią; bójki silnych z silnymi toczą się bez pytania
+  if (!chron) return false;
+  st.ostatniaWojna = sim.tick;
   st.biezace = {
     rodzaj: 'wojna', tytul: `Pierwsza krew: ${A.name} i ${B.name}`,
     tekst: `Padł pierwszy trup. Po jednej stronie ${nazwaNacji(A)}, po drugiej ${nazwaNacji(B)}. Będą się mścić, aż uraza wygaśnie albo jedni wyginą.`,
-    wybory, domyslny: 1, rozsadny: chron && stac(sim, wybory[0]) ? 0 : 1,
+    wybory, domyslny: 1, rozsadny: stac(sim, wybory[0]) ? 0 : 1,
     cel: { x: wj.x, y: wj.y, tekst: 'pierwsza krew' }, od: sim.tick, klan: A.id, klan2: B.id,
   };
   st.ile++;

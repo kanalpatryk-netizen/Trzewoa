@@ -58,7 +58,7 @@ export const WYDARZENIA = {
   /** Obcy lud: tylko przy takiej dominacji jednej krwi. */
   obcyOdDominacji: 0.74,
   /** Pierwsza krew: ta sama para nie wraca z kartą przez tyle tików; karty wojen nie częściej niż co `wojnaPo`. */
-  wojnaCisza: 28800, wojnaPo: 5400,
+  wojnaCisza: 43200, wojnaPo: 10800,
   /** Pierwsza krew: rozsądnie rozdzielić, gdy słabsza krew liczy tylu albo mniej. */
   wojnaChronPonizej: 10,
   /** Wymieranie: rasa ma tylu albo mniej, a miała co najmniej `wymieraSzczyt`. */

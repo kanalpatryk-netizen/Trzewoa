@@ -54,8 +54,14 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
   // naraz, ich pęknięcia się sumowały i trzy klany tej samej krwi otwierały rdzeń
   // w pięć minut, zamiast w długiej, bronionej warcie.
   // gdy droga już stoi otworem, kamień nie ma po co dalej pękać (ani sypać Wiarą)
-  for (const [id, n] of liczniki) {
+  // WERSJA ANDROID: modlą się wszyscy wierni pod skorupą razem — kuje (i wejdzie do środka)
+  // nacja, której jest tam najwięcej. Liczone osobno, sześciu pielgrzymów z trzech nacji
+  // (po dwóch) nie kruszyło kamienia wcale, a gracz nie miał jak tego zobaczyć.
+  let razem = 0;
+  for (const n of liczniki.values()) razem += n;
+  for (const [id] of liczniki) {
     if (stan.otwarta) break;
+    const n = razem;
     if (n < R.potrzebaWiernych || id !== najlepszy) continue;
     const klan = sim.clans[id];
     // nacja, której ktoś właśnie klęczy pod skorupą, z definicji nie jest martwa;
@@ -140,7 +146,7 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
   }
 
   // stan globalny tylko do podpowiedzi i wskaźników
-  stan.wierni = ilu;
+  stan.wierni = razem;
   if (stan.klan < 0) stan.klan = najlepszy;
   let max = 0;
   for (const k of sim.clans) if (!k.dead && k.rytual > max) max = k.rytual;

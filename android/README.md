@@ -31,29 +31,25 @@ Każda zapisana wersja ma własne wydanie z plikiem APK, które zostaje na stał
 | Wersja | Co w niej jest | APK |
 |---|---|---|
 | **v1** | pierwsza wersja na telefon: układ ekranu, dotyk, pełny ekran; mechanika jak na komputerze | [`Trzewia-v1.apk`](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/v1/Trzewia-v1.apk) |
-| **v2** | prostsza mechanika i wytłumaczona wiara (niżej) | [`Trzewia-v2.apk`](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/v2/Trzewia-v2.apk) |
+| **v2** | prostsza mechanika i wytłumaczona wiara | [`Trzewia-v2.apk`](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/v2/Trzewia-v2.apk) |
+| **v3** | karty wydarzeń z wyborem, trzy ryty, zawsze poziomo (niżej) | [`Trzewia-v3.apk`](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/v3/Trzewia-v3.apk) |
 
 Najnowsza wersja z gałęzi jest zawsze pod
 [`android-apk/Trzewia.apk`](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/android-apk/Trzewia.apk).
 
-## Prostsza mechanika
+## Mechanika na telefonie (v3)
 
-Na telefonie gra ma mniej rzeczy do ogarnięcia, a droga do wygranej przez wiarę jest łatwiejsza
-i wytłumaczona wprost:
+Mniej rzeczy do ogarnięcia, więcej decyzji. Główny sposób grania to **karty wydarzeń**:
 
 | Co | Na komputerze | Na telefonie |
 |---|---|---|
-| **Ryty** | pięć: Kształtuj, Zasiej, Szepcz, Znak, Skaź | cztery — bez **Skaź** (zmiany krwi gatunku) |
-| **Zasoby** | Krew, Wiara, Otchłań | Krew i Wiara; w miejscu Otchłani **studnia oddania** |
-| **Zasiew** | ruda, grzyb, kości, trucizna | ruda, grzyb, kości |
-| **Szept** | kop w dół, zabij swoich, prorokuj, uciekaj | **módl się**, prorokuj, uciekaj |
-| **Módl się** | — | wysyła wiernego od razu pod rdzeń; trzech z jednej nacji kruszy skorupę |
-| **Pielgrzymka** | od 60% oddania nacji | od 50% |
-| **Objawienie** | 45 Wiary | 30 Wiary, +20% oddania nacji (raz na nację, nie za każdego widza) |
-| **Wejście do rdzenia** | nacja ponad 55% albo wierny ponad 70% | nacja ponad 45% albo wierny ponad 60% |
-| **Stygnięcie oddania** | 0.004 | 0.002 — wiara wolniej gaśnie sama |
-| **Samouczek** | rozdział „Zmień im krew” | rozdziały „Poślij wiernego” i „Wiara i modlitwa” |
-| **Atlas** | — | tablica „Oddanie i modlitwa”, wyskakuje przy pierwszej modlitwie |
+| **Ryty** | pięć: Kształtuj, Zasiej, Szepcz, Znak, Skaź | trzy: **Nakarm** (grzyb), **Szepnij** („módl się”, „prorokuj”), **Cud** |
+| **Zasoby** | Krew, Wiara, Otchłań | Krew i Wiara — nad płytą jako liczby, obok oddania i snu |
+| **Wydarzenia** | przypływy, na które się nie wpływa | karty z wyborem: czas staje, 2–3 wybory, każdy z ceną i skutkiem |
+| **Wojny** | — | karta „pierwsza krew”: rozdziel nacje (rozejm na 2 min) albo pozwól walczyć |
+| **Droga pod rdzeń** | gracz ją drąży | drąży ją góra; jest sucha i ma stopnie, więc da się nią wrócić |
+| **Warta** | trzech wiernych jednej nacji | trzech wiernych z dowolnych nacji; w drodze się nie starzeją i głodnieją 5× wolniej |
+| **Ekran** | dowolny | zawsze poziomo |
 
 Studnia oddania (dolna rama) pokazuje oddanie najwierniejszej nacji, a kreska na niej — próg,
 od którego nacja sama wysyła wartę pod rdzeń.
