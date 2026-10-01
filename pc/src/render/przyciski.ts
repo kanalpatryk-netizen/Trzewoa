@@ -1,5 +1,6 @@
 import type { Plate } from './plate';
 import { SERIF } from './ink';
+import { rysujGrafike } from '../grafiki/grafiki';
 
 export type AkcjaPrzycisku = 'pauza' | 'wolniej' | 'szybciej' | 'zapiski' | 'atlas' | 'legenda' | 'kamera' | 'zapis';
 
@@ -75,7 +76,8 @@ export function rysujPrzyciski(ctx: CanvasRenderingContext2D, lista: Przycisk[],
       ctx.fillStyle = 'rgba(206,176,120,0.18)';
       ctx.fill();
     }
-    znak(ctx, b.akcja, b.r * 0.52, teraz);
+    // własna grafika (src/grafiki/pliki): przycisk-<akcja>, np. przycisk-pauza.png
+    if (!rysujGrafike(ctx, `przycisk-${b.akcja}`, 0, 0, b.r * 1.3, { czas: teraz })) znak(ctx, b.akcja, b.r * 0.52, teraz);
     ctx.restore();
   }
 

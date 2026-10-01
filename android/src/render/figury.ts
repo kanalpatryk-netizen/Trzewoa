@@ -1,5 +1,6 @@
 import type { Sim, Clan } from '../sim/sim';
 import type { Creature } from '../sim/creatures';
+import { pierwszaGrafika, rysujGrafike, RASY_W_PLIKACH } from '../grafiki/grafiki';
 import { Job } from '../sim/creatures';
 import { Race, RACES } from '../sim/races';
 import type { Camera } from './camera';
@@ -756,6 +757,10 @@ export function rysujPostac(
 ): Czynnosc {
   const r = ruch(c, czas);
   const czyn = cz ?? czynnosc(c, r, sim);
+  // własna grafika (src/grafiki/pliki): postac-<rasa>-<czynność> albo postac-<rasa>
+  const rasaPliku = RASY_W_PLIKACH[c.race];
+  const wlasna = pierwszaGrafika(`postac-${rasaPliku}-${czyn}`, `postac-${rasaPliku}`);
+  if (wlasna && rysujGrafike(ctx, wlasna, 0, 0, h, { kotwicaY: 1, czas: czas + c.id * 97 })) return czyn;
   const obrys = barwaKlanu(sim.clans[c.clan]);
   const f = fakturaRasy(ctx, c.race);
   if (c.race === Race.SPINNER) {

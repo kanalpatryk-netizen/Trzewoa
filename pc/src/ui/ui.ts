@@ -1,5 +1,6 @@
 import { Sim } from '../sim/sim';
 import { Race, RACES } from '../sim/races';
+import { rysujGrafike } from '../grafiki/grafiki';
 import { Creature, Job } from '../sim/creatures';
 import { Verb, TOOLS, affordable, cost, whisper, taint } from '../powers/powers';
 import { SERIF, creatureName, creatureNameCelownik } from '../render/overlay';
@@ -219,6 +220,8 @@ export class Ui {
 
   /** Symbol wyryty w kamieniu: najpierw rowek cienia, potem światło na krawędzi. */
   private rune(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, id: Verb, on: boolean, ready: boolean, time: number): void {
+    // własna grafika (src/grafiki/pliki): ryt-<id>, np. ryt-zasiej.png
+    if (rysujGrafike(ctx, `ryt-${id}`, x, y, s * 1.2, { alfa: on || ready ? 1 : 0.55, czas: time })) return;
     const glow = ready ? 0.6 + 0.22 * Math.sin(time * 0.0015 + x) : 0.16;
     ctx.save();
     ctx.translate(x, y);
