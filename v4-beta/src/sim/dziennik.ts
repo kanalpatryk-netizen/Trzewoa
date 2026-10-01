@@ -23,6 +23,16 @@ export const DZIENNIK = {
 export const DEV = {
   /** Tempo ponad zwykłe ×3 (0 = bez nadpisania). */
   tempo: 0,
+  /** Pauza dewelopera: świat stoi, idzie tylko o `krokow` tików na żądanie. */
+  pauza: false,
+  krokow: 0,
+  /** Śledzona postać (id, -1 = nikt) i czy kamera za nią jedzie. */
+  sledzony: -1,
+  sledz: false,
+  /** Kafel pod kursorem (świat) albo null. */
+  kursor: null as { x: number; y: number } | null,
+  /** Średni czas jednego kroku symulacji w ms. */
+  msKroku: 0,
 };
 
 export function zapisz(sim: Sim, kat: KategoriaWpisu, tekst: string, x?: number, y?: number): void {

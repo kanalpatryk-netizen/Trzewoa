@@ -104,7 +104,7 @@ export class App implements Kontekst {
     const w = e as WheelEvent;
     return {
       clientX: e.clientX / s, clientY: e.clientY / s,
-      button: e.button, buttons: e.buttons,
+      button: e.button, buttons: e.buttons, shiftKey: e.shiftKey,
       pointerId: (e as PointerEvent).pointerId, pointerType: (e as PointerEvent).pointerType,
       deltaX: w.deltaX, deltaY: w.deltaY, deltaMode: w.deltaMode,
       preventDefault: () => e.preventDefault(),

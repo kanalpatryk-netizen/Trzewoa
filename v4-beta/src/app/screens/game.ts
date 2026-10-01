@@ -12,6 +12,7 @@ import { rysujZapiski, type TrafienieZapisku } from '../../render/zapiski';
 import { rysujTempo } from '../../render/tempo';
 import { PanelDewelopera } from '../devpanel';
 import { DEV } from '../../sim/dziennik';
+import { rysujDev } from '../../render/dev';
 import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, type Przycisk } from '../../render/przyciski';
 import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
@@ -479,7 +480,12 @@ export class EkranGry implements Ekran {
   krok(_dt: number, teraz: number): void {
     // okienko dewelopera: tylko w grze (nie w samouczku) i tylko z włączonym trybem
     const dev = ustawienia.trybDeweloperski && !this.nasluch;
-    if (dev && !this.panelDev) this.panelDev = new PanelDewelopera({ sim: () => this.sim, pokazMiejsce: (x, y) => this.pokazMiejsce(x, y) });
+    if (dev && !this.panelDev) this.panelDev = new PanelDewelopera({
+      sim: () => this.sim,
+      pokazMiejsce: (x, y) => this.pokazMiejsce(x, y),
+      nowaGra: (ziarno) => { this.nowaGra(ziarno); this.ui.say(`Świat ${ziarno} od nowa.`, this.sim.tick); },
+    });
+    if (!dev) { DEV.pauza = false; DEV.sledzony = -1; DEV.kursor = null; }
     this.panelDev?.ustaw(dev);
     this.panelDev?.odswiez(teraz);
     // palec przytrzymany na rycie: tablica rytu, a wybór z dotknięcia się cofa — to nie był wybór
@@ -494,12 +500,20 @@ export class EkranGry implements Ekran {
     this.sluchaj();
     if (!this.zamrozone()) {
       let kroki = this.tempoTeraz();
-      if (this.spowolnione()) {
+      if (dev && DEV.pauza) { kroki = DEV.krokow; DEV.krokow = 0; }
+      else if (this.spowolnione()) {
         this.reszta += kroki * 0.25;
         kroki = Math.floor(this.reszta);
         this.reszta -= kroki;
       }
+      const t0 = performance.now();
       for (let i = 0; i < kroki; i++) this.sim.step();
+      if (dev && kroki > 0) DEV.msKroku = DEV.msKroku * 0.9 + ((performance.now() - t0) / kroki) * 0.1;
+      // kamera za śledzoną postacią (okienko dewelopera)
+      if (dev && DEV.sledz && DEV.sledzony >= 0) {
+        const c = this.sim.creatures.find((q) => q.id === DEV.sledzony && !q.dead);
+        if (c) { this.cam.x = this.camTarget.x = c.x; this.cam.y = this.camTarget.y = c.y; this.recznaKamera = true; this.cam.clamp(this.sim.world.w, this.sim.world.h); }
+      }
       this.dirty = true;
       // WERSJA ANDROID: kamera przejęta palcem albo „pokaż” zostaje tam, gdzie ją zostawiłeś —
       // dawniej po 20 sekundach sama wracała „za życiem” i cel rady uciekał spod ekranu.
@@ -642,6 +656,7 @@ export class EkranGry implements Ekran {
     }
     rysujZarys(ctx, sim, cam, teraz);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
+    if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
     if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
     if (this.pauza) {
@@ -899,6 +914,24 @@ export class EkranGry implements Ekran {
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
     const { ui, sim } = this;
     ui.pointer.x = e.clientX; ui.pointer.y = e.clientY;
+    // tryb deweloperski: kafel pod kursorem, a Shift+klik wybiera postać do inspektora
+    if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) {
+      if (this.naPlycie(e.clientX, e.clientY)) {
+        const [wx, wy] = this.swiatPod(e.clientX, e.clientY);
+        DEV.kursor = { x: wx, y: wy };
+        if (faza === 'dol' && e.shiftKey) {
+          const fx = this.cam.toWorldX(e.clientX - this.plate.x), fy = this.cam.toWorldY(e.clientY - this.plate.y);
+          let best = -1, bd = 3;
+          for (const c of sim.creatures) {
+            if (c.dead) continue;
+            const d = Math.hypot(c.x - fx, c.y - 0.5 - fy);
+            if (d < bd) { bd = d; best = c.id; }
+          }
+          DEV.sledzony = best;
+          return;
+        }
+      } else DEV.kursor = null;
+    }
     ui.plan = this.pauza ? this.rozkazy : null;
 
     if (this.atlas.otwarte) {
