@@ -65,9 +65,14 @@ jobs:
           Zbudowane z commita ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d)).
           EOF
           # jedno stałe wydanie, podmieniane przy każdej zmianie — linki /releases/latest/download/ się nie zmieniają
-          gh release delete gra --cleanup-tag --yes || true
-          gh release create gra pc/trzewia.html android/trzewia-android.html \
-            --target "$GITHUB_SHA" \
-            --title "Trzewia — najnowsza wersja" \
-            --notes-file notatki.md \
-            --latest
+          # pliki podmieniamy w istniejącym wydaniu — gdy tworzenie nowego się nie udało, linki nie znikają
+          if gh release view gra >/dev/null 2>&1; then
+            gh release upload gra pc/trzewia.html android/trzewia-android.html --clobber
+            gh release edit gra --notes-file notatki.md --latest
+          else
+            gh release create gra pc/trzewia.html android/trzewia-android.html \
+              --target "$GITHUB_SHA" \
+              --title "Trzewia — najnowsza wersja" \
+              --notes-file notatki.md \
+              --latest
+          fi

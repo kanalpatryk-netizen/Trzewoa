@@ -16,6 +16,11 @@ on:
 permissions:
   contents: write
 
+# przebiegi z gałęzi i z main po kolei — drugi zobaczy, że wydanie już jest, i je pominie
+concurrency:
+  group: android-wersje
+  cancel-in-progress: false
+
 jobs:
   wersja:
     runs-on: ubuntu-latest
@@ -101,11 +106,14 @@ jobs:
           ${{ matrix.opis }}
 
           **Instalacja:** pobierz \`Trzewia-${{ matrix.wersja }}.apk\` (niżej, w sekcji *Assets*) na telefonie i otwórz.
-          Wersja aplikacji 0.1.${{ matrix.numer }}, commit ${COMMIT::7}. Starsza wersja nie zainstaluje się
+          Wersja aplikacji 0.1.${{ matrix.numer }}, zbudowana z commita ${COMMIT::7}. Starsza wersja nie zainstaluje się
           na nowszą — najpierw odinstaluj aplikację (zapis gry przepadnie).
           NOTATKI
+          # Tag stawiamy na commicie tego przebiegu, a nie na zapisanym: GitHub nie pozwala
+          # tokenowi automatu tworzyć tagu na commicie z innymi plikami automatów niż w main
+          # (HTTP 403). Gra i tak jest zbudowana z zapisanego commita — mówią o tym notatki.
           gh release create "${{ matrix.wersja }}" "Trzewia-${{ matrix.wersja }}.apk" \
-            --target "${{ matrix.commit }}" \
+            --target "$GITHUB_SHA" \
             --title "Trzewia na Androida ${{ matrix.wersja }}" \
             --notes-file notatki.md \
             --latest=false \

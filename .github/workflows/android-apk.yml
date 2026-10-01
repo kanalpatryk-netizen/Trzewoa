@@ -76,9 +76,15 @@ jobs:
           Wersja testowa 0.1.${{ github.run_number }} z gałęzi \`${GITHUB_REF_NAME}\`, commit ${GITHUB_SHA::7}.
           Podpisana kluczem testowym — kolejne wersje instalują się na poprzednią (zapis gry zostaje).
           NOTATKI
-          gh release delete android-apk --cleanup-tag --yes || true
-          gh release create android-apk Trzewia.apk \
-            --target "$GITHUB_SHA" \
-            --title "Trzewia na Androida (APK)" \
-            --notes-file notatki.md \
-            --prerelease
+          # Plik podmieniamy w istniejącym wydaniu. Dawniej stare wydanie najpierw znikało,
+          # a gdy utworzenie nowego się nie udało, link do APK przestawał działać.
+          if gh release view android-apk >/dev/null 2>&1; then
+            gh release upload android-apk Trzewia.apk --clobber
+            gh release edit android-apk --notes-file notatki.md
+          else
+            gh release create android-apk Trzewia.apk \
+              --target "$GITHUB_SHA" \
+              --title "Trzewia na Androida (APK)" \
+              --notes-file notatki.md \
+              --prerelease
+          fi
