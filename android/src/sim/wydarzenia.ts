@@ -175,7 +175,8 @@ function kandydaci(sim: Sim, st: StanWydarzen): { waga: number; zbuduj: Budownic
   } });
 
   // --- obcy lud (gdy jedna krew zjada resztę)
-  if (sim.dominance > W.obcyOdDominacji && sim.przybyszow < PP.maxPrzybyszow) out.push({ rodzaj: 'obcy', waga: 3, zbuduj: () => ({
+  // (nie na początku: Ślepy Lud zawsze zaczyna jako większość — to jeszcze nie monokultura)
+  if (sim.tick > W.obcyPo && sim.dominance > W.obcyOdDominacji && sim.przybyszow < PP.maxPrzybyszow) out.push({ rodzaj: 'obcy', waga: 3, zbuduj: () => ({
     rodzaj: 'obcy', tytul: 'Ktoś puka od spodu', tekst: `${RACES[sim.domRace]?.name ?? 'Jedna krew'} zajmuje prawie całą górę. W głębi czeka garstka innych.`,
     wybory: [
       wybor('wypusc', 'Wypuść ich', 'Nowa krew stanie przeciw najliczniejszym — sen się oddali.'),

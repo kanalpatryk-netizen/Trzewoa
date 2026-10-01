@@ -909,7 +909,9 @@ export class Sim {
   obcyLud(): boolean {
     const w = this.world;
     const ofiar = this.popByRace[Race.GOBLIN] + this.popByRace[Race.DWARF];
-    const chetni = [Race.DWARF, Race.SPINNER, Race.TROLL, Race.GOBLIN]
+    // WERSJA ANDROID: bez trolli — sfora czterech–siedmiu trolli (siła 16) wybijała całą górę
+    // w minutę i zostawiała monokulturę gorszą od tej, którą miała przerwać
+    const chetni = [Race.DWARF, Race.SPINNER, Race.GOBLIN]
       .filter((r) => r !== this.domRace && this.popByRace[r] <= 2 && (r !== Race.SPINNER || ofiar >= PP.przadkiOfiar));
     if (!chetni.length) return false;
     const race = chetni[this.rng.int(chetni.length)];

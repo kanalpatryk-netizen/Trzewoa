@@ -55,8 +55,8 @@ export const WYDARZENIA = {
   znakOd: 0.2, znakDo: 0.5,
   /** Warta: nacja ma co najmniej tyle oddania i tylu ludzi. */
   wartaOddanie: 0.4, wartaMinNacja: 6,
-  /** Obcy lud: tylko przy takiej dominacji jednej krwi. */
-  obcyOdDominacji: 0.74,
+  /** Obcy lud: tylko przy takiej dominacji jednej krwi i nie wcześniej niż po tylu tikach. */
+  obcyOdDominacji: 0.74, obcyPo: 21600,
   /** Pierwsza krew: ta sama para nie wraca z kartą przez tyle tików; karty wojen nie częściej niż co `wojnaPo`. */
   wojnaCisza: 43200, wojnaPo: 10800,
   /** Pierwsza krew: rozsądnie rozdzielić, gdy słabsza krew liczy tylu albo mniej. */
