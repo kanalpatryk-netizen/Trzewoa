@@ -84,19 +84,31 @@ export interface ObszarDrogi { x: number; y: number; w: number; h: number; linia
 export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, teraz: number): ObszarDrogi {
   const { kroki, biezacy } = krokiDrogi(sim);
   const telefon = p.waski || p.niski;
+  // TELEFON POZIOMO: płyta ma ledwie ~340 px wysokości, a wstęga zajmowała jej prawie trzecią
+  // część i zasłaniała gniazda — jest węższa, tor niższy, „teraz:” w najwyżej dwóch linijkach,
+  // a „pokaż ›” stoi w pierwszej z nich zamiast we własnym wierszu
+  const zwarta = p.niski && !p.waski;
   // na telefonie większe litery — 11 px było nie do przeczytania
-  const rozm = telefon ? 13 : Math.max(12, Math.min(14, p.w / 90));
-  const szer = p.waski ? p.w - 16 : p.niski ? Math.min(460, p.w * 0.55) : Math.max(300, Math.min(440, p.w * 0.38));
+  const rozm = zwarta ? 12.5 : telefon ? 13 : Math.max(12, Math.min(14, p.w / 90));
+  const szer = p.waski ? p.w - 16 : zwarta ? Math.min(400, p.w * 0.46) : Math.max(300, Math.min(440, p.w * 0.38));
   // „teraz:” łamane do szerokości ramy — na telefonie zwykle w dwóch linijkach
   const co = terazDrogi(sim);
   ctx.save();
+  ctx.font = `${rozm * 0.8}px ${SERIF}`;
+  const pokazW = zwarta && co.cel ? ctx.measureText('pokaż ›').width + 12 : 0;
   ctx.font = `italic ${rozm * 0.9}px ${SERIF}`;
-  const linieTeraz = lamLinie(ctx, `teraz: ${co.tekst}`, szer - 20).slice(0, 3);
+  let linieTeraz = lamLinie(ctx, `teraz: ${co.tekst}`, szer - 20 - pokazW).slice(0, 3);
+  if (zwarta && linieTeraz.length > 2) {
+    linieTeraz = linieTeraz.slice(0, 2);
+    let l = linieTeraz[1];
+    while (l.length > 4 && ctx.measureText(`${l}…`).width > szer - 20 - pokazW) l = l.slice(0, -1);
+    linieTeraz[1] = `${l.trimEnd()}…`;
+  }
   ctx.restore();
   // podpisy węzłów („oddanie 45%”) stykały się z pierwszą linijką „teraz:” — na telefonie tor jest wyższy
-  const wysToru = rozm * (telefon ? 3.8 : 3.3);
-  // „pokaż ›” dostaje własny wiersz: przy dłuższej radzie wchodziło na jej koniec
-  const wys = wysToru + linieTeraz.length * rozm * 1.15 + rozm * (co.cel ? 1.2 : 0.5);
+  const wysToru = rozm * (zwarta ? 3.3 : telefon ? 3.8 : 3.3);
+  // „pokaż ›” dostaje własny wiersz: przy dłuższej radzie wchodziło na jej koniec (poza wersją zwartą)
+  const wys = wysToru + linieTeraz.length * rozm * 1.15 + rozm * (zwarta ? 0.3 : co.cel ? 1.2 : 0.5);
   const x0 = p.waski ? p.x + 8 : p.x + 12;
   // TELEFON: na dole płyty — u góry, pod powierzchnią, mieszkają ludy i wstęga je zasłaniała
   const y0 = telefon ? p.y + p.h - wys - 10 : p.y + 12;
@@ -104,7 +116,7 @@ export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, si
 
   const n = kroki.length;
   const lx0 = x0 + szer * 0.1, lx1 = x0 + szer * 0.9;
-  const ly = y0 + wysToru * 0.4;
+  const ly = y0 + wysToru * (zwarta ? 0.36 : 0.4);
   const krok = (lx1 - lx0) / (n - 1);
   const puls = 0.5 + 0.5 * Math.sin(teraz * 0.004);
   ctx.save();
@@ -146,7 +158,7 @@ export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, si
     const t = k.nazwa + (k.dopisek ? ` ${k.dopisek}` : '');
     ctx.font = `${i === biezacy ? '' : 'italic '}${rozm * (i === biezacy ? 0.95 : 0.85)}px ${SERIF}`;
     ctx.fillStyle = k.zrobiony ? 'rgba(236,200,140,0.8)' : i === biezacy ? `rgba(252,222,160,${0.85 + 0.15 * puls})` : 'rgba(170,158,138,0.55)';
-    ctx.fillText(t, x, ly + rozm * 1.45, krok * 1.1);
+    ctx.fillText(t, x, ly + rozm * (zwarta ? 1.3 : 1.45), krok * 1.1);
   });
   // co teraz — konkretna czynność; dotknięcie tej linii wiezie kamerę na miejsce
   const yl = y0 + wysToru + rozm * 0.2;
@@ -163,7 +175,7 @@ export function rysujDrogeDoWolnosci(ctx: CanvasRenderingContext2D, p: Plate, si
     ctx.fillStyle = `rgba(252,212,140,${0.55 + 0.35 * puls})`;
     ctx.textAlign = 'right';
     ctx.font = `${rozm * 0.8}px ${SERIF}`;
-    ctx.fillText('pokaż ›', x0 + szer - 10, y0 + wys - rozm * 0.45);
+    ctx.fillText('pokaż ›', x0 + szer - 10, zwarta ? yl : y0 + wys - rozm * 0.45);
   }
   ctx.restore();
   return {
