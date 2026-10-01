@@ -1,13 +1,11 @@
 # Zmiany
 
 ## Android v3
-- Karty wydarzeń z wyborem (najazd, zaraza, głód, prorok…) — główny sposób grania
+- Karty wydarzeń z wyborem — główny sposób grania
 - Tylko 3 ryty: Nakarm, Szepnij, Cud
-- Wiara, krew, oddanie i sen jako liczby nad płytą
-- Wierni sami docierają pod rdzeń — wygrana zwykle w 10–15 minut
-- Karta „pierwsza krew”: można rozdzielić walczące nacje
-- Aplikacja zawsze poziomo
-- Naprawiona karta samouczka w poziomie
+- Wierni sami docierają pod rdzeń — wygrana w ok. 10 minut
+- Wiara, krew, oddanie i sen jako liczby u góry ekranu
+- Zawsze poziomo
 
 ## Android v2
 - Bez Skazy, Otchłani i trucizny
