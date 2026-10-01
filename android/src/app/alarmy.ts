@@ -1,4 +1,5 @@
 import type { Sim } from '../sim/sim';
+import { procentSkorupy } from '../sim/rytual';
 import { RYTUAL } from '../nastawy/rytual';
 
 /** Sytuacja, przy której gra sama zatrzymuje czas i mówi, co możesz zrobić. */
@@ -92,12 +93,11 @@ export class Straznik {
       this.pekniec = sim.rytual.pekniecia;
       const w = sim.world;
       const r = sim.rytual;
-      const potrzeba = Math.max(r.pekniecia + (r.otwarta ? 0 : 1), r.skorupa);
-      // pierwsze pęknięcie to kamień milowy partii — czas staje, żeby gracz to zobaczył
-      const pierwsze = r.pekniecia === 1;
+      // tylko pierwsze pęknięcie zatrzymuje grę — dalej postęp rośnie w procentach, bez etapów
+      if (r.pekniecia !== 1) return null;
       return {
-        rodzaj: pierwsze ? 'pekniecie-pierwsze' : 'pekniecie', kryzys: pierwsze,
-        tytul: pierwsze ? 'Pierwsze pęknięcie skorupy' : `Skorupa pęka: ${r.pekniecia} z ${potrzeba}`,
+        rodzaj: 'pekniecie-pierwsze', kryzys: true,
+        tytul: `Skorupa zaczęła pękać — ${procentSkorupy(sim)}%`,
         tekst: `Modlitwa wiernych rozkuwa kamień, którego nie ruszy żaden kilof. Góra oddaje ci za to ${RYTUAL.nagrodaWiary} wiary.`,
         rada: 'Pilnuj grzybu przy przedsionku, żeby warta nie umarła z głodu — i nie wpuszczaj pod rdzeń obcych.',
         cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, tekst: 'przedsionek' },

@@ -26,7 +26,7 @@ export const KAMERA = {
 
 export const TEMPO = {
   /** Najwyższe tempo czasu (tików na klatkę). */
-  max: 8,
+  max: 3,
 };
 
 /** STEROWANIE PALCEM — tylko wersja Android (na telefonie nie ma klawiatury ani myszy). */

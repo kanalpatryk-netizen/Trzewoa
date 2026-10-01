@@ -1,3 +1,4 @@
+import { TEMPO } from '../nastawy/sterowanie';
 /** Ustawienia gracza — jedno miejsce, z którego czyta cała gra. */
 export interface Settings {
   trybDeweloperski: boolean; // podgląd liczb świata i narzędzia dla twórcy
@@ -70,7 +71,10 @@ function wczytaj(): Settings {
   try {
     const raw = localStorage.getItem(KLUCZ);
     if (!raw) return { ...DOMYSLNE };
-    return { ...DOMYSLNE, ...JSON.parse(raw) };
+    const u: Settings = { ...DOMYSLNE, ...JSON.parse(raw) };
+    // najwyżej ×3 — starsze zapisy miały do ×8
+    u.tempo = Math.min(TEMPO.max, Math.max(1, u.tempo));
+    return u;
   } catch {
     return { ...DOMYSLNE };
   }

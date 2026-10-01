@@ -1,4 +1,5 @@
 import type { Plate } from './plate';
+import { procentSkorupy } from '../sim/rytual';
 import type { Sim } from '../sim/sim';
 import { RACES, Race } from '../sim/races';
 import { PIELGRZYMKA, RYTUAL } from '../nastawy/rytual';
@@ -29,12 +30,11 @@ export function krokiDrogi(sim: Sim): { kroki: KrokDrogi[]; biezacy: number } {
   let powrot = false;
   for (const k of sim.clans) if (!k.dead && k.devotion > prog && k.powrotOk) powrot = true;
   const droga = r.pekniecia > 0 || r.wierni >= 3 || (wierza && (sim.jedzeniePrzedsionka >= 3 || powrot));
-  const potrzeba = Math.max(r.pekniecia + (r.otwarta ? 0 : 1), r.skorupa);
   const kroki: KrokDrogi[] = [
     { nazwa: 'wiara', zrobiony: wiara },
     { nazwa: 'oddanie', zrobiony: wierza, dopisek: !wierza && oddanie > 0 ? `${Math.floor(oddanie * 100)}%` : undefined },
     { nazwa: 'droga', zrobiony: droga },
-    { nazwa: 'skorupa', zrobiony: r.otwarta, dopisek: r.pekniecia > 0 && !r.otwarta ? `${r.pekniecia}/${potrzeba}` : undefined },
+    { nazwa: 'skorupa', zrobiony: r.otwarta, dopisek: !r.otwarta && procentSkorupy(sim) > 0 ? `${procentSkorupy(sim)}%` : undefined },
     { nazwa: 'wolność', zrobiony: !!sim.ending && sim.ending.startsWith('uwolnienie') },
   ];
   const biezacy = kroki.findIndex((k) => !k.zrobiony);
@@ -68,7 +68,7 @@ export function terazDrogi(sim: Sim): Teraz {
         ? { tekst: 'Nakarm przedsionek nad rdzeniem (grzyb) — z nim warta przeżyje na dole.', cel: przedsionek }
         : { tekst: `${najw ? najw.name : 'Wierni'} ruszą pod rdzeń i sami przekopią się w dół.`, cel: przedsionek };
     case 'skorupa':
-      return { tekst: `Wierni kują skorupę (${sim.rytual.pekniecia} pęknięć). Pilnuj, żeby przy przedsionku było co jeść.`, cel: przedsionek };
+      return { tekst: `Wierni kują skorupę — ${procentSkorupy(sim)}%. Pilnuj, żeby przy przedsionku było co jeść.`, cel: przedsionek };
     default:
       return { tekst: 'Skorupa otwarta — wierni schodzą do rdzenia.', cel: { x: w.coreX, y: w.coreY, r: 5, tekst: 'rdzeń' } };
   }

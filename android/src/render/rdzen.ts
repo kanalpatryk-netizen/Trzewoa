@@ -1,4 +1,5 @@
 import type { Sim } from '../sim/sim';
+import { procentSkorupy } from '../sim/rytual';
 import type { Camera } from './camera';
 import { T } from '../sim/tiles';
 import { glif } from './tajemnica';
@@ -95,17 +96,17 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
   const R = Rs * (1 + RW.puchniecie * uderz);
   rysujSerce(ctx, sx, sy, R, uderz, otwarta);
 
-  // --- wieniec: tyle ogniw, ile pęknięć trzeba; zapalone = pęknięte
-  const potrzeba = Math.max(1, Math.max(r.skorupa, r.pekniecia + (otwarta ? 0 : 1)));
-  const zrobione = otwarta ? potrzeba : Math.min(potrzeba, r.pekniecia);
+  // --- wieniec: zapala się płynnie, w procentach skruszonej skorupy (bez etapów „1 z 5”)
+  const proc = procentSkorupy(sim);
   const Rw = Math.max(R * RW.wieniec, z * RW.wieniecNaZoom);
   const obrot = teraz * 0.00008;
-  for (let i = 0; i < potrzeba; i++) {
-    const a0 = obrot + (i / potrzeba) * Math.PI * 2 + 0.08, a1 = obrot + ((i + 1) / potrzeba) * Math.PI * 2 - 0.08;
-    const lit = i < zrobione;
-    ctx.strokeStyle = lit ? `rgba(${RW.ogniwoZapalone},${0.75 + 0.25 * uderz})` : RW.ogniwoZgaszone;
-    ctx.lineWidth = lit ? Math.max(2, z * 0.3) : Math.max(1, z * 0.14);
-    ctx.beginPath(); ctx.arc(sx, sy, Rw, a0, a1); ctx.stroke();
+  ctx.strokeStyle = RW.ogniwoZgaszone;
+  ctx.lineWidth = Math.max(1, z * 0.14);
+  ctx.beginPath(); ctx.arc(sx, sy, Rw, 0, Math.PI * 2); ctx.stroke();
+  if (proc > 0) {
+    ctx.strokeStyle = `rgba(${RW.ogniwoZapalone},${0.75 + 0.25 * uderz})`;
+    ctx.lineWidth = Math.max(2, z * 0.3);
+    ctx.beginPath(); ctx.arc(sx, sy, Rw, -Math.PI / 2, -Math.PI / 2 + (proc / 100) * Math.PI * 2); ctx.stroke();
   }
   // znaki na wieńcu, obracające się powoli w przeciwną stronę
   if (Rw > RW.znakiWiencaOd) {
@@ -129,7 +130,7 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
     ctx.font = `italic ${rozm}px "Trzewia Tekst", Georgia, serif`;
     ctx.textAlign = 'center';
     const tekst = otwarta ? RW.podpisOtwarty
-      : r.pekniecia > 0 ? RW.podpisPeka.replace('{ile}', String(r.pekniecia)).replace('{z}', String(potrzeba)) : RW.podpisZamkniety;
+      : proc > 0 ? RW.podpisPeka.replace('{proc}', String(proc)) : RW.podpisZamkniety;
     const ty = sy + Rw + rozm * 2.4;
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(10,7,6,0.85)';

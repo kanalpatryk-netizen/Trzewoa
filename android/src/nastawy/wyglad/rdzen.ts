@@ -42,7 +42,7 @@ export const RDZEN_WYGLAD = {
   /** Podpis pod rdzeniem — od jakiego przybliżenia. */
   podpisOdZoom: 4,
   podpisZamkniety: 'twój rdzeń — tu cię uwolnią',
-  /** {ile} i {z} podmieniane na pęknięcia i potrzebne pęknięcia. */
-  podpisPeka: 'skorupa pęka: {ile} z {z}',
+  /** {proc} podmieniane na procent skruszonej skorupy. */
+  podpisPeka: 'skorupa pęka: {proc}%',
   podpisOtwarty: 'rdzeń otwarty — wierni schodzą',
 };

@@ -472,7 +472,7 @@ export class EkranGry implements Ekran {
     if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
     this.sluchaj();
     if (!this.zamrozone()) {
-      let kroki = Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik));
+      let kroki = Math.min(TEMPO.max, Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik)));
       if (this.spowolnione()) {
         this.reszta += kroki * 0.25;
         kroki = Math.floor(this.reszta);
@@ -662,7 +662,7 @@ export class EkranGry implements Ekran {
     this.ui.draw(ctx, sim, teraz);
     this.przyciski = rozmiescPrzyciski(plate, h, {
       pauza: this.pauza, zapiski: this.zapiski, legenda: this.legenda, noweTablice: odkrycia.niezobaczone,
-      tempo: Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik)),
+      tempo: Math.min(TEMPO.max, Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik))),
     });
     const podPrzyciskiem = przyciskPod(this.przyciski, this.ui.pointer.x, this.ui.pointer.y);
     rysujPrzyciski(ctx, this.przyciski, podPrzyciskiem?.akcja ?? null, teraz);
@@ -736,7 +736,7 @@ export class EkranGry implements Ekran {
     if (this.painting) this.rysujKoszt(ctx, w);
     if (!sim.ending) {
       const stan = this.zamrozone() ? 'stoi' : this.spowolnione() ? 'zwalnia' : 'plynie';
-      rysujTempo(ctx, plate, stan, Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik)), teraz);
+      rysujTempo(ctx, plate, stan, Math.min(TEMPO.max, Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik))), teraz);
     }
     if (this.zapiski) {
       const r = rysujZapiski(ctx, plate, sim, w, h, this.przewinZapiskow);

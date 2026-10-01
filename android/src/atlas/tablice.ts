@@ -479,7 +479,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'skorupa', grupa: 'prawa', nazwa: 'Skorupa rdzenia', lacina: 'Testa cordis',
     opis: `Kamień wokół rdzenia — nie da się go rozkuć. Pęka tylko pod modlitwą: gdy przy rdzeniu (do 16 kafli) stoi naraz co najmniej trzech wiernych (z dowolnych nacji), każdy z oddaniem od ${proc(RYTUAL.minOddanie)}. Kuje nacja, której jest tam najwięcej — jej postęp zostaje przy niej. Każde pęknięcie wyjmuje jeden kafel od góry, od strony przedsionka; zwykle trzeba ich około pięciu, każde idzie wolniej od poprzedniego.`,
-    kiedy: 'Trzymaj trzech i więcej razem, najedzonych i wierzących. Postęp widać na plakietce: „skorupa 2/5". Prorok dzieli wartę — nie teraz.',
+    kiedy: 'Trzymaj trzech i więcej razem, najedzonych i wierzących. Postęp widać w procentach na wstędze i wieńcu rdzenia. Prorok dzieli wartę — nie teraz.',
     rycina: skorupa,
   },
   {
