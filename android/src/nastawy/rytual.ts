@@ -126,6 +126,8 @@ export const PIELGRZYMKA = {
   rozrzutCelu: 3,
   /** „W przedsionku” = w takim prostokącie od jego środka (pół szerokości, pół wysokości). */
   przedsionekX: 6, przedsionekY: 5,
+  /** W drodze pod rdzeń głód rośnie w takim ułamku zwykłego tempa (niesie go wiara). */
+  glodWDrodze: 0.2,
   /** Pielgrzym szuka jedzenia, gdy głód przekroczy to… */
   glodSzukaJedzenia: 0.62,
   /** …w takim promieniu… */

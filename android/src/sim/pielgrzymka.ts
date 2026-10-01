@@ -174,7 +174,8 @@ export function aktualnyPlan(sim: Sim): PlanDrogi | null {
 /**
  * Góra drąży drogę swoim wiernym (wersja na telefon nie ma rytu drążenia): póki ktoś z nacji
  * z planu idzie pod rdzeń, co `PLAN_DROGI.drazenieCo` tików znika jeden kafel skały ze złotej
- * kreski — od strony gniazda, więc korytarz rośnie przed pielgrzymami.
+ * kreski — od strony gniazda, więc korytarz rośnie przed pielgrzymami — a cała droga
+ * zostaje sucha.
  */
 export function drazDrogeWiernym(sim: Sim): void {
   const p = sim.planDrogi;
@@ -183,6 +184,13 @@ export function drazDrogeWiernym(sim: Sim): void {
   for (const c of sim.creatures) if (!c.dead && c.clan === p.klan && c.job === Job.PIELGRZYM) { idzie = true; break; }
   if (!idzie) return;
   const w = sim.world;
+  // Góra osusza drogę wiernych: wydrążony korytarz przebijał kieszenie wody i magmy, ciecz
+  // zalewała go, a Ślepy Lud (nie pływa) stawał w połowie drogi i plan znikał na dobre.
+  // Próg na kaflach drogi nie wpuszcza cieczy (jak pierścień wokół przedsionka).
+  for (const i of p.sciezka) {
+    w.prog[i] = 1;
+    if (w.water[i] > 0 || w.magma[i] > 0) { w.water[i] = 0; w.magma[i] = 0; }
+  }
   while (p.kopac.length) {
     const i = p.kopac.pop()!;
     if (!doKopania(w.tile[i])) continue;

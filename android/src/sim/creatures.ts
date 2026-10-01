@@ -85,7 +85,9 @@ export function stepCreature(sim: Sim, c: Creature): void {
   const d = RACES[c.race];
   const tx = Math.max(0, Math.min(w.w - 1, Math.floor(c.x)));
   const ty = Math.max(0, Math.min(w.h - 1, Math.floor(c.y)));
-  c.age++;
+  // Pielgrzym się nie starzeje: Ślepy Lud żyje ok. 6000 tików, a sama droga pod rdzeń trwa
+  // prawie tyle — warta umierała ze starości w połowie zejścia albo pod skorupą.
+  if (c.job !== Job.PIELGRZYM) c.age++;
   c.anim++;
 
   // --- żywioły
@@ -100,7 +102,10 @@ export function stepCreature(sim: Sim, c: Creature): void {
   const over = sim.crowding[c.race] - 1;
   const press = over > 0 ? Math.min(K.glodOdTlokuMax, 1 + over * over * K.glodOdTloku) : 1;
   // w samouczku góra trawi wolniej: nauka nie może polegać na patrzeniu, jak wszyscy mrą
-  c.hunger += K.glodNaTik * d.metabolism * (1 + c.mad * K.glodOdSzalenstwa) * press * (sim.spokojnySwiat ? K.glodWSamouczku : 1);
+  // pielgrzyma niesie wiara: droga pod rdzeń ma dwieście, trzysta kafli, a zwykły głód
+  // zawracał go po dziewięćdziesięciu — warta nigdy nie docierała na miejsce
+  const wDrodze = c.job === Job.PIELGRZYM ? P.glodWDrodze : 1;
+  c.hunger += K.glodNaTik * d.metabolism * (1 + c.mad * K.glodOdSzalenstwa) * press * wDrodze * (sim.spokojnySwiat ? K.glodWSamouczku : 1);
   // Żużlowcy żywią się tym, co wypluwa ogień — przy gorącu głód im nie doskwiera
   if (c.race === Race.DWARF) {
     // ciepło własnej kuźni sięga daleko — przy niej się mieszka, nie tylko je
@@ -168,8 +173,11 @@ export function stepCreature(sim: Sim, c: Creature): void {
   // Kto właśnie się podciąga i ma ścianę pod ręką, trzyma się jej. Bez tego szyb, który
   // sami wykopali, był pułapką: wchodzili o pół kafla i spadali z powrotem, w kółko —
   // Żużlowcy potrafili tak przestać całe życie pod rudą, której nigdy nie dosięgli.
+  // Na drodze wiernych (próg z pielgrzymka.ts) góra wykuła stopnie — tam trzyma się każdy,
+  // także ten, kto wyłazi na nią z wody albo z otwartej jaskini.
+  const naStopniach = w.prog[w.idx(tx, ty)] === 1 || (ty > 0 && w.prog[w.idx(tx, ty - 1)] === 1);
   const trzymaSie = (c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
-    && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1));
+    && (naStopniach || w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1));
   if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
     // Kto dopiero co się wspinał i ma ścianę pod ręką, zsuwa się po niej, zamiast lecieć.
     // Inaczej każda zmiana zamiaru w połowie szybu kończyła się upadkiem z całej wysokości.
@@ -205,7 +213,11 @@ export function stepCreature(sim: Sim, c: Creature): void {
   if (c.carry > 0) c.carryT++; else c.carryT = 0;
 
   // --- zakleszczenie: stoi w miejscu mimo zajęcia, więc niech spróbuje czegoś innego
-  if ((c.id + sim.tick) % K.zakleszczenieCo === 0) {
+  // (warta modli się w przedsionku na stojąco — to nie zakleszczenie; wcześniej po kilku
+  // sprawdzeniach dostawała „idź gdzie indziej” i warta pod skorupą topniała)
+  const modliSiePodRdzeniem = c.job === Job.PIELGRZYM
+    && Math.abs(c.x - w.coreX) < P.przedsionekX && Math.abs(c.y - w.przedsionekY) < P.przedsionekY;
+  if (!modliSiePodRdzeniem && (c.id + sim.tick) % K.zakleszczenieCo === 0) {
     if (Math.abs(c.x - c.lx) < K.zakleszczenieRuch && Math.abs(c.y - c.ly) < K.zakleszczenieRuch) c.stall++;
     else c.stall = 0;
     c.lx = c.x; c.ly = c.y;
@@ -733,7 +745,17 @@ function idzPlanem(sim: Sim, c: Creature, sciezka: number[]): boolean {
       if (d < bd) { bd = d; best = j; }
     }
     if (best < 0) return false;
-    walkTo(sim, c, sciezka[best] % w.w, (sciezka[best] / w.w) | 0);
+    const bx = sciezka[best] % w.w, by = (sciezka[best] / w.w) | 0;
+    // kreska tuż obok, ale to jeszcze lita skała — przekuwa się do niej; wcześniej szedł
+    // „do niej” krokiem, stał pod ścianą, aż zakleszczenie zabierało mu wyprawę
+    if (bd <= 1 && w.solid(bx, by)) {
+      if (w.hardness(bx, by) <= 0) return false;
+      digTile(sim, c, bx, by);
+      return true;
+    }
+    // tuż obok i wolna — wchodzi na nią wprost, po stopniach (walkTo wymagał ściany pod ręką)
+    if (bd <= 1) { krok(sim, c, sciezka[best]); return true; }
+    walkTo(sim, c, bx, by);
     return true;
   }
   if (k === 0) return false;
@@ -774,6 +796,9 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   // nie licznik pęknięć. Wtedy pielgrzym przestaje być pielgrzymem: schodzi do rdzenia.
   if (sim.rytual.otwarta && (sim.clans[c.clan].devotion > RYTUAL.uwolnienieNacja || c.devotion > RYTUAL.uwolnienieWlasne)
       && sim.tick % P.sprawdzOtwarcieCo === c.id % P.sprawdzOtwarcieCo && wyslijDoRdzenia(sim, c, RYTUAL.zejsciePielgrzymaTikow)) return;
+  // warta pod skorupą trwa, aż kamień puści — limit wyprawy liczy się tylko w drodze
+  // (po 7000 tikach warta rozchodziła się do zwykłych zajęć tuż przed pęknięciem)
+  c.jt = Math.max(c.jt, P.wyprawaTikow);
   c.devotion = Math.min(1, c.devotion + P.modlitwaOddanie);
   c.hunger = Math.max(0, c.hunger - P.modlitwaKarmi);      // wiara trawi wolniej, ale trawi
   sim.wiara += P.modlitwaWiara * sim.incomeMult();

@@ -35,6 +35,8 @@ export function wolny(sim: Sim, i: number, plywa: boolean): boolean {
 /** Czy w tym kafelku da się wisieć — ściana z boku albo krawędź pod ręką. */
 export function uchwyt(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
+  // na drodze wiernych góra wykuwa stopnie (próg z pielgrzymka.ts) — wszędzie jest się czego trzymać
+  if (w.inb(x, y) && w.prog[w.idx(x, y)] === 1) return true;
   return w.solid(x - 1, y) || w.solid(x + 1, y) || w.solid(x - 1, y + 1) || w.solid(x + 1, y + 1);
 }
 
