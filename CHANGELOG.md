@@ -5,6 +5,8 @@
 - Karty z odroczonym skutkiem: układ z głębią, przysięga dwóch nacji
 - Trudność „Koszmar”
 - Statystyki partii na ekranie końcowym
+- Dziennik: inspektor postaci i kafla, pauza z krokami, wyszukiwarka, zapis do .txt, ziarno świata, licznik klatek
+- Płynniej przy tłumie: postacie rysowane z gotowych szkiców (3–6× szybciej przy setkach jednostek)
 
 ## Android v3
 - Karty wydarzeń z wyborem — główny sposób grania

@@ -801,6 +801,53 @@ export function rysujPostac(
   return czyn;
 }
 
+// ------------------------------------------------------- tłum: gotowe szkice
+/**
+ * WYDAJNOŚĆ (v4 beta): przy tłumie na ekranie postać nie jest rysowana od zera.
+ * Rysunek (rasa, nacja, czynność, wielkość, klatka chodu i pracy, kierunek) trafia
+ * do małego płótna i jest tylko wklejany — także dla innych postaci w tej samej pozie.
+ * Szkice żyją `SZKIC_MS`, potem rysują się na nowo, więc animacja dalej płynie.
+ */
+/** Od ilu widocznych postaci włącza się tryb tłumu (Infinity = nigdy). */
+export const TLUM = { od: 50 };
+const SZKIC_MS = 150;
+const SZKICE = new Map<string, HTMLCanvasElement>();
+const pulaPlocien: HTMLCanvasElement[] = [];
+let szkiceOd = -1e9;
+
+function postacZeSzkicu(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h: number, czas: number, kier: number, sx: number, sy: number, cien: boolean): Czynnosc {
+  if (czas - szkiceOd > SZKIC_MS || czas < szkiceOd || SZKICE.size > 800) {
+    for (const p of SZKICE.values()) pulaPlocien.push(p);
+    SZKICE.clear();
+    szkiceOd = czas;
+  }
+  const r = ruch(c, czas);
+  const cz = czynnosc(c, r, sim);
+  const hp = Math.max(8, Math.round(h));
+  const klucz = `${c.race}|${c.clan}|${cz}|${hp}|${(r.faza * 6) | 0}|${(r.zegar * 6) | 0}|${kier}|${cien ? 1 : 0}`;
+  const w = hp * 2.4, wys = hp * 2.1, stopy = hp * 1.6;
+  let p = SZKICE.get(klucz);
+  if (!p) {
+    const t = ctx.getTransform();
+    const skala = Math.max(1, Math.min(4, Math.hypot(t.a, t.b)));
+    p = pulaPlocien.pop() ?? document.createElement('canvas');
+    p.width = Math.ceil(w * skala); p.height = Math.ceil(wys * skala);
+    const g = p.getContext('2d')!;
+    g.setTransform(skala, 0, 0, skala, (w / 2) * skala, stopy * skala);
+    if (cien) {
+      g.fillStyle = 'rgba(6,4,4,0.55)';
+      g.beginPath();
+      g.ellipse(0, 0, hp * 0.32, hp * 0.065, 0, 0, Math.PI * 2);
+      g.fill();
+    }
+    g.scale(kier, 1);
+    rysujPostac(g, sim, c, hp, czas, cz);
+    SZKICE.set(klucz, p);
+  }
+  ctx.drawImage(p, sx - w / 2, sy - stopy, w, wys);
+  return cz;
+}
+
 export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, czas: number, wybrany?: number): void {
   const z = cam.zoom;
   const left = cam.x - cam.vw / 2 / z, top = cam.y - cam.vh / 2 / z;
@@ -823,6 +870,7 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
   }
   // dalsze (wyżej na ekranie) pierwsze — niższe zachodzą na nie, jak na rycinie z głębią
   doRysowania.sort((a, b) => a.c.y - b.c.y);
+  const tlum = doRysowania.length > TLUM.od;
 
   for (const { c, n } of doRysowania) {
     const d = RACES[c.race];
@@ -834,18 +882,22 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
 
     // cień kontaktowy — tylko na ziemi
     const naZiemi = c.vy <= 0.3 && sim.world.solid(Math.floor(c.x), Math.floor(c.y) + 1);
-    if (naZiemi) {
+    if (naZiemi && !(tlum && wybrany !== c.id)) {
       ctx.fillStyle = 'rgba(6,4,4,0.55)';
       ctx.beginPath();
       ctx.ellipse(sx, sy, h * 0.32, h * 0.065, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    ctx.save();
-    ctx.translate(sx, sy);
-    ctx.scale(kier, 1);
-    const cz = rysujPostac(ctx, sim, c, h, czas);
-    ctx.restore();
+    let cz: Czynnosc;
+    if (tlum && wybrany !== c.id) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
+    else {
+      ctx.save();
+      ctx.translate(sx, sy);
+      ctx.scale(kier, 1);
+      cz = rysujPostac(ctx, sim, c, h, czas);
+      ctx.restore();
+    }
 
     // ilu ich tu stoi
     if (n > 1) {
