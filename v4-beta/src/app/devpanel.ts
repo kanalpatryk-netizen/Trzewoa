@@ -7,6 +7,7 @@ import type { Sim } from '../sim/sim';
 import { DZIENNIK, DEV, zapisz, type KategoriaWpisu, type WpisDziennika } from '../sim/dziennik';
 import { wymusPekniecie } from '../sim/rytual';
 import { wylosuj } from '../sim/wydarzenia';
+import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 
 const KATEGORIE: { kat: KategoriaWpisu; nazwa: string; kolor: string }[] = [
   { kat: 'praca', nazwa: 'zajęcia', kolor: '#b9c4a8' },
@@ -18,11 +19,11 @@ const KATEGORIE: { kat: KategoriaWpisu; nazwa: string; kolor: string }[] = [
   { kat: 'swiat', nazwa: 'kronika', kolor: '#9fc3e0' },
 ];
 
-const KARTY = ['glod', 'klotnia', 'najazd', 'obcy', 'plemie', 'powodz', 'prorok', 'ruda', 'warta', 'wymiera', 'zaraza', 'znak', 'zyla'];
+const KARTY = ['dlug', 'przysiega', 'glod', 'klotnia', 'najazd', 'obcy', 'plemie', 'powodz', 'prorok', 'ruda', 'warta', 'wymiera', 'zaraza', 'znak', 'zyla'];
 
-/** Tiki gry → „mm:ss” (60 tików to sekunda przy tempie ×1). */
+/** Tiki gry → „mm:ss” czasu gry. */
 function czas(tick: number): string {
-  const s = Math.floor(tick / 60);
+  const s = Math.floor(tick / (TIKOW_NA_MINUTE / 60));
   return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
 }
 

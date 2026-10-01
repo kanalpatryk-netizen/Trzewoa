@@ -37,6 +37,8 @@ export const RYTUAL = {
   oporNaPekniecie: 0.18,
   /** Mnożnik tempa w trybie „łaskawa góra”. */
   laskawaMnoznik: 1.3,
+  /** v4 beta — mnożnik tempa w trybie Koszmar (skorupa twardsza). */
+  koszmarMnoznik: 0.7,
   /** Na początku partii skorupa jest twardsza: tempo startuje od tego ułamka… */
   wczesnieOd: 0.35,
   /** …i dochodzi do pełnego po tylu minutach gry. */

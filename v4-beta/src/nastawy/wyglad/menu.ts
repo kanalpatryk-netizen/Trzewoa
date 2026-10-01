@@ -13,7 +13,7 @@ export const MENU = {
   nadtytulWaski: 'anatomia góry',
   podtytulWaski: 'Grasz podziemiem.',
   /** Napisy na ramie: górny i dolny (szeroki / wąski ekran). */
-  ramaGora: 'Trzewia · anatomia góry, która śni', ramaGoraWaski: 'Trzewia',
+  ramaGora: 'Trzewia · v4 beta · anatomia góry, która śni', ramaGoraWaski: 'Trzewia · v4 beta',
   ramaDol: 'Tab. I — przekrój góry z rdzeniem', ramaDolWaski: 'Tab. I',
   /** Zachęta dla nowych graczy pod opisem pozycji. */
   zachetaSamouczek: 'Pierwszy raz? Zacznij od samouczka.',

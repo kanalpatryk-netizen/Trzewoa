@@ -74,7 +74,7 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
     const przed = klan.rytual;
     // Zegar rytuału: przy czterech wiernych i pełnym oddaniu całe pięć pęknięć
     // zajmuje około dziesięciu–piętnastu minut nieprzerwanej warty.
-    const laska = sim.lagodna ? R.laskawaMnoznik : 1;
+    const laska = sim.lagodna ? R.laskawaMnoznik : sim.koszmar ? R.koszmarMnoznik : 1;
     // na początku partii skorupa jest twardsza — wygrana w pięć minut nie jest wygraną
     const wczesnie = R.wczesnieOd + (1 - R.wczesnieOd) * Math.min(1, sim.tick / (TIKOW_NA_MINUTE * R.wczesnieMinut));
     klan.rytual = Math.min(1, klan.rytual + R.tempo * laska * wczesnie * (Math.min(R.maxWiernychLiczonych, n) / R.normaWiernych) * (R.podstawaOddania + klan.devotion) / opor);

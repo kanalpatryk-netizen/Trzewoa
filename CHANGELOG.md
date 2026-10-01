@@ -1,5 +1,11 @@
 # Zmiany
 
+## v4 beta (komputer)
+- Tryb deweloperski: okienko z logami świata i narzędziami
+- Karty z odroczonym skutkiem: układ z głębią, przysięga dwóch nacji
+- Trudność „Koszmar”
+- Statystyki partii na ekranie końcowym
+
 ## Android v3
 - Karty wydarzeń z wyborem — główny sposób grania
 - Tylko 3 ryty: Nakarm, Szepnij, Cud

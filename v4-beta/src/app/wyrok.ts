@@ -12,6 +12,18 @@ export interface Wyrok {
   rada: string;
   /** Jak daleko zaszła droga do Uwolnienia — to, co warto pamiętać z tej partii. */
   etap: string;
+  /** v4 beta: liczby z całej partii (jedna linijka). */
+  statystyki: string;
+}
+
+/** v4 beta: czas, szczyt ludności, narodziny, zgony, wykopane bloki, karty, trudność. */
+export function statystyki(sim: Sim): string {
+  let zgonow = 0;
+  for (const n of sim.deaths.values()) zgonow += n;
+  const sek = Math.floor(sim.tick / (TIKOW_NA_MINUTE / 60));
+  const tryb = sim.lagodna ? 'łaskawa' : sim.koszmar ? 'koszmar' : 'surowa';
+  return `${Math.floor(sek / 60)}:${String(sek % 60).padStart(2, '0')} min · najwięcej dusz ${sim.stat.szczyt} · narodzin ${sim.stat.urodzen} · zgonów ${zgonow}`
+    + ` · bloków wykopanych ${sim.dug} · kart ${sim.stat.kart} · góra ${tryb}`;
 }
 
 export function wyrok(sim: Sim): Wyrok {
@@ -32,15 +44,16 @@ export function wyrok(sim: Sim): Wyrok {
     return {
       przyczyna: 'Wierni przebili skorupę i uklękli przy rdzeniu.',
       rada: sim.lagodna ? 'Spróbuj surowej góry (Ustawienia → Świat → Góra).'
-        : 'Spróbuj szybciej — i tak, żeby nikt nie wymarł po drodze.',
-      etap,
+        : !sim.koszmar ? 'Spróbuj Koszmaru (Ustawienia → Świat → Góra) — sen przychodzi szybciej, a skorupa jest twardsza.'
+        : 'Wygrałeś Koszmar. Spróbuj szybciej — i tak, żeby nikt nie wymarł po drodze.',
+      etap, statystyki: statystyki(sim),
     };
   }
   if (rodzaj === 'smierc') {
     return {
       przyczyna: 'Do rdzenia doszli ci, którzy się nie modlili.',
       rada: 'Pilnuj, kto stoi pod skorupą: posyłaj tam swoich wiernych szeptem „módl się” i rób Cud przy ich gnieździe.',
-      etap,
+      etap, statystyki: statystyki(sim),
     };
   }
   // sen: z pustki albo z monokultury
@@ -48,13 +61,13 @@ export function wyrok(sim: Sim): Wyrok {
     return {
       przyczyna: 'Góra opustoszała — nie został prawie nikt, kto by o tobie myślał.',
       rada: 'Karm tych, których jest mało, a na kartach „wymierają” wybieraj ratunek. Pusta góra zasypia w kilka minut.',
-      etap,
+      etap, statystyki: statystyki(sim),
     };
   }
   const nazwa = RACES[sim.domRace]?.name ?? 'Jedna krew';
   return {
     przyczyna: `${nazwa} ${odmien(sim.domRace, 'zjadł', 'zjedli')} resztę. Z jedną krwią w trzewiach nie ma komu się bać.`,
     rada: 'Gdy wstęga pod płytą robi się jednego koloru, wysłuchaj ich proroka albo skieruj na nich najazd czy powódź — i dokarmiaj pozostałe rasy, zanim wymrą.',
-    etap,
+    etap, statystyki: statystyki(sim),
   };
 }

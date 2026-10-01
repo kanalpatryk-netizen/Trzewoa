@@ -24,7 +24,7 @@ export interface Settings {
   /** Nowa tablica atlasu: otwiera się sama przy pierwszym spotkaniu albo tylko trafia do atlasu. */
   tablice: 'pokazuj' | 'tylko w atlasie';
   /** Łaskawa góra wolniej zasypia i daje więcej krwi na start — na pierwsze partie. */
-  trudnosc: 'łaskawa' | 'surowa';
+  trudnosc: 'łaskawa' | 'surowa' | 'koszmar';
   /** Mnożnik wielkości całego obrazu ponad automatyczne dopasowanie do ekranu. */
   wielkoscUI: number;
   /** Android: gra wchodzi na pełny ekran po „dotknij, aby się obudzić”. */

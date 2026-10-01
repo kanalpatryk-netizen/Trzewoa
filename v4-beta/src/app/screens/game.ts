@@ -222,6 +222,7 @@ export class EkranGry implements Ekran {
     if (gotowa && gotowa.tick === 0) resetRaces();
     this.sim = gotowa && gotowa.tick === 0 ? gotowa : new Sim(ziarno ?? ((Math.random() * 1e9) | 0));
     if (ustawienia.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += GORA.laskawaKrew; }
+    if (ustawienia.trudnosc === 'koszmar') { this.sim.koszmar = true; this.sim.krew = Math.max(0, this.sim.krew - GORA.koszmarKrew); }
     this.ui.verb = null; this.ui.tool = null; this.ui.selected = null;
     this.cam.zoom = KAMERA.start;
     this.doSerca(true);

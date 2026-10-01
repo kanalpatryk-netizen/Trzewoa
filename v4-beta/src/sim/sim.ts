@@ -115,6 +115,10 @@ export class Sim {
    * kruszy ją szybciej — reszta świata jest taka sama, więc nauka się nie marnuje.
    */
   lagodna = false;
+  /** v4 beta — Koszmar: sen przychodzi szybciej, skorupa jest twardsza, a krwi jest mniej. */
+  koszmar = false;
+  /** v4 beta — statystyki partii na ekran końcowy. */
+  stat = { urodzen: 0, kart: 0, szczyt: 0 };
   /** Ile jedzenia rośnie w suchej strefie przy przedsionku — liczone co sekundę gry. */
   jedzeniePrzedsionka = 0;
   /** Ustawiane przy przekroczeniu progu senności — ekran gry bije w dzwon i kasuje. */
@@ -640,6 +644,7 @@ export class Sim {
     const clan = this.clans[c.clan];
     if (clan.pop >= clan.cap) return;
     const nowy = this.spawn(c.race, c.clan, Math.floor(c.x), Math.floor(c.y));
+    if (nowy) this.stat.urodzen++;
     if (nowy) zapisz(this, 'narodziny', `rodzi się ${kto(this, nowy)} — rodzic #${c.id}`, c.x, c.y);
   }
 
@@ -767,6 +772,7 @@ export class Sim {
       if (this.popByRace[r] > max) { max = this.popByRace[r]; mr = r; }
     }
     this.dominance = total > 0 ? max / total : 1;
+    if (total > this.stat.szczyt) this.stat.szczyt = total;
     this.domRace = mr;
     this.capacities();
     const senPrzed = this.sen;
@@ -780,7 +786,7 @@ export class Sim {
     // WERSJA ANDROID: kto modli się pod twoim rdzeniem, ten cię budzi — warta nie może
     // uśpić góry tylko dlatego, że jej lud jest liczny (tak kończyły się partie o krok od wygranej)
     const warta = this.rytual.wierni >= RYTUAL.potrzebaWiernych && !this.rytual.otwarta ? 0 : 1;
-    const rosnie = (G.senOdMonokultury * nadmiar * warta + G.senOdPustki * pustka) * (this.lagodna ? G.laskawaSen : 1);
+    const rosnie = (G.senOdMonokultury * nadmiar * warta + G.senOdPustki * pustka) * (this.lagodna ? G.laskawaSen : 1) * (this.koszmar ? G.koszmarSen : 1);
     this.sen = Math.max(0, Math.min(1, this.sen + (rosnie > 0 ? rosnie : -G.senCofaSie)));
     // sen ma być słyszalny, a nie tylko widoczny na krawędziach płyty
     for (const prog of G.senProgi) {

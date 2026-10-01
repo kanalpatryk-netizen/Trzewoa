@@ -42,6 +42,10 @@ export const GORA = {
   senCofaSie: 0.0005,
   /** Tryb „łaskawa góra”: sen przychodzi w takim ułamku tempa. */
   laskawaSen: 0.6,
+  /** v4 beta — Koszmar: sen przychodzi tyle razy szybciej… */
+  koszmarSen: 1.8,
+  /** …i tyle mniej Krwi na start. */
+  koszmarKrew: 40,
   /** Progi, przy których dzwoni dzwon i kronika ostrzega. */
   senProgi: [0.25, 0.5, 0.8],
   /** Cudza wojna (nacja z twojego szeptu) cofa sen o tyle za każdą śmierć. */

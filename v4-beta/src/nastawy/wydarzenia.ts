@@ -63,4 +63,18 @@ export const WYDARZENIA = {
   wojnaChronPonizej: 10,
   /** Wymieranie: rasa ma tylu albo mniej, a miała co najmniej `wymieraSzczyt`. */
   wymieraPonizej: 3, wymieraSzczyt: 7,
+
+  // ------------------------------------------------- v4 beta: skutki odroczone
+  /** Układ z głębią: tyle Krwi teraz… */
+  dlugKrew: 80,
+  /** …a po tylu tikach głębia się upomina: sen rośnie o tyle (Koszmar: × `koszmarDlug`). */
+  dlugPo: 21600, dlugSen: 0.12, koszmarDlug: 1.5,
+  /** Układ z głębią nie wcześniej niż po tylu tikach i nie gdy sen już jest wysoko. */
+  dlugOd: 14400, dlugMaxSen: 0.4,
+  /** Przysięga dwóch nacji: cena błogosławieństwa (Wiara) i po ilu tikach przysięga się spełnia. */
+  przysiegaWiara: 25, przysiegaPo: 14400,
+  /** Spełniona przysięga: tyle oddania obu nacjom i pokój na tyle tików. */
+  przysiegaOddanie: 0.12, przysiegaPokoj: 86400,
+  /** Zlekceważona przysięga: tyle urazy między nimi. */
+  przysiegaUraza: 3,
 };

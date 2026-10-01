@@ -29,7 +29,7 @@ export function serialize(sim: Sim): string {
     v: VERSION,
     seed: sim.seed,
     tick: sim.tick,
-    wiara: sim.wiara, krew: sim.krew, sen: sim.sen, rytual: sim.rytual, lagodna: sim.lagodna,
+    wiara: sim.wiara, krew: sim.krew, sen: sim.sen, rytual: sim.rytual, lagodna: sim.lagodna, koszmar: sim.koszmar, stat: sim.stat, dug: sim.dug,
     fungusBudget: sim.fungusBudget, nextTide: sim.nextTide, ending: sim.ending, przybyszow: sim.przybyszow,
     taints: sim.taints, nextId: sim.nextId, allForges: sim.allForges,
     chronicle: sim.chronicle.slice(-120),
@@ -55,6 +55,9 @@ export function restore(json: string): Sim | null {
   sim.tick = data.tick;
   sim.wiara = data.wiara; sim.krew = data.krew; sim.sen = data.sen;
   sim.lagodna = !!data.lagodna;
+  sim.koszmar = !!data.koszmar;
+  if (data.stat) sim.stat = { ...sim.stat, ...data.stat };
+  if (data.dug) sim.dug = data.dug;
   if (data.rytual) sim.rytual = { ...sim.rytual, ...data.rytual };   // stare zapisy nie znają nowych pól
   sim.fungusBudget = data.fungusBudget; sim.nextTide = data.nextTide; sim.ending = data.ending ?? null;
   sim.przybyszow = data.przybyszow ?? 0;

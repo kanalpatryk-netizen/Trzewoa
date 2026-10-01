@@ -61,6 +61,7 @@ export class EkranKroniki implements Ekran {
     const wrLinie: { t: string; k: string }[] = wr ? [
       ...zlam(ctx, wr.przyczyna, wrW).map((t) => ({ t, k: 'p' })),
       ...zlam(ctx, wr.etap, wrW).map((t) => ({ t, k: 'e' })),
+      ...zlam(ctx, wr.statystyki, wrW).map((t) => ({ t, k: 's' })),
       ...zlam(ctx, `Następnym razem: ${wr.rada.charAt(0).toLowerCase()}${wr.rada.slice(1)}`, wrW).map((t) => ({ t, k: 'r' })),
     ] : [];
     const wrH = wrLinie.length * rozmiar * 1.45;

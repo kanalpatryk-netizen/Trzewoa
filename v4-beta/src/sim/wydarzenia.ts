@@ -68,12 +68,17 @@ export interface StanWydarzen {
   ciszaWojen: Map<number, number>;
   /** Para nacji → do którego tiku trwa rozejm („rozdziel ich”). */
   pokoj: Map<number, number>;
+  /** v4 beta: skutki wyborów, które przychodzą dopiero po czasie. */
+  odroczone: Odroczony[];
 }
+
+/** Skutek, który spełni się w tiku `tick` (układ z głębią, przysięga nacji). */
+export interface Odroczony { tick: number; rodzaj: 'dlug' | 'przysiega' | 'krzywoprzysiestwo'; klan?: number; klan2?: number }
 
 export function nowyStanWydarzen(): StanWydarzen {
   return {
     biezace: null, nastepne: W.pierwsze, ostatnie: '', gracz: false, szczyt: [0, 0, 0, 0, 0, 0], ile: 0, koniec: -1e9,
-    wojna: null, ostatniaWojna: -1e9, ciszaWojen: new Map(), pokoj: new Map(),
+    wojna: null, ostatniaWojna: -1e9, ciszaWojen: new Map(), pokoj: new Map(), odroczone: [],
   };
 }
 
@@ -275,7 +280,62 @@ function kandydaci(sim: Sim, st: StanWydarzen): { waga: number; zbuduj: Budownic
       break;
     }
   }
+  // --- v4 beta: układ z głębią (krew teraz, sen później)
+  if (surowe && sim.tick > W.dlugOd && sim.sen < W.dlugMaxSen && !st.odroczone.some((o) => o.rodzaj === 'dlug')) out.push({ rodzaj: 'dlug', waga: 1.5, zbuduj: () => {
+    const minut = Math.round(W.dlugPo / 7200);
+    const wybory = [
+      wybor('bierz', `Weź ${W.dlugKrew} krwi`, `Teraz +${W.dlugKrew} krwi. Za ${minut} min głębia się upomni — sen urośnie.`),
+      wybor('odmow', 'Odmów', 'Nic nie dostajesz i nic nie jesteś winien.'),
+    ];
+    return { rodzaj: 'dlug', tytul: 'Głębia proponuje układ', tekst: 'Coś z dna szepcze: da ci krwi, jeśli kiedyś oddasz jej trochę swojego czuwania.', wybory, domyslny: 1, rozsadny: sim.krew < 40 ? 0 : 1, od: sim.tick };
+  } });
+
+  // --- v4 beta: przysięga dwóch nacji (spełnia się albo pęka po czasie)
+  const pary = zywe(sim).filter((k) => k.pop >= 4);
+  if (surowe && pary.length >= 2) out.push({ rodzaj: 'przysiega', waga: 1.5, zbuduj: () => {
+    const a = pary[sim.rng.int(pary.length)];
+    const reszta = pary.filter((k) => k.id !== a.id);
+    const b = reszta[sim.rng.int(reszta.length)];
+    const minut = Math.round(W.przysiegaPo / 7200);
+    const wybory = [
+      wybor('blogoslaw', 'Pobłogosław przysięgę', `Za ${minut} min ${a.name} i ${b.name} zawrą długi pokój i oboje uwierzą mocniej.`, 0, W.przysiegaWiara),
+      wybor('zlekcewaz', 'Zlekceważ', `Za ${minut} min przysięga pęknie — zostanie uraza i może polać się krew (a krew to twój zysk).`),
+    ];
+    return { rodzaj: 'przysiega', tytul: `Przysięga: ${a.name} i ${b.name}`, tekst: 'Starsi dwóch nacji spotkali się w połowie drogi i proszą cię o świadectwo.', wybory, domyslny: 1, rozsadny: sim.wiara >= W.przysiegaWiara + 20 ? 0 : 1, cel: gniazdo(a), od: sim.tick, klan: a.id, klan2: b.id };
+  } });
+
   return out;
+}
+
+/** v4 beta: spełnia skutki odroczone, którym przyszła pora. */
+function spelnijOdroczone(sim: Sim): void {
+  const st = sim.wydarzenia;
+  const teraz = st.odroczone.filter((o) => o.tick <= sim.tick);
+  if (!teraz.length) return;
+  st.odroczone = st.odroczone.filter((o) => o.tick > sim.tick);
+  for (const o of teraz) {
+    const a = o.klan !== undefined ? sim.clans[o.klan] : null;
+    const b = o.klan2 !== undefined ? sim.clans[o.klan2] : null;
+    if (o.rodzaj === 'dlug') {
+      sim.sen = Math.min(1, sim.sen + W.dlugSen * (sim.koszmar ? W.koszmarDlug : 1));
+      sim.log('Głębia upomniała się o dług. Powieki ciężeją.', 'otchlan');
+      zapisz(sim, 'karta', `dług spłacony snem (+${Math.round(W.dlugSen * 100)}% snu)`);
+    } else if (a && b && !a.dead && !b.dead) {
+      if (o.rodzaj === 'przysiega') {
+        st.pokoj.set(paraNacji(a.id, b.id), sim.tick + W.przysiegaPokoj);
+        a.grudge.delete(b.id); b.grudge.delete(a.id);
+        a.devotion = Math.min(1, a.devotion + W.przysiegaOddanie);
+        b.devotion = Math.min(1, b.devotion + W.przysiegaOddanie);
+        sim.gdzie(a.hx + 0.5, a.hy + 0.5).log(`${a.name} i ${b.name} dotrzymali przysięgi. Chwalą cię razem.`, 'wiara');
+        zapisz(sim, 'karta', `przysięga spełniona: ${a.name} i ${b.name}`, a.hx, a.hy);
+      } else {
+        a.grudge.set(b.id, (a.grudge.get(b.id) ?? 0) + W.przysiegaUraza);
+        b.grudge.set(a.id, (b.grudge.get(a.id) ?? 0) + W.przysiegaUraza);
+        sim.gdzie(a.hx + 0.5, a.hy + 0.5).log(`Przysięga ${a.name} i ${b.name} pękła. Pamiętają sobie każde słowo.`, 'krew');
+        zapisz(sim, 'karta', `przysięga pękła: ${a.name} i ${b.name}`, a.hx, a.hy);
+      }
+    }
+  }
 }
 
 // ---------------------------------------------------------------- rytm
@@ -284,6 +344,7 @@ function kandydaci(sim: Sim, st: StanWydarzen): { waga: number; zbuduj: Budownic
 export function tikWydarzen(sim: Sim): void {
   const st = sim.wydarzenia;
   if (sim.spokojnySwiat || sim.ending) return;
+  if (st.odroczone.length && sim.tick % 60 === 0) spelnijOdroczone(sim);
   if (sim.tick % 90 === 0) for (let r = 0; r < st.szczyt.length; r++) st.szczyt[r] = Math.max(st.szczyt[r], sim.popByRace[r]);
   if (st.biezace) {
     if (!st.gracz && sim.tick - st.biezace.od > W.bezGraczaPo) rozstrzygnij(sim, st.biezace.domyslny);
@@ -358,6 +419,7 @@ export function rozstrzygnij(sim: Sim, i: number): string | null {
   wykonaj(sim, e, w.id);
   if (e.cel) sim.gdzie(e.cel.x, e.cel.y);
   sim.log(`${e.tytul}. Wybrałeś: ${w.tekst.toLowerCase()}.`, 'swiat');
+  sim.stat.kart++;
   zapisz(sim, 'karta', `karta „${e.tytul}” → ${w.tekst}`);
   st.biezace = null;
   st.koniec = sim.tick;
@@ -439,6 +501,14 @@ function wykonaj(sim: Sim, e: Wydarzenie, id: string): void {
       for (const k of zywe(sim)) k.devotion = Math.min(1, k.devotion + W.zarazaUzdrowOddanie);
       break;
     case 'zyla:zostaw': sim.madVein(); break;
+    case 'dlug:bierz':
+      sim.krew += W.dlugKrew;
+      sim.wydarzenia.odroczone.push({ tick: sim.tick + W.dlugPo, rodzaj: 'dlug' });
+      break;
+    case 'przysiega:blogoslaw':
+    case 'przysiega:zlekcewaz':
+      if (klan && klan2) sim.wydarzenia.odroczone.push({ tick: sim.tick + W.przysiegaPo, rodzaj: id === 'blogoslaw' ? 'przysiega' : 'krzywoprzysiestwo', klan: klan.id, klan2: klan2.id });
+      break;
     case 'obcy:wypusc': sim.obcyLud(); break;
     case 'glod:karm':
       if (klan) {

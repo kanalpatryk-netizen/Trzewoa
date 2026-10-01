@@ -67,7 +67,7 @@ export class EkranUstawien implements Ekran {
       { typ: 'przelacznik', etykieta: 'Skala głębokości', opis: 'karby na prawym marginesie', czytaj: () => ustawienia.skalaGlebokosci, zmien: (v) => ustaw('skalaGlebokosci', v) },
 
       { typ: 'naglowek', tekst: 'Świat' },
-      { typ: 'wybor', etykieta: 'Góra', opis: 'łaskawa wolniej zasypia i daje więcej krwi — dla nowej gry', opcje: ['łaskawa', 'surowa'], czytaj: () => ustawienia.trudnosc, zmien: (v) => ustaw('trudnosc', v as typeof ustawienia.trudnosc) },
+      { typ: 'wybor', etykieta: 'Góra', opis: 'łaskawa wolniej zasypia, koszmar szybciej i z mniejszą krwią — dla nowej gry', opcje: ['łaskawa', 'surowa', 'koszmar'], czytaj: () => ustawienia.trudnosc, zmien: (v) => ustaw('trudnosc', v as typeof ustawienia.trudnosc) },
       { typ: 'wybor', etykieta: 'Auto-pauza', opis: 'gra sama zatrzymuje czas, gdy trzeba decydować', opcje: ['kryzysy', 'wszystko', 'wyłączona'], czytaj: () => ustawienia.autoPauza, zmien: (v) => ustaw('autoPauza', v as typeof ustawienia.autoPauza) },
       { typ: 'wybor', etykieta: 'Nowe tablice', opis: 'przy pierwszym spotkaniu tablica atlasu otwiera się sama', opcje: ['pokazuj', 'tylko w atlasie'], czytaj: () => ustawienia.tablice, zmien: (v) => ustaw('tablice', v as typeof ustawienia.tablice) },
       { typ: 'suwak', etykieta: 'Tempo czasu', opis: 'ile tików świata przypada na klatkę', min: 1, max: TEMPO.max, krok: 1, czytaj: () => ustawienia.tempo, zmien: (v) => ustaw('tempo', v), format: (v) => `${v}×` },
