@@ -1,5 +1,6 @@
 /** Ustawienia gracza — jedno miejsce, z którego czyta cała gra. */
 export interface Settings {
+  trybDeweloperski: boolean; // podgląd liczb świata i narzędzia dla twórcy
   glosnosc: number;        // 0..1
   muzyka: boolean;
   rezonans: boolean;       // dźwięk świata: kucie, modlitwa, kamień
@@ -30,6 +31,7 @@ export interface Settings {
 }
 
 export const DOMYSLNE: Settings = {
+  trybDeweloperski: false,
   glosnosc: 0.7,
   muzyka: true,
   rezonans: true,

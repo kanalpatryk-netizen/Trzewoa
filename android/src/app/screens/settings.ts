@@ -46,6 +46,8 @@ export class EkranUstawien implements Ekran {
   private zbuduj(): void {
     const proc = (v: number) => `${Math.round(v * 100)}%`;
     this.wiersze = [
+      { typ: 'naglowek', tekst: 'Deweloper' },
+      { typ: 'przelacznik', etykieta: 'Tryb deweloperski', opis: 'w grze liczby świata: wiara, krew, oddanie, żywi, dominacja, tik', czytaj: () => ustawienia.trybDeweloperski, zmien: (v) => ustaw('trybDeweloperski', v) },
       { typ: 'naglowek', tekst: 'Dźwięk' },
       { typ: 'suwak', etykieta: 'Głośność', opis: 'jedna dla muzyki, skały i gestów', min: 0, max: 1, krok: 0.1, czytaj: () => ustawienia.glosnosc, zmien: (v) => { ustaw('glosnosc', v); this.app.muzyka.glosnosc(v); this.app.dzwiek.odswiezGlosnosc(); this.app.gesty.odswiezGlosnosc(); this.app.gesty.klik(); }, format: proc },
       { typ: 'przelacznik', etykieta: 'Muzyka', opis: 'powolne akordy kamienia i uderzenia w metal', czytaj: () => ustawienia.muzyka, zmien: (v) => { ustaw('muzyka', v); if (v) this.app.muzyka.start(); else this.app.muzyka.stop(); } },

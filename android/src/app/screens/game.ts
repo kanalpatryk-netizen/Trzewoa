@@ -675,7 +675,7 @@ export class EkranGry implements Ekran {
     this.polaAlarmu = this.alarm && this.pauza && !this.zapiski && !wyd ? rysujAlarm(ctx, plate, this.alarm, teraz) : [];
     this.polaWydarzenia = wyd && !this.zapiski && !sim.ending ? rysujWydarzenie(ctx, plate, sim, wyd, teraz) : [];
     this.znakMenu(ctx, teraz);
-    if (this.liczby) {
+    if (this.liczby || ustawienia.trybDeweloperski) {
       ctx.save();
       ctx.font = `${Math.max(14, w / 74)}px "Trzewia Tekst", Georgia, serif`;
       ctx.textAlign = 'right';
