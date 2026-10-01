@@ -33,6 +33,11 @@ jobs:
             commit: 8539cb1079efcd0a19d82dd1ed6a12405e4a152c
             numer: 2
             opis: 'Prostsza mechanika: cztery ryty (bez Skazy, Otchłani i trucizny), szept „módl się”, łatwiejsza wiara, studnia oddania, nowe rozdziały samouczka o wierze.'
+          # v3 — karty wydarzeń, trzy ryty, zawsze poziomo
+          - wersja: v3
+            commit: cedc3baba02db9c5a41e5a9f6f558a92ce8a9245
+            numer: 3
+            opis: 'Karty wydarzeń z wyborem jako główny sposób grania, tylko trzy ryty (Nakarm, Szepnij, Cud), wierni sami docierają pod rdzeń — wygrana w ok. 10 minut. Aplikacja zawsze poziomo.'
     steps:
       - name: Czy ta wersja już jest zapisana
         id: jest
