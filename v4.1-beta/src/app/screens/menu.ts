@@ -3,14 +3,28 @@ import type { Kontekst } from '../context';
 import type { Akcja } from '../../core/keybinds';
 import { Tajemnica } from '../../render/tajemnica';
 import { Frontyspis } from '../../render/frontyspis';
-import { ramaRyciny, kartusz, przerywnik, znakPozycji, rzymska } from '../../render/ozdoby';
+import { ramaRyciny, kartusz, przerywnik, znakPozycji, rzymska, ramaKarty } from '../../render/ozdoby';
 import { BARWA, rgba } from '../../render/palette';
 import { SERIF, tloSadzy, kreska } from '../../render/ink';
 import { hasSave } from '../../core/save';
-import { ustawienia } from '../../core/settings-store';
+import { ustawienia, ustaw } from '../../core/settings-store';
 import { TELEFON } from '../../nastawy/ekran';
 import { MENU as M } from '../../nastawy/wyglad/menu';
 import { RAMA, KARTUSZ } from '../../nastawy/wyglad/ozdoby';
+import { GORA } from '../../nastawy/gora';
+import { RYTUAL } from '../../nastawy/rytual';
+
+type Trudnosc = typeof ustawienia.trudnosc;
+/** Poziomy trudności w oknie „Nowa gra”, od najłagodniejszego. */
+const TRUDNOSCI: Trudnosc[] = ['łaskawa', 'surowa', 'koszmar'];
+const proc = (v: number): string => `${Math.round(v * 100)}%`;
+
+/** Opis poziomu — liczby prosto z nastaw, żeby okno nie kłamało po strojeniu balansu. */
+function opisTrudnosci(t: Trudnosc): string {
+  if (t === 'łaskawa') return `Sen przychodzi o ${proc(1 - GORA.laskawaSen)} wolniej, skorupa pęka o ${proc(RYTUAL.laskawaMnoznik - 1)} szybciej, a na start masz ${GORA.laskawaKrew} krwi więcej. Na pierwsze partie.`;
+  if (t === 'koszmar') return `Sen przychodzi o ${proc(GORA.koszmarSen - 1)} szybciej, skorupa pęka o ${proc(1 - RYTUAL.koszmarMnoznik)} wolniej, na start masz ${GORA.koszmarKrew} krwi mniej, a dług u głębi boli bardziej.`;
+  return 'Góra bez ulg: sen, skorupa i krew takie, jakie są. Dla tych, którzy znają już drogę do rdzenia.';
+}
 
 /** Wewnętrzny odstęp od ramy (piksele). */
 const marginesRamy = (w: number): number => Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc));
@@ -50,6 +64,11 @@ export class EkranMenu implements Ekran {
     { id: 'ustawienia', ...M.pozycje.ustawienia, aktywna: () => true },
   ];
 
+  /** Okno „Nowa gra” z wyborem trudności (v4.1 beta) — null, gdy zamknięte. */
+  private okno: { od: number; wybrana: number; wroc: boolean } | null = null;
+  private trafieniaOkna: { x: number; y: number; w: number; h: number; id: string }[] = [];
+  private kartaOkna = { x: 0, y: 0, w: 0, h: 0 };
+
   constructor(private app: Kontekst) {}
 
   private trwaGra(): boolean {
@@ -63,8 +82,148 @@ export class EkranMenu implements Ekran {
     this.app.muzyka.ustawNapiecie(0);
     const k = (dane as { komunikat?: string } | undefined)?.komunikat;
     if (k) { this.komunikat = k; this.komunikatOd = performance.now(); }
-    this.wybrana = this.trwaGra() ? 0 : (ustawienia.samouczekZrobiony ? 1 : 3);
-    if (!this.pozycje[this.wybrana].aktywna()) this.wybrana = 1;
+    // po identyfikatorach, nie po numerach — numery przesunęły się, gdy doszedł „Świat dnia”
+    const ind = (id: string) => this.pozycje.findIndex((p) => p.id === id);
+    this.wybrana = this.trwaGra() ? ind('wroc') : ind(ustawienia.samouczekZrobiony ? 'nowa' : 'samouczek');
+    if (!this.pozycje[this.wybrana].aktywna()) this.wybrana = ind('nowa');
+    this.okno = null;
+    // „Nowa gra” z ekranu końcowego albo po samouczku: menu wita od razu oknem trudności
+    if ((dane as { nowaGra?: boolean } | undefined)?.nowaGra) { this.wybrana = ind('nowa'); this.otworzOkno(); }
+  }
+
+  // ---------------------------------------------------------- okno „Nowa gra”
+
+  private otworzOkno(): void {
+    const i = TRUDNOSCI.indexOf(ustawienia.trudnosc);
+    this.okno = { od: performance.now(), wybrana: i >= 0 ? i : 0, wroc: false };
+    this.trafieniaOkna = [];
+  }
+
+  private zamknijOkno(): void {
+    this.okno = null;
+    this.trafieniaOkna = [];
+  }
+
+  /** Zapamiętuje poziom (zostaje też w ustawieniach) i zaczyna nową górę. */
+  private zacznij(t: Trudnosc): void {
+    this.app.gesty.klik();
+    ustaw('trudnosc', t);
+    this.okno = null;
+    this.app.idz('gra', { tryb: 'nowa' });
+  }
+
+  private rysujOkno(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
+    const o = this.okno!;
+    const K = M.oknoTrudnosci;
+    const a = Math.min(1, (teraz - o.od) / K.wejscieMs);
+    ctx.save();
+    ctx.fillStyle = `rgba(6,4,4,${K.przyciemnienie * a})`;
+    ctx.fillRect(0, 0, w, h);
+    const cw = Math.min(620, w - 32);
+    const pad = Math.max(14, cw * 0.05);
+    const opisy = TRUDNOSCI.map(opisTrudnosci);
+    // pytanie, trzy poziomy (nazwa i opis), „Wróć” — pismo maleje, aż karta zmieści się w oknie
+    let r = Math.max(15, Math.min(24, cw / 21, h / 24));
+    let linie: number[] = [], lh = 0, wiersze: number[] = [], ch = 0;
+    for (let k = 0; k < 16; k++) {
+      lh = r * 0.72 * 1.35;
+      ctx.font = `italic ${r * 0.72}px ${SERIF}`;
+      linie = opisy.map((t) => this.linie(ctx, t, cw - pad * 2.2 - r * 1.3));
+      wiersze = linie.map((n) => r * 1.6 + n * lh);
+      ch = r * 3.0 + wiersze.reduce((s, x) => s + x + r * 0.3, 0) + r * 2.0;
+      if (ch <= h - 24 || r <= 11) break;
+      r *= 0.93;
+    }
+    const x = (w - cw) / 2, y = Math.max(12, (h - ch) / 2);
+    this.kartaOkna = { x, y, w: cw, h: ch };
+    ramaKarty(ctx, x, y, cw, ch, a, K.tytul, true);
+    ctx.textBaseline = 'alphabetic';
+    ctx.textAlign = 'center';
+    ctx.font = `italic ${r * 0.9}px ${SERIF}`;
+    ctx.fillStyle = rgba(BARWA.atrament, 0.9 * a);
+    ctx.fillText(K.pytanie, w / 2, y + r * 2.0, cw - pad * 2);
+    this.trafieniaOkna = [];
+    let yy = y + r * 3.0;
+    TRUDNOSCI.forEach((t, i) => {
+      const bx = x + pad * 0.6, bw = cw - pad * 1.2, hw = wiersze[i];
+      const wybrane = !o.wroc && i === o.wybrana;
+      if (wybrane) {
+        ctx.fillStyle = rgba(BARWA.zarBlady, 0.07 * a);
+        ctx.fillRect(bx, yy, bw, hw);
+        ctx.strokeStyle = rgba(BARWA.zarBlady, 0.65 * a);
+        ctx.lineWidth = 1;
+        ctx.strokeRect(bx + 0.5, yy + 0.5, bw - 1, hw - 1);
+      }
+      // numer (skrót klawisza), nazwa poziomu i znacznik ostatniego wyboru
+      ctx.textAlign = 'left';
+      ctx.font = `${r * 0.62}px ${SERIF}`;
+      ctx.fillStyle = rgba(wybrane ? BARWA.zarBlady : BARWA.atramentCichy, 0.9 * a);
+      ctx.fillText(rzymska(i + 1), bx + pad * 0.5, yy + r * 1.15);
+      const nx = bx + pad * 0.5 + r * 1.3;
+      ctx.font = `${r}px ${SERIF}`;
+      ctx.fillStyle = rgba(wybrane ? BARWA.atramentMocny : BARWA.atrament, (wybrane ? 1 : 0.85) * a);
+      ctx.fillText(K.etykiety[t], nx, yy + r * 1.2);
+      if (t === ustawienia.trudnosc) {
+        ctx.textAlign = 'right';
+        ctx.font = `italic ${r * 0.62}px ${SERIF}`;
+        ctx.fillStyle = rgba(BARWA.zarBlady, 0.75 * a);
+        ctx.fillText(K.ostatnio, bx + bw - pad * 0.5, yy + r * 1.15);
+      }
+      ctx.font = `italic ${r * 0.72}px ${SERIF}`;
+      ctx.fillStyle = rgba(BARWA.atrament, (wybrane ? 0.92 : 0.7) * a);
+      this.akapit(ctx, opisy[i], nx, yy + r * 1.2 + lh, bw - (nx - bx) - pad * 0.5, lh, 'left');
+      this.trafieniaOkna.push({ x: bx, y: yy, w: bw, h: hw, id: t });
+      yy += hw + r * 0.3;
+    });
+    // stopka: „Wróć”, a na szerokim oknie podpowiedź klawiszy
+    const yw = y + ch - r * 0.95;
+    ctx.textAlign = 'center';
+    ctx.font = `${r * 0.85}px ${SERIF}`;
+    ctx.fillStyle = rgba(o.wroc ? BARWA.atramentMocny : BARWA.atrament, (o.wroc ? 1 : 0.75) * a);
+    ctx.fillText(K.wroc, w / 2, yw);
+    const sw = ctx.measureText(K.wroc).width;
+    if (o.wroc) {
+      ctx.strokeStyle = rgba(BARWA.zarBlady, 0.6 * a);
+      ctx.lineWidth = 1.1;
+      kreska(ctx, w / 2 - sw / 2, yw + r * 0.3, w / 2 + sw / 2, yw + r * 0.3, 0.9, 14);
+    }
+    this.trafieniaOkna.push({ x: w / 2 - sw / 2 - 16, y: yw - r * 1.1, w: sw + 32, h: r * 1.6, id: 'wroc' });
+    if (cw >= 580) {
+      ctx.textAlign = 'right';
+      ctx.font = `italic ${r * 0.55}px ${SERIF}`;
+      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.6 * a);
+      ctx.fillText(K.podpowiedz, x + cw - pad, yw);
+    }
+    ctx.restore();
+  }
+
+  private dotykOkna(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
+    const o = this.okno!;
+    const traf = this.trafieniaOkna.find((t) => e.clientX >= t.x && e.clientX <= t.x + t.w && e.clientY >= t.y && e.clientY <= t.y + t.h);
+    if (faza === 'ruch') {
+      o.wroc = traf?.id === 'wroc';
+      if (traf && !o.wroc) o.wybrana = TRUDNOSCI.indexOf(traf.id as Trudnosc);
+      return;
+    }
+    if (faza !== 'dol') return;
+    if (!traf) {
+      // dotknięcie obok karty zamyka okno, jak w każdym oknie dialogowym
+      const k = this.kartaOkna;
+      if (e.clientX < k.x || e.clientX > k.x + k.w || e.clientY < k.y || e.clientY > k.y + k.h) this.zamknijOkno();
+      return;
+    }
+    if (traf.id === 'wroc') { this.app.gesty.klik(); this.zamknijOkno(); return; }
+    this.zacznij(traf.id as Trudnosc);
+  }
+
+  private klawiszOkna(akcja: Akcja | null, e: KeyboardEvent): void {
+    const o = this.okno!;
+    const n = TRUDNOSCI.length;
+    if (e.key === 'ArrowDown') { o.wybrana = o.wroc ? 0 : (o.wybrana + 1) % n; o.wroc = false; return; }
+    if (e.key === 'ArrowUp') { o.wybrana = o.wroc ? n - 1 : (o.wybrana + n - 1) % n; o.wroc = false; return; }
+    if (e.key >= '1' && e.key <= String(n)) { this.zacznij(TRUDNOSCI[Number(e.key) - 1]); return; }
+    if (e.key === 'Enter' || e.key === ' ') { if (o.wroc) this.zamknijOkno(); else this.zacznij(TRUDNOSCI[o.wybrana]); return; }
+    if (akcja === 'menu' || e.key === 'Escape' || e.key === 'Backspace') this.zamknijOkno();
   }
 
   krok(): void { /* rycina żyje własnym zegarem */ }
@@ -85,6 +244,7 @@ export class EkranMenu implements Ekran {
     this.kurz(ctx, w, h, czas);
     ramaRyciny(ctx, w, h, wejscie, waski ? M.ramaGoraWaski : M.ramaGora, waski ? M.ramaDolWaski : M.ramaDol);
     this.stopka(ctx, w, h, teraz, wejscie);
+    if (this.okno) this.rysujOkno(ctx, w, h, teraz);
   }
 
   private kurz(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
@@ -310,7 +470,7 @@ export class EkranMenu implements Ekran {
     if (!p || !p.aktywna()) return;
     this.app.gesty.klik();
     if (p.id === 'wroc') this.app.idz('gra');
-    else if (p.id === 'nowa') this.app.idz('gra', { tryb: 'nowa' });
+    else if (p.id === 'nowa') this.otworzOkno();
     else if (p.id === 'dnia') this.app.idz('gra', { tryb: 'dnia' });
     else if (p.id === 'osiagniecia') this.app.idz('osiagniecia');
     else if (p.id === 'wczytaj') this.app.idz('gra', { tryb: 'wczytaj' });
@@ -320,6 +480,7 @@ export class EkranMenu implements Ekran {
   }
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
+    if (this.okno) { this.dotykOkna(e, faza); return; }
     const traf = this.trafienia.find((t) => e.clientX >= t.x && e.clientX <= t.x + t.w && e.clientY >= t.y && e.clientY <= t.y + t.h);
     if (!traf) return;
     if (faza === 'ruch') { this.wybrana = traf.i; return; }
@@ -327,6 +488,7 @@ export class EkranMenu implements Ekran {
   }
 
   klawisz(akcja: Akcja | null, e: KeyboardEvent): void {
+    if (this.okno) { this.klawiszOkna(akcja, e); return; }
     const dalej = (kier: number) => {
       let i = this.wybrana;
       for (let k = 0; k < this.pozycje.length; k++) {

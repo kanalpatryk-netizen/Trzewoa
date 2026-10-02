@@ -12,6 +12,7 @@ Nowości:
   nakarmiona nacja jako wdzięczni, przetrwana zaraza jako ozdrowieńcy, przegrana wojna jako prośba o pomstę.
 - **Świat dnia** — w menu: jedna góra na cały dzień, ta sama dla każdego; najlepszy czas zostaje w przeglądarce.
 - **Osiągnięcia** — 11 celów dodatkowych (np. wygraj w 8 minut, na Koszmarze, bez wojen); lista w menu.
+- **Wybór trudności** — „Nowa gra” otwiera okno: *łaskawa*, *surowa* albo *koszmar*, z opisem, co się zmienia.
 - Wszystko z 4.0 beta: dziennik dewelopera, Koszmar, statystyki, płynność przy tłumie.
 
 ```bash

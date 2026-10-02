@@ -313,7 +313,7 @@ export class EkranSamouczka implements Ekran {
   private graj(): void {
     this.gra.dozwolone = null;
     ustawienia.tempo = this.tempoPrzed;
-    this.app.idz('gra', { tryb: 'nowa' });
+    this.app.idz('menu', { nowaGra: true });   // pierwsza prawdziwa góra: najpierw okno trudności
   }
 
   private doMenu(): void {

@@ -220,7 +220,7 @@ export class EkranKroniki implements Ekran {
 
   private uruchom(id: string): void {
     if (id === 'dnia') this.app.idz('gra', { tryb: 'dnia' });
-    else if (id === 'nowa') this.app.idz('gra', { tryb: 'nowa' });
+    else if (id === 'nowa') this.app.idz('menu', { nowaGra: true });   // najpierw okno trudności
     else this.app.idz('menu');
   }
 

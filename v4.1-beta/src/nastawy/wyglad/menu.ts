@@ -73,4 +73,20 @@ export const MENU = {
   pylkow: 44, pylekAlfa: 0.05, pylekMigotanie: 0.07,
   /** Komunikat (np. po końcu gry) wisi tyle ms. */
   komunikatMs: 8000,
+
+  // ---------------------------------------------- okno „Nowa gra” (v4.1 beta)
+  /**
+   * Po „Nowa gra” (w menu, na ekranie końcowym i po samouczku) otwiera się okno z wyborem
+   * trudności. Opisy liczb (sen, skorupa, krew) liczą się z nastaw w gora.ts i rytual.ts.
+   */
+  oknoTrudnosci: {
+    tytul: 'nowa gra',
+    pytanie: 'Jaka ma być twoja góra?',
+    wroc: 'Wróć',
+    podpowiedz: '1–3 albo strzałki i Enter · Esc wraca',
+    ostatnio: 'ostatnio',
+    etykiety: { 'łaskawa': 'Łaskawa', surowa: 'Surowa', koszmar: 'Koszmar' },
+    /** Ciemność pod oknem i czas jej nadejścia (ms). */
+    przyciemnienie: 0.74, wejscieMs: 180,
+  },
 };
