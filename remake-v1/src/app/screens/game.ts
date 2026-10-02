@@ -13,7 +13,10 @@ import { rysujTempo } from '../../render/tempo';
 import { PanelDewelopera } from '../devpanel';
 import { DEV } from '../../sim/dziennik';
 import { rysujDev } from '../../render/dev';
-import { klanLudu, liczRole } from '../../sim/lud';
+import { klanLudu, liczRole, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
+
+/** Barwy ról w panelu LUD (te same odcienie co obrys postaci na płycie). */
+const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
 import { rysujZnacznikiLudu } from '../../render/lud';
 import { LUD } from '../../nastawy/lud';
 import { dzisiaj, ziarnoDnia, wynikDnia, czasGry } from '../../core/swiat-dnia';
@@ -29,7 +32,7 @@ import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
-import { computePlate, drawFrame, drawCensus, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
+import { computePlate, obszarSpisu, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
 import { seed, sign, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
@@ -403,20 +406,17 @@ export class EkranGry implements Ekran {
   }
 
   /**
-   * Remake v1: pasek nad płytą — wiara, krew, jedzenie w spiżarni, ilu jest w każdej roli
-   * i przełącznik, kogo skała wyda następnym razem (z odliczaniem i ceną w krwi).
+   * Remake v1: pasek nad płytą — tylko trzy zasoby: wiara, krew i jedzenie w spiżarni.
+   * Role i przełącznik „ze skały” stoją w panelu LUD pod płytą (górny margines należy
+   * do narzędzi rytu — wcześniej wszystko to nachodziło na siebie).
    */
   private rysujZasoby(ctx: CanvasRenderingContext2D, plate: Plate, w: number): void {
     const { sim } = this;
     const klan = klanLudu(sim);
-    const role = liczRole(sim);
     const czesci: [string, string, string][] = [
       ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(236,214,160,1)'],
       ['krew', `${Math.floor(sim.krew)}`, 'rgba(226,120,100,1)'],
       ['jedzenie', `${klan?.stock ?? 0}`, 'rgba(170,200,130,1)'],
-      ['pobożni', `${role.pobozny}`, 'rgba(246,226,170,1)'],
-      ['robotnicy', `${role.robotnik}`, 'rgba(214,176,120,1)'],
-      ['rycerze', `${role.rycerz}`, 'rgba(176,196,226,1)'],
     ];
     ctx.save();
     const rozm = Math.max(13, Math.min(17, w / 30));
@@ -433,32 +433,92 @@ export class EkranGry implements Ekran {
       ctx.font = fL; ctx.fillStyle = kol;
       ctx.fillText(l, x, y); x += kaw(l, fL) + odst;
     }
+    ctx.restore();
+  }
+
+  /**
+   * Remake v1: panel LUD pod płytą (w miejscu dawnego spisu ras). Wstęga dzieli się na
+   * trzy role w proporcji do ich liczby, pod nią przełącznik — kogo skała wyda następnym
+   * razem, za ile sekund i za ile krwi.
+   */
+  private rysujPanelLudu(ctx: CanvasRenderingContext2D, plate: Plate, vh: number): void {
+    const { sim } = this;
+    const o = obszarSpisu(plate, vh);
+    const h = o.h / 2.4, y = o.y + h * 0.4;
+    const x0 = o.x, x1 = o.x + o.w;
+    const role = liczRole(sim);
+    const razem = role.pobozny + role.robotnik + role.rycerz;
+    const telefon = plate.waski || plate.niski;
+    const rozm = telefon ? 13 : Math.max(13, Math.min(17, plate.w * 0.016));
+    ctx.save();
+    ctx.textBaseline = 'alphabetic';
+    // wstęga ról
+    ctx.strokeStyle = 'rgba(206,192,166,0.25)';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x0 + 0.5, y + 0.5, x1 - x0 - 1, h - 1);
+    const kolejnosc: Rola[] = ['pobozny', 'robotnik', 'rycerz'];
+    let cx = x0;
+    for (const r of kolejnosc) {
+      const n = role[r];
+      if (!n) continue;
+      const bw = (x1 - x0) * (n / Math.max(1, razem));
+      const [cr, cg, cb] = BARWA_ROLI[r];
+      ctx.fillStyle = `rgba(${cr},${cg},${cb},0.22)`;
+      ctx.fillRect(cx, y, bw, h);
+      ctx.strokeStyle = `rgba(${cr},${cg},${cb},0.7)`;
+      ctx.beginPath();
+      for (let k = 0; k < bw + h; k += 5) { ctx.moveTo(cx + Math.min(bw, k), y + Math.max(0, k - bw)); ctx.lineTo(cx + Math.max(0, k - h), y + Math.min(h, k)); }
+      ctx.stroke();
+      cx += bw;
+    }
+    // podpisy w trzech stałych kolumnach — pod wąskim kawałkiem wstęgi nazwa się nie mieściła
+    if (razem) {
+      ctx.font = `${rozm}px ${SERIF}`;
+      ctx.textAlign = 'center';
+      kolejnosc.forEach((r, i) => {
+        const [cr, cg, cb] = BARWA_ROLI[r];
+        ctx.fillStyle = `rgba(${cr},${cg},${cb},${role[r] ? 0.95 : 0.45})`;
+        ctx.fillText(`${NAZWA_ROLI_MNOGA[r]} ${role[r]}`, x0 + (x1 - x0) * (i + 0.5) / 3, y + h + rozm * 1.15, (x1 - x0) / 3 - 4);
+      });
+    } else {
+      ctx.textAlign = 'center';
+      ctx.font = `italic ${rozm}px ${SERIF}`;
+      ctx.fillStyle = 'rgba(226,120,100,0.9)';
+      ctx.fillText('w górze nie został nikt z twoich', (x0 + x1) / 2, y + h + rozm * 1.15);
+    }
     // przełącznik: „ze skały: [robotnik] [pobożny] · za 12 s · 20 krwi”
     const st = sim.lud;
     const zaS = Math.max(0, Math.ceil((st.nastepne - sim.tick) / 120));
     const koszt = LUD.koszt[st.rola];
+    const yb = y + h + rozm * 2.9;
+    const kaw = (t: string, f: string) => { ctx.font = f; return ctx.measureText(t).width; };
+    const fE = `italic ${rozm * 0.95}px ${SERIF}`, fL = `${rozm * 1.05}px ${SERIF}`;
+    let x = x0;
+    ctx.textAlign = 'left';
     ctx.font = fE; ctx.fillStyle = 'rgba(190,178,156,0.9)';
-    const etyk = 'ze skały: ';
-    x += odst * 0.6;
-    ctx.fillText(etyk, x, y); x += kaw(etyk, fE);
+    ctx.fillText('ze skały:', x, yb); x += kaw('ze skały: ', fE) + 2;
     this.przyciskiRoli = [];
+    const bh = rozm * 1.6;
     for (const rola of ['robotnik', 'pobozny'] as const) {
       const napis = rola === 'robotnik' ? 'robotnik' : 'pobożny';
-      const sz = kaw(napis, fL) + 14;
+      const sz = kaw(napis, fL) + 18;
       const wybrany = st.rola === rola;
-      ctx.strokeStyle = wybrany ? 'rgba(232,190,120,0.95)' : 'rgba(150,140,120,0.5)';
-      ctx.fillStyle = wybrany ? 'rgba(80,58,30,0.75)' : 'rgba(20,15,12,0.6)';
-      ctx.lineWidth = 1;
-      ctx.fillRect(x, y - rozm * 1.05, sz, rozm * 1.45);
-      ctx.strokeRect(x + 0.5, y - rozm * 1.05 + 0.5, sz - 1, rozm * 1.45 - 1);
-      ctx.font = fL; ctx.fillStyle = wybrany ? 'rgba(250,232,190,1)' : 'rgba(200,188,166,0.75)';
-      ctx.fillText(napis, x + 7, y);
-      this.przyciskiRoli.push({ x, y: y - rozm * 1.05, w: sz, h: rozm * 1.45, rola });
+      const [cr, cg, cb] = BARWA_ROLI[rola];
+      ctx.fillStyle = wybrany ? 'rgba(80,58,30,0.8)' : 'rgba(20,15,12,0.6)';
+      ctx.fillRect(x, yb - bh * 0.72, sz, bh);
+      ctx.strokeStyle = wybrany ? `rgba(${cr},${cg},${cb},0.95)` : 'rgba(150,140,120,0.45)';
+      ctx.lineWidth = wybrany ? 1.5 : 1;
+      ctx.strokeRect(x + 0.5, yb - bh * 0.72 + 0.5, sz - 1, bh - 1);
+      ctx.font = fL; ctx.fillStyle = wybrany ? 'rgba(250,232,190,1)' : 'rgba(200,188,166,0.7)';
+      ctx.fillText(napis, x + 9, yb);
+      this.przyciskiRoli.push({ x, y: yb - bh * 0.72, w: sz, h: bh, rola });
       x += sz + 6;
     }
+    // odliczanie i cena wierszem niżej — obok przycisków było ściśnięte w nieczytelny pasek
     ctx.font = fE;
     ctx.fillStyle = sim.krew >= koszt ? 'rgba(190,178,156,0.9)' : 'rgba(226,120,100,0.95)';
-    ctx.fillText(sim.krew >= koszt ? `za ${zaS} s · ${koszt} krwi` : `brak krwi (${koszt})`, x + 4, y);
+    const opis = sim.krew >= koszt ? `następny za ${zaS} s · kosztuje ${koszt} krwi` : `brak krwi — potrzeba ${koszt}`;
+    ctx.fillText(opis, x0, yb + bh * 0.95, x1 - x0);
     ctx.restore();
   }
 
@@ -747,7 +807,7 @@ export class EkranGry implements Ekran {
     const banerNaDole = (plate.waski || plate.niski) && (this.pauza || this.ui.verb !== null || !!this.ui.selected);
     this.drogaRect = !this.nasluch && !sim.ending && !banerNaDole ? rysujDrogeDoWolnosci(ctx, plate, sim, teraz) : null;
     if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) rysujMinimape(ctx, sim, cam, plate, teraz);
-    if (ustawienia.spisRas) drawCensus(ctx, plate, sim, h);
+    this.rysujPanelLudu(ctx, plate, h);
     drawOddanie(ctx, plate, sim, h);
     drawCrack(ctx, plate, sim, w, h, teraz);
     if (ustawienia.kronika) drawChronicle(ctx, plate, sim, w, h);
@@ -777,10 +837,10 @@ export class EkranGry implements Ekran {
         `krew ${Math.round(sim.krew)}`,
         `oddanie ${Math.round((najwierniejsza(sim)?.devotion ?? 0) * 100)}%`,
         `żywych ${sim.creatures.reduce((n, c) => n + (c.dead ? 0 : 1), 0)}`,
-        `dominacja ${(sim.dominance * 100) | 0}%`,
         `tik ${sim.tick}`,
       ];
-      linie.forEach((l, i) => ctx.fillText(l, plate.x + plate.w - 12, plate.y + 24 + i * 20));
+      // na dole płyty po prawej — u góry stoją dziennik dewelopera i podpis Cudu
+      linie.forEach((l, i) => ctx.fillText(l, plate.x + plate.w - 12, plate.y + plate.h - 14 - (linie.length - 1 - i) * 20));
       ctx.restore();
     }
     if (this.legenda) rysujLegende(ctx, plate, w);

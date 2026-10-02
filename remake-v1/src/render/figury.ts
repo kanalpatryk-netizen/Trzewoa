@@ -1,5 +1,5 @@
 import type { Sim, Clan } from '../sim/sim';
-import { rolaPostaci } from '../sim/lud';
+import { rolaPostaci, type Rola } from '../sim/lud';
 import type { Creature } from '../sim/creatures';
 import { pierwszaGrafika, rysujGrafike, RASY_W_PLIKACH } from '../grafiki/grafiki';
 import { Job } from '../sim/creatures';
@@ -558,7 +558,7 @@ function szczegoly(ctx: CanvasRenderingContext2D, rasa: Race, s: Szkielet, b: Bu
   ctx.lineJoin = 'round';
 
   // narzędzie w dłoni: kilof przy kopaniu, młot przy budowie, pałka w walce
-  if (cz === 'kopie' || cz === 'buduje' || (cz === 'walczy' && rasa !== Race.SPINNER)) {
+  if (cz === 'kopie' || cz === 'buduje' || (cz === 'walczy' && rasa !== Race.SPINNER && c.rola !== 'rycerz')) {
     const [, , dx, dy] = s.rekaA;
     const kat = Math.atan2(dy - s.rekaA[1], dx - s.rekaA[0]);
     const dl = h * (rasa === Race.TROLL ? 0.2 : 0.34);
@@ -789,6 +789,7 @@ export function rysujPostac(
   const sy = czlekoksztaltny(c.race, s, b, h, p);
   wyrysuj(ctx, sy, f, obrys, Math.max(0.9, h * 0.035));
   szczegoly(ctx, c.race, s, b, h, p, czyn, czas, c, obrys);
+  if (rola) strojRoli(ctx, rola, s, b, h, p, czyn, obrys);
   // przy uderzeniu kilofa pryskają odpryski — w chwili trafienia, nie bez przerwy
   if (czyn === 'kopie') {
     const tempo = c.race === Race.DWARF ? 1.25 : c.race === Race.TROLL ? 0.7 : 1;
@@ -804,6 +805,135 @@ export function rysujPostac(
     }
   }
   return czyn;
+}
+
+
+/**
+ * Remake v1: strój roli na szkielecie postaci — rusza się razem z nią i trafia do szkiców tłumu.
+ * Kapłan (pobożny): szata do ziemi, spiczasty kaptur, krzyż na piersi, laska.
+ * Rycerz: hełm z przyłbicą i pióropuszem, napierśnik, tarcza i miecz.
+ * Robotnik: czapka górnicza z lampką, kilof na plecach.
+ */
+function strojRoli(ctx: CanvasRenderingContext2D, rola: Rola, s: Szkielet, b: Budowa, h: number, p: Poza, cz: Czynnosc, obrys: string): void {
+  const gr = b.glowa * h;
+  const lw = Math.max(0.9, h * 0.035);
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  const obrysuj = (wypelnienie: string) => {
+    ctx.fillStyle = wypelnienie; ctx.fill();
+    ctx.strokeStyle = obrys; ctx.lineWidth = lw; ctx.stroke();
+  };
+  if (rola === 'pobozny') {
+    // szata: od barków do ziemi, dół rozchyla się za krokiem
+    const nx = cos(p.tulow), ny = sin(p.tulow);
+    const bark = b.bark * h * 1.05;
+    const lewo = Math.min(s.nogaA[2], s.nogaB[2], s.biodroX) - h * 0.1;
+    const prawo = Math.max(s.nogaA[2], s.nogaB[2], s.biodroX) + h * 0.1;
+    const dol = Math.max(s.nogaA[3], s.nogaB[3]) - h * 0.04;
+    ctx.beginPath();
+    ctx.moveTo(s.barkX - nx * bark, s.barkY - ny * bark);
+    ctx.lineTo(s.barkX + nx * bark, s.barkY + ny * bark);
+    ctx.quadraticCurveTo(s.biodroX + b.pas * h * 1.3, s.biodroY, prawo, dol);
+    ctx.lineTo(lewo, dol);
+    ctx.quadraticCurveTo(s.biodroX - b.pas * h * 1.3, s.biodroY, s.barkX - nx * bark, s.barkY - ny * bark);
+    ctx.closePath();
+    obrysuj('rgba(46,30,40,0.97)');
+    // pas ze sznura
+    ctx.strokeStyle = 'rgba(232,206,150,0.85)'; ctx.lineWidth = lw * 0.9;
+    ctx.beginPath(); ctx.moveTo(s.biodroX - b.pas * h, s.biodroY); ctx.lineTo(s.biodroX + b.pas * h, s.biodroY);
+    ctx.lineTo(s.biodroX + b.pas * h * 0.6, s.biodroY + h * 0.12); ctx.stroke();
+    // krzyż na piersi
+    const kx = (s.barkX + s.biodroX) / 2 + h * 0.03, ky = s.barkY + (s.biodroY - s.barkY) * 0.35;
+    ctx.strokeStyle = 'rgba(246,222,150,0.98)'; ctx.lineWidth = lw * 1.1;
+    ctx.beginPath(); ctx.moveTo(kx, ky - h * 0.06); ctx.lineTo(kx, ky + h * 0.07); ctx.moveTo(kx - h * 0.04, ky - h * 0.02); ctx.lineTo(kx + h * 0.04, ky - h * 0.02); ctx.stroke();
+    // spiczasty kaptur
+    ctx.beginPath();
+    ctx.moveTo(s.glowaX - gr * 1.15, s.glowaY + gr * 1.0);
+    ctx.quadraticCurveTo(s.glowaX - gr * 1.3, s.glowaY - gr * 1.1, s.glowaX - gr * 0.5, s.glowaY - gr * 2.1);
+    ctx.quadraticCurveTo(s.glowaX + gr * 0.9, s.glowaY - gr * 1.0, s.glowaX + gr * 1.1, s.glowaY + gr * 0.7);
+    ctx.closePath();
+    obrysuj('rgba(46,30,40,0.97)');
+    ctx.fillStyle = 'rgba(8,5,6,0.95)';                    // cień twarzy pod kapturem
+    ctx.beginPath(); ctx.ellipse(s.glowaX + gr * 0.45, s.glowaY + gr * 0.1, gr * 0.42, gr * 0.6, 0, 0, PI * 2); ctx.fill();
+    // laska z krzyżem w drugiej ręce (przy modlitwie i kopaniu ręce mają co innego do roboty)
+    if (cz !== 'modli' && cz !== 'kopie') {
+      const [, , hx, hy] = s.rekaB;
+      ctx.strokeStyle = 'rgba(150,112,70,0.98)'; ctx.lineWidth = lw * 1.3;
+      ctx.beginPath(); ctx.moveTo(hx, Math.min(-h * 0.02, hy + h * 0.35)); ctx.lineTo(hx, hy - h * 0.5); ctx.stroke();
+      ctx.strokeStyle = 'rgba(246,222,150,0.98)'; ctx.lineWidth = lw * 1.1;
+      ctx.beginPath(); ctx.moveTo(hx, hy - h * 0.5); ctx.lineTo(hx, hy - h * 0.66); ctx.moveTo(hx - h * 0.06, hy - h * 0.6); ctx.lineTo(hx + h * 0.06, hy - h * 0.6); ctx.stroke();
+    }
+  } else if (rola === 'rycerz') {
+    // napierśnik
+    ctx.beginPath();
+    const t = tulowPoly(s, b, h, p, h * 0.025);
+    ctx.moveTo(t[0], t[1]); for (let i = 2; i < t.length; i += 2) ctx.lineTo(t[i], t[i + 1]); ctx.closePath();
+    obrysuj('rgba(112,124,146,0.98)');
+    ctx.strokeStyle = 'rgba(214,224,240,0.7)'; ctx.lineWidth = lw * 0.8;
+    ctx.beginPath(); ctx.moveTo((t[2] + t[4]) / 2, (t[3] + t[5]) / 2); ctx.lineTo((t[0] + t[6]) / 2, (t[1] + t[7]) / 2); ctx.stroke();
+    // hełm garnczkowy z przyłbicą
+    ctx.beginPath();
+    ctx.moveTo(s.glowaX - gr * 1.0, s.glowaY + gr * 0.9);
+    ctx.lineTo(s.glowaX - gr * 1.0, s.glowaY - gr * 0.4);
+    ctx.quadraticCurveTo(s.glowaX, s.glowaY - gr * 1.6, s.glowaX + gr * 1.05, s.glowaY - gr * 0.4);
+    ctx.lineTo(s.glowaX + gr * 1.05, s.glowaY + gr * 0.9);
+    ctx.closePath();
+    obrysuj('rgba(150,162,184,0.99)');
+    ctx.strokeStyle = 'rgba(10,8,10,0.95)'; ctx.lineWidth = lw * 1.2;
+    ctx.beginPath(); ctx.moveTo(s.glowaX + gr * 0.05, s.glowaY - gr * 0.05); ctx.lineTo(s.glowaX + gr * 1.0, s.glowaY - gr * 0.05); ctx.stroke();
+    // pióropusz
+    ctx.strokeStyle = 'rgba(196,58,52,0.95)'; ctx.lineWidth = lw * 1.6;
+    ctx.beginPath(); ctx.moveTo(s.glowaX, s.glowaY - gr * 1.05);
+    ctx.quadraticCurveTo(s.glowaX - gr * 0.6, s.glowaY - gr * 2.1, s.glowaX - gr * 1.6, s.glowaY - gr * 1.3); ctx.stroke();
+    // miecz w dłoni: w walce idzie za ręką, poza nią trzymany klingą w górę
+    const [ax, ay, dx, dy] = s.rekaA;
+    const kat = cz === 'walczy' ? Math.atan2(dy - ay, dx - ax) : -PI * 0.38;
+    const dl = h * 0.52;
+    const ex = dx + cos(kat) * dl, ey = dy + sin(kat) * dl;
+    ctx.strokeStyle = 'rgba(10,8,8,0.95)'; ctx.lineWidth = lw * 2.6;
+    ctx.beginPath(); ctx.moveTo(dx, dy); ctx.lineTo(ex, ey); ctx.stroke();
+    ctx.strokeStyle = 'rgba(226,234,246,0.99)'; ctx.lineWidth = lw * 1.3;
+    ctx.stroke();
+    const px = -sin(kat), py = cos(kat);
+    ctx.strokeStyle = 'rgba(214,180,96,0.98)'; ctx.lineWidth = lw * 1.4;
+    ctx.beginPath(); ctx.moveTo(dx + cos(kat) * h * 0.04 - px * h * 0.08, dy + sin(kat) * h * 0.04 - py * h * 0.08);
+    ctx.lineTo(dx + cos(kat) * h * 0.04 + px * h * 0.08, dy + sin(kat) * h * 0.04 + py * h * 0.08); ctx.stroke();
+    // tarcza na drugiej ręce
+    const [, , tx, ty] = s.rekaB;
+    const sw = h * 0.15, sh = h * 0.24;
+    const cx = tx + h * 0.06, cy = ty - h * 0.06;
+    ctx.beginPath();
+    ctx.moveTo(cx - sw, cy - sh * 0.45);
+    ctx.lineTo(cx + sw, cy - sh * 0.45);
+    ctx.quadraticCurveTo(cx + sw, cy + sh * 0.25, cx, cy + sh * 0.6);
+    ctx.quadraticCurveTo(cx - sw, cy + sh * 0.25, cx - sw, cy - sh * 0.45);
+    ctx.closePath();
+    obrysuj('rgba(58,74,118,0.98)');
+    ctx.strokeStyle = 'rgba(232,212,150,0.95)'; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(cx, cy - sh * 0.4); ctx.lineTo(cx, cy + sh * 0.5); ctx.moveTo(cx - sw * 0.8, cy - sh * 0.12); ctx.lineTo(cx + sw * 0.8, cy - sh * 0.12); ctx.stroke();
+  } else {
+    // robotnik: kilof na plecach (przy kopaniu ma go w ręku)
+    if (cz !== 'kopie' && cz !== 'buduje') {
+      const ox = s.barkX - h * 0.14, oy = s.barkY + h * 0.2;
+      const kx = s.barkX + h * 0.06, ky = s.barkY - h * 0.3;
+      ctx.strokeStyle = 'rgba(150,112,70,0.98)'; ctx.lineWidth = lw * 1.3;
+      ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(kx, ky); ctx.stroke();
+      ctx.strokeStyle = 'rgba(210,204,194,0.98)'; ctx.lineWidth = lw * 1.4;
+      ctx.beginPath(); ctx.moveTo(kx - h * 0.13, ky + h * 0.03); ctx.quadraticCurveTo(kx, ky - h * 0.04, kx + h * 0.13, ky + h * 0.05); ctx.stroke();
+    }
+    // czapka górnicza z daszkiem i lampką
+    ctx.beginPath();
+    ctx.moveTo(s.glowaX - gr * 1.05, s.glowaY - gr * 0.15);
+    ctx.quadraticCurveTo(s.glowaX, s.glowaY - gr * 1.55, s.glowaX + gr * 1.05, s.glowaY - gr * 0.15);
+    ctx.lineTo(s.glowaX + gr * 1.5, s.glowaY - gr * 0.05);
+    ctx.lineTo(s.glowaX - gr * 1.05, s.glowaY - gr * 0.15);
+    ctx.closePath();
+    obrysuj('rgba(150,104,52,0.98)');
+    ctx.fillStyle = 'rgba(255,226,120,1)';
+    ctx.beginPath(); ctx.arc(s.glowaX + gr * 0.75, s.glowaY - gr * 0.55, Math.max(1, gr * 0.28), 0, PI * 2); ctx.fill();
+  }
+  ctx.restore();
 }
 
 // ------------------------------------------------------- tłum: gotowe szkice
@@ -906,17 +1036,6 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       ctx.restore();
     }
 
-    // Remake v1: rycerz nosi miecz — klinga i jelec obok sylwetki
-    if (c.rola === 'rycerz') {
-      ctx.save();
-      ctx.strokeStyle = 'rgba(206,218,236,0.95)';
-      ctx.lineWidth = Math.max(1.2, h * 0.05);
-      const bx = sx + kier * h * 0.32, by = sy - h * 0.38;
-      ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + kier * h * 0.18, by - h * 0.55); ctx.stroke();
-      ctx.lineWidth = Math.max(1, h * 0.04);
-      ctx.beginPath(); ctx.moveTo(bx - h * 0.09, by - h * 0.03); ctx.lineTo(bx + h * 0.09, by + h * 0.03); ctx.stroke();
-      ctx.restore();
-    }
     // ilu ich tu stoi
     if (n > 1) {
       ctx.font = `${Math.max(13, h * 0.45)}px "Trzewia Tekst", Georgia, serif`;
