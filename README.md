@@ -6,6 +6,7 @@ Wygrywasz, gdy wierni dokopią się do twojego rdzenia.
 | | |
 |---|---|
 | 📱 Android | [**Trzewia.apk**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/android-apk/Trzewia.apk) |
+| 🧪 **v4.2 beta** (komputer) | [**trzewia-v4.2-beta.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-v4.2-beta.html) — drożejące wybory, mniej krwi, jaśniejszy świat · [więcej](v4.2-beta) |
 | 🧪 **v4.1 beta** (komputer) | [**trzewia-v4.1-beta.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-v4.1-beta.html) — cechy nacji, łańcuchy kart, świat dnia, osiągnięcia · [więcej](v4.1-beta) |
 | 🧪 **v4 beta** (komputer) | [**trzewia-v4-beta.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-v4-beta.html) — nowości + dziennik dewelopera · [więcej](v4-beta) |
 | 🖥️ **v3 remake** (komputer) | [**trzewia-v3-remake.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-v3-remake.html) — gra z telefonu w przeglądarce · [więcej](v3-remake) |
@@ -17,4 +18,4 @@ a gdy czas stanie — wybierz kartę wydarzenia. Przegrywasz, gdy góra zaśnie.
 Wersje: [v1](https://github.com/kanalpatryk-netizen/Trzewoa/releases/tag/v1) ·
 [v2](https://github.com/kanalpatryk-netizen/Trzewoa/releases/tag/v2) ·
 [v3](https://github.com/kanalpatryk-netizen/Trzewoa/releases/tag/v3) · [zmiany](CHANGELOG.md) ·
-kod: [`android/`](android), [`v4.1-beta/`](v4.1-beta), [`v4-beta/`](v4-beta), [`pc/`](pc)
+kod: [`android/`](android), [`v4.2-beta/`](v4.2-beta), [`v4.1-beta/`](v4.1-beta), [`v4-beta/`](v4-beta), [`pc/`](pc)

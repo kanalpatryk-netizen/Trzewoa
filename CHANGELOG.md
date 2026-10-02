@@ -1,5 +1,11 @@
 # Zmiany
 
+## v4.2 beta (komputer)
+- Płatny wybór na karcie drożeje o 50% za każde wcześniejsze kupno w tej partii (karta to pokazuje)
+- Limit krwi 150 zamiast 250; karty „pierwszej krwi” rzadziej
+- Ustawienie „Jasność świata” (domyślnie 125%) — korytarze i mieszkańców widać od razu
+- Balans (automat, 16 światów, surowa): 16/16 wygranych, mediana 9,8 min, partie 6–19 min
+
 ## v4.1 beta (komputer)
 - Cechy nacji: pobożni, płodni, wojowniczy, kopacze, długowieczni, skromni — zaleta i wada
 - Łańcuchy kart: heretyk, proroctwo, wdzięczni, ozdrowieńcy, pomsta — wybory wracają po czasie
