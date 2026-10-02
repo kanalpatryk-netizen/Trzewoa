@@ -495,8 +495,11 @@ export class EkranGry implements Ekran {
     const fE = `italic ${rozm * 0.95}px ${SERIF}`, fL = `${rozm * 1.05}px ${SERIF}`;
     let x = x0;
     ctx.textAlign = 'left';
+    // „ze skały:” tylko gdy starczy miejsca na przyciski i odliczanie w jednym wierszu
+    const naPrzyciski = kaw('robotnik', fL) + kaw('pobożny', fL) + 36 + 6;
+    const zEtykieta = x1 - x0 >= kaw('ze skały: ', fE) + naPrzyciski + kaw('za 20 s · 30 krwi', fE) + 12;
     ctx.font = fE; ctx.fillStyle = 'rgba(190,178,156,0.9)';
-    ctx.fillText('ze skały:', x, yb); x += kaw('ze skały: ', fE) + 2;
+    if (zEtykieta) { ctx.fillText('ze skały:', x, yb); x += kaw('ze skały: ', fE) + 2; }
     this.przyciskiRoli = [];
     const bh = rozm * 1.6;
     for (const rola of ['robotnik', 'pobozny'] as const) {
@@ -514,11 +517,13 @@ export class EkranGry implements Ekran {
       this.przyciskiRoli.push({ x, y: yb - bh * 0.72, w: sz, h: bh, rola });
       x += sz + 6;
     }
-    // odliczanie i cena wierszem niżej — obok przycisków było ściśnięte w nieczytelny pasek
+    // odliczanie i cena obok przycisków (wiersz niżej wchodził na kronikę); krótsze, gdy brak miejsca
     ctx.font = fE;
     ctx.fillStyle = sim.krew >= koszt ? 'rgba(190,178,156,0.9)' : 'rgba(226,120,100,0.95)';
-    const opis = sim.krew >= koszt ? `następny za ${zaS} s · kosztuje ${koszt} krwi` : `brak krwi — potrzeba ${koszt}`;
-    ctx.fillText(opis, x0, yb + bh * 0.95, x1 - x0);
+    const miejsce = x1 - x - 4;
+    const wersje = sim.krew >= koszt ? [`za ${zaS} s · ${koszt} krwi`, `${zaS} s · ${koszt} kr.`, `${zaS} s`] : [`brak krwi (${koszt})`, `brak krwi`];
+    const opis = wersje.find((t) => kaw(t, fE) <= miejsce) ?? wersje[wersje.length - 1];
+    ctx.fillText(opis, x + 4, yb);
     ctx.restore();
   }
 

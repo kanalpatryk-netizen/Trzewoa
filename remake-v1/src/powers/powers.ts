@@ -1,7 +1,7 @@
 import { Sim } from '../sim/sim';
 import { T, PASSABLE } from '../sim/tiles';
 import { Race, RACES } from '../sim/races';
-import { Creature, Thought } from '../sim/creatures';
+import { Creature, Thought, Job } from '../sim/creatures';
 import { KOSZTY, MOCE, SKAZY } from '../nastawy/moce';
 import { odswiezPlan } from '../sim/pielgrzymka';
 import { rolaPostaci, maxHp } from '../sim/lud';
@@ -25,6 +25,7 @@ export const TOOLS: Record<Verb, Tool[]> = {
     { id: 'modl', label: 'módl się', hint: 'idzie pod twój rdzeń i modli się tam' },
     { id: 'okalecz', label: 'okalecz się', hint: 'pobożny upuszcza krwi: dostajesz krew, a on słabnie na zawsze' },
     { id: 'ofiaruj', label: 'ofiaruj', hint: 'oddaje ci życie — dużo krwi, jedna osoba mniej' },
+    { id: 'przerwij', label: 'przerwij modlitwę', hint: 'wraca do swoich i przez minutę nie idzie się modlić' },
   ],
   znak: [
     { id: 'objawienie', label: 'objawienie', hint: 'wszyscy dookoła widzą cud; ich oddanie rośnie' },
@@ -87,11 +88,17 @@ const THOUGHTS: Record<string, Thought> = {
   modl: Thought.PRAY_CORE, prorok: Thought.PROPHESY, uciekaj: Thought.FLEE_UP,
 };
 
+/** Remake v1: czy postać się modli albo idzie się modlić (wtedy można jej to przerwać). */
+export function modliSie(c: Creature): boolean {
+  return c.job === Job.PRAY || c.job === Job.PIELGRZYM || c.thought === Thought.PRAY_CORE;
+}
+
 /** Szept — najtańszy i najprecyzyjniejszy. Tak wysyła się wiernych pod rdzeń i robi proroków. */
 export function whisper(sim: Sim, tool: string, c: Creature): boolean {
   // Remake v1: okaleczyć może się tylko pobożny i tylko raz; ofiarą może być każdy z ludu
   if (tool === 'okalecz' && (rolaPostaci(c) !== 'pobozny' || c.okaleczony)) return false;
   if (tool === 'ofiaruj' && !rolaPostaci(c)) return false;
+  if (tool === 'przerwij' && !modliSie(c)) return false;
   if (!pay(sim, 'szept', tool)) return false;
   if (tool === 'okalecz') {
     c.okaleczony = true;
@@ -99,6 +106,16 @@ export function whisper(sim: Sim, tool: string, c: Creature): boolean {
     c.hp = Math.min(c.hp, maxHp(sim, c));
     for (let i = 0; i < 6; i++) sim.spark(c.x, c.y - 0.5, 'hit');
     sim.efekt(c.x, c.y, 'mysl', `+${LUD.okaleczenieKrew} krwi`);
+    return true;
+  }
+  if (tool === 'przerwij') {
+    const klan = sim.clans[c.clan];
+    c.thought = Thought.NONE;
+    c.job = Job.WANDER; c.droga = undefined;
+    c.jx = klan?.hx ?? Math.floor(c.x); c.jy = klan?.hy ?? Math.floor(c.y);
+    c.jt = 0;
+    c.bezModlitwyDo = sim.tick + LUD.przerwaModlitwy;
+    sim.efekt(c.x, c.y, 'mysl', 'wraca');
     return true;
   }
   if (tool === 'ofiaruj') {

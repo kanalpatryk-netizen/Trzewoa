@@ -14,17 +14,17 @@ export const REMAKE: boolean = true;
 
 export const LUD = {
   /** Kto stoi przy siedzibie na początku partii. */
-  start: { pobozny: 4, robotnik: 5, rycerz: 2 } as Record<Rola, number>,
+  start: { pobozny: 3, robotnik: 3, rycerz: 1 } as Record<Rola, number>,
   /** Jedzenie w spiżarni siedziby na start. */
   jedzenieStart: 60,
   /** Krew na start — zapas, z którego płacisz za nowych i za ryty. */
   krewStart: 120,
-  /** Co tyle tików skała wydaje nową postać (15 s). */
-  wyjscieCo: 1800,
+  /** Co tyle tików skała wydaje nową postać (20 s). */
+  wyjscieCo: 2400,
   /** Ile krwi kosztuje wyjście ze skały (rycerzy się nie przywołuje — odkopuje się ich w skale). */
   koszt: { pobozny: 30, robotnik: 20 } as Record<'pobozny' | 'robotnik', number>,
   /** Najwięcej żywych postaci ludu naraz. */
-  limit: 30,
+  limit: 14,
   /** Świeżo wyszły ze skały: przez tyle tików siła, szybkość, kopanie i modlitwa × `oslabienie` (−60%). */
   oslabienieTikow: 7200, oslabienie: 0.4,
 
@@ -57,6 +57,26 @@ export const LUD = {
   obozMin: 2,
   /** Ile jedzenia ze starej spiżarni robotnik bierze na raz. */
   przenoszenie: 3,
+
+  /** Robotnik kopie i zbiera w tym prostokącie wokół siedziby (kafle w bok / w pionie). */
+  robotnikZasieg: { x: 22, y: 9 },
+  /** Nie kopie kafla, pod którym ziała pustka głębsza niż tyle — tak wpadali do jaskiń bez dna. */
+  spadekMaks: 4,
+  /** Strefa wokół rdzenia, do której robotnicy nie wchodzą — tam modlą się pobożni. */
+  strefaRdzenia: 20,
+  /** Rycerze na warcie stoją tyle kafli za krawędzią przedsionka, po obu jego stronach. */
+  wartaOdstep: 2,
+  /** Po szepcie „przerwij” pobożny przez tyle tików nie wraca do modlitwy (1 min). */
+  przerwaModlitwy: 7200,
+
+  /** Obóz ze spiżarnią: tylu stacjonujących (pobożni, rycerze) dalej niż `obozOdleglosc` od każdej spiżarni. */
+  obozOdleglosc: 20, obozyMaks: 5, obozMinStacjonujacych: 3,
+  /** Robotnik donosi jedzenie pobożnemu albo rycerzowi, gdy ten jest głodniejszy niż to. */
+  glodDostawy: 0.35,
+  /** Pobożni i rycerze sami idą jeść dopiero tak głodni — albo gdy nie ma żadnego robotnika. */
+  glodSam: 0.8,
+  /** Zasięg szukania drogi przy donoszeniu (kafle przeszukane, nie długość drogi). */
+  dostawaLimit: 9000,
 
   /** Co tyle tików sprawdzamy, czy da się jeszcze wygrać. */
   przegranaCo: 240,

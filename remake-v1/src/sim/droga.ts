@@ -2,6 +2,7 @@ import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { RACES } from './races';
 import { PASSABLE } from './tiles';
+import { LUD, REMAKE } from '../nastawy/lud';
 import { WORLD_W, WORLD_H } from './world';
 
 /**
@@ -36,7 +37,7 @@ export function wolny(sim: Sim, i: number, plywa: boolean): boolean {
 export function uchwyt(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
   // na drodze wiernych góra wykuwa stopnie (próg z pielgrzymka.ts) — wszędzie jest się czego trzymać
-  if (w.inb(x, y) && w.prog[w.idx(x, y)] === 1) return true;
+  if (w.inb(x, y) && (w.prog[w.idx(x, y)] === 1 || w.drabina[w.idx(x, y)] === 1)) return true;
   return w.solid(x - 1, y) || w.solid(x + 1, y) || w.solid(x - 1, y + 1) || w.solid(x + 1, y + 1);
 }
 
@@ -45,6 +46,26 @@ export function stoi(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
   if (!w.inb(x, y + 1)) return true;
   return w.solid(x, y + 1) || w.water[w.idx(x, y + 1)] >= 4;
+}
+
+/** Ile pustych kafli ziała pod (x, y), licząc do pierwszej podłogi (najwyżej limit+1). */
+export function glebiaPod(sim: Sim, x: number, y: number, limit: number): number {
+  const w = sim.world;
+  let n = 0;
+  for (let yy = y + 1; yy < w.h && n <= limit; yy++) {
+    if (!w.passable(x, yy) || w.water[w.idx(x, yy)] >= 4) break;
+    n++;
+  }
+  return n;
+}
+
+/**
+ * Remake v1: krok w przepaść — tu nie ma podłogi ani ściany do trzymania, a pod spodem
+ * ziała pustka głębsza niż `LUD.spadekMaks`. Lud tak nie chodzi: zeskok w jaskinię
+ * bez dna to droga w jedną stronę (robotnicy lądowali przy rdzeniu w pół minuty).
+ */
+export function przepasc(sim: Sim, x: number, y: number): boolean {
+  return !stoi(sim, x, y) && !uchwyt(sim, x, y) && glebiaPod(sim, x, y, LUD.spadekMaks) > LUD.spadekMaks;
 }
 
 /** Spadając stąd, wylądowałby w ogniu. */
@@ -71,6 +92,7 @@ export function szukajDrogi(
   const w = sim.world;
   const W = w.w;
   const plywa = RACES[c.race].swims;
+  const ostrozny = REMAKE && c.race === 0;   // lud (Race.GOBLIN) omija przepaści
   const sx = Math.floor(c.x), sy = Math.floor(c.y);
   if (!w.inb(sx, sy)) return null;
   pokolenie++;
@@ -100,7 +122,7 @@ export function szukajDrogi(
     const naPodlodze = stoi(sim, x, y);
     const wisi = !naPodlodze && uchwyt(sim, x, y);
     // w dół: z wiszenia albo w locie
-    if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa)) dodaj(i + W, i);
+    if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa) && !(ostrozny && wisi && przepasc(sim, x, y + 1))) dodaj(i + W, i);
     if (!naPodlodze && !wisi) continue;            // w locie nie ma innego wyboru
     // w górę: tylko tam, gdzie da się chwycić
     if (y > 0 && wolny(sim, i - W, plywa) && uchwyt(sim, x, y - 1)) dodaj(i - W, i);
@@ -114,6 +136,7 @@ export function szukajDrogi(
       // z wiszenia tylko na półkę; z podłogi wszędzie, byle nie nad ogień
       if (wisi && !tamStoi) continue;
       if (!tamStoi && nadOgniem(sim, nx, y)) continue;
+      if (ostrozny && przepasc(sim, nx, y)) continue;
       dodaj(j, i);
     }
   }

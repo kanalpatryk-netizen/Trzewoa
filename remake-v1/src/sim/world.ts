@@ -32,6 +32,11 @@ export class World {
    * w którym da się odprawić rytuał, i połowa światów była nie do przejścia.
    */
   readonly prog = new Uint8Array(WORLD_W * WORLD_H);
+  /**
+   * Remake v1: klamry — lud wbija je wszędzie, którędy przeszedł. Daje uchwyt jak ściana,
+   * więc każdą drogą w dół da się potem wrócić w górę (do poprzedniego obozu i spiżarni).
+   */
+  readonly drabina = new Uint8Array(WORLD_W * WORLD_H);
   readonly rng: Rng;
   readonly noise: Noise;
   /** Kafli, o których nikt teraz nie pamięta — to jest Otchłań, cała i jedyna. */

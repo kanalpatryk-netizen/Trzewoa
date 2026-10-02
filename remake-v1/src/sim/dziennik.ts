@@ -52,6 +52,7 @@ export const OPIS_PRACY = [
   'wędruje', 'kopie', 'idzie jeść', 'modli się', 'buduje', 'walczy', 'ucieka', 'idzie płodzić',
   'niesie łup', 'bierze w jarzmo', 'schodzi w głąb', 'najeżdża', 'składa ofiarę', 'śpi w skale',
   'grzeje się przy ogniu', 'wysysa jeńca', 'idzie pod rdzeń jako pielgrzym',
+  'zbiera jedzenie do spiżarni', 'idzie jeść do spiżarni', 'niesie jedzenie głodnemu', 'trzyma wartę przy rdzeniu',
 ];
 
 export const NAZWY_KAFLI = [

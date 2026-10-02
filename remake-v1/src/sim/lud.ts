@@ -11,6 +11,7 @@ import { zapisz } from './dziennik';
 import { T } from './tiles';
 import { Job } from './creatures';
 import { szukajDrogi, budzetDrog, nowyTik } from './droga';
+import { PIELGRZYMKA as P } from '../nastawy/rytual';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -27,12 +28,68 @@ export interface StanLudu {
   siedzibaT: number;
   /** Stara spiżarnia po przenosinach — robotnicy znoszą z niej jedzenie do nowej siedziby. */
   sklad: { x: number; y: number; ilosc: number } | null;
-  /** Odcięte grupki (tylko znaczniki na mapie). */
+  /** Odcięte grupki (liczone przy przenosinach siedziby). */
   obozy: { x: number; y: number; ilu: number }[];
+  /** Spiżarnie obozów (siedziba ma swoją w `klan.stock`). Stara siedziba po przenosinach też tu trafia. */
+  spizarnie: Spizarnia[];
+}
+
+export interface Spizarnia { x: number; y: number; ilosc: number }
+
+/** Jedna spiżarnia ludu — siedziby albo obozu — z tym, co się z nią robi. */
+export interface MiejsceJedzenia {
+  x: number; y: number; ilosc: number; baza: boolean;
+  wez(n: number): number;
+  odloz(n: number): void;
+}
+
+/** Wszystkie spiżarnie: najpierw siedziba, potem obozy. */
+export function wszystkieSpizarnie(sim: Sim): MiejsceJedzenia[] {
+  const out: MiejsceJedzenia[] = [];
+  const klan = klanLudu(sim);
+  if (klan) out.push({
+    x: klan.hx, y: klan.hy, ilosc: klan.stock, baza: true,
+    wez: (n) => { const k = Math.min(n, klan.stock); klan.stock -= k; return k; },
+    odloz: (n) => { klan.stock += n; },
+  });
+  for (const s of sim.lud.spizarnie) out.push({
+    x: s.x, y: s.y, ilosc: s.ilosc, baza: false,
+    wez: (n) => { const k = Math.min(n, s.ilosc); s.ilosc -= k; return k; },
+    odloz: (n) => { s.ilosc += n; },
+  });
+  return out;
+}
+
+/** Najbliższa spiżarnia (w linii prostej) — z jedzeniem albo dowolna. */
+export function najblizszaSpizarnia(sim: Sim, x: number, y: number, zJedzeniem: boolean): MiejsceJedzenia | null {
+  let best: MiejsceJedzenia | null = null, bd = Infinity;
+  for (const s of wszystkieSpizarnie(sim)) {
+    if (zJedzeniem && s.ilosc <= 0) continue;
+    const d = Math.hypot(s.x - x, s.y - y);
+    if (d < bd) { bd = d; best = s; }
+  }
+  return best;
+}
+
+/** Spiżarnie od najbliższej (w linii prostej) — z jedzeniem albo wszystkie. */
+export function spizarnieWgOdleglosci(sim: Sim, x: number, y: number, zJedzeniem: boolean): MiejsceJedzenia[] {
+  return wszystkieSpizarnie(sim).filter((s) => !zJedzeniem || s.ilosc > 0)
+    .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+}
+
+/** Spiżarnia stojąca na tym kaflu (albo tuż obok). */
+export function spizarniaW(sim: Sim, x: number, y: number): MiejsceJedzenia | null {
+  return wszystkieSpizarnie(sim).find((s) => Math.abs(s.x - x) <= 1 && Math.abs(s.y - y) <= 1) ?? null;
+}
+
+/** Stacjonujący: pobożni i rycerze — jedzenie przynoszą im robotnicy. */
+export function stacjonuje(c: Creature): boolean {
+  const r = rolaPostaci(c);
+  return r === 'pobozny' || r === 'rycerz';
 }
 
 export function nowyStanLudu(): StanLudu {
-  return { rola: 'robotnik', nastepne: LUD.wyjscieCo, siedzibaT: 0, sklad: null, obozy: [] };
+  return { rola: 'robotnik', nastepne: LUD.wyjscieCo, siedzibaT: 0, sklad: null, obozy: [], spizarnie: [] };
 }
 
 /** Rola postaci ludu — albo null dla obcych (ludzie z powierzchni). */
@@ -94,6 +151,19 @@ export function podloga(sim: Sim, x: number, y: number, promien = 6): [number, n
   return null;
 }
 
+/** Środek największej grupy ludu (skupisko w promieniu 8 kafli) — bez pielgrzymów i warty pod rdzeniem. */
+function najwiekszaGrupa(sim: Sim, klanId: number): { x: number; y: number; ilu: number } | null {
+  const lud = sim.creatures.filter((c) => !c.dead && c.clan === klanId && c.job !== Job.PIELGRZYM && c.job !== Job.WARTA);
+  let best: { x: number; y: number; ilu: number } | null = null;
+  for (const c of lud) {
+    const grupa = lud.filter((o) => Math.hypot(o.x - c.x, o.y - c.y) < 8);
+    if (!best || grupa.length > best.ilu) {
+      best = { x: grupa.reduce((s, o) => s + o.x, 0) / grupa.length, y: grupa.reduce((s, o) => s + o.y, 0) / grupa.length, ilu: grupa.length };
+    }
+  }
+  return best;
+}
+
 /** Skała wydaje nową postać wybranej roli — jeśli jest na nią krew i miejsce w ludzie. */
 function wyjscieZeSkaly(sim: Sim): void {
   const st = sim.lud;
@@ -103,7 +173,10 @@ function wyjscieZeSkaly(sim: Sim): void {
   const zywych = sim.creatures.reduce((n, c) => n + (!c.dead && c.race === Race.GOBLIN ? 1 : 0), 0);
   // nie stać albo pełno — spróbuj za sekundę, licznik nie przepada
   if (!klan || zywych >= LUD.limit || sim.krew < koszt) { st.nastepne = sim.tick + 120; return; }
-  const miejsce = podloga(sim, klan.hx, klan.hy) ?? [klan.hx, klan.hy];
+  // przy największej grupie ludu, nie w siedzibie: siedziba potrafiła zostać na górze,
+  // a nowi nie mieli jak zejść do reszty
+  const g = najwiekszaGrupa(sim, klan.id);
+  const miejsce = (g && podloga(sim, Math.floor(g.x), Math.floor(g.y), 5)) ?? podloga(sim, klan.hx, klan.hy) ?? [klan.hx, klan.hy];
   const c = sim.spawn(Race.GOBLIN, klan.id, miejsce[0], miejsce[1]);
   st.nastepne = sim.tick + LUD.wyjscieCo;
   if (!c) return;
@@ -126,7 +199,7 @@ function pilnujSiedziby(sim: Sim): void {
   const klan = klanLudu(sim);
   if (!klan) return;
   // pielgrzymi schodzą pod rdzeń z własnej woli — nie liczą się jako odcięci
-  const lud = sim.creatures.filter((c) => !c.dead && c.clan === klan.id && c.job !== Job.PIELGRZYM);
+  const lud = sim.creatures.filter((c) => !c.dead && c.clan === klan.id && c.job !== Job.PIELGRZYM && c.job !== Job.WARTA);
   if (!lud.length) return;
   // kto może dojść do siedziby — tym samym szukaniem drogi, którym chodzą (wspinaczka po ścianach,
   // zeskoki); proste zalewanie przejść uznawało za „blisko” każdego, kto spadł szybem w dół
@@ -156,9 +229,9 @@ function pilnujSiedziby(sim: Sim): void {
   if (!cel || cel.ilu <= dojdzie.size) return;
   const miejsce = podloga(sim, Math.floor(cel.x), Math.floor(cel.y), 10);
   if (!miejsce) return;
-  // stara spiżarnia zostaje — robotnicy przeniosą jedzenie (nic się nie teleportuje)
-  const reszta = (sim.lud.sklad?.ilosc ?? 0) + klan.stock;
-  sim.lud.sklad = reszta > 0 ? { x: klan.hx, y: klan.hy, ilosc: reszta } : null;
+  // stara siedziba zostaje obozem ze swoją spiżarnią — robotnicy będą z niej brać (nic się nie teleportuje)
+  const reszta = klan.stock;
+  odlozDoObozu(sim, klan.hx, klan.hy, reszta);
   klan.stock = 0;
   klan.hx = miejsce[0]; klan.hy = miejsce[1];
   if (w.passable(miejsce[0], miejsce[1])) w.set(miejsce[0], miejsce[1], T.NEST);
@@ -166,7 +239,7 @@ function pilnujSiedziby(sim: Sim): void {
   sim.lud.obozy = sim.lud.obozy.filter((o) => Math.hypot(o.x - miejsce[0], o.y - miejsce[1]) > 8);
   sim.efekt(miejsce[0] + 0.5, miejsce[1] + 0.5, 'cud');
   sim.gdzie(miejsce[0] + 0.5, miejsce[1] + 0.5).log(
-    reszta > 0 ? `${klan.name} przenieśli siedzibę. Robotnicy przeniosą ${reszta} jedzenia ze starej spiżarni.` : `${klan.name} przenieśli siedzibę tam, gdzie jest ich najwięcej.`,
+    reszta > 0 ? `${klan.name} przenieśli siedzibę. W starym obozie zostało ${reszta} jedzenia — robotnicy będą z niego brać.` : `${klan.name} przenieśli siedzibę tam, gdzie jest ich najwięcej.`,
     'swiat');
 }
 
@@ -187,10 +260,55 @@ function sprawdzPrzegrana(sim: Sim): void {
   sim.log('Nie został nikt, kto by się modlił, a krwi nie starczy, by skała wydała nowego.', 'koniec');
 }
 
+/** Dokłada jedzenie do spiżarni obozu w (x, y) — albo zakłada tam obóz. */
+function odlozDoObozu(sim: Sim, x: number, y: number, ile: number): void {
+  const jest = sim.lud.spizarnie.find((s) => Math.abs(s.x - x) <= 3 && Math.abs(s.y - y) <= 3);
+  if (jest) jest.ilosc += ile;
+  else sim.lud.spizarnie.push({ x, y, ilosc: ile });
+}
+
+/**
+ * Obozy ze spiżarniami: gdzie stacjonuje co najmniej `obozMin` pobożnych lub rycerzy daleko
+ * od każdej spiżarni, tam powstaje obóz. Pod rdzeniem stawiamy go z boku przedsionka (przy
+ * warcie), żeby nie stał w miejscu modlitwy. Puste obozy, przy których nikogo nie ma, znikają.
+ */
+function pilnujObozow(sim: Sim, klan: Sim['clans'][number]): void {
+  const w = sim.world;
+  const st = sim.creatures.filter((c) => !c.dead && c.clan === klan.id && stacjonuje(c));
+  const wzieci = new Set<number>();
+  for (const c of st) {
+    if (wzieci.has(c.id)) continue;
+    const grupa = st.filter((o) => !wzieci.has(o.id) && Math.hypot(o.x - c.x, o.y - c.y) < 8);
+    for (const o of grupa) wzieci.add(o.id);
+    if (grupa.length < LUD.obozMinStacjonujacych || sim.lud.spizarnie.length >= LUD.obozyMaks) continue;
+    let gx = grupa.reduce((s, o) => s + o.x, 0) / grupa.length, gy = grupa.reduce((s, o) => s + o.y, 0) / grupa.length;
+    const daleko = wszystkieSpizarnie(sim).every((s) => Math.hypot(s.x - gx, s.y - gy) > LUD.obozOdleglosc);
+    if (!daleko) continue;
+    if (Math.hypot(gx - w.coreX, gy - w.coreY) < LUD.strefaRdzenia) {
+      gx = w.coreX + (gx < w.coreX ? -1 : 1) * (P.przedsionekX + LUD.wartaOdstep);
+      gy = w.przedsionekY;
+    }
+    const m = podloga(sim, Math.floor(gx), Math.floor(gy), 5);
+    if (!m) continue;
+    sim.lud.spizarnie.push({ x: m[0], y: m[1], ilosc: 0 });
+    sim.gdzie(m[0] + 0.5, m[1] + 0.5).log(`${klan.name} rozbili obóz — robotnicy będą tu donosić jedzenie.`, 'swiat', 'oboz');
+  }
+  // pusty obóz bez nikogo w pobliżu znika
+  const zywi = sim.creatures.filter((c) => !c.dead && c.clan === klan.id);
+  sim.lud.spizarnie = sim.lud.spizarnie.filter((s) => s.ilosc > 0 || zywi.some((c) => Math.hypot(c.x - s.x, c.y - s.y) < 15));
+}
+
 /** Wołane z sim.step() co tik. */
 export function tikLudu(sim: Sim): void {
   if (sim.spokojnySwiat || sim.ending) return;
+  // stary zapis: „stara spiżarnia” staje się obozem
+  if (sim.lud.sklad) { odlozDoObozu(sim, sim.lud.sklad.x, sim.lud.sklad.y, sim.lud.sklad.ilosc); sim.lud.sklad = null; }
+  if (!sim.lud.spizarnie) sim.lud.spizarnie = [];
   wyjscieZeSkaly(sim);
-  if (sim.tick % LUD.siedzibaCo === 0) pilnujSiedziby(sim);
+  if (sim.tick % LUD.siedzibaCo === 0) {
+    pilnujSiedziby(sim);
+    const klan = klanLudu(sim);
+    if (klan) pilnujObozow(sim, klan);
+  }
   if (sim.tick % LUD.przegranaCo === 0) sprawdzPrzegrana(sim);
 }

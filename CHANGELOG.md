@@ -7,6 +7,13 @@
 - Spiżarnia w siedzibie; robotnicy znoszą jedzenie; bez rudy
 - Wędrowna siedziba i obozy odciętych; ołtarz nie zamurowuje już nikogo
 - Bez snu góry: przegrana, gdy nie da się już wygrać
+- Poprawki po grze: mniej postaci (start 3/3/1, limit 14, skała co 20 s); nowi wychodzą przy największej grupie
+- Robotnicy kopią w poziomie wokół siedziby, nie przebijają się do jaskiń i trzymają się z dala od rdzenia
+- Lud nie wchodzi w przepaści, a tam, którędy przeszedł, wbija klamry — każdą drogą w dół da się wrócić
+- Spiżarnia w każdym obozie; robotnicy donoszą jedzenie pobożnym i rycerzom tam, gdzie stoją
+  (z najbliższego obozu z jedzeniem, a gdy tam pusto — z poprzedniego), sami jedzą z najbliższej spiżarni
+- Pod rdzeniem porządek: pobożni w szeregu co dwa kafle, rycerze na warcie po bokach przedsionka
+- Szept „przerwij modlitwę” (za darmo, na minutę); czytelne podpisy siedziby i obozów
 
 ## v4.2 beta (komputer)
 - Płatny wybór na karcie drożeje o 50% za każde wcześniejsze kupno w tej partii (karta to pokazuje)
