@@ -1,5 +1,15 @@
 # Zmiany
 
+## v4.1 beta (komputer)
+- Cechy nacji: pobożni, płodni, wojowniczy, kopacze, długowieczni, skromni — zaleta i wada
+- Łańcuchy kart: heretyk, proroctwo, wdzięczni, ozdrowieńcy, pomsta — wybory wracają po czasie
+- Świat dnia: ta sama góra dla każdego przez cały dzień, najlepszy czas zapamiętany
+- Osiągnięcia: 11 celów dodatkowych, lista w menu i nowe zdobycze na ekranie końcowym
+- Skutki odroczone przeżywają zapis gry
+
+## v3 — poprawka
+- Płynniej przy dużej liczbie jednostek (APK i v3 remake)
+
 ## v4 beta (komputer)
 - Tryb deweloperski: okienko z logami świata i narzędziami
 - Karty z odroczonym skutkiem: układ z głębią, przysięga dwóch nacji
