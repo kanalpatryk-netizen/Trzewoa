@@ -1,5 +1,13 @@
 # Zmiany
 
+## Remake v1 (komputer) — etap 1
+- Jeden lud: pobożni, robotnicy, rycerze (zamiast wielu ras)
+- Bez narodzin: co 15 s skała wydaje wybraną rolę za krew (osłabiony przez minutę)
+- Krew jako zasób: zapas, śmierci, ofiara, samookaleczenie pobożnego
+- Spiżarnia w siedzibie; robotnicy znoszą jedzenie; bez rudy
+- Wędrowna siedziba i obozy odciętych; ołtarz nie zamurowuje już nikogo
+- Bez snu góry: przegrana, gdy nie da się już wygrać
+
 ## v4.2 beta (komputer)
 - Płatny wybór na karcie drożeje o 50% za każde wcześniejsze kupno w tej partii (karta to pokazuje)
 - Limit krwi 150 zamiast 250; karty „pierwszej krwi” rzadziej

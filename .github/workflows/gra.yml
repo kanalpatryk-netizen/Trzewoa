@@ -7,6 +7,7 @@
 #   trzewia-v4-beta.html  — v4 beta na komputer (folder v4-beta/)
 #   trzewia-v4.1-beta.html — v4.1 beta na komputer (folder v4.1-beta/)
 #   trzewia-v4.2-beta.html — v4.2 beta na komputer (folder v4.2-beta/)
+#   trzewia-remake-v1.html — Remake v1 na komputer (folder remake-v1/)
 # Linki …/releases/latest/download/<plik> zawsze pobierają najświeższą grę.
 # Można też uruchomić ręcznie: Actions → „Gra do pobrania” → Run workflow.
 name: Gra do pobrania
@@ -39,6 +40,7 @@ jobs:
             v4-beta/package-lock.json
             v4.1-beta/package-lock.json
             v4.2-beta/package-lock.json
+            remake-v1/package-lock.json
 
       - name: Komputer — budowa
         working-directory: pc
@@ -80,6 +82,14 @@ jobs:
           npm run pack
           mv trzewia.html trzewia-v4.2-beta.html
 
+      - name: Remake v1 — budowa
+        working-directory: remake-v1
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm run pack
+          mv trzewia.html trzewia-remake-v1.html
+
       - name: Wydanie „najnowsza wersja”
         env:
           GH_TOKEN: ${{ github.token }}
@@ -91,6 +101,7 @@ jobs:
           - \`trzewia.html\` — na komputer ($(kb pc/trzewia.html) kB)
           - \`trzewia-android.html\` — na telefon z Androidem ($(kb android/trzewia-android.html) kB)
           - \`trzewia-v3-remake.html\` — gra z telefonu (v3) na komputer, myszą
+          - \`trzewia-remake-v1.html\` — Remake v1 na komputer (jeden lud: pobożni, robotnicy, rycerze; krew; wędrowna siedziba)
           - \`trzewia-v4.2-beta.html\` — v4.2 beta na komputer (drożejące wybory, mniej krwi, jaśniejszy świat)
           - \`trzewia-v4.1-beta.html\` — v4.1 beta na komputer (cechy nacji, łańcuchy kart, świat dnia, osiągnięcia)
           - \`trzewia-v4-beta.html\` — v4 beta na komputer (nowości, tryb deweloperski z dziennikiem)
@@ -102,10 +113,10 @@ jobs:
           # jedno stałe wydanie, podmieniane przy każdej zmianie — linki /releases/latest/download/ się nie zmieniają
           # pliki podmieniamy w istniejącym wydaniu — gdy tworzenie nowego się nie udało, linki nie znikają
           if gh release view gra >/dev/null 2>&1; then
-            gh release upload gra pc/trzewia.html android/trzewia-android.html v3-remake/trzewia-v3-remake.html v4-beta/trzewia-v4-beta.html v4.1-beta/trzewia-v4.1-beta.html v4.2-beta/trzewia-v4.2-beta.html --clobber
+            gh release upload gra pc/trzewia.html android/trzewia-android.html v3-remake/trzewia-v3-remake.html v4-beta/trzewia-v4-beta.html v4.1-beta/trzewia-v4.1-beta.html v4.2-beta/trzewia-v4.2-beta.html remake-v1/trzewia-remake-v1.html --clobber
             gh release edit gra --notes-file notatki.md --latest
           else
-            gh release create gra pc/trzewia.html android/trzewia-android.html v3-remake/trzewia-v3-remake.html v4-beta/trzewia-v4-beta.html v4.1-beta/trzewia-v4.1-beta.html v4.2-beta/trzewia-v4.2-beta.html \
+            gh release create gra pc/trzewia.html android/trzewia-android.html v3-remake/trzewia-v3-remake.html v4-beta/trzewia-v4-beta.html v4.1-beta/trzewia-v4.1-beta.html v4.2-beta/trzewia-v4.2-beta.html remake-v1/trzewia-remake-v1.html \
               --target "$GITHUB_SHA" \
               --title "Trzewia — najnowsza wersja" \
               --notes-file notatki.md \
