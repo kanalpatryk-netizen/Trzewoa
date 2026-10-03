@@ -78,7 +78,7 @@ export const LUD = {
   /** …a stojącym daleko od jedzenia (dalej niż `daleko`) już przy takim głodzie. */
   glodDostawyDaleko: 0.2,
   /** Pobożni i rycerze sami idą jeść dopiero tak głodni — albo gdy nie ma żadnego robotnika. */
-  glodSam: 0.8,
+  glodSam: 0.6,
   /** Stacjonujący ze spiżarnią z jedzeniem w tej odległości (kafle) je sam, gdy tylko zgłodnieje. */
   spizarniaObok: 10,
   /** Tak głodny stacjonujący bez dostawy odrywa kopacza drogi od pracy. */

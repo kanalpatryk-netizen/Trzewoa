@@ -844,7 +844,8 @@ function planujLud(sim: Sim, c: Creature): void {
       const strona = c.id % 2 ? -1 : 1;
       const naPoscie = (x: number, y: number, s: number) => {
         const od = (x - w.coreX) * s;
-        return od > P.przedsionekX && od <= P.przedsionekX + LUD.wartaOdstep + 8 && Math.abs(y - w.przedsionekY) <= 6 && stoi(sim, x, y);
+        // (nie przy magmie — rycerze są wolni i płonęli, zanim zdążyli odejść od ognia)
+        return od > P.przedsionekX && od <= P.przedsionekX + LUD.wartaOdstep + 8 && Math.abs(y - w.przedsionekY) <= 6 && stoi(sim, x, y) && !sim.przyMagmie(x, y, 3);
       };
       const d = droga((x, y) => naPoscie(x, y, strona), LUD.dostawaLimit) ?? droga((x, y) => naPoscie(x, y, -strona), LUD.dostawaLimit);
       if (d) { naDroge(d); zamiar('trzyma wartę pod rdzeniem, z boku modlących się', Job.WARTA, podroz(d) + Z); return; }
@@ -879,7 +880,7 @@ function stanPrzyObozie(sim: Sim, c: Creature, naDroge: (d: number[], x?: number
   // rycerze stoją dalej, na skraju obozu; pobożni bliżej — każdy w swoim miejscu, nie jeden na drugim
   const r = rolaPostaci(c) === 'rycerz' ? 5 : 2;
   const px = sp.x + (c.id % 2 ? -1 : 1) * (r + (c.id >> 1) % 3);
-  const sucho = (x: number, y: number) => sim.world.water[sim.world.idx(x, y)] < 3;
+  const sucho = (x: number, y: number) => sim.world.water[sim.world.idx(x, y)] < 3 && !sim.przyMagmie(x, y, 3);
   const d = droga((x, y) => Math.abs(x - px) <= 1 && Math.abs(y - sp.y) <= 3 && stoi(sim, x, y) && sucho(x, y), LUD.doSpizarni)
     ?? droga((x, y) => Math.abs(x - sp.x) <= 6 && Math.abs(y - sp.y) <= 3 && stoi(sim, x, y) && sucho(x, y), LUD.doSpizarni);
   if (!d) return false;
