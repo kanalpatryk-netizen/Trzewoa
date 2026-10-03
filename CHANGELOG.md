@@ -26,7 +26,7 @@
 - Pobożni i rycerze stacjonują przy obozie frontowym (najbliżej rdzenia); nowi idą za postępem
 - Grzyb posadzony przy obozie robotnicy znoszą do jego spiżarni; podpis obozu pokazuje też grzyb obok
 - Ucieczka przed wodą, zalana siedziba przenosi się na suche miejsce
-- Obozy i siedziba stają na płaskich, szerokich półkach (najchętniej przy grzybie), nie w szybach przy ogniu; nowy obóz najwyżej co minutę
+- Obozy i siedziba (także na starcie) stają na płaskich półkach szerokich na ≥5 kafli i wysokich na ≥3 (najchętniej przy grzybie); bez takiego miejsca obóz nie powstaje; nowy obóz najwyżej co minutę
 - Koniec lewitowania: schodzący po klamrach nie zatrzymuje się w powietrzu
 
 ## v4.2 beta (komputer)

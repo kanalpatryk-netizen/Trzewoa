@@ -15,7 +15,7 @@ import { GORA as G, LUDY as L, ZASIEDLENIE as Z, PRZYPLYWY as PP } from '../nast
 import { SWIAT } from '../nastawy/swiat';
 import { cechaNacji, losujCeche } from './cechy';
 import type { Podsumowanie } from '../core/osiagniecia';
-import { tikLudu, nowyStanLudu, nadajRole, podloga, type StanLudu } from './lud';
+import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, type StanLudu } from './lud';
 import { LUD, REMAKE } from '../nastawy/lud';
 
 export interface Clan {
@@ -209,7 +209,9 @@ export class Sim {
 
     void hotSpot; void found;   // Remake v1: dawne zasiedlenie wielu ras zostaje w kodzie jako punkt odniesienia
     // Remake v1: jeden lud — pobożni, robotnicy i rycerze przy jednej siedzibie
-    const [hx, hy] = spot(Z.slepyLud1.od, Z.slepyLud1.do);
+    // siedziba na starcie też na porządnej półce (szeroko i wysoko), jeśli taka jest w pobliżu
+    const [sx0, sy0] = spot(Z.slepyLud1.od, Z.slepyLud1.do);
+    const [hx, hy] = miejsceNaObozu(this, sx0, sy0, 20, 12) ?? [sx0, sy0];
     const lud = this.newClan(Race.GOBLIN, hx, hy);
     lud.name = 'Pobożni';
     lud.cecha = undefined;

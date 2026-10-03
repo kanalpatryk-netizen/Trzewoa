@@ -280,18 +280,20 @@ function pilnujSiedziby(sim: Sim): void {
   const g = zalana ? najwiekszaGrupa(sim, klan.id) : null;
   const cel = zalana ? (g ? { x: g.x, y: Math.max(2, g.y - 2), ilu: g.ilu } : null) : [...obozy].sort((a, b) => b.ilu - a.ilu)[0];
   if (!cel || (!zalana && cel.ilu <= dojdzie.size)) return;
-  const miejsce = miejsceNaObozu(sim, cel.x, cel.y) ?? podloga(sim, Math.floor(cel.x), Math.floor(cel.y), 10);
-  if (!miejsce) return;
+  const miejsce = miejsceNaObozu(sim, cel.x, cel.y, 20, 12);
+  if (!miejsce && !zalana) return;          // siedziba przenosi się tylko na porządną półkę…
+  const gdzie = miejsce ?? podloga(sim, Math.floor(cel.x), Math.floor(cel.y), 10);   // …chyba że stara tonie
+  if (!gdzie) return;
   // stara siedziba zostaje obozem ze swoją spiżarnią — robotnicy będą z niej brać (nic się nie teleportuje)
   const reszta = klan.stock;
   odlozDoObozu(sim, klan.hx, klan.hy, reszta);
   klan.stock = 0;
-  klan.hx = miejsce[0]; klan.hy = miejsce[1];
-  if (w.passable(miejsce[0], miejsce[1])) w.set(miejsce[0], miejsce[1], T.NEST);
+  klan.hx = gdzie[0]; klan.hy = gdzie[1];
+  if (w.passable(gdzie[0], gdzie[1])) w.set(gdzie[0], gdzie[1], T.NEST);
   sim.lud.siedzibaT = sim.tick;
-  sim.lud.obozy = sim.lud.obozy.filter((o) => Math.hypot(o.x - miejsce[0], o.y - miejsce[1]) > 8);
-  sim.efekt(miejsce[0] + 0.5, miejsce[1] + 0.5, 'cud');
-  sim.gdzie(miejsce[0] + 0.5, miejsce[1] + 0.5).log(
+  sim.lud.obozy = sim.lud.obozy.filter((o) => Math.hypot(o.x - gdzie[0], o.y - gdzie[1]) > 8);
+  sim.efekt(gdzie[0] + 0.5, gdzie[1] + 0.5, 'cud');
+  sim.gdzie(gdzie[0] + 0.5, gdzie[1] + 0.5).log(
     reszta > 0 ? `${klan.name} przenieśli siedzibę. W starym obozie zostało ${reszta} jedzenia — robotnicy będą z niego brać.` : `${klan.name} przenieśli siedzibę tam, gdzie jest ich najwięcej.`,
     'swiat');
 }
@@ -320,8 +322,12 @@ function sprawdzPrzegrana(sim: Sim): void {
  */
 export function miejsceNaObozu(sim: Sim, gx: number, gy: number, rx = 16, ry = 9, minSzer = LUD.obozSzerokosc): [number, number] | null {
   const w = sim.world;
-  const dobre = (x: number, y: number) => w.inb(x, y) && w.passable(x, y) && w.passable(x, y - 1) && !w.passable(x, y + 1)
-    && w.water[w.idx(x, y)] < 3 && w.magma[w.idx(x, y)] === 0;
+  // podłoga pod spodem i co najmniej `obozWysokosc` wolnych kafli w górę — w niskiej szczelinie obóz nie staje
+  const dobre = (x: number, y: number) => {
+    if (!w.inb(x, y - LUD.obozWysokosc + 1) || !w.inb(x, y + 1) || w.passable(x, y + 1)) return false;
+    for (let k = 0; k < LUD.obozWysokosc; k++) if (!w.passable(x, y - k)) return false;
+    return w.water[w.idx(x, y)] < 3 && w.magma[w.idx(x, y)] === 0;
+  };
   let best: [number, number] | null = null, bs = -Infinity;
   for (let y = Math.floor(gy) - ry; y <= Math.floor(gy) + ry; y++) {
     for (let x = Math.floor(gx) - rx; x <= Math.floor(gx) + rx; x++) {
@@ -369,8 +375,8 @@ function pilnujObozow(sim: Sim, klan: Sim['clans'][number]): void {
       gy = w.przedsionekY;
     }
     if (sim.tick - (sim.lud.obozT ?? -1e9) < LUD.obozPrzerwa) continue;
-    const m = miejsceNaObozu(sim, gx, gy) ?? podloga(sim, Math.floor(gx), Math.floor(gy), 5);
-    if (!m) continue;
+    const m = miejsceNaObozu(sim, gx, gy, 20, 12);
+    if (!m) continue;   // nie ma szerokiej i wysokiej półki — obozu tu nie będzie
     if (wszystkieSpizarnie(sim).some((s) => Math.hypot(s.x - m[0], s.y - m[1]) <= LUD.obozOdleglosc)) continue;
     sim.lud.spizarnie.push({ x: m[0], y: m[1], ilosc: 0, od: sim.tick });
     sim.lud.obozT = sim.tick;
