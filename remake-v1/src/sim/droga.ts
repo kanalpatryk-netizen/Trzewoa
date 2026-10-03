@@ -65,6 +65,8 @@ export function glebiaPod(sim: Sim, x: number, y: number, limit: number): number
  * bez dna to droga w jedną stronę (robotnicy lądowali przy rdzeniu w pół minuty).
  */
 export function przepasc(sim: Sim, x: number, y: number): boolean {
+  // lud nie spada, tylko schodzi po klamrach (creatures.ts) — przepaść przestała być pułapką
+  if (REMAKE && LUD.klamry) return false;
   return !stoi(sim, x, y) && !uchwyt(sim, x, y) && glebiaPod(sim, x, y, LUD.spadekMaks) > LUD.spadekMaks;
 }
 
@@ -119,6 +121,10 @@ export function szukajDrogi(
       for (let k = i; k !== start; k = skad[k]) droga.push(k);
       droga.reverse();
       return droga;
+    }
+    // Remake v1: droga wiernych (stopnie) jest drogą w obie strony — po niej idzie się jak korytarzem
+    if (ostrozny && w.prog[i] === 1) {
+      for (const j of [i - W, i + W, x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1]) if (j >= 0 && j < w.w * WORLD_H && w.prog[j] === 1 && wolny(sim, j, plywa)) dodaj(j, i);
     }
     const naPodlodze = stoi(sim, x, y);
     const wisi = !naPodlodze && uchwyt(sim, x, y);

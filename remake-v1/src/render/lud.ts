@@ -6,6 +6,7 @@
 import type { Sim } from '../sim/sim';
 import type { Camera } from './camera';
 import { SERIF } from './ink';
+import { grzybPrzy } from '../sim/lud';
 
 /** Podpis w ciemnej ramce z kreską odniesienia do miejsca (sx, sy). */
 function podpis(ctx: CanvasRenderingContext2D, tekst: string, sx: number, sy: number, barwa: string, rozmiar: number): void {
@@ -41,7 +42,8 @@ export function rysujZnacznikiLudu(ctx: CanvasRenderingContext2D, sim: Sim, cam:
     ctx.fillStyle = 'rgba(12,8,7,0.95)';
     ctx.beginPath(); ctx.moveTo(x - r * 0.25, y); ctx.lineTo(x, y - r * 0.6); ctx.lineTo(x + r * 0.25, y); ctx.closePath(); ctx.fill();
     const barwa = o.ilosc > 0 ? 'rgba(240,214,164,0.98)' : 'rgba(226,150,120,0.95)';
-    podpis(ctx, `obóz · spiżarnia ${o.ilosc}`, x, y - r * 1.3, barwa, rozmiar);
+    const g = grzybPrzy(sim, o.x, o.y);
+    podpis(ctx, `obóz · spiżarnia ${o.ilosc}${g ? ` · grzyb obok ${g}` : ''}`, x, y - r * 1.3, barwa, rozmiar);
   }
   ctx.restore();
 }

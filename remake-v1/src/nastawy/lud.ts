@@ -41,11 +41,11 @@ export const LUD = {
   ofiaraKrew: 40,
 
   /** Jedzenie: robotnicy znoszą do siedziby, dopóki w spiżarni jest mniej niż `zapasDo`. */
-  zapasDo: 40,
+  zapasDo: 150,
   /** Jeden zebrany grzyb daje tyle jedzenia w spiżarni; jedno jedzenie ze spiżarni gasi tyle głodu. */
   plon: 2, posilek: 0.45,
   /** Szukając drogi do spiżarni, przeszukuje się najwyżej tyle kafli (to nie długość drogi, tylko zasięg szukania). */
-  doSpizarni: 4000,
+  doSpizarni: 9000,
   /** Kto nie zdołał dojść do spiżarni, przez tyle tików szuka grzyba sam (10 s). */
   spizarniaPrzerwa: 1200,
 
@@ -78,6 +78,18 @@ export const LUD = {
   /** Zasięg szukania drogi przy donoszeniu (kafle przeszukane, nie długość drogi). */
   dostawaLimit: 9000,
 
+  /** Lud ucieka w górę, gdy woda pod nogami sięga tyle (0–8). */
+  wodaUcieka: 4,
+  /** Dalej niż tyle kafli od spiżarni z jedzeniem robotnik rusza jeść wcześniej, a kopacz drogi dostaje dostawę. */
+  daleko: 45,
+  /** Gdy pielgrzymi czekają, a żaden robotnik nie kopie drogi, góra drąży jej czoło co tyle tików (2 s). */
+  goraDrazyCo: 240,
+  /** Lud nie spada: nad pustką schodzi po klamrach z tą prędkością (kafli na tik). */
+  klamry: true, zjazd: 0.06,
+  /** Tylu robotników naraz kopie drogę do rdzenia (złotą kreskę). */
+  drogaKopaczy: 3,
+  /** Grzyb w tej odległości od obozu (kafle) robotnicy zbierają do jego spiżarni. */
+  grzybPrzyObozie: 10,
   /** Zamiar postaci trwa tyle tików (10 s), chyba że cel osiągnie wcześniej albo przerwie go coś pilnego. */
   zamiarTikow: 1200,
 

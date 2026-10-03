@@ -4,6 +4,13 @@ import { T } from './tiles';
 import { aktualnyPlan } from './pielgrzymka';
 import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
 import { REMAKE } from '../nastawy/lud';
+import { grzybPrzy } from './lud';
+
+/** Remake v1: podpis siedziby — ile w spiżarni i ile grzyba rośnie obok. */
+function podpisSiedziby(sim: Sim, k: Sim['clans'][number]): string {
+  const g = grzybPrzy(sim, k.hx, k.hy);
+  return `siedziba · spiżarnia ${k.stock}${g ? ` · grzyb obok ${g}` : ''}`;
+}
 
 export interface Podpowiedz { tekst: string; cel?: { x: number; y: number; r: number; tekst: string }; waga: number; }
 
@@ -37,7 +44,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
       : 'Nakarm ich — przeciągnij palcem po ich jaskini.';
     kandydaci.push({
       tekst: `${nazwa} ${odmien(r, 'jest', 'są')} o krok od wygaśnięcia. ${rada}`,
-      cel: klan ? { x: klan.hx, y: klan.hy, r: 5, tekst: REMAKE ? 'siedziba' : nazwa } : undefined,
+      cel: klan ? { x: klan.hx, y: klan.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, klan) : nazwa } : undefined,
       waga: 100 - ilu,
     });
   }
@@ -49,7 +56,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     const klan = sim.clans.filter((k) => !k.dead && k.race === sim.domRace && k.pop > 0).sort((a, b) => b.pop - a.pop)[0];
     kandydaci.push({
       tekst: `${nazwa} ${odmien(sim.domRace, 'bierze', 'biorą')} górę. Szepnij komuś z nich „prorokuj” — nacja pęknie na dwie. Klęski z kart kieruj na nich.`,
-      cel: klan ? { x: klan.hx, y: klan.hy, r: 5, tekst: REMAKE ? 'siedziba' : nazwa } : undefined,
+      cel: klan ? { x: klan.hx, y: klan.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, klan) : nazwa } : undefined,
       waga: 80 + sim.dominance * 20,
     });
   }
@@ -116,7 +123,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   if (sim.tick > 3000 && sim.rytual.pekniecia === 0 && duzeWierne && duzeWierne.devotion <= PIELGRZYMKA.oddanieNacji) {
     kandydaci.push({
       tekst: `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij trzem z nich „módl się”.`,
-      cel: { x: duzeWierne.hx, y: duzeWierne.hy, r: 5, tekst: REMAKE ? 'siedziba' : duzeWierne.name },
+      cel: { x: duzeWierne.hx, y: duzeWierne.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, duzeWierne) : duzeWierne.name },
       waga: 25,
     });
   }

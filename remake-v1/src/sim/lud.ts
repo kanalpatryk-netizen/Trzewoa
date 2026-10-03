@@ -77,6 +77,28 @@ export function spizarnieWgOdleglosci(sim: Sim, x: number, y: number, zJedzeniem
     .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
 }
 
+/** Obóz frontowy: spiżarnia (siedziba albo obóz) najbliżej rdzenia — tam stacjonują pobożni i rycerze. */
+export function obozFrontowy(sim: Sim): MiejsceJedzenia | null {
+  const w = sim.world;
+  let best: MiejsceJedzenia | null = null, bd = Infinity;
+  for (const s of wszystkieSpizarnie(sim)) {
+    const d = Math.hypot(s.x - w.coreX, s.y - w.coreY);
+    if (d < bd) { bd = d; best = s; }
+  }
+  return best;
+}
+
+/** Ile grzyba rośnie przy spiżarni (w zasięgu, z którego robotnicy go do niej znoszą). */
+export function grzybPrzy(sim: Sim, x: number, y: number): number {
+  const w = sim.world;
+  const r = LUD.grzybPrzyObozie;
+  let n = 0;
+  for (let yy = y - r; yy <= y + r; yy++) for (let xx = x - r; xx <= x + r; xx++) {
+    if (w.inb(xx, yy) && w.tile[w.idx(xx, yy)] === T.FUNGUS) n++;
+  }
+  return n;
+}
+
 /** Spiżarnia stojąca na tym kaflu (albo tuż obok). */
 export function spizarniaW(sim: Sim, x: number, y: number): MiejsceJedzenia | null {
   return wszystkieSpizarnie(sim).find((s) => Math.abs(s.x - x) <= 1 && Math.abs(s.y - y) <= 1) ?? null;
@@ -248,11 +270,14 @@ function pilnujSiedziby(sim: Sim): void {
     }
   }
   sim.lud.obozy = obozy;
-  if (odcieci.length / lud.length <= LUD.odcieciProg || sim.tick - sim.lud.siedzibaT < LUD.siedzibaPrzerwa) return;
+  // zalana siedziba przenosi się od razu — na suche miejsce przy największej grupie
+  const zalana = w.water[w.idx(klan.hx, klan.hy)] >= LUD.wodaUcieka;
+  if (!zalana && (odcieci.length / lud.length <= LUD.odcieciProg || sim.tick - sim.lud.siedzibaT < LUD.siedzibaPrzerwa)) return;
   // nowa siedziba przy największym obozie — ale tylko gdy jest w nim więcej ludu niż tych,
   // którzy wciąż mogą wrócić (rozproszeni kopacze nie ciągną siedziby za sobą)
-  const cel = [...obozy].sort((a, b) => b.ilu - a.ilu)[0];
-  if (!cel || cel.ilu <= dojdzie.size) return;
+  const g = zalana ? najwiekszaGrupa(sim, klan.id) : null;
+  const cel = zalana ? (g ? { x: g.x, y: Math.max(2, g.y - 2), ilu: g.ilu } : null) : [...obozy].sort((a, b) => b.ilu - a.ilu)[0];
+  if (!cel || (!zalana && cel.ilu <= dojdzie.size)) return;
   const miejsce = podloga(sim, Math.floor(cel.x), Math.floor(cel.y), 10);
   if (!miejsce) return;
   // stara siedziba zostaje obozem ze swoją spiżarnią — robotnicy będą z niej brać (nic się nie teleportuje)

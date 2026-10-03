@@ -9,7 +9,8 @@ import { LUDY } from '../nastawy/gora';
 import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi } from './droga';
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
-import { mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
+import { czoloDrogi } from './pielgrzymka';
+import { obozFrontowy, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
 import { LUD, REMAKE } from '../nastawy/lud';
 
 export enum Job {
@@ -90,6 +91,8 @@ export interface Creature {
   /** Remake v1: robotnik przekopuje korytarz w tę stronę (−1 zachód, 1 wschód); ostatni kierunek pamięta. */
   korytarz?: number;
   kierunek?: number;
+  /** Remake v1: robotnik kopie drogę do rdzenia (złotą kreskę). */
+  kopieDroge?: boolean;
   /** Remake v1: stojąc przy obozie, modli się (pobożny). */
   modliPrzyObozie?: boolean;
   /** Remake v1: wysłany pod rdzeń — wraca do pielgrzymki po każdym przerwaniu (ogień, ucieczka, posiłek). */
@@ -234,6 +237,14 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   const trzymaSie = naDrodzeWiernych || ((c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
     && (naStopniach || w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1)));
   if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
+    // Remake v1: lud nie spada — schodzi powoli, wbijając klamry (droga w dół staje się drogą w górę);
+    // swobodny lot w jaskinię bez dna łamał im kości albo kończył się w magmie
+    if (REMAKE && LUD.klamry && rolaPostaci(c) && w.magma[w.idx(tx, Math.min(w.h - 1, ty + 1))] === 0) {
+      c.vy = 0;
+      c.y += LUD.zjazd;
+      c.wspina = sim.tick;
+      return;
+    }
     // Kto dopiero co się wspinał i ma ścianę pod ręką, zsuwa się po niej, zamiast lecieć.
     // Inaczej każda zmiana zamiaru w połowie szybu kończyła się upadkiem z całej wysokości.
     if ((c.wspina ?? -99) >= sim.tick - K.zsuwaSieTikow && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty))
@@ -327,6 +338,13 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     if (REMAKE && rolaPostaci(c)) { c.zamiar = 'ucieka od ognia'; c.zamiarDo = sim.tick + K.ogienTikow; }
     c.jx = tx - Math.sign(mx || c.face) * K.ogienUciekaX; c.jy = ty - (my >= 0 ? K.ogienUciekaWGore : -K.ogienUciekaWDol);
     c.jt = K.ogienTikow; c.fear = 1;
+  }
+
+  // Remake v1: woda podchodzi — lud wychodzi w górę, zamiast stać na swoim miejscu, aż utonie
+  if (REMAKE && rolaPostaci(c) && c.job !== Job.FLEE && (c.id + sim.tick) % 20 === 0 && w.water[w.idx(tx, ty)] >= LUD.wodaUcieka) {
+    c.job = Job.FLEE; c.droga = undefined;
+    c.jx = tx; c.jy = Math.max(2, ty - 8); c.jt = 240;
+    c.zamiar = 'ucieka przed wodą'; c.zamiarDo = sim.tick + 240;
   }
 
   // --- wybór zajęcia
@@ -650,6 +668,8 @@ function planujLud(sim: Sim, c: Creature): void {
   const rola = rolaPostaci(c)!;
   const Z = LUD.zamiarTikow;
   c.korytarz = undefined;
+  const kopal = !!c.kopieDroge;
+  c.kopieDroge = false;
   c.modliPrzyObozie = false;
   const naDroge = (droga: number[], cx?: number, cy?: number): void => {
     c.droga = droga; c.drogaI = 0;
@@ -673,7 +693,11 @@ function planujLud(sim: Sim, c: Creature): void {
 
   // --- głód: robotnik je sam; pobożni i rycerze czekają na dostawę, chyba że już ledwo żyją
   const robotnikow = liczRole(sim).robotnik;
-  const glodny = rola === 'robotnik' ? c.hunger > K.idzieJesc : c.hunger > LUD.glodSam || (robotnikow === 0 && c.hunger > K.idzieJesc);
+  // robotnik daleko od spiżarni rusza jeść wcześniej (droga powrotna bywa długa), kopacz drogi czeka na dostawę
+  const spB = najblizszaSpizarnia(sim, c.x, c.y, true);
+  const dalekoOdJedzenia = !spB || Math.hypot(spB.x - c.x, spB.y - c.y) > LUD.daleko;
+  const progRobotnika = kopal && robotnikow > 1 ? LUD.glodSam : dalekoOdJedzenia ? LUD.glodDostawy : K.idzieJesc;
+  const glodny = rola === 'robotnik' ? c.hunger > progRobotnika : c.hunger > LUD.glodSam || (robotnikow === 0 && c.hunger > K.idzieJesc);
   const odOgnia = sim.tick - (c.odOgnia ?? -1e9) < Z;   // świeżo uciekł od ognia — nie wraca w jego stronę
   if (glodny && c.carry === 0) {
     if (sim.tick >= (c.bezSpizarniDo ?? 0)) {
@@ -755,13 +779,16 @@ function planujLud(sim: Sim, c: Creature): void {
 /** Miejsce do stania przy najbliższym obozie (siedzibie albo obozie ze spiżarnią) — każdy ma swoje. */
 function stanPrzyObozie(sim: Sim, c: Creature, naDroge: (d: number[], x?: number, y?: number) => void,
   droga: (cel: (x: number, y: number) => boolean, limit: number) => number[] | null): boolean {
-  const sp = najblizszaSpizarnia(sim, c.x, c.y, false);
+  // pobożni i rycerze stacjonują przy obozie frontowym (najbliżej rdzenia) — idą za postępem drogi;
+  // robotnik odpoczywa przy najbliższej spiżarni
+  const sp = stacjonuje(c) ? obozFrontowy(sim) : najblizszaSpizarnia(sim, c.x, c.y, false);
   if (!sp) return false;
   // rycerze stoją dalej, na skraju obozu; pobożni bliżej — każdy w swoim miejscu, nie jeden na drugim
   const r = rolaPostaci(c) === 'rycerz' ? 5 : 2;
   const px = sp.x + (c.id % 2 ? -1 : 1) * (r + (c.id >> 1) % 3);
-  const d = droga((x, y) => Math.abs(x - px) <= 1 && Math.abs(y - sp.y) <= 3 && stoi(sim, x, y), LUD.doSpizarni)
-    ?? droga((x, y) => Math.abs(x - sp.x) <= 6 && Math.abs(y - sp.y) <= 3 && stoi(sim, x, y), LUD.doSpizarni);
+  const sucho = (x: number, y: number) => sim.world.water[sim.world.idx(x, y)] < 3;
+  const d = droga((x, y) => Math.abs(x - px) <= 1 && Math.abs(y - sp.y) <= 3 && stoi(sim, x, y) && sucho(x, y), LUD.doSpizarni)
+    ?? droga((x, y) => Math.abs(x - sp.x) <= 6 && Math.abs(y - sp.y) <= 3 && stoi(sim, x, y) && sucho(x, y), LUD.doSpizarni);
   if (!d) return false;
   naDroge(d);
   return true;
@@ -787,7 +814,33 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
       }
     }
   }
-  // 2. poza strefą pracy albo przy rdzeniu — wraca do siedziby
+  // 2. droga do rdzenia: kopie czoło złotej kreski (najwyżej kilku naraz)
+  const cz = czoloDrogi(sim);
+  if (cz >= 0) {
+    let kopiacych = 0;
+    for (const o of sim.creatures) if (!o.dead && o.id !== c.id && o.kopieDroge) kopiacych++;
+    if (kopiacych < LUD.drogaKopaczy) {
+      const fx = cz % w.w, fy = (cz / w.w) | 0;
+      const d = droga((x, y) => Math.abs(x - fx) + Math.abs(y - fy) === 1 || (Math.abs(x - fx) === 1 && Math.abs(y - fy) === 1), LUD.dostawaLimit);
+      if (d) {
+        naDroge(d); c.jx = fx; c.jy = fy; c.dig = 0; c.kopieDroge = true;
+        zamiar('kopie drogę do rdzenia', Job.DIG, podroz(d) + Z);
+        return;
+      }
+    }
+  }
+  // 3. grzyb przy obozach — do spiżarni obozu (posadzony przy obozie trafia do niej)
+  {
+    const sp = spizarnieWgOdleglosci(sim, c.x, c.y, false);
+    const przyObozie = (x: number, y: number) => sp.some((s) => Math.abs(s.x - x) <= LUD.grzybPrzyObozie && Math.abs(s.y - y) <= LUD.grzybPrzyObozie);
+    const najblizsza = sp[0];
+    if (najblizsza && najblizsza.ilosc < LUD.zapasDo) {
+      const d = szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && przyObozie(x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, LUD.dostawaLimit)
+        ?? szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && wZasieguPracy(clan, x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, K.jedzenieLimit);
+      if (d) { naDroge(d); zamiar('zbiera grzyb do spiżarni', Job.ZBIERA, podroz(d)); return; }
+    }
+  }
+  // 4. poza strefą pracy albo przy rdzeniu — wraca do siedziby
   const przyRdzeniu = Math.hypot(c.x - w.coreX, c.y - w.coreY) < LUD.strefaRdzenia;
   // (po ucieczce od ognia nie wraca od razu — droga do siedziby prowadziła obok magmy i kręcił się w kółko)
   const swiezoOdOgnia = sim.tick - (c.odOgnia ?? -1e9) < Z;
@@ -1085,7 +1138,9 @@ function glodnyDoNakarmienia(sim: Sim, c: Creature): Creature | null {
   for (const o of sim.creatures) if (!o.dead && o.id !== c.id && o.dostawaDla !== undefined) obslugiwani.add(o.dostawaDla);
   let best: Creature | null = null, bd = Infinity;
   for (const o of sim.creatures) {
-    if (o.dead || o.clan !== c.clan || !stacjonuje(o) || o.hunger < LUD.glodDostawy || obslugiwani.has(o.id)) continue;
+    // stacjonujący — i kopacze drogi daleko od spiżarni (wracając po jedzenie, umierali po drodze)
+    const kopaczDaleko = o.kopieDroge && (najblizszaSpizarnia(sim, o.x, o.y, false) ? Math.hypot(najblizszaSpizarnia(sim, o.x, o.y, false)!.x - o.x, najblizszaSpizarnia(sim, o.x, o.y, false)!.y - o.y) > LUD.daleko : false);
+    if (o.dead || o.clan !== c.clan || !(stacjonuje(o) || kopaczDaleko) || o.hunger < LUD.glodDostawy || obslugiwani.has(o.id)) continue;
     const d = Math.hypot(o.x - c.x, o.y - c.y);
     if (d < bd) { bd = d; best = o; }
   }
@@ -1127,6 +1182,11 @@ function doDig(sim: Sim, c: Creature): void {
   if (w.get(c.jx, c.jy) === T.AIR || !w.inb(c.jx, c.jy)) {
     // Remake v1: korytarz — następny kafel w tę samą stronę, dopóki trwa zamiar
     if (c.korytarz && sim.tick < (c.zamiarDo ?? 0) && kafelKorytarza(sim, c, c.jx + c.korytarz, c.jy)) { c.jx += c.korytarz; c.dig = 0; return; }
+    // Remake v1: droga do rdzenia — następny kafel czoła, póki trwa zamiar
+    if (c.kopieDroge && sim.tick < (c.zamiarDo ?? 0)) {
+      const cz = czoloDrogi(sim);
+      if (cz >= 0) { c.jx = cz % w.w; c.jy = (cz / w.w) | 0; c.dig = 0; c.droga = undefined; return; }
+    }
     c.jt = 0;
     return;
   }
@@ -1216,6 +1276,8 @@ function idzPlanem(sim: Sim, c: Creature, sciezka: number[]): boolean {
     // po skosie (np. z wody albo z półki obok początku kreski) — też krokiem; prosto do niej
     // stał w miejscu na granicy kafli i cała warta czekała przy siedzibie
     if (bd === 2 && Math.abs(bx - tx) === 1 && Math.abs(by - ty) === 1 && !w.solid(bx, by)) { krok(sim, c, sciezka[best]); return true; }
+    // Remake v1: dalej niż o krok — prawdziwą drogą (doPielgrzym), nie na przełaj
+    if (REMAKE) return false;
     walkTo(sim, c, bx, by);
     return true;
   }
@@ -1224,6 +1286,8 @@ function idzPlanem(sim: Sim, c: Creature, sciezka: number[]): boolean {
   const nx = nast % w.w, ny = (nast / w.w) | 0;
   if (w.solid(nx, ny)) {
     if (w.hardness(nx, ny) <= 0) return false;
+    // Remake v1: drogę kopią robotnicy (albo, gdy nikt nie kopie, powoli góra) — pobożny czeka na czole
+    if (REMAKE) return true;
     digTile(sim, c, nx, ny);
     return true;
   }
@@ -1254,7 +1318,9 @@ function doPielgrzym(sim: Sim, c: Creature): void {
     // szli prosto w stronę rdzenia i wpadali do magmy
     if (REMAKE) {
       if (!c.droga && budzetDrog() > 2) {
-        const d = szukajDrogi(sim, c, (i, x, y) => w.prog[i] === 1
+        // do kafla aktualnej drogi (stopnie zostają też po starych planach — przy nich stawali na zawsze)
+        const naKresce = plan ? new Set(plan.sciezka) : null;
+        const d = szukajDrogi(sim, c, (i, x, y) => (naKresce !== null && naKresce.has(i) && !w.solid(x, y))
           || (Math.abs(x - w.coreX) < P.przedsionekX && Math.abs(y - w.przedsionekY) < P.przedsionekY), LUD.dostawaLimit);
         if (d) { c.droga = d; c.drogaI = 0; }
       }
@@ -1281,7 +1347,7 @@ function doPielgrzym(sim: Sim, c: Creature): void {
     if (Math.abs(c.x - przed) < 0.001) c.jx = Math.floor(c.x);   // nie ma przejścia — zostaje tu
   }
   c.devotion = Math.min(1, c.devotion + P.modlitwaOddanie);
-  c.hunger = Math.max(0, c.hunger - P.modlitwaKarmi);      // wiara trawi wolniej, ale trawi
+  if (!REMAKE) c.hunger = Math.max(0, c.hunger - P.modlitwaKarmi);      // wiara trawi wolniej, ale trawi (Remake v1: karmią dostawy)
   sim.wiara += P.modlitwaWiara * sim.incomeMult();
   if (sim.tick % P.mysliCo === 0 && sim.rng.chance(P.mysliSzansa)) sim.efekt(c.x, c.y - 0.4, 'mysl');
 }

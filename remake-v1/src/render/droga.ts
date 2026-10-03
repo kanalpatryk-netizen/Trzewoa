@@ -1,4 +1,5 @@
 import { REMAKE } from '../nastawy/lud';
+import { grzybPrzy } from '../sim/lud';
 import type { Plate } from './plate';
 import { procentSkorupy } from '../sim/rytual';
 import type { Sim } from '../sim/sim';
@@ -54,22 +55,24 @@ export function terazDrogi(sim: Sim): Teraz {
     if (k.dead || k.pop < PIELGRZYMKA.minNacja || RACES[k.race].faithGain <= 0) continue;
     if (!najw || k.devotion > najw.devotion) najw = k;
   }
-  const gniazdo = (k: Sim['clans'][number]) => ({ x: k.hx, y: k.hy, r: 5, tekst: REMAKE ? `siedziba · spiżarnia ${k.stock}` : k.name });
+  const gniazdo = (k: Sim['clans'][number]) => ({ x: k.hx, y: k.hy, r: 5, tekst: REMAKE ? `siedziba · spiżarnia ${k.stock}${grzybPrzy(sim, k.hx, k.hy) ? ` · grzyb obok ${grzybPrzy(sim, k.hx, k.hy)}` : ''}` : k.name });
   switch (kroki[biezacy]?.nazwa) {
     case 'wiara': {
       const lud = sim.clans.filter((k) => !k.dead && k.race === Race.GOBLIN && k.pop > 0).sort((a, b) => b.pop - a.pop)[0];
-      return { tekst: 'Zrób Cud przy Ślepym Ludzie — przy nim zaczną się modlić.', cel: lud ? gniazdo(lud) : undefined };
+      return { tekst: REMAKE ? 'Zrób Cud przy siedzibie — pobożni zaczną się modlić i dadzą ci wiarę.' : 'Zrób Cud przy Ślepym Ludzie — przy nim zaczną się modlić.', cel: lud ? gniazdo(lud) : undefined };
     }
     case 'oddanie':
       return najw
         ? { tekst: `Zrób Cud przy gnieździe: ${najw.name} — wierzą na ${Math.floor(najw.devotion * 100)}%, potrzeba ponad ${Math.round(PIELGRZYMKA.oddanieNacji * 100)}%. Albo szepnij „módl się” trzem z nich.`, cel: gniazdo(najw) }
-        : { tekst: 'Żadna nacja nie jest dość liczna, by w ciebie uwierzyć. Nakarm którąś.' };
+        : REMAKE
+          ? { tekst: 'Wydawaj ze skały pobożnych i zrób Cud przy siedzibie — albo szepnij „módl się” trzem pobożnym.', cel: (() => { const k = sim.clans.find((k) => !k.dead && k.race === Race.GOBLIN); return k ? gniazdo(k) : undefined; })() }
+          : { tekst: 'Żadna nacja nie jest dość liczna, by w ciebie uwierzyć. Nakarm którąś.' };
     case 'droga':
       return sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku
-        ? { tekst: 'Nakarm przedsionek nad rdzeniem (grzyb) — z nim warta przeżyje na dole.', cel: przedsionek }
-        : { tekst: `${najw ? najw.name : 'Wierni'} ruszą pod rdzeń i sami przekopią się w dół.`, cel: przedsionek };
+        ? { tekst: REMAKE ? 'Robotnicy kopią drogę do rdzenia (złota kreska). Gdy będzie gotowa, szepnij trzem pobożnym „módl się”.' : 'Nakarm przedsionek nad rdzeniem (grzyb) — z nim warta przeżyje na dole.', cel: przedsionek }
+        : { tekst: REMAKE ? 'Pobożni ruszą pod rdzeń wykopaną drogą; robotnicy doniosą im jedzenie.' : `${najw ? najw.name : 'Wierni'} ruszą pod rdzeń i sami przekopią się w dół.`, cel: przedsionek };
     case 'skorupa':
-      return { tekst: `Wierni kują skorupę — ${procentSkorupy(sim)}%. Pilnuj, żeby przy przedsionku było co jeść.`, cel: przedsionek };
+      return { tekst: REMAKE ? `Pobożni kruszą skorupę modlitwą — ${procentSkorupy(sim)}%. Pilnuj, żeby robotnicy mieli co im donosić.` : `Wierni kują skorupę — ${procentSkorupy(sim)}%. Pilnuj, żeby przy przedsionku było co jeść.`, cel: przedsionek };
     default:
       return { tekst: 'Skorupa otwarta — wierni schodzą do rdzenia.', cel: { x: w.coreX, y: w.coreY, r: 5, tekst: 'rdzeń' } };
   }

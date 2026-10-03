@@ -20,6 +20,12 @@
 - Pielgrzym wysłany pod rdzeń wraca do wyprawy po każdym przerwaniu, idzie drogą wiernych
   i nie spada z niej w magmę
 - Aureola: jasna przy wzmocnieniu, czerwona przy osłabieniu; na karcie nazwa stanu, skutek i kiedy minie
+- Drogę do rdzenia kopią robotnicy (do 3 naraz) — góra tylko osusza kreskę i drąży sama, gdy nikt nie kopie;
+  pielgrzymi idą wykopaną drogą, nie kują jej sami; modlitwa już nie karmi — karmią dostawy
+- Lud nie spada: nad pustką schodzi po klamrach, a którędy zszedł, tamtędy wróci (koniec z uwięzieniem na półce)
+- Pobożni i rycerze stacjonują przy obozie frontowym (najbliżej rdzenia); nowi idą za postępem
+- Grzyb posadzony przy obozie robotnicy znoszą do jego spiżarni; podpis obozu pokazuje też grzyb obok
+- Ucieczka przed wodą, zalana siedziba przenosi się na suche miejsce
 
 ## v4.2 beta (komputer)
 - Płatny wybór na karcie drożeje o 50% za każde wcześniejsze kupno w tej partii (karta to pokazuje)

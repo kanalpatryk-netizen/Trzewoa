@@ -52,7 +52,7 @@ function ruchGracza(sim: any) {
   // Remake v1: kogo wydaje skała — najpierw ręce do pracy, potem pobożni
   const role: any = { pobozny: 0, robotnik: 0, rycerz: 0 };
   for (const c of sim.creatures) if (!c.dead && c.race === Race.GOBLIN) role[c.rola ?? 'pobozny']++;
-  sim.lud.rola = role.pobozny < 2 ? 'pobozny' : role.robotnik < 6 ? 'robotnik' : role.pobozny < 8 ? 'pobozny' : role.robotnik < 10 ? 'robotnik' : 'pobozny';
+  sim.lud.rola = role.pobozny < 3 ? 'pobozny' : role.robotnik < 6 ? 'robotnik' : role.pobozny < 8 ? 'pobozny' : role.robotnik < 10 ? 'robotnik' : 'pobozny';
   // ratunek: nikt się nie modli i nie ma krwi na pobożnego — ofiara z robotnika
   if (role.pobozny === 0 && sim.krew < 30 && sim.wiara >= 10) {
     const r = sim.creatures.find((c: any) => !c.dead && c.race === Race.GOBLIN && c.rola === 'robotnik');
