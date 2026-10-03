@@ -26,6 +26,7 @@
 - Bot: 8 z 8 wygranych (7,4–18 min); na 8 światach łącznie 6 zgonów ludu (wcześniej ~18)
 - Głodny, do którego żaden Strażnik nie jest blisko (12 kafli), nie ucieka przed falą, tylko idzie jeść (na skraju strefy uciekali w kółko i umierali z głodu); na 16 światach zgonów z głodu 25 zamiast 37
 - Idący wyliczoną drogą przechodzi obok magmy bez ucieczki, jeśli następny kafel jest wolny od ognia (droga szybem przy magmie była przerywana co sekundę i robotnicy dreptali w kółko do śmierci); na 16 światach: głód 18 zgonów (było 25), w magmie 0
+- Pasek „Śniący Kamień śpi w ścianie · wróci za m:ss · zbierz rycerzy” i wskazówka „teraz:” prowadząca do świecącego gniazda; w czasie fali wstęga mówi, że skorupa nie pęka
 - Uprawa przy spiżarni liczy tylko grzyb na podłodze w swoim pasie (wiszący nad siedzibą grzyb blokował ją i siedziba głodowała)
 - Na 16 światach: 14 wygranych, 2 partie trwają po 25 min, 0 porażek
 

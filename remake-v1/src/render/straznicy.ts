@@ -5,6 +5,7 @@
 import type { Sim } from '../sim/sim';
 import type { Creature } from '../sim/creatures';
 import { aktywnyBoss } from '../sim/boss';
+import { bossSpi } from '../sim/straznicy';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { SERIF } from './ink';
 import type { Camera } from './camera';
@@ -96,6 +97,21 @@ export function rysujStraznika(ctx: CanvasRenderingContext2D, sim: Sim, c: Creat
 /** Pasek fali u góry pola gry: która fala, ilu zostało, życie bossa. */
 export function rysujPasekFali(ctx: CanvasRenderingContext2D, sim: Sim, x: number, y: number, szer: number): void {
   const st = sim.lud.straznicy;
+  // boss wrócił do ściany, bo nie miał z kim walczyć — gracz widzi, ile ma czasu na zebranie rycerzy
+  if (st && !st.trwa && bossSpi(sim)) {
+    const roz = Math.max(12, Math.min(16, szer * 0.02));
+    const s = Math.max(0, Math.ceil(((st.bossSpiDo ?? 0) - sim.tick) / 120));
+    const tekst = `${aktywnyBoss().nazwa} śpi w ścianie · wróci za ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')} · skorupa nie pęka · zbierz rycerzy`;
+    ctx.save();
+    ctx.font = `${roz}px ${SERIF}`;
+    ctx.textAlign = 'center';
+    const bw = ctx.measureText(tekst).width + 28, bh = roz * 1.9, bx = x + szer / 2 - bw / 2;
+    ctx.fillStyle = 'rgba(10,10,16,0.88)'; ctx.fillRect(bx, y, bw, bh);
+    ctx.strokeStyle = 'rgba(150,190,255,0.45)'; ctx.lineWidth = 1; ctx.strokeRect(bx + 0.5, y + 0.5, bw - 1, bh - 1);
+    ctx.fillStyle = 'rgba(200,225,255,0.85)'; ctx.fillText(tekst, x + szer / 2, y + roz * 1.3);
+    ctx.restore();
+    return;
+  }
   if (!st?.trwa) return;
   const zywi = sim.creatures.filter((c) => !c.dead && c.straznik);
   const boss = zywi.find((c) => c.boss);
