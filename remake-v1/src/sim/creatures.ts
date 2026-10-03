@@ -1349,7 +1349,9 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
   // Trol jest szalony z natury, ale ognia i tak się boi — inaczej żaden nie dożywał drugiej minuty.
   // Tak samo z dziurą w podłodze nad jeziorem ognia: po wykopaniu kafla spadało się
   // szybem prosto w magmę i całe gniazdo ginęło po kolei w jednym miejscu.
-  if (t !== T.CORE && (c.mad < K.kopanieOgienSzalenstwo || c.race === Race.TROLL) && c.job !== Job.DESCEND
+  // Remake v1: lud nie przebija się do ognia nawet w obłędzie — pięciu robotników wracających do siedziby
+  // wykopało kafel pod kieszenią magmy i ogień zalał cały szyb
+  if (t !== T.CORE && (c.mad < K.kopanieOgienSzalenstwo || c.race === Race.TROLL || (REMAKE && rolaPostaci(c))) && c.job !== Job.DESCEND
       && (sim.przyMagmie(x, y, K.kopanieOgienZasieg) || nadOgniem(sim, x, y))) {
     c.dig = 0; c.jt = 0; return;
   }
@@ -1368,7 +1370,8 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
 
 function doWander(sim: Sim, c: Creature): void {
   // Remake v1: lud nie kopie na spacerze — chyba że zbłąkany wraca w stronę siedziby
-  if (REMAKE && rolaPostaci(c)) { walkTo(sim, c, c.jx, c.jy, !wZasieguPracy(sim.clans[c.clan], c.x, c.y)); return; }
+  // (wyliczoną drogą — na przełaj „wracający do siedziby” wspinał się w ślepy szyb, zsuwał i tak w kółko, aż padł z głodu)
+  if (REMAKE && rolaPostaci(c)) { idz(sim, c, c.jx, c.jy, !wZasieguPracy(sim.clans[c.clan], c.x, c.y)); return; }
   walkTo(sim, c, c.jx, c.jy, sim.rng.chance(K.spacerKopie));
 }
 

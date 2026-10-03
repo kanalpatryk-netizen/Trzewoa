@@ -9,7 +9,11 @@
 - Posterunki wart i miejsca przy obozie omijają magmę (wolni rycerze płonęli); stacjonujący jedzą sami od 60% głodu
 - Magma przy drodze wiernych zastyga w kamień (wlewała się do korytarza i paliła kopaczy); robotnicy nie kopią czoła drogi tuż przy ogniu
 - Ucieczka od ognia prawdziwą drogą do bezpiecznego miejsca (lud utykał w kieszeni przy magmie)
-- Bot: 7 z 8 wygranych (7,8–12,5 min)
+- Lud nie przebija się do magmy nawet w obłędzie (pięciu robotników otworzyło kieszeń magmy nad szybem)
+- „Wraca do siedziby” idzie wyliczoną drogą — wcześniej na przełaj wpadał w ślepy szyb i ginął z głodu
+- Najazd ludzi schodzi ≥35 kafli od siedziby; bez „poprowadź ich na” własny lud; bot zawala wejście, gdy ma krew
+- Naprawiony skrypt testu balansu (znak ` w szablonie)
+- Bot: 8 z 8 wygranych (7,4–18 min)
 
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,

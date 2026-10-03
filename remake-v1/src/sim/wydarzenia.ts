@@ -149,14 +149,18 @@ function kandydaci(sim: Sim, st: StanWydarzen): { waga: number; zbuduj: Budownic
 
   // --- najazd z powierzchni
   if (surowe && !sim.rozejm) out.push({ rodzaj: 'najazd', waga: 3, zbuduj: () => {
-    const x = 8 + sim.rng.int(w.w - 16);
+    // Remake v1: schodzą z dala od siedziby ludu — zrzuceni tuż nad nią wyrzynali całą siedzibę w kilka sekund
+    const lud = sim.clans.find((k) => !k.dead && k.race === Race.GOBLIN);
+    let x = 8 + sim.rng.int(w.w - 16);
+    for (let k = 0; k < 20 && lud && Math.abs(x - lud.hx) < W.najazdOdSiedziby; k++) x = 8 + sim.rng.int(w.w - 16);
     const ilu = PP.ludzieIlu + sim.rng.int(PP.ludzieRozrzut);
     const wybory = [
       wybor('zawal', 'Zawal im wejście', 'Nie zejdą. Nikt nie zginie — ale nie popłynie też krew.', W.najazdZawal),
       wybor('wpusc', 'Wpuść ich', 'Zejdą po rudę i będą walczyć z tymi, na których trafią. Każda śmierć to twoja krew.'),
     ];
-    if (dom) wybory.push(wybor('prowadz', `Poprowadź ich na ${dom.name}`, `Uderzą w najliczniejszych — ${RACES[dom.race].name} straci ludzi, a reszta odetchnie.`, 0, W.najazdProwadz));
-    const rozsadny = naDom && dom ? 2 : sim.krew >= 60 ? 0 : 1;
+    // (na własny lud nikt ich nie prowadzi — w Remake v1 to jedyna nacja)
+    if (dom && dom.race !== Race.GOBLIN) wybory.push(wybor('prowadz', `Poprowadź ich na ${dom.name}`, `Uderzą w najliczniejszych — ${RACES[dom.race].name} straci ludzi, a reszta odetchnie.`, 0, W.najazdProwadz));
+    const rozsadny = naDom && dom && dom.race !== Race.GOBLIN ? 2 : sim.krew >= W.najazdZawal ? 0 : 1;
     return { rodzaj: 'najazd', tytul: 'Ludzie schodzą z powierzchni', tekst: `${ilu} ludzi idzie w dół po rudę i sławę. Po drodze zabijają.`, wybory, domyslny: 1, rozsadny, cel: { x: x + 0.5, y: 6, tekst: 'tu schodzą' }, od: sim.tick, x };
   } });
 

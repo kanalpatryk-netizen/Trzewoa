@@ -34,7 +34,7 @@ const NA_MINUTE = 7200;
 
 /**
  * Rozsądny gracz wersji na telefon: odpowiada na karty wydarzeń tak, jak radzi zdrowy rozsądek
- * (pole `rozsadny` karty), karmi głodnych grzybem, stawia Cud przy najwierniejszych
+ * (pole „rozsadny” karty), karmi głodnych grzybem, stawia Cud przy najwierniejszych
  * i szepcze „módl się”, gdy przy przedsionku jest co jeść. Nie drąży i nie zawala — tego
  * w tej wersji nie ma.
  */

@@ -19,6 +19,8 @@ export const WYDARZENIA = {
   // ----------------------------------------------------------------- ceny
   /** Najazd: zawalenie wejścia / poprowadzenie ich na najsilniejszych. */
   najazdZawal: 20, najazdProwadz: 10,
+  /** Remake v1: najazd schodzi co najmniej tyle kafli (w poziomie) od siedziby ludu. */
+  najazdOdSiedziby: 35,
   /** Powódź: zatkanie szczeliny / skierowanie wody na najsilniejszych. */
   powodzZatkaj: 15, powodzKieruj: 10,
   /** Zaraza: uzdrowienie (Wiara) i ile oddania dostaje wtedy każda nacja. */
