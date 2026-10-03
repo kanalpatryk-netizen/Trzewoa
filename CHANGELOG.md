@@ -16,6 +16,7 @@
 - Tragarz, który słabnie z głodu, zjada niesione jedzenie (sześciu padło z pełnymi rękami)
 - Lud nad samą magmą wisi na klamrze zamiast zjeżdżać w ogień
 - Głodny przerywa długi spacer i najpierw szuka jedzenia
+- Pod rdzeniem szaleństwo głębi nie łapie nikogo z ludu (warta rycerzy głodowała przez nie o połowę szybciej)
 - Głodny uwięziony w odciętej kieszeni (żadna droga do spiżarni) wkopuje się do najbliższej spiżarni
 - Bot: 8 z 8 wygranych (7,4–18 min); na 8 światach łącznie 6 zgonów ludu (wcześniej ~18)
 

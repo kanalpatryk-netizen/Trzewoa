@@ -228,8 +228,11 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // każdą pielgrzymkę: wierni wariowali, rozszczepiali się i wracali trolami.
   // Pielgrzym niesie tę wiarę ze sobą przez całą drogę w dół — inaczej wariował
   // w połowie zejścia, zanim w ogóle doszedł pod skorupę.
-  const podRdzeniem = c.devotion > P.ochronaOddanie
-    && (c.job === Job.PIELGRZYM || (Math.abs(c.x - w.coreX) < P.ochronaZasieg && Math.abs(c.y - w.coreY) < P.ochronaZasieg));
+  // Remake v1: pod rdzeniem chroni każdego z ludu — warta (rycerze, mało pobożni) łapała szaleństwo głębi,
+  // które przyspieszało głód o połowę, i rycerze padali na posterunku
+  const przyRdzeniu = Math.abs(c.x - w.coreX) < P.ochronaZasieg && Math.abs(c.y - w.coreY) < P.ochronaZasieg;
+  const podRdzeniem = (REMAKE && rolaPostaci(c) !== null && przyRdzeniu) || (c.devotion > P.ochronaOddanie
+    && (c.job === Job.PIELGRZYM || przyRdzeniu));
   // (wolniej niż kiedyś: pół minuty przy dnie wystarczało, żeby Żużlowiec, który zszedł
   // tylko po ciepło, wrócił z nożem na swoich)
   // Żużlowcy żyją przy ogniu głębi i głębia mniej im miesza w głowach
