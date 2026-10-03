@@ -869,9 +869,28 @@ function planujLud(sim: Sim, c: Creature): void {
     }
     if (stanPrzyObozie(sim, c, naDroge, droga)) { zamiar('pilnuje obozu', Job.STOI, Z); return; }
   }
-  // nie ma dokąd iść — stoi, gdzie jest
+  // nie ma dokąd iść — z odciętej kieszeni wkopuje się do spiżarni, inaczej stoi, gdzie jest
+  if (wkopSieDoSpizarni(sim, c, zamiar)) return;
   c.jx = Math.floor(c.x); c.jy = Math.floor(c.y);
   zamiar('czeka', Job.STOI, Z);
+}
+
+/**
+ * Remake v1: kto utknął w kieszeni, z której nie prowadzi żadna droga (zalało ją, osypała się),
+ * wkopuje się w stronę najbliższej spiżarni — wcześniej „czekał” tam, aż umarł z głodu.
+ */
+function wkopSieDoSpizarni(sim: Sim, c: Creature, zamiar: (opis: string, job: Job, jt: number) => void): boolean {
+  // tylko głodny i tylko gdy szukanie drogi naprawdę się odbyło (pusty budżet to nie „nie ma drogi”) —
+  // wkopujący się na ślepo przy froncie drogi rozkopywali ją i droga do rdzenia stała przez 10 minut
+  if (c.hunger <= LUD.glodSam || budzetDrog() < 3) return false;
+  const sp = najblizszaSpizarnia(sim, c.x, c.y, false);
+  if (!sp || Math.hypot(sp.x - c.x, sp.y - c.y) <= 3) return false;
+  const sps = spizarnieWgOdleglosci(sim, c.x, c.y, false);
+  const d = szukajDrogi(sim, c, (_i, x, y) => sps.some((o) => Math.abs(o.x - x) <= 1 && Math.abs(o.y - y) <= 1), LUD.doSpizarni);
+  if (d || budzetDrog() < 1) return false;
+  c.jx = sp.x; c.jy = sp.y; c.droga = undefined;
+  zamiar('wkopuje się z odciętej kieszeni do spiżarni', Job.WANDER, LUD.zamiarTikow);
+  return true;
 }
 
 /** Miejsce do stania przy najbliższym obozie (siedzibie albo obozie ze spiżarnią) — każdy ma swoje. */
@@ -1017,6 +1036,7 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   }
   // 5. nie ma czego kopać — odpoczywa przy spiżarni
   if (stanPrzyObozie(sim, c, naDroge, droga)) { zamiar('odpoczywa przy spiżarni', Job.STOI, Z); return; }
+  if (wkopSieDoSpizarni(sim, c, zamiar)) return;
   c.jx = cx; c.jy = cy;
   zamiar('czeka', Job.STOI, Z);
 }
@@ -1385,7 +1405,7 @@ function doWander(sim: Sim, c: Creature): void {
   // (głodny przerywa długi spacer — planer najpierw szuka jedzenia; robotnik „odchodzący spod rdzenia” doszedł
   // aż do siedziby i padł tam z głodu, wciąż w tym samym zamiarze)
   if (REMAKE && rolaPostaci(c) && c.carry === 0 && c.hunger > LUD.glodSam && (sim.tick + c.id) % 60 === 0) { c.jt = 0; return; }
-  if (REMAKE && rolaPostaci(c)) { idz(sim, c, c.jx, c.jy, !wZasieguPracy(sim.clans[c.clan], c.x, c.y)); return; }
+  if (REMAKE && rolaPostaci(c)) { idz(sim, c, c.jx, c.jy, !wZasieguPracy(sim.clans[c.clan], c.x, c.y) || !!c.zamiar?.startsWith('wkopuje')); return; }
   walkTo(sim, c, c.jx, c.jy, sim.rng.chance(K.spacerKopie));
 }
 
