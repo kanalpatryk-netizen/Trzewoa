@@ -56,6 +56,8 @@ export const STRAZNICY = {
    * (Bez tego fala z bossem bez rycerzy trwała wiecznie i lud wymierał z głodu, czekając.)
    */
   bossZasypiaBezRycerzy: 21600, bossSpi: 28800,
+  /** Głodny z ludu nie ucieka przed falą (idzie jeść), dopóki żaden Strażnik nie jest bliżej niż tyle kafli. */
+  glodnyNieUciekaOd: 12,
   /** Wiara za pokonaną falę. */
   nagrodaWiary: 15,
 };

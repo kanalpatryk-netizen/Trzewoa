@@ -11,7 +11,7 @@ import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi } from './pielgrzymka';
 import { gniazdaWSkale, obudzGniazdo } from './lud';
-import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow } from './straznicy';
+import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy } from './straznicy';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { zajecieBuntownika } from './bunt';
 import { obozFrontowy, wszystkieSpizarnie as wszystkieSpizarnieLudu, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
@@ -749,7 +749,10 @@ function planujLud(sim: Sim, c: Creature): void {
 
   // etap 3: zwykła fala Strażników — kto nie jest rycerzem, odchodzi spod rdzenia (modlitwa i tak nic nie kruszy);
   // pobożny z wyprawy wraca pod rdzeń, gdy fala minie
-  if (falaZwykla(sim) && rola !== 'rycerz' && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas)) {
+  // (głodny, do którego żaden Strażnik nie jest blisko, najpierw idzie jeść — na skraju strefy uciekali w kółko
+  // i umierali z głodu po kilku naraz)
+  const glodnyBezpieczny = c.hunger > LUD.glodSam && !zywiStraznicy(sim).some((s) => Math.hypot(s.x - c.x, s.y - c.y) < STRAZNICY.glodnyNieUciekaOd);
+  if (falaZwykla(sim) && rola !== 'rycerz' && !glodnyBezpieczny && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas)) {
     // najchętniej do najbliższej spiżarni poza strefą (tam przeczeka i zje), inaczej byle dalej
     const sp = spizarnieWgOdleglosci(sim, c.x, c.y, false).find((o) => !wStrefieStraznikow(sim, o.x, o.y, STRAZNICY.ucieczkaZapas));
     const d = (sp ? droga((x, y) => Math.abs(x - sp.x) <= 3 && Math.abs(y - sp.y) <= 2 && stoi(sim, x, y), LUD.dostawaLimit) : null)
