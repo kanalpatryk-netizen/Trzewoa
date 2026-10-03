@@ -7,6 +7,9 @@
 - Siedziba nie przenosi się pod rdzeń (w strefę Strażników); stojący tam nie ciągną jej za sobą
 - Karta buntownika pokazuje jego zamiar
 - Posterunki wart i miejsca przy obozie omijają magmę (wolni rycerze płonęli); stacjonujący jedzą sami od 60% głodu
+- Magma przy drodze wiernych zastyga w kamień (wlewała się do korytarza i paliła kopaczy); robotnicy nie kopią czoła drogi tuż przy ogniu
+- Ucieczka od ognia prawdziwą drogą do bezpiecznego miejsca (lud utykał w kieszeni przy magmie)
+- Bot: 7 z 8 wygranych (7,8–12,5 min)
 
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,

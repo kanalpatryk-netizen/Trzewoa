@@ -375,6 +375,12 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     if (REMAKE && rolaPostaci(c)) { c.zamiar = 'ucieka od ognia'; c.zamiarDo = sim.tick + K.ogienTikow; }
     c.jx = tx - Math.sign(mx || c.face) * K.ogienUciekaX; c.jy = ty - (my >= 0 ? K.ogienUciekaWGore : -K.ogienUciekaWDol);
     c.jt = K.ogienTikow; c.fear = 1;
+    // Remake v1: prawdziwą drogą do najbliższego miejsca z dala od ognia — punkt „obok” bywał nieosiągalny
+    // i lud stał w kieszeni przy magmie, uciekając w miejscu, aż spłonął albo umarł z głodu
+    if (REMAKE && rolaPostaci(c)) {
+      const d = szukajDrogi(sim, c, (_i, x, y) => !sim.przyMagmie(x, y, 3) && stoi(sim, x, y), 3000);
+      if (d) { c.droga = d; c.drogaI = 0; const k = d[d.length - 1]; c.jx = k % w.w; c.jy = (k / w.w) | 0; }
+    }
   }
 
   // Remake v1: woda podchodzi — lud wychodzi w górę, zamiast stać na swoim miejscu, aż utonie
@@ -930,7 +936,7 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   }
   // 2. droga do rdzenia: kopie czoło złotej kreski (najwyżej kilku naraz)
   const cz = czoloDrogi(sim);
-  if (cz >= 0 && !strefa(cz % w.w, (cz / w.w) | 0)) {
+  if (cz >= 0 && !strefa(cz % w.w, (cz / w.w) | 0) && !sim.przyMagmie(cz % w.w, (cz / w.w) | 0, 2)) {
     let kopiacych = 0;
     for (const o of sim.creatures) if (!o.dead && o.id !== c.id && o.kopieDroge) kopiacych++;
     // przy małej liczbie robotników mniej kopaczy — ktoś musi zbierać jedzenie
@@ -1765,7 +1771,10 @@ function doFight(sim: Sim, c: Creature): void {
   else walkTo(sim, c, foe.x, foe.y);
 }
 
-function doFlee(sim: Sim, c: Creature): void { walkTo(sim, c, c.jx, c.jy, false); }
+function doFlee(sim: Sim, c: Creature): void {
+  if (REMAKE && c.droga) { if (idz(sim, c, c.jx, c.jy, false)) c.jt = 0; return; }
+  walkTo(sim, c, c.jx, c.jy, false);
+}
 
 function doBreed(sim: Sim, c: Creature): void {
   const clan = sim.clans[c.clan];

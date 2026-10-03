@@ -245,6 +245,17 @@ export function drazDrogeWiernym(sim: Sim): void {
       w.prog[i] = 1;
       if (w.water[i] > 0 || w.magma[i] > 0) { w.water[i] = 0; w.magma[i] = 0; }
     }
+    // magma tuż przy drodze zastyga w kamień — wlewała się do korytarza i paliła kopaczy jednego po drugim
+    if (sim.tick % 60 === 0) {
+      for (const i of p.sciezka) {
+        const x = i % w.w, y = (i / w.w) | 0;
+        for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+          if (!w.inb(x + dx, y + dy)) continue;
+          const j = w.idx(x + dx, y + dy);
+          if (w.magma[j] > 0 && !p.sciezka.includes(j)) { w.magma[j] = 0; if (w.tile[j] !== T.CORE) w.tile[j] = T.STONE; }
+        }
+      }
+    }
     if (sim.tick % LUD.goraDrazyCo !== 0) return;
     const cz = czoloDrogi(sim);
     if (cz < 0) return;
