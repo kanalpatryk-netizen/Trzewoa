@@ -24,7 +24,8 @@
 - Gniazdo pokazane (karta snu, uśpiony boss): „Przemyśl i kop” trafia w nie bez zgadywania
 - Głodny w płytkiej wodzie najpierw idzie jeść; głodny „czekający z dala od ognia” w odciętej kieszeni wkopuje się do spiżarni
 - Bot: 8 z 8 wygranych (7,4–18 min); na 8 światach łącznie 6 zgonów ludu (wcześniej ~18)
-- Na 16 światach: 13 wygranych, 3 partie trwają po 25 min, 0 porażek
+- Uprawa przy spiżarni liczy tylko grzyb na podłodze w swoim pasie (wiszący nad siedzibą grzyb blokował ją i siedziba głodowała)
+- Na 16 światach: 14 wygranych, 2 partie trwają po 25 min, 0 porażek
 
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,

@@ -552,7 +552,13 @@ function pilnujGniazd(sim: Sim): void {
 function uprawa(sim: Sim): void {
   const w = sim.world;
   for (const sp of wszystkieSpizarnie(sim)) {
-    if (grzybPrzy(sim, sp.x, sp.y) >= LUD.uprawaDo) continue;
+    // liczy tylko grzyb na podłodze w pasie, w którym sam sadzi — wiszący w powietrzu nad siedzibą
+    // (nie do zebrania) blokował uprawę i siedziba głodowała przy trzystu grzybach na mapie
+    let rosnie = 0;
+    for (let y = sp.y - 3; y <= sp.y + 2; y++) for (let x = sp.x - LUD.uprawaPromien; x <= sp.x + LUD.uprawaPromien; x++) {
+      if (w.inb(x, y + 1) && w.tile[w.idx(x, y)] === T.FUNGUS && w.solid(x, y + 1)) rosnie++;
+    }
+    if (rosnie >= LUD.uprawaDo) continue;
     const jest = sim.creatures.some((c) => !c.dead && rolaPostaci(c) === 'robotnik' && Math.hypot(c.x - sp.x, c.y - sp.y) <= LUD.uprawaZasieg);
     if (!jest) continue;
     for (let proba = 0; proba < 12; proba++) {
