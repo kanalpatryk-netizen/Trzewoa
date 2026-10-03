@@ -254,7 +254,7 @@ export function drazDrogeWiernym(sim: Sim): void {
     for (const c of sim.creatures) {
       if (c.dead || c.clan !== p.klan) continue;
       const blisko = Math.abs(c.x - fx) <= 4 && Math.abs(c.y - fy) <= 4;
-      if (c.job === Job.PIELGRZYM) czekaja = true;
+      if (c.job === Job.PIELGRZYM || c.wyprawa) czekaja = true;
       if (c.kopieDroge && blisko) kopie = true;
     }
     if (!czekaja || kopie) return;

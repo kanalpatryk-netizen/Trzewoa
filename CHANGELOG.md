@@ -11,6 +11,9 @@
 - Rycerze poza wartą pilnują obozu z jedzeniem (stały posterunek); wartę pod rdzeniem trzymają, gdy jest
   tam obóz z jedzeniem; głodnieją wolniej (×0,35)
 - Poprawka ruchu: po klamrach w bok postać się trzyma (wcześniej zjeżdżała szybem i wspinała się w kółko)
+- Pobożni wysłani pod rdzeń czekają przy obozie frontowym (modląc się), aż robotnicy dokopią drogę —
+  nie stoją już przy czole między kopaczami; gdy droga gotowa, schodzą razem
+- Rycerze idą z wyprawą: do obozu frontowego, a gdy pobożni modlą się pod rdzeniem — na wartę
 
 ## Remake v1 (komputer) — etap 1
 - Jeden lud: pobożni, robotnicy, rycerze (zamiast wielu ras)

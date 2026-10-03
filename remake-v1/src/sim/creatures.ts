@@ -708,6 +708,15 @@ function planujLud(sim: Sim, c: Creature): void {
 
   // pielgrzym trzyma się wyprawy, aż dojdzie (albo aż ty ją przerwiesz) — wcześniej porzucał ją po minucie
   if ((c.job === Job.PIELGRZYM || c.wyprawa) && sim.tick >= (c.bezModlitwyDo ?? 0) && c.hunger < LUD.glodSam) {
+    // droga do rdzenia jeszcze niewykopana — czeka przy obozie frontowym, a nie stoi między kopaczami
+    if (drogaNiegotowa(sim, c)) {
+      c.wyprawa = true;
+      if (stanPrzyObozie(sim, c, naDroge, droga)) {
+        c.modliPrzyObozie = true;
+        zamiar('czeka przy obozie, aż robotnicy dokopią drogę do rdzenia', Job.STOI, Z);
+        return;
+      }
+    }
     if (c.job !== Job.PIELGRZYM) { c.jx = miejsceWSzeregu(sim, c); c.jy = w.przedsionekY; c.dig = 0; }
     c.wyprawa = true;
     zamiar('schodzi pod rdzeń i modli się z wartą', Job.PIELGRZYM, P.wyprawaTikow);
@@ -796,11 +805,9 @@ function planujLud(sim: Sim, c: Creature): void {
     }
   }
   if (rola === 'rycerz') {
-    // warta pod rdzeniem tylko wtedy, gdy przy rdzeniu jest obóz z jedzeniem — bez niego rycerz stał
-    // na warcie sto kafli od spiżarni i umierał z głodu, zanim dostawa do niego doszła
-    const jedzeniePrzyRdzeniu = spizarnieWgOdleglosci(sim, w.coreX, w.przedsionekY, true)
-      .some((sp) => Math.hypot(sp.x - w.coreX, sp.y - w.przedsionekY) <= LUD.daleko);
-    if (wartaPotrzebna(sim) && jedzeniePrzyRdzeniu) {
+    // pobożni modlą się pod rdzeniem — rycerze idą z nimi na wartę (jedzenie donoszą robotnicy,
+    // a przy warcie powstaje obóz, który zaopatrują)
+    if (wartaPotrzebna(sim)) {
       const strona = c.id % 2 ? -1 : 1;
       const naPoscie = (x: number, y: number, s: number) => {
         const od = (x - w.coreX) * s;
@@ -827,7 +834,8 @@ function stanPrzyObozie(sim: Sim, c: Creature, naDroge: (d: number[], x?: number
   let sp: ReturnType<typeof obozFrontowy>;
   if (rolaPostaci(c) === 'rycerz') {
     const stary = c.posterunek ? wszystkieSpizarnieLudu(sim).find((o) => o.x === c.posterunek!.x && o.y === c.posterunek!.y && o.ilosc > 0) : undefined;
-    sp = stary ?? najblizszaSpizarnia(sim, c.x, c.y, true) ?? obozFrontowy(sim);
+    // gdy pobożni wyruszają pod rdzeń, rycerze idą z nimi do obozu frontowego
+    sp = wyprawaTrwa(sim) ? obozFrontowy(sim) : stary ?? najblizszaSpizarnia(sim, c.x, c.y, true) ?? obozFrontowy(sim);
     c.posterunek = sp ? { x: sp.x, y: sp.y } : undefined;
   } else sp = stacjonuje(c) ? obozFrontowy(sim) : najblizszaSpizarnia(sim, c.x, c.y, false);
   if (!sp) return false;
@@ -1363,6 +1371,22 @@ export function miejsceWSzeregu(sim: Sim, c: Creature): number {
   return sim.world.coreX + ((c.id % 5) - 2) * 2;
 }
 
+/**
+ * Remake v1: droga do rdzenia wciąż się kopie, a pielgrzym nie jest jeszcze blisko przedsionka.
+ * Wtedy czeka przy obozie frontowym — wcześniej szedł niegotową drogą i stał przy czole między robotnikami.
+ */
+function drogaNiegotowa(sim: Sim, c: Creature): boolean {
+  if (czoloDrogi(sim) < 0) return false;
+  const w = sim.world;
+  return Math.hypot(c.x - w.coreX, c.y - w.przedsionekY) > LUD.strefaRdzenia;
+}
+
+/** Remake v1: czy któryś pobożny jest w drodze pod rdzeń albo czeka na nią (wtedy rycerze idą z nimi). */
+function wyprawaTrwa(sim: Sim): boolean {
+  for (const o of sim.creatures) if (!o.dead && (o.wyprawa || o.job === Job.PIELGRZYM)) return true;
+  return false;
+}
+
 /** Remake v1: czy ktoś z ludu modli się już pod rdzeniem (wtedy rycerze stają na warcie). */
 function wartaPotrzebna(sim: Sim): boolean {
   const w = sim.world;
@@ -1563,6 +1587,8 @@ function doPielgrzym(sim: Sim, c: Creature): void {
     if (c.hunger > P.glodWraca) { c.job = Job.WANDER; c.jt = 0; c.jx = sim.clans[c.clan].hx; c.jy = sim.clans[c.clan].hy; return; }
   }
   const wPrzedsionku = Math.abs(c.x - w.coreX) < P.przedsionekX && Math.abs(c.y - w.przedsionekY) < P.przedsionekY;
+  // Remake v1: drogi jeszcze nie ma — wraca czekać przy obozie (planer), zamiast iść za kopaczami
+  if (!wPrzedsionku && REMAKE && sim.tick % 120 === c.id % 120 && drogaNiegotowa(sim, c)) { c.wyprawa = true; c.jt = 0; return; }
   if (!wPrzedsionku) {
     // swoja nacja ma plan drogi — idzie nim i sama przekopuje skałę po drodze; na przełaj
     // pielgrzymi szli prosto w dół i stawali na pierwszym jeziorze nad rdzeniem
