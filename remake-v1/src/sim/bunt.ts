@@ -54,6 +54,8 @@ export function nawroc(sim: Sim, ilu: number): number {
     c.buntownik = false;
     c.zamiar = undefined; c.jt = 0;
     sim.target.delete(c.id);
+    // kto go gonił, przestaje — inaczej bił dalej nawróconego (już swojego)
+    for (const o of sim.creatures) if (!o.dead && sim.target.get(o.id) === c.id) { sim.target.delete(o.id); if (o.job === Job.FIGHT) o.jt = 0; }
     sim.efekt(c.x, c.y, 'mysl', 'wraca');
     n++;
   }

@@ -1799,6 +1799,9 @@ function doBuild(sim: Sim, c: Creature): void {
 function doFight(sim: Sim, c: Creature): void {
   const foe = sim.creatureById(sim.target.get(c.id) ?? -1);
   if (!foe || foe.dead) { sim.target.delete(c.id); c.jt = 0; return; }
+  // Remake v1: swój na swojego nie idzie — cel mógł przestać być buntownikiem (nawrócony szeptem albo kartą),
+  // a rycerze, którzy go gonili, dobijali potem wiernego towarzysza z warty
+  if (REMAKE && rolaPostaci(c) && rolaPostaci(foe)) { sim.target.delete(c.id); c.jt = 0; return; }
   // etap 3: ze Strażnikiem Snu walczy się w rytmie ciosów, nie co tik
   if (foe.straznik || foe.buntownik || c.buntownik) {
     // etap 4: z buntownikami (i buntownicy z ludem) też w rytmie ciosów

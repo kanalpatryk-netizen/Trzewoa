@@ -26,7 +26,7 @@ export const TOOLS: Record<Verb, Tool[]> = {
     { id: 'okalecz', label: 'okalecz się', hint: 'pobożny upuszcza krwi: dostajesz krew, a on słabnie na zawsze' },
     { id: 'ofiaruj', label: 'ofiaruj', hint: 'oddaje ci życie — dużo krwi, jedna osoba mniej' },
     { id: 'przerwij', label: 'przerwij modlitwę', hint: 'wraca do swoich i przez minutę nie idzie się modlić' },
-    { id: 'przemysl', label: 'przemyśl i kop', hint: 'robotnik klęka, prosi o znak i kopie ku śpiącym rycerzom — znak jest niedokładny: jeden trafia raz na trzy, trzech na pewno' },
+    { id: 'przemysl', label: 'przemyśl i kop', hint: 'robotnik klęka, prosi o znak i kopie ku śpiącym rycerzom — znak jest niedokładny: jeden trafia raz na trzy, trzech na pewno (w świecące gniazdo — zawsze)' },
   ],
   znak: [
     { id: 'objawienie', label: 'objawienie', hint: 'wszyscy dookoła widzą cud; ich oddanie rośnie' },

@@ -138,6 +138,8 @@ export const LUD = {
    * odrasta jeden grzyb (na podłodze, najwyżej `uprawaPromien` kafli od spiżarni), dopóki rośnie ich tam mniej niż `uprawaDo`.
    */
   uprawaCo: 600, uprawaDo: 8, uprawaPromien: 7, uprawaZasieg: 14,
+  /** Uprawa: gdy przy spiżarni nie ma podłogi, sadzi do `uprawaZasieg` kafli w bok i tyle w pionie (i tam liczy grzyb). */
+  uprawaWPionie: 6,
 
   /** Co tyle tików sprawdzamy, czy da się jeszcze wygrać. */
   przegranaCo: 240,

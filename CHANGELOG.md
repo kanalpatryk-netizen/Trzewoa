@@ -28,7 +28,9 @@
 - Idący wyliczoną drogą przechodzi obok magmy bez ucieczki, jeśli następny kafel jest wolny od ognia (droga szybem przy magmie była przerywana co sekundę i robotnicy dreptali w kółko do śmierci); na 16 światach: głód 18 zgonów (było 25), w magmie 0
 - Pasek „Śniący Kamień śpi w ścianie · wróci za m:ss · zbierz rycerzy” i wskazówka „teraz:” prowadząca do świecącego gniazda; w czasie fali wstęga mówi, że skorupa nie pęka
 - Uprawa przy spiżarni liczy tylko grzyb na podłodze w swoim pasie (wiszący nad siedzibą grzyb blokował ją i siedziba głodowała)
-- Na 16 światach: 14 wygranych, 2 partie trwają po 25 min, 0 porażek
+- Nawrócony buntownik przestaje być celem — rycerze gonili go dalej i dobijali wiernych towarzyszy z warty; lud nie bije swoich (poza buntem)
+- Uprawa: gdy przy spiżarni nie ma podłogi (siedziba w pustej jaskini), sadzi szerzej (±14 kafli w bok, ±6 w pionie)
+- Na 16 światach: 14 wygranych, 2 partie trwają po 25 min, 0 porażek; zgonów z głodu łącznie 8 (na początku nocy ~37)
 
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,

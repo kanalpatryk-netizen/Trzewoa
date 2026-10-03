@@ -552,18 +552,21 @@ function pilnujGniazd(sim: Sim): void {
 function uprawa(sim: Sim): void {
   const w = sim.world;
   for (const sp of wszystkieSpizarnie(sim)) {
-    // liczy tylko grzyb na podłodze w pasie, w którym sam sadzi — wiszący w powietrzu nad siedzibą
+    // liczy tylko grzyb na podłodze w obszarze, w którym sam sadzi — wiszący w powietrzu nad siedzibą
     // (nie do zebrania) blokował uprawę i siedziba głodowała przy trzystu grzybach na mapie
+    const R = LUD.uprawaZasieg, H = LUD.uprawaWPionie;
     let rosnie = 0;
-    for (let y = sp.y - 3; y <= sp.y + 2; y++) for (let x = sp.x - LUD.uprawaPromien; x <= sp.x + LUD.uprawaPromien; x++) {
+    for (let y = sp.y - H; y <= sp.y + H; y++) for (let x = sp.x - R; x <= sp.x + R; x++) {
       if (w.inb(x, y + 1) && w.tile[w.idx(x, y)] === T.FUNGUS && w.solid(x, y + 1)) rosnie++;
     }
     if (rosnie >= LUD.uprawaDo) continue;
     const jest = sim.creatures.some((c) => !c.dead && rolaPostaci(c) === 'robotnik' && Math.hypot(c.x - sp.x, c.y - sp.y) <= LUD.uprawaZasieg);
     if (!jest) continue;
-    for (let proba = 0; proba < 12; proba++) {
-      const x = sp.x + sim.rng.int(LUD.uprawaPromien * 2 + 1) - LUD.uprawaPromien;
-      const y = sp.y + sim.rng.int(5) - 3;
+    // najpierw tuż przy spiżarni; gdy tam nie ma podłogi (siedziba w pustej jaskini) — szerzej
+    for (let proba = 0; proba < 24; proba++) {
+      const r = proba < 12 ? LUD.uprawaPromien : R, h = proba < 12 ? 3 : H;
+      const x = sp.x + sim.rng.int(r * 2 + 1) - r;
+      const y = sp.y + sim.rng.int(h * 2 + 1) - h;
       if (!w.inb(x, y + 1) || w.tile[w.idx(x, y)] !== T.AIR || !w.solid(x, y + 1)) continue;
       if (w.water[w.idx(x, y)] > 2 || w.magma[w.idx(x, y)] > 0 || (Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1)) continue;
       w.tile[w.idx(x, y)] = T.FUNGUS;
