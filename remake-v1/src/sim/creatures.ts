@@ -502,6 +502,7 @@ function pickJob(sim: Sim, c: Creature): void {
         // szept daje mu wiarę, jakiej nacja jeszcze nie ma: pod rdzeniem jego modlitwa się liczy,
         // a gdy skorupa puści, wejdzie do środka jako wierny
         c.devotion = Math.max(c.devotion, P.szeptOddanie);
+        c.tor = undefined; c.przemysl = undefined;   // kto idzie się modlić, porzuca kopanie ku znakowi
         c.job = Job.PIELGRZYM;
         c.wyprawa = true;
         if (REMAKE) { c.zamiar = 'schodzi pod rdzeń i modli się z wartą'; c.zamiarDo = sim.tick + P.wyprawaTikow; }

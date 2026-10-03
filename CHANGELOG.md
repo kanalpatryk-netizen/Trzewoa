@@ -20,6 +20,7 @@
 - Głodny uwięziony w odciętej kieszeni (żadna droga do spiżarni) wkopuje się do najbliższej spiżarni
 - Woda wsiąka w pęknięcia skorupy — zalany szyb nad rdzeniem blokował wygraną mimo 12 pęknięć
 - Śniący Kamień bez rycerzy przez 3 min wraca do ściany na 4 min (skorupa wtedy nie pęka) i zdradza jedno gniazdo — koniec pata, w którym lud wymierał z głodu
+- Karta „Pobożni chcą zejść pod rdzeń” wysyła tylko pobożnych (zabierała robotnika z torem ku gniazdu — tor nie kończył się nigdy i blokował nowe próby); idący się modlić porzuca tor
 - Gniazdo pokazane (karta snu, uśpiony boss): „Przemyśl i kop” trafia w nie bez zgadywania
 - Głodny w płytkiej wodzie najpierw idzie jeść; głodny „czekający z dala od ognia” w odciętej kieszeni wkopuje się do spiżarni
 - Bot: 8 z 8 wygranych (7,4–18 min); na 8 światach łącznie 6 zgonów ludu (wcześniej ~18)

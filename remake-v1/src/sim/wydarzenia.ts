@@ -837,7 +837,9 @@ function jedzeniePrzyPrzedsionku(sim: Sim): void {
 function poslijWarte(sim: Sim, k: Clan | null): void {
   if (!k) return;
   let posl = ilePielgrzymow(sim, k.id);
-  const chetni = sim.creatures.filter((c) => !c.dead && c.clan === k.id && c.job !== Job.PIELGRZYM && !c.slave)
+  // (Remake v1: tylko pobożni — karta zabierała też robotników, a ten z torem ku gniazdu stał potem
+  // przy obozie jak pielgrzym i tor nie kończył się nigdy)
+  const chetni = sim.creatures.filter((c) => !c.dead && c.clan === k.id && c.job !== Job.PIELGRZYM && !c.slave && (c.rola ?? 'pobozny') === 'pobozny' && !c.buntownik)
     .sort((a, b) => a.hunger - b.hunger);
   for (const c of chetni) {
     if (posl >= W.wartaIlu) break;
