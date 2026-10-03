@@ -241,8 +241,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     // swobodny lot w jaskinię bez dna łamał im kości albo kończył się w magmie
     if (REMAKE && LUD.klamry && rolaPostaci(c) && w.magma[w.idx(tx, Math.min(w.h - 1, ty + 1))] === 0) {
       c.vy = 0;
-      c.y += LUD.zjazd;
-      c.wspina = sim.tick;
+      c.y += LUD.zjazd;   // bez „chwytu” — inaczej klamra pod nogami trzymała go w powietrzu i stał tam
       return;
     }
     // Kto dopiero co się wspinał i ma ścianę pod ręką, zsuwa się po niej, zamiast lecieć.

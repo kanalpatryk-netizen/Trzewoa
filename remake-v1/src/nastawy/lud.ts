@@ -71,6 +71,8 @@ export const LUD = {
 
   /** Obóz ze spiżarnią: tylu stacjonujących (pobożni, rycerze) dalej niż `obozOdleglosc` od każdej spiżarni. */
   obozOdleglosc: 20, obozyMaks: 5, obozMinStacjonujacych: 3,
+  /** Obóz staje na płaskiej półce co najmniej tak szerokiej (kafle); nowy najwyżej co minutę; pusty obóz żyje co najmniej 2 min. */
+  obozSzerokosc: 5, obozPrzerwa: 7200, obozZycie: 14400,
   /** Robotnik donosi jedzenie pobożnemu albo rycerzowi, gdy ten jest głodniejszy niż to. */
   glodDostawy: 0.35,
   /** Pobożni i rycerze sami idą jeść dopiero tak głodni — albo gdy nie ma żadnego robotnika. */

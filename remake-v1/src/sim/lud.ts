@@ -32,9 +32,11 @@ export interface StanLudu {
   obozy: { x: number; y: number; ilu: number }[];
   /** Spiżarnie obozów (siedziba ma swoją w `klan.stock`). Stara siedziba po przenosinach też tu trafia. */
   spizarnie: Spizarnia[];
+  /** tik założenia ostatniego obozu */
+  obozT?: number;
 }
 
-export interface Spizarnia { x: number; y: number; ilosc: number }
+export interface Spizarnia { x: number; y: number; ilosc: number; /** tik założenia */ od?: number }
 
 /** Jedna spiżarnia ludu — siedziby albo obozu — z tym, co się z nią robi. */
 export interface MiejsceJedzenia {
@@ -278,7 +280,7 @@ function pilnujSiedziby(sim: Sim): void {
   const g = zalana ? najwiekszaGrupa(sim, klan.id) : null;
   const cel = zalana ? (g ? { x: g.x, y: Math.max(2, g.y - 2), ilu: g.ilu } : null) : [...obozy].sort((a, b) => b.ilu - a.ilu)[0];
   if (!cel || (!zalana && cel.ilu <= dojdzie.size)) return;
-  const miejsce = podloga(sim, Math.floor(cel.x), Math.floor(cel.y), 10);
+  const miejsce = miejsceNaObozu(sim, cel.x, cel.y) ?? podloga(sim, Math.floor(cel.x), Math.floor(cel.y), 10);
   if (!miejsce) return;
   // stara siedziba zostaje obozem ze swoją spiżarnią — robotnicy będą z niej brać (nic się nie teleportuje)
   const reszta = klan.stock;
@@ -311,11 +313,38 @@ function sprawdzPrzegrana(sim: Sim): void {
   sim.log('Nie został nikt, kto by się modlił, a krwi nie starczy, by skała wydała nowego.', 'koniec');
 }
 
+/**
+ * Miejsce na obóz albo siedzibę: płaska, szeroka półka (co najmniej `obozSzerokosc` kafli
+ * podłogi z miejscem nad głową), sucha i z dala od magmy — najlepiej przy grzybie.
+ * Wcześniej obóz stawał tam, gdzie akurat był środek grupy: w szybie, przy ogniu.
+ */
+export function miejsceNaObozu(sim: Sim, gx: number, gy: number, rx = 16, ry = 9, minSzer = LUD.obozSzerokosc): [number, number] | null {
+  const w = sim.world;
+  const dobre = (x: number, y: number) => w.inb(x, y) && w.passable(x, y) && w.passable(x, y - 1) && !w.passable(x, y + 1)
+    && w.water[w.idx(x, y)] < 3 && w.magma[w.idx(x, y)] === 0;
+  let best: [number, number] | null = null, bs = -Infinity;
+  for (let y = Math.floor(gy) - ry; y <= Math.floor(gy) + ry; y++) {
+    for (let x = Math.floor(gx) - rx; x <= Math.floor(gx) + rx; x++) {
+      if (!dobre(x, y)) continue;
+      let l = 0, p = 0;
+      while (l < 8 && dobre(x - l - 1, y)) l++;
+      while (p < 8 && dobre(x + p + 1, y)) p++;
+      const szer = l + p + 1;
+      if (szer < minSzer || Math.min(l, p) < Math.floor(minSzer / 2)) continue;      // na środku półki, nie na krawędzi
+      if (sim.przyMagmie(x, y, 5) || Math.hypot(x - w.coreX, y - w.coreY) < P.przedsionekX + 2) continue;
+      const wynik = szer * 2 + Math.min(15, grzybPrzy(sim, x, y)) * 1.5 - Math.hypot(x - gx, (y - gy) * 1.5) * 0.6;
+      if (wynik > bs) { bs = wynik; best = [x, y]; }
+    }
+  }
+  // nie ma szerokiej półki — węższa, byle płaska
+  return best ?? (minSzer > 3 ? miejsceNaObozu(sim, gx, gy, rx, ry, 3) : null);
+}
+
 /** Dokłada jedzenie do spiżarni obozu w (x, y) — albo zakłada tam obóz. */
 function odlozDoObozu(sim: Sim, x: number, y: number, ile: number): void {
   const jest = sim.lud.spizarnie.find((s) => Math.abs(s.x - x) <= 3 && Math.abs(s.y - y) <= 3);
   if (jest) jest.ilosc += ile;
-  else sim.lud.spizarnie.push({ x, y, ilosc: ile });
+  else sim.lud.spizarnie.push({ x, y, ilosc: ile, od: sim.tick });
 }
 
 /**
@@ -339,14 +368,17 @@ function pilnujObozow(sim: Sim, klan: Sim['clans'][number]): void {
       gx = w.coreX + (gx < w.coreX ? -1 : 1) * (P.przedsionekX + LUD.wartaOdstep);
       gy = w.przedsionekY;
     }
-    const m = podloga(sim, Math.floor(gx), Math.floor(gy), 5);
+    if (sim.tick - (sim.lud.obozT ?? -1e9) < LUD.obozPrzerwa) continue;
+    const m = miejsceNaObozu(sim, gx, gy) ?? podloga(sim, Math.floor(gx), Math.floor(gy), 5);
     if (!m) continue;
-    sim.lud.spizarnie.push({ x: m[0], y: m[1], ilosc: 0 });
+    if (wszystkieSpizarnie(sim).some((s) => Math.hypot(s.x - m[0], s.y - m[1]) <= LUD.obozOdleglosc)) continue;
+    sim.lud.spizarnie.push({ x: m[0], y: m[1], ilosc: 0, od: sim.tick });
+    sim.lud.obozT = sim.tick;
     sim.gdzie(m[0] + 0.5, m[1] + 0.5).log(`${klan.name} rozbili obóz — robotnicy będą tu donosić jedzenie.`, 'swiat', 'oboz');
   }
   // pusty obóz bez nikogo w pobliżu znika
   const zywi = sim.creatures.filter((c) => !c.dead && c.clan === klan.id);
-  sim.lud.spizarnie = sim.lud.spizarnie.filter((s) => s.ilosc > 0 || zywi.some((c) => Math.hypot(c.x - s.x, c.y - s.y) < 15));
+  sim.lud.spizarnie = sim.lud.spizarnie.filter((s) => s.ilosc > 0 || sim.tick - (s.od ?? 0) < LUD.obozZycie || zywi.some((c) => Math.hypot(c.x - s.x, c.y - s.y) < 15));
 }
 
 /** Wołane z sim.step() co tik. */
