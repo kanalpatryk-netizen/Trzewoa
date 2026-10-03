@@ -379,7 +379,13 @@ function krokStworzenia(sim: Sim, c: Creature): void {
 
   // --- ogień tuż obok: ucieka, zanim spłynie — wcześniej stali przy kuźni i czekali,
   // aż magma z rozkopanej kieszeni wleje im się pod nogi
-  if ((c.id + sim.tick) % K.ogienSprawdzCo === 0 && c.job !== Job.FLEE && !(REMAKE && c.job === Job.PIELGRZYM && w.prog[w.idx(tx, ty)] === 1) && sim.przyMagmie(tx, ty, 1)) {
+  // Remake v1: kto idzie wyliczoną drogą, a następny kafel jest wolny od ognia, przechodzi obok bez ucieczki —
+  // droga szybem przy magmie była przerywana co sekundę i robotnicy dreptali tam w kółko, aż padli z głodu
+  const przechodzi = REMAKE && !!rolaPostaci(c) && !!c.droga && (() => {
+    const n = c.droga![Math.min(c.droga!.length - 1, c.drogaI ?? 0)];
+    return n !== undefined && w.magma[n] === 0 && w.magma[w.idx(tx, ty)] === 0;
+  })();
+  if ((c.id + sim.tick) % K.ogienSprawdzCo === 0 && c.job !== Job.FLEE && !przechodzi && !(REMAKE && c.job === Job.PIELGRZYM && w.prog[w.idx(tx, ty)] === 1) && sim.przyMagmie(tx, ty, 1)) {
     let mx = 0, my = 0;
     for (let dy = -K.ogienZasieg; dy <= K.ogienZasieg; dy++) for (let dx = -K.ogienZasieg; dx <= K.ogienZasieg; dx++) {
       if (w.inb(tx + dx, ty + dy) && w.magma[w.idx(tx + dx, ty + dy)] > 0) { mx += dx; my += dy; }
