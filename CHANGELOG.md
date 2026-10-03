@@ -28,6 +28,9 @@
 - Ucieczka przed wodą, zalana siedziba przenosi się na suche miejsce
 - Obozy i siedziba (także na starcie) stają na płaskich półkach szerokich na ≥5 kafli i wysokich na ≥3 (najchętniej przy grzybie); bez takiego miejsca obóz nie powstaje; nowy obóz najwyżej co minutę
 - Koniec lewitowania: schodzący po klamrach nie zatrzymuje się w powietrzu
+- Głodny przy pełnej spiżarni: pobożni i rycerze z jedzeniem w zasięgu ~10 kafli jedzą sami, nie czekają na dostawę;
+  kopacze drogi przerywają pracę, by nakarmić pilnie głodnych; robotnicy zaopatrują obóz frontowy;
+  kurier bez jedzenia nie blokuje już dostawy
 
 ## v4.2 beta (komputer)
 - Płatny wybór na karcie drożeje o 50% za każde wcześniejsze kupno w tej partii (karta to pokazuje)

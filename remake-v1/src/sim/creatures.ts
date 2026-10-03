@@ -10,7 +10,7 @@ import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi } fro
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi } from './pielgrzymka';
-import { obozFrontowy, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
+import { obozFrontowy, wszystkieSpizarnie as wszystkieSpizarnieLudu, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
 import { LUD, REMAKE } from '../nastawy/lud';
 
 export enum Job {
@@ -85,6 +85,8 @@ export interface Creature {
   bezModlitwyDo?: number;
   /** Remake v1: robotnik niesie jedzenie tej postaci (id). */
   dostawaDla?: number;
+  /** Remake v1: robotnik niesie zapas do spiżarni tego obozu (zaopatrzenie obozu frontowego). */
+  doObozu?: { x: number; y: number };
   /** Remake v1: zamiar — co teraz robi i do kiedy się tego trzyma (widać go na karcie postaci). */
   zamiar?: string;
   zamiarDo?: number;
@@ -667,6 +669,8 @@ function planujLud(sim: Sim, c: Creature): void {
   const rola = rolaPostaci(c)!;
   const Z = LUD.zamiarTikow;
   c.korytarz = undefined;
+  // z pustymi rękami nikomu nic nie niesie — inaczej „kurier”, który poszedł jeść, blokował dostawę na zawsze
+  if (c.carry === 0) { c.dostawaDla = undefined; c.doObozu = undefined; }
   const kopal = !!c.kopieDroge;
   c.kopieDroge = false;
   c.modliPrzyObozie = false;
@@ -696,7 +700,11 @@ function planujLud(sim: Sim, c: Creature): void {
   const spB = najblizszaSpizarnia(sim, c.x, c.y, true);
   const dalekoOdJedzenia = !spB || Math.hypot(spB.x - c.x, spB.y - c.y) > LUD.daleko;
   const progRobotnika = kopal && robotnikow > 1 ? LUD.glodSam : dalekoOdJedzenia ? LUD.glodDostawy : K.idzieJesc;
-  const glodny = rola === 'robotnik' ? c.hunger > progRobotnika : c.hunger > LUD.glodSam || (robotnikow === 0 && c.hunger > K.idzieJesc);
+  // stacjonujący przy spiżarni z jedzeniem je sam (po co czekać na dostawę, gdy jedzenie leży obok);
+  // dostawy są dla tych, którzy stoją daleko — pod rdzeniem, na warcie
+  const spizarniaObok = !!spB && Math.hypot(spB.x - c.x, spB.y - c.y) <= LUD.spizarniaObok;
+  const glodny = rola === 'robotnik' ? c.hunger > progRobotnika
+    : c.hunger > LUD.glodSam || (robotnikow === 0 && c.hunger > K.idzieJesc) || (spizarniaObok && c.hunger > LUD.glodDostawy);
   const odOgnia = sim.tick - (c.odOgnia ?? -1e9) < Z;   // świeżo uciekł od ognia — nie wraca w jego stronę
   if (glodny && c.carry === 0) {
     if (sim.tick >= (c.bezSpizarniDo ?? 0)) {
@@ -720,6 +728,15 @@ function planujLud(sim: Sim, c: Creature): void {
       return;
     }
     c.dostawaDla = undefined;
+    // zapas dla obozu — do jego spiżarni
+    if (c.doObozu) {
+      const cel = c.doObozu;
+      c.jx = cel.x; c.jy = cel.y;
+      const d = droga((x, y) => Math.abs(x - cel.x) <= 1 && Math.abs(y - cel.y) <= 1, LUD.dostawaLimit);
+      if (d) naDroge(d, cel.x, cel.y);
+      zamiar('niesie zapas do spiżarni obozu', Job.HAUL, d ? podroz(d) : Z);
+      return;
+    }
     const sp = najblizszaSpizarnia(sim, c.x, c.y, false);
     if (sp) {
       c.jx = sp.x; c.jy = sp.y;
@@ -809,6 +826,22 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
       if (d) {
         naDroge(d, sp.x, sp.y); c.dostawaDla = komu.id;
         zamiar(`bierze jedzenie ze spiżarni dla: ${komu.rola === 'rycerz' ? 'rycerz' : 'pobożny'} #${komu.id}`, Job.ZBIERA, podroz(d));
+        return;
+      }
+    }
+  }
+  // 1b. zaopatrzenie obozu frontowego: pusta spiżarnia tam, gdzie stacjonują — zapas z najbogatszej
+  const front = obozFrontowy(sim);
+  if (front && !front.baza && front.ilosc < LUD.obozMinZapas) {
+    let niosa = 0;
+    for (const o of sim.creatures) if (!o.dead && o.id !== c.id && o.doObozu && o.doObozu.x === front.x && o.doObozu.y === front.y) niosa++;
+    const zrodlo = wszystkieSpizarnieLudu(sim).filter((s) => s !== front && !(s.x === front.x && s.y === front.y) && s.ilosc > LUD.obozMinZapas)
+      .sort((a, b) => b.ilosc - a.ilosc)[0];
+    if (zrodlo && niosa < 2) {
+      const d = droga((x, y) => Math.abs(x - zrodlo.x) <= 1 && Math.abs(y - zrodlo.y) <= 1, LUD.dostawaLimit);
+      if (d) {
+        naDroge(d, zrodlo.x, zrodlo.y); c.doObozu = { x: front.x, y: front.y };
+        zamiar('bierze zapas dla obozu frontowego', Job.ZBIERA, podroz(d));
         return;
       }
     }
@@ -1139,11 +1172,21 @@ function glodnyDoNakarmienia(sim: Sim, c: Creature): Creature | null {
   for (const o of sim.creatures) {
     // stacjonujący — i kopacze drogi daleko od spiżarni (wracając po jedzenie, umierali po drodze)
     const kopaczDaleko = o.kopieDroge && (najblizszaSpizarnia(sim, o.x, o.y, false) ? Math.hypot(najblizszaSpizarnia(sim, o.x, o.y, false)!.x - o.x, najblizszaSpizarnia(sim, o.x, o.y, false)!.y - o.y) > LUD.daleko : false);
-    if (o.dead || o.clan !== c.clan || !(stacjonuje(o) || kopaczDaleko) || o.hunger < LUD.glodDostawy || obslugiwani.has(o.id)) continue;
+    if (o.dead || o.clan !== c.clan || !(stacjonuje(o) || kopaczDaleko) || obslugiwani.has(o.id)) continue;
+    // daleko od jedzenia dostawa rusza wcześniej — droga w obie strony trwa
+    const spO = najblizszaSpizarnia(sim, o.x, o.y, true);
+    const prog = !spO || Math.hypot(spO.x - o.x, spO.y - o.y) > LUD.daleko ? LUD.glodDostawyDaleko : LUD.glodDostawy;
+    if (o.hunger < prog) continue;
     const d = Math.hypot(o.x - c.x, o.y - c.y);
     if (d < bd) { bd = d; best = o; }
   }
   return best;
+}
+
+/** Remake v1: czy ktoś stacjonujący bardzo głoduje, a nikt mu nie niesie jedzenia (wtedy kopacz drogi przerywa). */
+function pilnieGlodny(sim: Sim, c: Creature): boolean {
+  const g = glodnyDoNakarmienia(sim, c);
+  return !!g && g.hunger > LUD.glodPilny;
 }
 
 /** Remake v1: robotnik niesie jedzenie głodnemu — idzie za nim, karmi z ręki, resztę odnosi. */
@@ -1181,7 +1224,8 @@ function doDig(sim: Sim, c: Creature): void {
   if (w.get(c.jx, c.jy) === T.AIR || !w.inb(c.jx, c.jy)) {
     // Remake v1: korytarz — następny kafel w tę samą stronę, dopóki trwa zamiar
     if (c.korytarz && sim.tick < (c.zamiarDo ?? 0) && kafelKorytarza(sim, c, c.jx + c.korytarz, c.jy)) { c.jx += c.korytarz; c.dig = 0; return; }
-    // Remake v1: droga do rdzenia — następny kafel czoła, póki trwa zamiar
+    // Remake v1: droga do rdzenia — następny kafel czoła, póki trwa zamiar (głodny bez dostawy ma pierwszeństwo)
+    if (c.kopieDroge && (sim.tick + c.id) % 240 === 0 && pilnieGlodny(sim, c)) { c.jt = 0; return; }
     if (c.kopieDroge && sim.tick < (c.zamiarDo ?? 0)) {
       const cz = czoloDrogi(sim);
       if (cz >= 0) { c.jx = cz % w.w; c.jy = (cz / w.w) | 0; c.dig = 0; c.droga = undefined; return; }
@@ -1199,9 +1243,9 @@ function doDig(sim: Sim, c: Creature): void {
 function doZbiera(sim: Sim, c: Creature): void {
   const w = sim.world;
   if (Math.abs(c.jx - Math.floor(c.x)) > 1 || Math.abs(c.jy - Math.floor(c.y)) > 1) { idz(sim, c, c.jx, c.jy); return; }
-  const sp = c.dostawaDla !== undefined ? spizarniaW(sim, c.jx, c.jy) : null;
+  const sp = c.dostawaDla !== undefined || c.doObozu ? spizarniaW(sim, c.jx, c.jy) : null;
   if (sp) {
-    c.carry += sp.wez(LUD.przenoszenie);
+    c.carry += sp.wez(c.doObozu ? LUD.zapasPartia : LUD.przenoszenie);
   } else if (w.get(c.jx, c.jy) === T.FUNGUS) {
     w.set(c.jx, c.jy, T.AIR);
     c.carry += LUD.plon;

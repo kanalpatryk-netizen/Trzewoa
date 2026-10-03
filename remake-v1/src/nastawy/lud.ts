@@ -75,8 +75,16 @@ export const LUD = {
   obozSzerokosc: 5, obozWysokosc: 3, obozPrzerwa: 7200, obozZycie: 14400,
   /** Robotnik donosi jedzenie pobożnemu albo rycerzowi, gdy ten jest głodniejszy niż to. */
   glodDostawy: 0.35,
+  /** …a stojącym daleko od jedzenia (dalej niż `daleko`) już przy takim głodzie. */
+  glodDostawyDaleko: 0.2,
   /** Pobożni i rycerze sami idą jeść dopiero tak głodni — albo gdy nie ma żadnego robotnika. */
   glodSam: 0.8,
+  /** Stacjonujący ze spiżarnią z jedzeniem w tej odległości (kafle) je sam, gdy tylko zgłodnieje. */
+  spizarniaObok: 10,
+  /** Tak głodny stacjonujący bez dostawy odrywa kopacza drogi od pracy. */
+  glodPilny: 0.55,
+  /** Obóz frontowy z mniej niż tyle jedzenia robotnicy zaopatrują z najbogatszej spiżarni, po tyle naraz. */
+  obozMinZapas: 12, zapasPartia: 6,
   /** Zasięg szukania drogi przy donoszeniu (kafle przeszukane, nie długość drogi). */
   dostawaLimit: 9000,
 
