@@ -15,7 +15,8 @@
 - Naprawiony skrypt testu balansu (znak ` w szablonie)
 - Tragarz, który słabnie z głodu, zjada niesione jedzenie (sześciu padło z pełnymi rękami)
 - Lud nad samą magmą wisi na klamrze zamiast zjeżdżać w ogień
-- Bot: 8 z 8 wygranych (7,4–18 min)
+- Głodny przerywa długi spacer i najpierw szuka jedzenia
+- Bot: 8 z 8 wygranych (7,4–18 min); na 8 światach łącznie 6 zgonów ludu (wcześniej ~18)
 
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,

@@ -1382,6 +1382,9 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
 function doWander(sim: Sim, c: Creature): void {
   // Remake v1: lud nie kopie na spacerze — chyba że zbłąkany wraca w stronę siedziby
   // (wyliczoną drogą — na przełaj „wracający do siedziby” wspinał się w ślepy szyb, zsuwał i tak w kółko, aż padł z głodu)
+  // (głodny przerywa długi spacer — planer najpierw szuka jedzenia; robotnik „odchodzący spod rdzenia” doszedł
+  // aż do siedziby i padł tam z głodu, wciąż w tym samym zamiarze)
+  if (REMAKE && rolaPostaci(c) && c.carry === 0 && c.hunger > LUD.glodSam && (sim.tick + c.id) % 60 === 0) { c.jt = 0; return; }
   if (REMAKE && rolaPostaci(c)) { idz(sim, c, c.jx, c.jy, !wZasieguPracy(sim.clans[c.clan], c.x, c.y)); return; }
   walkTo(sim, c, c.jx, c.jy, sim.rng.chance(K.spacerKopie));
 }
