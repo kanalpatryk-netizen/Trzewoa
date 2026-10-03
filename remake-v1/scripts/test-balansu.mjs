@@ -64,7 +64,7 @@ function ruchGracza(sim: any) {
       && !sim.creatures.some((c: any) => !c.dead && (c.tor || c.przemysl !== undefined))) {
     let n = 0;
     for (const c of sim.creatures) if (n < 3 && !c.dead && c.rola === 'robotnik' && c.hunger < 0.4 && whisper(sim, 'przemysl', c)) n++;
-    if (n) sim._przemysl = sim.tick;
+    if (n) { sim._przemysl = sim.tick; sim._przemyslN = (sim._przemyslN ?? 0) + 1; }
   }
 
   // 1. głodujący dostają grzyb pod nogi

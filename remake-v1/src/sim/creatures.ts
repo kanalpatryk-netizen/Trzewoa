@@ -932,7 +932,8 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   if (cz >= 0 && !strefa(cz % w.w, (cz / w.w) | 0)) {
     let kopiacych = 0;
     for (const o of sim.creatures) if (!o.dead && o.id !== c.id && o.kopieDroge) kopiacych++;
-    if (kopiacych < LUD.drogaKopaczy) {
+    // przy małej liczbie robotników mniej kopaczy — ktoś musi zbierać jedzenie
+    if (kopiacych < Math.min(LUD.drogaKopaczy, Math.max(1, liczRole(sim).robotnik - 2))) {
       const fx = cz % w.w, fy = (cz / w.w) | 0;
       const d = droga((x, y) => Math.abs(x - fx) + Math.abs(y - fy) === 1 || (Math.abs(x - fx) === 1 && Math.abs(y - fy) === 1), LUD.dostawaLimit);
       if (d) {

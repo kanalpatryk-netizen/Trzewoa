@@ -131,6 +131,12 @@ export const LUD = {
    */
   weteranPo: 28800, weteranGlod: 0.45, weteranWiara: 0.2, weteranPremia: 1.3,
 
+  /**
+   * Uprawa: przy każdej spiżarni, przy której w promieniu `uprawaZasieg` jest robotnik, co `uprawaCo` tików
+   * odrasta jeden grzyb (na podłodze, najwyżej `uprawaPromien` kafli od spiżarni), dopóki rośnie ich tam mniej niż `uprawaDo`.
+   */
+  uprawaCo: 600, uprawaDo: 8, uprawaPromien: 7, uprawaZasieg: 14,
+
   /** Co tyle tików sprawdzamy, czy da się jeszcze wygrać. */
   przegranaCo: 240,
 };

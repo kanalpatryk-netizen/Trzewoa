@@ -75,6 +75,7 @@ export function buntownicy(sim: Sim): Creature[] {
 /** Zajęcie buntownika (zamiast planera ludu): najbliższy z ludu — i na niego. */
 export function zajecieBuntownika(sim: Sim, c: Creature): void {
   c.hunger = Math.min(c.hunger, 0.3);       // buntownicy biorą, co chcą — nie głodują
+  c.zamiar = 'zbuntował się — bije każdego z ludu'; c.zamiarDo = undefined;
   const cel = sim.nearestCreature(c.x, c.y, K.buntWidzi, (o) => !o.buntownik && rolaPostaci(o) !== null);
   if (!cel) { c.job = Job.WANDER; c.jx = Math.floor(c.x) + (sim.rng.chance(0.5) ? 6 : -6); c.jy = Math.floor(c.y); c.jt = 600; return; }
   sim.target.set(c.id, cel.id);

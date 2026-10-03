@@ -301,7 +301,9 @@ function pilnujSiedziby(sim: Sim): void {
   const klan = klanLudu(sim);
   if (!klan) return;
   // pielgrzymi schodzą pod rdzeń z własnej woli — nie liczą się jako odcięci
-  const lud = sim.creatures.filter((c) => !c.dead && c.clan === klan.id && c.job !== Job.PIELGRZYM && c.job !== Job.WARTA);
+  // (ani ci, którzy stoją pod rdzeniem — w strefie Strażników Snu; siedziba szła za nimi pod sam rdzeń)
+  const wStrefie = (x: number, y: number) => Math.hypot(x - w.coreX, y - w.przedsionekY) < STRAZNICY.limitOdRdzenia + STRAZNICY.ucieczkaZapas;
+  const lud = sim.creatures.filter((c) => !c.dead && c.clan === klan.id && c.job !== Job.PIELGRZYM && c.job !== Job.WARTA && !wStrefie(c.x, c.y));
   if (!lud.length) return;
   // kto może dojść do siedziby — tym samym szukaniem drogi, którym chodzą (wspinaczka po ścianach,
   // zeskoki); proste zalewanie przejść uznawało za „blisko” każdego, kto spadł szybem w dół
@@ -335,7 +337,7 @@ function pilnujSiedziby(sim: Sim): void {
   const miejsce = miejsceNaObozu(sim, cel.x, cel.y, 20, 12);
   if (!miejsce && !zalana) return;          // siedziba przenosi się tylko na porządną półkę…
   const gdzie = miejsce ?? podloga(sim, Math.floor(cel.x), Math.floor(cel.y), 10);   // …chyba że stara tonie
-  if (!gdzie) return;
+  if (!gdzie || wStrefie(gdzie[0], gdzie[1])) return;
   // stara siedziba zostaje obozem ze swoją spiżarnią — robotnicy będą z niej brać (nic się nie teleportuje)
   const reszta = klan.stock;
   odlozDoObozu(sim, klan.hx, klan.hy, reszta);
@@ -542,6 +544,28 @@ function pilnujGniazd(sim: Sim): void {
   for (const g of gniazdaWSkale(sim)) if (dokopane(sim, g)) obudzGniazdo(sim, g);
 }
 
+/**
+ * Uprawa grzyba przy spiżarniach: gdzie przy spiżarni jest robotnik, a grzyba mało, odrasta nowy —
+ * na podłodze, w suchym miejscu. Bez tego grzyb wokół siedziby kończył się po kilku minutach
+ * i cały lud wymierał z głodu, choć robotnicy żyli.
+ */
+function uprawa(sim: Sim): void {
+  const w = sim.world;
+  for (const sp of wszystkieSpizarnie(sim)) {
+    if (grzybPrzy(sim, sp.x, sp.y) >= LUD.uprawaDo) continue;
+    const jest = sim.creatures.some((c) => !c.dead && rolaPostaci(c) === 'robotnik' && Math.hypot(c.x - sp.x, c.y - sp.y) <= LUD.uprawaZasieg);
+    if (!jest) continue;
+    for (let proba = 0; proba < 12; proba++) {
+      const x = sp.x + sim.rng.int(LUD.uprawaPromien * 2 + 1) - LUD.uprawaPromien;
+      const y = sp.y + sim.rng.int(5) - 3;
+      if (!w.inb(x, y + 1) || w.tile[w.idx(x, y)] !== T.AIR || !w.solid(x, y + 1)) continue;
+      if (w.water[w.idx(x, y)] > 2 || w.magma[w.idx(x, y)] > 0 || (Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1)) continue;
+      w.tile[w.idx(x, y)] = T.FUNGUS;
+      break;
+    }
+  }
+}
+
 /** Wołane z sim.step() co tik. */
 export function tikLudu(sim: Sim): void {
   if (sim.spokojnySwiat || sim.ending) return;
@@ -550,6 +574,7 @@ export function tikLudu(sim: Sim): void {
   if (!sim.lud.spizarnie) sim.lud.spizarnie = [];
   wyjscieZeSkaly(sim);
   if (sim.tick % 30 === 0) pilnujGniazd(sim);
+  if (sim.tick % LUD.uprawaCo === 0) uprawa(sim);
   tikStraznikow(sim);
   tikBuntu(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {

@@ -1,5 +1,12 @@
 # Zmiany
 
+## Remake v1 (komputer) — poprawki po etapie 4
+- Uprawa: przy spiżarni, przy której pracuje robotnik, grzyb sam odrasta (do 8 sztuk) — grzyb wokół
+  siedziby kończył się po kilku minutach i lud wymierał z głodu
+- Przy małej liczbie robotników mniej z nich kopie drogę do rdzenia (zawsze ktoś zbiera jedzenie)
+- Siedziba nie przenosi się pod rdzeń (w strefę Strażników); stojący tam nie ciągną jej za sobą
+- Karta buntownika pokazuje jego zamiar
+
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,
   wierni rycerze walczą z nimi sami), zatrute plony (zatrucie: czerwona aureola, −40% na minutę),
