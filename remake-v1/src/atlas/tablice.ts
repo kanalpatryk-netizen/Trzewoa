@@ -17,6 +17,7 @@ import { glif } from '../render/tajemnica';
 import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
 import { LUDY } from '../nastawy/gora';
 import { CECHY } from '../nastawy/cechy';
+import { LUD } from '../nastawy/lud';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
@@ -383,7 +384,7 @@ export const TABLICE: Tablica[] = [
   // rasy
   {
     id: 'rasa-0', grupa: 'rasy', nazwa: 'Pobożni', lacina: 'Gens pia',
-    opis: 'Twój jedyny lud. Nikt się nie rodzi — co 15 sekund skała wydaje nowego za krew: pobożnego, który się modli, albo robotnika, który kopie i znosi jedzenie do siedziby. Rycerze z mieczem walczą za nich, ale modlą się bardzo wolno.',
+    opis: `Twój jedyny lud. Nikt się nie rodzi — co ${Math.round(LUD.wyjscieCo / 120)} sekund skała wydaje nowego za krew: pobożnego, który się modli, albo robotnika, który kopie drogę i donosi jedzenie. Rycerzy skała nie wydaje — śpią w gniazdach w skale.`,
     kiedy: 'Pilnuj krwi i spiżarni. Pobożny może się okaleczyć (krew, ale słabnie na zawsze), a każdego możesz złożyć w ofierze. Bez pobożnych i bez krwi na nowego — przegrywasz.',
     rycina: postac(Race.GOBLIN, 'modli'),
   },
@@ -442,8 +443,8 @@ export const TABLICE: Tablica[] = [
   // zasoby
   {
     id: 'krew', grupa: 'zasoby', nazwa: 'Krew', lacina: 'Sanguis',
-    opis: 'Liczba nad płytą i czerwona rysa pod nią. Płaci ci ją każda śmierć w twoich trzewiach — cudza wojna jest twoim dochodem. Mieści się jej najwyżej 250.',
-    kiedy: 'Wydajesz ją na jedzenie (ryt Nakarm) i na wybory na kartach wydarzeń.',
+    opis: 'Liczba nad płytą i czerwona rysa pod nią. Płaci ci ją każda śmierć — także Strażników Snu i buntowników — szept „ofiaruj” i samookaleczenie pobożnego.',
+    kiedy: 'Wydajesz ją na nowych ze skały, na jedzenie (ryt Nakarm) i na wybory na kartach wydarzeń.',
     rycina: cala(rysujOrgany),
   },
   {
@@ -460,9 +461,9 @@ export const TABLICE: Tablica[] = [
     rycina: cala(rysujPamiec),
   },
   {
-    id: 'sen', grupa: 'prawa', nazwa: 'Sen', lacina: 'Somnus',
-    opis: 'Jedyna przegrana. Przychodzi z monokultury albo z pustki: powieka schodzi z góry i z dołu płyty. Budzi cię wojna, którą sam rozpętałeś — i warta, która modli się pod twoim rdzeniem.',
-    kiedy: 'Gdy wstęga warstw zaczyna mieć jeden kolor — wysłuchaj proroka tej nacji albo skieruj na nią najazd czy powódź.',
+    id: 'sen', grupa: 'prawa', nazwa: 'Przegrana', lacina: 'Casus',
+    opis: 'Przegrywasz, gdy nie da się już wygrać: nie żyje żaden pobożny, a nawet ofiara ze wszystkich nie da krwi na nowego. Najczęstsza droga do tego to głód — lud daleko od spiżarni, bez robotników, którzy noszą jedzenie.',
+    kiedy: 'Trzymaj robotników, zakładaj obozy ze spiżarniami i sadź przy nich grzyb. Nie wysyłaj pod rdzeń ostatniego pobożnego.',
     rycina: cala(rysujSpis),
   },
   {
@@ -473,14 +474,14 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'droga', grupa: 'prawa', nazwa: 'Droga do wolności', lacina: 'Via liberationis',
-    opis: `Wygrywasz, gdy wierni przebiją skorupę rdzenia i uklękną przy nim. Po kolei: ktoś musi się modlić (wiara); jedna nacja musi uwierzyć na ${proc(PIELGRZYMKA.oddanieNacji)} — Cud przy jej gnieździe (oddanie) — albo sam poślesz trzech jej ludzi szeptem „módl się” lub kartą wydarzenia; przy przedsionku pod rdzeniem musi rosnąć grzyb, żeby warta przeżyła na dole (droga); warta modli się przy rdzeniu, aż skorupa pęknie (skorupa); potem wierni sami wchodzą do środka.`,
-    kiedy: 'Kroki widać na wstędze u dołu płyty. Po drodze nie daj górze zasnąć: nikt nie może wymrzeć ani zjeść reszty.',
+    opis: `Wygrywasz, gdy pobożni przebiją skorupę rdzenia i uklękną przy nim. Po kolei: pobożni się modlą (wiara); lud uwierzy na ${proc(PIELGRZYMKA.oddanieNacji)} albo sam poślesz trzech szeptem „módl się” (oddanie); robotnicy wykopią drogę do rdzenia — złotą kreskę (droga); pobożni modlą się pod rdzeniem, rycerze trzymają wartę, a fale Strażników Snu trzeba pokonać (skorupa); potem wierni sami wchodzą do środka.`,
+    kiedy: 'Kroki widać na wstędze drogi. Rycerzy szukaj wcześnie — bez nich nie pokonasz ostatniej fali.',
     rycina: drogaWolnosci,
   },
   {
     id: 'skorupa', grupa: 'prawa', nazwa: 'Skorupa rdzenia', lacina: 'Testa cordis',
     opis: `Kamień wokół rdzenia — nie da się go rozkuć. Pęka tylko pod modlitwą: gdy przy rdzeniu (do 16 kafli) stoi naraz co najmniej trzech wiernych (z dowolnych nacji), każdy z oddaniem od ${proc(RYTUAL.minOddanie)}. Kuje nacja, której jest tam najwięcej — jej postęp zostaje przy niej. Każde pęknięcie wyjmuje jeden kafel od góry, od strony przedsionka; zwykle trzeba ich około pięciu, każde idzie wolniej od poprzedniego.`,
-    kiedy: 'Trzymaj trzech i więcej razem, najedzonych i wierzących. Postęp widać w procentach na wstędze i wieńcu rdzenia. Prorok dzieli wartę — nie teraz.',
+    kiedy: 'Trzymaj trzech i więcej razem, najedzonych i wierzących. Przy 20, 45, 70 i 90% wychodzą Strażnicy Snu — dopóki żyją, skorupa nie pęka.',
     rycina: skorupa,
   },
   {
@@ -509,9 +510,45 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'wydarzenia', grupa: 'prawa', nazwa: 'Wydarzenia', lacina: 'Aestus',
-    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, powódź, zaraza, głód, prorok, kłótnia nacji, żyła rudy, prośba o znak. Gdy dwie nacje zaczynają wojnę, karta „pierwsza krew” przychodzi od razu. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku.',
-    kiedy: 'Nie ma złych kart — są złe chwile. Gdy jedna krew bierze górę, kieruj na nią klęski; gdy ktoś wymiera albo ginie w wojnie, ratuj go; gdy nacja chce zejść pod rdzeń, poślij ją.',
+    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, powódź, zaraza, głód, spisek rycerzy, zatrute plony, woda nad obozem, zawał nad drogą wiernych, sen o kamiennych rycerzach. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku. Niektóre wracają: zostawiony spisek po dwóch minutach wybucha buntem — część rycerzy zmienia barwy i bije lud.',
+    kiedy: 'Spisek gaś od razu, jeśli stać cię na krew. Zatrute plony lepiej spalić niż zjeść. Sen o rycerzach pokazuje gniazdo — warto.',
     rycina: cala(rysujPrzyplyw),
+  },
+  {
+    id: 'role', grupa: 'prawa', nazwa: 'Role ludu', lacina: 'Officia',
+    opis: 'Pobożni modlą się i kruszą skorupę; stoją przy obozie najbliżej rdzenia. Robotnicy kopią drogę do rdzenia, zbierają grzyb do spiżarni, donoszą jedzenie stojącym i zaopatrują obóz frontowy. Rycerze mają miecz i cztery razy więcej życia; poza wartą pilnują obozu z jedzeniem, a w czasie fali walczą ze Strażnikami.',
+    kiedy: 'Na karcie postaci widać jej zamiar i ile jeszcze go trzyma. Kogo wyda skała, wybierasz pod paskiem ról.',
+    rycina: postac(Race.GOBLIN, 'kopie'),
+  },
+  {
+    id: 'gniazda', grupa: 'prawa', nazwa: 'Kamienni rycerze', lacina: 'Equites saxei',
+    opis: `W każdej górze śpi ${LUD.gniazda} gniazd po ${LUD.gniazdoRycerzy.od}–${LUD.gniazdoRycerzy.do} rycerzy — z dala od magmy, wody i drogi do rdzenia. Gdy ktoś z ludu jest blisko, skała słabo się żarzy. Kto się dokopie, budzi ich: wychodzą od razu jako weterani.`,
+    kiedy: 'Szepnij robotnikowi „przemyśl i kop”: klęka, prosi o znak i kopie tunel ku najbliższemu gniazdu. Znak jest niedokładny — jeden kopacz trafia raz na trzy, trzech razem na pewno.',
+    rycina: postac(Race.GOBLIN, 'kopie'),
+  },
+  {
+    id: 'weterani', grupa: 'prawa', nazwa: 'Weterani i aureole', lacina: 'Veterani',
+    opis: `Kto przeżyje w ludzie ${Math.round(LUD.weteranPo / 7200)} minuty, staje się weteranem: póki najedzony, a lud wierny, ma +${Math.round((LUD.weteranPremia - 1) * 100)}% siły, szybkości, kopania i modlitwy. Jasna aureola znaczy wzmocnienie, czerwona — osłabienie (świeżo ze skały, okaleczony, zatruty).`,
+    kiedy: 'Karta postaci mówi, jaki to stan i kiedy minie. Weterana warto karmić — głodny traci premię.',
+    rycina: postac(Race.GOBLIN, 'modli'),
+  },
+  {
+    id: 'straznicy', grupa: 'prawa', nazwa: 'Strażnicy Snu', lacina: 'Custodes somni',
+    opis: 'Skorupa ma strażników. Przy 20, 45 i 70% skruszenia wychodzą spod niej fale — z każdą silniejsi. Przenikają skałę, nie odchodzą daleko od rdzenia i biją najpierw rycerzy. Dopóki fala trwa, skorupa nie pęka i nikt nie wejdzie do rdzenia.',
+    kiedy: 'W czasie fali pobożni i robotnicy sami odchodzą spod rdzenia — walczą rycerze. Pasek nad płytą mówi, ilu zostało.',
+    rycina: skorupa,
+  },
+  {
+    id: 'boss', grupa: 'prawa', nazwa: 'Śniący Kamień', lacina: 'Lapis somnians',
+    opis: 'Ostatnia fala, przy 90% skorupy. Wielki strażnik wychodzi ze ściany przedsionka. Rani go tylko rycerz. Co jakiś czas uderza w ziemię i zasypuje kawałek drogi wiernych. Gdy pod rdzeniem modli się trzech pobożnych, słabnie — bez modlitwy się zrasta.',
+    kiedy: 'Wszyscy rycerze pod rdzeń, trzech pobożnych do modlitwy, robotnicy przy drodze. Życie bossa widać na pasku nad płytą.',
+    rycina: skorupa,
+  },
+  {
+    id: 'klamry', grupa: 'prawa', nazwa: 'Klamry', lacina: 'Fibulae',
+    opis: 'Lud nie spada: nad pustką schodzi powoli, wbijając w ścianę żelazne klamry, a w otwartej pustce wiesza linę. Którędy zszedł, tamtędy wróci.',
+    kiedy: 'Klamry widać przy ścianach szybów i jaskiń. Nie trzeba ich budować — powstają same.',
+    rycina: postac(Race.GOBLIN, 'wspina'),
   },
   {
     id: 'pauza', grupa: 'prawa', nazwa: 'Pauza', lacina: 'Tempus suspensum',

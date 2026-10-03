@@ -17,7 +17,7 @@ import { klanLudu, liczRole, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 
 /** Barwy ról w panelu LUD (te same odcienie co obrys postaci na płycie). */
 const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
-import { rysujZnacznikiLudu } from '../../render/lud';
+import { rysujZnacznikiLudu, rysujKlamry } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
 import { LUD } from '../../nastawy/lud';
 import { dzisiaj, ziarnoDnia, wynikDnia, czasGry } from '../../core/swiat-dnia';
@@ -365,7 +365,14 @@ export class EkranGry implements Ekran {
     if (sim.prayers > 0 && sim.tick > 600) odkrycia.odkryj('oddanie');
     if (sim.tick > 7000) cicho('pamiec');
     // v4.1 beta: cechy nacji — raz na początku, żeby gracz wiedział, co znaczy „pobożni” na podpisie
-    if (sim.tick > 3600) odkrycia.odkryj('cechy');
+    if (sim.tick > 3600) cicho('cechy');
+    // Remake v1: tablice ludu, gniazd, weteranów, Strażników i bossa
+    if (sim.tick > 600) cicho('role');
+    if (sim.tick > 4000) cicho('klamry');
+    if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
+    if ((sim.lud.gniazda ?? []).some((g) => g.odkryte) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
+    if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
+    if (sim.creatures.some((c) => !c.dead && c.boss)) odkrycia.odkryj('boss');
     if (this.ui.verb) cicho(`ryt-${this.ui.verb}`);
     if (this.pauza) cicho('pauza');
     // pismo w skale: kiedy czas stoi, a znaki świecą — albo gdy ktoś długo na nie patrzy
@@ -776,6 +783,7 @@ export class EkranGry implements Ekran {
       rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, false);
     }
     rysujZarys(ctx, sim, cam, teraz);
+    rysujKlamry(ctx, sim, cam);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);

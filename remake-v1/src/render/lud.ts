@@ -42,8 +42,9 @@ export function rysujZnacznikiLudu(ctx: CanvasRenderingContext2D, sim: Sim, cam:
       const d = Math.hypot(c.x - g.x, c.y - g.y);
       if (d < najblizej) najblizej = d;
     }
-    if (najblizej > LUD.gniazdoZar) continue;
-    const sila = 1 - najblizej / LUD.gniazdoZar;
+    if (najblizej > LUD.gniazdoZar && !g.znany) continue;
+    // pokazane kartą „sen o rycerzach” świeci zawsze
+    const sila = Math.max(g.znany ? 0.6 : 0, 1 - najblizej / LUD.gniazdoZar);
     const puls = 0.7 + 0.3 * Math.sin(czas * 0.003 + g.id * 1.7);
     const x = sx(g.x + 0.5), y = sy(g.y + 0.5), r = Math.max(16, z * 3.6);
     const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
@@ -69,6 +70,53 @@ export function rysujZnacznikiLudu(ctx: CanvasRenderingContext2D, sim: Sim, cam:
     const barwa = o.ilosc > 0 ? 'rgba(240,214,164,0.98)' : 'rgba(226,150,120,0.95)';
     const g = grzybPrzy(sim, o.x, o.y);
     podpis(ctx, `obóz · spiżarnia ${o.ilosc}${g ? ` · grzyb obok ${g}` : ''}`, x, y - r * 1.3, barwa, rozmiar);
+  }
+  ctx.restore();
+}
+
+/**
+ * Etap 4: klamry — żelazne zaczepy, które lud wbija tam, którędy schodził. Przy ścianie
+ * rysują się jako klamra wbita w skałę, w otwartej pustce jako lina z węzłami.
+ * Pokazujemy je tylko tam, gdzie gracz już widział (w.ever).
+ */
+export function rysujKlamry(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera): void {
+  const w = sim.world;
+  const z = cam.zoom;
+  if (z < 3) return;                                   // z daleka to tylko szum
+  const left = cam.x - cam.vw / 2 / z, top = cam.y - cam.vh / 2 / z;
+  const x0 = Math.max(0, Math.floor(left)), x1 = Math.min(w.w - 1, Math.ceil(left + cam.vw / z));
+  const y0 = Math.max(0, Math.floor(top)), y1 = Math.min(w.h - 1, Math.ceil(top + cam.vh / z));
+  ctx.save();
+  ctx.lineCap = 'round';
+  const lw = Math.max(1, z * 0.09);
+  for (let y = y0; y <= y1; y++) {
+    for (let x = x0; x <= x1; x++) {
+      const i = w.idx(x, y);
+      if (w.drabina[i] !== 1 || !w.ever[i] || !w.passable(x, y)) continue;
+      // na podłodze klamry nie są potrzebne — tylko tam, gdzie się wisi
+      if (w.solid(x, y + 1)) continue;
+      const px = (x - left) * z, py = (y - top) * z;
+      const lewa = w.solid(x - 1, y), prawa = w.solid(x + 1, y);
+      ctx.strokeStyle = 'rgba(182,168,140,0.85)';
+      ctx.lineWidth = lw;
+      if (lewa || prawa) {
+        // klamra w kształcie „ㄷ” wbita w ścianę
+        const sx = lewa ? px + z * 0.04 : px + z * 0.96, d = lewa ? 1 : -1;
+        for (const ky of [0.3, 0.75]) {
+          ctx.beginPath();
+          ctx.moveTo(sx, py + z * (ky - 0.1));
+          ctx.lineTo(sx + d * z * 0.28, py + z * (ky - 0.1));
+          ctx.lineTo(sx + d * z * 0.28, py + z * (ky + 0.1));
+          ctx.lineTo(sx, py + z * (ky + 0.1));
+          ctx.stroke();
+        }
+      } else {
+        // lina w pustce, z węzłem
+        ctx.beginPath(); ctx.moveTo(px + z * 0.5, py); ctx.lineTo(px + z * 0.5, py + z); ctx.stroke();
+        ctx.fillStyle = 'rgba(182,168,140,0.85)';
+        ctx.beginPath(); ctx.arc(px + z * 0.5, py + z * 0.5, lw * 1.2, 0, Math.PI * 2); ctx.fill();
+      }
+    }
   }
   ctx.restore();
 }

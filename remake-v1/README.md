@@ -1,4 +1,4 @@
-# Trzewia — Remake v1 (komputer) · etap 3
+# Trzewia — Remake v1 (komputer) · etap 4
 
 Nowa gra na fundamencie 4.2 beta. Wszystkie wcześniejsze wersje zostają bez zmian (punkt odniesienia).
 
@@ -39,11 +39,17 @@ i otwórz w przeglądarce.
   (robotnicy muszą ją odkopać); słabnie, gdy pod rdzeniem modli się trzech pobożnych, a bez modlitwy
   się zrasta. Bossa łatwo podmienić: nastawy w `src/nastawy/boss.ts`, zachowanie w `src/sim/boss.ts`
   (rejestr `BOSSOWIE` i `AKTYWNY_BOSS`). Fale: `src/nastawy/straznicy.ts`.
+- **Nowa talia kart:** spisek rycerzy (zostawiony po 2 min wybucha buntem — część rycerzy zmienia barwy
+  i bije lud; wierni rycerze ruszają na nich sami), zatrute plony, woda nad obozem, zawał nad drogą
+  wiernych, sen o kamiennych rycerzach (pokazuje gniazdo). Liczby: `src/nastawy/karty-ludu.ts`.
+- **Klamry** widać przy ścianach szybów (zaczepy) i w pustce (liny).
 - **Bez snu góry.** Przegrywasz dopiero, gdy nie da się już wygrać: nie ma pobożnych,
   a nawet ofiara ze wszystkich nie da krwi na nowego.
 
 ## Dalsze etapy (plan)
-4. Nowa talia kart (spisek rycerzy, powodzie, zatrute plony), grafika, samouczek, balans.
+Wszystkie cztery etapy zrobione — dalej: poprawki po testach.
 
-Znane braki: samouczek i część tablic atlasu opisują jeszcze dawne zasady; dowóz jedzenia
-daleko od siedziby (pod rdzeń) bywa za wolny — balans w etapie 4.
+Film z rozgrywki: `film/remake-v1-etap4.webm`.
+
+Znane braki: balans fal i bossa (bez kilku rycerzy ostatnia fala jest nie do przejścia), stare tablice
+atlasu o dawnych rasach zostały jako punkt odniesienia.

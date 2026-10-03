@@ -10,9 +10,10 @@ import { Job } from './creatures';
 import { Race, RACES } from './races';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { procentSkorupy } from './rytual';
-import { rolaPostaci, mnoznik } from './lud';
+import { rolaPostaci, mnoznik, maxHp } from './lud';
 import { aktywnyBoss } from './boss';
 import { zapisz } from './dziennik';
+import { LUD } from '../nastawy/lud';
 
 export interface StanStraznikow {
   /** numer następnej (albo trwającej) fali w STRAZNICY.fale */
@@ -22,6 +23,10 @@ export interface StanStraznikow {
   klan: number;
   /** tik początku trwającej fali */
   od: number;
+  /** tik ostatniego ciosu Strażnika (do zasypiania fali, w której nikt już nie walczy) */
+  cios?: number;
+  /** fala z bossem, a pod rdzeniem nie ma rycerzy (liczone co pół sekundy) */
+  bezRycerzy?: boolean;
 }
 
 export function nowyStanStraznikow(): StanStraznikow {
@@ -37,10 +42,17 @@ export function falaTrwa(sim: Sim): boolean {
   return !!sim.lud.straznicy?.trwa;
 }
 
-/** Czy trwa fala bez bossa — wtedy wszyscy poza rycerzami odchodzą spod rdzenia. */
+/**
+ * Czy wszyscy poza rycerzami mają odejść spod rdzenia: trwa zwykła fala — albo fala z bossem,
+ * a pod rdzeniem nie ma ani jednego rycerza (pobożni zostawali i boss wybijał ich do nogi).
+ */
 export function falaZwykla(sim: Sim): boolean {
   const st = sim.lud.straznicy;
-  return !!st?.trwa && !S.fale[st.fala]?.boss;
+  if (!st?.trwa) return false;
+  if (!S.fale[st.fala]?.boss) return true;
+  if (sim.tick % 60 !== 0 && st.bezRycerzy !== undefined) return st.bezRycerzy;
+  st.bezRycerzy = !sim.creatures.some((c) => !c.dead && rolaPostaci(c) === 'rycerz' && wStrefieStraznikow(sim, c.x, c.y, S.ucieczkaZapas));
+  return st.bezRycerzy;
 }
 
 /** Czy (x, y) leży w strefie, w której grasują Strażnicy (z zapasem na ucieczkę). */
@@ -103,11 +115,22 @@ export function tikStraznikow(sim: Sim): void {
       st.trwa = false;
       st.fala++;
       sim.wiara += S.nagrodaWiary;
+      // po wygranej fali rycerze odpoczywają — wracają do pełni sił (inaczej armia topniała z fali na falę)
+      for (const c of sim.creatures) if (!c.dead && rolaPostaci(c) === 'rycerz') c.hp = Math.max(c.hp, maxHp(sim, c));
       const w = sim.world;
       sim.gdzie(w.coreX, w.przedsionekY).log(
         st.fala >= S.fale.length ? 'Ostatni Strażnik Snu rozsypał się w pył. Nikt już nie strzeże twojego snu.'
           : `Fala Strażników Snu pokonana. Skorupa znów pęka pod modlitwą (+${S.nagrodaWiary} wiary).`, 'wiara', `fala-koniec-${st.fala}`);
       zapisz(sim, 'rytual', `fala ${st.fala} pokonana`, w.coreX, w.przedsionekY);
+    }
+    // zwykła fala bez walki zasypia — skorupa się zrasta (inaczej bez rycerzy fala trwała wiecznie, a lud głodował, czekając)
+    if (st.trwa && !S.fale[st.fala]?.boss && sim.tick - Math.max(st.od, st.cios ?? 0) > S.zasypiaPo) {
+      for (const c of zywiStraznicy(sim)) { c.dead = true; sim.clans[c.clan].pop--; sim.efekt(c.x, c.y, 'cud'); }
+      st.trwa = false;
+      st.fala++;
+      for (const k of sim.clans) if (!k.dead && k.rytual > 0) k.rytual = 0;
+      const w = sim.world;
+      sim.gdzie(w.coreX, w.przedsionekY).log('Strażnicy Snu nie mieli z kim walczyć i wrócili do skały. Skorupa zrosła się tam, gdzie pękała.', 'otchlan', `fala-sen-${st.fala}`);
     }
     const def = S.fale[st.fala];
     if (!st.trwa && def && !sim.rytual.otwarta && procentSkorupy(sim) >= def.prog) zacznijFale(sim, st);
@@ -178,7 +201,8 @@ export function walczZeStraznikiem(sim: Sim, c: Creature, s: Creature, podejdz: 
   c.face = s.x > c.x ? 1 : -1;
   if (sim.tick - (c.ciosT ?? -1e9) < S.rycerzCiosCo) return;
   c.ciosT = sim.tick;
-  const dmg = RACES[c.race].strength * mnoznik(sim, c, 'sila') * (0.8 + sim.rng.next() * 0.4);
+  // (zbuntowany rycerz nie ma już roli, ale bije jak rycerz)
+  const dmg = RACES[c.race].strength * (c.buntownik ? LUD.role.rycerz.sila : mnoznik(sim, c, 'sila')) * (0.8 + sim.rng.next() * 0.4);
   ranStraznika(sim, s, c, dmg);
 }
 
@@ -202,6 +226,8 @@ export function celStraznika(sim: Sim, c: Creature, limit: number): Creature | n
   for (const o of sim.creatures) {
     if (o.dead || !rolaPostaci(o)) continue;
     if (Math.hypot(o.x - w.coreX, o.y - w.przedsionekY) > limit) continue;
+    // uciekających spod rdzenia nie gonią — w wąskich szybach doganiali ich jednego po drugim
+    if (rolaPostaci(o) !== 'rycerz' && o.job === Job.WANDER && o.zamiar?.startsWith('odchodzi spod rdzenia')) continue;
     // najpierw rycerze — warta staje między Strażnikami a modlącymi się
     const d = Math.hypot(o.x - c.x, o.y - c.y) - (rolaPostaci(o) === 'rycerz' ? S.rycerzPierwszy : 0);
     if (d < bd) { bd = d; best = o; }
@@ -211,6 +237,7 @@ export function celStraznika(sim: Sim, c: Creature, limit: number): Creature | n
 
 /** Cios Strażnika w kogoś z ludu; kto nie jest rycerzem, oddaje słabszy. */
 export function ciosStraznika(sim: Sim, c: Creature, cel: Creature, sila: number): void {
+  if (sim.lud.straznicy) sim.lud.straznicy.cios = sim.tick;
   cel.hp -= sila * (0.85 + sim.rng.next() * 0.3);
   sim.spark(cel.x, cel.y - 0.5, 'hit');
   if (cel.hp <= 0) { sim.kill(cel, c.boss ? `zmiażdżony przez: ${aktywnyBoss().nazwa}` : 'z ręki Strażnika Snu', 'straznik'); return; }

@@ -84,7 +84,9 @@ export const LUD = {
   /** Tak głodny stacjonujący bez dostawy odrywa kopacza drogi od pracy. */
   glodPilny: 0.55,
   /** Obóz frontowy z mniej niż tyle jedzenia robotnicy zaopatrują z najbogatszej spiżarni, po tyle naraz. */
-  obozMinZapas: 12, zapasPartia: 6,
+  obozMinZapas: 24, zapasPartia: 12,
+  /** Najwyżej tylu robotników naraz niesie zapas do obozu frontowego. */
+  zapasNosicieli: 3,
   /** Zasięg szukania drogi przy donoszeniu (kafle przeszukane, nie długość drogi). */
   dostawaLimit: 9000,
 

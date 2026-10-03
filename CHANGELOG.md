@@ -1,5 +1,19 @@
 # Zmiany
 
+## Remake v1 (komputer) — etap 4
+- Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,
+  wierni rycerze walczą z nimi sami), zatrute plony (zatrucie: czerwona aureola, −40% na minutę),
+  woda nad obozem, zawał nad drogą wiernych, sen o kamiennych rycerzach (gniazdo świeci na stałe)
+- Klamry rysowane w grze; Strażnicy z głową i nogami, boss z koroną
+- Samouczek i atlas pod nowe zasady: role ludu, rycerze w skale, weterani i aureole, Strażnicy Snu,
+  Śniący Kamień, klamry, nowa przegrana; nowe tablice odkrywają się w grze
+- Balans: obóz frontowy zaopatruje do 3 nosicieli po 12 jedzenia; grzyb przy obozie zbierany także
+  pod rdzeniem; w czasie fali robotnicy nie biorą zadań w strefie Strażników, uciekający i czekający idą
+  do spiżarni poza strefą, nowi ze skały wychodzą przy siedzibie; Strażnicy nie gonią uciekających;
+  zwykła fala bez walki przez 3 min wraca do snu (skorupa się zrasta); przy bossie bez rycerzy lud się
+  wycofuje; po wygranej fali rycerze wracają do pełni sił; Strażnicy nieco słabsi
+- Film z rozgrywki: remake-v1/film/remake-v1-etap4.webm
+
 ## Remake v1 (komputer) — etap 3
 - Strażnicy Snu: fale przy 20/45/70% skorupy (2/3/4 Strażników, każda fala silniejsza), przy 90% boss
   z dwoma Strażnikami; podczas fali skorupa nie pęka i nikt nie wchodzi do rdzenia; za falę +15 wiary

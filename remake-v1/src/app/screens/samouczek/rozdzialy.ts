@@ -9,7 +9,7 @@ import { PIELGRZYMKA, RYTUAL } from '../../../nastawy/rytual';
 const PROG = `${Math.round(PIELGRZYMKA.oddanieNacji * 100)}%`;
 
 /**
- * TREŚĆ SAMOUCZKA — osiem krótkich rozdziałów: tytuł, wstęp, czynności do odhaczenia
+ * TREŚĆ SAMOUCZKA — krótkie rozdziały (Remake v1: lud, role, rycerze w skale, Strażnicy Snu): tytuł, wstęp, czynności do odhaczenia
  * (z palcem, który wskazuje, w co kliknąć) i zdanie na koniec. Logika karty,
  * palca i przechodzenia między rozdziałami jest w ../tutorial.ts.
  */
@@ -84,16 +84,36 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g) => { g.sim.krew += 60; g.sim.wiara += 40; },
     etapy: [
       {
-        tekst: 'Wiara rośnie, gdy ktoś się do ciebie modli. Krew — z każdej śmierci. Obie wydajesz na ryty i wybory.',
+        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew — z każdej śmierci i z ofiar. Jedzenie leży w spiżarniach. Wiarę i krew wydajesz na ryty, wybory i nowych ze skały.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarZasobow(s.gra.plate) }),
       },
       {
-        tekst: `Oddanie: jak mocno wierzy w ciebie najwierniejsza nacja. Złota studnia pokazuje to samo — od kreski (${PROG}) nacja sama idzie pod twój rdzeń.`,
+        tekst: `Oddanie: jak mocno lud w ciebie wierzy. Złota studnia pokazuje to samo — od kreski (${PROG}) pobożni sami idą pod twój rdzeń.`,
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOddania(s.gra.plate, s.vh) }),
       },
     ],
     koniec: 'Gdy na coś cię nie stać, ryt po lewej przygasa, a wybór na karcie ma cenę na czerwono.',
     czasowniki: [],
+  },
+  {
+    tytul: 'Lud i jego role',
+    wstep: 'Twój lud ma trzy role. Nikt się nie rodzi — nowych wydaje skała.',
+    czasowniki: [],
+    etapy: [
+      {
+        tekst: 'Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę, zbierają grzyb i donoszą jedzenie. Rycerze bronią — i walczą ze Strażnikami Snu.',
+        rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
+      },
+      {
+        tekst: 'Pod paskiem ról wybierasz, kogo wyda skała: robotnika albo pobożnego. Co 20 s wychodzi nowy — za krew, osłabiony przez minutę (czerwona aureola).',
+        rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
+      },
+      {
+        tekst: 'Kto przeżyje 4 minuty, najedzony, a lud wierzy — staje się weteranem: +30% do wszystkiego i jasna aureola.',
+        rozumiem: true,
+      },
+    ],
+    koniec: 'Każda postać ma swój zamiar — dotknij jej, a karta powie, co robi i ile jeszcze.',
   },
   {
     tytul: 'Nakarm ich',
@@ -157,52 +177,85 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Wydarzenia',
-    wstep: 'Co chwilę coś się dzieje: najazd, zaraza, głód, prorok. Czas wtedy staje, a ty wybierasz.',
+    wstep: 'Co chwilę coś się dzieje: najazd, zaraza, spisek rycerzy, zatrute plony, woda nad obozem. Czas wtedy staje, a ty wybierasz.',
     czasowniki: [],
     przygotuj: (g) => { g.sim.krew += 40; g.sim.wiara += 40; },
     etapy: [
       {
         tekst: 'Za chwilę pokaże się karta. Przeczytaj ją i dotknij jednego z wyborów.',
-        wejdz: (g) => { g.sim.wydarzenia.gracz = true; wylosuj(g.sim, 'ruda'); },
+        wejdz: (g) => { g.sim.wydarzenia.gracz = true; if (!wylosuj(g.sim, 'sen')) wylosuj(g.sim, 'znak'); },
         gotowe: (_g, z) => z?.typ === 'wydarzenie',
       },
     ],
-    koniec: 'Każdy wybór ma cenę i skutek, napisane wprost. To główna część gry — resztę robią twoi mieszkańcy.',
+    koniec: 'Każdy wybór ma cenę i skutek, napisane wprost. Niektóre wracają: zostawiony spisek rycerzy wybucha buntem.',
+  },
+  {
+    tytul: 'Rycerze w skale',
+    wstep: 'Rycerzy nie wyda skała — śpią w niej. W każdej górze jest pięć gniazd kamiennych rycerzy.',
+    czasowniki: [],
+    etapy: [
+      {
+        tekst: 'Gdy ktoś z ludu jest blisko gniazda, skała słabo się żarzy. Kto się do niego dokopie, budzi rycerzy — od razu weteranów.',
+        rozumiem: true,
+      },
+      {
+        tekst: 'Szepnij robotnikowi „przemyśl i kop”: uklęknie, poprosi o znak i wykopie tunel ku gniazdu. Znak jest niedokładny — jeden trafia raz na trzy, trzech na pewno.',
+        rozumiem: true,
+      },
+    ],
+    koniec: 'Bez rycerzy nie pokonasz ostatniej fali. Szukaj ich wcześnie.',
+  },
+  {
+    tytul: 'Strażnicy Snu',
+    wstep: 'Skorupa rdzenia ma strażników. Przy 20, 45 i 70% wychodzą fale, przy 90% — Śniący Kamień.',
+    czasowniki: [],
+    etapy: [
+      {
+        tekst: 'Dopóki fala trwa, skorupa nie pęka. Rycerze walczą sami; pobożni i robotnicy odchodzą spod rdzenia.',
+        rozumiem: true,
+        wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
+      },
+      {
+        tekst: 'Śniącego Kamienia rani tylko rycerz. Słabnie, gdy pod rdzeniem modli się trzech pobożnych, a zasypaną przez niego drogę odkopują robotnicy.',
+        rozumiem: true,
+      },
+    ],
+    koniec: 'Pasek nad płytą pokaże, która to fala i ile życia zostało bossowi.',
   },
   {
     tytul: 'Droga do wolności',
-    wstep: 'Tak wygrywasz: jedna nacja musi uwierzyć, zejść pod rdzeń i modlić się, aż kamień pęknie.',
+    wstep: 'Tak wygrywasz: pobożni schodzą pod rdzeń i modlą się, aż kamień pęknie.',
     czasowniki: [],
     przygotuj: (g, s) => { const d = s.gniazdoGoblinow(); if (d) g.pokazMiejsce(d.x, d.y, 12, true); },
     etapy: [
       {
-        tekst: 'Modlą się przy ołtarzu, przy twoim Cudzie i pod rdzeniem. Każda modlitwa to Wiara dla ciebie i trochę oddania.',
+        tekst: 'Najpierw robotnicy kopią drogę do rdzenia (złota kreska). Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerze idą z nimi na wartę.',
         rozumiem: true,
       },
       {
-        tekst: `Przy ${PROG} oddania nacja sama wyśle wartę pod rdzeń. Karta „chcą zejść pod twój rdzeń” albo szept „módl się” zrobią to od razu.`,
+        tekst: `Przy ${PROG} oddania pobożni sami pójdą pod rdzeń. Karta „chcą zejść pod twój rdzeń” albo szept „módl się” zrobią to od razu.`,
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOddania(s.gra.plate, s.vh) }),
       },
       {
-        tekst: 'Pod rdzeniem warta je to, co rośnie przy przedsionku. Nakarm to miejsce, zanim zejdą.',
+        tekst: 'Pod rdzeniem jedzenie donoszą robotnicy — z obozu najbliżej rdzenia. Pilnuj, żeby w spiżarniach było co nosić.',
         rozumiem: true,
         wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
         wskaz: (s) => { const w = s.gra.sim.world; return { typ: 'swiat', cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, r: 6, tekst: 'przedsionek' } }; },
       },
     ],
-    koniec: 'Wiara → oddanie → warta pod rdzeniem → pęknięcia → wolność. Każdy krok widać na wstędze u dołu płyty.',
+    koniec: 'Wiara → droga → warta pod rdzeniem → pęknięcia (i fale) → wolność. Każdy krok widać na wstędze drogi.',
   },
   {
     tytul: 'Jak przegrać',
-    wstep: 'Jest tylko jedna przegrana: zaśniesz.',
+    wstep: 'Przegrywasz, gdy nie da się już wygrać.',
     czasowniki: [],
     etapy: [
       {
-        tekst: 'To wstęga ludów. Gdy jedna krew zje resztę albo wszyscy wymrą — zaczniesz zasypiać.',
+        tekst: 'Gdy nie zostanie żaden pobożny, a krwi nie starczy, by skała wydała nowego — to koniec. Najczęściej zabija głód: lud daleko od spiżarni.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
     ],
-    koniec: 'Karm słabszych. Gdy jedna nacja rośnie za bardzo — wysłuchaj jej proroka albo skieruj na nią najazd.',
+    koniec: 'Zakładaj obozy ze spiżarniami, sadź grzyb przy nich i trzymaj robotników — to oni noszą jedzenie.',
   },
 ];
 

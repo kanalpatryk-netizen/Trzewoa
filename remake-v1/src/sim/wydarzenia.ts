@@ -7,6 +7,7 @@ import { Job, Thought } from './creatures';
 import { odswiezPlan, najwierniejsza } from './pielgrzymka';
 import { WYDARZENIA as W } from '../nastawy/wydarzenia';
 import { PRZYPLYWY as PP } from '../nastawy/gora';
+import { kandydaciLudu, wykonajLudu, zbudujLancuchLudu } from './karty-ludu';
 
 /**
  * KARTY WYDARZEŃ — główny sposób grania w wersji na telefon.
@@ -319,7 +320,8 @@ function kandydaci(sim: Sim, st: StanWydarzen): { waga: number; zbuduj: Budownic
 
   // Remake v1: jeden lud — tylko karty, które mają w nim sens (bez wojen nacji, proroków,
   // obcych ras, kuźni i żył szaleństwa). Nowa talia przyjdzie w kolejnym etapie.
-  return out.filter((k) => KARTY_REMAKE.has(k.rodzaj));
+  // etap 4: nowa talia ludu (spisek rycerzy, zatrute plony, woda w obozie, zawał, sen o rycerzach)
+  return [...out.filter((k) => KARTY_REMAKE.has(k.rodzaj)), ...kandydaciLudu(sim, st)];
 }
 
 const KARTY_REMAKE = new Set(['najazd', 'powodz', 'zaraza', 'glod', 'znak', 'warta', 'dlug', 'wymiera']);
@@ -521,6 +523,7 @@ export function kartaPlemienia(sim: Sim, k: Clan): void {
 function wykonaj(sim: Sim, e: Wydarzenie, id: string): void {
   const klan = e.klan !== undefined ? sim.clans[e.klan] : null;
   const klan2 = e.klan2 !== undefined ? sim.clans[e.klan2] : null;
+  if (wykonajLudu(sim, e, id)) return;
   switch (`${e.rodzaj}:${id}`) {
     case 'najazd:wpusc': sim.humanRaid(e.x); break;
     case 'najazd:prowadz': { const d = dominujaca(sim, 0); sim.humanRaid(d ? d.hx : e.x); break; }
@@ -672,6 +675,8 @@ const zywaNacja = (sim: Sim, id?: number): Clan | null => {
 
 /** Buduje kartę z łańcucha; null, gdy jej nacja już nie żyje albo karta straciła sens. */
 function zbudujLancuch(sim: Sim, l: { karta: string; klan?: number; klan2?: number }): Wydarzenie | null {
+  const ludu = zbudujLancuchLudu(sim, l.karta);
+  if (ludu || l.karta === 'bunt') return ludu;
   const k = zywaNacja(sim, l.klan), k2 = zywaNacja(sim, l.klan2);
   const baza = { rodzaj: l.karta, od: sim.tick, lancuch: true as const };
   switch (l.karta) {
@@ -748,7 +753,7 @@ export function wymusLancuch(sim: Sim, karta: string): boolean {
 }
 
 /** Karty, które wracają z łańcuchów — dla okienka dewelopera. */
-export const KARTY_LANCUCHA = ['heretyk', 'proroctwo', 'wdzieczni', 'ozdrowiency', 'zemsta'];
+export const KARTY_LANCUCHA = ['heretyk', 'proroctwo', 'wdzieczni', 'ozdrowiency', 'zemsta', 'bunt'];
 
 function wykonajLancuch(sim: Sim, e: Wydarzenie, id: string, klan: Clan | null, klan2: Clan | null): void {
   const dodajOddanie = (k: Clan, v: number) => { k.devotion = Math.max(0, Math.min(1, k.devotion + v)); };

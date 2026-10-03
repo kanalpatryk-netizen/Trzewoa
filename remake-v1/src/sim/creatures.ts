@@ -13,6 +13,7 @@ import { czoloDrogi } from './pielgrzymka';
 import { gniazdaWSkale, obudzGniazdo } from './lud';
 import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow } from './straznicy';
 import { STRAZNICY } from '../nastawy/straznicy';
+import { zajecieBuntownika } from './bunt';
 import { obozFrontowy, wszystkieSpizarnie as wszystkieSpizarnieLudu, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
 import { LUD, REMAKE } from '../nastawy/lud';
 
@@ -104,6 +105,10 @@ export interface Creature {
   wyprawa?: boolean;
   /** Remake v1: tik ostatniej ucieczki od ognia — przez chwilę nie wraca tą samą drogą. */
   odOgnia?: number;
+  /** Etap 4: zbuntowany rycerz (skutek zostawionego spisku) — bije lud, nie słucha. */
+  buntownik?: boolean;
+  /** Etap 4: zatruty (zatrute plony) do tego tiku. */
+  zatrutyDo?: number;
   /** Etap 3: Strażnik Snu (przenika skałę, nie je); boss — id bossa z nastawy/boss.ts. */
   straznik?: boolean;
   boss?: string;
@@ -416,6 +421,8 @@ function pickJob(sim: Sim, c: Creature): void {
   const oldX = c.jx, oldY = c.jy;
   c.jt = K.decyzjaTikow + sim.rng.int(K.decyzjaRozrzut);
   c.droga = undefined; c.drogaI = 0;
+  // etap 4: zbuntowany rycerz nie ma planera ludu — szuka, kogo bić
+  if (c.buntownik) { zajecieBuntownika(sim, c); return; }
   /** Zapamiętuje drogę i ustawia cel zajęcia na jej końcu (albo na podanym kaflu). */
   const naDroge = (droga: number[], cx?: number, cy?: number): void => {
     c.droga = droga; c.drogaI = 0;
@@ -720,7 +727,10 @@ function planujLud(sim: Sim, c: Creature): void {
   // etap 3: zwykła fala Strażników — kto nie jest rycerzem, odchodzi spod rdzenia (modlitwa i tak nic nie kruszy);
   // pobożny z wyprawy wraca pod rdzeń, gdy fala minie
   if (falaZwykla(sim) && rola !== 'rycerz' && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas)) {
-    const d = droga((x, y) => !wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas) && stoi(sim, x, y), LUD.dostawaLimit);
+    // najchętniej do najbliższej spiżarni poza strefą (tam przeczeka i zje), inaczej byle dalej
+    const sp = spizarnieWgOdleglosci(sim, c.x, c.y, false).find((o) => !wStrefieStraznikow(sim, o.x, o.y, STRAZNICY.ucieczkaZapas));
+    const d = (sp ? droga((x, y) => Math.abs(x - sp.x) <= 3 && Math.abs(y - sp.y) <= 2 && stoi(sim, x, y), LUD.dostawaLimit) : null)
+      ?? droga((x, y) => !wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas) && stoi(sim, x, y), LUD.dostawaLimit);
     if (d) { naDroge(d); zamiar('odchodzi spod rdzenia przed Strażnikami Snu', Job.WANDER, podroz(d)); return; }
   }
   // pielgrzym trzyma się wyprawy, aż dojdzie (albo aż ty ją przerwiesz) — wcześniej porzucał ją po minucie
@@ -729,7 +739,8 @@ function planujLud(sim: Sim, c: Creature): void {
     if (drogaNiegotowa(sim, c) || falaZwykla(sim)) {
       c.wyprawa = true;
       if (falaZwykla(sim)) {
-        c.jx = Math.floor(c.x); c.jy = Math.floor(c.y); c.droga = undefined;
+        // czeka przy spiżarni poza strefą Strażników (stanPrzyObozie sam ją wybiera) — tam zje
+        if (!stanPrzyObozie(sim, c, naDroge, droga)) { c.jx = Math.floor(c.x); c.jy = Math.floor(c.y); c.droga = undefined; }
         zamiar('czeka z dala od rdzenia, aż fala Strażników minie', Job.STOI, Z);
         return;
       }
@@ -884,11 +895,13 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   const w = sim.world;
   const Z = LUD.zamiarTikow;
   if (c.carry === 0) c.dostawaDla = undefined;
+  // etap 4: w czasie zwykłej fali Strażników robotnik nie bierze zadań w ich strefie (ginęli, nosząc tam jedzenie)
+  const strefa = falaZwykla(sim) ? (x: number, y: number) => wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas) : () => false;
   // 0. szept „Przemyśl i kop”: klęczy i prosi o znak, potem kopie ku gniazdu rycerzy
   if (planPrzemysl(sim, c, naDroge, zamiar, droga, podroz)) return;
   // 1. dostawa: z najbliższej spiżarni z jedzeniem (jak tam nie dojdzie — z następnej) do głodnego
   const komu = glodnyDoNakarmienia(sim, c);
-  if (komu) {
+  if (komu && !strefa(komu.x, komu.y)) {
     for (const sp of spizarnieWgOdleglosci(sim, c.x, c.y, true).slice(0, 3)) {
       const d = droga((x, y) => Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1, LUD.dostawaLimit);
       if (d) {
@@ -900,12 +913,12 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   }
   // 1b. zaopatrzenie obozu frontowego: pusta spiżarnia tam, gdzie stacjonują — zapas z najbogatszej
   const front = obozFrontowy(sim);
-  if (front && !front.baza && front.ilosc < LUD.obozMinZapas) {
+  if (front && !front.baza && front.ilosc < LUD.obozMinZapas && !strefa(front.x, front.y)) {
     let niosa = 0;
     for (const o of sim.creatures) if (!o.dead && o.id !== c.id && o.doObozu && o.doObozu.x === front.x && o.doObozu.y === front.y) niosa++;
     const zrodlo = wszystkieSpizarnieLudu(sim).filter((s) => s !== front && !(s.x === front.x && s.y === front.y) && s.ilosc > LUD.obozMinZapas)
       .sort((a, b) => b.ilosc - a.ilosc)[0];
-    if (zrodlo && niosa < 2) {
+    if (zrodlo && niosa < LUD.zapasNosicieli) {
       const d = droga((x, y) => Math.abs(x - zrodlo.x) <= 1 && Math.abs(y - zrodlo.y) <= 1, LUD.dostawaLimit);
       if (d) {
         naDroge(d, zrodlo.x, zrodlo.y); c.doObozu = { x: front.x, y: front.y };
@@ -916,7 +929,7 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   }
   // 2. droga do rdzenia: kopie czoło złotej kreski (najwyżej kilku naraz)
   const cz = czoloDrogi(sim);
-  if (cz >= 0) {
+  if (cz >= 0 && !strefa(cz % w.w, (cz / w.w) | 0)) {
     let kopiacych = 0;
     for (const o of sim.creatures) if (!o.dead && o.id !== c.id && o.kopieDroge) kopiacych++;
     if (kopiacych < LUD.drogaKopaczy) {
@@ -935,7 +948,9 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
     const przyObozie = (x: number, y: number) => sp.some((s) => Math.abs(s.x - x) <= LUD.grzybPrzyObozie && Math.abs(s.y - y) <= LUD.grzybPrzyObozie);
     const najblizsza = sp[0];
     if (najblizsza && najblizsza.ilosc < LUD.zapasDo) {
-      const d = szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && przyObozie(x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, LUD.dostawaLimit)
+      // grzyb przy obozie zbierają także pod rdzeniem (obóz frontowy stoi przy warcie) — byle nie w przedsionku
+      const wPrzedsionku = (x: number, y: number) => Math.abs(x - w.coreX) <= P.przedsionekX && Math.abs(y - w.przedsionekY) <= P.przedsionekY;
+      const d = szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && przyObozie(x, y) && !wPrzedsionku(x, y) && !strefa(x, y), LUD.dostawaLimit)
         ?? szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && wZasieguPracy(clan, x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, K.jedzenieLimit);
       if (d) { naDroge(d); zamiar('zbiera grzyb do spiżarni', Job.ZBIERA, podroz(d)); return; }
     }
@@ -1723,7 +1738,12 @@ function doFight(sim: Sim, c: Creature): void {
   const foe = sim.creatureById(sim.target.get(c.id) ?? -1);
   if (!foe || foe.dead) { sim.target.delete(c.id); c.jt = 0; return; }
   // etap 3: ze Strażnikiem Snu walczy się w rytmie ciosów, nie co tik
-  if (foe.straznik) { walczZeStraznikiem(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); }); return; }
+  if (foe.straznik || foe.buntownik || c.buntownik) {
+    // etap 4: z buntownikami (i buntownicy z ludem) też w rytmie ciosów
+    if (c.buntownik && foe.straznik) { sim.target.delete(c.id); c.jt = 0; return; }
+    walczZeStraznikiem(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); });
+    return;
+  }
   const dist = Math.hypot(foe.x - c.x, foe.y - c.y);
   if (dist < K.walkaZasieg) {
     const dmg = RACES[c.race].strength * mnoznik(sim, c, 'sila') * cechaNacji(sim.clans[c.clan]).sila * (K.walkaMin + sim.rng.next() * K.walkaRozrzut) * (1 + c.mad);

@@ -13,7 +13,10 @@ import { Job } from './creatures';
 import { szukajDrogi, budzetDrog, nowyTik } from './droga';
 import { PIELGRZYMKA as P } from '../nastawy/rytual';
 import { Rng } from '../core/rng';
-import { tikStraznikow, type StanStraznikow } from './straznicy';
+import { tikStraznikow, falaTrwa, type StanStraznikow } from './straznicy';
+import { STRAZNICY } from '../nastawy/straznicy';
+import { tikBuntu } from './bunt';
+import { KARTY_LUDU } from '../nastawy/karty-ludu';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -50,6 +53,8 @@ export interface Gniazdo {
   blad: number;
   /** Tory już sprawdzone przez kopaczy (−1, 0, 1). */
   proby: number[];
+  /** Etap 4: pokazane kartą „sen o rycerzach” — świeci zawsze. */
+  znany?: boolean;
 }
 
 export interface Spizarnia { x: number; y: number; ilosc: number; /** tik założenia */ od?: number }
@@ -134,7 +139,7 @@ export function nowyStanLudu(): StanLudu {
 
 /** Rola postaci ludu — albo null dla obcych (ludzie z powierzchni). */
 export function rolaPostaci(c: Creature): Rola | null {
-  return c.race === Race.GOBLIN ? (c.rola ?? 'pobozny') : null;
+  return c.race === Race.GOBLIN && !c.buntownik ? (c.rola ?? 'pobozny') : null;
 }
 
 /** Mnożnik statystyki: rola × osłabienie po wyjściu ze skały × okaleczenie. */
@@ -145,6 +150,7 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   if (c.slabyDo !== undefined && sim.tick < c.slabyDo && co !== 'hp' && co !== 'glod') v *= LUD.oslabienie;
   if (c.okaleczony && (co === 'hp' || co === 'sila' || co === 'szybkosc')) v *= LUD.okaleczenie;
   if (co !== 'hp' && co !== 'glod' && weteranAktywny(sim, c)) v *= LUD.weteranPremia;
+  if (c.zatrutyDo !== undefined && sim.tick < c.zatrutyDo && (co === 'sila' || co === 'szybkosc' || co === 'kopanie')) v *= KARTY_LUDU.zatrucie;
   return v;
 }
 
@@ -190,6 +196,9 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   }
   if (c.slabyDo !== undefined && sim.tick < c.slabyDo) {
     out.push({ nazwa: 'osłabiony po wyjściu ze skały', skutek: `−${Math.round((1 - LUD.oslabienie) * 100)}% siły, szybkości, kopania i modlitwy`, dobry: false, do: c.slabyDo });
+  }
+  if (c.zatrutyDo !== undefined && sim.tick < c.zatrutyDo) {
+    out.push({ nazwa: 'zatruty', skutek: `−${Math.round((1 - KARTY_LUDU.zatrucie) * 100)}% siły, szybkości i kopania (zatrute plony)`, dobry: false, do: c.zatrutyDo });
   }
   if (c.okaleczony) {
     out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false });
@@ -265,7 +274,9 @@ function wyjscieZeSkaly(sim: Sim): void {
   if (!klan || zywych >= LUD.limit || sim.krew < koszt) { st.nastepne = sim.tick + 120; return; }
   // przy największej grupie ludu, nie w siedzibie: siedziba potrafiła zostać na górze,
   // a nowi nie mieli jak zejść do reszty
-  const g = najwiekszaGrupa(sim, klan.id);
+  // (w czasie fali Strażników nie przy grupie pod rdzeniem — wychodzili prosto pod ich pięści)
+  const g0 = najwiekszaGrupa(sim, klan.id);
+  const g = g0 && falaTrwa(sim) && Math.hypot(g0.x - sim.world.coreX, g0.y - sim.world.przedsionekY) < STRAZNICY.limitOdRdzenia + STRAZNICY.ucieczkaZapas ? null : g0;
   const miejsce = (g && podloga(sim, Math.floor(g.x), Math.floor(g.y), 5)) ?? podloga(sim, klan.hx, klan.hy) ?? [klan.hx, klan.hy];
   const c = sim.spawn(Race.GOBLIN, klan.id, miejsce[0], miejsce[1]);
   st.nastepne = sim.tick + LUD.wyjscieCo;
@@ -540,6 +551,7 @@ export function tikLudu(sim: Sim): void {
   wyjscieZeSkaly(sim);
   if (sim.tick % 30 === 0) pilnujGniazd(sim);
   tikStraznikow(sim);
+  tikBuntu(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {
     pilnujSiedziby(sim);
     const klan = klanLudu(sim);

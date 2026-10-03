@@ -25,7 +25,7 @@ export const STRAZNICY = {
   ] as Fala[],
 
   /** Życie i siła ciosu Strażnika w pierwszej fali; każda następna fala × (1 + `wzrostNaFale`). */
-  hp: 40, sila: 2.5, wzrostNaFale: 0.25,
+  hp: 36, sila: 2, wzrostNaFale: 0.2,
   /** Co tyle tików Strażnik zadaje cios (gdy stoi przy celu) i z jakiej odległości (kafle). */
   ciosCo: 120, zasieg: 1.4,
   /** Prędkość (kafle na tik). Strażnicy przenikają skałę — idą prosto do celu. */
@@ -45,6 +45,11 @@ export const STRAZNICY = {
    * — modlitwa i tak nic nie kruszy. Przy fali z bossem pobożni zostają: ich modlitwa go osłabia.
    */
   ucieczkaZapas: 6,
+  /**
+   * Zwykła fala, która przez tyle tików (3 min) nikogo nie uderzy (lud uciekł, rycerzy brak), wraca do snu —
+   * ale skorupa się zrasta: postęp trwającego pęknięcia przepada, nagrody nie ma. Fala z bossem nie zasypia.
+   */
+  zasypiaPo: 21600,
   /** Wiara za pokonaną falę. */
   nagrodaWiary: 15,
 };

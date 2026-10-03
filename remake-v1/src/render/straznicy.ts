@@ -34,20 +34,37 @@ export function rysujStraznika(ctx: CanvasRenderingContext2D, sim: Sim, c: Creat
   ctx.strokeStyle = boss ? 'rgba(190,220,255,0.98)' : 'rgba(170,205,255,0.9)';
   ctx.lineWidth = Math.max(1.5, h * 0.045);
   ctx.shadowColor = 'rgba(120,180,255,0.8)'; ctx.shadowBlur = h * 0.18;
+  // nogi: dwa krótkie słupy kamienia, krok w rytmie unoszenia
+  const krok = Math.sin(czas * 0.004 + c.id) * h * 0.04;
+  for (const [nx, dk] of [[-h * 0.13, krok], [h * 0.1, -krok]] as const) {
+    ctx.beginPath();
+    ctx.moveTo(nx - h * 0.07, -h * 0.26); ctx.lineTo(nx + h * 0.07, -h * 0.26);
+    ctx.lineTo(nx + h * 0.08 + dk, 0); ctx.lineTo(nx - h * 0.08 + dk, 0); ctx.closePath();
+    ctx.fill(); ctx.stroke();
+  }
+  // tułów: kanciasty głaz, pochylony do przodu
   ctx.beginPath();
-  ctx.moveTo(-h * 0.26, 0);
-  ctx.lineTo(-h * 0.3, -h * 0.42);
-  ctx.lineTo(-h * 0.18, -h * 0.78);
-  ctx.lineTo(h * 0.06, -h * (0.9 + oddech * 0.02));
-  ctx.lineTo(h * 0.28, -h * 0.66);
-  ctx.lineTo(h * 0.3, -h * 0.3);
-  ctx.lineTo(h * 0.2, 0);
+  ctx.moveTo(-h * 0.25, -h * 0.22);
+  ctx.lineTo(-h * 0.29, -h * 0.48);
+  ctx.lineTo(-h * 0.16, -h * 0.68);
+  ctx.lineTo(h * 0.14, -h * (0.7 + oddech * 0.02));
+  ctx.lineTo(h * 0.27, -h * 0.5);
+  ctx.lineTo(h * 0.22, -h * 0.22);
+  ctx.closePath();
+  ctx.fill(); ctx.stroke();
+  // głowa: osobny, mniejszy kamień wysunięty do przodu
+  ctx.beginPath();
+  ctx.moveTo(-h * 0.04, -h * 0.68);
+  ctx.lineTo(-h * 0.02, -h * 0.84);
+  ctx.lineTo(h * 0.14, -h * (0.9 + oddech * 0.02));
+  ctx.lineTo(h * 0.26, -h * 0.8);
+  ctx.lineTo(h * 0.22, -h * 0.66);
   ctx.closePath();
   ctx.fill(); ctx.stroke();
   ctx.shadowBlur = 0;
   // ramię z pięścią-głazem (przy ciosie wyrzucone do przodu)
-  const px = uderza ? h * 0.46 : h * 0.3, py = uderza ? -h * 0.5 : -h * 0.28;
-  ctx.beginPath(); ctx.moveTo(h * 0.16, -h * 0.62); ctx.lineTo(px, py);
+  const px = uderza ? h * 0.48 : h * 0.32, py = uderza ? -h * 0.55 : -h * 0.3;
+  ctx.beginPath(); ctx.moveTo(h * 0.16, -h * 0.6); ctx.lineTo(px, py);
   ctx.lineWidth = h * 0.1; ctx.strokeStyle = sk[1]; ctx.stroke();
   ctx.fillStyle = sk[0];
   ctx.beginPath(); ctx.arc(px, py, h * 0.09, 0, Math.PI * 2); ctx.fill();
@@ -62,15 +79,15 @@ export function rysujStraznika(ctx: CanvasRenderingContext2D, sim: Sim, c: Creat
   // oczy: dwie świecące szczeliny
   ctx.shadowColor = 'rgba(140,200,255,0.95)'; ctx.shadowBlur = h * 0.25;
   ctx.fillStyle = `rgba(200,230,255,${0.75 + 0.25 * blask})`;
-  ctx.fillRect(h * 0.02, -h * 0.72, h * 0.1, h * 0.03);
-  ctx.fillRect(h * 0.15, -h * 0.68, h * 0.07, h * 0.025);
+  ctx.fillRect(h * 0.06, -h * 0.8, h * 0.08, h * 0.028);
+  ctx.fillRect(h * 0.17, -h * 0.77, h * 0.06, h * 0.024);
   ctx.shadowBlur = 0;
   if (boss) {
     // korona z odłamków skały
     ctx.fillStyle = sk[1];
     ctx.beginPath();
-    ctx.moveTo(-h * 0.14, -h * 0.82); ctx.lineTo(-h * 0.08, -h * 1.02); ctx.lineTo(0, -h * 0.88);
-    ctx.lineTo(h * 0.07, -h * 1.06); ctx.lineTo(h * 0.14, -h * 0.84);
+    ctx.moveTo(-h * 0.01, -h * 0.85); ctx.lineTo(h * 0.03, -h * 1.03); ctx.lineTo(h * 0.1, -h * 0.9);
+    ctx.lineTo(h * 0.17, -h * 1.07); ctx.lineTo(h * 0.24, -h * 0.82);
     ctx.closePath(); ctx.fill();
   }
   ctx.restore();

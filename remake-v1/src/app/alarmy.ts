@@ -59,7 +59,9 @@ export class Straznik {
     alarm.tablica = alarm.rodzaj.startsWith('wymiera-') ? `rasa-${alarm.rodzaj.slice(8)}`
       : alarm.rodzaj === 'dominacja' || alarm.rodzaj.startsWith('sen') ? 'sen'
       : alarm.rodzaj === 'otwarta' ? 'rdzen'
-      : alarm.rodzaj.startsWith('pekniecie') ? 'skorupa' : undefined;
+      : alarm.rodzaj.startsWith('pekniecie') ? 'skorupa'
+      : alarm.rodzaj === `fala-${STRAZNICY.fale.length}` ? 'boss'
+      : alarm.rodzaj.startsWith('fala-') ? 'straznicy' : undefined;
     if (!alarm.kryzys && poziom !== 'wszystko') return null;
     if (this.wyciszone.has(alarm.rodzaj)) return null;
     // nie częściej niż co kilkanaście sekund świata, a ten sam rodzaj rzadziej
