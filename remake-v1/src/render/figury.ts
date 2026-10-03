@@ -1,5 +1,6 @@
 import type { Sim, Clan } from '../sim/sim';
 import { rolaPostaci, stanyPostaci, type Rola } from '../sim/lud';
+import { rysujStraznika } from './straznicy';
 import type { Creature } from '../sim/creatures';
 import { pierwszaGrafika, rysujGrafike, RASY_W_PLIKACH } from '../grafiki/grafiki';
 import { Job } from '../sim/creatures';
@@ -758,6 +759,8 @@ function barwaKlanu(klan: Clan | undefined): string {
 export function rysujPostac(
   ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h: number, czas: number, cz?: Czynnosc,
 ): Czynnosc {
+  // etap 3: Strażnik Snu (i boss) ma własny rysunek
+  if (c.straznik) { rysujStraznika(ctx, sim, c, h, czas); return 'stoi'; }
   const r = ruch(c, czas);
   const czyn = cz ?? czynnosc(c, r, sim);
   // własna grafika (src/grafiki/pliki): postac-<rasa>-<czynność> albo postac-<rasa>
@@ -998,7 +1001,7 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     if (c.dead) continue;
     if (c.x < left - 3 || c.x > right + 3 || c.y < top - 3 || c.y > bottom + 3) { pamiec.delete(c); continue; }
     if (!grupowanie) { doRysowania.push({ c, n: 1 }); continue; }
-    const klucz = `${Math.round(c.x / 2.2)},${Math.round(c.y / 2.2)},${c.race}`;
+    const klucz = `${Math.round(c.x / 2.2)},${Math.round(c.y / 2.2)},${c.race}${c.boss ? 'B' : ''}`;
     const jest = zajete.get(klucz);
     if (jest) { jest.n++; continue; }
     const wpis = { c, n: 1 };
@@ -1027,7 +1030,7 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     }
 
     let cz: Czynnosc;
-    if (tlum && wybrany !== c.id) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
+    if (tlum && wybrany !== c.id && !c.straznik) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
     else {
       ctx.save();
       ctx.translate(sx, sy);

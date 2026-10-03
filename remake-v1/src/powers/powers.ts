@@ -101,6 +101,7 @@ export function moznaPrzemyslec(sim: Sim, c: Creature): boolean {
 
 /** Szept — najtańszy i najprecyzyjniejszy. Tak wysyła się wiernych pod rdzeń i robi proroków. */
 export function whisper(sim: Sim, tool: string, c: Creature): boolean {
+  if (c.straznik) return false;     // Strażnicy Snu nie słuchają szeptów
   // Remake v1: okaleczyć może się tylko pobożny i tylko raz; ofiarą może być każdy z ludu
   if (tool === 'okalecz' && (rolaPostaci(c) !== 'pobozny' || c.okaleczony)) return false;
   if (tool === 'ofiaruj' && !rolaPostaci(c)) return false;

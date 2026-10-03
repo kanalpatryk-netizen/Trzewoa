@@ -7,6 +7,7 @@ import { wolny, stoi, uchwyt, nadOgniem } from './droga';
 import { RYTUAL as R, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 import { RDZEN } from '../nastawy/swiat';
+import { falaTrwa } from './straznicy';
 
 export interface StanRytualu {
   /** Postęp nacji, która jest najbliżej przebicia — tylko do pokazania graczowi. */
@@ -67,6 +68,8 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
     if (stan.otwarta) break;
     const n = razem;
     if (n < R.potrzebaWiernych || id !== najlepszy) continue;
+    // etap 3: dopóki trwa fala Strażników Snu, skorupa nie pęka
+    if (falaTrwa(sim)) continue;
     const klan = sim.clans[id];
     // nacja, której ktoś właśnie klęczy pod skorupą, z definicji nie jest martwa;
     // flaga potrafi zostać po przepisaniu ludzi między klanami i mroziła rytuał na zawsze
@@ -103,7 +106,8 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
 
   // Po przebiciu skorupy do środka schodzą wyłącznie wierni tej nacji, która kuła.
   // Przypadkowy przechodzień nie porzuca swoich spraw, żeby wejść do cudzego boga.
-  if (stan.otwarta && sim.tick % R.zejscieCo === 0) {
+  // (etap 3: dopóki trwa fala Strażników Snu, nikt nie schodzi do rdzenia — nawet przez otwartą skorupę)
+  if (stan.otwarta && !falaTrwa(sim) && sim.tick % R.zejscieCo === 0) {
     // kto prowadzi: nacja, która kuła, a gdy nikt nie kuł — ta z najliczniejszą wartą
     const prowadzi = sim.clans[stan.klan >= 0 ? stan.klan : najlepszy];
     // schodzą wierni tej nacji — o wejściu decyduje ich własna wiara, nie średnia z domu

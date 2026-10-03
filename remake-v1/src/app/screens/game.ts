@@ -18,6 +18,7 @@ import { klanLudu, liczRole, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 /** Barwy ról w panelu LUD (te same odcienie co obrys postaci na płycie). */
 const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
 import { rysujZnacznikiLudu } from '../../render/lud';
+import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
 import { LUD } from '../../nastawy/lud';
 import { dzisiaj, ziarnoDnia, wynikDnia, czasGry } from '../../core/swiat-dnia';
 import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, type Przycisk } from '../../render/przyciski';
@@ -780,6 +781,7 @@ export class EkranGry implements Ekran {
     rysujEfekty(ctx, sim.efekty, cam, teraz);
     if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
     rysujZnacznikiLudu(ctx, sim, cam);
+    rysujStraznikowWSkale(ctx, sim, cam, teraz);
     if (this.pauza) {
       // czas stoi: świat przygasa, a na nim widać już tylko plan
       ctx.fillStyle = 'rgba(8,6,10,0.26)';
@@ -789,6 +791,8 @@ export class EkranGry implements Ekran {
     if (this.cel) podswietlCel(ctx, cam, this.cel, teraz);
     ctx.restore();
     ctx.restore();
+    // etap 3: fala Strażników Snu — pasek nad polem gry (między wstęgą drogi a Cudem)
+    rysujPasekFali(ctx, sim, plate.x + plate.w * 0.42, plate.y + 10, plate.w * 0.46);
     if (this.pauza) {
       // wstrzymany oddech: złota, pulsująca rama wewnątrz płyty
       const puls = 0.5 + 0.5 * Math.sin(teraz * 0.0025);

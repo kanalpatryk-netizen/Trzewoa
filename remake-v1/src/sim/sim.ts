@@ -17,6 +17,7 @@ import { cechaNacji, losujCeche } from './cechy';
 import type { Podsumowanie } from '../core/osiagniecia';
 import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, zalozGniazda, type StanLudu } from './lud';
 import { LUD, REMAKE } from '../nastawy/lud';
+import { falaTrwa } from './straznicy';
 
 export interface Clan {
   id: number;
@@ -520,7 +521,7 @@ export class Sim {
     this.spark(c.x, c.y, 'hit');
     this.efekt(c.x, c.y, 'smierc');
     if (c.prophet) this.gdzie(c.x, c.y).log(`Prorok ${this.clans[c.clan].name} zginął ${why}.`, 'krew');
-    if (this.clans[c.clan].pop <= 0 && !this.clans[c.clan].dead) {
+    if (this.clans[c.clan].pop <= 0 && !this.clans[c.clan].dead && !c.straznik) {
       this.clans[c.clan].dead = true;
       this.log(`${this.clans[c.clan].name} — wygaśli. Nikt ich nie opłakał.`, 'krew',
         'wygasli', (n) => `${n} nacje wygasły. Nikt ich nie opłakał.`);
@@ -704,6 +705,8 @@ export class Sim {
 
   reachCore(c: Creature): void {
     if (this.ending) return;
+    // etap 3: dopóki trwa fala Strażników Snu (z bossem włącznie), rdzeń jest dla nikogo nie do dotknięcia
+    if (falaTrwa(this)) return;
     const clan = this.clans[c.clan];
     // liczy się też wiara tego, kto wchodzi: warta z pełnym oddaniem, której nacja
     // w domu akurat ostygła, wchodziła jako zabójcy — i gracz przegrywał wygraną

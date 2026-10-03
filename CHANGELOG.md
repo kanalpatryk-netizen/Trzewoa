@@ -1,5 +1,18 @@
 # Zmiany
 
+## Remake v1 (komputer) — etap 3
+- Strażnicy Snu: fale przy 20/45/70% skorupy (2/3/4 Strażników, każda fala silniejsza), przy 90% boss
+  z dwoma Strażnikami; podczas fali skorupa nie pęka i nikt nie wchodzi do rdzenia; za falę +15 wiary
+- Strażnicy przenikają skałę, nie odchodzą dalej niż 30 kafli od rdzenia, biją najpierw rycerzy;
+  rycerze w zasięgu ruszają do walki (cios co pół sekundy), reszta ludu oddaje słaby cios
+- Podczas zwykłej fali pobożni i robotnicy odchodzą spod rdzenia, wysłani pobożni czekają z dala;
+  przy fali z bossem pobożni modlą się dalej — ich modlitwa osłabia bossa
+- Boss Śniący Kamień (src/nastawy/boss.ts + src/sim/boss.ts, wymienny przez AKTYWNY_BOSS): rani go
+  tylko rycerz, zasypuje drogę wiernych, słabnie od modlitwy trzech pobożnych, bez niej się zrasta
+- Pasek fali nad polem gry (która fala, ilu zostało, życie bossa), alarm z radą przy każdej fali,
+  kamienne sylwetki Strażników i bossa (widoczne także w skale), karta Strażnika
+- Fale i boss przeżywają zapis gry
+
 ## Remake v1 (komputer) — etap 2
 - Kamienni rycerze w 5 gniazdach w skale (po 2–3, z boku osi siedziba–rdzeń, z dala od magmy i wody);
   słaby żar, gdy ktoś jest blisko; dokopanie budzi ich jako weteranów (najedzonych), z przejściem do tunelu

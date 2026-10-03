@@ -1,6 +1,14 @@
 import type { Sim } from '../sim/sim';
 import { procentSkorupy } from '../sim/rytual';
 import { RYTUAL } from '../nastawy/rytual';
+import { STRAZNICY } from '../nastawy/straznicy';
+import { aktywnyBoss } from '../sim/boss';
+
+/** Ile fal Strażników już się zaczęło. */
+function falRozpoczetych(sim: Sim): number {
+  const st = sim.lud.straznicy;
+  return st ? st.fala + (st.trwa ? 1 : 0) : 0;
+}
 
 /** Sytuacja, przy której gra sama zatrzymuje czas i mówi, co możesz zrobić. */
 export interface Alarm {
@@ -26,6 +34,7 @@ export class Straznik {
   private senProg = 0;
   private pekniec = 0;
   private otwarta = false;
+  private fal = 0;
   private ostatnio = new Map<string, number>();
   private ostatniAlarm = -1e9;
   /** Rodzaje, przy których gracz poprosił, żeby go więcej nie zatrzymywać. */
@@ -38,6 +47,7 @@ export class Straznik {
     this.senProg = sim.sen;
     this.pekniec = sim.rytual.pekniecia;
     this.otwarta = sim.rytual.otwarta;
+    this.fal = falRozpoczetych(sim);
     this.ostatniAlarm = sim.tick;
   }
 
@@ -77,6 +87,23 @@ export class Straznik {
       }
     }
     this.senProg = Math.min(this.senProg, sim.sen);
+    // etap 3: fala Strażników Snu
+    const fal = falRozpoczetych(sim);
+    if (fal > this.fal) {
+      this.fal = fal;
+      this.pekniec = sim.rytual.pekniecia;     // pęknięcie, które wywołało falę, nie zatrzymuje gry drugi raz
+      const w = sim.world;
+      const def = STRAZNICY.fale[fal - 1];
+      return {
+        rodzaj: `fala-${fal}`, kryzys: true,
+        tytul: def?.boss ? `Ostatnia fala — ${aktywnyBoss().nazwa}` : `Strażnicy Snu — fala ${fal} z ${STRAZNICY.fale.length}`,
+        tekst: def?.boss ? `${aktywnyBoss().opis} Dopóki stoi, skorupa nie pęknie.`
+          : `Spod skorupy wychodzą Strażnicy (${def?.straznikow ?? '?'}). Dopóki żyją, skorupa nie pęka. Pobożni i robotnicy odchodzą spod rdzenia — walczą rycerze.`,
+        rada: def?.boss ? 'Wyślij pod rdzeń wszystkich rycerzy i trzech pobożnych do modlitwy. Robotnicy muszą odkopywać zasypaną drogę.'
+          : 'Za mało rycerzy? Szepnij trzem robotnikom „przemyśl i kop” — w skale śpią kamienni rycerze.',
+        cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, tekst: 'przedsionek' },
+      };
+    }
     // skorupa rdzenia
     if (sim.rytual.otwarta && !this.otwarta) {
       this.otwarta = true;

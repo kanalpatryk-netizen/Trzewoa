@@ -1,4 +1,4 @@
-# Trzewia — Remake v1 (komputer) · etap 2
+# Trzewia — Remake v1 (komputer) · etap 3
 
 Nowa gra na fundamencie 4.2 beta. Wszystkie wcześniejsze wersje zostają bez zmian (punkt odniesienia).
 
@@ -32,11 +32,17 @@ i otwórz w przeglądarce.
   bierze tor jeszcze niesprawdzony. Jeden trafia mniej więcej raz na trzy, trzech — na pewno.
 - **Weterani:** po 4 minutach w ludzie, póki najedzony, a lud wierny — +30% siły, szybkości, kopania
   i modlitwy, jasna aureola. Na karcie widać też „weteran bez premii” i dlaczego.
+- **Strażnicy Snu** wychodzą spod skorupy przy 20, 45 i 70% jej skruszenia; przy 90% przychodzi boss.
+  Dopóki fala trwa, skorupa nie pęka i nikt nie wejdzie do rdzenia. Walczą rycerze (Strażnicy biorą
+  ich na cel najpierw); pobożni i robotnicy odchodzą spod rdzenia. Za pokonaną falę: wiara.
+- **Boss — Śniący Kamień:** rani go tylko rycerz; co jakiś czas zasypuje kawałek drogi wiernych
+  (robotnicy muszą ją odkopać); słabnie, gdy pod rdzeniem modli się trzech pobożnych, a bez modlitwy
+  się zrasta. Bossa łatwo podmienić: nastawy w `src/nastawy/boss.ts`, zachowanie w `src/sim/boss.ts`
+  (rejestr `BOSSOWIE` i `AKTYWNY_BOSS`). Fale: `src/nastawy/straznicy.ts`.
 - **Bez snu góry.** Przegrywasz dopiero, gdy nie da się już wygrać: nie ma pobożnych,
   a nawet ofiara ze wszystkich nie da krwi na nowego.
 
 ## Dalsze etapy (plan)
-3. Strażnicy Snu — fale od 20% pęknięcia skorupy, boss przy 90%.
 4. Nowa talia kart (spisek rycerzy, powodzie, zatrute plony), grafika, samouczek, balans.
 
 Znane braki: samouczek i część tablic atlasu opisują jeszcze dawne zasady; dowóz jedzenia

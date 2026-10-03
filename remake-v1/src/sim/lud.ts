@@ -13,6 +13,7 @@ import { Job } from './creatures';
 import { szukajDrogi, budzetDrog, nowyTik } from './droga';
 import { PIELGRZYMKA as P } from '../nastawy/rytual';
 import { Rng } from '../core/rng';
+import { tikStraznikow, type StanStraznikow } from './straznicy';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -37,6 +38,8 @@ export interface StanLudu {
   obozT?: number;
   /** Etap 2: gniazda kamiennych rycerzy zamurowane w skale. */
   gniazda?: Gniazdo[];
+  /** Etap 3: fale Strażników Snu. */
+  straznicy?: StanStraznikow;
 }
 
 /** Gniazdo kamiennych rycerzy: śpią w litej skale, aż ktoś się do nich dokopie. */
@@ -536,6 +539,7 @@ export function tikLudu(sim: Sim): void {
   if (!sim.lud.spizarnie) sim.lud.spizarnie = [];
   wyjscieZeSkaly(sim);
   if (sim.tick % 30 === 0) pilnujGniazd(sim);
+  tikStraznikow(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {
     pilnujSiedziby(sim);
     const klan = klanLudu(sim);

@@ -49,6 +49,8 @@ export function sprawdz(ile: number) {
     let i = 0;
     for (; i < 200000 && !sim.ending; i++) {
       sim.step();
+      // etap 3: test sprawdza samą skorupę — fale Strażników Snu „pokonuje” od razu (jak gdyby broniła ich warta)
+      if (i % 60 === 0) for (const c of sim.creatures) if (!c.dead && c.straznik) sim.kill(c, 'test', 'test');
       klan.devotion = 1;
       klan.dead = false;
       if (i % 50 === 0) uzupelnij();

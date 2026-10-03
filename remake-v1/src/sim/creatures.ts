@@ -11,6 +11,8 @@ import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi } from './pielgrzymka';
 import { gniazdaWSkale, obudzGniazdo } from './lud';
+import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow } from './straznicy';
+import { STRAZNICY } from '../nastawy/straznicy';
 import { obozFrontowy, wszystkieSpizarnie as wszystkieSpizarnieLudu, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
 import { LUD, REMAKE } from '../nastawy/lud';
 
@@ -102,6 +104,13 @@ export interface Creature {
   wyprawa?: boolean;
   /** Remake v1: tik ostatniej ucieczki od ognia — przez chwilę nie wraca tą samą drogą. */
   odOgnia?: number;
+  /** Etap 3: Strażnik Snu (przenika skałę, nie je); boss — id bossa z nastawy/boss.ts. */
+  straznik?: boolean;
+  boss?: string;
+  /** Etap 3: tik ostatniego ciosu, największe życie (pasek), tik ostatniego zasypania drogi (boss). */
+  ciosT?: number;
+  hpMax?: number;
+  zasypT?: number;
   /** Etap 2: obóz, którego rycerz pilnuje (trzyma się go, póki jest tam jedzenie). */
   posterunek?: { x: number; y: number };
   /** Etap 2: tik, od którego jest w ludzie (staż weterana); brak = od początku partii. */
@@ -151,6 +160,8 @@ export function stepCreature(sim: Sim, c: Creature): void {
 }
 
 function krokStworzenia(sim: Sim, c: Creature): void {
+  // etap 3: Strażnicy Snu żyją po swojemu (sim/straznicy.ts)
+  if (c.straznik) { krokStraznika(sim, c); return; }
   const w = sim.world;
   const d = RACES[c.race];
   // v4.1 beta: cecha nacji (pobożni, płodni, wojowniczy…) — mnożniki na statystyki rasy
@@ -706,11 +717,22 @@ function planujLud(sim: Sim, c: Creature): void {
   const droga = (cel: (x: number, y: number) => boolean, limit: number) => szukajDrogi(sim, c, (_i, x, y) => cel(x, y), limit);
   const podroz = (d: number[]) => K.noszenieTikow + d.length * K.tikowNaKafel;
 
+  // etap 3: zwykła fala Strażników — kto nie jest rycerzem, odchodzi spod rdzenia (modlitwa i tak nic nie kruszy);
+  // pobożny z wyprawy wraca pod rdzeń, gdy fala minie
+  if (falaZwykla(sim) && rola !== 'rycerz' && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas)) {
+    const d = droga((x, y) => !wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas) && stoi(sim, x, y), LUD.dostawaLimit);
+    if (d) { naDroge(d); zamiar('odchodzi spod rdzenia przed Strażnikami Snu', Job.WANDER, podroz(d)); return; }
+  }
   // pielgrzym trzyma się wyprawy, aż dojdzie (albo aż ty ją przerwiesz) — wcześniej porzucał ją po minucie
   if ((c.job === Job.PIELGRZYM || c.wyprawa) && sim.tick >= (c.bezModlitwyDo ?? 0) && c.hunger < LUD.glodSam) {
-    // droga do rdzenia jeszcze niewykopana — czeka przy obozie frontowym, a nie stoi między kopaczami
-    if (drogaNiegotowa(sim, c)) {
+    // droga do rdzenia jeszcze niewykopana albo trwa fala Strażników — czeka przy obozie frontowym
+    if (drogaNiegotowa(sim, c) || falaZwykla(sim)) {
       c.wyprawa = true;
+      if (falaZwykla(sim)) {
+        c.jx = Math.floor(c.x); c.jy = Math.floor(c.y); c.droga = undefined;
+        zamiar('czeka z dala od rdzenia, aż fala Strażników minie', Job.STOI, Z);
+        return;
+      }
       if (stanPrzyObozie(sim, c, naDroge, droga)) {
         c.modliPrzyObozie = true;
         zamiar('czeka przy obozie, aż robotnicy dokopią drogę do rdzenia', Job.STOI, Z);
@@ -838,6 +860,10 @@ function stanPrzyObozie(sim: Sim, c: Creature, naDroge: (d: number[], x?: number
     sp = wyprawaTrwa(sim) ? obozFrontowy(sim) : stary ?? najblizszaSpizarnia(sim, c.x, c.y, true) ?? obozFrontowy(sim);
     c.posterunek = sp ? { x: sp.x, y: sp.y } : undefined;
   } else sp = stacjonuje(c) ? obozFrontowy(sim) : najblizszaSpizarnia(sim, c.x, c.y, false);
+  // etap 3: w czasie fali Strażników nie-rycerze nie stają przy obozie pod rdzeniem
+  if (sp && rolaPostaci(c) !== 'rycerz' && falaZwykla(sim) && wStrefieStraznikow(sim, sp.x, sp.y, STRAZNICY.ucieczkaZapas)) {
+    sp = spizarnieWgOdleglosci(sim, c.x, c.y, false).find((o) => !wStrefieStraznikow(sim, o.x, o.y, STRAZNICY.ucieczkaZapas)) ?? null;
+  }
   if (!sp) return false;
   // rycerze stoją dalej, na skraju obozu; pobożni bliżej — każdy w swoim miejscu, nie jeden na drugim
   const r = rolaPostaci(c) === 'rycerz' ? 5 : 2;
@@ -1588,7 +1614,7 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   }
   const wPrzedsionku = Math.abs(c.x - w.coreX) < P.przedsionekX && Math.abs(c.y - w.przedsionekY) < P.przedsionekY;
   // Remake v1: drogi jeszcze nie ma — wraca czekać przy obozie (planer), zamiast iść za kopaczami
-  if (!wPrzedsionku && REMAKE && sim.tick % 120 === c.id % 120 && drogaNiegotowa(sim, c)) { c.wyprawa = true; c.jt = 0; return; }
+  if (REMAKE && sim.tick % 120 === c.id % 120 && ((!wPrzedsionku && drogaNiegotowa(sim, c)) || falaZwykla(sim))) { c.wyprawa = true; c.jt = 0; return; }
   if (!wPrzedsionku) {
     // swoja nacja ma plan drogi — idzie nim i sama przekopuje skałę po drodze; na przełaj
     // pielgrzymi szli prosto w dół i stawali na pierwszym jeziorze nad rdzeniem
@@ -1615,7 +1641,7 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   }
   // Dopiero na miejscu widać, czy skorupa już puściła — i liczy się faktyczna droga,
   // nie licznik pęknięć. Wtedy pielgrzym przestaje być pielgrzymem: schodzi do rdzenia.
-  if (sim.rytual.otwarta && (sim.clans[c.clan].devotion > RYTUAL.uwolnienieNacja || c.devotion > RYTUAL.uwolnienieWlasne)
+  if (sim.rytual.otwarta && !falaTrwa(sim) && (sim.clans[c.clan].devotion > RYTUAL.uwolnienieNacja || c.devotion > RYTUAL.uwolnienieWlasne)
       && sim.tick % P.sprawdzOtwarcieCo === c.id % P.sprawdzOtwarcieCo && wyslijDoRdzenia(sim, c, RYTUAL.zejsciePielgrzymaTikow)) return;
   // warta pod skorupą trwa, aż kamień puści — limit wyprawy liczy się tylko w drodze
   // (po 7000 tikach warta rozchodziła się do zwykłych zajęć tuż przed pęknięciem)
@@ -1696,6 +1722,8 @@ function doBuild(sim: Sim, c: Creature): void {
 function doFight(sim: Sim, c: Creature): void {
   const foe = sim.creatureById(sim.target.get(c.id) ?? -1);
   if (!foe || foe.dead) { sim.target.delete(c.id); c.jt = 0; return; }
+  // etap 3: ze Strażnikiem Snu walczy się w rytmie ciosów, nie co tik
+  if (foe.straznik) { walczZeStraznikiem(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); }); return; }
   const dist = Math.hypot(foe.x - c.x, foe.y - c.y);
   if (dist < K.walkaZasieg) {
     const dmg = RACES[c.race].strength * mnoznik(sim, c, 'sila') * cechaNacji(sim.clans[c.clan]).sila * (K.walkaMin + sim.rng.next() * K.walkaRozrzut) * (1 + c.mad);

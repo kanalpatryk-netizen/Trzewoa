@@ -2,6 +2,7 @@ import { Sim } from '../sim/sim';
 import { RACES } from '../sim/races';
 import { cechaNacji } from '../sim/cechy';
 import { rolaPostaci, NAZWA_ROLI, stanyPostaci } from '../sim/lud';
+import { aktywnyBoss } from '../sim/boss';
 import { rysujGrafike } from '../grafiki/grafiki';
 import { Creature, Job } from '../sim/creatures';
 import { Verb, TOOLS, affordable, cost, whisper, modliSie, moznaPrzemyslec } from '../powers/powers';
@@ -420,7 +421,7 @@ export class Ui {
     ctx.textBaseline = 'alphabetic';
     let rozmImienia = Math.max(16, Math.min(24, cw * 0.075));
     ctx.font = `${rozmImienia}px ${SERIF}`;
-    const imie = creatureName(c);
+    const imie = c.boss ? aktywnyBoss().nazwa : c.straznik ? 'Strażnik Snu' : creatureName(c);
     if (ctx.measureText(imie).width > tw) { rozmImienia *= tw / ctx.measureText(imie).width; ctx.font = `${rozmImienia}px ${SERIF}`; }
     ctx.fillStyle = 'rgba(242,228,202,0.97)';
     ctx.fillText(imie, tx, ny + rozmImienia * 0.9);
@@ -429,7 +430,7 @@ export class Ui {
     ctx.fillStyle = 'rgba(224,168,96,0.85)';
     const cecha = cechaNacji(clan).nazwa;
     const rola = rolaPostaci(c);
-    ctx.fillText(`${rola ? NAZWA_ROLI[rola].toUpperCase() : RACES[c.race].name.toUpperCase()} · ${clan.name}${cecha ? ` · ${cecha}` : ''}`, tx, ny + rozmImienia * 0.9 + rozm * 1.5, tw);
+    ctx.fillText(`${rola ? NAZWA_ROLI[rola].toUpperCase() : c.straznik ? (c.boss ? 'BOSS' : 'STRAŻNIK') : RACES[c.race].name.toUpperCase()} · ${clan.name}${cecha ? ` · ${cecha}` : ''}`, tx, ny + rozmImienia * 0.9 + rozm * 1.5, tw);
     ctx.font = `italic ${rozm}px ${SERIF}`;
     ctx.fillStyle = 'rgba(208,194,170,0.86)';
     wrap(ctx, lifeLine(c, sim), tx, ny + rozmImienia * 0.9 + rozm * 3.1, tw, rozm * 1.3);
@@ -475,7 +476,7 @@ export class Ui {
     ctx.fillStyle = 'rgba(224,168,96,0.8)';
     ctx.fillText(napisSzeptu, x + cw / 2, yM - rozm * 1.15);
     // okaleczyć może się tylko pobożny, i tylko raz — innym tej myśli nie pokazujemy
-    const tools = TOOLS.szept.filter((t) => (t.id !== 'okalecz' || (rolaPostaci(c) === 'pobozny' && !c.okaleczony)) && (t.id !== 'przerwij' || modliSie(c)) && (t.id !== 'przemysl' || moznaPrzemyslec(sim, c)));
+    const tools = c.straznik ? [] : TOOLS.szept.filter((t) => (t.id !== 'okalecz' || (rolaPostaci(c) === 'pobozny' && !c.okaleczony)) && (t.id !== 'przerwij' || modliSie(c)) && (t.id !== 'przemysl' || moznaPrzemyslec(sim, c)));
     const size = Math.max(13, Math.min(17, cw * 0.05));
     ctx.font = `${size}px ${SERIF}`;
     for (let k = 0; k < tools.length; k++) {
