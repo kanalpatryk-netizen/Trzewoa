@@ -4,7 +4,7 @@ import { Race, RACES } from '../sim/races';
 import { Creature, Thought, Job } from '../sim/creatures';
 import { KOSZTY, MOCE, SKAZY } from '../nastawy/moce';
 import { odswiezPlan } from '../sim/pielgrzymka';
-import { rolaPostaci, maxHp } from '../sim/lud';
+import { rolaPostaci, maxHp, gniazdaWSkale } from '../sim/lud';
 import { LUD } from '../nastawy/lud';
 
 /**
@@ -26,6 +26,7 @@ export const TOOLS: Record<Verb, Tool[]> = {
     { id: 'okalecz', label: 'okalecz się', hint: 'pobożny upuszcza krwi: dostajesz krew, a on słabnie na zawsze' },
     { id: 'ofiaruj', label: 'ofiaruj', hint: 'oddaje ci życie — dużo krwi, jedna osoba mniej' },
     { id: 'przerwij', label: 'przerwij modlitwę', hint: 'wraca do swoich i przez minutę nie idzie się modlić' },
+    { id: 'przemysl', label: 'przemyśl i kop', hint: 'robotnik klęka, prosi o znak i kopie ku śpiącym rycerzom — znak jest niedokładny: jeden trafia raz na trzy, trzech na pewno' },
   ],
   znak: [
     { id: 'objawienie', label: 'objawienie', hint: 'wszyscy dookoła widzą cud; ich oddanie rośnie' },
@@ -93,12 +94,18 @@ export function modliSie(c: Creature): boolean {
   return c.job === Job.PRAY || c.job === Job.PIELGRZYM || c.thought === Thought.PRAY_CORE || !!c.wyprawa || !!c.modliPrzyObozie;
 }
 
+/** Etap 2: „Przemyśl i kop” — tylko robotnik, który jeszcze nie kopie ku znakowi, i tylko gdy w skale śpią rycerze. */
+export function moznaPrzemyslec(sim: Sim, c: Creature): boolean {
+  return rolaPostaci(c) === 'robotnik' && !c.tor && c.przemysl === undefined && gniazdaWSkale(sim).length > 0;
+}
+
 /** Szept — najtańszy i najprecyzyjniejszy. Tak wysyła się wiernych pod rdzeń i robi proroków. */
 export function whisper(sim: Sim, tool: string, c: Creature): boolean {
   // Remake v1: okaleczyć może się tylko pobożny i tylko raz; ofiarą może być każdy z ludu
   if (tool === 'okalecz' && (rolaPostaci(c) !== 'pobozny' || c.okaleczony)) return false;
   if (tool === 'ofiaruj' && !rolaPostaci(c)) return false;
   if (tool === 'przerwij' && !modliSie(c)) return false;
+  if (tool === 'przemysl' && !moznaPrzemyslec(sim, c)) return false;
   if (!pay(sim, 'szept', tool)) return false;
   if (tool === 'okalecz') {
     c.okaleczony = true;
@@ -117,6 +124,14 @@ export function whisper(sim: Sim, tool: string, c: Creature): boolean {
     c.bezModlitwyDo = sim.tick + LUD.przerwaModlitwy;
     c.wyprawa = false;
     sim.efekt(c.x, c.y, 'mysl', 'wraca');
+    return true;
+  }
+  if (tool === 'przemysl') {
+    c.przemysl = sim.tick + LUD.przemyslModlitwa;
+    c.tor = undefined; c.droga = undefined; c.kopieDroge = false;
+    c.jt = 0;
+    sim.efekt(c.x, c.y, 'mysl', 'przemyśl i kop');
+    sim.spark(c.x, c.y - 0.5, 'pray');
     return true;
   }
   if (tool === 'ofiaruj') {

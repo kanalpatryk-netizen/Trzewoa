@@ -15,7 +15,7 @@ import { GORA as G, LUDY as L, ZASIEDLENIE as Z, PRZYPLYWY as PP } from '../nast
 import { SWIAT } from '../nastawy/swiat';
 import { cechaNacji, losujCeche } from './cechy';
 import type { Podsumowanie } from '../core/osiagniecia';
-import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, type StanLudu } from './lud';
+import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, zalozGniazda, type StanLudu } from './lud';
 import { LUD, REMAKE } from '../nastawy/lud';
 
 export interface Clan {
@@ -224,6 +224,8 @@ export class Sim {
         if (c) { nadajRole(this, c, rola); c.age = this.rng.int(Math.floor(RACES[Race.GOBLIN].lifespan * Z.dorosliDo)); }
       }
     }
+    // etap 2: kamienni rycerze śpią w skale — do odkopania
+    zalozGniazda(this);
 
     // to, co wiedzą od pokoleń: okolice własnych gniazd
     for (const clan of this.clans) {

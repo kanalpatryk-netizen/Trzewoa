@@ -4,7 +4,7 @@ import { cechaNacji } from '../sim/cechy';
 import { rolaPostaci, NAZWA_ROLI, stanyPostaci } from '../sim/lud';
 import { rysujGrafike } from '../grafiki/grafiki';
 import { Creature, Job } from '../sim/creatures';
-import { Verb, TOOLS, affordable, cost, whisper, modliSie } from '../powers/powers';
+import { Verb, TOOLS, affordable, cost, whisper, modliSie, moznaPrzemyslec } from '../powers/powers';
 import { SERIF, creatureName, creatureNameCelownik } from '../render/overlay';
 import { Plate } from '../render/plate';
 import { rysujStany } from '../render/stany';
@@ -451,9 +451,9 @@ export class Ui {
       for (const st of stany) {
         if (ys > yM - rozm * 1.9) break;
         const zostalo = st.do !== undefined ? Math.max(0, Math.ceil((st.do - sim.tick) / 120)) : null;
-        const kiedy = zostalo === null ? 'na zawsze' : zostalo >= 60 ? `mija za ${Math.floor(zostalo / 60)} min ${zostalo % 60} s` : `mija za ${zostalo} s`;
+        const kiedy = st.kiedy ?? (zostalo === null ? 'na zawsze' : zostalo >= 60 ? `mija za ${Math.floor(zostalo / 60)} min ${zostalo % 60} s` : `mija za ${zostalo} s`);
         ctx.font = `${rozm * 0.95}px ${SERIF}`;
-        ctx.fillStyle = st.dobry ? 'rgba(250,226,150,0.98)' : 'rgba(236,112,96,0.98)';
+        ctx.fillStyle = st.uspiony ? 'rgba(190,180,160,0.85)' : st.dobry ? 'rgba(250,226,150,0.98)' : 'rgba(236,112,96,0.98)';
         const znak = '• ';
         ctx.fillText(`${znak}${st.nazwa} — ${kiedy}`, x + 18, ys, cw - 36);
         ctx.font = `italic ${rozm * 0.82}px ${SERIF}`;
@@ -475,7 +475,7 @@ export class Ui {
     ctx.fillStyle = 'rgba(224,168,96,0.8)';
     ctx.fillText(napisSzeptu, x + cw / 2, yM - rozm * 1.15);
     // okaleczyć może się tylko pobożny, i tylko raz — innym tej myśli nie pokazujemy
-    const tools = TOOLS.szept.filter((t) => (t.id !== 'okalecz' || (rolaPostaci(c) === 'pobozny' && !c.okaleczony)) && (t.id !== 'przerwij' || modliSie(c)));
+    const tools = TOOLS.szept.filter((t) => (t.id !== 'okalecz' || (rolaPostaci(c) === 'pobozny' && !c.okaleczony)) && (t.id !== 'przerwij' || modliSie(c)) && (t.id !== 'przemysl' || moznaPrzemyslec(sim, c)));
     const size = Math.max(13, Math.min(17, cw * 0.05));
     ctx.font = `${size}px ${SERIF}`;
     for (let k = 0; k < tools.length; k++) {

@@ -1,4 +1,4 @@
-# Trzewia — Remake v1 (komputer) · etap 1
+# Trzewia — Remake v1 (komputer) · etap 2
 
 Nowa gra na fundamencie 4.2 beta. Wszystkie wcześniejsze wersje zostają bez zmian (punkt odniesienia).
 
@@ -24,12 +24,20 @@ i otwórz w przeglądarce.
   Odcięte grupki zakładają obozy (znaczniki na mapie).
 - **Zamiary:** każdy ma cel na ~10 s (widać go na karcie postaci), zamiast co chwilę losować zajęcie.
 - **Aureole:** jasna — wzmocnienie, czerwona — osłabienie; karta mówi, co to i kiedy minie.
+- **Kamienni rycerze** śpią w gniazdach zamurowanych w skale (5 gniazd, po 2–3 rycerzy, na różnych
+  głębokościach, z dala od magmy). Gdy ktoś z ludu jest blisko, gniazdo słabo się żarzy. Kto się do
+  niego dokopie, budzi rycerzy — od razu weteranów. Ze skały rycerzy się nie przywołuje.
+- **Szept „Przemyśl i kop”** (robotnik, 6 wiary): klęka, prosi o znak, potem powoli kopie tunel ku
+  najbliższemu gniazdu. Znak jest niedokładny — gniazdo leży na jednym z trzech torów; każdy kopacz
+  bierze tor jeszcze niesprawdzony. Jeden trafia mniej więcej raz na trzy, trzech — na pewno.
+- **Weterani:** po 4 minutach w ludzie, póki najedzony, a lud wierny — +30% siły, szybkości, kopania
+  i modlitwy, jasna aureola. Na karcie widać też „weteran bez premii” i dlaczego.
 - **Bez snu góry.** Przegrywasz dopiero, gdy nie da się już wygrać: nie ma pobożnych,
   a nawet ofiara ze wszystkich nie da krwi na nowego.
 
 ## Dalsze etapy (plan)
-2. Rycerze w gniazdach w skale, szept „Przemyśl i kop”, premie weteranów.
 3. Strażnicy Snu — fale od 20% pęknięcia skorupy, boss przy 90%.
 4. Nowa talia kart (spisek rycerzy, powodzie, zatrute plony), grafika, samouczek, balans.
 
-Znane braki etapu 1: samouczek i część tablic atlasu opisują jeszcze dawne zasady.
+Znane braki: samouczek i część tablic atlasu opisują jeszcze dawne zasady; dowóz jedzenia
+daleko od siedziby (pod rdzeń) bywa za wolny — balans w etapie 4.

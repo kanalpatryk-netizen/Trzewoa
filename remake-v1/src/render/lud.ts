@@ -4,9 +4,11 @@
  * bez tła ginęły w rycinie skały.
  */
 import type { Sim } from '../sim/sim';
+import { Race } from '../sim/races';
 import type { Camera } from './camera';
 import { SERIF } from './ink';
-import { grzybPrzy } from '../sim/lud';
+import { grzybPrzy, gniazdaWSkale } from '../sim/lud';
+import { LUD } from '../nastawy/lud';
 
 /** Podpis w ciemnej ramce z kreską odniesienia do miejsca (sx, sy). */
 function podpis(ctx: CanvasRenderingContext2D, tekst: string, sx: number, sy: number, barwa: string, rozmiar: number): void {
@@ -31,6 +33,29 @@ export function rysujZnacznikiLudu(ctx: CanvasRenderingContext2D, sim: Sim, cam:
   ctx.save();
   ctx.font = `italic ${rozmiar}px ${SERIF}`;
   ctx.textAlign = 'left';
+  // etap 2: gniazda kamiennych rycerzy — słaby żar w skale, gdy ktoś z ludu jest blisko (im bliżej, tym jaśniej)
+  const czas = performance.now();
+  for (const g of gniazdaWSkale(sim)) {
+    let najblizej = Infinity;
+    for (const c of sim.creatures) {
+      if (c.dead || c.race !== Race.GOBLIN) continue;
+      const d = Math.hypot(c.x - g.x, c.y - g.y);
+      if (d < najblizej) najblizej = d;
+    }
+    if (najblizej > LUD.gniazdoZar) continue;
+    const sila = 1 - najblizej / LUD.gniazdoZar;
+    const puls = 0.7 + 0.3 * Math.sin(czas * 0.003 + g.id * 1.7);
+    const x = sx(g.x + 0.5), y = sy(g.y + 0.5), r = Math.max(16, z * 3.6);
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+    grad.addColorStop(0, `rgba(255,178,96,${(0.25 + 0.55 * sila) * puls})`);
+    grad.addColorStop(0.35, `rgba(240,130,60,${(0.12 + 0.3 * sila) * puls})`);
+    grad.addColorStop(1, 'rgba(255,120,60,0)');
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = grad;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
   // obozy ze spiżarniami (siedziba ma swój podpis przy gnieździe)
   for (const o of sim.lud.spizarnie) {
     const x = sx(o.x + 0.5), y = sy(o.y + 1);

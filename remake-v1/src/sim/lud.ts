@@ -12,6 +12,7 @@ import { T } from './tiles';
 import { Job } from './creatures';
 import { szukajDrogi, budzetDrog, nowyTik } from './droga';
 import { PIELGRZYMKA as P } from '../nastawy/rytual';
+import { Rng } from '../core/rng';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -34,6 +35,18 @@ export interface StanLudu {
   spizarnie: Spizarnia[];
   /** tik założenia ostatniego obozu */
   obozT?: number;
+  /** Etap 2: gniazda kamiennych rycerzy zamurowane w skale. */
+  gniazda?: Gniazdo[];
+}
+
+/** Gniazdo kamiennych rycerzy: śpią w litej skale, aż ktoś się do nich dokopie. */
+export interface Gniazdo {
+  id: number; x: number; y: number; rycerzy: number;
+  odkryte: boolean;
+  /** Na którym z trzech torów (−1, 0, 1) naprawdę leży — błąd znaku z „Przemyśl i kop”. */
+  blad: number;
+  /** Tory już sprawdzone przez kopaczy (−1, 0, 1). */
+  proby: number[];
 }
 
 export interface Spizarnia { x: number; y: number; ilosc: number; /** tik założenia */ od?: number }
@@ -128,7 +141,21 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   let v = LUD.role[r][co];
   if (c.slabyDo !== undefined && sim.tick < c.slabyDo && co !== 'hp' && co !== 'glod') v *= LUD.oslabienie;
   if (c.okaleczony && (co === 'hp' || co === 'sila' || co === 'szybkosc')) v *= LUD.okaleczenie;
+  if (co !== 'hp' && co !== 'glod' && weteranAktywny(sim, c)) v *= LUD.weteranPremia;
   return v;
+}
+
+/** Etap 2: przesłużył już swoje w ludzie (staż weterana). */
+export function weteranStaz(sim: Sim, c: Creature): boolean {
+  return sim.tick - (c.od ?? 0) >= LUD.weteranPo;
+}
+
+/** Etap 2: premia weterana działa — staż, najedzony, lud wierny, nie osłabiony po wyjściu ze skały. */
+export function weteranAktywny(sim: Sim, c: Creature): boolean {
+  if (!weteranStaz(sim, c) || c.hunger >= LUD.weteranGlod) return false;
+  if (c.slabyDo !== undefined && sim.tick < c.slabyDo) return false;
+  const klan = sim.clans[c.clan];
+  return !!klan && klan.devotion >= LUD.weteranWiara;
 }
 
 /** Stan postaci widoczny dla gracza: aureola nad głową i wiersz na karcie. */
@@ -140,14 +167,24 @@ export interface StanPostaci {
   dobry: boolean;
   /** tik, w którym minie (brak = na zawsze) */
   do?: number;
+  /** zamiast „mija za…” (np. „póki najedzony”) */
+  kiedy?: string;
+  /** stan nieczynny — tylko wiersz na karcie, bez aureoli */
+  uspiony?: boolean;
 }
 
-/**
- * Wzmocnienia i osłabienia postaci. Na razie osłabienia (wyjście ze skały, okaleczenie);
- * wzmocnienia weteranów dojdą w etapie 2 — aureola i karta już je pokażą.
- */
+/** Wzmocnienia i osłabienia postaci: weteran, osłabienie po wyjściu ze skały, okaleczenie. */
 export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   const out: StanPostaci[] = [];
+  const premia = `+${Math.round((LUD.weteranPremia - 1) * 100)}% siły, szybkości, kopania i modlitwy`;
+  if (weteranAktywny(sim, c)) {
+    out.push({ nazwa: 'weteran', skutek: premia, dobry: true, kiedy: 'póki najedzony, a lud wierny' });
+  } else if (weteranStaz(sim, c) && rolaPostaci(c)) {
+    // staż jest, premii nie ma — na karcie widać dlaczego (bez aureoli)
+    const klan = sim.clans[c.clan];
+    const czemu = c.hunger >= LUD.weteranGlod ? 'głodny' : (klan && klan.devotion < LUD.weteranWiara) ? 'lud stracił wiarę' : 'osłabiony';
+    out.push({ nazwa: 'weteran bez premii', skutek: `${premia} wróci, gdy to minie`, dobry: true, uspiony: true, kiedy: czemu });
+  }
   if (c.slabyDo !== undefined && sim.tick < c.slabyDo) {
     out.push({ nazwa: 'osłabiony po wyjściu ze skały', skutek: `−${Math.round((1 - LUD.oslabienie) * 100)}% siły, szybkości, kopania i modlitwy`, dobry: false, do: c.slabyDo });
   }
@@ -235,6 +272,7 @@ function wyjscieZeSkaly(sim: Sim): void {
   c.age = 0;
   c.devotion = Math.max(c.devotion, klan.devotion);
   c.slabyDo = sim.tick + LUD.oslabienieTikow;
+  c.od = sim.tick;
   sim.efekt(c.x, c.y, 'zasiew');
   zapisz(sim, 'narodziny', `ze skały wychodzi ${NAZWA_ROLI[st.rola].toLowerCase()} #${c.id} (−${koszt} krwi)`, c.x, c.y);
 }
@@ -387,6 +425,109 @@ function pilnujObozow(sim: Sim, klan: Sim['clans'][number]): void {
   sim.lud.spizarnie = sim.lud.spizarnie.filter((s) => s.ilosc > 0 || sim.tick - (s.od ?? 0) < LUD.obozZycie || zywi.some((c) => Math.hypot(c.x - s.x, c.y - s.y) < 15));
 }
 
+// ------------------------------------------------------------ gniazda rycerzy (etap 2)
+
+/**
+ * Zamurowuje w skale gniazda kamiennych rycerzy: po jednym w każdym paśmie głębokości
+ * między siedzibą a rdzeniem, w litej skale z podłogą pod spodem, z dala od magmy,
+ * wody, siedziby i rdzenia. Czysty los psułby uczciwość (raz tuż obok, raz w ogniu).
+ */
+export function zalozGniazda(sim: Sim): void {
+  const w = sim.world;
+  const klan = klanLudu(sim);
+  if (!klan) return;
+  const gniazda: Gniazdo[] = [];
+  // własne losowanie: gniazda nie przestawiają reszty świata (ta sama góra co przed etapem 2)
+  const rng = new Rng((sim.seed ^ 0x5bd1e995) >>> 0);
+  const odY = Math.min(klan.hy + 6, w.przedsionekY - 60), doY = w.przedsionekY - 22;
+  const pasmo = (doY - odY) / LUD.gniazda;
+  const lite = (x: number, y: number) => w.inb(x, y) && w.solid(x, y) && w.hardness(x, y) > 0 && w.tile[w.idx(x, y)] !== T.CORE;
+  for (let k = 0; k < LUD.gniazda; k++) {
+    let best: [number, number] | null = null, bs = -Infinity;
+    for (let proba = 0; proba < 400; proba++) {
+      const x = 8 + rng.int(w.w - 16);
+      const y = Math.floor(odY + pasmo * k + rng.int(Math.max(1, Math.floor(pasmo))));
+      // komora 3×2 w litej skale (i lita skała wokół), podłoga pod spodem
+      let ok = true;
+      for (let yy = y - 2; yy <= y + 2 && ok; yy++) for (let xx = x - 2; xx <= x + 2 && ok; xx++) if (!lite(xx, yy)) ok = false;
+      if (!ok) continue;
+      if (sim.przyMagmie(x, y, 7)) continue;
+      if (Math.hypot(x - klan.hx, y - klan.hy) < LUD.gniazdoOdSiedziby) continue;
+      if (Math.hypot(x - w.coreX, y - w.coreY) < LUD.strefaRdzenia + 6) continue;
+      if (gniazda.some((g) => Math.hypot(g.x - x, g.y - y) < LUD.gniazdoOdstep)) continue;
+      let woda = false;
+      for (let yy = y - 4; yy <= y + 4 && !woda; yy++) for (let xx = x - 4; xx <= x + 4; xx++) if (w.inb(xx, yy) && w.water[w.idx(xx, yy)] > 0) { woda = true; break; }
+      if (woda) continue;
+      // z boku osi siedziba–rdzeń: na osi leży droga do rdzenia i jej kopacze odkrywali gniazda sami,
+      // a za daleko — wyprawa przez pół góry; najchętniej `gniazdoOdOsi` kafli w bok
+      const os = Math.abs(x - (klan.hx + (w.coreX - klan.hx) * (y - klan.hy) / Math.max(1, w.coreY - klan.hy)));
+      if (os < LUD.gniazdoOdOsi.od) continue;
+      const wynik = -Math.abs(os - LUD.gniazdoOdOsi.najlepiej) + rng.int(20);
+      if (wynik > bs) { bs = wynik; best = [x, y]; }
+    }
+    if (!best) continue;
+    const n = LUD.gniazdoRycerzy.od + rng.int(LUD.gniazdoRycerzy.do - LUD.gniazdoRycerzy.od + 1);
+    gniazda.push({ id: gniazda.length, x: best[0], y: best[1], rycerzy: n, odkryte: false, blad: rng.int(3) - 1, proby: [] });
+  }
+  sim.lud.gniazda = gniazda;
+}
+
+/** Nieodkryte gniazda. */
+export function gniazdaWSkale(sim: Sim): Gniazdo[] {
+  return (sim.lud.gniazda ?? []).filter((g) => !g.odkryte);
+}
+
+/** Czy ktoś się już dokopał w pobliże gniazda (kafel przechodni w jego zasięgu). */
+function dokopane(sim: Sim, g: Gniazdo): boolean {
+  const w = sim.world, r = LUD.gniazdoZasieg;
+  for (let yy = g.y - r; yy <= g.y + r; yy++) for (let xx = g.x - r; xx <= g.x + r; xx++) if (w.passable(xx, yy)) return true;
+  return false;
+}
+
+/** Budzi gniazdo: komora się otwiera, rycerze wstają i przyłączają się do ludu — od razu jako weterani. */
+export function obudzGniazdo(sim: Sim, g: Gniazdo): void {
+  const w = sim.world;
+  const klan = klanLudu(sim);
+  g.odkryte = true;
+  if (!klan) return;
+  for (let xx = g.x - 1; xx <= g.x + 1; xx++) for (let yy = g.y - 1; yy <= g.y; yy++) if (w.tile[w.idx(xx, yy)] !== T.CORE) w.set(xx, yy, T.AIR);
+  // przejście z komory do tunelu, który ją odkrył — inaczej rycerze stali zamurowani tuż obok niego
+  let bx = -1, by = -1, bd = Infinity;
+  const r = LUD.gniazdoZasieg + 1;
+  for (let yy = g.y - r; yy <= g.y + r; yy++) for (let xx = g.x - r; xx <= g.x + r; xx++) {
+    if (Math.abs(xx - g.x) <= 1 && yy >= g.y - 1 && yy <= g.y) continue;
+    if (!w.passable(xx, yy)) continue;
+    const d = Math.abs(xx - g.x) + Math.abs(yy - g.y);
+    if (d < bd) { bd = d; bx = xx; by = yy; }
+  }
+  if (bx >= 0) {
+    let x = Math.max(g.x - 1, Math.min(g.x + 1, bx)), y = Math.max(g.y - 1, Math.min(g.y, by));
+    for (let k = 0; k < 12 && (x !== bx || y !== by); k++) {
+      if (x !== bx) x += Math.sign(bx - x); else y += Math.sign(by - y);
+      if (w.solid(x, y) && w.hardness(x, y) > 0) w.set(x, y, T.AIR);
+    }
+  }
+  for (let i = 0; i < g.rycerzy; i++) {
+    const c = sim.spawn(Race.GOBLIN, klan.id, g.x - 1 + (i % 3), g.y);
+    if (!c) continue;
+    nadajRole(sim, c, 'rycerz');
+    c.age = 0;
+    c.devotion = Math.max(c.devotion, klan.devotion);
+    c.od = sim.tick - LUD.weteranPo;      // przespali wieki w skale — budzą się weteranami, syci
+    c.hunger = 0;
+  }
+  // kto kopał ku temu gniazdu, kończy — gniazdo już nie śpi
+  for (const o of sim.creatures) if (!o.dead && o.tor && o.tor.gn === g.id) { o.tor = undefined; o.przemysl = undefined; o.jt = 0; }
+  sim.efekt(g.x + 0.5, g.y + 0.5, 'cud');
+  for (let i = 0; i < 10; i++) sim.spark(g.x + 0.5, g.y, 'glint');
+  sim.gdzie(g.x + 0.5, g.y + 0.5).log(`Skała pękła — ${g.rycerzy} kamiennych rycerzy budzi się i przyłącza do ludu.`, 'swiat', 'gniazdo');
+  zapisz(sim, 'narodziny', `gniazdo #${g.id} odkryte: ${g.rycerzy} rycerzy`, g.x, g.y);
+}
+
+function pilnujGniazd(sim: Sim): void {
+  for (const g of gniazdaWSkale(sim)) if (dokopane(sim, g)) obudzGniazdo(sim, g);
+}
+
 /** Wołane z sim.step() co tik. */
 export function tikLudu(sim: Sim): void {
   if (sim.spokojnySwiat || sim.ending) return;
@@ -394,6 +535,7 @@ export function tikLudu(sim: Sim): void {
   if (sim.lud.sklad) { odlozDoObozu(sim, sim.lud.sklad.x, sim.lud.sklad.y, sim.lud.sklad.ilosc); sim.lud.sklad = null; }
   if (!sim.lud.spizarnie) sim.lud.spizarnie = [];
   wyjscieZeSkaly(sim);
+  if (sim.tick % 30 === 0) pilnujGniazd(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {
     pilnujSiedziby(sim);
     const klan = klanLudu(sim);

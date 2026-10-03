@@ -32,7 +32,7 @@ export const LUD = {
   role: {
     pobozny: { hp: 1, sila: 1, szybkosc: 1, kopanie: 0.5, modlitwa: 1, glod: 0.3 },
     robotnik: { hp: 1.3, sila: 1.2, szybkosc: 1.05, kopanie: 1.4, modlitwa: 0.15, glod: 0.35 },
-    rycerz: { hp: 4, sila: 5, szybkosc: 0.6, kopanie: 0.3, modlitwa: 0.1, glod: 0.45 },
+    rycerz: { hp: 4, sila: 5, szybkosc: 0.6, kopanie: 0.3, modlitwa: 0.1, glod: 0.35 },
   } as Record<Rola, MnoznikiRoli>,
 
   /** Samookaleczenie pobożnego: tyle krwi, a on na zawsze ma życie, siłę i szybkość × `okaleczenie`. */
@@ -102,6 +102,32 @@ export const LUD = {
   grzybPrzyObozie: 10,
   /** Zamiar postaci trwa tyle tików (10 s), chyba że cel osiągnie wcześniej albo przerwie go coś pilnego. */
   zamiarTikow: 1200,
+
+  /**
+   * Etap 2 — gniazda kamiennych rycerzy: tyle gniazd zamurowanych w skale (na różnych głębokościach,
+   * z dala od magmy i rdzenia), po tylu rycerzy w każdym. Gniazdo budzi się, gdy ktoś wykopie kafel
+   * w odległości `gniazdoZasieg`; żarzy się słabo, gdy ktoś z ludu jest bliżej niż `gniazdoZar` kafli.
+   */
+  gniazda: 5, gniazdoRycerzy: { od: 2, do: 3 }, gniazdoZasieg: 2, gniazdoZar: 12,
+  /** Gniazda co najmniej tyle kafli od siedziby i od siebie nawzajem. */
+  gniazdoOdSiedziby: 14, gniazdoOdstep: 18,
+  /** Tyle kafli w bok od osi siedziba–rdzeń (najmniej, najchętniej) — na osi biegnie droga do rdzenia. */
+  gniazdoOdOsi: { od: 12, najlepiej: 24 },
+
+  /**
+   * Szept „Przemyśl i kop”: robotnik klęczy `przemyslModlitwa` tików, prosząc o znak, potem kopie
+   * ku najbliższemu gniazdu — ale znak jest niedokładny. Prawdziwe gniazdo leży na jednym z trzech
+   * torów oddalonych o `przemyslRozstaw` kafli (w poprzek kierunku kopania); każdy kopacz bierze
+   * tor, którego nikt jeszcze nie sprawdził. Jeden trafia raz na trzy, trzech — na pewno.
+   */
+  przemyslModlitwa: 720, przemyslRozstaw: 8, przemyslTempo: 0.7, przemyslBledow: 4,
+
+  /**
+   * Weteran: po `weteranPo` tikach w ludzie (4 min), dopóki najedzony (głód poniżej `weteranGlod`)
+   * i wierny (oddanie co najmniej `weteranWiara`) — siła, szybkość, kopanie i modlitwa × `weteranPremia`.
+   * Rycerze z gniazd budzą się od razu weteranami.
+   */
+  weteranPo: 28800, weteranGlod: 0.45, weteranWiara: 0.2, weteranPremia: 1.3,
 
   /** Co tyle tików sprawdzamy, czy da się jeszcze wygrać. */
   przegranaCo: 240,

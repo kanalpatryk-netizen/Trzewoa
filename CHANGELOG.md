@@ -1,5 +1,17 @@
 # Zmiany
 
+## Remake v1 (komputer) — etap 2
+- Kamienni rycerze w 5 gniazdach w skale (po 2–3, z boku osi siedziba–rdzeń, z dala od magmy i wody);
+  słaby żar, gdy ktoś jest blisko; dokopanie budzi ich jako weteranów (najedzonych), z przejściem do tunelu
+- Szept „Przemyśl i kop” (robotnik, 6 wiary): klęczy i prosi o znak, potem kopie tunel ku gniazdu
+  wzdłuż prostej, obchodzi ogień, wodę i przepaści; trzy tory — jeden kopacz trafia ~1/3, trzech na pewno
+  (w testach 19/20 światów); kopacz ku znakowi czeka na dostawę jedzenia jak kopacze drogi
+- Weterani: po 4 min, póki najedzeni i lud wierny — +30% siły, szybkości, kopania, modlitwy; jasna aureola;
+  na karcie „póki najedzony” albo „weteran bez premii” z powodem
+- Rycerze poza wartą pilnują obozu z jedzeniem (stały posterunek); wartę pod rdzeniem trzymają, gdy jest
+  tam obóz z jedzeniem; głodnieją wolniej (×0,35)
+- Poprawka ruchu: po klamrach w bok postać się trzyma (wcześniej zjeżdżała szybem i wspinała się w kółko)
+
 ## Remake v1 (komputer) — etap 1
 - Jeden lud: pobożni, robotnicy, rycerze (zamiast wielu ras)
 - Bez narodzin: co 15 s skała wydaje wybraną rolę za krew (osłabiony przez minutę)

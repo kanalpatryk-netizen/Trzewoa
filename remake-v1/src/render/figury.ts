@@ -1038,7 +1038,7 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
 
     // Remake v1: aureola nad głową — jasna przy wzmocnieniu, czerwona przy osłabieniu
     if (rolaPostaci(c)) {
-      const stany = stanyPostaci(sim, c);
+      const stany = stanyPostaci(sim, c).filter((s) => !s.uspiony);
       const dobre = stany.some((s) => s.dobry), zle = stany.some((s) => !s.dobry);
       if (dobre || zle) {
         const puls = 0.75 + 0.25 * Math.sin(czas * 0.005 + c.id);

@@ -16,6 +16,8 @@ export const KOSZTY = {
     ofiaruj: { krew: 0, wiara: 10, otchlan: 0 },
     // przerwanie modlitwy nic nie kosztuje — to cofnięcie wcześniejszej decyzji
     przerwij: { krew: 0, wiara: 0, otchlan: 0 },
+    // etap 2: robotnik modli się o znak, gdzie w skale śpią rycerze
+    przemysl: { krew: 0, wiara: 6, otchlan: 0 },
   },
   znak: {
     objawienie: { krew: 0, wiara: 30, otchlan: 0 },
