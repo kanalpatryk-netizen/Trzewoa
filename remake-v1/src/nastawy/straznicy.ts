@@ -50,6 +50,12 @@ export const STRAZNICY = {
    * ale skorupa się zrasta: postęp trwającego pęknięcia przepada, nagrody nie ma. Fala z bossem nie zasypia.
    */
   zasypiaPo: 21600,
+  /**
+   * Boss bez przeciwnika: gdy przez tyle tików (3 min) pod rdzeniem nie ma ani jednego rycerza, wraca do ściany
+   * i śpi `bossSpi` tików (4 min) — lud odżywa i zbiera rycerzy, skorupa w tym czasie nie pęka, potem boss wraca.
+   * (Bez tego fala z bossem bez rycerzy trwała wiecznie i lud wymierał z głodu, czekając.)
+   */
+  bossZasypiaBezRycerzy: 21600, bossSpi: 28800,
   /** Wiara za pokonaną falę. */
   nagrodaWiary: 15,
 };

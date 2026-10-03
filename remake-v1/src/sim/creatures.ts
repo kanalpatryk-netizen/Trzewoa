@@ -398,7 +398,9 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   }
 
   // Remake v1: woda podchodzi — lud wychodzi w górę, zamiast stać na swoim miejscu, aż utonie
-  if (REMAKE && rolaPostaci(c) && c.job !== Job.FLEE && (c.id + sim.tick) % 20 === 0 && w.water[w.idx(tx, ty)] >= LUD.wodaUcieka) {
+  if (REMAKE && rolaPostaci(c) && c.job !== Job.FLEE && (c.id + sim.tick) % 20 === 0 && w.water[w.idx(tx, ty)] >= LUD.wodaUcieka
+    // (głodny w płytkiej wodzie, która nie topi, najpierw idzie jeść — uciekał w kółko z dołu bez wyjścia i padł z głodu)
+    && !(c.hunger > LUD.glodSam && w.water[w.idx(tx, ty)] <= K.toniePowyzej)) {
     c.job = Job.FLEE; c.droga = undefined;
     c.jx = tx; c.jy = Math.max(2, ty - 8); c.jt = 240;
     c.zamiar = 'ucieka przed wodą'; c.zamiarDo = sim.tick + 240;
@@ -1008,6 +1010,7 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
     return;
   }
   if (swiezoOdOgnia) {
+    if (wkopSieDoSpizarni(sim, c, zamiar)) return;
     c.jx = Math.floor(c.x); c.jy = Math.floor(c.y);
     zamiar('czeka z dala od ognia', Job.STOI, Z);
     return;
@@ -1099,14 +1102,15 @@ function planPrzemysl(sim: Sim, c: Creature,
 function wyznaczTor(sim: Sim, c: Creature): boolean {
   const w = sim.world;
   const cx = Math.floor(c.x), cy = Math.floor(c.y);
-  const g = gniazdaWSkale(sim).sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy))[0];
+  // gniazdo już pokazane (sen o rycerzach, uśpiony boss) idzie pierwsze — i tor trafia w nie bez zgadywania
+  const g = gniazdaWSkale(sim).sort((a, b) => (Number(!!b.znany) - Number(!!a.znany)) || (Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy)))[0];
   if (!g) return false;
   let wolne = [-1, 0, 1].filter((s) => !g.proby.includes(s));
   if (!wolne.length) { g.proby = []; wolne = [-1, 0, 1]; }
   const s = wolne[sim.rng.int(wolne.length)];
   g.proby.push(s);
   const vx = g.x - cx, vy = g.y - cy, L = Math.hypot(vx, vy) || 1;
-  const off = (s - g.blad) * LUD.przemyslRozstaw;
+  const off = g.znany ? 0 : (s - g.blad) * LUD.przemyslRozstaw;
   const tx = Math.max(2, Math.min(w.w - 3, Math.round(g.x - (vy / L) * off) + sim.rng.int(3) - 1));
   const ty = Math.max(2, Math.min(w.przedsionekY - 6, Math.round(g.y + (vx / L) * off) + sim.rng.int(3) - 1));
   c.tor = { gn: g.id, tx, ty, hx: cx, hy: cy, sx: cx, sy: cy, kroki: 0, limit: (Math.abs(tx - cx) + Math.abs(ty - cy)) * 2 + 40 };

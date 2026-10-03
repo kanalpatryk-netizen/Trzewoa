@@ -80,7 +80,7 @@ export function kandydaciLudu(sim: Sim, st: StanWydarzen): Kandydat[] {
   if (ukryte.length && role.rycerz < 6) out.push({ rodzaj: 'sen', waga: 1.6, zbuduj: () => {
     const g = ukryte.sort((a, b) => Math.hypot(a.x - lud.hx, a.y - lud.hy) - Math.hypot(b.x - lud.hx, b.y - lud.hy))[0];
     const wybory = [
-      wybor('pokaz', 'Pokaż im to miejsce', 'Gniazdo zaświeci w skale na stałe — robotnicy będą wiedzieć, gdzie kopać.', 0, K.senPokaz),
+      wybor('pokaz', 'Pokaż im to miejsce', 'Gniazdo zaświeci w skale na stałe — robotnicy będą wiedzieć, gdzie kopać („Przemyśl i kop” trafi w nie bez pudła).', 0, K.senPokaz),
       wybor('milcz', 'Niech śpią dalej', 'Nic się nie zmieni. „Przemyśl i kop” wciąż może je znaleźć.'),
     ];
     return { rodzaj: 'sen', tytul: 'Sen o kamiennych rycerzach', tekst: 'Pobożnym śni się skała, w której ktoś oddycha. Pytają, czy to znak.', wybory, domyslny: 1, rozsadny: stac(sim, wybory[0]) ? 0 : 1, cel: { x: g.x + 0.5, y: g.y + 0.5, tekst: 'gniazdo' }, od: sim.tick, x: g.id };

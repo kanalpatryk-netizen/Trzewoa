@@ -18,7 +18,12 @@
 - Głodny przerywa długi spacer i najpierw szuka jedzenia
 - Pod rdzeniem szaleństwo głębi nie łapie nikogo z ludu (warta rycerzy głodowała przez nie o połowę szybciej)
 - Głodny uwięziony w odciętej kieszeni (żadna droga do spiżarni) wkopuje się do najbliższej spiżarni
+- Woda wsiąka w pęknięcia skorupy — zalany szyb nad rdzeniem blokował wygraną mimo 12 pęknięć
+- Śniący Kamień bez rycerzy przez 3 min wraca do ściany na 4 min (skorupa wtedy nie pęka) i zdradza jedno gniazdo — koniec pata, w którym lud wymierał z głodu
+- Gniazdo pokazane (karta snu, uśpiony boss): „Przemyśl i kop” trafia w nie bez zgadywania
+- Głodny w płytkiej wodzie najpierw idzie jeść; głodny „czekający z dala od ognia” w odciętej kieszeni wkopuje się do spiżarni
 - Bot: 8 z 8 wygranych (7,4–18 min); na 8 światach łącznie 6 zgonów ludu (wcześniej ~18)
+- Na 16 światach: 13 wygranych, 3 partie trwają po 25 min, 0 porażek
 
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,

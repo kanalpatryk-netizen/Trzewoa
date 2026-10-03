@@ -7,7 +7,7 @@ import { wolny, stoi, uchwyt, nadOgniem } from './droga';
 import { RYTUAL as R, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 import { RDZEN } from '../nastawy/swiat';
-import { falaTrwa } from './straznicy';
+import { falaTrwa, bossSpi } from './straznicy';
 
 export interface StanRytualu {
   /** Postęp nacji, która jest najbliżej przebicia — tylko do pokazania graczowi. */
@@ -69,7 +69,7 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
     const n = razem;
     if (n < R.potrzebaWiernych || id !== najlepszy) continue;
     // etap 3: dopóki trwa fala Strażników Snu, skorupa nie pęka
-    if (falaTrwa(sim)) continue;
+    if (falaTrwa(sim) || bossSpi(sim)) continue;
     const klan = sim.clans[id];
     // nacja, której ktoś właśnie klęczy pod skorupą, z definicji nie jest martwa;
     // flaga potrafi zostać po przepisaniu ludzi między klanami i mroziła rytuał na zawsze
@@ -99,6 +99,7 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
   // Czy droga naprawdę stoi otworem — sprawdzamy mapę, nie licznik pęknięć. Licznik
   // kłamał: skorupa kruszyła się wszerz, a gra już wysyłała ludzi na lity kamień.
   // (bez względu na to, skąd wzięło się przejście — zawał, woda czy pęknięcia)
+  if (!stan.otwarta && stan.pekniecia > 0 && sim.tick % R.sprawdzDrogeCo === 0) osuszPekniecia(sim);
   if (!stan.otwarta && sim.tick % R.sprawdzDrogeCo === 0 && drogaDoRdzenia(sim)) {
     stan.otwarta = true;
     sim.gdzie(w.coreX, w.coreY - 6).log('Droga do rdzenia stoi otworem.', 'koniec', 'skorupa-otwarta');
@@ -315,6 +316,23 @@ export function procentSkorupy(sim: Sim): number {
   if (r.otwarta) return 100;
   const potrzeba = Math.max(1, r.skorupa, r.pekniecia + 1);
   return Math.min(99, Math.floor(((r.pekniecia + r.postep) / potrzeba) * 100));
+}
+
+/**
+ * Woda wsiąka w pęknięcia skorupy (szyb nad rdzeniem i komora wokół niego). Zalany szyb był dla
+ * wiernych ścianą: skorupa pękała dwanaście razy, a droga do rdzenia nigdy się nie otwierała.
+ */
+function osuszPekniecia(sim: Sim): void {
+  const w = sim.world;
+  for (let y = w.coreY - R.glebokoscPekniecia; y <= w.coreY + R.glebokoscPekniecia; y++) {
+    for (let x = w.coreX - R.glebokoscPekniecia; x <= w.coreX + R.glebokoscPekniecia; x++) {
+      if (!w.inb(x, y)) continue;
+      const i = w.idx(x, y);
+      if (w.water[i] === 0 || w.tile[i] !== T.AIR) continue;
+      const wSzybie = y <= w.coreY && R.kolumnyPekniec.includes(x - w.coreX);
+      if (wSzybie || wKomorze(sim, x, y)) w.water[i] = 0;
+    }
+  }
 }
 
 /** Jedno pęknięcie skorupy (z modlitwy albo z narzędzia dewelopera). */

@@ -10,7 +10,7 @@ import { Job } from './creatures';
 import { Race, RACES } from './races';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { procentSkorupy } from './rytual';
-import { rolaPostaci, mnoznik, maxHp } from './lud';
+import { rolaPostaci, mnoznik, maxHp, gniazdaWSkale } from './lud';
 import { aktywnyBoss } from './boss';
 import { zapisz } from './dziennik';
 import { LUD } from '../nastawy/lud';
@@ -27,6 +27,15 @@ export interface StanStraznikow {
   cios?: number;
   /** fala z bossem, a pod rdzeniem nie ma rycerzy (liczone co pół sekundy) */
   bezRycerzy?: boolean;
+  /** od kiedy (tik) przy bossie nie ma rycerzy */
+  bezRycerzyOd?: number;
+  /** boss wrócił do ściany i śpi do tego tiku — skorupa nie pęka, fala zacznie się od nowa */
+  bossSpiDo?: number;
+}
+
+/** Czy boss śpi w ścianie (wrócił, bo nie miał z kim walczyć) — skorupa wtedy nie pęka. */
+export function bossSpi(sim: Sim): boolean {
+  return sim.tick < (sim.lud.straznicy?.bossSpiDo ?? 0);
 }
 
 export function nowyStanStraznikow(): StanStraznikow {
@@ -132,8 +141,26 @@ export function tikStraznikow(sim: Sim): void {
       const w = sim.world;
       sim.gdzie(w.coreX, w.przedsionekY).log('Strażnicy Snu nie mieli z kim walczyć i wrócili do skały. Skorupa zrosła się tam, gdzie pękała.', 'otchlan', `fala-sen-${st.fala}`);
     }
+    // fala z bossem bez rycerzy: boss wraca do ściany i śpi, lud odżywa (inaczej pat — i głód do ostatniego)
+    if (st.trwa && S.fale[st.fala]?.boss) {
+      if (!falaZwykla(sim)) st.bezRycerzyOd = undefined;
+      else if (st.bezRycerzyOd === undefined) st.bezRycerzyOd = sim.tick;
+      else if (sim.tick - st.bezRycerzyOd > S.bossZasypiaBezRycerzy) {
+        for (const c of zywiStraznicy(sim)) { c.dead = true; sim.clans[c.clan].pop--; sim.efekt(c.x, c.y, 'cud'); }
+        st.trwa = false;
+        st.bezRycerzyOd = undefined;
+        st.bossSpiDo = sim.tick + S.bossSpi;
+        const w = sim.world;
+        // śniąc, Kamień zdradza, gdzie śpią jego rycerze: najbliższe siedzibie ukryte gniazdo zaczyna świecić
+        const klan = sim.clans.find((k) => !k.dead && k.race === Race.GOBLIN);
+        const g = klan ? gniazdaWSkale(sim).filter((o) => !o.znany).sort((a, b) => Math.hypot(a.x - klan.hx, a.y - klan.hy) - Math.hypot(b.x - klan.hx, b.y - klan.hy))[0] : undefined;
+        if (g) { g.znany = true; sim.efekt(g.x + 0.5, g.y + 0.5, 'cud'); }
+        sim.gdzie(w.coreX, w.przedsionekY).log(`${aktywnyBoss().nazwa} nie miał z kim walczyć i zapadł z powrotem w ścianę. Wróci — zbierz rycerzy.${g ? ' We śnie zdradził jedno gniazdo: „Przemyśl i kop” trafi w nie bez pudła.' : ''}`, 'otchlan', `boss-sen-${sim.tick}`);
+        zapisz(sim, 'rytual', 'boss wraca do ściany (brak rycerzy)', w.coreX, w.przedsionekY);
+      }
+    }
     const def = S.fale[st.fala];
-    if (!st.trwa && def && !sim.rytual.otwarta && procentSkorupy(sim) >= def.prog) zacznijFale(sim, st);
+    if (!st.trwa && def && !sim.rytual.otwarta && !bossSpi(sim) && procentSkorupy(sim) >= def.prog) zacznijFale(sim, st);
   }
   if (st.trwa && sim.tick % 30 === 0) rycerzeDoWalki(sim);
 }
