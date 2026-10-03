@@ -78,6 +78,9 @@ export const LUD = {
   /** Zasięg szukania drogi przy donoszeniu (kafle przeszukane, nie długość drogi). */
   dostawaLimit: 9000,
 
+  /** Zamiar postaci trwa tyle tików (10 s), chyba że cel osiągnie wcześniej albo przerwie go coś pilnego. */
+  zamiarTikow: 1200,
+
   /** Co tyle tików sprawdzamy, czy da się jeszcze wygrać. */
   przegranaCo: 240,
 };

@@ -90,7 +90,7 @@ const THOUGHTS: Record<string, Thought> = {
 
 /** Remake v1: czy postać się modli albo idzie się modlić (wtedy można jej to przerwać). */
 export function modliSie(c: Creature): boolean {
-  return c.job === Job.PRAY || c.job === Job.PIELGRZYM || c.thought === Thought.PRAY_CORE;
+  return c.job === Job.PRAY || c.job === Job.PIELGRZYM || c.thought === Thought.PRAY_CORE || !!c.wyprawa || !!c.modliPrzyObozie;
 }
 
 /** Szept — najtańszy i najprecyzyjniejszy. Tak wysyła się wiernych pod rdzeń i robi proroków. */
@@ -115,6 +115,7 @@ export function whisper(sim: Sim, tool: string, c: Creature): boolean {
     c.jx = klan?.hx ?? Math.floor(c.x); c.jy = klan?.hy ?? Math.floor(c.y);
     c.jt = 0;
     c.bezModlitwyDo = sim.tick + LUD.przerwaModlitwy;
+    c.wyprawa = false;
     sim.efekt(c.x, c.y, 'mysl', 'wraca');
     return true;
   }

@@ -1,7 +1,7 @@
 import { Sim } from '../sim/sim';
 import { RACES } from '../sim/races';
 import { cechaNacji } from '../sim/cechy';
-import { rolaPostaci, NAZWA_ROLI } from '../sim/lud';
+import { rolaPostaci, NAZWA_ROLI, stanyPostaci } from '../sim/lud';
 import { rysujGrafike } from '../grafiki/grafiki';
 import { Creature, Job } from '../sim/creatures';
 import { Verb, TOOLS, affordable, cost, whisper, modliSie } from '../powers/powers';
@@ -373,7 +373,9 @@ export class Ui {
    */
   private drawCard(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, time: number): void {
     const p = this.plate;
-    const cw = Math.min(360, p.w * (p.waski ? 0.94 : 0.46)), ch = Math.min(290, p.h * 0.7);
+    // Remake v1: każdy stan (wzmocnienie, osłabienie) dokłada karcie wiersz — opis nie wchodzi na szept
+    const dodatek = stanyPostaci(sim, c).length * Math.max(12, Math.min(15, Math.min(360, p.w * (p.waski ? 0.94 : 0.46)) * 0.043)) * 2.3;
+    const cw = Math.min(360, p.w * (p.waski ? 0.94 : 0.46)), ch = Math.min(290 + dodatek, p.h * 0.9);
     const x = p.waski ? p.x + (p.w - cw) / 2 : p.x + p.w - cw - 12;
     // wąsko karta schodzi pod wstęgę drogi do wolności, szeroko wstęga jest w lewym rogu
     const y = Math.max(p.y + (p.waski ? 122 : 14), Math.min(p.y + p.h - ch - 8, p.y + p.h / 2 - ch / 2));
@@ -382,7 +384,7 @@ export class Ui {
     ramaKarty(ctx, x, y, cw, ch, 1, 'mieszkaniec góry');
 
     // nisza z sylwetką: łuk, kreskowana skała za plecami, podłoga
-    const nw = cw * 0.3, nh = ch * 0.5;
+    const nw = cw * 0.3, nh = Math.min(ch, 290) * 0.5;
     const nx = x + 16, ny = y + 18;
     const nisza = new Path2D();
     nisza.moveTo(nx, ny + nh);
@@ -427,7 +429,7 @@ export class Ui {
     ctx.fillStyle = 'rgba(224,168,96,0.85)';
     const cecha = cechaNacji(clan).nazwa;
     const rola = rolaPostaci(c);
-    ctx.fillText(`${rola ? NAZWA_ROLI[rola].toUpperCase() : RACES[c.race].name.toUpperCase()} · ${clan.name}${c.okaleczony ? ' · okaleczony' : ''}${c.slabyDo && sim.tick < c.slabyDo ? ' · osłabiony' : ''}${cecha ? ` · ${cecha}` : ''}`, tx, ny + rozmImienia * 0.9 + rozm * 1.5, tw);
+    ctx.fillText(`${rola ? NAZWA_ROLI[rola].toUpperCase() : RACES[c.race].name.toUpperCase()} · ${clan.name}${cecha ? ` · ${cecha}` : ''}`, tx, ny + rozmImienia * 0.9 + rozm * 1.5, tw);
     ctx.font = `italic ${rozm}px ${SERIF}`;
     ctx.fillStyle = 'rgba(208,194,170,0.86)';
     wrap(ctx, lifeLine(c, sim), tx, ny + rozmImienia * 0.9 + rozm * 3.1, tw, rozm * 1.3);
@@ -438,7 +440,28 @@ export class Ui {
     rysujStany(ctx, c, tx + sStan, ny + nh - sStan * 1.6, sStan, Math.max(sStan * 2.1, 34));
 
     // myśli do szeptu: przerywnik, podpis i cztery słowa w klamrach
-    const yM = y + ch * 0.76;
+    // Remake v1: wzmocnienia i osłabienia — co to jest i kiedy minie (pod niszą, nad szeptem);
+    // gdy są, część z szeptem schodzi niżej, żeby opis stanu na nią nie wchodził
+    const stany = stanyPostaci(sim, c);
+    const koniecStanow = ny + nh + rozm * 1.35 + stany.length * rozm * 2.3;
+    const yM = Math.max(y + Math.min(ch, 290) * 0.76, koniecStanow + rozm * 1.6);
+    if (stany.length) {
+      let ys = ny + nh + rozm * 1.35;
+      ctx.textAlign = 'left';
+      for (const st of stany) {
+        if (ys > yM - rozm * 1.9) break;
+        const zostalo = st.do !== undefined ? Math.max(0, Math.ceil((st.do - sim.tick) / 120)) : null;
+        const kiedy = zostalo === null ? 'na zawsze' : zostalo >= 60 ? `mija za ${Math.floor(zostalo / 60)} min ${zostalo % 60} s` : `mija za ${zostalo} s`;
+        ctx.font = `${rozm * 0.95}px ${SERIF}`;
+        ctx.fillStyle = st.dobry ? 'rgba(250,226,150,0.98)' : 'rgba(236,112,96,0.98)';
+        const znak = '• ';
+        ctx.fillText(`${znak}${st.nazwa} — ${kiedy}`, x + 18, ys, cw - 36);
+        ctx.font = `italic ${rozm * 0.82}px ${SERIF}`;
+        ctx.fillStyle = 'rgba(208,194,170,0.8)';
+        ctx.fillText(st.skutek, x + 18 + rozm * 1.1, ys + rozm * 1.05, cw - 36 - rozm * 1.1);
+        ys += rozm * 2.3;
+      }
+    }
     ctx.strokeStyle = 'rgba(207,194,166,0.25)';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(x + 18, yM - rozm * 1.4); ctx.lineTo(x + cw - 18, yM - rozm * 1.4); ctx.stroke();
@@ -525,6 +548,11 @@ export class Ui {
 
 function lifeLine(c: Creature, sim: Sim): string {
   const clan = sim.clans[c.clan];
+  // Remake v1: zamiar — co teraz robi i jak długo jeszcze się tego trzyma
+  if (rolaPostaci(c) && c.zamiar) {
+    const zostalo = Math.max(0, Math.ceil(((c.zamiarDo ?? 0) - sim.tick) / 120));
+    return `Teraz: ${c.zamiar}${zostalo > 0 && c.job !== Job.PIELGRZYM ? ` (jeszcze ${zostalo} s)` : ''}.`;
+  }
   if (c.prophet) return 'Prorok. Słyszał cię raz i nie przestał powtarzać.';
   if (c.mad > 0.5) return 'Kopał za głęboko. Wrócił inny.';
   if (c.job === Job.DIG || c.job === Job.DESCEND) return 'Drąży. Nie wie, że drąży w kimś.';

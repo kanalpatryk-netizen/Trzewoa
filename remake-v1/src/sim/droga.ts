@@ -92,7 +92,8 @@ export function szukajDrogi(
   const w = sim.world;
   const W = w.w;
   const plywa = RACES[c.race].swims;
-  const ostrozny = REMAKE && c.race === 0;   // lud (Race.GOBLIN) omija przepaści
+  // lud (Race.GOBLIN) omija przepaści — także pielgrzym: schodzi drogą wiernych, która ma stopnie
+  const ostrozny = REMAKE && c.race === 0;
   const sx = Math.floor(c.x), sy = Math.floor(c.y);
   if (!w.inb(sx, sy)) return null;
   pokolenie++;

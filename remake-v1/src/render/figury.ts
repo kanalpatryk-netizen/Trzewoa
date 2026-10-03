@@ -1,5 +1,5 @@
 import type { Sim, Clan } from '../sim/sim';
-import { rolaPostaci, type Rola } from '../sim/lud';
+import { rolaPostaci, stanyPostaci, type Rola } from '../sim/lud';
 import type { Creature } from '../sim/creatures';
 import { pierwszaGrafika, rysujGrafike, RASY_W_PLIKACH } from '../grafiki/grafiki';
 import { Job } from '../sim/creatures';
@@ -1036,6 +1036,26 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       ctx.restore();
     }
 
+    // Remake v1: aureola nad głową — jasna przy wzmocnieniu, czerwona przy osłabieniu
+    if (rolaPostaci(c)) {
+      const stany = stanyPostaci(sim, c);
+      const dobre = stany.some((s) => s.dobry), zle = stany.some((s) => !s.dobry);
+      if (dobre || zle) {
+        const puls = 0.75 + 0.25 * Math.sin(czas * 0.005 + c.id);
+        const ax = sx + kier * h * 0.05, ay = sy - h * 1.08;
+        const rx = Math.max(7, h * 0.26), ry = Math.max(2.4, h * 0.08);
+        ctx.save();
+        ctx.lineWidth = Math.max(2, h * 0.065);
+        const rysuj = (barwa: string, cien: string, dy: number) => {
+          ctx.shadowColor = cien; ctx.shadowBlur = Math.max(6, h * 0.35);
+          ctx.strokeStyle = barwa;
+          ctx.beginPath(); ctx.ellipse(ax, ay + dy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+        };
+        if (zle) rysuj(`rgba(236,70,56,${0.95 * puls})`, 'rgba(255,40,30,0.9)', 0);
+        if (dobre) rysuj(`rgba(255,240,180,${0.98 * puls})`, 'rgba(255,230,150,0.95)', zle ? -ry * 2.6 : 0);
+        ctx.restore();
+      }
+    }
     // ilu ich tu stoi
     if (n > 1) {
       ctx.font = `${Math.max(13, h * 0.45)}px "Trzewia Tekst", Georgia, serif`;

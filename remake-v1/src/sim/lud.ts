@@ -107,6 +107,32 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   return v;
 }
 
+/** Stan postaci widoczny dla gracza: aureola nad głową i wiersz na karcie. */
+export interface StanPostaci {
+  nazwa: string;
+  /** co daje albo odbiera */
+  skutek: string;
+  /** wzmocnienie (jasna aureola) czy osłabienie (czerwona) */
+  dobry: boolean;
+  /** tik, w którym minie (brak = na zawsze) */
+  do?: number;
+}
+
+/**
+ * Wzmocnienia i osłabienia postaci. Na razie osłabienia (wyjście ze skały, okaleczenie);
+ * wzmocnienia weteranów dojdą w etapie 2 — aureola i karta już je pokażą.
+ */
+export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
+  const out: StanPostaci[] = [];
+  if (c.slabyDo !== undefined && sim.tick < c.slabyDo) {
+    out.push({ nazwa: 'osłabiony po wyjściu ze skały', skutek: `−${Math.round((1 - LUD.oslabienie) * 100)}% siły, szybkości, kopania i modlitwy`, dobry: false, do: c.slabyDo });
+  }
+  if (c.okaleczony) {
+    out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false });
+  }
+  return out;
+}
+
 /** Największe życie tej postaci (rasa × rola). */
 export function maxHp(sim: Sim, c: Creature): number {
   return RACES[c.race].maxHp * mnoznik(sim, c, 'hp');

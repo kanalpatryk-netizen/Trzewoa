@@ -14,6 +14,12 @@
   (z najbliższego obozu z jedzeniem, a gdy tam pusto — z poprzedniego), sami jedzą z najbliższej spiżarni
 - Pod rdzeniem porządek: pobożni w szeregu co dwa kafle, rycerze na warcie po bokach przedsionka
 - Szept „przerwij modlitwę” (za darmo, na minutę); czytelne podpisy siedziby i obozów
+- Zamiary: każda postać ma cel (np. „przekopuje korytarz na wschód”, „niesie jedzenie: pobożny #4”,
+  „modli się przy obozie”, „pilnuje obozu”) i trzyma się go ~10 s albo do osiągnięcia — zamiast
+  losować zajęcie co ułamek sekundy; zamiar widać na karcie postaci
+- Pielgrzym wysłany pod rdzeń wraca do wyprawy po każdym przerwaniu, idzie drogą wiernych
+  i nie spada z niej w magmę
+- Aureola: jasna przy wzmocnieniu, czerwona przy osłabieniu; na karcie nazwa stanu, skutek i kiedy minie
 
 ## v4.2 beta (komputer)
 - Płatny wybór na karcie drożeje o 50% za każde wcześniejsze kupno w tej partii (karta to pokazuje)

@@ -22,6 +22,8 @@ i otwórz w przeglądarce.
 - **Wędrowna siedziba** — gdy większość ludu nie może do niej wrócić (najwyżej co 2,5 min),
   przenosi się tam, gdzie jest ich najwięcej; robotnicy przenoszą jedzenie ze starej spiżarni.
   Odcięte grupki zakładają obozy (znaczniki na mapie).
+- **Zamiary:** każdy ma cel na ~10 s (widać go na karcie postaci), zamiast co chwilę losować zajęcie.
+- **Aureole:** jasna — wzmocnienie, czerwona — osłabienie; karta mówi, co to i kiedy minie.
 - **Bez snu góry.** Przegrywasz dopiero, gdy nie da się już wygrać: nie ma pobożnych,
   a nawet ofiara ze wszystkich nie da krwi na nowego.
 
