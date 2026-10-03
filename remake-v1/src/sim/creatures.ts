@@ -211,6 +211,12 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     }
     if (hot) c.hunger = Math.max(0, c.hunger - K.cieploKarmi);
   }
+  // Remake v1: kto niesie jedzenie i już słabnie z głodu, zjada swój ładunek — sześciu tragarzy padło
+  // z pełnymi rękami w drodze do spiżarni obozu, do której nie umieli dojść
+  if (REMAKE && c.carry > 0 && c.hunger > LUD.zjadaNiesione && rolaPostaci(c)) {
+    c.carry--; sim.meals++; c.hunger = Math.max(0, c.hunger - LUD.posilek);
+    if (c.carry === 0) { c.dostawaDla = undefined; c.doObozu = undefined; }
+  }
   if (c.hunger > K.glodZabija) c.hp -= K.glodObrazenia;
   else if (c.hunger < K.najedzonyLeczy && c.hp < maxHp(sim, c)) c.hp = Math.min(maxHp(sim, c), c.hp + K.leczenieNaTik);
   if (c.age > d.lifespan * m.zycie && !sim.spokojnySwiat) c.hp -= K.starosc;
@@ -279,6 +285,11 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     if (REMAKE && LUD.klamry && rolaPostaci(c) && w.magma[w.idx(tx, Math.min(w.h - 1, ty + 1))] === 0) {
       c.vy = 0;
       c.y += LUD.zjazd;   // bez „chwytu” — inaczej klamra pod nogami trzymała go w powietrzu i stał tam
+      return;
+    }
+    // nad samą magmą lud wbija klamrę i wisi (planer zawróci go w górę) — kopacz drogi zjeżdżał prosto w jezioro ognia
+    if (REMAKE && LUD.klamry && rolaPostaci(c)) {
+      c.vy = 0; c.wspina = sim.tick; c.jt = Math.min(c.jt, 1);
       return;
     }
     // Kto dopiero co się wspinał i ma ścianę pod ręką, zsuwa się po niej, zamiast lecieć.

@@ -13,6 +13,8 @@
 - „Wraca do siedziby” idzie wyliczoną drogą — wcześniej na przełaj wpadał w ślepy szyb i ginął z głodu
 - Najazd ludzi schodzi ≥35 kafli od siedziby; bez „poprowadź ich na” własny lud; bot zawala wejście, gdy ma krew
 - Naprawiony skrypt testu balansu (znak ` w szablonie)
+- Tragarz, który słabnie z głodu, zjada niesione jedzenie (sześciu padło z pełnymi rękami)
+- Lud nad samą magmą wisi na klamrze zamiast zjeżdżać w ogień
 - Bot: 8 z 8 wygranych (7,4–18 min)
 
 ## Remake v1 (komputer) — etap 4
