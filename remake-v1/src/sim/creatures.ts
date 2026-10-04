@@ -1157,7 +1157,7 @@ function wyznaczTor(sim: Sim, c: Creature): boolean {
 }
 
 /** Czy tor może przejść przez ten kafel (bez ognia, wody, rdzenia i skały nie do ruszenia). */
-function kafelToru(sim: Sim, x: number, y: number): boolean {
+export function kafelToru(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
   if (x < 1 || y < 1 || x >= w.w - 1 || y >= w.h - 1) return false;
   const i = w.idx(x, y);
@@ -1175,7 +1175,7 @@ function kafelToru(sim: Sim, x: number, y: number): boolean {
  * z którego przyszedł. Za dużo kroków — tor się kończy.
  */
 /** Remake v1: trasa tunelu do gniazda — BFS po kaflach, przez które tor może przejść (patrz `kafelToru`). */
-function trasaToru(sim: Sim, sx: number, sy: number, gx: number, gy: number): number[] | null {
+export function trasaToru(sim: Sim, sx: number, sy: number, gx: number, gy: number): number[] | null {
   const w = sim.world, W = w.w;
   const start = w.idx(sx, sy);
   const skad = new Map<number, number>([[start, -1]]);
@@ -1248,7 +1248,10 @@ function doTor(sim: Sim, c: Creature): void {
     (t.byl ??= []).push(w.idx(t.hx, t.hy));
     if (t.byl.length > 60) t.byl.shift();
     if (cx === c.jx && cy === c.jy && Math.abs(cx - t.hx) + Math.abs(cy - t.hy) === 1) {
-      t.px = t.hx; t.py = t.hy; t.hx = cx; t.hy = cy; t.kroki = (t.kroki ?? 0) + 1;
+      // krok liczy się tylko na nowy kafel — w pionowym szybie zsuwał się i wchodził z powrotem,
+      // licznik dobijał do limitu i tor kończył się „ogień zagrodził” kilkanaście kafli przed gniazdem
+      const nowy = !t.byl.includes(w.idx(cx, cy));
+      t.px = t.hx; t.py = t.hy; t.hx = cx; t.hy = cy; if (nowy) t.kroki = (t.kroki ?? 0) + 1;
     } else if (Math.abs(cx - t.hx) <= 2 && Math.abs(cy - t.hy) <= 2) {
       // tuż obok czoła (zsunął się po klamrach, wrócił z jedzenia) — tunel rusza stąd
       t.hx = cx; t.hy = cy; t.px = undefined; t.py = undefined; c.jx = cx; c.jy = cy;
@@ -1262,7 +1265,11 @@ function doTor(sim: Sim, c: Creature): void {
     if (!n) { koniecToru(sim, c, 'zagrodzone'); return; }
     c.jx = n[0]; c.jy = n[1]; c.dig = 0;
   }
-  if (w.solid(c.jx, c.jy)) { digTile(sim, c, c.jx, c.jy); return; }
+  if (w.solid(c.jx, c.jy)) {
+    // kopie nad sobą albo w bok, wisząc w szybie — trzyma się ścian, zamiast zsuwać się w dół
+    if (!w.solid(cx, cy + 1) && (w.solid(cx - 1, cy) || w.solid(cx + 1, cy))) { c.wspina = sim.tick; c.vy = 0; }
+    digTile(sim, c, c.jx, c.jy); return;
+  }
   // w górę własnym szybem: wspina się po jego ścianach (walkTo nie sięga kafla tuż nad głową)
   if (c.jy < cy && c.jx === cx) {
     const v = RACES[c.race].speed * mnoznik(sim, c, 'szybkosc');
