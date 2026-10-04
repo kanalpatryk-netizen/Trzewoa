@@ -23,9 +23,8 @@
 - Karta „Pobożni chcą zejść pod rdzeń” wysyła tylko pobożnych (zabierała robotnika z torem ku gniazdu — tor nie kończył się nigdy i blokował nowe próby); idący się modlić porzuca tor
 - Gniazdo pokazane (karta snu, uśpiony boss): „Przemyśl i kop” trafia w nie bez zgadywania
 - Głodny w płytkiej wodzie najpierw idzie jeść; głodny „czekający z dala od ognia” w odciętej kieszeni wkopuje się do spiżarni
-- Bot: 8 z 8 wygranych (7,4–18 min); na 8 światach łącznie 6 zgonów ludu (wcześniej ~18)
-- Głodny, do którego żaden Strażnik nie jest blisko (12 kafli), nie ucieka przed falą, tylko idzie jeść (na skraju strefy uciekali w kółko i umierali z głodu); na 16 światach zgonów z głodu 25 zamiast 37
-- Idący wyliczoną drogą przechodzi obok magmy bez ucieczki, jeśli następny kafel jest wolny od ognia (droga szybem przy magmie była przerywana co sekundę i robotnicy dreptali w kółko do śmierci); na 16 światach: głód 18 zgonów (było 25), w magmie 0
+- Głodny, do którego żaden Strażnik nie jest blisko (12 kafli), nie ucieka przed falą, tylko idzie jeść (na skraju strefy uciekali w kółko i umierali z głodu)
+- Idący wyliczoną drogą przechodzi obok magmy bez ucieczki, jeśli następny kafel jest wolny od ognia (droga szybem przy magmie była przerywana co sekundę i robotnicy dreptali w kółko do śmierci)
 - Pasek „Śniący Kamień śpi w ścianie · wróci za m:ss · zbierz rycerzy” i wskazówka „teraz:” prowadząca do świecącego gniazda; w czasie fali wstęga mówi, że skorupa nie pęka
 - Uprawa przy spiżarni liczy tylko grzyb na podłodze w swoim pasie (wiszący nad siedzibą grzyb blokował ją i siedziba głodowała)
 - Nawrócony buntownik przestaje być celem — rycerze gonili go dalej i dobijali wiernych towarzyszy z warty; lud nie bije swoich (poza buntem)
@@ -34,8 +33,9 @@
 - Bot: przy pokazanym gnieździe wysyła jednego robotnika (wystarczy 6 wiary)
 - Najazd ludzi wraca na powierzchnię po 1,5 min (wcześniej błąkał się, aż trafił na siedzibę)
 - Karta „Woda nad obozem” → „Odwróć wodę”: woda naprawdę spływa daleko od siedziby i obozów (losowa powódź potrafiła trafić prosto nad obóz i utopić kilku)
-- Sprawdzone też na 16 nowych światach (16–31): 16 wygranych; razem 30 z 32, 0 porażek
-- Na 16 światach: 15 wygranych, 1 partia trwa po 25 min, 0 porażek; zgonów z głodu łącznie 2 (na początku nocy ~37) — boss zasypia już po 2 min bez rycerzy (pielgrzymi czekający przy pustym obozie nie głodują)
+- Wynik bota (ostatni pomiar, 64 światy): 58 wygranych, 1 porażka, 5 partii trwa po 25 min; mediana partii ok. 9 min.
+  Przebiegi są chaotyczne — jedna inna karta zmienia całą partię; wersja tuż przed ostatnią poprawką miała 61/64.
+  Zgonów z głodu na 16 pierwszych światach: z ~37 na początku poprawek do kilku; w magmie 0
 
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,
