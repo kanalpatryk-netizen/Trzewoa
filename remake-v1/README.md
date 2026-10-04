@@ -56,7 +56,7 @@ Wszystkie cztery etapy zrobione — dalej: poprawki po testach.
 
 Film z rozgrywki: `film/remake-v1-etap4.webm`.
 
-Stan po poprawkach (bot na 64 światach): 62 wygrane, 0 porażek, 2 partie przeciągają się ponad 25 min.
+Stan po poprawkach (bot na 64 światach): 61–62 wygrane, 0 porażek, reszta przeciąga się ponad 25 min.
 
 Znane braki: gdy wszystkie gniazda są odkopane, a rycerze zginęli, bossa nie da się pokonać (zasypia
 i wraca w kółko); karta spisku często zabiera rycerzy; stare tablice atlasu o dawnych rasach zostały
