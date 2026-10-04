@@ -176,7 +176,10 @@ export function pilnujCzola(sim: Sim): void {
   if (!st || st.i !== cz) { sim.lud.czolo = { i: cz, od: sim.tick, prob: 0, zk: 0 }; return; }
   if (cz < 0) return;
   st.prob++;
-  if (sim.creatures.some((c) => !c.dead && c.kopieDroge)) st.zk++;
+  // liczy się tylko kopacz tuż przy czole — stoi, bo nie da się go wykuć, a nie dlatego, że nie miał kto przyjść
+  // (przy dwóch głodnych robotnikach plan omijał czoło i brał trasę dłuższą o sto kafli)
+  const fx = cz % sim.world.w, fy = (cz / sim.world.w) | 0;
+  if (sim.creatures.some((c) => !c.dead && c.kopieDroge && Math.abs(c.x - fx) <= 3 && Math.abs(c.y - fy) <= 3)) st.zk++;
   // czoło przy samej magmie — robotnicy tam nie kopią (płonęli), więc nie ma na co czekać; inaczej wszyscy
   // „odpoczywali przy spiżarni”, a droga stała po kilkanaście minut
   const w0 = sim.world, przyOgniu = sim.przyMagmie(cz % w0.w, (cz / w0.w) | 0, 2);
@@ -185,8 +188,16 @@ export function pilnujCzola(sim: Sim): void {
   sim.lud.omijaj.push([cz, sim.tick + PLAN_DROGI.czoloOmijaj]);
   sim.lud.czolo = undefined;
   const w = sim.world;
-  zapisz(sim, 'praca', `czoło drogi (${cz % w.w}, ${(cz / w.w) | 0}) stoi — plan je omija`, cz % w.w, (cz / w.w) | 0);
+  const stary = sim.planDrogi;
   odswiezPlan(sim);
+  // objazd dużo dłuższy niż to, co zostało — zostaje stary plan (przy magmie i tak nikt czoła nie wykuje)
+  if (!przyOgniu && stary && sim.planDrogi && sim.planDrogi.kopac.length > stary.kopac.length * 1.5 + 10) {
+    sim.lud.omijaj = sim.lud.omijaj.filter(([i]) => i !== cz);
+    sim.planDrogi = stary;
+    zapisz(sim, 'praca', `czoło drogi (${cz % w.w}, ${(cz / w.w) | 0}) stoi, ale objazd byłby dużo dłuższy — plan zostaje`, cz % w.w, (cz / w.w) | 0);
+    return;
+  }
+  zapisz(sim, 'praca', `czoło drogi (${cz % w.w}, ${(cz / w.w) | 0}) stoi — plan je omija`, cz % w.w, (cz / w.w) | 0);
 }
 
 /** Remake v1: czoło drogi — pierwszy kafel skały na kresce od strony obozu (tam kopie robotnik), albo -1. */

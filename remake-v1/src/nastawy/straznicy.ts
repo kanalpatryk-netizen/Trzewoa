@@ -63,6 +63,8 @@ export const STRAZNICY = {
   rycerzyNaBossa: 3,
   /** Czekający rycerz broni się, gdy Strażnik (albo boss) podejdzie bliżej niż tyle kafli. */
   rycerzBroniSieOd: 4,
+  /** Głodny rycerz (powyżej `LUD.glodSam`) idzie jeść — walczy tylko ze Strażnikiem bliżej niż tyle kafli. */
+  rycerzGlodnyWalczyOd: 2.5,
   /** Głodny z ludu nie ucieka przed falą (idzie jeść), dopóki żaden Strażnik nie jest bliżej niż tyle kafli. */
   glodnyNieUciekaOd: 12,
   /** Wiara za pokonaną falę. */

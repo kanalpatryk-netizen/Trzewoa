@@ -281,13 +281,19 @@ function rycerzeDoWalki(sim: Sim): void {
   for (const c of sim.creatures) {
     if (c.dead || rolaPostaci(c) !== 'rycerz') continue;
     const obecny = sim.creatureById(sim.target.get(c.id) ?? -1);
-    if (c.job === Job.FIGHT && obecny && !obecny.dead && obecny.straznik) continue;
-    let best: Creature | null = null, bd = S.rycerzWidzi;
+    // głodny rycerz najpierw je — walczy tylko z tym, co stoi tuż obok (dziesięciu rycerzy umarło z głodu,
+    // goniąc Strażnika w skale: co pół sekundy ten przydział odbierał im drogę do spiżarni)
+    const glodny = c.hunger > LUD.glodSam;
+    if (c.job === Job.FIGHT && obecny && !obecny.dead && obecny.straznik && !(glodny && Math.hypot(obecny.x - c.x, obecny.y - c.y) > S.rycerzGlodnyWalczyOd)) continue;
+    let best: Creature | null = null, bd = glodny ? S.rycerzGlodnyWalczyOd : S.rycerzWidzi;
     for (const s of wrogowie) {
       const d = Math.hypot(s.x - c.x, s.y - c.y);
       if (d < bd) { bd = d; best = s; }
     }
-    if (!best) continue;
+    if (!best) {
+      if (glodny && c.job === Job.FIGHT && obecny?.straznik) { sim.target.delete(c.id); c.jt = 0; c.zamiarDo = sim.tick; }
+      continue;
+    }
     sim.target.set(c.id, best.id);
     c.job = Job.FIGHT; c.jt = 600; c.droga = undefined; c.losowo = undefined;
     c.zamiar = best.boss ? `walczy z: ${aktywnyBoss().nazwa}` : 'walczy ze Strażnikiem Snu';

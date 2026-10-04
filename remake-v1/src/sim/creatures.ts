@@ -6,7 +6,7 @@ import { pielgrzymowKlanu, wKomorze } from './rytual';
 import { STWORZENIA as K } from '../nastawy/stworzenia';
 import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { LUDY, PRZYPLYWY as PP } from '../nastawy/gora';
-import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi } from './droga';
+import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchwyt } from './droga';
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi } from './pielgrzymka';
@@ -99,6 +99,8 @@ export interface Creature {
   kierunek?: number;
   /** Remake v1: robotnik kopie drogę do rdzenia (złotą kreskę). */
   kopieDroge?: boolean;
+  /** Co ostatnio odebrało zdrowie — kronika podaje prawdziwą przyczynę śmierci (wcześniej każda brzmiała „z wycieńczenia”). */
+  rana?: 'magma' | 'woda' | 'glod' | 'starosc' | 'przysypany' | 'upadek' | 'grzybnia';
   /** Szept „kop losowo” (rycerz): kafle skały, które ma jeszcze wykopać. */
   losowo?: number[];
   /** …i od kiedy kopie pierwszy z nich (kafel, który nie daje się ruszyć, po chwili odpada). */
@@ -188,10 +190,10 @@ function krokStworzenia(sim: Sim, c: Creature): void {
 
   // --- żywioły
   const i = w.idx(Math.max(0, Math.min(w.w - 1, tx)), Math.max(0, Math.min(w.h - 1, ty)));
-  if (w.magma[i] > 0) { c.hp -= K.magmaObrazenia + w.magma[i]; c.fear = 1; }
-  if (w.water[i] > K.toniePowyzej && !d.swims) { c.hp -= K.tonieObrazenia; c.fear = Math.min(1, c.fear + K.tonieStrach); }
+  if (w.magma[i] > 0) { c.hp -= K.magmaObrazenia + w.magma[i]; c.fear = 1; c.rana = 'magma'; }
+  if (w.water[i] > K.toniePowyzej && !d.swims) { c.hp -= K.tonieObrazenia; c.fear = Math.min(1, c.fear + K.tonieStrach); c.rana = 'woda'; }
   // grzybnia parzy obcych, ale nie zabija w pół minuty tego, kto tylko przez nią przechodzi
-  if (w.tile[i] === T.FUNGUS && c.race !== Race.GOBLIN) c.hp -= K.grzybniaParzy;
+  if (w.tile[i] === T.FUNGUS && c.race !== Race.GOBLIN) { c.hp -= K.grzybniaParzy; c.rana = 'grzybnia'; }
 
   // --- głód i wiek
   // zatłoczenie bije w głód natychmiast: nadmiar nie chudnie powoli, tylko pada
@@ -225,9 +227,9 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     c.carry--; sim.meals++; c.hunger = Math.max(0, c.hunger - LUD.posilek);
     if (c.carry === 0) { c.dostawaDla = undefined; c.doObozu = undefined; }
   }
-  if (c.hunger > K.glodZabija) c.hp -= K.glodObrazenia;
+  if (c.hunger > K.glodZabija) { c.hp -= K.glodObrazenia; c.rana = 'glod'; }
   else if (c.hunger < K.najedzonyLeczy && c.hp < maxHp(sim, c)) c.hp = Math.min(maxHp(sim, c), c.hp + K.leczenieNaTik);
-  if (c.age > d.lifespan * m.zycie && !sim.spokojnySwiat) c.hp -= K.starosc;
+  if (c.age > d.lifespan * m.zycie && !sim.spokojnySwiat) { c.hp -= K.starosc; c.rana = 'starosc'; }
   c.fear *= K.wygasanieStrachu;
 
   // --- szaleństwo głębi: im niżej, tym mniej z niego zostaje
@@ -253,12 +255,16 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // kto wrócił wyżej, powoli dochodzi do siebie — szaleństwo nie jest już wieczne
   else if (depth < K.zdrowiejePowyzej && c.mad > 0 && c.race !== Race.TROLL) c.mad = Math.max(0, c.mad - K.zdrowienie);
 
-  if (c.hp <= 0) { sim.kill(c, 'z wycieńczenia', c.age > d.lifespan * m.zycie ? 'starość' : 'wycieńczenie'); return; }
+  if (c.hp <= 0) {
+    const r = PRZYCZYNA[c.rana ?? ''] ?? ['z wycieńczenia', c.age > d.lifespan * m.zycie ? 'starość' : 'wycieńczenie'];
+    sim.kill(c, r[0], r[1]);
+    return;
+  }
 
   // --- przysypanie: kiedy strop się osunie, stworzenie zostaje w litej skale.
   // Bez tego stało nieruchomo do śmierci i wyglądało to jak zawieszona gra.
   if (!w.passable(tx, ty)) {
-    c.hp -= K.przysypanyObrazenia;
+    c.hp -= K.przysypanyObrazenia; c.rana = 'przysypany';
     c.fear = Math.min(1, c.fear + K.przysypanyStrach);
     if (d.digPower > 0) {
       c.dig += d.digPower * m.kopanie * K.wygrzebywanieSila;
@@ -324,7 +330,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   }
   // Upadek boli, ale nie zabija na miejscu: raz, przy lądowaniu, i dopiero z wysokości
   // kilku kafli (wcześniej liczył się dwa razy — w locie i po lądowaniu).
-  if (c.vy > K.bolesnyUpadek) c.hp -= RACES[c.race].maxHp * K.upadekObrazenia * Math.min(1, (c.vy - K.bolesnyUpadek) / K.upadekPelny);
+  if (c.vy > K.bolesnyUpadek) { c.hp -= RACES[c.race].maxHp * K.upadekObrazenia * Math.min(1, (c.vy - K.bolesnyUpadek) / K.upadekPelny); c.rana = 'upadek'; }
   c.vy = 0;
 
   // --- rozglądanie się: rysunek twojego ciała powstaje tylko z ich oczu
@@ -1078,6 +1084,12 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   if (sp && sp.ilosc < LUD.zapasDo) {
     const d = szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && wStrefiePracy(sim, clan, x, y) && !strefa(x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, K.jedzenieLimit);
     if (d) { naDroge(d); zamiar('zbiera grzyb do spiżarni', Job.ZBIERA, podroz(d)); return; }
+    // spiżarnie puste — po grzyb dalej, poza strefę pracy (robotnicy odpoczywali przy pustej spiżarni,
+    // a rycerze i pobożni błąkali się po całej górze i umierali z głodu)
+    if (wszystkieSpizarnieLudu(sim).reduce((n, o) => n + o.ilosc, 0) < LUD.pustoPonizej) {
+      const dd = szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && !strefa(x, y) && !sim.przyMagmie(x, y, 3) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, K.jedzenieLimitGlodny);
+      if (dd) { naDroge(dd); zamiar('idzie daleko po grzyb — spiżarnie puste', Job.ZBIERA, podroz(dd)); return; }
+    }
   }
   // 4. przekopuje korytarz — jeden kierunek przez cały zamiar, kafel po kafelku
   const cx = Math.floor(c.x), cy = Math.floor(c.y);
@@ -1177,15 +1189,19 @@ function wyznaczTor(sim: Sim, c: Creature): boolean {
   c.torBledy = 0;
   // gniazdo pokazane: trasa wyliczona przez skałę (z ominięciem ognia, wody i przepaści) — zachłanny krok
   // stawał przy pierwszej przeszkodzie i w niektórych światach żadne gniazdo nie dawało się odkopać
-  if (g.znany) {
-    // najpierw zwykłą drogą (klamry, jaskinie) jak najbliżej gniazda, stamtąd tunel — trasa tunelu nie
+  // (tak samo tor ku znakowi niepewnemu — do wskazanego punktu: zachłanny krok od miejsca, w którym kopacz
+  // klęczał, odbijał się od pierwszej jaskini i tor kończył się po kilku kaflach; w jednym świecie trzydzieści
+  // „przemyśl i kop” dało jedno gniazdo)
+  {
+    const px = g.znany ? g.x : tx, py = g.znany ? g.y : ty;
+    // najpierw zwykłą drogą (klamry, jaskinie) jak najbliżej celu, stamtąd tunel — trasa tunelu nie
     // przechodzi nad przepaściami, a do wielu gniazd prowadzi tylko przez otwartą jaskinię
     let sx = cx, sy = cy;
     for (const D of [3, 6, 10, 15, 22]) {
-      const d = szukajDrogi(sim, c, (_i, x, y) => stoi(sim, x, y) && Math.abs(x - g.x) + Math.abs(y - g.y) <= D, 8000);
+      const d = szukajDrogi(sim, c, (_i, x, y) => stoi(sim, x, y) && Math.abs(x - px) + Math.abs(y - py) <= D, 8000);
       if (d && d.length) { const k = d[d.length - 1]; sx = k % w.w; sy = (k / w.w) | 0; break; }
     }
-    const trasa = trasaToru(sim, sx, sy, g.x, g.y);
+    const trasa = trasaToru(sim, sx, sy, px, py);
     if (trasa) {
       c.tor = { gn: g.id, tx, ty, hx: sx, hy: sy, sx, sy, kroki: 0, limit: trasa.length * 2 + 40, trasa, wraca: sx !== cx || sy !== cy };
     }
@@ -1296,6 +1312,8 @@ function doTor(sim: Sim, c: Creature): void {
     } else { c.jt = 0; return; }
   }
   if (cx === t.tx && cy === t.ty) { koniecToru(sim, c, 'pusto'); return; }
+  // koniec wyliczonej trasy (kończy się tuż przy celu) — dotarł
+  if (t.trasa && t.trasa.length && t.trasa[t.trasa.length - 1] === w.idx(cx, cy)) { koniecToru(sim, c, 'pusto'); return; }
   // cel kroku: ten sam, dopóki go nie wykopie albo do niego nie wejdzie
   const juz = (c.jx !== cx || c.jy !== cy) && Math.abs(c.jx - cx) + Math.abs(c.jy - cy) === 1 && kafelToru(sim, c.jx, c.jy);
   if (!juz) {
@@ -1341,7 +1359,8 @@ function koniecToru(sim: Sim, c: Creature, czemu: 'pusto' | 'zagrodzone' | 'zgub
     obudzGniazdo(sim, g, podloga(sim, Math.floor(c.x), Math.floor(c.y), 3) ?? [Math.floor(c.x), Math.floor(c.y)]);
     return;
   }
-  const napis = czemu === 'pusto' ? 'tu pusto' : czemu === 'zagrodzone' ? 'ogień zagrodził' : 'zgubił tunel';
+  // (zagrodzić może ogień, woda albo przepaść — napis mówi, co naprawdę)
+  const napis = czemu === 'pusto' ? 'tu pusto' : czemu === 'zagrodzone' ? (sim.przyMagmie(Math.floor(c.x), Math.floor(c.y), 4) ? 'ogień zagrodził' : 'nie ma którędy kopać') : 'zgubił tunel';
   sim.efekt(c.x, c.y, 'mysl', napis);
   if (czemu === 'pusto') sim.gdzie(c.x, c.y).log('Robotnik dokopał się do końca znaku — skała pusta. Inny tor może trafić.', 'swiat', 'tor-pusty');
 }
@@ -1360,8 +1379,25 @@ function kafelKorytarza(sim: Sim, c: Creature, x: number, y: number): boolean {
 }
 
 /** Remake v1: stoi w swoim miejscu — pobożny modli się przy obozie, rycerz pilnuje, robotnik odpoczywa. */
+/**
+ * Remake v1: kto stoi na swoim miejscu bez podłogi pod nogami (na linie, przy ścianie), trzyma chwyt — inaczej
+ * chwyt wygasał, zjeżdżał po linie, wspinał się z powrotem i tak w kółko („stał” przy obozie, przebywając
+ * po kilkaset kafli na minutę).
+ */
+/** Ostatnia rana → [opis w kronice, znacznik statystyki] (głód zostaje „wycieńczeniem” — tak liczą testy). */
+const PRZYCZYNA: Record<string, [string, string]> = {
+  magma: ['w ogniu', 'magma'], woda: ['utonął', 'woda'], glod: ['z głodu', 'wycieńczenie'], starosc: ['ze starości', 'starość'],
+  przysypany: ['przysypany skałą', 'przysypany'], upadek: ['od upadku', 'upadek'], grzybnia: ['poparzony grzybnią', 'grzybnia'],
+};
+
+function trzymajSieNaMiejscu(sim: Sim, c: Creature): void {
+  const cx = Math.floor(c.x), cy = Math.floor(c.y);
+  if (REMAKE && rolaPostaci(c) && !stoi(sim, cx, cy) && uchwyt(sim, cx, cy)) { c.wspina = sim.tick; c.vy = 0; }
+}
+
 function doStoi(sim: Sim, c: Creature): void {
   if (Math.abs(c.jx - Math.floor(c.x)) > 1 || Math.abs(c.jy - Math.floor(c.y)) > 1) { idz(sim, c, c.jx, c.jy, false); return; }
+  trzymajSieNaMiejscu(sim, c);
   if (c.modliPrzyObozie && sim.tick >= (c.bezModlitwyDo ?? 0)) {
     sim.pray(c, T.AIR);
     c.devotion = Math.min(1, c.devotion + K.modlitwaOddanie * 0.5);
@@ -1379,6 +1415,21 @@ function idz(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): bool
     const nast = nastepnyKafel(sim, c);
     if (nast >= 0) { krok(sim, c, nast); return false; }
     c.droga = undefined;
+  }
+  // Remake v1: wisi bez podłogi (zsunął się z wyliczonej drogi) i do celu jeszcze daleko — liczy drogę od nowa,
+  // zamiast iść na przełaj: na przełaj wspinał się po linie pod półkę, nie umiał zrobić kroku w bok, chwyt
+  // wygasał i zjeżdżał — w górę i w dół w kółko, „stojąc” przy obozie. Gdy drogi naprawdę nie ma — porzuca zamiar.
+  const cx = Math.floor(c.x), cy = Math.floor(c.y);
+  if (REMAKE && rolaPostaci(c) && (Math.abs(tx - cx) > 1 || Math.abs(ty - cy) > 1) && !stoi(sim, cx, cy)
+      && (sim.tick + c.id) % 30 === 0 && budzetDrog() > 0) {
+    const d = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - tx) <= 1 && Math.abs(y - ty) <= 1, 4000);
+    if (!d) { c.jt = 0; c.droga = undefined; return false; }
+    if (d.length) {
+      c.droga = d; c.drogaI = 0;
+      const nast = nastepnyKafel(sim, c);
+      if (nast >= 0) { krok(sim, c, nast); return false; }
+      c.droga = undefined;
+    }
   }
   return walkTo(sim, c, tx, ty, mayDig);
 }
@@ -1682,6 +1733,7 @@ function doDostawa(sim: Sim, c: Creature): void {
 function doWarta(sim: Sim, c: Creature): void {
   if (!wartaPotrzebna(sim)) { c.jt = 0; return; }
   if (Math.abs(c.jx - Math.floor(c.x)) > 1 || Math.abs(c.jy - Math.floor(c.y)) > 4) idz(sim, c, c.jx, c.jy, false);
+  else trzymajSieNaMiejscu(sim, c);
 }
 
 function doDig(sim: Sim, c: Creature): void {

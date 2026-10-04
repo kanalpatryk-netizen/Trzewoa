@@ -1,6 +1,13 @@
 # Zmiany
 
 ## Remake v1 (komputer) — poprawki po etapie 4
+- Próby z dwoma graczami (budowniczy i speedrunner, `scripts/proby-graczy.mjs`) — poprawione to, co wyszło w logach:
+  - postać „stojąca” przy obozie na linie bez podłogi trzyma chwyt — jeździła w górę i w dół po kilkaset kafli na minutę; zgubiona droga liczy się od nowa zamiast iść na przełaj
+  - tunel ku gniazdu najpierw dochodzi zwykłą drogą jak najbliżej celu, potem kopie wyliczoną trasą — tunele odbijały się od pierwszej jaskini (30 „przemyśl i kop” dało jedno gniazdo); napis „ogień zagrodził” tylko przy ogniu
+  - głodny rycerz nie jest ciągnięty do walki ze Strażnikiem w skale — dziesięciu rycerzy umarło z głodu przy pełnej spiżarni
+  - przy pustych spiżarniach robotnicy idą po grzyb poza strefę pracy, zamiast odpoczywać przy pustej spiżarni
+  - omijanie stojącego czoła liczy tylko kopacza tuż przy czole i nie bierze objazdu dużo dłuższego (plan skakał z 16 na 146 kafli)
+  - kronika podaje prawdziwą przyczynę śmierci (utonął, ze starości, z głodu, przysypany…) zamiast zawsze „z wycieńczenia”
 - Rycerze przy bossie: gdy jest ich za mało, nie uciekają już do dalekiej spiżarni jak pobożni — stają tuż za skrajem strefy i bronią się przed Strażnikiem albo bossem, który podejdzie bliżej niż 4 kafle; na karcie „czeka na skraju (2/3)”
 - Nowy szept tylko dla rycerza: „kop losowo” (4 wiary) — wykopuje ~10 połączonych kafli skały obok siebie (w bok i w dół, tempem robotnika); trafi blisko śpiącego gniazda, to je budzi. Kafel, do którego nie da się podejść albo który nie daje się ruszyć, odpada
 - Kopacz drogi przy czole na linie albo przy ścianie trzyma chwyt, dopóki kuje — zsuwał się po chwili poza zasięg, wspinał z powrotem i kuł ułamek sekundy (pętla w górę i w dół po linie pod czołem drogi)

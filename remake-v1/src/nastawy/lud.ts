@@ -79,6 +79,8 @@ export const LUD = {
   glodDostawyDaleko: 0.2,
   /** Pobożni i rycerze sami idą jeść dopiero tak głodni — albo gdy nie ma żadnego robotnika. */
   glodSam: 0.6,
+  /** Gdy we wszystkich spiżarniach razem jest mniej jedzenia niż tyle, robotnik idzie po grzyb także poza strefę pracy. */
+  pustoPonizej: 15,
   /** Przy takim głodzie niosący jedzenie zjada własny ładunek, zamiast paść z nim w rękach. */
   zjadaNiesione: 0.85,
   /** Stacjonujący ze spiżarnią z jedzeniem w tej odległości (kafle) je sam, gdy tylko zgłodnieje. */
