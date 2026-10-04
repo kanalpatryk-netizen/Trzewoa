@@ -53,7 +53,7 @@ function ruch(c: Creature, czas: number): Ruch {
   const dx = c.x - r.x, dy = c.y - r.y;
   const droga = Math.hypot(dx, dy);
   if (droga > 4) { r.x = c.x; r.y = c.y; r.t = czas; return r; }          // skok (wczytanie, teleport)
-  const krok = krokRasy(c.race);
+  const krok = krokPostaci(c);
   const przyrost = Math.min(Math.abs(dx) / krok, MAKS_KROKOW_NA_SEKUNDE * dt);
   r.faza = (r.faza + przyrost) % 1;
   r.fazaPion = (r.fazaPion + Math.min(Math.abs(dy) / 0.9, 2.4 * dt)) % 1;
@@ -66,6 +66,15 @@ function ruch(c: Creature, czas: number): Ruch {
 /** Długość pełnego kroku w kaflach — duzi stawiają kroki rzadziej. */
 function krokRasy(r: Race): number {
   return r === Race.TROLL ? 1.6 : r === Race.DWARF ? 0.8 : r === Race.SPINNER ? 0.7 : 1.0;
+}
+
+/**
+ * Nowe postacie ludu stawiają krok jak człowiek — pełny cykl to ok. 0,8 wzrostu — więc stopa
+ * stojąca na ziemi nie ślizga się (dawniej cykl miał 1 kafel przy postaci wysokiej na ponad 2).
+ */
+function krokPostaci(c: Creature): number {
+  if (c.race !== Race.GOBLIN || ustawienia.nowePostacie === false) return krokRasy(c.race);
+  return 0.8 * 1.9 * RACES[c.race].size * ustawienia.wielkoscSylwetek * (c.rola === 'rycerz' ? 1.3 : 1);
 }
 
 export type Czynnosc =
