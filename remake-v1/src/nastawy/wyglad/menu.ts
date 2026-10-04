@@ -18,6 +18,8 @@ export const MENU = {
   /** Zachęta dla nowych graczy pod opisem pozycji. */
   zachetaSamouczek: 'Pierwszy raz? Zacznij od samouczka.',
   /** Podpowiedź sterowania w lewym dolnym rogu (tylko szeroki ekran). */
+  /** Wersja gry — małym drukiem w prawym dolnym rogu menu. */
+  wersja: 'Remake v1',
   podpowiedz: '',   // Android: nic — na komputerze „strzałki i enter · albo po prostu dotknij”
   /** Pozycje spisu: etykieta i opis pod spisem. Kolejność = kolejność na ekranie. */
   pozycje: {

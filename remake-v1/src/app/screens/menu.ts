@@ -462,6 +462,14 @@ export class EkranMenu implements Ekran {
       const m = marginesRamy(w) + 22;
       ctx.fillText(M.podpowiedz, m + w * 0.02, h - m - 4);
     }
+    // wersja gry — małym drukiem w prawym dolnym rogu, w ramie
+    {
+      ctx.font = `italic ${Math.max(11, w / 130)}px ${SERIF}`;
+      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.55 * alfa);
+      ctx.textAlign = 'right';
+      const m = marginesRamy(w) + 22;
+      ctx.fillText(M.wersja, w - m - w * 0.02, h - m - 4);
+    }
     ctx.restore();
   }
 
