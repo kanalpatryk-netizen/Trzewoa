@@ -50,7 +50,16 @@ i otwórz w przeglądarce.
 - **Nowa talia kart:** spisek rycerzy (rzadki — najwyżej raz na 5 min; zostawiony po 2 min wybucha buntem — część rycerzy zmienia barwy
   i bije lud; wierni rycerze ruszają na nich sami), zatrute plony, woda nad obozem, zawał nad drogą
   wiernych, sen o kamiennych rycerzach (pokazuje gniazdo). Liczby: `src/nastawy/karty-ludu.ts`.
-- **Postacie ludu** (`src/render/postacie.ts`): cieniowane, z twarzami i płynnym ruchem — cykl chodu, zamach kilofem, klęczenie w modlitwie, cięcie mieczem; peleryna, pióropusz i szata mają bezwładność. Dawny rysunek: ustawienia → „Nowe postacie”.
+- **Postacie ludu** (`src/render/postacie.ts`, kod w `src/render/lud/`): kończyny z mięśniami, dłonie z kciukiem,
+  buty z podeszwą, głowy z profilu (oczy, brwi, usta, uszy, brody); robotnik — czapka z lampką i snopem światła, chusta,
+  kamizelka, łata na kolanie, kilof przez plecy, worek z grzybami; pobożny — kaptur ze szpicem, szkaplerz z haftem,
+  sznur z frędzlem, krzyżyk, laska z krzyżem i wstążką, księga; rycerz — hełm z nitami i świecącym wizjerem, pióropusz,
+  naramiennik, nakolanniki, kolczuga, tarcza z okuciem, pochwa miecza. Animacje z klatek kluczowych (`lud/ruch.ts`):
+  chód z przetaczaniem stopy (krok dopasowany do drogi — stopy się nie ślizgają), bieg z fazą lotu, kopanie (zamach
+  z zatrzymaniem, uderzenie z odpryskami, powrót), cięcie i pchnięcie mieczem na przemian ze smugą ostrza, modlitwa,
+  wspinaczka, upadek i lądowanie, wzdrygnięcie przy trafieniu, drobne gesty, gdy stoi. Peleryna, pióra, kaptur, szata,
+  worek i wstążki mają bezwładność, a zmiana czynności przechodzi płynnie. Szczegółowość rośnie z przybliżeniem;
+  przy jakości „szybka” (albo gdy auto tnie jakość) bez najdrobniejszych detali. Dawny rysunek: ustawienia → „Nowe postacie”.
 - **Klamry** widać przy ścianach szybów (zaczepy) i w pustce (liny).
 - **Bez snu góry.** Przegrywasz dopiero, gdy nie da się już wygrać: nie ma pobożnych,
   a nawet ofiara ze wszystkich nie da krwi na nowego.
