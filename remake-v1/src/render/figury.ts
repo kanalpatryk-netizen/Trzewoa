@@ -69,7 +69,7 @@ function krokRasy(r: Race): number {
 
 export type Czynnosc =
   | 'stoi' | 'idzie' | 'biegnie' | 'wspina' | 'spada'
-  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa';
+  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta';
 
 /** Co widać: czynność wynika z zajęcia, ale i z tego, czy stworzenie w ogóle się rusza. */
 function czynnosc(c: Creature, r: Ruch, sim: Sim): Czynnosc {
@@ -91,6 +91,8 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim): Czynnosc {
     case Job.BUILD: if (przy(c.jx, c.jy, 1.6)) return 'buduje'; break;
     case Job.DRAIN: return stoi ? 'wysysa' : 'idzie';
     case Job.FIGHT: case Job.SLAVE: {
+      // ostatnia deska: pobożny unosi księgę przeciw bossowi
+      if (c.ksiegaT !== undefined && sim.tick - c.ksiegaT < 400 && r.v < 0.6) return 'czyta';
       const cel = sim.creatureById(sim.target.get(c.id) ?? -1);
       if (cel && !cel.dead && Math.hypot(cel.x - c.x, cel.y - c.y) < 1.8) return 'walczy';
       return r.v > 0.6 ? 'biegnie' : 'stoi';
@@ -397,6 +399,16 @@ function poza(rasa: Race, cz: Czynnosc, r: Ruch, czas: number, c: Creature): Poz
       break;
     }
     case 'wysysa': break;
+    case 'czyta': {
+      // obie ręce wyciągnięte przed siebie, księga uniesiona na wysokość twarzy
+      const drg = sin(czas * 0.006 + c.id) * 0.06;
+      p.ramieA = -1.35 + drg; p.lokiecA = 0.25;
+      p.ramieB = -1.25 + drg; p.lokiecB = 0.3;
+      p.tulow = garb - 0.08;
+      p.udoA = 0.25; p.lydkaA = 0.15; p.udoB = -0.2; p.lydkaB = 0.1;
+      p.glowa = -0.1;
+      break;
+    }
   }
   // szaleństwo: drgania i przekrzywiona głowa
   if (c.mad > 0.4 && !ustawienia.ograniczRuch) {
@@ -860,8 +872,24 @@ function strojRoli(ctx: CanvasRenderingContext2D, rola: Rola, s: Szkielet, b: Bu
     obrysuj('rgba(46,30,40,0.97)');
     ctx.fillStyle = 'rgba(8,5,6,0.95)';                    // cień twarzy pod kapturem
     ctx.beginPath(); ctx.ellipse(s.glowaX + gr * 0.45, s.glowaY + gr * 0.1, gr * 0.42, gr * 0.6, 0, 0, PI * 2); ctx.fill();
+    // księga w wyciągniętych dłoniach (ostatnia deska przeciw bossowi): oprawa, jasne karty, złoty krzyż
+    if (cz === 'czyta') {
+      const [, , ax, ay] = s.rekaA, [, , bx, by] = s.rekaB;
+      const kx = (ax + bx) / 2, ky = (ay + by) / 2 - h * 0.04, kw = h * 0.22, kh = h * 0.16;
+      ctx.fillStyle = 'rgba(92,40,30,0.98)'; ctx.strokeStyle = obrys; ctx.lineWidth = lw;
+      ctx.beginPath(); ctx.rect(kx - kw / 2, ky - kh / 2, kw, kh); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(250,240,210,0.98)';
+      ctx.fillRect(kx - kw / 2 + lw, ky - kh / 2 + lw, kw / 2 - lw * 1.5, kh - lw * 2);
+      ctx.fillRect(kx + lw * 0.5, ky - kh / 2 + lw, kw / 2 - lw * 1.5, kh - lw * 2);
+      ctx.strokeStyle = 'rgba(246,206,110,0.98)'; ctx.lineWidth = lw * 0.9;
+      ctx.beginPath(); ctx.moveTo(kx, ky - kh * 0.32); ctx.lineTo(kx, ky + kh * 0.32); ctx.moveTo(kx - kw * 0.12, ky - kh * 0.1); ctx.lineTo(kx + kw * 0.12, ky - kh * 0.1); ctx.stroke();
+      // poświata księgi
+      const g = ctx.createRadialGradient(kx, ky, 0, kx, ky, h * 0.4);
+      g.addColorStop(0, 'rgba(255,230,150,0.35)'); g.addColorStop(1, 'rgba(255,230,150,0)');
+      ctx.fillStyle = g; ctx.beginPath(); ctx.arc(kx, ky, h * 0.4, 0, PI * 2); ctx.fill();
+    }
     // laska z krzyżem w drugiej ręce (przy modlitwie i kopaniu ręce mają co innego do roboty)
-    if (cz !== 'modli' && cz !== 'kopie') {
+    if (cz !== 'modli' && cz !== 'kopie' && cz !== 'czyta') {
       const [, , hx, hy] = s.rekaB;
       ctx.strokeStyle = 'rgba(150,112,70,0.98)'; ctx.lineWidth = lw * 1.3;
       ctx.beginPath(); ctx.moveTo(hx, Math.min(-h * 0.02, hy + h * 0.35)); ctx.lineTo(hx, hy - h * 0.5); ctx.stroke();

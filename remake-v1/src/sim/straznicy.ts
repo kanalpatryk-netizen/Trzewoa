@@ -33,6 +33,17 @@ export interface StanStraznikow {
   bossSpiDo?: number;
 }
 
+/**
+ * Ostatnia deska: trwa fala z bossem, w ludzie nie ma ani jednego rycerza i nie zostało żadne
+ * nieodkopane gniazdo — wtedy bossa ranią też pobożni (księgą, z dystansu), a on nie zasypia.
+ */
+export function trybWiernych(sim: Sim): boolean {
+  const st = sim.lud.straznicy;
+  if (!st?.trwa || !S.fale[st.fala]?.boss) return false;
+  if (gniazdaWSkale(sim).length > 0) return false;
+  return !sim.creatures.some((c) => !c.dead && rolaPostaci(c) === 'rycerz');
+}
+
 /** Czy boss śpi w ścianie (wrócił, bo nie miał z kim walczyć) — skorupa wtedy nie pęka. */
 export function bossSpi(sim: Sim): boolean {
   return sim.tick < (sim.lud.straznicy?.bossSpiDo ?? 0);
@@ -143,7 +154,7 @@ export function tikStraznikow(sim: Sim): void {
     }
     // fala z bossem bez rycerzy: boss wraca do ściany i śpi, lud odżywa (inaczej pat — i głód do ostatniego)
     if (st.trwa && S.fale[st.fala]?.boss) {
-      if (!falaZwykla(sim)) st.bezRycerzyOd = undefined;
+      if (!falaZwykla(sim) || trybWiernych(sim)) st.bezRycerzyOd = undefined;
       else if (st.bezRycerzyOd === undefined) st.bezRycerzyOd = sim.tick;
       else if (sim.tick - st.bezRycerzyOd > S.bossZasypiaBezRycerzy) {
         for (const c of zywiStraznicy(sim)) { c.dead = true; sim.clans[c.clan].pop--; sim.efekt(c.x, c.y, 'cud'); }
@@ -163,6 +174,43 @@ export function tikStraznikow(sim: Sim): void {
     if (!st.trwa && def && !sim.rytual.otwarta && !bossSpi(sim) && procentSkorupy(sim) >= def.prog) zacznijFale(sim, st);
   }
   if (st.trwa && sim.tick % 30 === 0) rycerzeDoWalki(sim);
+  if (st.trwa && sim.tick % 30 === 15 && trybWiernych(sim)) wierniDoWalki(sim);
+}
+
+/** Ostatnia deska: pobożni w zasięgu ruszają z księgą na najbliższego Strażnika (pomocników bossa też). */
+function wierniDoWalki(sim: Sim): void {
+  const wrogowie = zywiStraznicy(sim);
+  if (!wrogowie.length) return;
+  const nazwa = aktywnyBoss().nazwa;
+  for (const c of sim.creatures) {
+    if (c.dead || rolaPostaci(c) !== 'pobozny') continue;
+    let best: Creature | null = null, bd = aktywnyBoss().ksiega.widzi;
+    for (const s of wrogowie) { const d = Math.hypot(s.x - c.x, s.y - c.y); if (d < bd) { bd = d; best = s; } }
+    if (!best) continue;
+    if (c.job === Job.FIGHT && sim.target.get(c.id) === best.id) continue;
+    sim.target.set(c.id, best.id);
+    c.job = Job.FIGHT; c.jt = 600; c.droga = undefined;
+    c.zamiar = best.boss ? `unosi księgę przeciw: ${nazwa}` : 'unosi księgę przeciw Strażnikowi Snu';
+    c.zamiarDo = sim.tick + 600;
+    c.wyprawa = false;
+  }
+}
+
+/** Pobożny z księgą: razi bossa z dystansu, a gdy ten podejdzie zbyt blisko — cofa się. */
+export function walczKsiega(sim: Sim, c: Creature, s: Creature, idzDo: (x: number, y: number) => void): void {
+  const K = aktywnyBoss().ksiega;
+  const d = Math.hypot(s.x - c.x, s.y - c.y);
+  c.face = s.x > c.x ? 1 : -1;
+  // cofa się przed każdym Strażnikiem, który podszedł za blisko (nie tylko przed celem)
+  let zagr: Creature | null = null, zd = K.cofa;
+  for (const o of zywiStraznicy(sim)) { const od = Math.hypot(o.x - c.x, o.y - c.y); if (od < zd) { zd = od; zagr = o; } }
+  if (zagr) { idzDo(Math.floor(c.x + Math.sign(c.x - zagr.x || 1) * 5), Math.floor(c.y)); return; }
+  if (d > K.zasieg) { idzDo(Math.floor(s.x), Math.floor(s.y)); return; }
+  if (sim.tick - (c.ksiegaT ?? -1e9) < K.co) return;
+  c.ksiegaT = sim.tick;
+  // promień z księgi do bossa
+  for (let k = 1; k <= 5; k++) sim.spark(c.x + (s.x - c.x) * k / 6, c.y - 0.6 + (s.y - c.y) * k / 6, 'pray');
+  ranStraznika(sim, s, c, K.rana * mnoznik(sim, c, 'modlitwa'));
 }
 
 function zacznijFale(sim: Sim, st: StanStraznikow): void {

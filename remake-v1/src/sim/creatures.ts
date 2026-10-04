@@ -11,7 +11,7 @@ import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi } from './pielgrzymka';
 import { gniazdaWSkale, obudzGniazdo, podloga } from './lud';
-import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy } from './straznicy';
+import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy, trybWiernych, walczKsiega } from './straznicy';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { zajecieBuntownika } from './bunt';
 import { obozFrontowy, wszystkieSpizarnie as wszystkieSpizarnieLudu, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
@@ -114,6 +114,8 @@ export interface Creature {
   boss?: string;
   /** Etap 3: tik ostatniego ciosu, największe życie (pasek), tik ostatniego zasypania drogi (boss). */
   ciosT?: number;
+/** Remake v1: tik ostatniego rażenia księgą (pobożny przeciw bossowi, ostatnia deska) */
+ksiegaT?: number;
   hpMax?: number;
   zasypT?: number;
   /** Etap 2: obóz, którego rycerz pilnuje (trzyma się go, póki jest tam jedzenie). */
@@ -762,7 +764,8 @@ function planujLud(sim: Sim, c: Creature): void {
   // (głodny, do którego żaden Strażnik nie jest blisko, najpierw idzie jeść — na skraju strefy uciekali w kółko
   // i umierali z głodu po kilku naraz)
   const glodnyBezpieczny = c.hunger > LUD.glodSam && !zywiStraznicy(sim).some((s) => Math.hypot(s.x - c.x, s.y - c.y) < STRAZNICY.glodnyNieUciekaOd);
-  if (falaZwykla(sim) && rola !== 'rycerz' && !glodnyBezpieczny && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas)) {
+  // (ostatnia deska: pobożni nie uciekają — stają przeciw bossowi z księgą)
+  if (falaZwykla(sim) && rola !== 'rycerz' && !(rola === 'pobozny' && trybWiernych(sim)) && !glodnyBezpieczny && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas)) {
     // najchętniej do najbliższej spiżarni poza strefą (tam przeczeka i zje), inaczej byle dalej
     const sp = spizarnieWgOdleglosci(sim, c.x, c.y, false).find((o) => !wStrefieStraznikow(sim, o.x, o.y, STRAZNICY.ucieczkaZapas));
     const d = (sp ? droga((x, y) => Math.abs(x - sp.x) <= 3 && Math.abs(y - sp.y) <= 2 && stoi(sim, x, y), LUD.dostawaLimit) : null)
@@ -1886,6 +1889,11 @@ function doFight(sim: Sim, c: Creature): void {
   if (foe.straznik || foe.buntownik || c.buntownik) {
     // etap 4: z buntownikami (i buntownicy z ludem) też w rytmie ciosów
     if (c.buntownik && foe.straznik) { sim.target.delete(c.id); c.jt = 0; return; }
+    // ostatnia deska: pobożny razi Strażników (i bossa) księgą z dystansu
+    if (foe.straznik && rolaPostaci(c) === 'pobozny' && trybWiernych(sim)) {
+      walczKsiega(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); });
+      return;
+    }
     walczZeStraznikiem(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); });
     return;
   }

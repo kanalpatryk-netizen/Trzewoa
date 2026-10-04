@@ -216,7 +216,7 @@ export const ROZDZIALY: Rozdzial[] = [
         wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
       },
       {
-        tekst: 'Śniącego Kamienia rani tylko rycerz. Słabnie, gdy pod rdzeniem modli się trzech pobożnych, a zasypaną przez niego drogę odkopują robotnicy. Gdy przez 2 minuty nie ma przed nim rycerza, zapada w ścianę na 4 minuty i zdradza jedno gniazdo — wtedy zbierz rycerzy.',
+        tekst: 'Śniącego Kamienia rani tylko rycerz. Słabnie, gdy pod rdzeniem modli się trzech pobożnych, a zasypaną przez niego drogę odkopują robotnicy. Gdy przez 2 minuty nie ma przed nim rycerza, zapada w ścianę na 4 minuty i zdradza jedno gniazdo — wtedy zbierz rycerzy. Gdy gniazda są już rozkopane, a rycerzy brak, nie zasypia — wtedy pobożni unoszą księgi i razią go z dystansu.',
         rozumiem: true,
       },
     ],

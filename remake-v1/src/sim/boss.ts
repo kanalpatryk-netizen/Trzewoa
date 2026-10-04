@@ -12,7 +12,7 @@ import type { Creature } from './creatures';
 import { T } from './tiles';
 import { AKTYWNY_BOSS, SNIACY_KAMIEN as K, type IdBossa } from '../nastawy/boss';
 import { STRAZNICY as S } from '../nastawy/straznicy';
-import { nowyStraznik, ruchStraznika, celStraznika, ciosStraznika } from './straznicy';
+import { nowyStraznik, ruchStraznika, celStraznika, ciosStraznika, trybWiernych } from './straznicy';
 import { rolaPostaci } from './lud';
 
 export interface Boss {
@@ -25,6 +25,8 @@ export interface Boss {
   pojaw(sim: Sim): Creature | null;
   tik(sim: Sim, c: Creature): void;
   przyjmij(sim: Sim, c: Creature, od: Creature, rana: number): number;
+  /** ostatnia deska: jak razi go pobożny z księgą (zasięg, rytm, rana, kiedy się cofa) */
+  ksiega: { zasieg: number; co: number; rana: number; cofa: number; widzi: number };
 }
 
 /** Ilu wiernych modli się teraz pod rdzeniem (liczy rytuał). */
@@ -64,8 +66,10 @@ const sniacyKamien: Boss = {
     c.ciosT = sim.tick;
     ciosStraznika(sim, c, cel, K.sila);
   },
+  ksiega: { zasieg: K.ksiegaZasieg, co: K.ksiegaCo, rana: K.ksiegaRana, cofa: K.ksiegaCofa, widzi: K.ksiegaWidzi },
   przyjmij(sim, _c, od, rana) {
-    if (K.tylkoRycerze && rolaPostaci(od) !== 'rycerz') return 0;
+    // (ostatnia deska: bez rycerzy i bez gniazd ranią go też pobożni — księgą)
+    if (K.tylkoRycerze && rolaPostaci(od) !== 'rycerz' && !(rolaPostaci(od) === 'pobozny' && trybWiernych(sim))) return 0;
     return modlacych(sim) >= K.modlitwaWiernych ? rana * K.modlitwaRany : rana;
   },
 };

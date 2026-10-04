@@ -29,7 +29,8 @@ export function kandydaciLudu(sim: Sim, st: StanWydarzen): Kandydat[] {
 
   // --- spisek rycerzy
   const czeka = st.odroczone.some((o) => o.karta === 'bunt');
-  if (surowe && role.rycerz >= K.spisekMinRycerzy && !czeka && !buntownicy(sim).length) out.push({ rodzaj: 'spisek', waga: 2.5, zbuduj: () => {
+  if (surowe && role.rycerz >= K.spisekMinRycerzy && !czeka && !buntownicy(sim).length && sim.tick >= (sim.lud.spisekPo ?? 0)) out.push({ rodzaj: 'spisek', waga: K.spisekWaga, zbuduj: () => {
+    sim.lud.spisekPo = sim.tick + K.spisekPrzerwa;
     const wybory = [
       wybor('stlum', `Zgładź spiskowców (${K.spisekSpiskowcow})`, `Zginą — spisek umrze z nimi. Ich śmierć to twoja krew.`, 0, K.spisekStlum),
       wybor('przekup', 'Kup ich wierność', 'Dostaną krew i najlepsze miejsce przy spiżarni. Spisek się rozwieje.', K.spisekPrzekup),

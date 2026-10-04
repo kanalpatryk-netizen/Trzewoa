@@ -33,4 +33,12 @@ export const SNIACY_KAMIEN = {
   modlitwaWiernych: 3, modlitwaRany: 1.6,
   /** bez tej modlitwy zrasta się o tyle życia na tik */
   zrastanie: 0.03,
+  /**
+   * Ostatnia deska: gdy nie ma już ani rycerzy, ani nieodkopanych gniazd, rani go też pobożny —
+   * unosi przed siebie księgę i razi z dystansu `ksiegaZasieg` kafli, co `ksiegaCo` tików za
+   * `ksiegaRana`; gdy boss podejdzie bliżej niż `ksiegaCofa`, pobożny się cofa.
+   */
+  ksiegaZasieg: 9, ksiegaCo: 150, ksiegaRana: 2, ksiegaCofa: 6,
+  /** z jak daleka (kafle) pobożni ruszają na Strażników z księgą */
+  ksiegaWidzi: 60,
 };

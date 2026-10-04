@@ -44,7 +44,9 @@ i otwórz w przeglądarce.
   (rejestr `BOSSOWIE` i `AKTYWNY_BOSS`). Fale: `src/nastawy/straznicy.ts`.
   Gdy przez 2 minuty nie ma przed nim żadnego rycerza, zapada w ścianę na 4 minuty (skorupa wtedy nie
   pęka, pasek pokazuje odliczanie) i zdradza jedno gniazdo — lud może odżyć i zebrać rycerzy.
-- **Nowa talia kart:** spisek rycerzy (zostawiony po 2 min wybucha buntem — część rycerzy zmienia barwy
+  Gdy wszystkie gniazda są już rozkopane, a rycerzy brak, boss nie zasypia: pobożni unoszą księgi
+  i razią Strażników z dystansu (9 kafli, cofają się, gdy wróg podejdzie), a boss i jego słudzy biją ich.
+- **Nowa talia kart:** spisek rycerzy (rzadki — najwyżej raz na 5 min; zostawiony po 2 min wybucha buntem — część rycerzy zmienia barwy
   i bije lud; wierni rycerze ruszają na nich sami), zatrute plony, woda nad obozem, zawał nad drogą
   wiernych, sen o kamiennych rycerzach (pokazuje gniazdo). Liczby: `src/nastawy/karty-ludu.ts`.
 - **Klamry** widać przy ścianach szybów (zaczepy) i w pustce (liny).

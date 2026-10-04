@@ -31,6 +31,8 @@ export interface StanLudu {
   nastepne: number;
   /** Tik ostatnich przenosin siedziby. */
   siedzibaT: number;
+  /** Karta spisku nie wróci przed tym tikiem (przerwa po poprzednim spisku). */
+  spisekPo?: number;
   /** Stara spiżarnia po przenosinach — robotnicy znoszą z niej jedzenie do nowej siedziby. */
   sklad: { x: number; y: number; ilosc: number } | null;
   /** Odcięte grupki (liczone przy przenosinach siedziby). */

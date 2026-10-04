@@ -1,6 +1,8 @@
 # Zmiany
 
 ## Remake v1 (komputer) — poprawki po etapie 4
+- Spisek rycerzy rzadszy: mniejsza waga w losowaniu i najwyżej jeden na 5 minut
+- Pobożni z księgą: gdy w ostatniej fali nie ma już gniazd ani rycerzy, pobożni unoszą księgi i razią Strażników z dystansu (cofają się, gdy wróg podejdzie); boss i słudzy biją ich — boss nie zasypia w tej sytuacji
 - Uprawa: przy spiżarni, przy której pracuje robotnik, grzyb sam odrasta (do 8 sztuk) — grzyb wokół
   siedziby kończył się po kilku minutach i lud wymierał z głodu
 - Przy małej liczbie robotników mniej z nich kopie drogę do rdzenia (zawsze ktoś zbiera jedzenie)

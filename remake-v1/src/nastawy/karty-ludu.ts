@@ -6,6 +6,8 @@
 export const KARTY_LUDU = {
   /** Spisek: co najmniej tylu rycerzy; zgładzenie zabija `spisekSpiskowcow`, przekupstwo kosztuje krew. */
   spisekMinRycerzy: 4, spisekSpiskowcow: 2, spisekPrzekup: 25, spisekStlum: 6,
+  /** Waga karty spisku w losowaniu (była 2,5 — spiski zabierały rycerzy, potrzebnych na bossa) i przerwa po spisku (5 min). */
+  spisekWaga: 1, spisekPrzerwa: 36000,
   /** Zostawiony spisek wraca jako bunt po tylu tikach (2 min); buntuje się taka część rycerzy (co najmniej 1). */
   buntPo: 14400, buntCzesc: 0.4,
   /** Bunt: „przemów do nich” (wiara) zawraca połowę buntowników; „oddaj obóz” — odchodzą z jedzeniem. */
