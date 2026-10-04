@@ -33,12 +33,13 @@ i otwórz w przeglądarce.
   W gniazdo **pokazane** (karta snu albo uśpiony boss) trafia bez zgadywania: robotnik dochodzi jak
   najbliżej i kopie wyliczoną trasą. Gdy ogień lub woda zagrodzi tunel tuż przy gnieździe (≤6 kafli),
   rycerze słyszą kopanie i przebijają się sami.
+- **Szept „kop losowo”** (tylko rycerz, 4 wiary): wykopuje ~10 połączonych kafli skały obok siebie (w bok i w dół), kopiąc jak robotnik — na chybił trafił; trafi blisko śpiącego gniazda, to je budzi.
 - **Weterani:** po 4 minutach w ludzie, póki najedzony, a lud wierny — +30% siły, szybkości, kopania
   i modlitwy, jasna aureola. Na karcie widać też „weteran bez premii” i dlaczego.
 - **Strażnicy Snu** wychodzą spod skorupy przy 20, 45 i 70% jej skruszenia; przy 90% przychodzi boss.
   Dopóki fala trwa, skorupa nie pęka i nikt nie wejdzie do rdzenia. Walczą rycerze (Strażnicy biorą
   ich na cel najpierw); pobożni i robotnicy odchodzą spod rdzenia. Za pokonaną falę: wiara.
-- **Boss — Śniący Kamień:** rani go tylko rycerz, a rycerze ruszają na niego dopiero we trzech (mniej czeka z dala od rdzenia, aż przyjdą nowi z gniazd; gdy gniazd już nie ma, idą, ilu jest — `rycerzyNaBossa` w `src/nastawy/straznicy.ts`); co jakiś czas zasypuje kawałek drogi wiernych
+- **Boss — Śniący Kamień:** rani go tylko rycerz, a rycerze ruszają na niego dopiero we trzech (mniej czeka na skraju strefy i broni się, gdy coś podejdzie, aż przyjdą nowi z gniazd; gdy gniazd już nie ma, idą, ilu jest — `rycerzyNaBossa` w `src/nastawy/straznicy.ts`); co jakiś czas zasypuje kawałek drogi wiernych
   (robotnicy muszą ją odkopać); słabnie, gdy pod rdzeniem modli się trzech pobożnych, a bez modlitwy
   się zrasta. Bossa łatwo podmienić: nastawy w `src/nastawy/boss.ts`, zachowanie w `src/sim/boss.ts`
   (rejestr `BOSSOWIE` i `AKTYWNY_BOSS`). Fale: `src/nastawy/straznicy.ts`.

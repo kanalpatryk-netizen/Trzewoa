@@ -124,6 +124,8 @@ export const LUD = {
    * torów oddalonych o `przemyslRozstaw` kafli (w poprzek kierunku kopania); każdy kopacz bierze
    * tor, którego nikt jeszcze nie sprawdził. Jeden trafia raz na trzy, trzech — na pewno.
    */
+  /** Szept „kop losowo” (tylko rycerz): wykopuje tyle połączonych kafli skały obok siebie, kopiąc `losowoTempo` razy szybciej niż zwykle (rycerz kopie słabo). */
+  losowoKafli: 10, losowoTempo: 3,
   przemyslModlitwa: 720, przemyslRozstaw: 8, przemyslTempo: 0.7, przemyslBledow: 4,
   /** Tunel zagrodzony najdalej tyle kafli (w kratkach) od gniazda — rycerze słyszą kopanie i przebijają się sami. */
   gniazdoUslyszy: 6,

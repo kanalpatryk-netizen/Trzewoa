@@ -540,7 +540,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'boss', grupa: 'prawa', nazwa: 'Śniący Kamień', lacina: 'Lapis somnians',
-    opis: 'Ostatnia fala, przy 90% skorupy. Wielki strażnik wychodzi ze ściany przedsionka. Rani go tylko rycerz. Na bossa rycerze ruszają dopiero we trzech — mniej czeka z dala od rdzenia (gdy gniazd już nie ma, idą, ilu jest). Co jakiś czas uderza w ziemię i zasypuje kawałek drogi wiernych. Gdy pod rdzeniem modli się trzech pobożnych, słabnie — bez modlitwy się zrasta. Gdy przez 2 minuty nie ma przed nim żadnego rycerza, zapada w ścianę na 4 minuty (skorupa wtedy nie pęka) i we śnie zdradza jedno gniazdo rycerzy. Gdy gniazda są już rozkopane, a rycerzy brak, nie zasypia — wtedy pobożni unoszą księgi i razią go z dystansu.',
+    opis: 'Ostatnia fala, przy 90% skorupy. Wielki strażnik wychodzi ze ściany przedsionka. Rani go tylko rycerz. Na bossa rycerze ruszają dopiero we trzech — mniej czeka na skraju i broni się, gdy coś podejdzie (gdy gniazd już nie ma, idą, ilu jest). Co jakiś czas uderza w ziemię i zasypuje kawałek drogi wiernych. Gdy pod rdzeniem modli się trzech pobożnych, słabnie — bez modlitwy się zrasta. Gdy przez 2 minuty nie ma przed nim żadnego rycerza, zapada w ścianę na 4 minuty (skorupa wtedy nie pęka) i we śnie zdradza jedno gniazdo rycerzy. Gdy gniazda są już rozkopane, a rycerzy brak, nie zasypia — wtedy pobożni unoszą księgi i razią go z dystansu.',
     kiedy: 'Wszyscy rycerze pod rdzeń, trzech pobożnych do modlitwy, robotnicy przy drodze. Życie bossa widać na pasku nad płytą.',
     rycina: skorupa,
   },

@@ -259,7 +259,20 @@ function rycerzeDoWalki(sim: Sim): void {
   // za mało rycerzy na bossa — przerywają walkę i odchodzą spod rdzenia (planer prowadzi ich do obozu)
   if (rycerzeCzekaja(sim)) {
     for (const c of sim.creatures) {
-      if (c.dead || rolaPostaci(c) !== 'rycerz' || c.job !== Job.FIGHT) continue;
+      if (c.dead || rolaPostaci(c) !== 'rycerz') continue;
+      // broni się przed tym, co podeszło blisko — dalszych nie goni
+      let blisko: Creature | null = null, bd = S.rycerzBroniSieOd;
+      for (const s of wrogowie) { const d = Math.hypot(s.x - c.x, s.y - c.y); if (d < bd) { bd = d; blisko = s; } }
+      if (blisko) {
+        if (c.job !== Job.FIGHT || sim.target.get(c.id) !== blisko.id) {
+          sim.target.set(c.id, blisko.id);
+          c.job = Job.FIGHT; c.jt = 240; c.droga = undefined; c.losowo = undefined;
+          c.zamiar = blisko.boss ? `broni się przed: ${aktywnyBoss().nazwa}` : 'broni się przed Strażnikiem Snu';
+          c.zamiarDo = sim.tick + 240;
+        }
+        continue;
+      }
+      if (c.job !== Job.FIGHT) continue;
       const cel = sim.creatureById(sim.target.get(c.id) ?? -1);
       if (cel && cel.straznik) { sim.target.delete(c.id); c.jt = 0; c.zamiarDo = sim.tick; }
     }
@@ -276,7 +289,7 @@ function rycerzeDoWalki(sim: Sim): void {
     }
     if (!best) continue;
     sim.target.set(c.id, best.id);
-    c.job = Job.FIGHT; c.jt = 600; c.droga = undefined;
+    c.job = Job.FIGHT; c.jt = 600; c.droga = undefined; c.losowo = undefined;
     c.zamiar = best.boss ? `walczy z: ${aktywnyBoss().nazwa}` : 'walczy ze Strażnikiem Snu';
     c.zamiarDo = sim.tick + 600;
     c.wyprawa = false;

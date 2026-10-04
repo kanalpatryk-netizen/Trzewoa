@@ -1,6 +1,8 @@
 # Zmiany
 
 ## Remake v1 (komputer) — poprawki po etapie 4
+- Rycerze przy bossie: gdy jest ich za mało, nie uciekają już do dalekiej spiżarni jak pobożni — stają tuż za skrajem strefy i bronią się przed Strażnikiem albo bossem, który podejdzie bliżej niż 4 kafle; na karcie „czeka na skraju (2/3)”
+- Nowy szept tylko dla rycerza: „kop losowo” (4 wiary) — wykopuje ~10 połączonych kafli skały obok siebie (w bok i w dół, tempem robotnika); trafi blisko śpiącego gniazda, to je budzi. Kafel, do którego nie da się podejść albo który nie daje się ruszyć, odpada
 - Kopacz drogi przy czole na linie albo przy ścianie trzyma chwyt, dopóki kuje — zsuwał się po chwili poza zasięg, wspinał z powrotem i kuł ułamek sekundy (pętla w górę i w dół po linie pod czołem drogi)
 - Menu główne: wersja gry („Remake v1”) małym drukiem w prawym dolnym rogu
 - Droga do rdzenia: czoło przy samej magmie (robotnicy tam nie kopią — wszyscy „odpoczywali przy spiżarni”) albo takie, które stoi 2 minuty mimo wysłanych kopaczy (wisiało nad szybem bez podłogi — zjeżdżali po linie i wracali w kółko), plan drogi omija przez 6 minut i liczy trasę od nowa; kopacz wybiera miejsce z podłogą albo ścianą. Bot na 64 światach: postoje drogi ponad 3 min z 5 światów (do 14 min) do 1 (3,5 min), 64/64 wygranych, średnio 10,4 min. Na ekranie liny tylko w pustce, jedną kreską (bez klamer przy ścianach). (Wcześniejsza próba — mniej lin w symulacji, zakaz przepaści, zakaz pól bez oparcia — odcinała lud od jedzenia i została cofnięta)
