@@ -1668,6 +1668,17 @@ function doZapas(sim: Sim, c: Creature): void {
   // dla szukania drogi, ale nie dla nóg, i głodni stali pod nią, aż padli
   if (Math.abs(c.jx - Math.floor(c.x)) > 2 || Math.abs(c.jy - Math.floor(c.y)) > 2) {
     if (c.jt <= 1) c.bezSpizarniDo = sim.tick + LUD.spizarniaPrzerwa;   // nie doszedł — na razie szuka grzyba
+    // ledwo żyje, a grzyb rośnie tuż obok drogi — zjada go po drodze (padali z głodu kilka kafli od grzybni)
+    if (c.hunger > LUD.zjadaNiesione && (c.id + sim.tick) % 30 === 0) {
+      const cx = Math.floor(c.x), cy = Math.floor(c.y);
+      for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) {
+        if (!sim.world.inb(cx + dx, cy + dy) || sim.world.tile[sim.world.idx(cx + dx, cy + dy)] !== T.FUNGUS) continue;
+        sim.world.set(cx + dx, cy + dy, T.AIR);
+        sim.meals++;
+        c.hunger = Math.max(0, c.hunger - K.kesGrzyba);
+        return;
+      }
+    }
     idz(sim, c, c.jx, c.jy);
     return;
   }
