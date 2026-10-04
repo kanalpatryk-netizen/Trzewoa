@@ -11,7 +11,7 @@
 - Ucieczka od ognia prawdziwą drogą do bezpiecznego miejsca (lud utykał w kieszeni przy magmie)
 - Lud nie przebija się do magmy nawet w obłędzie (pięciu robotników otworzyło kieszeń magmy nad szybem)
 - „Wraca do siedziby” idzie wyliczoną drogą — wcześniej na przełaj wpadał w ślepy szyb i ginął z głodu
-- Najazd ludzi schodzi ≥35 kafli od siedziby; bez „poprowadź ich na” własny lud; bot zawala wejście, gdy ma krew
+- Najazd ludzi schodzi ≥55 kafli od siedziby; bez „poprowadź ich na” własny lud; bot zawala wejście, gdy ma krew
 - Naprawiony skrypt testu balansu (znak ` w szablonie)
 - Tragarz, który słabnie z głodu, zjada niesione jedzenie (sześciu padło z pełnymi rękami)
 - Lud nad samą magmą wisi na klamrze zamiast zjeżdżać w ogień
@@ -32,6 +32,8 @@
 - Uprawa: gdy przy spiżarni nie ma podłogi (siedziba w pustej jaskini), sadzi szerzej (±14 kafli w bok, ±6 w pionie)
 - „Przemyśl i kop” do pokazanego gniazda: robotnik dochodzi zwykłą drogą jak najbliżej gniazda i stamtąd kopie wyliczoną trasą (BFS przez skałę z ominięciem ognia, wody i przepaści; gdy coś ją zagrodzi — liczy od nowa). Wcześniej w niektórych światach żadne gniazdo nie dawało się odkopać i rycerzy nie było wcale
 - Bot: przy pokazanym gnieździe wysyła jednego robotnika (wystarczy 6 wiary)
+- Najazd ludzi wraca na powierzchnię po 1,5 min (wcześniej błąkał się, aż trafił na siedzibę)
+- Sprawdzone też na 16 nowych światach (16–31): 16 wygranych; razem 30 z 32, 0 porażek
 - Na 16 światach: 15 wygranych, 1 partia trwa po 25 min, 0 porażek; zgonów z głodu łącznie 2 (na początku nocy ~37) — boss zasypia już po 2 min bez rycerzy (pielgrzymi czekający przy pustym obozie nie głodują)
 
 ## Remake v1 (komputer) — etap 4

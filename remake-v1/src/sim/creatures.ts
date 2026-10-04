@@ -5,7 +5,7 @@ import { Race, RACES } from './races';
 import { pielgrzymowKlanu, wKomorze } from './rytual';
 import { STWORZENIA as K } from '../nastawy/stworzenia';
 import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
-import { LUDY } from '../nastawy/gora';
+import { LUDY, PRZYPLYWY as PP } from '../nastawy/gora';
 import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi } from './droga';
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
@@ -546,7 +546,9 @@ function pickJob(sim: Sim, c: Creature): void {
   }
 
   // wróg w pobliżu
-  const foe = sim.nearestCreature(c.x, c.y, c.race === Race.HUMAN ? K.wrogZasiegLudzi : K.wrogZasieg, (o) => sim.hostile(c, o));
+  // (Remake v1: najazd, któremu minął czas, już nie walczy — wraca na powierzchnię)
+  const odchodzi = REMAKE && c.race === Race.HUMAN && c.od !== undefined && sim.tick - c.od > PP.ludzieWracajaPo;
+  const foe = odchodzi ? null : sim.nearestCreature(c.x, c.y, c.race === Race.HUMAN ? K.wrogZasiegLudzi : K.wrogZasieg, (o) => sim.hostile(c, o));
   if (foe) {
     const scary = RACES[foe.race].strength > d.strength * K.strasznyWrog;
     if (scary && rolaPostaci(c) !== 'rycerz' && sim.rng.chance(K.strachSzansa * d.fearGain * cechaNacji(sim.clans[c.clan]).strach)) {
@@ -1971,7 +1973,10 @@ function doDrain(sim: Sim, c: Creature): void {
 
 /** Ludzie nie mieszkają w tobie. Przychodzą po rudę i po sławę. */
 function doRaid(sim: Sim, c: Creature): void {
-  if (c.carry >= K.ludzieNiosa || c.hp < RACES[c.race].maxHp * K.ludzieRanni) {
+  // Remake v1: najazd ma swój czas — potem ludzie wracają na powierzchnię (wpuszczeni dwa razy z rzędu
+  // błąkali się, aż trafili na siedzibę, i wybijali cały lud)
+  const dosc = REMAKE && c.od !== undefined && sim.tick - c.od > PP.ludzieWracajaPo;
+  if (c.carry >= K.ludzieNiosa || c.hp < RACES[c.race].maxHp * K.ludzieRanni || dosc) {
     if (c.y < K.ludzieWychodza) { sim.leaveWorld(c); return; }
     walkTo(sim, c, c.x + sim.rng.range(-3, 3), 2);
     return;

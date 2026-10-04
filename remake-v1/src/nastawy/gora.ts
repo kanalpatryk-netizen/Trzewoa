@@ -277,6 +277,8 @@ export const PRZYPLYWY = {
   obcyOddanie: 0.22, obcyOddanieRozrzut: 0.3, obcyIlu: 4, obcyRozrzut: 4, obcyWiek: 800,
   /** Najazd ludzi: ilu + los do rozrzutu. */
   ludzieIlu: 5, ludzieRozrzut: 7,
+  /** Remake v1: po tylu tikach (1,5 min) najazd wraca na powierzchnię. */
+  ludzieWracajaPo: 10800,
   /** Powódź: świeże plemiona (młodsze niż tyle tików) są oszczędzane w tym odstępie. */
   swiezeTikow: 3000, powodzOdstep: 14,
   /** Powódź: tyle prób zalania, w pasie tylu kafli pod powierzchnią. */

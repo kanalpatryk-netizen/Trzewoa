@@ -1086,7 +1086,7 @@ export class Sim {
     }
     const clan = this.newClan(Race.HUMAN, x, y);
     const n = PP.ludzieIlu + this.rng.int(PP.ludzieRozrzut);
-    for (let i = 0; i < n; i++) this.spawn(Race.HUMAN, clan.id, x + this.rng.int(6) - 3, y);
+    for (let i = 0; i < n; i++) { const c = this.spawn(Race.HUMAN, clan.id, x + this.rng.int(6) - 3, y); if (c) c.od = this.tick; }
     this.lastTide = 'krucjata'; this.tideTick = this.tick;
     this.gdzie(clan.hx, clan.hy).log(`Z powierzchni zeszli ludzie: ${clan.name}. Szukają rudy i sławy.`, 'swiat');
   }
