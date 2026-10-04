@@ -77,7 +77,9 @@ export function terazDrogi(sim: Sim): Teraz {
       if (REMAKE && bossSpi(sim)) {
         // boss śpi, bo nie było rycerzy — wskazówka prowadzi do świecącego gniazda
         const g = (sim.lud.gniazda ?? []).find((o) => o.znany && !o.odkryte);
-        return { tekst: `${aktywnyBoss().nazwa} śpi w ścianie i wróci. Szepnij robotnikom „Przemyśl i kop” — świecące gniazdo da rycerzy.`, cel: g ? { x: g.x, y: g.y, r: 4, tekst: 'gniazdo rycerzy' } : przedsionek };
+        // (gdy wszystkie gniazda są już odkopane, nie ma czego szukać — nie odsyłamy gracza na marne)
+        if (!g) return { tekst: `${aktywnyBoss().nazwa} śpi w ścianie i wróci. Wszystkie gniazda rycerzy są już odkopane — ocal tych rycerzy, którzy jeszcze żyją, i trzymaj ich przy rdzeniu.`, cel: przedsionek };
+        return { tekst: `${aktywnyBoss().nazwa} śpi w ścianie i wróci. Szepnij robotnikom „Przemyśl i kop” — świecące gniazdo da rycerzy.`, cel: { x: g.x, y: g.y, r: 4, tekst: 'gniazdo rycerzy' } };
       }
       if (REMAKE && falaTrwa(sim)) return { tekst: 'Fala Strażników Snu — rycerze walczą, reszta odchodzi spod rdzenia. Dopóki fala trwa, skorupa nie pęka.', cel: przedsionek };
       return { tekst: REMAKE ? `Pobożni kruszą skorupę modlitwą — ${procentSkorupy(sim)}%. Pilnuj, żeby robotnicy mieli co im donosić.` : `Wierni kują skorupę — ${procentSkorupy(sim)}%. Pilnuj, żeby przy przedsionku było co jeść.`, cel: przedsionek };
