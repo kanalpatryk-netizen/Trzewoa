@@ -62,6 +62,7 @@ export class EkranUstawien implements Ekran {
       { typ: 'suwak', etykieta: 'Jasność świata', opis: 'jaśniej widać korytarze i mieszkańców', min: 1, max: 1.8, krok: 0.05, czytaj: () => ustawienia.jasnosc, zmien: (v) => ustaw('jasnosc', v), format: (v) => `${Math.round(v * 100)}%` },
       { typ: 'suwak', etykieta: 'Wielkość mieszkańców', opis: 'sylwetki w kaflach', min: 0.7, max: 2.2, krok: 0.1, czytaj: () => ustawienia.wielkoscSylwetek, zmien: (v) => ustaw('wielkoscSylwetek', v), format: (v) => `${v.toFixed(1)}×` },
       { typ: 'przelacznik', etykieta: 'Oddech kamienia', opis: 'powolne falowanie całego rysunku', czytaj: () => ustawienia.oddech, zmien: (v) => ustaw('oddech', v) },
+      { typ: 'przelacznik', etykieta: 'Nowe postacie', opis: 'cieniowane postacie ludu z płynnym ruchem; wyłączone — dawny rysunek z ryciny', czytaj: () => ustawienia.nowePostacie !== false, zmien: (v) => ustaw('nowePostacie', v) },
       { typ: 'przelacznik', etykieta: 'Ogranicz ruch', opis: 'wycisza drgania obrazu, dym i wiercenie się sylwetek', czytaj: () => ustawienia.ograniczRuch, zmien: (v) => ustaw('ograniczRuch', v) },
       // (bez przełącznika kroniki — na telefonie kronika jest tylko w zapiskach)
       { typ: 'przelacznik', etykieta: 'Spis ras', opis: 'wstęga warstw — najważniejszy wskaźnik w grze', czytaj: () => ustawienia.spisRas, zmien: (v) => ustaw('spisRas', v) },

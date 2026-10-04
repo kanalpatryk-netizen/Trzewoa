@@ -49,6 +49,7 @@ i otwórz w przeglądarce.
 - **Nowa talia kart:** spisek rycerzy (rzadki — najwyżej raz na 5 min; zostawiony po 2 min wybucha buntem — część rycerzy zmienia barwy
   i bije lud; wierni rycerze ruszają na nich sami), zatrute plony, woda nad obozem, zawał nad drogą
   wiernych, sen o kamiennych rycerzach (pokazuje gniazdo). Liczby: `src/nastawy/karty-ludu.ts`.
+- **Postacie ludu** (`src/render/postacie.ts`): cieniowane, z twarzami i płynnym ruchem — cykl chodu, zamach kilofem, klęczenie w modlitwie, cięcie mieczem; peleryna, pióropusz i szata mają bezwładność. Dawny rysunek: ustawienia → „Nowe postacie”.
 - **Klamry** widać przy ścianach szybów (zaczepy) i w pustce (liny).
 - **Bez snu góry.** Przegrywasz dopiero, gdy nie da się już wygrać: nie ma pobożnych,
   a nawet ofiara ze wszystkich nie da krwi na nowego.

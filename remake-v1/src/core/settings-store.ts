@@ -31,6 +31,8 @@ export interface Settings {
   wielkoscUI: number;
   /** Android: gra wchodzi na pełny ekran po „dotknij, aby się obudzić”. */
   pelnyEkran: boolean;
+  /** Remake v1: nowe postacie ludu (cieniowane, z ruchem wtórnym); wyłączone — stary rysunek z ryciny. */
+  nowePostacie: boolean;
 }
 
 export const DOMYSLNE: Settings = {
@@ -58,6 +60,7 @@ export const DOMYSLNE: Settings = {
   trudnosc: 'łaskawa',
   wielkoscUI: 1,
   pelnyEkran: true,
+  nowePostacie: true,
 };
 
 /**

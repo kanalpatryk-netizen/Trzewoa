@@ -1,6 +1,7 @@
 # Zmiany
 
 ## Remake v1 (komputer) — poprawki po etapie 4
+- Nowe postacie ludu (`src/render/postacie.ts`): cieniowane bryły, twarze (mrugają), jasna obwódka roli; robotnik w czapce z lampką i kamizelce, pobożny w szacie z kapturem, laską i krzyżem, rycerz w zbroi z tuniką, peleryną, pióropuszem, tarczą i mieczem. Animacje: cykl chodu i biegu z kołysaniem, zamach kilofem z wyczekaniem i odpryskami, klęczenie w modlitwie (co jakiś czas wznosi ręce, iskry z dłoni), cięcie mieczem ze śladem, wspinaczka ręka za ręką, spadanie, jedzenie, księga, worek na plecach tragarza; peleryna, pióropusz, kaptur i szata mają bezwładność, a zmiana czynności przechodzi płynnie. Dawny rysunek zostaje — przełącznik „Nowe postacie” w ustawieniach
 - Rycerze ruszają na bossa dopiero we trzech: mniej czeka z dala od rdzenia (boss tymczasem zasypia i zdradza kolejne gniazdo); gdy gniazd już nie ma, idą, ilu jest — pojedynczo ginęli od razu i partia stała w miejscu. Wstęga drogi mówi, ilu rycerzy brakuje
 - Robotnik zbiera grzyb i „wraca do siedziby” także przy spiżarni obozu — przy siedzibie na jałowej półce wszyscy robotnicy (również kopacze drogi) wracali do pustej siedziby, utykali na jej skraju, a rycerze pod rdzeniem umierali z głodu
 - Tunel ku gniazdu w górę: kopacz trzyma się ścian szybu i nie zsuwa się co chwilę; zsunięcie się i powrót na ten sam kafel nie zużywa limitu kroków — tory do pokazanych gniazd kończyły się „ogień zagrodził” kilkanaście kafli przed celem, choć ognia nie było (boss usypiał po kilka razy, a gniazdo zostawało w skale)
