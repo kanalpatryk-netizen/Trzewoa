@@ -19,7 +19,7 @@
 - Pod rdzeniem szaleństwo głębi nie łapie nikogo z ludu (warta rycerzy głodowała przez nie o połowę szybciej)
 - Głodny uwięziony w odciętej kieszeni (żadna droga do spiżarni) wkopuje się do najbliższej spiżarni
 - Woda wsiąka w pęknięcia skorupy — zalany szyb nad rdzeniem blokował wygraną mimo 12 pęknięć
-- Śniący Kamień bez rycerzy przez 3 min wraca do ściany na 4 min (skorupa wtedy nie pęka) i zdradza jedno gniazdo — koniec pata, w którym lud wymierał z głodu
+- Śniący Kamień bez rycerzy przez 2 min wraca do ściany na 4 min (skorupa wtedy nie pęka) i zdradza jedno gniazdo — koniec pata, w którym lud wymierał z głodu
 - Karta „Pobożni chcą zejść pod rdzeń” wysyła tylko pobożnych (zabierała robotnika z torem ku gniazdu — tor nie kończył się nigdy i blokował nowe próby); idący się modlić porzuca tor
 - Gniazdo pokazane (karta snu, uśpiony boss): „Przemyśl i kop” trafia w nie bez zgadywania
 - Głodny w płytkiej wodzie najpierw idzie jeść; głodny „czekający z dala od ognia” w odciętej kieszeni wkopuje się do spiżarni
@@ -32,7 +32,7 @@
 - Uprawa: gdy przy spiżarni nie ma podłogi (siedziba w pustej jaskini), sadzi szerzej (±14 kafli w bok, ±6 w pionie)
 - „Przemyśl i kop” do pokazanego gniazda: robotnik dochodzi zwykłą drogą jak najbliżej gniazda i stamtąd kopie wyliczoną trasą (BFS przez skałę z ominięciem ognia, wody i przepaści; gdy coś ją zagrodzi — liczy od nowa). Wcześniej w niektórych światach żadne gniazdo nie dawało się odkopać i rycerzy nie było wcale
 - Bot: przy pokazanym gnieździe wysyła jednego robotnika (wystarczy 6 wiary)
-- Na 16 światach: 15 wygranych, 1 partia trwa po 25 min, 0 porażek; zgonów z głodu łącznie 10 (na początku nocy ~37)
+- Na 16 światach: 15 wygranych, 1 partia trwa po 25 min, 0 porażek; zgonów z głodu łącznie 2 (na początku nocy ~37) — boss zasypia już po 2 min bez rycerzy (pielgrzymi czekający przy pustym obozie nie głodują)
 
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,

@@ -51,11 +51,11 @@ export const STRAZNICY = {
    */
   zasypiaPo: 21600,
   /**
-   * Boss bez przeciwnika: gdy przez tyle tików (3 min) pod rdzeniem nie ma ani jednego rycerza, wraca do ściany
+   * Boss bez przeciwnika: gdy przez tyle tików (2 min) pod rdzeniem nie ma ani jednego rycerza, wraca do ściany
    * i śpi `bossSpi` tików (4 min) — lud odżywa i zbiera rycerzy, skorupa w tym czasie nie pęka, potem boss wraca.
    * (Bez tego fala z bossem bez rycerzy trwała wiecznie i lud wymierał z głodu, czekając.)
    */
-  bossZasypiaBezRycerzy: 21600, bossSpi: 28800,
+  bossZasypiaBezRycerzy: 14400, bossSpi: 28800,
   /** Głodny z ludu nie ucieka przed falą (idzie jeść), dopóki żaden Strażnik nie jest bliżej niż tyle kafli. */
   glodnyNieUciekaOd: 12,
   /** Wiara za pokonaną falę. */
