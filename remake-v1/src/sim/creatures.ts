@@ -806,7 +806,9 @@ function planujLud(sim: Sim, c: Creature): void {
   const odOgnia = sim.tick - (c.odOgnia ?? -1e9) < Z;   // świeżo uciekł od ognia — nie wraca w jego stronę
   if (glodny && c.carry === 0) {
     if (sim.tick >= (c.bezSpizarniDo ?? 0)) {
-      for (const sp of spizarnieWgOdleglosci(sim, c.x, c.y, true).filter((sp) => !odOgnia || !sim.przyMagmie(sp.x, sp.y, 4)).slice(0, 3)) {
+      // (w czasie fali nie-rycerz nie idzie jeść do spiżarni w strefie Strażników — boss wybijał ich tam po kolei)
+      const wFali = falaZwykla(sim) && rola !== 'rycerz';
+      for (const sp of spizarnieWgOdleglosci(sim, c.x, c.y, true).filter((sp) => (!odOgnia || !sim.przyMagmie(sp.x, sp.y, 4)) && !(wFali && wStrefieStraznikow(sim, sp.x, sp.y, STRAZNICY.ucieczkaZapas))).slice(0, 3)) {
         const d = droga((x, y) => Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1, LUD.doSpizarni);
         if (d) { naDroge(d, sp.x, sp.y); zamiar(sp.baza ? 'idzie jeść do spiżarni w siedzibie' : 'idzie jeść do spiżarni obozu', Job.ZAPAS, podroz(d)); return; }
       }

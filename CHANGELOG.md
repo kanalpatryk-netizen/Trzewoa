@@ -33,7 +33,8 @@
 - Bot: przy pokazanym gnieździe wysyła jednego robotnika (wystarczy 6 wiary)
 - Najazd ludzi wraca na powierzchnię po 1,5 min (wcześniej błąkał się, aż trafił na siedzibę)
 - Karta „Woda nad obozem” → „Odwróć wodę”: woda naprawdę spływa daleko od siedziby i obozów (losowa powódź potrafiła trafić prosto nad obóz i utopić kilku)
-- Wynik bota (ostatni pomiar, 64 światy): 58 wygranych, 1 porażka, 5 partii trwa po 25 min; mediana partii ok. 9 min.
+- W czasie fali głodny nie-rycerz nie idzie jeść do spiżarni w strefie Strażników (boss wybijał ich tam po kolei)
+- Wynik bota (ostatni pomiar, 64 światy): 58 wygranych, 0 porażek, 6 partii trwa po 25 min; mediana partii ok. 9 min.
   Przebiegi są chaotyczne — jedna inna karta zmienia całą partię; wersja tuż przed ostatnią poprawką miała 61/64.
   Zgonów z głodu na 16 pierwszych światach: z ~37 na początku poprawek do kilku; w magmie 0
 
