@@ -38,7 +38,7 @@ i otwórz w przeglądarce.
 - **Strażnicy Snu** wychodzą spod skorupy przy 20, 45 i 70% jej skruszenia; przy 90% przychodzi boss.
   Dopóki fala trwa, skorupa nie pęka i nikt nie wejdzie do rdzenia. Walczą rycerze (Strażnicy biorą
   ich na cel najpierw); pobożni i robotnicy odchodzą spod rdzenia. Za pokonaną falę: wiara.
-- **Boss — Śniący Kamień:** rani go tylko rycerz; co jakiś czas zasypuje kawałek drogi wiernych
+- **Boss — Śniący Kamień:** rani go tylko rycerz, a rycerze ruszają na niego dopiero we trzech (mniej czeka z dala od rdzenia, aż przyjdą nowi z gniazd; gdy gniazd już nie ma, idą, ilu jest — `rycerzyNaBossa` w `src/nastawy/straznicy.ts`); co jakiś czas zasypuje kawałek drogi wiernych
   (robotnicy muszą ją odkopać); słabnie, gdy pod rdzeniem modli się trzech pobożnych, a bez modlitwy
   się zrasta. Bossa łatwo podmienić: nastawy w `src/nastawy/boss.ts`, zachowanie w `src/sim/boss.ts`
   (rejestr `BOSSOWIE` i `AKTYWNY_BOSS`). Fale: `src/nastawy/straznicy.ts`.

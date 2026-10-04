@@ -44,6 +44,24 @@ export function trybWiernych(sim: Sim): boolean {
   return !sim.creatures.some((c) => !c.dead && rolaPostaci(c) === 'rycerz');
 }
 
+/** Ilu rycerzy jest w ludzie (bez buntowników). */
+export function iluRycerzy(sim: Sim): number {
+  let n = 0;
+  for (const c of sim.creatures) if (!c.dead && !c.buntownik && rolaPostaci(c) === 'rycerz') n++;
+  return n;
+}
+
+/**
+ * Trwa fala z bossem, a rycerzy jest za mało, żeby ruszyć (`rycerzyNaBossa`) — czekają z dala od rdzenia
+ * na towarzyszy. Gdy w skale nie ma już gniazd, nie ma na kogo czekać: idą, ilu jest.
+ */
+export function rycerzeCzekaja(sim: Sim): boolean {
+  const st = sim.lud.straznicy;
+  if (!st?.trwa || !S.fale[st.fala]?.boss) return false;
+  if (gniazdaWSkale(sim).length === 0) return false;
+  return iluRycerzy(sim) < S.rycerzyNaBossa;
+}
+
 /** Czy boss śpi w ścianie (wrócił, bo nie miał z kim walczyć) — skorupa wtedy nie pęka. */
 export function bossSpi(sim: Sim): boolean {
   return sim.tick < (sim.lud.straznicy?.bossSpiDo ?? 0);
@@ -238,6 +256,15 @@ function zacznijFale(sim: Sim, st: StanStraznikow): void {
 function rycerzeDoWalki(sim: Sim): void {
   const wrogowie = zywiStraznicy(sim);
   if (!wrogowie.length) return;
+  // za mało rycerzy na bossa — przerywają walkę i odchodzą spod rdzenia (planer prowadzi ich do obozu)
+  if (rycerzeCzekaja(sim)) {
+    for (const c of sim.creatures) {
+      if (c.dead || rolaPostaci(c) !== 'rycerz' || c.job !== Job.FIGHT) continue;
+      const cel = sim.creatureById(sim.target.get(c.id) ?? -1);
+      if (cel && cel.straznik) { sim.target.delete(c.id); c.jt = 0; c.zamiarDo = sim.tick; }
+    }
+    return;
+  }
   for (const c of sim.creatures) {
     if (c.dead || rolaPostaci(c) !== 'rycerz') continue;
     const obecny = sim.creatureById(sim.target.get(c.id) ?? -1);

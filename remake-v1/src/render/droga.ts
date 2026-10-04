@@ -2,7 +2,8 @@ import { REMAKE } from '../nastawy/lud';
 import { grzybPrzy } from '../sim/lud';
 import type { Plate } from './plate';
 import { procentSkorupy } from '../sim/rytual';
-import { bossSpi, falaTrwa, trybWiernych } from '../sim/straznicy';
+import { bossSpi, falaTrwa, trybWiernych, rycerzeCzekaja, iluRycerzy } from '../sim/straznicy';
+import { STRAZNICY } from '../nastawy/straznicy';
 import { aktywnyBoss } from '../sim/boss';
 import type { Sim } from '../sim/sim';
 import { RACES, Race } from '../sim/races';
@@ -81,6 +82,7 @@ export function terazDrogi(sim: Sim): Teraz {
         if (!g) return { tekst: `${aktywnyBoss().nazwa} śpi w ścianie i wróci. Wszystkie gniazda rycerzy są już odkopane — ocal tych rycerzy, którzy jeszcze żyją, i trzymaj ich przy rdzeniu.`, cel: przedsionek };
         return { tekst: `${aktywnyBoss().nazwa} śpi w ścianie i wróci. Szepnij robotnikom „Przemyśl i kop” — świecące gniazdo da rycerzy.`, cel: { x: g.x, y: g.y, r: 4, tekst: 'gniazdo rycerzy' } };
       }
+      if (REMAKE && rycerzeCzekaja(sim)) return { tekst: `${aktywnyBoss().nazwa} czeka pod rdzeniem. Rycerzy jest ${iluRycerzy(sim)} z ${STRAZNICY.rycerzyNaBossa} — czekają z dala, aż zbierze się ich dość. Szepnij robotnikom „Przemyśl i kop”.`, cel: przedsionek };
       if (REMAKE && falaTrwa(sim) && trybWiernych(sim)) return { tekst: 'Fala Strażników Snu — nie ma rycerzy ani gniazd: pobożni unoszą księgi i razią Strażników z dystansu.', cel: przedsionek };
       if (REMAKE && falaTrwa(sim)) return { tekst: 'Fala Strażników Snu — rycerze walczą, reszta odchodzi spod rdzenia. Dopóki fala trwa, skorupa nie pęka.', cel: przedsionek };
       return { tekst: REMAKE ? `Pobożni kruszą skorupę modlitwą — ${procentSkorupy(sim)}%. Pilnuj, żeby robotnicy mieli co im donosić.` : `Wierni kują skorupę — ${procentSkorupy(sim)}%. Pilnuj, żeby przy przedsionku było co jeść.`, cel: przedsionek };

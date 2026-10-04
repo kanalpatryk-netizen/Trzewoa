@@ -56,6 +56,11 @@ export const STRAZNICY = {
    * (Bez tego fala z bossem bez rycerzy trwała wiecznie i lud wymierał z głodu, czekając.)
    */
   bossZasypiaBezRycerzy: 14400, bossSpi: 28800,
+  /**
+   * Na bossa rycerze ruszają dopiero razem: dopóki w ludzie jest ich mniej niż tyle (a w skale śpią jeszcze
+   * gniazda), czekają z dala od rdzenia — pojedynczo ginęli od razu. Gdy gniazd już nie ma, idą, ilu jest.
+   */
+  rycerzyNaBossa: 3,
   /** Głodny z ludu nie ucieka przed falą (idzie jeść), dopóki żaden Strażnik nie jest bliżej niż tyle kafli. */
   glodnyNieUciekaOd: 12,
   /** Wiara za pokonaną falę. */

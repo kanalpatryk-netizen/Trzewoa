@@ -11,7 +11,7 @@ import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi } from './pielgrzymka';
 import { gniazdaWSkale, obudzGniazdo, podloga } from './lud';
-import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy, trybWiernych, walczKsiega } from './straznicy';
+import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy, trybWiernych, rycerzeCzekaja, walczKsiega } from './straznicy';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { zajecieBuntownika } from './bunt';
 import { obozFrontowy, wszystkieSpizarnie as wszystkieSpizarnieLudu, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
@@ -765,12 +765,14 @@ function planujLud(sim: Sim, c: Creature): void {
   // i umierali z głodu po kilku naraz)
   const glodnyBezpieczny = c.hunger > LUD.glodSam && !zywiStraznicy(sim).some((s) => Math.hypot(s.x - c.x, s.y - c.y) < STRAZNICY.glodnyNieUciekaOd);
   // (ostatnia deska: pobożni nie uciekają — stają przeciw bossowi z księgą)
-  if (falaZwykla(sim) && rola !== 'rycerz' && !(rola === 'pobozny' && trybWiernych(sim)) && !glodnyBezpieczny && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas)) {
+  // (rycerze też, gdy jest ich za mało na bossa — czekają na towarzyszy)
+  const czeka = rola === 'rycerz' && rycerzeCzekaja(sim);
+  if ((falaZwykla(sim) || czeka) && (rola !== 'rycerz' || czeka) && !(rola === 'pobozny' && trybWiernych(sim)) && !glodnyBezpieczny && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas)) {
     // najchętniej do najbliższej spiżarni poza strefą (tam przeczeka i zje), inaczej byle dalej
     const sp = spizarnieWgOdleglosci(sim, c.x, c.y, false).find((o) => !wStrefieStraznikow(sim, o.x, o.y, STRAZNICY.ucieczkaZapas));
     const d = (sp ? droga((x, y) => Math.abs(x - sp.x) <= 3 && Math.abs(y - sp.y) <= 2 && stoi(sim, x, y), LUD.dostawaLimit) : null)
       ?? droga((x, y) => !wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas) && stoi(sim, x, y), LUD.dostawaLimit);
-    if (d) { naDroge(d); zamiar('odchodzi spod rdzenia przed Strażnikami Snu', Job.WANDER, podroz(d)); return; }
+    if (d) { naDroge(d); zamiar(czeka ? `czeka na towarzyszy — na bossa ruszą, gdy będzie ich ${STRAZNICY.rycerzyNaBossa}` : 'odchodzi spod rdzenia przed Strażnikami Snu', Job.WANDER, podroz(d)); return; }
   }
   // pielgrzym trzyma się wyprawy, aż dojdzie (albo aż ty ją przerwiesz) — wcześniej porzucał ją po minucie
   if ((c.job === Job.PIELGRZYM || c.wyprawa) && sim.tick >= (c.bezModlitwyDo ?? 0) && c.hunger < LUD.glodSam) {
@@ -809,7 +811,7 @@ function planujLud(sim: Sim, c: Creature): void {
   const odOgnia = sim.tick - (c.odOgnia ?? -1e9) < Z;   // świeżo uciekł od ognia — nie wraca w jego stronę
   if (glodny && c.carry === 0) {
     // (w czasie fali nie-rycerz nie idzie jeść do spiżarni w strefie Strażników — boss wybijał ich tam po kolei)
-    const wFali = falaZwykla(sim) && rola !== 'rycerz';
+    const wFali = falaZwykla(sim) && (rola !== 'rycerz' || rycerzeCzekaja(sim));
     if (sim.tick >= (c.bezSpizarniDo ?? 0)) {
       for (const sp of spizarnieWgOdleglosci(sim, c.x, c.y, true).filter((sp) => (!odOgnia || !sim.przyMagmie(sp.x, sp.y, 4)) && !(wFali && wStrefieStraznikow(sim, sp.x, sp.y, STRAZNICY.ucieczkaZapas))).slice(0, 3)) {
         const d = droga((x, y) => Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1, LUD.doSpizarni);
@@ -882,7 +884,7 @@ function planujLud(sim: Sim, c: Creature): void {
   if (rola === 'rycerz') {
     // pobożni modlą się pod rdzeniem — rycerze idą z nimi na wartę (jedzenie donoszą robotnicy,
     // a przy warcie powstaje obóz, który zaopatrują)
-    if (wartaPotrzebna(sim)) {
+    if (wartaPotrzebna(sim) && !rycerzeCzekaja(sim)) {
       const strona = c.id % 2 ? -1 : 1;
       const naPoscie = (x: number, y: number, s: number) => {
         const od = (x - w.coreX) * s;
@@ -934,7 +936,7 @@ function stanPrzyObozie(sim: Sim, c: Creature, naDroge: (d: number[], x?: number
     c.posterunek = sp ? { x: sp.x, y: sp.y } : undefined;
   } else sp = stacjonuje(c) ? obozFrontowy(sim) : najblizszaSpizarnia(sim, c.x, c.y, false);
   // etap 3: w czasie fali Strażników nie-rycerze nie stają przy obozie pod rdzeniem
-  if (sp && rolaPostaci(c) !== 'rycerz' && falaZwykla(sim) && wStrefieStraznikow(sim, sp.x, sp.y, STRAZNICY.ucieczkaZapas)) {
+  if (sp && (rolaPostaci(c) !== 'rycerz' ? falaZwykla(sim) : rycerzeCzekaja(sim)) && wStrefieStraznikow(sim, sp.x, sp.y, STRAZNICY.ucieczkaZapas)) {
     sp = spizarnieWgOdleglosci(sim, c.x, c.y, false).find((o) => !wStrefieStraznikow(sim, o.x, o.y, STRAZNICY.ucieczkaZapas)) ?? null;
   }
   if (!sp) return false;
