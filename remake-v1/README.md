@@ -30,6 +30,9 @@ i otwórz w przeglądarce.
 - **Szept „Przemyśl i kop”** (robotnik, 6 wiary): klęka, prosi o znak, potem powoli kopie tunel ku
   najbliższemu gniazdu. Znak jest niedokładny — gniazdo leży na jednym z trzech torów; każdy kopacz
   bierze tor jeszcze niesprawdzony. Jeden trafia mniej więcej raz na trzy, trzech — na pewno.
+  W gniazdo **pokazane** (karta snu albo uśpiony boss) trafia bez zgadywania: robotnik dochodzi jak
+  najbliżej i kopie wyliczoną trasą. Gdy ogień lub woda zagrodzi tunel tuż przy gnieździe (≤6 kafli),
+  rycerze słyszą kopanie i przebijają się sami.
 - **Weterani:** po 4 minutach w ludzie, póki najedzony, a lud wierny — +30% siły, szybkości, kopania
   i modlitwy, jasna aureola. Na karcie widać też „weteran bez premii” i dlaczego.
 - **Strażnicy Snu** wychodzą spod skorupy przy 20, 45 i 70% jej skruszenia; przy 90% przychodzi boss.
@@ -39,6 +42,8 @@ i otwórz w przeglądarce.
   (robotnicy muszą ją odkopać); słabnie, gdy pod rdzeniem modli się trzech pobożnych, a bez modlitwy
   się zrasta. Bossa łatwo podmienić: nastawy w `src/nastawy/boss.ts`, zachowanie w `src/sim/boss.ts`
   (rejestr `BOSSOWIE` i `AKTYWNY_BOSS`). Fale: `src/nastawy/straznicy.ts`.
+  Gdy przez 2 minuty nie ma przed nim żadnego rycerza, zapada w ścianę na 4 minuty (skorupa wtedy nie
+  pęka, pasek pokazuje odliczanie) i zdradza jedno gniazdo — lud może odżyć i zebrać rycerzy.
 - **Nowa talia kart:** spisek rycerzy (zostawiony po 2 min wybucha buntem — część rycerzy zmienia barwy
   i bije lud; wierni rycerze ruszają na nich sami), zatrute plony, woda nad obozem, zawał nad drogą
   wiernych, sen o kamiennych rycerzach (pokazuje gniazdo). Liczby: `src/nastawy/karty-ludu.ts`.
@@ -51,5 +56,8 @@ Wszystkie cztery etapy zrobione — dalej: poprawki po testach.
 
 Film z rozgrywki: `film/remake-v1-etap4.webm`.
 
-Znane braki: balans fal i bossa (bez kilku rycerzy ostatnia fala jest nie do przejścia), stare tablice
-atlasu o dawnych rasach zostały jako punkt odniesienia.
+Stan po poprawkach (bot na 64 światach): 62 wygrane, 0 porażek, 2 partie przeciągają się ponad 25 min.
+
+Znane braki: gdy wszystkie gniazda są odkopane, a rycerze zginęli, bossa nie da się pokonać (zasypia
+i wraca w kółko); karta spisku często zabiera rycerzy; stare tablice atlasu o dawnych rasach zostały
+jako punkt odniesienia.
