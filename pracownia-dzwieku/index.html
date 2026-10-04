@@ -1,0 +1,1682 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pracownia dźwięku — Trzewia</title>
+<!--
+  PRACOWNIA DŹWIĘKU — stół warsztatowy do nowego soundtracku Trzewi.
+  Nic tu nie jest wpięte w grę. Każdy dźwięk ma własny przycisk, każda warstwa
+  własne pokrętło, a stan góry ustawiasz suwakami, żeby usłyszeć, jak warstwy
+  reagują. Wszystko syntezowane w locie — zero plików dźwiękowych, jak w grze.
+
+  Układ skryptu odpowiada planowanym plikom gry, żeby przeniesienie było przepisaniem,
+  nie pisaniem od nowa:
+    NASTAWY          → nastawy/dzwiek.ts
+    MIKSER           → core/mikser.ts
+    ZEGAR            → core/zegar.ts
+    WARSTWY: serce, oddech, kamien, trzewia, praca, modlitwa, straznicy, dzwon
+                     → core/warstwy/*.ts
+    DYRYGENT         → core/dyrygent.ts
+-->
+<style>
+  :root {
+    /* barwy z nastawy/barwy.ts — ciemność jest ciepła, kolor tylko jako światło */
+    --sadza: #0b0807;
+    --sadza-jasna: #141010;
+    --atrament: #cfc2a6;
+    --atrament-mocny: #efe3c6;
+    --atrament-cichy: #8d8477;
+    --zar: #ff8c32;
+    --zar-blady: #e0a860;
+    --krew: #8a1a16;
+    --krew-jasna: #c2503c;
+    --biolumina: #7ab060;
+    --otchlan: #e8e6ee;
+    --kreska: #2a2220;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--sadza); }
+  body {
+    color: var(--atrament);
+    font: 15px/1.5 Georgia, "Times New Roman", serif;
+    padding: 0 16px 64px;
+    -webkit-text-size-adjust: 100%;
+  }
+  .ramka { max-width: 1140px; margin: 0 auto; }
+
+  /* ---------------------------------------------------------------- czołówka */
+  header { padding: 28px 0 18px; border-bottom: 1px solid var(--kreska); }
+  h1 {
+    margin: 0 0 4px; font-size: 26px; font-weight: normal;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--atrament-mocny);
+  }
+  .podtytul { margin: 0; color: var(--atrament-cichy); font-size: 13.5px; font-style: italic; }
+
+  .pulpit {
+    display: flex; flex-wrap: wrap; gap: 14px; align-items: center;
+    margin-top: 18px;
+  }
+  button {
+    font: 13px Georgia, serif; letter-spacing: .04em;
+    color: var(--atrament); background: #181312;
+    border: 1px solid var(--kreska); border-radius: 2px;
+    padding: 7px 11px; cursor: pointer;
+  }
+  button:hover { border-color: var(--zar-blady); color: var(--atrament-mocny); }
+  button:active { background: #221a17; }
+  button:disabled { opacity: .35; cursor: default; }
+  button.glowny {
+    font-size: 15px; padding: 11px 20px;
+    border-color: var(--zar); color: var(--zar);
+    letter-spacing: .1em; text-transform: uppercase;
+  }
+  button.glowny.gra { border-color: var(--krew-jasna); color: var(--krew-jasna); }
+  button.maly { font-size: 12px; padding: 5px 8px; }
+  button.wlaczony { border-color: var(--biolumina); color: var(--biolumina); }
+
+  /* -------------------------------------------------------------- przyrządy */
+  .przyrzady {
+    display: grid; grid-template-columns: 1fr auto; gap: 18px;
+    align-items: center; margin: 18px 0 6px;
+  }
+  canvas { width: 100%; height: 104px; display: block; background: #0d0a09; border: 1px solid var(--kreska); }
+  .liczniki { display: flex; gap: 22px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; }
+  .licznik b { display: block; font-size: 20px; font-weight: normal; color: var(--zar-blady); font-family: Georgia, serif; }
+  .licznik span { color: var(--atrament-cichy); letter-spacing: .08em; text-transform: uppercase; font-size: 10px; }
+  .takt { display: flex; gap: 6px; margin-top: 6px; }
+  .takt i { width: 9px; height: 9px; border: 1px solid var(--kreska); border-radius: 50%; }
+  .takt i.bije { background: var(--krew-jasna); border-color: var(--krew-jasna); }
+
+  /* ---------------------------------------------------------------- sekcje */
+  h2 {
+    margin: 34px 0 12px; font-size: 12px; font-weight: normal;
+    letter-spacing: .2em; text-transform: uppercase; color: var(--zar-blady);
+    border-bottom: 1px solid var(--kreska); padding-bottom: 6px;
+  }
+  .opis { margin: -4px 0 14px; color: var(--atrament-cichy); font-size: 13px; font-style: italic; }
+
+  .rzad { display: flex; flex-wrap: wrap; gap: 8px; }
+
+  /* ---------------------------------------------------------------- suwaki */
+  .suwaki { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px 22px; }
+  .suwak { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 10px; }
+  .suwak label { font-size: 13px; }
+  .suwak output { font-family: ui-monospace, Menlo, monospace; font-size: 12px; color: var(--zar-blady); }
+  .suwak input { grid-column: 1 / -1; width: 100%; }
+  input[type=range] { accent-color: var(--zar); height: 18px; }
+  .ptaszki { display: flex; flex-wrap: wrap; gap: 18px; margin-top: 14px; font-size: 13.5px; }
+  .ptaszki label { display: flex; align-items: center; gap: 7px; cursor: pointer; }
+  input[type=checkbox] { accent-color: var(--zar); }
+
+  /* --------------------------------------------------------------- warstwy */
+  .warstwy { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .karta { border: 1px solid var(--kreska); background: var(--sadza-jasna); padding: 13px 14px 14px; }
+  .karta > h3 {
+    margin: 0 0 2px; font-size: 16px; font-weight: normal; color: var(--atrament-mocny);
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  }
+  .karta > h3 em { font-family: ui-monospace, Menlo, monospace; font-style: normal; font-size: 10.5px; color: var(--atrament-cichy); }
+  .karta p { margin: 0 0 11px; font-size: 12.5px; color: var(--atrament-cichy); font-style: italic; line-height: 1.45; }
+  .sterowanie { display: flex; align-items: center; gap: 8px; margin-bottom: 11px; }
+  .sterowanie input[type=range] { flex: 1; }
+  .zrodlo { font-family: ui-monospace, Menlo, monospace; font-size: 10.5px; color: var(--atrament-cichy); margin-top: 11px; letter-spacing: .02em; }
+  .mierz { height: 3px; background: #241c1a; margin-top: 9px; }
+  .mierz i { display: block; height: 100%; width: 0; background: var(--zar); }
+
+  footer { margin-top: 44px; padding-top: 16px; border-top: 1px solid var(--kreska); color: var(--atrament-cichy); font-size: 12.5px; font-style: italic; }
+  .uwaga { color: var(--krew-jasna); font-style: normal; }
+  @media (max-width: 620px) { .przyrzady { grid-template-columns: 1fr; } h1 { font-size: 21px; } }
+</style>
+</head>
+<body>
+<div class="ramka">
+
+<header>
+  <h1>Pracownia dźwięku</h1>
+  <p class="podtytul">Trzewia — stół warsztatowy nowego soundtracku. Nic tu nie jest wpięte w grę.</p>
+  <div class="pulpit">
+    <button id="obudz" class="glowny">Obudź górę</button>
+    <div class="suwak" style="min-width:180px">
+      <label for="master">Głośność</label><output id="master-o">70%</output>
+      <input type="range" id="master" min="0" max="1" step="0.02" value="0.7">
+    </div>
+    <button id="cisza" class="maly" disabled>Cisza (wszystko stop)</button>
+  </div>
+</header>
+
+<div class="przyrzady">
+  <div>
+    <canvas id="widmo" width="900" height="104"></canvas>
+    <div class="takt" id="takt"><i></i><i></i><i></i><i></i></div>
+  </div>
+  <div class="liczniki">
+    <div class="licznik"><span>puls</span><b id="l-bpm">—</b></div>
+    <div class="licznik"><span>uderzenie</span><b id="l-uderzenie">—</b></div>
+    <div class="licznik"><span>źródła</span><b id="l-zrodla">0</b></div>
+  </div>
+</div>
+
+<h2>Odsłony</h2>
+<p class="opis">Nastawiają cały stan góry naraz — tak, jak dyrygent ustawiałby go w grze.</p>
+<div class="rzad" id="odslony"></div>
+
+<h2>Stan góry</h2>
+<p class="opis">To, co w grze wypełniałby <code>core/stan-dzwieku.ts</code>. Kręć i słuchaj, jak warstwy reagują.</p>
+<div class="suwaki" id="stan"></div>
+<div class="ptaszki" id="stan-ptaszki"></div>
+
+<h2>Warstwy</h2>
+<p class="opis">Każda warstwa osobno: włącz, ustaw głośność, posłuchaj jej samej (solo) albo wywołaj pojedynczy dźwięk.</p>
+<div class="warstwy" id="warstwy"></div>
+
+<h2>Zdarzenia i chwile</h2>
+<p class="opis">Dźwięki, które w grze padają raz, w konkretnej chwili.</p>
+<div class="rzad" id="zdarzenia"></div>
+
+<footer>
+  <p><span class="uwaga">Uwaga:</span> ten plik powstał z czytania kodu i wiedzy o syntezie — autor nie odsłuchał go przed oddaniem. Wszystkie liczby to pierwsze przybliżenie i są do strojenia uchem.</p>
+  <p>Pasmo pod 100 Hz zaznaczone na czerwono: telefon tego nie zagra (lekcja z <code>core/audio.ts</code> — 46 Hz nie wychodzi z żadnego małego głośnika). Jeśli warstwa ma tam całą energię, na telefonie jej nie będzie.</p>
+</footer>
+
+</div>
+
+<script>
+'use strict';
+
+/* ════════════════════════════════════════════════════════════════════════════
+   NASTAWY — wszystkie liczby w jednym miejscu (→ nastawy/dzwiek.ts)
+   ════════════════════════════════════════════════════════════════════════════ */
+const N = {
+  mikser: {
+    wzmocnienie: 1.6,
+    progOgranicznika: -10, kolano: 8, stosunek: 6, atak: 0.005, zwolnienie: 0.25,
+    poglos: 3.4,
+    pauzaFiltr: 420, pauzaCiszej: 0.35,
+    /* ducking od serca: o ile świat ustępuje uderzeniu i jak długo wraca */
+    duszenie: 0.16, duszenieWrot: 0.22,
+  },
+  zegar: {
+    /* puls czuwania i puls u progu śmierci — tempo bierze się z `sen` */
+    bpmCzuwania: 42, bpmSnu: 15,
+    /* fala Strażników podkręca serce */
+    falaSzybciej: 1.3,
+    wyprzedzenie: 0.12, tyk: 25,
+    /* akord co tyle uderzeń — harmonia oddycha razem z pulsem */
+    uderzenNaAkord: 8,
+  },
+  serce: {
+    glosnosc: 0.62,
+    /* S1 — głuchy spad; S2 — wyżej i krócej, po tej części cyklu */
+    s1Od: 56, s1Do: 33, s1Dlugosc: 0.22,
+    s2Od: 76, s2Do: 48, s2Dlugosc: 0.13, s2Po: 0.3, s2Ciszej: 0.6,
+    /* alikwoty — bez nich telefon nie zagra nic (patrz: 46 Hz w audio.ts) */
+    alikwot1: 2.3, alikwot1Glos: 0.4, alikwot2: 3.9, alikwot2Glos: 0.17,
+    /* skrzyp kamienia na uderzeniu: krótki szum w pasmie */
+    skrzypHz: 380, skrzypGlos: 0.1,
+    /* zasypianie: od jakiego `sen` serce gubi uderzenia i jak drży w czasie */
+    gubiOd: 0.55, gubiNajwyzej: 0.42, drzenie: 0.055,
+    /* potknięcie: drugie S1 krótko po pierwszym */
+    potknieciePo: 0.17, potkniecieGlos: 0.5,
+    poglos: 0.3,
+  },
+  oddech: {
+    glosnosc: 0.5,
+    uderzenNaOddech: 4,
+    wdechOd: 170, wdechDo: 520, wydechDo: 150,
+    czescWdechu: 0.36, szczyt: 0.9, q: 0.8,
+  },
+  kamien: {
+    glosnosc: 0.8,
+    podstawa: 146.83,                 /* D3 */
+    skale: {
+      dorycka:   [0, 2, 3, 5, 7, 9, 10],
+      frygijska: [0, 1, 3, 5, 7, 8, 10],
+      lokrycka:  [0, 1, 3, 5, 6, 8, 10],
+    },
+    /* przy jakiej głębokości wchodzi kolejny tryb (z histerezą, żeby nie migało) */
+    progFrygijska: 0.34, progLokrycka: 0.72, histereza: 0.05,
+    /* zwis: im głębiej, tym cięższy kamień — delikatne obniżenie stroju (centy) */
+    zwisNajwyzej: 14,
+    filtrOd: 260, filtrSzczyt: 520, filtrNapiecie: 520, filtrDo: 240, q: 0.9,
+    glos: 0.07, rozrzut: 0.03, bas: 0.12, odstrojenie: 12, rozstaw: 0.55,
+    progresja: [
+      { stopnie: [0, 2, 4], bas: -5 },
+      { stopnie: [-2, 0, 3], bas: -7 },
+      { stopnie: [1, 3, 5], bas: -4 },
+      { stopnie: [0, 2, 6], bas: -5 },
+      { stopnie: [-3, -1, 2], bas: -8 },
+    ],
+  },
+  trzewia: {
+    glosnosc: 0.55,
+    /* bulgot krwi: ile uderzeń na bąbel przy pełnej krwi */
+    bulgotSzansa: 0.55, bulgotOd: 58, bulgotDo: 132, bulgotDlugosc: 0.26, bulgotGlos: 0.17,
+    /* lepka warstwa: szum, którego pasmo wędruje jak gęsty płyn */
+    lepkaOd: 90, lepkaDo: 260, lepkaGlos: 0.1, lepkaTempo: 0.07,
+    /* magma: skwierczenie wysoko i trzaski */
+    magmaHz: 2600, magmaQ: 0.6, magmaGlos: 0.02, trzaskSzansa: 0.3, trzaskGlos: 0.035,
+  },
+  praca: {
+    glosnosc: 0.7,
+    /* kilof na ósemce; przy dużym zagęszczeniu dochodzą szesnastki */
+    kilofOd: 150, kilofRozrzut: 90, glebokoNiżej: 60,
+    kilofGlos: 0.05, kilofGlosOdPracy: 0.07, kilofFiltr: 900,
+    ludzkoscMs: 14,                   /* rozjazd ręki — bez tego to maszyna */
+    szesnastkiOd: 0.6,
+    krokGlos: 0.035, krokHz: 110,
+    zbrojaGlos: 0.06, zbrojaHz: 2300,
+    poglos: 0.25,
+  },
+  modlitwa: {
+    glosnosc: 0.6,
+    glosow: 3,
+    /* samogłoski: pary formantów F1/F2 — stąd „o” i „a” */
+    samogloskaO: [400, 760], samogloskaA: [700, 1150],
+    q1: 7, q2: 9,
+    vibratoHz: 4.8, vibratoCenty: 9,
+    dech: 0.1,                        /* ile szumu w głosie — bez tego to organy */
+    wejscie: 2.2, zejscie: 3.2,
+  },
+  straznicy: {
+    glosnosc: 0.6,
+    /* tryton nad podstawą — jedyny interwał poza skalą w całej grze */
+    tryton: 6, metal: 1.73, modulacja: 0.9,
+    pomrukHz: 62, pomrukQ: 7, pomrukTempo: 0.11,
+    /* śpiący kamień: cienkie dzwonienie wysoko, jak w uszach */
+    snuHz: 3100, snuGlos: 0.02, snuTremolo: 0.23,
+    ciosGlos: 0.3,
+  },
+  dzwon: {
+    glosnosc: 0.9,
+    metal: 2.76, modulacja: 1.8, ogon: 4.5, poglos: 0.55,
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   MIKSER — jedna przestrzeń dla wszystkiego (→ core/mikser.ts)
+
+   Serce omija tłumik zawieszenia: kiedy czas staje, świat cichnie za skałą,
+   a puls zostaje blisko ucha. Zatrzymanie czasu ma być wejściem do środka góry.
+   ════════════════════════════════════════════════════════════════════════════ */
+const Mikser = {
+  ctx: null,
+  szyny: {},          /* szyna na warstwę — głośność i solo */
+  mierniki: {},       /* odczep na warstwę — żeby widzieć, co naprawdę gra */
+  mokre: {},          /* wysyłka warstwy do jaskini, pod tą samą głośnością co sucha */
+  swiat: null,        /* wszystko poza sercem */
+  duszenie: null,     /* ducking od uderzenia serca */
+  tlumik: null,       /* filtr zawieszenia (pauza) */
+  wzmocnienie: null,
+  poglos: null,
+  analiza: null,
+  szum: null,         /* brązowy — ciepły, do niskich pasm (oddech, kroki, skrzyp) */
+  szumBialy: null,    /* biały — do wysokich (skwierczenie magmy, zbroje) */
+  zrodla: 0,          /* licznik żywych źródeł — budżet telefonu */
+
+  start() {
+    if (this.ctx) return this.ctx;
+    const Ctor = window.AudioContext || window.webkitAudioContext;
+    if (!Ctor) return null;
+    const ctx = new Ctor();
+    this.ctx = ctx;
+
+    const ogr = ctx.createDynamicsCompressor();
+    ogr.threshold.value = N.mikser.progOgranicznika;
+    ogr.knee.value = N.mikser.kolano;
+    ogr.ratio.value = N.mikser.stosunek;
+    ogr.attack.value = N.mikser.atak;
+    ogr.release.value = N.mikser.zwolnienie;
+    ogr.connect(ctx.destination);
+
+    this.analiza = ctx.createAnalyser();
+    this.analiza.fftSize = 2048;
+    this.analiza.smoothingTimeConstant = 0.72;
+    this.analiza.minDecibels = -72;      /* domyślne -100 dB rysuje jako sygnał nawet ciszę */
+    this.analiza.maxDecibels = -12;
+    this.analiza.connect(ogr);
+
+    this.wzmocnienie = ctx.createGain();
+    this.wzmocnienie.gain.value = N.mikser.wzmocnienie;
+    this.wzmocnienie.connect(this.analiza);
+
+    this.tlumik = ctx.createBiquadFilter();
+    this.tlumik.type = 'lowpass';
+    this.tlumik.frequency.value = 16000;
+    this.tlumik.Q.value = 0.6;
+    this.tlumik.connect(this.wzmocnienie);
+
+    this.duszenie = ctx.createGain();
+    this.duszenie.connect(this.tlumik);
+
+    this.swiat = ctx.createGain();
+    this.swiat.connect(this.duszenie);
+
+    const splot = ctx.createConvolver();
+    splot.buffer = jaskinia(ctx, N.mikser.poglos);
+    splot.connect(this.tlumik);
+    this.poglos = ctx.createGain();
+    this.poglos.connect(splot);
+
+    /* szum raz, na zawsze — brąz, nie biel: cieplejszy, mniej syczy */
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 3), ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    let ost = 0;
+    for (let i = 0; i < d.length; i++) {
+      const b = Math.random() * 2 - 1;
+      ost = (ost + 0.02 * b) / 1.02;
+      d[i] = ost * 3.2;
+    }
+    this.szum = buf;
+
+    /* biały: brązowy opada 6 dB na oktawę, więc pasmo przy 2600 Hz wychodziło z niego
+       prawie puste — skwierczenie magmy było niemal niesłyszalne */
+    const bialy = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 3), ctx.sampleRate);
+    const db = bialy.getChannelData(0);
+    for (let i = 0; i < db.length; i++) db[i] = Math.random() * 2 - 1;
+    this.szumBialy = bialy;
+    return ctx;
+  },
+
+  /** Szyna warstwy. Serce dostaje drogę omijającą tłumik zawieszenia. */
+  szyna(nazwa, omijaPauze) {
+    if (this.szyny[nazwa]) return this.szyny[nazwa];
+    const g = this.ctx.createGain();
+    g.connect(omijaPauze ? this.wzmocnienie : this.swiat);
+    const a = this.ctx.createAnalyser();
+    a.fftSize = 256;
+    g.connect(a);                       /* odczep na miernik — nic dalej nie idzie */
+    this.mierniki[nazwa] = a;
+    /* mokra szyna: pogłos warstwy pod jej własną głośnością. Bez tego wyciszenie
+       warstwy zostawia jej ogon w jaskini — ten błąd jest dziś w grze, bo
+       core/music.ts i core/gesty.ts wysyłają do pogłosu przed swoim masterem. */
+    const mokra = this.ctx.createGain();
+    mokra.connect(this.poglos);
+    g.__mokra = mokra;
+    this.mokre[nazwa] = mokra;
+    this.szyny[nazwa] = g;
+    return g;
+  },
+
+  /** Natężenie warstwy (0..1) liczone z odczepu — miernik ma mówić prawdę. */
+  poziomSzyny(nazwa) {
+    const a = this.mierniki[nazwa];
+    if (!a) return 0;
+    const d = new Uint8Array(a.fftSize);
+    a.getByteTimeDomainData(d);
+    let s = 0;
+    for (let i = 0; i < d.length; i++) { const v = (d[i] - 128) / 128; s += v * v; }
+    return Math.sqrt(s / d.length);
+  },
+
+  panorama(x) {
+    const ctx = this.ctx;
+    if (typeof ctx.createStereoPanner !== 'function') return ctx.createGain();
+    const p = ctx.createStereoPanner();
+    p.pan.value = Math.max(-1, Math.min(1, x));
+    return p;
+  },
+
+  /** Wyjście z panoramą i wysyłką do pogłosu jaskini. */
+  wyjscie(szyna, pan, poglos) {
+    const p = this.panorama(pan || 0);
+    p.connect(szyna);
+    if (poglos > 0) {
+      const s = this.ctx.createGain();
+      s.gain.value = poglos;
+      p.connect(s); s.connect(szyna.__mokra || this.poglos);
+    }
+    return p;
+  },
+
+  /** Każde uderzenie serca lekko dociska świat — mix zaczyna oddychać z pulsem. */
+  dus(t, sila) {
+    const g = this.duszenie.gain;
+    const d = Math.max(0, Math.min(0.5, N.mikser.duszenie * sila * stan.duszenie));
+    g.setValueAtTime(1, t);
+    g.linearRampToValueAtTime(1 - d, t + 0.015);
+    g.linearRampToValueAtTime(1, t + N.mikser.duszenieWrot);
+  },
+
+  /** 0 — świat płynie; 1 — pauza: góra słychać jak przez skałę. */
+  zawies(ile) {
+    const t = this.ctx.currentTime;
+    const hz = 16000 * Math.pow(N.mikser.pauzaFiltr / 16000, Math.max(0, Math.min(1, ile)));
+    this.tlumik.frequency.cancelScheduledValues(t);
+    this.tlumik.frequency.setTargetAtTime(hz, t, ile > 0 ? 0.3 : 0.18);
+    this.swiat.gain.cancelScheduledValues(t);
+    this.swiat.gain.setTargetAtTime(1 - ile * N.mikser.pauzaCiszej, t, 0.4);
+  },
+
+  /** Policzone źródło — żeby było widać budżet węzłów na telefon. */
+  licz(src) {
+    this.zrodla++;
+    src.onended = () => { this.zrodla--; };
+  },
+};
+
+/**
+ * Odpowiedź impulsowa jaskini: kilka wczesnych odbić od bliskich ścian, potem
+ * ciemniejący ogon — im dalej w skałę, tym mniej zostaje z wysokich tonów.
+ * (Przeniesione z core/mikser.ts — tam się sprawdza, nie ma po co wymyślać.)
+ */
+function jaskinia(ctx, sekundy) {
+  const n = Math.floor(ctx.sampleRate * sekundy);
+  const buf = ctx.createBuffer(2, n, ctx.sampleRate);
+  for (let k = 0; k < 2; k++) {
+    const d = buf.getChannelData(k);
+    let lp = 0;
+    for (let i = 0; i < n; i++) {
+      const t = i / n;
+      lp += (Math.random() * 2 - 1 - lp) * (0.55 - 0.45 * t);
+      d[i] = lp * Math.pow(1 - t, 2.8) * 0.5;
+    }
+    for (let e = 0; e < 7; e++) {
+      const i = Math.floor(ctx.sampleRate * (0.009 + e * 0.014 + Math.random() * 0.02));
+      if (i < n) d[i] += (Math.random() < 0.5 ? -1 : 1) * (0.55 - e * 0.06);
+    }
+  }
+  return buf;
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   NARZĘDZIA — kawałki, z których zbudowane są wszystkie warstwy
+   ════════════════════════════════════════════════════════════════════════════ */
+const lerp = (a, b, t) => a + (b - a) * t;
+const zakres = (v, a, b) => Math.max(a, Math.min(b, v));
+const BEZ_ZERA = 0.0001;
+
+/** Szum w pasmie: krótkie tarcie, którego pasmo wędruje. Rylec, krok, trzask. */
+function szum(szyna, kiedy, dlugosc, od, doHz, glos, pan, poglos, q, bialy) {
+  const ctx = Mikser.ctx;
+  const src = ctx.createBufferSource();
+  src.buffer = bialy ? Mikser.szumBialy : Mikser.szum;
+  const f = ctx.createBiquadFilter();
+  f.type = 'bandpass'; f.Q.value = q || 2.2;
+  f.frequency.setValueAtTime(od, kiedy);
+  f.frequency.exponentialRampToValueAtTime(Math.max(20, doHz), kiedy + dlugosc);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(BEZ_ZERA, kiedy);
+  g.gain.exponentialRampToValueAtTime(Math.max(BEZ_ZERA, glos), kiedy + Math.min(0.02, dlugosc * 0.3));
+  g.gain.exponentialRampToValueAtTime(BEZ_ZERA, kiedy + dlugosc);
+  src.connect(f); f.connect(g); g.connect(Mikser.wyjscie(szyna, pan, poglos));
+  src.start(kiedy, Math.random() * 1.5); src.stop(kiedy + dlugosc + 0.05);
+  Mikser.licz(src);
+}
+
+/** Ton, który od razu opada — podstawa każdego uderzenia. */
+function ton(szyna, kiedy, hzOd, hzDo, dlugosc, glos, pan, poglos, kształt) {
+  const ctx = Mikser.ctx;
+  const o = ctx.createOscillator();
+  const g = ctx.createGain();
+  o.type = kształt || 'sine';
+  o.frequency.setValueAtTime(hzOd, kiedy);
+  o.frequency.exponentialRampToValueAtTime(Math.max(20, hzDo), kiedy + dlugosc);
+  g.gain.setValueAtTime(BEZ_ZERA, kiedy);
+  g.gain.exponentialRampToValueAtTime(Math.max(BEZ_ZERA, glos), kiedy + 0.006);
+  g.gain.exponentialRampToValueAtTime(BEZ_ZERA, kiedy + dlugosc);
+  o.connect(g); g.connect(Mikser.wyjscie(szyna, pan, poglos));
+  o.start(kiedy); o.stop(kiedy + dlugosc + 0.05);
+  Mikser.licz(o);
+}
+
+/** Dzwon: nieharmoniczny modulator (2.76) daje metal, nie flet. */
+function dzwonFM(szyna, kiedy, hz, glos, ogon, pan, poglos, metal, modulacja) {
+  const ctx = Mikser.ctx;
+  const nosna = ctx.createOscillator();
+  const mod = ctx.createOscillator();
+  const modG = ctx.createGain();
+  const g = ctx.createGain();
+  nosna.type = 'sine'; nosna.frequency.value = hz;
+  mod.type = 'sine'; mod.frequency.value = hz * (metal || N.dzwon.metal);
+  modG.gain.setValueAtTime(hz * (modulacja || N.dzwon.modulacja), kiedy);
+  modG.gain.exponentialRampToValueAtTime(hz * 0.2, kiedy + ogon * 0.6);
+  mod.connect(modG); modG.connect(nosna.frequency);
+  g.gain.setValueAtTime(BEZ_ZERA, kiedy);
+  g.gain.exponentialRampToValueAtTime(Math.max(BEZ_ZERA, glos), kiedy + 0.008);
+  g.gain.exponentialRampToValueAtTime(BEZ_ZERA, kiedy + ogon);
+  nosna.connect(g); g.connect(Mikser.wyjscie(szyna, pan, poglos));
+  nosna.start(kiedy); nosna.stop(kiedy + ogon + 0.3);
+  mod.start(kiedy); mod.stop(kiedy + ogon + 0.3);
+  Mikser.licz(nosna);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   STAN GÓRY — to, co w grze wypełniałby core/stan-dzwieku.ts
+   ════════════════════════════════════════════════════════════════════════════ */
+const stan = {
+  glebokosc: 0.3, sen: 0, wiara: 0.3, krew: 0.2, zywi: 0.5, kopie: 0.4,
+  rycerze: 0, dominacja: 0.2, magma: 0, skorupa: 0,
+  fala: false, bossSpi: false, zamrozone: false,
+  duszenie: 1,
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ZEGAR — puls jest siatką całej gry (→ core/zegar.ts)
+
+   Planuje z wyprzedzeniem, więc nie dryfuje jak setInterval na telefonie.
+   Tempo bierze się z `sen`: zasypianie zwalnia i rozwleka cały utwór.
+   ════════════════════════════════════════════════════════════════════════════ */
+const Zegar = {
+  bpm: N.zegar.bpmCzuwania,
+  nastepne: 0,
+  uderzenie: 0,
+  sluchacze: [],
+  timer: null,
+  ostatnieBicie: 0,
+
+  start() {
+    if (this.timer !== null) return;              /* już idzie — nie przestawiaj siatki */
+    this.nastepne = Mikser.ctx.currentTime + 0.15;
+    this.timer = setInterval(() => this.tyk(), N.zegar.tyk);
+  },
+  stop() { if (this.timer !== null) { clearInterval(this.timer); this.timer = null; } },
+
+  /** Tempo ze stanu góry — liczone tu, żeby wszystkie warstwy miały jedną prawdę. */
+  tempo() {
+    const z = N.zegar;
+    let bpm = lerp(z.bpmCzuwania, z.bpmSnu, zakres(stan.sen, 0, 1));
+    if (stan.fala) bpm *= z.falaSzybciej;
+    return bpm;
+  },
+
+  tyk() {
+    const ctx = Mikser.ctx;
+    if (!ctx) return;
+    this.bpm = this.tempo();
+    const krok = 60 / this.bpm;
+    let obieg = 0;
+    while (this.nastepne < ctx.currentTime + N.zegar.wyprzedzenie && obieg++ < 8) {
+      const t = this.nastepne, u = this.uderzenie;
+      for (const s of this.sluchacze) { try { s(t, u, krok); } catch (e) { console.error(e); } }
+      this.ostatnieBicie = u;
+      this.nastepne += krok;
+      this.uderzenie++;
+    }
+    /* po dłuższym zatrzymaniu nie nadrabiaj — przeskocz do teraz */
+    if (this.nastepne < ctx.currentTime) this.nastepne = ctx.currentTime + 0.05;
+  },
+
+  na(f) { this.sluchacze.push(f); },
+  /** Najbliższy punkt siatki nie wcześniej niż `t` — do kwantyzacji kilofów. */
+  nasiatke(t) { const k = 60 / this.bpm; return Math.ceil((t - this.nastepne) / k) * k + this.nastepne; },
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   WARSTWA — jeden interfejs dla wszystkich (→ core/warstwy/*.ts)
+
+   { nazwa, opis, zrodlo, wlaczona, poziom, przygotuj(), nauderzeniu(), ustaw(), dzwieki[] }
+   Warstwa nie wie o istnieniu innych warstw. Dodanie nowej nie dotyka gry.
+   ════════════════════════════════════════════════════════════════════════════ */
+const warstwy = [];
+function warstwa(w) { warstwy.push(w); return w; }
+
+/* ─────────────────────────────────────────────────────── SERCE: puls rdzenia */
+const Serce = warstwa({
+  nazwa: 'Serce',
+  zrodlo: 'warstwy/serce.ts',
+  opis: 'Puls rdzenia i zegar całej gry. Tempo bierze się z „sen” — zasypianie zwalnia, gubi uderzenia i w końcu milknie. Pasek życia, którego nie trzeba rysować.',
+  omijaPauze: true,
+  wlaczona: true, poziom: 1,
+
+  przygotuj() { this.szyna = Mikser.szyna('serce', true); },
+
+  /** Jedno uderzenie: S1 głuche i niskie, po nim S2 wyżej i krócej. */
+  bij(t, sila, krok) {
+    const s = N.serce, g = s.glosnosc * sila;
+    const sz = this.szyna;
+    /* S1 — ciało */
+    ton(sz, t, s.s1Od, s.s1Do, s.s1Dlugosc, g, 0, s.poglos);
+    ton(sz, t, s.s1Od * s.alikwot1, s.s1Do * s.alikwot1, s.s1Dlugosc * 0.7, g * s.alikwot1Glos, 0, s.poglos);
+    ton(sz, t, s.s1Od * s.alikwot2, s.s1Do * s.alikwot2, s.s1Dlugosc * 0.45, g * s.alikwot2Glos, 0, s.poglos * 0.6);
+    /* skrzyp kamienia — to serce góry, nie człowieka */
+    szum(sz, t, 0.06, s.skrzypHz, s.skrzypHz * 0.5, g * s.skrzypGlos, 0, s.poglos, 1.8);
+    /* S2 — zamknięcie */
+    const dt = Math.min(0.34, (krok || 1.4) * s.s2Po);
+    ton(sz, t + dt, s.s2Od, s.s2Do, s.s2Dlugosc, g * s.s2Ciszej, 0, s.poglos);
+    ton(sz, t + dt, s.s2Od * s.alikwot1, s.s2Do * s.alikwot1, s.s2Dlugosc * 0.6, g * s.s2Ciszej * s.alikwot1Glos, 0, s.poglos);
+    Mikser.dus(t, sila);
+  },
+
+  nauderzeniu(t, u, krok) {
+    if (!this.czynna()) return;
+    const s = N.serce;
+    if (stan.sen >= 1) return;                      /* zasnąłeś na zawsze */
+    /* zasypianie: część uderzeń wypada, resztę rozjeżdża w czasie */
+    const zmeczenie = zakres((stan.sen - s.gubiOd) / (1 - s.gubiOd), 0, 1);
+    if (zmeczenie > 0 && Math.random() < zmeczenie * s.gubiNajwyzej) return;
+    const drzy = (Math.random() - 0.5) * s.drzenie * zmeczenie * 2;
+    const sila = this.poziom * (1 - zmeczenie * 0.3) * (0.92 + Math.random() * 0.16);
+    this.bij(t + Math.max(0, drzy), sila, krok);
+    /* potknięcie: drugie S1 krótko po pierwszym — serce się gubi */
+    if (zmeczenie > 0.3 && Math.random() < zmeczenie * 0.22) {
+      this.bij(t + s.potknieciePo, sila * s.potkniecieGlos, krok);
+    }
+  },
+
+  czynna() { return this.wlaczona && solo(this); },
+
+  dzwieki: [
+    { etykieta: 'uderzenie (czuwanie)', gra() { Serce.bij(Mikser.ctx.currentTime + 0.05, 1, 1.4); } },
+    { etykieta: 'uderzenie (sen 0,8)', gra() { Serce.bij(Mikser.ctx.currentTime + 0.05, 0.7, 2.6); } },
+    { etykieta: 'potknięcie', gra() {
+      const t = Mikser.ctx.currentTime + 0.05;
+      Serce.bij(t, 0.9, 2.2); Serce.bij(t + N.serce.potknieciePo, 0.45, 2.2);
+    } },
+    { etykieta: 'ostatnie uderzenie', gra() {
+      const t = Mikser.ctx.currentTime + 0.05;
+      Serce.bij(t, 1.15, 3.4);
+      /* ogon: ton, który nie wraca */
+      ton(Serce.szyna, t + 0.1, 40, 26, 6, N.serce.glosnosc * 0.3, 0, 0.8);
+    } },
+  ],
+});
+
+/* ───────────────────────────────────────────── ODDECH: powietrze w korytarzach */
+const Oddech = warstwa({
+  nazwa: 'Oddech',
+  zrodlo: 'warstwy/oddech.ts',
+  opis: 'Wdech i wydech skały, jeden na cztery uderzenia serca. Powietrze w korytarzach, nie człowiek — pasmo wędruje w górę i wraca dłużej, niż szło.',
+  wlaczona: true, poziom: 1,
+
+  przygotuj() {
+    const ctx = Mikser.ctx;
+    this.szyna = Mikser.szyna('oddech');
+    const src = ctx.createBufferSource();
+    src.buffer = Mikser.szum; src.loop = true;
+    this.filtr = ctx.createBiquadFilter();
+    this.filtr.type = 'bandpass';
+    this.filtr.frequency.value = N.oddech.wdechOd;
+    this.filtr.Q.value = N.oddech.q;
+    this.g = ctx.createGain();
+    this.g.gain.value = BEZ_ZERA;
+    src.connect(this.filtr); this.filtr.connect(this.g); this.g.connect(this.szyna);
+    const s = ctx.createGain(); s.gain.value = 0.3;
+    this.g.connect(s); s.connect(this.szyna.__mokra);
+    src.start();
+  },
+
+  cykl(t, dlugosc, sila) {
+    const o = N.oddech, f = this.filtr.frequency, g = this.g.gain;
+    const wdech = dlugosc * o.czescWdechu, wydech = dlugosc - wdech;
+    f.cancelScheduledValues(t); g.cancelScheduledValues(t);
+    f.setValueAtTime(Math.max(20, f.value), t);
+    f.linearRampToValueAtTime(o.wdechDo, t + wdech);
+    f.linearRampToValueAtTime(o.wydechDo, t + wdech + wydech);
+    g.setValueAtTime(Math.max(BEZ_ZERA, g.value), t);
+    g.linearRampToValueAtTime(Math.max(BEZ_ZERA, o.glosnosc * o.szczyt * sila), t + wdech * 0.85);
+    g.linearRampToValueAtTime(BEZ_ZERA, t + dlugosc * 0.98);
+  },
+
+  nauderzeniu(t, u, krok) {
+    if (!this.czynna()) return;
+    if (u % N.oddech.uderzenNaOddech !== 0) return;
+    const sila = this.poziom * (0.45 + stan.zywi * 0.55);
+    this.cykl(t, krok * N.oddech.uderzenNaOddech, sila);
+  },
+
+  ustaw() { if (!this.czynna()) this.g.gain.setTargetAtTime(BEZ_ZERA, Mikser.ctx.currentTime, 0.3); },
+  czynna() { return this.wlaczona && solo(this); },
+
+  dzwieki: [
+    { etykieta: 'wdech', gra() {
+      const o = N.oddech, t = Mikser.ctx.currentTime + 0.05, f = Oddech.filtr.frequency, g = Oddech.g.gain;
+      f.cancelScheduledValues(t); g.cancelScheduledValues(t);
+      f.setValueAtTime(o.wdechOd, t); f.linearRampToValueAtTime(o.wdechDo, t + 1.6);
+      g.setValueAtTime(BEZ_ZERA, t); g.linearRampToValueAtTime(o.glosnosc * o.szczyt, t + 1.5);
+      g.linearRampToValueAtTime(BEZ_ZERA, t + 2.1);
+    } },
+    { etykieta: 'wydech', gra() {
+      const o = N.oddech, t = Mikser.ctx.currentTime + 0.05, f = Oddech.filtr.frequency, g = Oddech.g.gain;
+      f.cancelScheduledValues(t); g.cancelScheduledValues(t);
+      f.setValueAtTime(o.wdechDo, t); f.linearRampToValueAtTime(o.wydechDo, t + 2.8);
+      g.setValueAtTime(o.glosnosc * o.szczyt, t); g.linearRampToValueAtTime(BEZ_ZERA, t + 2.8);
+    } },
+    { etykieta: 'pełny cykl (6 s)', gra() { Oddech.cykl(Mikser.ctx.currentTime + 0.05, 6, 1); } },
+  ],
+});
+
+/* ──────────────────────────────────── KAMIEŃ: pad, harmonia, tryb z głębokości */
+const Kamien = warstwa({
+  nazwa: 'Kamień',
+  zrodlo: 'warstwy/kamien.ts',
+  opis: 'Pad: trzy filtrowane piły i bas. Akord wchodzi co osiem uderzeń serca, więc harmonia oddycha razem z pulsem. Tryb skali ciemnieje z głębokością: dorycka → frygijska → lokrycka.',
+  wlaczona: true, poziom: 1,
+  krok: 0,
+  tryb: 'frygijska',
+  gieta: false,                 /* true — ciągłe gięcie skali zamiast progów */
+
+  przygotuj() { this.szyna = Mikser.szyna('kamien'); },
+
+  /** Tryb z głębokości, z histerezą — żeby nie migał na granicy progu. */
+  wybierzTryb() {
+    const k = N.kamien, g = stan.glebokosc, h = k.histereza;
+    const t = this.tryb;
+    if (g > k.progLokrycka + (t === 'lokrycka' ? -h : h)) this.tryb = 'lokrycka';
+    else if (g > k.progFrygijska + (t === 'dorycka' ? h : -h)) this.tryb = 'frygijska';
+    else this.tryb = 'dorycka';
+    return this.tryb;
+  },
+
+  /** Skala: progi albo ciągłe gięcie między trybami (gięcie bywa mikrotonowe). */
+  skala() {
+    const k = N.kamien;
+    if (!this.gieta) return k.skale[this.wybierzTryb()];
+    const g = zakres(stan.glebokosc, 0, 1);
+    const a = k.skale.dorycka, b = k.skale.frygijska, c = k.skale.lokrycka;
+    if (g < 0.5) { const u = g / 0.5; return a.map((v, i) => lerp(v, b[i], u)); }
+    const u = (g - 0.5) / 0.5; return b.map((v, i) => lerp(v, c[i], u));
+  },
+
+  hz(stopien, skala) {
+    const k = N.kamien;
+    const okt = Math.floor(stopien / skala.length);
+    const i = ((stopien % skala.length) + skala.length) % skala.length;
+    const zwis = -k.zwisNajwyzej * zakres(stan.glebokosc, 0, 1) / 100;   /* centy → półtony */
+    return k.podstawa * Math.pow(2, (skala[i] + okt * 12 + zwis) / 12);
+  },
+
+  /** Akord: trzy piły rozstawione szeroko plus bas. Filtr otwiera się jak oddech. */
+  zagraj(t, dlugosc, akord, skala, napiecie) {
+    const k = N.kamien, ctx = Mikser.ctx, sz = this.szyna;
+    const wejscie = dlugosc * 0.45, wyjscie = dlugosc * 0.55;
+    const szczyt = k.filtrSzczyt + napiecie * k.filtrNapiecie;
+    akord.stopnie.forEach((st, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = 'sawtooth';
+      o.frequency.value = this.hz(st, skala);
+      o.detune.value = (Math.random() - 0.5) * k.odstrojenie;
+      f.type = 'lowpass'; f.Q.value = k.q;
+      f.frequency.setValueAtTime(k.filtrOd, t);
+      f.frequency.linearRampToValueAtTime(szczyt, t + wejscie);
+      f.frequency.exponentialRampToValueAtTime(k.filtrDo, t + wejscie + wyjscie);
+      g.gain.setValueAtTime(BEZ_ZERA, t);
+      g.gain.exponentialRampToValueAtTime((k.glos + Math.random() * k.rozrzut) * this.poziom * k.glosnosc, t + wejscie);
+      g.gain.exponentialRampToValueAtTime(BEZ_ZERA, t + wejscie + wyjscie);
+      o.connect(f); f.connect(g); g.connect(Mikser.wyjscie(sz, (i - 1) * k.rozstaw, 0.2));
+      o.start(t); o.stop(t + dlugosc + 0.3);
+      Mikser.licz(o);
+    });
+    /* bas o oktawę wyżej niż „naturalnie”: 33–49 Hz ginęło w każdym telefonie */
+    ton(sz, t, this.hz(akord.bas + 7, skala), this.hz(akord.bas + 7, skala) * 0.98,
+        dlugosc, k.bas * this.poziom * k.glosnosc, 0, 0.1, 'triangle');
+  },
+
+  nauderzeniu(t, u, krok) {
+    if (!this.czynna()) return;
+    if (u % N.zegar.uderzenNaAkord !== 0) return;
+    const k = N.kamien;
+    const akord = k.progresja[this.krok++ % k.progresja.length];
+    const napiecie = zakres(Math.max(stan.sen, (stan.dominacja - 0.55) * 2), 0, 1);
+    /* Zaduch: przy dominacji jednej nacji pad traci głos — nuda jako kara */
+    const zuboz = stan.dominacja > 0.7 ? { stopnie: akord.stopnie.slice(0, 2), bas: akord.bas } : akord;
+    this.zagraj(t, krok * N.zegar.uderzenNaAkord, zuboz, this.skala(), napiecie);
+  },
+
+  czynna() { return this.wlaczona && solo(this); },
+
+  dzwieki: [
+    { etykieta: 'akord dorycki (powierzchnia)', gra() { Kamien.zagraj(Mikser.ctx.currentTime + 0.05, 11, N.kamien.progresja[0], N.kamien.skale.dorycka, 0.2); } },
+    { etykieta: 'akord frygijski (korytarze)', gra() { Kamien.zagraj(Mikser.ctx.currentTime + 0.05, 11, N.kamien.progresja[0], N.kamien.skale.frygijska, 0.3); } },
+    { etykieta: 'akord lokrycki (przy rdzeniu)', gra() { Kamien.zagraj(Mikser.ctx.currentTime + 0.05, 11, N.kamien.progresja[4], N.kamien.skale.lokrycka, 0.8); } },
+    { etykieta: 'cała progresja (5 × 6 s)', gra() {
+      const t0 = Mikser.ctx.currentTime + 0.05, sk = Kamien.skala();
+      N.kamien.progresja.forEach((a, i) => Kamien.zagraj(t0 + i * 6, 6.4, a, sk, 0.3));
+    } },
+    { etykieta: 'sam bas', gra() {
+      const sk = Kamien.skala();
+      ton(Kamien.szyna, Mikser.ctx.currentTime + 0.05, Kamien.hz(-5 + 7, sk), Kamien.hz(-5 + 7, sk) * 0.98, 8, N.kamien.bas, 0, 0.1, 'triangle');
+    } },
+  ],
+});
+
+/* ─────────────────────────────────────────── TRZEWIA: krew, lepkość, magma */
+const Trzewia = warstwa({
+  nazwa: 'Trzewia',
+  zrodlo: 'warstwy/trzewia.ts',
+  opis: 'Nowa warstwa. Bulgot krwi w żyłach góry, lepka masa pod spodem i skwierczenie magmy. To, czego dzisiejszy soundtrack nie ma w ogóle, choć gra nazywa się „Trzewia”.',
+  wlaczona: true, poziom: 1,
+
+  przygotuj() {
+    const ctx = Mikser.ctx;
+    this.szyna = Mikser.szyna('trzewia');
+
+    /* lepka masa: szum, którego pasmo wędruje jak gęsty płyn */
+    const src = ctx.createBufferSource();
+    src.buffer = Mikser.szum; src.loop = true;
+    this.lepkaF = ctx.createBiquadFilter();
+    this.lepkaF.type = 'lowpass'; this.lepkaF.frequency.value = N.trzewia.lepkaOd; this.lepkaF.Q.value = 4;
+    const lfo = ctx.createOscillator(), lfoG = ctx.createGain();
+    lfo.frequency.value = N.trzewia.lepkaTempo; lfoG.gain.value = (N.trzewia.lepkaDo - N.trzewia.lepkaOd) / 2;
+    lfo.connect(lfoG); lfoG.connect(this.lepkaF.frequency);
+    this.lepkaG = ctx.createGain(); this.lepkaG.gain.value = BEZ_ZERA;
+    src.connect(this.lepkaF); this.lepkaF.connect(this.lepkaG); this.lepkaG.connect(this.szyna);
+    src.start(); lfo.start();
+
+    /* magma: skwierczenie wysoko — jedyna warstwa, która syczy */
+    const m = ctx.createBufferSource();
+    m.buffer = Mikser.szumBialy; m.loop = true;
+    const mf = ctx.createBiquadFilter();
+    mf.type = 'bandpass'; mf.frequency.value = N.trzewia.magmaHz; mf.Q.value = N.trzewia.magmaQ;
+    this.magmaG = ctx.createGain(); this.magmaG.gain.value = BEZ_ZERA;
+    m.connect(mf); mf.connect(this.magmaG); this.magmaG.connect(this.szyna);
+    m.start();
+  },
+
+  /** Bąbel: ton, który idzie w górę i gaśnie — odwrotnie niż uderzenie. */
+  bulgot(t, glos) {
+    const b = N.trzewia, ctx = Mikser.ctx;
+    const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(b.bulgotOd * (0.8 + Math.random() * 0.5), t);
+    o.frequency.exponentialRampToValueAtTime(b.bulgotDo * (0.8 + Math.random() * 0.6), t + b.bulgotDlugosc);
+    f.type = 'lowpass'; f.frequency.value = 500;
+    g.gain.setValueAtTime(BEZ_ZERA, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(BEZ_ZERA, glos), t + b.bulgotDlugosc * 0.55);
+    g.gain.exponentialRampToValueAtTime(BEZ_ZERA, t + b.bulgotDlugosc);
+    o.connect(f); f.connect(g); g.connect(Mikser.wyjscie(this.szyna, (Math.random() - 0.5) * 1.1, 0.3));
+    o.start(t); o.stop(t + b.bulgotDlugosc + 0.05);
+    Mikser.licz(o);
+  },
+
+  nauderzeniu(t, u, krok) {
+    if (!this.czynna()) return;
+    const b = N.trzewia;
+    if (Math.random() < b.bulgotSzansa * stan.krew) {
+      this.bulgot(t + Math.random() * krok, b.bulgotGlos * this.poziom * b.glosnosc);
+    }
+    if (stan.magma > 0.05 && Math.random() < b.trzaskSzansa * stan.magma) {
+      szum(this.szyna, t + Math.random() * krok, 0.04, 3200, 1400,
+           b.trzaskGlos * stan.magma * this.poziom * b.glosnosc, (Math.random() - 0.5) * 1.2, 0.2, 3, true);
+    }
+  },
+
+  ustaw() {
+    const t = Mikser.ctx.currentTime, b = N.trzewia, cz = this.czynna();
+    this.lepkaG.gain.setTargetAtTime(cz ? Math.max(BEZ_ZERA, b.lepkaGlos * stan.krew * this.poziom * b.glosnosc) : BEZ_ZERA, t, 1.5);
+    this.magmaG.gain.setTargetAtTime(cz ? Math.max(BEZ_ZERA, b.magmaGlos * stan.magma * this.poziom * b.glosnosc) : BEZ_ZERA, t, 1.2);
+  },
+  czynna() { return this.wlaczona && solo(this); },
+
+  dzwieki: [
+    { etykieta: 'bulgot', gra() { Trzewia.bulgot(Mikser.ctx.currentTime + 0.05, N.trzewia.bulgotGlos); } },
+    { etykieta: 'żyła bulgoce (4 s)', gra() {
+      const t = Mikser.ctx.currentTime + 0.05;
+      for (let i = 0; i < 9; i++) Trzewia.bulgot(t + Math.random() * 4, N.trzewia.bulgotGlos * (0.6 + Math.random() * 0.6));
+    } },
+    { etykieta: 'skwierczenie magmy (3 s)', gra() {
+      const t = Mikser.ctx.currentTime + 0.05, g = Trzewia.magmaG.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(BEZ_ZERA, t);
+      g.linearRampToValueAtTime(N.trzewia.magmaGlos * 3, t + 0.6);
+      g.linearRampToValueAtTime(BEZ_ZERA, t + 3);
+      for (let i = 0; i < 14; i++) szum(Trzewia.szyna, t + Math.random() * 3, 0.04, 3200, 1400, N.trzewia.trzaskGlos, (Math.random() - 0.5) * 1.2, 0.2, 3, true);
+    } },
+    { etykieta: 'pęknięcie żyły', gra() {
+      const t = Mikser.ctx.currentTime + 0.05;
+      ton(Trzewia.szyna, t, 160, 42, 0.9, 0.3, 0, 0.6);
+      szum(Trzewia.szyna, t, 0.5, 900, 180, 0.2, 0, 0.6, 1.2);
+      for (let i = 0; i < 6; i++) Trzewia.bulgot(t + 0.2 + Math.random() * 1.6, N.trzewia.bulgotGlos * 1.4);
+    } },
+  ],
+});
+
+/* ───────────────────────────────── PRACA: kilofy na siatce, kroki, zbroje */
+const Praca = warstwa({
+  nazwa: 'Praca',
+  zrodlo: 'warstwy/praca.ts',
+  opis: 'Lud jest sekcją rytmiczną. Kilofy kwantyzowane do siatki serca: dużo robotników = góra ma groove, mało = rytm kuleje, zero = zostaje sam kamień. Wymieranie słychać, zanim się je zobaczy.',
+  wlaczona: true, poziom: 1,
+
+  przygotuj() { this.szyna = Mikser.szyna('praca'); },
+
+  /** Stuk kucia — praca jest rytmem, nie efektem. */
+  kilof(t, glos, pan, glebokosc) {
+    const p = N.praca, ctx = Mikser.ctx;
+    const hz = p.kilofOd + Math.random() * p.kilofRozrzut - (glebokosc || 0) * p.glebokoNiżej;
+    const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+    o.type = 'square';
+    o.frequency.setValueAtTime(Math.max(40, hz), t);
+    o.frequency.exponentialRampToValueAtTime(Math.max(30, hz * 0.4), t + 0.05);
+    g.gain.setValueAtTime(BEZ_ZERA, t);
+    g.gain.exponentialRampToValueAtTime(Math.max(BEZ_ZERA, glos), t + 0.004);
+    g.gain.exponentialRampToValueAtTime(BEZ_ZERA, t + 0.09);
+    f.type = 'lowpass'; f.frequency.value = p.kilofFiltr;
+    o.connect(g); g.connect(f); f.connect(Mikser.wyjscie(this.szyna, pan, p.poglos));
+    o.start(t); o.stop(t + 0.12);
+    Mikser.licz(o);
+  },
+
+  krok(t, glos, pan) {
+    const p = N.praca;
+    ton(this.szyna, t, p.krokHz, p.krokHz * 0.6, 0.08, glos, pan, 0.15);
+    szum(this.szyna, t, 0.05, 600, 220, glos * 0.7, pan, 0.15, 1.4);
+  },
+
+  zbroja(t, glos, pan) {
+    const p = N.praca;
+    szum(this.szyna, t, 0.1, p.zbrojaHz, p.zbrojaHz * 0.5, glos, pan, 0.4, 5, true);
+    dzwonFM(this.szyna, t, p.zbrojaHz * 0.5, glos * 0.4, 0.3, pan, 0.4, 1.41, 0.6);
+  },
+
+  nauderzeniu(t, u, krok) {
+    if (!this.czynna() || stan.zamrozone) return;     /* czas stoi — kilofy milkną */
+    const p = N.praca, gl = stan.glebokosc;
+    const glos = (p.kilofGlos + stan.kopie * p.kilofGlosOdPracy) * this.poziom * p.glosnosc;
+    const ludzkosc = () => (Math.random() - 0.5) * 2 * p.ludzkoscMs / 1000;
+    /* ósemki: szansa na kilof = zagęszczenie pracy */
+    for (let i = 0; i < 2; i++) {
+      if (Math.random() >= stan.kopie) continue;
+      this.kilof(t + i * krok / 2 + ludzkosc(), glos, (Math.random() - 0.5) * 1.2, gl);
+    }
+    /* szesnastki dopiero przy gęstej pracy — wtedy groove się zaciska */
+    if (stan.kopie > p.szesnastkiOd) {
+      const sz = (stan.kopie - p.szesnastkiOd) / (1 - p.szesnastkiOd);
+      for (let i = 0; i < 4; i++) {
+        if (Math.random() >= sz * 0.5) continue;
+        this.kilof(t + (i * 2 + 1) * krok / 8 + ludzkosc(), glos * 0.6, (Math.random() - 0.5) * 1.2, gl);
+      }
+    }
+    /* kroki na kontrę — lud chodzi między uderzeniami serca */
+    if (stan.zywi > 0.1 && Math.random() < stan.zywi * 0.7) {
+      this.krok(t + krok / 2 + ludzkosc(), p.krokGlos * stan.zywi * this.poziom * p.glosnosc, (Math.random() - 0.5) * 1.4);
+    }
+    /* zbroje rycerzy — metal na co drugim uderzeniu */
+    if (stan.rycerze > 0.05 && u % 2 === 1 && Math.random() < stan.rycerze) {
+      this.zbroja(t + ludzkosc(), p.zbrojaGlos * stan.rycerze * this.poziom * p.glosnosc, (Math.random() - 0.5) * 1.3);
+    }
+  },
+
+  czynna() { return this.wlaczona && solo(this); },
+
+  dzwieki: [
+    { etykieta: 'kilof', gra() { Praca.kilof(Mikser.ctx.currentTime + 0.05, 0.1, 0, 0.2); } },
+    { etykieta: 'kilof głęboko', gra() { Praca.kilof(Mikser.ctx.currentTime + 0.05, 0.1, 0, 1); } },
+    { etykieta: 'krok', gra() { Praca.krok(Mikser.ctx.currentTime + 0.05, 0.07, 0); } },
+    { etykieta: 'zbroja', gra() { Praca.zbroja(Mikser.ctx.currentTime + 0.05, 0.1, 0); } },
+    { etykieta: 'takt pracy — gęsto (20 kilofów)', gra() { Praca.takt(1); } },
+    { etykieta: 'takt pracy — rzadko (5 kilofów)', gra() { Praca.takt(0.22); } },
+  ],
+
+  /** Demonstracja zasady: ten sam rytm przy różnym zagęszczeniu pracy. */
+  takt(zageszczenie) {
+    const t0 = Mikser.ctx.currentTime + 0.08, krok = 60 / Zegar.tempo();
+    for (let u = 0; u < 8; u++) {
+      for (let i = 0; i < 2; i++) {
+        if (Math.random() >= zageszczenie) continue;
+        this.kilof(t0 + u * krok + i * krok / 2 + (Math.random() - 0.5) * 0.028,
+                   (N.praca.kilofGlos + zageszczenie * N.praca.kilofGlosOdPracy), (Math.random() - 0.5) * 1.2, stan.glebokosc);
+      }
+    }
+  },
+});
+
+/* ──────────────────────────────────────── MODLITWA: chór formantowy pobożnych */
+const Modlitwa = warstwa({
+  nazwa: 'Modlitwa',
+  zrodlo: 'warstwy/modlitwa.ts',
+  opis: 'Nowa warstwa. Dziś modlitwa to szum w filtrze — tu są głosy: piły przez filtry formantowe, samogłoska między „o” i „a”, każdy głos z własnym vibrato, żeby brzmiał jak tłum, nie organy.',
+  wlaczona: true, poziom: 1,
+  glosy: null,
+
+  przygotuj() {
+    const ctx = Mikser.ctx, m = N.modlitwa;
+    this.szyna = Mikser.szyna('modlitwa');
+    this.wspolna = ctx.createGain();
+    this.wspolna.gain.value = BEZ_ZERA;
+    this.wspolna.connect(this.szyna);
+    const s = ctx.createGain(); s.gain.value = 0.45;
+    this.wspolna.connect(s); s.connect(this.szyna.__mokra);
+
+    this.glosy = [];
+    for (let i = 0; i < m.glosow; i++) {
+      const o = ctx.createOscillator();
+      o.type = 'sawtooth';
+      o.frequency.value = 220;
+      /* vibrato: każdy głos inaczej, inaczej też szybko — stąd tłum */
+      const lfo = ctx.createOscillator(), lfoG = ctx.createGain();
+      lfo.frequency.value = m.vibratoHz * (0.82 + Math.random() * 0.36);
+      lfoG.gain.value = m.vibratoCenty;
+      lfo.connect(lfoG); lfoG.connect(o.detune);
+      /* dech: trochę szumu w tym samym torze formantów */
+      const sz = ctx.createBufferSource();
+      sz.buffer = Mikser.szum; sz.loop = true;
+      const szG = ctx.createGain(); szG.gain.value = m.dech;
+
+      const f1 = ctx.createBiquadFilter(); f1.type = 'bandpass'; f1.Q.value = m.q1;
+      const f2 = ctx.createBiquadFilter(); f2.type = 'bandpass'; f2.Q.value = m.q2;
+      const g1 = ctx.createGain(); g1.gain.value = 1;
+      const g2 = ctx.createGain(); g2.gain.value = 0.55;
+      const glos = ctx.createGain();
+      glos.gain.value = 1 / m.glosow;
+
+      o.connect(f1); o.connect(f2);
+      sz.connect(szG); szG.connect(f1); szG.connect(f2);
+      f1.connect(g1); f2.connect(g2);
+      g1.connect(glos); g2.connect(glos);
+      glos.connect(Mikser.wyjscie(this.wspolna, (i - (m.glosow - 1) / 2) * 0.5, 0));
+      o.start(); lfo.start(); sz.start();
+      this.glosy.push({ o, f1, f2 });
+    }
+    this.samogloska(0.35, Mikser.ctx.currentTime, 0.01);
+  },
+
+  /** 0 — „o”, 1 — „a”. Modlitwa się otwiera, gdy wiara rośnie. */
+  samogloska(ile, t, czas) {
+    const m = N.modlitwa;
+    const f1 = lerp(m.samogloskaO[0], m.samogloskaA[0], ile);
+    const f2 = lerp(m.samogloskaO[1], m.samogloskaA[1], ile);
+    for (const g of this.glosy) {
+      g.f1.frequency.setTargetAtTime(f1, t, czas);
+      g.f2.frequency.setTargetAtTime(f2, t, czas);
+    }
+  },
+
+  /** Chór siada na akordzie kamienia, oktawę wyżej — nad pracą, nie w niej. */
+  nastroj(t, czas) {
+    const sk = Kamien.skala();
+    const akord = N.kamien.progresja[Math.max(0, Kamien.krok - 1) % N.kamien.progresja.length];
+    this.glosy.forEach((g, i) => {
+      const st = akord.stopnie[i % akord.stopnie.length] + 7;
+      g.o.frequency.setTargetAtTime(Kamien.hz(st, sk), t, czas);
+    });
+  },
+
+  nauderzeniu(t, u, krok) {
+    if (!this.czynna()) return;
+    if (u % N.zegar.uderzenNaAkord !== 0) return;     /* wejście na akord, nie w środku */
+    this.nastroj(t, 0.6);
+    this.samogloska(zakres(stan.wiara, 0, 1), t, 1.2);
+  },
+
+  ustaw() {
+    const m = N.modlitwa, t = Mikser.ctx.currentTime;
+    const cel = this.czynna() ? m.glosnosc * stan.wiara * this.poziom * (stan.zamrozone ? 0.3 : 1) : 0;
+    this.wspolna.gain.setTargetAtTime(Math.max(BEZ_ZERA, cel), t, cel > 0.001 ? m.wejscie : m.zejscie);
+  },
+  czynna() { return this.wlaczona && solo(this); },
+
+  dzwieki: [
+    { etykieta: 'wejście chóru (8 s)', gra() {
+      const t = Mikser.ctx.currentTime + 0.05, g = Modlitwa.wspolna.gain;
+      Modlitwa.nastroj(t, 0.1);
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(BEZ_ZERA, t);
+      g.linearRampToValueAtTime(N.modlitwa.glosnosc, t + 2.6);
+      g.setValueAtTime(N.modlitwa.glosnosc, t + 5.4);
+      g.linearRampToValueAtTime(BEZ_ZERA, t + 8);
+    } },
+    { etykieta: 'samogłoska „o”', gra() { Modlitwa.pokaz(0); } },
+    { etykieta: 'samogłoska „a”', gra() { Modlitwa.pokaz(1); } },
+    { etykieta: 'otwarcie „o” → „a”', gra() {
+      const t = Mikser.ctx.currentTime + 0.05;
+      Modlitwa.pokaz(0, 6);
+      Modlitwa.samogloska(0, t, 0.01);
+      Modlitwa.samogloska(1, t + 1, 1.6);
+    } },
+  ],
+
+  pokaz(samogl, dlugosc) {
+    const t = Mikser.ctx.currentTime + 0.05, g = this.wspolna.gain, d = dlugosc || 4;
+    this.nastroj(t, 0.1);
+    if (samogl !== undefined) this.samogloska(samogl, t, 0.01);
+    g.cancelScheduledValues(t);
+    g.setValueAtTime(BEZ_ZERA, t);
+    g.linearRampToValueAtTime(N.modlitwa.glosnosc, t + 1.2);
+    g.setValueAtTime(N.modlitwa.glosnosc, t + d * 0.6);
+    g.linearRampToValueAtTime(BEZ_ZERA, t + d);
+  },
+});
+
+/* ──────────────────────────────────────────── STRAŻNICY: tryton, groza, boss */
+const Straznicy = warstwa({
+  nazwa: 'Strażnicy',
+  zrodlo: 'warstwy/straznicy.ts',
+  opis: 'Nowa warstwa. Tryton nad podstawą — jedyny interwał poza skalą w całej grze — na nieharmonicznych nośnych. Fala Strażników ma być słyszalna bez patrzenia na ekran. Śpiący kamień dzwoni cienko, wysoko, jak w uszach.',
+  wlaczona: true, poziom: 1,
+
+  przygotuj() {
+    const ctx = Mikser.ctx, s = N.straznicy;
+    this.szyna = Mikser.szyna('straznicy');
+    this.wspolna = ctx.createGain();
+    this.wspolna.gain.value = BEZ_ZERA;
+    this.wspolna.connect(this.szyna);
+    const w = ctx.createGain(); w.gain.value = 0.4;
+    this.wspolna.connect(w); w.connect(this.szyna.__mokra);
+
+    /* dwie nośne: podstawa i tryton, obie z nieharmonicznym modulatorem */
+    this.pary = [0, s.tryton].map((polton, i) => {
+      const hz = N.kamien.podstawa * Math.pow(2, (polton - 12) / 12);
+      const o = ctx.createOscillator(), mod = ctx.createOscillator(), modG = ctx.createGain(), g = ctx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = hz;
+      o.detune.value = (i - 0.5) * 16;
+      mod.type = 'sine'; mod.frequency.value = hz * s.metal;
+      modG.gain.value = hz * s.modulacja;
+      mod.connect(modG); modG.connect(o.frequency);
+      g.gain.value = 0.5;
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass'; f.frequency.value = s.pomrukHz * 4; f.Q.value = s.pomrukQ;
+      /* pomruk: filtr wędruje sam, wolno i nieregularnie */
+      const lfo = ctx.createOscillator(), lfoG = ctx.createGain();
+      lfo.frequency.value = s.pomrukTempo * (0.7 + i * 0.6);
+      lfoG.gain.value = s.pomrukHz * 2.2;
+      lfo.connect(lfoG); lfoG.connect(f.frequency);
+      o.connect(f); f.connect(g); g.connect(Mikser.wyjscie(this.wspolna, i ? 0.4 : -0.4, 0));
+      o.start(); mod.start(); lfo.start();
+      return { o, f };
+    });
+
+    /* śpiący kamień: cienkie dzwonienie wysoko, z wolnym tremolo */
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = s.snuHz;
+    const lfo = ctx.createOscillator(), lfoG = ctx.createGain();
+    lfo.frequency.value = s.snuTremolo; lfoG.gain.value = 0.6;
+    lfo.connect(lfoG); lfoG.connect(g.gain);
+    this.snuG = ctx.createGain(); this.snuG.gain.value = BEZ_ZERA;
+    g.gain.value = 1;
+    o.connect(g); g.connect(this.snuG); this.snuG.connect(this.szyna);
+    o.start(); lfo.start();
+  },
+
+  cios(t, glos) {
+    const s = N.straznicy;
+    ton(this.szyna, t, 90, 34, 0.5, glos, 0, 0.6);
+    szum(this.szyna, t, 0.22, 1800, 300, glos * 0.7, 0, 0.6, 1.1);
+    dzwonFM(this.szyna, t + 0.01, N.kamien.podstawa * 0.5, glos * 0.5, 2.2, 0, 0.7, s.metal, 1.2);
+  },
+
+  ustaw() {
+    const s = N.straznicy, t = Mikser.ctx.currentTime, cz = this.czynna();
+    const sila = stan.fala ? 1 : 0;
+    this.wspolna.gain.setTargetAtTime(cz ? Math.max(BEZ_ZERA, s.glosnosc * sila * this.poziom * 0.25) : BEZ_ZERA, t, 2.4);
+    this.snuG.gain.setTargetAtTime(cz && stan.bossSpi ? s.snuGlos * this.poziom : BEZ_ZERA, t, 2);
+  },
+  czynna() { return this.wlaczona && solo(this); },
+
+  dzwieki: [
+    { etykieta: 'tryton wchodzi (8 s)', gra() {
+      const t = Mikser.ctx.currentTime + 0.05, g = Straznicy.wspolna.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(BEZ_ZERA, t);
+      g.linearRampToValueAtTime(N.straznicy.glosnosc * 0.25, t + 3);
+      g.setValueAtTime(N.straznicy.glosnosc * 0.25, t + 5.5);
+      g.linearRampToValueAtTime(BEZ_ZERA, t + 8);
+    } },
+    { etykieta: 'śpiący kamień (dzwonienie w uszach)', gra() {
+      const t = Mikser.ctx.currentTime + 0.05, g = Straznicy.snuG.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(BEZ_ZERA, t);
+      g.linearRampToValueAtTime(N.straznicy.snuGlos, t + 1.5);
+      g.setValueAtTime(N.straznicy.snuGlos, t + 5);
+      g.linearRampToValueAtTime(BEZ_ZERA, t + 7);
+    } },
+    { etykieta: 'cios Strażnika', gra() { Straznicy.cios(Mikser.ctx.currentTime + 0.05, N.straznicy.ciosGlos); } },
+    { etykieta: 'przebudzenie bossa', gra() {
+      const t = Mikser.ctx.currentTime + 0.05;
+      Dzwon.uderz(t, Kamien.hz(-7, Kamien.skala()), 0.26, 7);
+      Straznicy.cios(t + 0.45, N.straznicy.ciosGlos * 0.8);
+      const g = Straznicy.wspolna.gain;
+      g.cancelScheduledValues(t);
+      g.setValueAtTime(BEZ_ZERA, t);
+      g.linearRampToValueAtTime(N.straznicy.glosnosc * 0.3, t + 2.5);
+      g.linearRampToValueAtTime(BEZ_ZERA, t + 9);
+    } },
+  ],
+});
+
+/* ───────────────────────────────────────── DZWON: głos rdzenia, tylko zdarzenia */
+const Dzwon = warstwa({
+  nazwa: 'Głos rdzenia',
+  zrodlo: 'warstwy/dzwon.ts',
+  opis: 'Dzwon przestaje losować. Dziś bije co 6–13 sekund i dlatego nic nie znaczy — tu mówi tylko wtedy, gdy rdzeń ma co powiedzieć: pęknięcie skorupy, cud, ostrzeżenie, przebudzenie bossa.',
+  wlaczona: true, poziom: 1,
+
+  przygotuj() { this.szyna = Mikser.szyna('dzwon'); },
+
+  uderz(t, hz, glos, ogon) {
+    const d = N.dzwon;
+    dzwonFM(this.szyna, t, hz, glos * this.poziom * d.glosnosc, ogon || d.ogon,
+            (Math.random() - 0.5) * 1.1, d.poglos, d.metal, d.modulacja);
+  },
+
+  /** Cud słychać jako uderzenie w skałę, nie jako fanfarę. */
+  cud(t) {
+    for (let i = 0; i < 3; i++) {
+      ton(this.szyna, t + i * 0.16, 70 - i * 8, (70 - i * 8) * 0.4, 0.3, 0.22 * this.poziom, 0, 0.7);
+      ton(this.szyna, t + i * 0.16, (70 - i * 8) * 2.32, (70 - i * 8) * 0.93, 0.18, 0.12 * this.poziom, 0, 0.7);
+    }
+  },
+
+  /** Kryzys: dwa dzwony o pół tonu od siebie. Zgrzyt, którego nie da się zignorować. */
+  alarm(t, kryzys) {
+    if (kryzys) {
+      ton(this.szyna, t, 58, 30, 0.6, 0.4 * this.poziom, 0, 0.7);
+      this.uderz(t + 0.02, 146.83, 0.34, 5);
+      this.uderz(t + 0.05, 155.56, 0.22, 4.5);
+      this.uderz(t + 0.9, 293.66, 0.12, 3.5);
+    } else {
+      this.uderz(t, 293.66, 0.2, 3.5);
+      this.uderz(t + 0.32, 440, 0.13, 3);
+    }
+  },
+
+  czynna() { return this.wlaczona && solo(this); },
+
+  dzwieki: [
+    { etykieta: 'dzwon nisko', gra() { Dzwon.uderz(Mikser.ctx.currentTime + 0.05, Kamien.hz(-7, Kamien.skala()), 0.2, 7); } },
+    { etykieta: 'dzwon wysoko', gra() { Dzwon.uderz(Mikser.ctx.currentTime + 0.05, Kamien.hz(9, Kamien.skala()), 0.14, 4.5); } },
+    { etykieta: 'cud', gra() { Dzwon.cud(Mikser.ctx.currentTime + 0.05); } },
+    { etykieta: 'alarm kryzysu', gra() { Dzwon.alarm(Mikser.ctx.currentTime + 0.05, true); } },
+    { etykieta: 'alarm wydarzenia', gra() { Dzwon.alarm(Mikser.ctx.currentTime + 0.05, false); } },
+  ],
+});
+
+/* ════════════════════════════════════════════════════════════════════════════
+   DYRYGENT — stan → odsłona → natężenia (→ core/dyrygent.ts)
+   ════════════════════════════════════════════════════════════════════════════ */
+const Dyrygent = {
+  ruszyl: false,
+  zegarStoi: false,     /* pracownia: nic nie gra samo, zostają pojedyncze dźwięki */
+
+  start() {
+    if (!Mikser.start()) { alert('Ta przeglądarka nie daje Web Audio.'); return false; }
+    if (this.ruszyl) {
+      Mikser.ctx.resume();
+      if (!this.zegarStoi) Zegar.start();         /* po „Cisza” zegar stoi */
+      return true;
+    }
+    for (const w of warstwy) w.przygotuj();
+    Zegar.na((t, u, krok) => { for (const w of warstwy) if (w.nauderzeniu) w.nauderzeniu(t, u, krok); });
+    if (!this.zegarStoi) Zegar.start();
+    setInterval(() => this.ustaw(), 200);
+    this.ruszyl = true;
+    Mikser.zawies(0);
+    return true;
+  },
+
+  ustaw() {
+    if (!this.ruszyl) return;
+    for (const w of warstwy) if (w.ustaw) w.ustaw();
+    for (const szyna of Object.values(Mikser.szyny)) {
+      const w = warstwy.find((x) => x.szyna === szyna);
+      if (!w) continue;
+      const cel = w.czynna() ? 1 : BEZ_ZERA;
+      szyna.gain.setTargetAtTime(cel, Mikser.ctx.currentTime, 0.25);
+      if (szyna.__mokra) szyna.__mokra.gain.setTargetAtTime(cel, Mikser.ctx.currentTime, 0.25);
+    }
+    Mikser.zawies(stan.zamrozone ? 1 : 0);
+  },
+
+  cisza() {
+    if (!this.ruszyl) return;
+    /* twarde ścięcie na wyjściu: warstwy schodzą własnym tempem (chór 3 s),
+       więc samo wyciszanie szyn to jeszcze nie cisza */
+    const g = Mikser.wzmocnienie.gain;
+    g.cancelScheduledValues(Mikser.ctx.currentTime);
+    g.setTargetAtTime(BEZ_ZERA, Mikser.ctx.currentTime, 0.06);
+    Zegar.stop();
+    for (const w of warstwy) { w.wlaczona = false; if (w.ustaw) w.ustaw(); }
+    for (const sz of Object.values(Mikser.szyny)) sz.gain.setTargetAtTime(BEZ_ZERA, Mikser.ctx.currentTime, 0.2);
+    for (const mk of Object.values(Mikser.mokre)) mk.gain.setTargetAtTime(BEZ_ZERA, Mikser.ctx.currentTime, 0.2);
+  },
+
+  /**
+   * RDZEŃ OTWARTY — jedyne rozwiązanie harmonii w całej grze.
+   * Po kilkunastu minutach frygijskiego zawieszenia wchodzi czysta tercja wielka.
+   * Wygrana nie jest fanfarą. Jest pierwszą konsonansą, jaką gracz słyszy.
+   */
+  rozwiazanie() {
+    const ctx = Mikser.ctx, t = ctx.currentTime + 0.1, baza = N.kamien.podstawa;
+    /* ostatnie pełne uderzenie serca */
+    Serce.bij(t, 1.2, 1.6);
+    /* dzwon na podstawie */
+    Dzwon.uderz(t + 0.35, baza, 0.26, 9);
+    /* trójdźwięk wprost z półtonów: D F# A — nuty, których w grze nie ma */
+    [0, 4, 7, 12, 16].forEach((polton, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain(), f = ctx.createBiquadFilter();
+      o.type = 'sawtooth';
+      o.frequency.value = baza * Math.pow(2, polton / 12);
+      o.detune.value = (Math.random() - 0.5) * 8;
+      f.type = 'lowpass'; f.Q.value = 0.8;
+      f.frequency.setValueAtTime(300, t);
+      f.frequency.linearRampToValueAtTime(2600, t + 7);
+      f.frequency.linearRampToValueAtTime(900, t + 17);
+      g.gain.setValueAtTime(BEZ_ZERA, t + 0.3);
+      g.gain.exponentialRampToValueAtTime(0.075 * (1 - i * 0.1), t + 6);
+      g.gain.exponentialRampToValueAtTime(BEZ_ZERA, t + 17);
+      o.connect(f); f.connect(g); g.connect(Mikser.wyjscie(Kamien.szyna, (i - 2) * 0.4, 0.35));
+      o.start(t); o.stop(t + 17.5);
+      Mikser.licz(o);
+    });
+    /* chór wchodzi oktawę wyżej, na tej samej tercji */
+    Modlitwa.glosy.forEach((gl, i) => {
+      const polton = [12, 16, 19][i % 3];
+      gl.o.frequency.setTargetAtTime(baza * Math.pow(2, polton / 12), t + 0.3, 1.6);
+    });
+    Modlitwa.samogloska(1, t + 0.3, 2.4);
+    const mg = Modlitwa.wspolna.gain;
+    mg.cancelScheduledValues(t);
+    mg.setValueAtTime(Math.max(BEZ_ZERA, mg.value), t);
+    mg.linearRampToValueAtTime(N.modlitwa.glosnosc * 1.1, t + 7);
+    mg.linearRampToValueAtTime(BEZ_ZERA, t + 17);
+  },
+
+  /** Kronika: jedno trzymane pasmo, ostatnie uderzenie, cisza. */
+  kronika() {
+    const t = Mikser.ctx.currentTime + 0.1;
+    Serce.bij(t, 1.15, 3.4);
+    ton(Serce.szyna, t + 0.1, 40, 26, 7, N.serce.glosnosc * 0.3, 0, 0.8);
+    ton(Kamien.szyna, t, N.kamien.podstawa * Math.pow(2, 1 / 12), N.kamien.podstawa * Math.pow(2, 1 / 12) * 0.995, 12, 0.05, 0, 0.5, 'sawtooth');
+    Dzwon.uderz(t + 1.2, N.kamien.podstawa * 0.5, 0.16, 9);
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   SOLO — pomocnik: czy ta warstwa ma teraz grać
+   ════════════════════════════════════════════════════════════════════════════ */
+let solowana = null;
+function solo(w) { return solowana === null || solowana === w; }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ODSŁONY — pełne nastawy stanu, tak jak ustawiłby je dyrygent
+   ════════════════════════════════════════════════════════════════════════════ */
+const ODSLONY = [
+  { nazwa: 'Przebudzenie', opis: 'menu — serce i kamień, nic więcej',
+    stan: { glebokosc: 0.1, sen: 0, wiara: 0, krew: 0.1, zywi: 0, kopie: 0, rycerze: 0, dominacja: 0, magma: 0, fala: false, bossSpi: false, zamrozone: false } },
+  { nazwa: 'Zasiedlenie', opis: 'lud wchodzi, groove się buduje',
+    stan: { glebokosc: 0.2, sen: 0.05, wiara: 0.15, krew: 0.15, zywi: 0.3, kopie: 0.3, rycerze: 0, dominacja: 0.15, magma: 0, fala: false, bossSpi: false, zamrozone: false } },
+  { nazwa: 'Kult', opis: 'wiara rośnie, chór nad pracą',
+    stan: { glebokosc: 0.45, sen: 0.1, wiara: 0.85, krew: 0.3, zywi: 0.8, kopie: 0.75, rycerze: 0.2, dominacja: 0.3, magma: 0.1, fala: false, bossSpi: false, zamrozone: false } },
+  { nazwa: 'Zaduch', opis: 'jedna nacja zjada resztę — pad traci głos',
+    stan: { glebokosc: 0.5, sen: 0.3, wiara: 0.4, krew: 0.25, zywi: 0.6, kopie: 0.5, rycerze: 0.1, dominacja: 0.92, magma: 0.1, fala: false, bossSpi: false, zamrozone: false } },
+  { nazwa: 'Sen', opis: 'puls zwalnia i gubi, świat traci wysokie',
+    stan: { glebokosc: 0.6, sen: 0.82, wiara: 0.2, krew: 0.15, zywi: 0.3, kopie: 0.2, rycerze: 0, dominacja: 0.5, magma: 0.1, fala: false, bossSpi: false, zamrozone: false } },
+  { nazwa: 'Fala Strażników', opis: 'tryton, serce przyspiesza, lud walczy dalej',
+    stan: { glebokosc: 0.85, sen: 0.35, wiara: 0.6, krew: 0.5, zywi: 0.5, kopie: 0.3, rycerze: 0.9, dominacja: 0.4, magma: 0.3, fala: true, bossSpi: false, zamrozone: false } },
+  { nazwa: 'Śpiący kamień', opis: 'boss zasnął — cienkie dzwonienie wysoko',
+    stan: { glebokosc: 0.9, sen: 0.3, wiara: 0.5, krew: 0.4, zywi: 0.5, kopie: 0.6, rycerze: 0.5, dominacja: 0.4, magma: 0.2, fala: false, bossSpi: true, zamrozone: false } },
+  { nazwa: 'Czas stoi', opis: 'pauza — świat za skałą, puls blisko ucha',
+    stan: { glebokosc: 0.6, sen: 0.25, wiara: 0.5, krew: 0.3, zywi: 0.7, kopie: 0.7, rycerze: 0.3, dominacja: 0.3, magma: 0.1, fala: false, bossSpi: false, zamrozone: true } },
+  { nazwa: 'Przy magmie', opis: 'skwierczenie i trzaski w kadrze',
+    stan: { glebokosc: 0.95, sen: 0.3, wiara: 0.4, krew: 0.7, zywi: 0.5, kopie: 0.5, rycerze: 0.2, dominacja: 0.3, magma: 0.95, fala: false, bossSpi: false, zamrozone: false } },
+];
+
+/* ════════════════════════════════════════════════════════════════════════════
+   STÓŁ — interfejs pracowni
+   ════════════════════════════════════════════════════════════════════════════ */
+const el = (id) => document.getElementById(id);
+
+const SUWAKI_STANU = [
+  ['glebokosc', 'Głębokość', 'tryb skali, strój, barwa kilofa'],
+  ['sen', 'Sen', 'tempo pulsu i gubione uderzenia'],
+  ['wiara', 'Wiara', 'głośność chóru i otwarcie samogłoski'],
+  ['krew', 'Krew', 'bulgot i lepka masa'],
+  ['zywi', 'Żywi', 'oddech i kroki'],
+  ['kopie', 'Kopiących', 'zagęszczenie kilofów — groove'],
+  ['rycerze', 'Rycerzy', 'zbroje na kontrę'],
+  ['dominacja', 'Dominacja', 'Zaduch: pad traci głos'],
+  ['magma', 'Magma', 'skwierczenie i trzaski'],
+  ['duszenie', 'Ducking od serca', 'o ile świat ustępuje uderzeniu'],
+];
+
+function zbudujStan() {
+  const dom = el('stan');
+  for (const [klucz, etykieta, opis] of SUWAKI_STANU) {
+    const d = document.createElement('div');
+    d.className = 'suwak';
+    d.innerHTML =
+      '<label for="s-' + klucz + '" title="' + opis + '">' + etykieta + '</label>' +
+      '<output id="o-' + klucz + '"></output>' +
+      '<input type="range" id="s-' + klucz + '" min="0" max="1" step="0.01" value="' + stan[klucz] + '">';
+    dom.appendChild(d);
+    const we = d.querySelector('input'), wy = d.querySelector('output');
+    const odswiez = () => { wy.textContent = Number(we.value).toFixed(2); };
+    we.addEventListener('input', () => { stan[klucz] = parseFloat(we.value); odswiez(); });
+    odswiez();
+  }
+  const pt = el('stan-ptaszki');
+  for (const [klucz, etykieta] of [['fala', 'Fala Strażników'], ['bossSpi', 'Boss śpi'], ['zamrozone', 'Czas stoi (pauza)']]) {
+    const l = document.createElement('label');
+    l.innerHTML = '<input type="checkbox" id="p-' + klucz + '"><span>' + etykieta + '</span>';
+    pt.appendChild(l);
+    l.querySelector('input').addEventListener('change', (e) => { stan[klucz] = e.target.checked; });
+  }
+  /* gięcie skali — do porównania z progami */
+  const l = document.createElement('label');
+  l.innerHTML = '<input type="checkbox" id="p-gieta"><span>Gięcie skali (zamiast progów)</span>';
+  pt.appendChild(l);
+  l.querySelector('input').addEventListener('change', (e) => { Kamien.gieta = e.target.checked; });
+
+  /* zatrzymany zegar: nic nie gra samo — jeden dźwięk w ciszy, do strojenia */
+  const z = document.createElement('label');
+  z.innerHTML = '<input type="checkbox" id="p-zegar"><span>Zatrzymaj zegar (tylko pojedyncze dźwięki)</span>';
+  pt.appendChild(z);
+  z.querySelector('input').addEventListener('change', (e) => {
+    Dyrygent.zegarStoi = e.target.checked;
+    if (e.target.checked) Zegar.stop(); else if (Dyrygent.ruszyl) Zegar.start();
+  });
+}
+
+function zbudujOdslony() {
+  const dom = el('odslony');
+  for (const o of ODSLONY) {
+    const b = document.createElement('button');
+    b.textContent = o.nazwa;
+    b.title = o.opis;
+    b.addEventListener('click', () => {
+      Object.assign(stan, o.stan);
+      odswiezStanUI();
+      Dyrygent.ustaw();
+    });
+    dom.appendChild(b);
+  }
+}
+
+function odswiezStanUI() {
+  for (const [klucz] of SUWAKI_STANU) {
+    const we = el('s-' + klucz);
+    if (!we) continue;
+    we.value = stan[klucz];
+    el('o-' + klucz).textContent = Number(stan[klucz]).toFixed(2);
+  }
+  for (const klucz of ['fala', 'bossSpi', 'zamrozone']) {
+    const p = el('p-' + klucz);
+    if (p) p.checked = !!stan[klucz];
+  }
+}
+
+function zbudujWarstwy() {
+  const dom = el('warstwy');
+  for (const w of warstwy) {
+    const k = document.createElement('div');
+    k.className = 'karta';
+    k.innerHTML =
+      '<h3><span>' + w.nazwa + '</span><em>' + w.zrodlo + '</em></h3>' +
+      '<p>' + w.opis + '</p>' +
+      '<div class="sterowanie"></div>' +
+      '<div class="rzad"></div>' +
+      '<div class="mierz"><i></i></div>';
+    const ster = k.querySelector('.sterowanie');
+
+    const wl = document.createElement('button');
+    wl.className = 'maly wlaczony';
+    wl.dataset.wl = '1';
+    wl.textContent = 'wł.';
+    wl.addEventListener('click', () => {
+      w.wlaczona = !w.wlaczona;
+      wl.textContent = w.wlaczona ? 'wł.' : 'wył.';
+      wl.classList.toggle('wlaczony', w.wlaczona);
+      Dyrygent.ustaw();
+    });
+    ster.appendChild(wl);
+
+    const so = document.createElement('button');
+    so.className = 'maly';
+    so.textContent = 'solo';
+    so.addEventListener('click', () => {
+      solowana = solowana === w ? null : w;
+      for (const b of document.querySelectorAll('[data-solo]')) b.classList.remove('wlaczony');
+      if (solowana === w) so.classList.add('wlaczony');
+      Dyrygent.ustaw();
+    });
+    so.dataset.solo = '1';
+    ster.appendChild(so);
+
+    const gl = document.createElement('input');
+    gl.type = 'range'; gl.min = '0'; gl.max = '1.5'; gl.step = '0.02'; gl.value = String(w.poziom);
+    gl.title = 'głośność warstwy';
+    gl.addEventListener('input', () => { w.poziom = parseFloat(gl.value); });
+    ster.appendChild(gl);
+
+    const rzad = k.querySelector('.rzad');
+    for (const d of (w.dzwieki || [])) {
+      const b = document.createElement('button');
+      b.className = 'maly';
+      b.textContent = d.etykieta;
+      b.addEventListener('click', () => { if (wymagaStartu()) d.gra(); });
+      rzad.appendChild(b);
+    }
+    w.mierzUI = k.querySelector('.mierz i');
+    dom.appendChild(k);
+  }
+}
+
+function zbudujZdarzenia() {
+  const dom = el('zdarzenia');
+  const lista = [
+    ['Pęknięcie skorupy 1', () => pekniecie(0)],
+    ['Pęknięcie skorupy 2', () => pekniecie(1)],
+    ['Pęknięcie skorupy 3', () => pekniecie(2)],
+    ['Pęknięcie skorupy 4', () => pekniecie(3)],
+    ['Pęknięcie skorupy 5 (ostatnie)', () => pekniecie(4)],
+    ['Góra zasypia — ostrzeżenie', () => Dzwon.alarm(Mikser.ctx.currentTime + 0.05, true)],
+    ['Przebudzenie bossa', () => Straznicy.dzwieki[3].gra()],
+    ['RDZEŃ OTWARTY — rozwiązanie', () => Dyrygent.rozwiazanie()],
+    ['Kronika — koniec', () => Dyrygent.kronika()],
+  ];
+  for (const [etykieta, f] of lista) {
+    const b = document.createElement('button');
+    b.textContent = etykieta;
+    if (etykieta.indexOf('RDZEŃ') === 0) b.className = 'glowny';
+    b.addEventListener('click', () => { if (wymagaStartu()) f(); });
+    dom.appendChild(b);
+  }
+}
+
+/** Pęknięcia idą w górę po skali — każde kolejne wyżej, bliżej wygranej. */
+function pekniecie(nr) {
+  const sk = Kamien.skala(), t = Mikser.ctx.currentTime + 0.05;
+  Dzwon.uderz(t, Kamien.hz(2 + nr * 2, sk), 0.2 - nr * 0.012, 5 + nr);
+  szum(Dzwon.szyna, t, 0.3, 1400, 320, 0.14, (Math.random() - 0.5) * 0.8, 0.5, 1.4);
+  ton(Dzwon.szyna, t, 120, 48, 0.4, 0.16, 0, 0.5);
+}
+
+function wymagaStartu() {
+  if (Dyrygent.ruszyl) { Mikser.ctx.resume(); return true; }
+  return Dyrygent.start();
+}
+
+/* ─────────────────────────────────────────────────────── przyrządy: widmo, takt */
+function rysuj() {
+  requestAnimationFrame(rysuj);
+  const c = el('widmo'), ctx2 = c.getContext('2d');
+  const w = c.width, h = c.height;
+  ctx2.clearRect(0, 0, w, h);
+
+  if (!Mikser.analiza) {
+    ctx2.fillStyle = '#4a423c';
+    ctx2.font = '13px Georgia, serif';
+    ctx2.fillText('Naciśnij „Obudź górę” — przeglądarka nie wpuści dźwięku bez twojego ruchu.', 14, h / 2);
+    return;
+  }
+
+  const n = Mikser.analiza.frequencyBinCount;
+  const dane = new Uint8Array(n);
+  Mikser.analiza.getByteFrequencyData(dane);
+  const nyquist = Mikser.ctx.sampleRate / 2;
+
+  /* pasmo, którego telefon nie zagra */
+  const x100 = (Math.log(100 / 20) / Math.log(nyquist / 20)) * w;
+  ctx2.fillStyle = 'rgba(138, 26, 22, 0.22)';
+  ctx2.fillRect(0, 0, x100, h);
+  ctx2.fillStyle = '#6b2a24';
+  ctx2.font = '9px ui-monospace, monospace';
+  ctx2.fillText('100 Hz', x100 + 4, 11);
+
+  /* widmo w skali logarytmicznej — tak, jak się słyszy */
+  ctx2.beginPath();
+  ctx2.moveTo(0, h);
+  for (let x = 0; x < w; x++) {
+    const hz = 20 * Math.pow(nyquist / 20, x / w);
+    const i = Math.min(n - 1, Math.round(hz / nyquist * n));
+    const v = dane[i] / 255;
+    ctx2.lineTo(x, h - v * h * 0.96);
+  }
+  ctx2.lineTo(w, h);
+  ctx2.closePath();
+  ctx2.fillStyle = 'rgba(255, 140, 50, 0.3)';
+  ctx2.fill();
+  ctx2.strokeStyle = '#e0a860';
+  ctx2.lineWidth = 1;
+  ctx2.stroke();
+
+  /* liczniki */
+  el('l-bpm').textContent = stan.sen >= 1 ? 'stoi' : Zegar.bpm.toFixed(1);
+  el('l-uderzenie').textContent = String(Zegar.uderzenie);
+  el('l-zrodla').textContent = String(Mikser.zrodla);
+
+  /* takt: które uderzenie w czwórce */
+  const faza = Zegar.uderzenie % 4;
+  const kropki = el('takt').children;
+  for (let i = 0; i < kropki.length; i++) kropki[i].classList.toggle('bije', i === faza);
+
+  /* miernik warstwy — prawdziwe RMS z odczepu szyny */
+  for (const warst of warstwy) {
+    if (!warst.mierzUI || !warst.szyna) continue;
+    if (!warst.nazwaSzyny) warst.nazwaSzyny = Object.keys(Mikser.szyny).find((k) => Mikser.szyny[k] === warst.szyna);
+    const v = Mikser.poziomSzyny(warst.nazwaSzyny);
+    warst.mierzUI.style.width = Math.min(100, Math.sqrt(v) * 190) + '%';
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────── start */
+el('obudz').addEventListener('click', () => {
+  if (!Dyrygent.start()) return;
+  el('obudz').textContent = 'Góra czuwa';
+  el('obudz').classList.add('gra');
+  el('cisza').disabled = false;
+  const g = Mikser.wzmocnienie.gain, t = Mikser.ctx.currentTime;
+  g.cancelScheduledValues(t);
+  g.setTargetAtTime(N.mikser.wzmocnienie * parseFloat(el('master').value), t, 0.08);
+});
+
+el('cisza').addEventListener('click', () => {
+  Dyrygent.cisza();
+  el('obudz').textContent = 'Obudź górę';
+  el('obudz').classList.remove('gra');
+  /* warstwy wracają włączone, ale zegar rusza dopiero przy „Obudź górę” */
+  for (const w of warstwy) w.wlaczona = true;
+  for (const b of document.querySelectorAll('[data-wl]')) { b.textContent = 'wł.'; b.classList.add('wlaczony'); }
+});
+
+el('master').addEventListener('input', (e) => {
+  const v = parseFloat(e.target.value);
+  el('master-o').textContent = Math.round(v * 100) + '%';
+  if (Mikser.wzmocnienie) Mikser.wzmocnienie.gain.setTargetAtTime(N.mikser.wzmocnienie * v, Mikser.ctx.currentTime, 0.08);
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (!Mikser.ctx) return;
+  if (document.hidden) Mikser.ctx.suspend().catch(() => {});
+  else Mikser.ctx.resume().catch(() => {});
+});
+
+zbudujOdslony();
+zbudujStan();
+zbudujWarstwy();
+zbudujZdarzenia();
+odswiezStanUI();
+rysuj();
+</script>
+</body>
+</html>
