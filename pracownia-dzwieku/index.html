@@ -166,6 +166,14 @@
 <div class="suwaki" id="stan"></div>
 <div class="ptaszki" id="stan-ptaszki"></div>
 
+<h2>Strój i generator tonu</h2>
+<p class="opis">Jedna częstotliwość odniesienia dla całej harmonii — kamień, chór, strażnicy i dzwon liczą się od niej. Generator obok gra czysty ton, żeby dało się ją najpierw usłyszeć.</p>
+<div class="warstwy" id="stroj"></div>
+
+<h2>Zapis nastaw</h2>
+<p class="opis">Zapisuje wszystkie liczby tak, jak są teraz ustawione — gotowy plik do wrzucenia w grę jako <code>src/nastawy/dzwiek.ts</code>. JSON obok wczytuje się z powrotem do pracowni.</p>
+<div id="zapis"></div>
+
 <h2>Warstwy</h2>
 <p class="opis">Każda warstwa osobno: włącz, ustaw głośność, posłuchaj jej samej (solo) albo wywołaj pojedynczy dźwięk.</p>
 <div class="warstwy" id="warstwy"></div>
@@ -286,6 +294,16 @@ const N = {
     /* śpiący kamień: cienkie dzwonienie wysoko, jak w uszach */
     snuHz: 3100, snuGlos: 0.02, snuTremolo: 0.23,
     ciosGlos: 0.3,
+  },
+  /** Strój: częstotliwość odniesienia, od której liczy się cała harmonia. */
+  stroj: {
+    /** Domyślnie D3 przy A4 = 440 Hz — tak było dotąd. */
+    domyslne: 146.83,
+    /** Pasmo, w które zwija się odniesienie, gdy serce ma z niego brać ton. */
+    serceOd: 45, serceDo: 90,
+    /** Zestaw „solfeggio” + dwa stroje koncertowe — do generatora tonu. */
+    presety: [174, 285, 396, 417, 528, 639, 741, 852, 963],
+    koncertowe: [432, 440],
   },
   dzwon: {
     glosnosc: 0.9,
@@ -541,6 +559,56 @@ function dzwonFM(szyna, kiedy, hz, glos, ogon, pan, poglos, metal, modulacja) {
   Mikser.licz(nosna);
 }
 
+/** Zwija częstotliwość oktawami, aż wpadnie w pasmo — 852 Hz → 53,25 Hz. */
+function doOktawy(hz, lo, hi) {
+  let v = hz;
+  while (v > hi) v /= 2;
+  while (v < lo) v *= 2;
+  return v;
+}
+
+/** Nazwa nuty i odchylenie w centach — żeby było widać, co to za dźwięk. */
+function nazwaNuty(hz) {
+  const NUTY = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const m = 69 + 12 * Math.log2(hz / 440);
+  const blisko = Math.round(m);
+  const centy = Math.round((m - blisko) * 100);
+  return NUTY[((blisko % 12) + 12) % 12] + (Math.floor(blisko / 12) - 1) +
+         (centy === 0 ? '' : (centy > 0 ? ' +' : ' ') + centy + ' ct');
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
+   STRÓJ — jedna częstotliwość odniesienia dla całej harmonii
+
+   Kamień liczy akord wprost z `N.kamien.podstawa`, więc wystarczy ją podmienić.
+   Strażnicy i chór mają podtrzymywane oscylatory — te trzeba przestroić ręcznie.
+   ════════════════════════════════════════════════════════════════════════════ */
+const Stroj = {
+  odniesienie: N.stroj.domyslne,
+  serceZeStroju: false,
+
+  /** Ile razy cała harmonia jest wyżej/niżej niż dotąd — do dźwięków z wpisanymi Hz. */
+  get mnoznik() { return this.odniesienie / N.stroj.domyslne; },
+
+  /** Ton serca: odniesienie zwinięte w pasmo ciała (852 Hz → 53,25 Hz). */
+  get serce() { return doOktawy(this.odniesienie, N.stroj.serceOd, N.stroj.serceDo); },
+
+  ustaw(hz) {
+    this.odniesienie = Math.max(20, Math.min(4000, hz));
+    N.kamien.podstawa = this.odniesienie;
+    if (!Dyrygent.ruszyl) return;
+    const t = Mikser.ctx.currentTime;
+    /* strażnicy: nośne wyliczone raz w przygotuj() — bez tego zostałyby w starym stroju */
+    if (Straznicy.pary) {
+      Straznicy.pary.forEach((para, i) => {
+        const polton = i === 0 ? 0 : N.straznicy.tryton;
+        para.o.frequency.setTargetAtTime(this.odniesienie * Math.pow(2, (polton - 12) / 12), t, 0.4);
+      });
+    }
+    if (Modlitwa.glosy) Modlitwa.nastroj(t, 0.4);
+  },
+};
+
 /* ════════════════════════════════════════════════════════════════════════════
    STAN GÓRY — to, co w grze wypełniałby core/stan-dzwieku.ts
    ════════════════════════════════════════════════════════════════════════════ */
@@ -625,16 +693,21 @@ const Serce = warstwa({
   bij(t, sila, krok) {
     const s = N.serce, g = s.glosnosc * sila;
     const sz = this.szyna;
+    /* przy stroju z odniesienia serce siada na nim, zwiniętym w pasmo ciała —
+       przy 852 Hz wypada 53,25 Hz, czyli cztery oktawy niżej */
+    const s1 = Stroj.serceZeStroju ? Stroj.serce : s.s1Od;
+    const s2 = s1 * (s.s2Od / s.s1Od);
+    const s1k = s1 * (s.s1Do / s.s1Od), s2k = s2 * (s.s2Do / s.s2Od);
     /* S1 — ciało */
-    ton(sz, t, s.s1Od, s.s1Do, s.s1Dlugosc, g, 0, s.poglos);
-    ton(sz, t, s.s1Od * s.alikwot1, s.s1Do * s.alikwot1, s.s1Dlugosc * 0.7, g * s.alikwot1Glos, 0, s.poglos);
-    ton(sz, t, s.s1Od * s.alikwot2, s.s1Do * s.alikwot2, s.s1Dlugosc * 0.45, g * s.alikwot2Glos, 0, s.poglos * 0.6);
+    ton(sz, t, s1, s1k, s.s1Dlugosc, g, 0, s.poglos);
+    ton(sz, t, s1 * s.alikwot1, s1k * s.alikwot1, s.s1Dlugosc * 0.7, g * s.alikwot1Glos, 0, s.poglos);
+    ton(sz, t, s1 * s.alikwot2, s1k * s.alikwot2, s.s1Dlugosc * 0.45, g * s.alikwot2Glos, 0, s.poglos * 0.6);
     /* skrzyp kamienia — to serce góry, nie człowieka */
     szum(sz, t, 0.06, s.skrzypHz, s.skrzypHz * 0.5, g * s.skrzypGlos, 0, s.poglos, 1.8);
     /* S2 — zamknięcie */
     const dt = Math.min(0.34, (krok || 1.4) * s.s2Po);
-    ton(sz, t + dt, s.s2Od, s.s2Do, s.s2Dlugosc, g * s.s2Ciszej, 0, s.poglos);
-    ton(sz, t + dt, s.s2Od * s.alikwot1, s.s2Do * s.alikwot1, s.s2Dlugosc * 0.6, g * s.s2Ciszej * s.alikwot1Glos, 0, s.poglos);
+    ton(sz, t + dt, s2, s2k, s.s2Dlugosc, g * s.s2Ciszej, 0, s.poglos);
+    ton(sz, t + dt, s2 * s.alikwot1, s2k * s.alikwot1, s.s2Dlugosc * 0.6, g * s.s2Ciszej * s.alikwot1Glos, 0, s.poglos);
     Mikser.dus(t, sila);
   },
 
@@ -1249,14 +1322,15 @@ const Dzwon = warstwa({
 
   /** Kryzys: dwa dzwony o pół tonu od siebie. Zgrzyt, którego nie da się zignorować. */
   alarm(t, kryzys) {
+    const m = Stroj.mnoznik;                 /* wpisane Hz jadą za strojem */
     if (kryzys) {
-      ton(this.szyna, t, 58, 30, 0.6, 0.4 * this.poziom, 0, 0.7);
-      this.uderz(t + 0.02, 146.83, 0.34, 5);
-      this.uderz(t + 0.05, 155.56, 0.22, 4.5);
-      this.uderz(t + 0.9, 293.66, 0.12, 3.5);
+      ton(this.szyna, t, 58 * m, 30 * m, 0.6, 0.4 * this.poziom, 0, 0.7);
+      this.uderz(t + 0.02, 146.83 * m, 0.34, 5);
+      this.uderz(t + 0.05, 155.56 * m, 0.22, 4.5);
+      this.uderz(t + 0.9, 293.66 * m, 0.12, 3.5);
     } else {
-      this.uderz(t, 293.66, 0.2, 3.5);
-      this.uderz(t + 0.32, 440, 0.13, 3);
+      this.uderz(t, 293.66 * m, 0.2, 3.5);
+      this.uderz(t + 0.32, 440 * m, 0.13, 3);
     }
   },
 
@@ -1372,6 +1446,284 @@ const Dyrygent = {
 };
 
 /* ════════════════════════════════════════════════════════════════════════════
+   GENERATOR TONU — czysty ton do odsłuchu i do pomiaru
+
+   Idzie własną szyną omijającą filtr pauzy: ma być wzorcem, nie częścią świata.
+   ════════════════════════════════════════════════════════════════════════════ */
+const Generator = {
+  szyna: null,
+  zagraj(hz, dlugosc, kształt) {
+    if (!Mikser.ctx) return;
+    if (!this.szyna) this.szyna = Mikser.szyna('generator', true);
+    const ctx = Mikser.ctx, d = Math.max(0.4, dlugosc || 3), t = ctx.currentTime + 0.03;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = kształt || 'sine';
+    o.frequency.value = Math.max(20, Math.min(18000, hz));
+    /* łagodne wejście i wyjście — prostokątna koperta strzela trzaskiem */
+    g.gain.setValueAtTime(BEZ_ZERA, t);
+    g.gain.linearRampToValueAtTime(0.18, t + 0.05);
+    g.gain.setValueAtTime(0.18, t + d - 0.15);
+    g.gain.linearRampToValueAtTime(BEZ_ZERA, t + d);
+    o.connect(g); g.connect(this.szyna);
+    o.start(t); o.stop(t + d + 0.05);
+    Mikser.licz(o);
+  },
+};
+
+/* ════════════════════════════════════════════════════════════════════════════
+   ZAPIS NASTAW — pracownia wypluwa gotowy plik dla gry
+
+   Konwencja repozytorium (nastawy/README.md): każda liczba ma komentarz, co robi
+   i w którą stronę działa. Opisy trzymamy tutaj, żeby zapisany plik je miał.
+   ════════════════════════════════════════════════════════════════════════════ */
+const OPISY = {
+  'mikser.wzmocnienie': 'wzmocnienie całej gry przed ogranicznikiem',
+  'mikser.progOgranicznika': 'próg ogranicznika (dB) — niżej znaczy mocniej dociska',
+  'mikser.kolano': 'kolano ogranicznika (dB) — wyżej znaczy łagodniej',
+  'mikser.stosunek': 'stopień kompresji powyżej progu',
+  'mikser.atak': 'jak szybko ogranicznik łapie szczyt (s)',
+  'mikser.zwolnienie': 'jak długo puszcza (s)',
+  'mikser.poglos': 'długość ogona jaskini (s)',
+  'mikser.pauzaFiltr': 'pauza: filtr świata schodzi do tylu Hz',
+  'mikser.pauzaCiszej': 'pauza: o tyle spada głośność świata (0..1)',
+  'mikser.duszenie': 'ducking: o ile świat ustępuje uderzeniu serca (0..1)',
+  'mikser.duszenieWrot': 'jak długo świat wraca po uderzeniu (s)',
+
+  'zegar.bpmCzuwania': 'puls góry, gdy czuwa (sen = 0)',
+  'zegar.bpmSnu': 'puls u progu śmierci (sen = 1); przy sen = 1 serce milknie',
+  'zegar.falaSzybciej': 'mnożnik tempa w czasie fali Strażników',
+  'zegar.wyprzedzenie': 'o ile sekund w przód planuje zegar (nie dryfuje jak setInterval)',
+  'zegar.tyk': 'jak często zegar dokłada uderzenia (ms)',
+  'zegar.uderzenNaAkord': 'akord co tyle uderzeń — harmonia oddycha razem z pulsem',
+
+  'serce.glosnosc': 'udział serca we wspólnej głośności',
+  'serce.s1Od': 'S1 (głuche uderzenie): od ilu Hz spada',
+  'serce.s1Do': 'S1: do ilu Hz dochodzi',
+  'serce.s1Dlugosc': 'S1: długość (s)',
+  'serce.s2Od': 'S2 (zamknięcie): od ilu Hz',
+  'serce.s2Do': 'S2: do ilu Hz',
+  'serce.s2Dlugosc': 'S2: długość (s)',
+  'serce.s2Po': 'S2 pada po tej części odstępu między uderzeniami (0..1)',
+  'serce.s2Ciszej': 'S2 jest o tyle cichsze od S1',
+  'serce.alikwot1': 'pierwszy alikwot — bez niego telefon nie zagra nic',
+  'serce.alikwot1Glos': 'głośność pierwszego alikwotu',
+  'serce.alikwot2': 'drugi alikwot',
+  'serce.alikwot2Glos': 'głośność drugiego alikwotu',
+  'serce.skrzypHz': 'skrzyp kamienia na uderzeniu (Hz) — to serce góry, nie człowieka',
+  'serce.skrzypGlos': 'głośność skrzypu',
+  'serce.gubiOd': 'od jakiego `sen` serce zaczyna gubić uderzenia (0..1)',
+  'serce.gubiNajwyzej': 'jaka część uderzeń wypada przy pełnym zmęczeniu',
+  'serce.drzenie': 'rozjazd uderzeń w czasie przy zasypianiu (s)',
+  'serce.potknieciePo': 'potknięcie: drugie S1 po tylu sekundach',
+  'serce.potkniecieGlos': 'głośność potknięcia względem uderzenia',
+  'serce.poglos': 'ile serca idzie w pogłos jaskini',
+
+  'oddech.glosnosc': 'udział oddechu we wspólnej głośności',
+  'oddech.uderzenNaOddech': 'jeden oddech na tyle uderzeń serca',
+  'oddech.wdechOd': 'pasmo na początku wdechu (Hz)',
+  'oddech.wdechDo': 'pasmo u szczytu wdechu (Hz)',
+  'oddech.wydechDo': 'pasmo na końcu wydechu (Hz)',
+  'oddech.czescWdechu': 'jaka część cyklu to wdech — wydech trwa dłużej (0..1)',
+  'oddech.szczyt': 'głośność u szczytu wdechu',
+  'oddech.q': 'szerokość pasma oddechu (wyżej znaczy węziej)',
+
+  'kamien.glosnosc': 'udział kamienia we wspólnej głośności',
+  'kamien.podstawa': 'STRÓJ: częstotliwość odniesienia całej harmonii (Hz)',
+  'kamien.progFrygijska': 'od tej głębokości skala jest frygijska (0..1)',
+  'kamien.progLokrycka': 'od tej głębokości lokrycka — przy rdzeniu grunt się usuwa',
+  'kamien.histereza': 'zapas na progach, żeby tryb nie migał na granicy',
+  'kamien.zwisNajwyzej': 'o tyle centów cięższy strój na dnie',
+  'kamien.filtrOd': 'filtr akordu: od ilu Hz się otwiera',
+  'kamien.filtrSzczyt': 'do ilu dochodzi przy zerowym napięciu',
+  'kamien.filtrNapiecie': 'o tyle wyżej przy pełnym napięciu',
+  'kamien.filtrDo': 'do ilu wraca na końcu akordu',
+  'kamien.q': 'rezonans filtru akordu',
+  'kamien.glos': 'głośność jednego głosu akordu',
+  'kamien.rozrzut': 'losowy dodatek do głośności głosu',
+  'kamien.bas': 'głośność basu (oktawę wyżej niż naturalnie — niżej telefon nie gra)',
+  'kamien.odstrojenie': 'odstrojenie głosów (centy, ±połowa)',
+  'kamien.rozstaw': 'rozstaw głosów w panoramie (0..1)',
+
+  'trzewia.glosnosc': 'udział trzewi we wspólnej głośności',
+  'trzewia.bulgotSzansa': 'szansa na bąbel na uderzenie przy pełnej krwi',
+  'trzewia.bulgotOd': 'bąbel: od ilu Hz idzie w górę',
+  'trzewia.bulgotDo': 'bąbel: do ilu Hz',
+  'trzewia.bulgotDlugosc': 'długość bąbla (s)',
+  'trzewia.bulgotGlos': 'głośność bąbla',
+  'trzewia.lepkaOd': 'lepka masa: dolne pasmo (Hz)',
+  'trzewia.lepkaDo': 'lepka masa: górne pasmo (Hz)',
+  'trzewia.lepkaGlos': 'głośność lepkiej masy przy pełnej krwi',
+  'trzewia.lepkaTempo': 'jak wolno wędruje pasmo lepkiej masy (Hz)',
+  'trzewia.magmaHz': 'skwierczenie magmy: pasmo (Hz) — karmione BIAŁYM szumem',
+  'trzewia.magmaQ': 'szerokość pasma skwierczenia',
+  'trzewia.magmaGlos': 'głośność skwierczenia przy magmie w kadrze',
+  'trzewia.trzaskSzansa': 'szansa na trzask na uderzenie przy pełnej magmie',
+  'trzewia.trzaskGlos': 'głośność trzasku',
+
+  'praca.glosnosc': 'udział pracy we wspólnej głośności',
+  'praca.kilofOd': 'kilof: podstawa wysokości (Hz)',
+  'praca.kilofRozrzut': 'losowy dodatek do wysokości kilofa (Hz)',
+  'praca.glebokoNiżej': 'o tyle Hz niżej na dnie',
+  'praca.kilofGlos': 'głośność kilofa przy zerowej pracy',
+  'praca.kilofGlosOdPracy': 'o tyle głośniej przy pełnej pracy',
+  'praca.kilofFiltr': 'górne odcięcie kilofa (Hz)',
+  'praca.ludzkoscMs': 'rozjazd ręki (ms) — bez tego praca brzmi jak maszyna',
+  'praca.szesnastkiOd': 'od jakiego zagęszczenia dochodzą szesnastki (0..1)',
+  'praca.krokGlos': 'głośność kroku',
+  'praca.krokHz': 'wysokość kroku (Hz)',
+  'praca.zbrojaGlos': 'głośność zbroi',
+  'praca.zbrojaHz': 'pasmo zbroi (Hz) — karmione BIAŁYM szumem',
+  'praca.poglos': 'ile pracy idzie w pogłos',
+
+  'modlitwa.glosnosc': 'udział modlitwy we wspólnej głośności',
+  'modlitwa.glosow': 'ilu głosów chóru (każdy to oscylator + dwa formanty)',
+  'modlitwa.q1': 'szerokość pierwszego formantu (wyżej znaczy węziej)',
+  'modlitwa.q2': 'szerokość drugiego formantu',
+  'modlitwa.vibratoHz': 'tempo vibrata głosu',
+  'modlitwa.vibratoCenty': 'głębokość vibrata (centy)',
+  'modlitwa.dech': 'ile szumu w głosie — bez tego chór brzmi jak organy',
+  'modlitwa.wejscie': 'jak wolno chór narasta (s)',
+  'modlitwa.zejscie': 'jak wolno schodzi (s)',
+
+  'straznicy.glosnosc': 'udział strażników we wspólnej głośności',
+  'straznicy.tryton': 'interwał nad podstawą (półtony) — jedyny poza skalą w całej grze',
+  'straznicy.metal': 'nieharmoniczny stosunek modulatora — stąd metal',
+  'straznicy.modulacja': 'głębokość modulacji',
+  'straznicy.pomrukHz': 'pomruk: środek pasma (Hz)',
+  'straznicy.pomrukQ': 'rezonans pomruku',
+  'straznicy.pomrukTempo': 'jak wolno wędruje pomruk (Hz)',
+  'straznicy.snuHz': 'śpiący kamień: cienkie dzwonienie wysoko (Hz)',
+  'straznicy.snuGlos': 'głośność dzwonienia — ma być na granicy słyszalności',
+  'straznicy.snuTremolo': 'tempo falowania dzwonienia (Hz)',
+  'straznicy.ciosGlos': 'głośność ciosu Strażnika',
+
+  'dzwon.glosnosc': 'udział dzwonu we wspólnej głośności',
+  'dzwon.metal': 'nieharmoniczny stosunek modulatora (2,76 — jak dzwon rurowy)',
+  'dzwon.modulacja': 'głębokość modulacji na starcie',
+  'dzwon.ogon': 'ile wybrzmiewa (s)',
+  'dzwon.poglos': 'ile dzwonu idzie w pogłos',
+
+  'stroj.domyslne': 'strój wyjściowy (Hz) — D3 przy A4 = 440',
+  'stroj.serceOd': 'pasmo, w które zwija się strój dla serca: dolna granica (Hz)',
+  'stroj.serceDo': 'górna granica (Hz)',
+};
+
+/** Liczba bez śmieci po przecinku: 0.07, 146.83, 53.25. */
+function liczba(v) {
+  if (!isFinite(v)) return String(v);
+  if (Number.isInteger(v)) return String(v);
+  return String(parseFloat(v.toFixed(6)));
+}
+
+/** Zapisuje wartość jako TypeScript, z komentarzami z OPISY. */
+function doTS(v, wciecie, sekcja) {
+  const w = '  '.repeat(wciecie);
+  const NL = String.fromCharCode(10);
+  if (Array.isArray(v)) {
+    if (v.every((x) => typeof x === 'number')) return '[' + v.map(liczba).join(', ') + ']';
+    return '[' + NL + v.map((x) => w + '  ' + doTS(x, wciecie + 1, sekcja)).join(',' + NL) + ',' + NL + w + ']';
+  }
+  if (v && typeof v === 'object') {
+    const linie = [];
+    for (const [k, x] of Object.entries(v)) {
+      const opis = OPISY[sekcja ? sekcja + '.' + k : k];
+      if (opis) linie.push(w + '  /** ' + opis + ' */');
+      /* klucz ze spacją albo z polską literą nie jest identyfikatorem — w cudzysłów */
+      const kl = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(k) ? k : "'" + k + "'";
+      linie.push(w + '  ' + kl + ': ' + doTS(x, wciecie + 1, sekcja) + ',');
+    }
+    return '{' + NL + linie.join(NL) + NL + w + '}';
+  }
+  if (typeof v === 'number') return liczba(v);
+  if (typeof v === 'string') return "'" + v + "'";
+  return String(v);
+}
+
+const SEKCJE = [
+  ['MIKSER', 'mikser', 'Wspólna przestrzeń dźwięku: wzmocnienie, ogranicznik, pogłos, pauza, ducking.'],
+  ['ZEGAR', 'zegar', 'Puls jest siatką całej gry. Tempo bierze się z `sen` — zasypianie rozwleka cały utwór.'],
+  ['SERCE', 'serce', 'Puls rdzenia. Pasek życia, którego nie trzeba rysować.'],
+  ['ODDECH', 'oddech', 'Powietrze w korytarzach: wdech i wydech skały.'],
+  ['KAMIEN', 'kamien', 'Pad i harmonia. Tryb skali ciemnieje z głębokością.'],
+  ['TRZEWIA', 'trzewia', 'Krew, lepka masa i magma w żyłach góry.'],
+  ['PRACA', 'praca', 'Lud jako sekcja rytmiczna: kilofy na siatce serca, kroki, zbroje.'],
+  ['MODLITWA', 'modlitwa', 'Chór formantowy pobożnych. Rośnie z wiarą.'],
+  ['STRAZNICY', 'straznicy', 'Tryton i pomruk ostatniej fali. Śpiący kamień dzwoni wysoko.'],
+  ['DZWON', 'dzwon', 'Głos rdzenia — tylko na zdarzenia, nigdy losowo.'],
+  ['STROJ', 'stroj', 'Strój odniesienia i zestawy częstotliwości do generatora.'],
+];
+
+/** Klucz warstwy taki, jak jej plik w grze: 'warstwy/serce.ts' → 'serce'. */
+function kluczWarstwy(w) { return w.zrodlo.replace('warstwy/', '').replace('.ts', ''); }
+
+/** Pełny plik nastaw dla gry — to, co pracownia ma teraz pod pokrętłami. */
+function nastawyTS() {
+  const data = new Date().toISOString().slice(0, 10);
+  const poziomy = {};
+  for (const w of warstwy) poziomy[kluczWarstwy(w)] = parseFloat(w.poziom.toFixed(3));
+
+  let t = '/**\n';
+  t += ' * DŹWIĘK — wszystkie liczby nowego soundtracku. Wszystko syntezowane w locie,\n';
+  t += ' * zero plików dźwiękowych.\n';
+  t += ' *\n';
+  t += ' * Zapisane z pracowni dźwięku (pracownia-dzwieku/index.html) ' + data + '.\n';
+  t += ' * Głośności to mnożniki (1 = jak zapisano, 0.5 = o połowę ciszej, 0 = wyciszone).\n';
+  t += ' * Czasy w sekundach, częstotliwości w hercach.\n';
+  t += ' */\n';
+  for (const [nazwa, klucz, opis] of SEKCJE) {
+    t += '\n/** ' + opis + ' */\n';
+    t += 'export const ' + nazwa + ' = ' + doTS(N[klucz], 0, klucz) + ';\n';
+  }
+  t += '\n/**\n * Głośność każdej warstwy ustawiona w pracowni (mnożnik 0..1.5).\n';
+  t += ' * Klucze odpowiadają plikom core/warstwy/<klucz>.ts.\n */\n';
+  t += 'export const WARSTWY = ' + doTS(poziomy, 0, null) + ';\n';
+  t += '\n/** Czy serce bierze ton ze stroju odniesienia (zwinięty w pasmo ciała). */\n';
+  t += 'export const SERCE_ZE_STROJU = ' + Stroj.serceZeStroju + ';\n';
+  return t;
+}
+
+/** Ten sam zapis maszynowo — wraca do pracowni przyciskiem „Wczytaj”. */
+function nastawyJSON() {
+  const poziomy = {};
+  for (const w of warstwy) poziomy[kluczWarstwy(w)] = parseFloat(w.poziom.toFixed(3));
+  return JSON.stringify({
+    pracownia: 'Trzewia — pracownia dźwięku',
+    zapisano: new Date().toISOString(),
+    nastawy: N,
+    warstwy: poziomy,
+    stroj: { odniesienie: Stroj.odniesienie, serceZeStroju: Stroj.serceZeStroju },
+  }, null, 2);
+}
+
+function wczytajJSON(tekst) {
+  const d = JSON.parse(tekst);
+  if (!d || !d.nastawy) throw new Error('to nie jest zapis z pracowni (brak pola „nastawy”)');
+  /* scalamy po kluczach — zapis ze starszej wersji nie wywali brakujących pokręteł */
+  for (const [sekcja, wartosci] of Object.entries(d.nastawy)) {
+    if (!N[sekcja] || typeof wartosci !== 'object') continue;
+    Object.assign(N[sekcja], wartosci);
+  }
+  if (d.warstwy) for (const w of warstwy) {
+    const v = d.warstwy[kluczWarstwy(w)];
+    if (v !== undefined) w.poziom = v;
+  }
+  if (d.stroj) {
+    Stroj.serceZeStroju = !!d.stroj.serceZeStroju;
+    Stroj.ustaw(d.stroj.odniesienie || N.kamien.podstawa);
+  }
+  return d;
+}
+
+function zapiszPlik(nazwa, tekst) {
+  const blob = new Blob([tekst], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nazwa;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+/* ════════════════════════════════════════════════════════════════════════════
    SOLO — pomocnik: czy ta warstwa ma teraz grać
    ════════════════════════════════════════════════════════════════════════════ */
 let solowana = null;
@@ -1405,6 +1757,8 @@ const ODSLONY = [
    STÓŁ — interfejs pracowni
    ════════════════════════════════════════════════════════════════════════════ */
 const el = (id) => document.getElementById(id);
+/** Odświeża opis stroju — ustawiane w zbudujStroj(), wołane też po wczytaniu JSON. */
+let zbudujStrojOpis = () => {};
 
 const SUWAKI_STANU = [
   ['glebokosc', 'Głębokość', 'tryb skali, strój, barwa kilofa'],
@@ -1541,6 +1895,198 @@ function zbudujWarstwy() {
   }
 }
 
+function zbudujStroj() {
+  const dom = el('stroj');
+
+  /* ─────────────────────────────────────────────── karta: strój odniesienia */
+  const a = document.createElement('div');
+  a.className = 'karta';
+  a.innerHTML =
+    '<h3><span>Strój odniesienia</span><em>N.kamien.podstawa</em></h3>' +
+    '<p>Od tej częstotliwości liczy się cały akord, chór, tryton strażników i dzwon. ' +
+    'Domyślnie D3 = 146,83 Hz (A4 = 440). Zmiana działa od następnego akordu.</p>' +
+    '<div class="sterowanie">' +
+      '<input type="number" id="stroj-hz" min="20" max="4000" step="0.01" style="width:110px" value="' + Stroj.odniesienie + '">' +
+      '<button class="maly" id="stroj-ustaw">ustaw</button>' +
+    '</div>' +
+    '<div class="rzad" id="stroj-presety"></div>' +
+    '<div class="ptaszki" style="margin-top:12px">' +
+      '<label><input type="checkbox" id="stroj-serce"><span>Serce też ze stroju</span></label>' +
+    '</div>' +
+    '<div class="zrodlo" id="stroj-opis"></div>';
+  dom.appendChild(a);
+
+  zbudujStrojOpis = () => {
+    const h = Stroj.odniesienie;
+    el('stroj-hz').value = Stroj.odniesienie.toFixed(2);
+    el('stroj-serce').checked = Stroj.serceZeStroju;
+    el('stroj-opis').innerHTML =
+      'odniesienie ' + h.toFixed(2) + ' Hz ≈ ' + nazwaNuty(h) + '<br>' +
+      'oktawy w dół: ' + (h / 2).toFixed(2) + ' · ' + (h / 4).toFixed(2) + ' · ' + (h / 8).toFixed(2) + ' Hz<br>' +
+      'serce ' + (Stroj.serceZeStroju ? 'na ' + Stroj.serce.toFixed(2) + ' Hz (ze stroju)' : 'na ' + N.serce.s1Od + ' Hz (własne)');
+  };
+  const ustaw = (hz) => { Stroj.ustaw(hz); zbudujStrojOpis(); };
+  el('stroj-ustaw').addEventListener('click', () => { if (wymagaStartu()) ustaw(parseFloat(el('stroj-hz').value)); });
+  el('stroj-hz').addEventListener('keydown', (e) => { if (e.key === 'Enter') el('stroj-ustaw').click(); });
+  el('stroj-serce').addEventListener('change', (e) => { Stroj.serceZeStroju = e.target.checked; zbudujStrojOpis(); });
+
+  for (const [etykieta, hz, tytul] of [
+    ['jak teraz — 146,83', N.stroj.domyslne, 'D3 przy A4 = 440 Hz'],
+    ['852 ÷ 8 = 106,5', 852 / 8, '852 Hz zwinięte trzy oktawy w dół — niżej i ciężej niż dotąd'],
+    ['852 ÷ 4 = 213', 852 / 4, '852 Hz zwinięte dwie oktawy w dół — jaśniej, bliżej góry'],
+    ['A = 432 → 144,16', 146.83 * 432 / 440, 'D3 przy stroju koncertowym A4 = 432 Hz'],
+  ]) {
+    const b = document.createElement('button');
+    b.className = 'maly'; b.textContent = etykieta; b.title = tytul;
+    b.addEventListener('click', () => { if (wymagaStartu()) ustaw(hz); });
+    el('stroj-presety').appendChild(b);
+  }
+
+  /* ──────────────────────────────────────────────── karta: generator tonu */
+  const g = document.createElement('div');
+  g.className = 'karta';
+  g.innerHTML =
+    '<h3><span>Generator tonu</span><em>czysty ton</em></h3>' +
+    '<p>Wpisz dowolną częstotliwość albo weź gotową. Ton idzie własną szyną, omijając filtr pauzy — to wzorzec do odsłuchu, nie część soundtracku.</p>' +
+    '<div class="sterowanie">' +
+      '<input type="number" id="gen-hz" min="20" max="18000" step="0.01" style="width:110px" value="852">' +
+      '<select id="gen-kształt" style="background:#181312;color:var(--atrament);border:1px solid var(--kreska);padding:6px">' +
+        '<option value="sine">sinus</option><option value="triangle">trójkąt</option>' +
+        '<option value="sawtooth">piła</option><option value="square">prostokąt</option>' +
+      '</select>' +
+      '<button class="maly" id="gen-graj">zagraj 3 s</button>' +
+    '</div>' +
+    '<div class="rzad" id="gen-presety"></div>' +
+    '<div class="zrodlo" id="gen-opis"></div>';
+  dom.appendChild(g);
+
+  const genOpis = () => {
+    const h = parseFloat(el('gen-hz').value);
+    if (!isFinite(h) || h <= 0) { el('gen-opis').textContent = ''; return; }
+    el('gen-opis').innerHTML = h.toFixed(2) + ' Hz ≈ ' + nazwaNuty(h) +
+      ' · oktawy w dół: ' + (h / 2).toFixed(1) + ' · ' + (h / 4).toFixed(1) + ' · ' + (h / 8).toFixed(1) + ' Hz';
+  };
+  const graj = () => {
+    if (!wymagaStartu()) return;
+    Generator.zagraj(parseFloat(el('gen-hz').value), 3, el('gen-kształt').value);
+    genOpis();
+  };
+  el('gen-graj').addEventListener('click', graj);
+  el('gen-hz').addEventListener('input', genOpis);
+  el('gen-hz').addEventListener('keydown', (e) => { if (e.key === 'Enter') graj(); });
+
+  for (const hz of N.stroj.presety) {
+    const b = document.createElement('button');
+    b.className = 'maly'; b.textContent = hz + ' Hz';
+    if (hz === 852) b.classList.add('wlaczony');
+    b.title = 'zestaw „solfeggio” — wymyślony w latach 70. XX w., bez potwierdzonego działania na ciało; tu jest po prostu wyborem stroju';
+    b.addEventListener('click', () => { el('gen-hz').value = hz; graj(); });
+    el('gen-presety').appendChild(b);
+  }
+  for (const hz of N.stroj.koncertowe) {
+    const b = document.createElement('button');
+    b.className = 'maly'; b.textContent = 'A = ' + hz;
+    b.title = 'strój koncertowy';
+    b.addEventListener('click', () => { el('gen-hz').value = hz; graj(); });
+    el('gen-presety').appendChild(b);
+  }
+
+  zbudujStrojOpis(); genOpis();
+}
+
+function zbudujZapis() {
+  const dom = el('zapis');
+  const k = document.createElement('div');
+  k.className = 'karta';
+  k.innerHTML =
+    '<h3><span>Zapisz nastawy</span><em>src/nastawy/dzwiek.ts</em></h3>' +
+    '<p>Zapisuje każdą liczbę tak, jak jest teraz ustawiona — razem z komentarzami, ' +
+    'czego dotyczy i w którą stronę działa. Plik tekstowy, gotowy do wrzucenia w grę. ' +
+    'JSON obok wczytuje się z powrotem tutaj, żeby dało się wrócić do zapisanego brzmienia.</p>' +
+    '<div class="rzad">' +
+      '<button id="zap-ts">Zapisz dzwiek.ts</button>' +
+      '<button class="maly" id="zap-json">Zapisz JSON</button>' +
+      '<button class="maly" id="zap-wczytaj">Wczytaj JSON…</button>' +
+      '<button class="maly" id="zap-podglad">Podgląd</button>' +
+      '<button class="maly" id="zap-kopiuj">Kopiuj do schowka</button>' +
+      '<input type="file" id="zap-plik" accept=".json,application/json" style="display:none">' +
+    '</div>' +
+    '<div class="zrodlo" id="zap-stan"></div>' +
+    '<textarea id="zap-tekst" readonly style="display:none;width:100%;height:300px;margin-top:11px;' +
+      'background:#0d0a09;color:var(--atrament);border:1px solid var(--kreska);' +
+      'font:11.5px/1.5 ui-monospace,Menlo,monospace;padding:9px;resize:vertical"></textarea>';
+  dom.appendChild(k);
+
+  const stan2 = (tekst, zle) => {
+    const e = el('zap-stan');
+    e.textContent = tekst;
+    e.style.color = zle ? 'var(--krew-jasna)' : 'var(--atrament-cichy)';
+  };
+  const ile = (t) => t.split('\n').length + ' linii, ' + (new Blob([t]).size / 1024).toFixed(1) + ' kB';
+
+  el('zap-ts').addEventListener('click', () => {
+    const t = nastawyTS();
+    zapiszPlik('dzwiek.ts', t);
+    stan2('zapisano dzwiek.ts — ' + ile(t) + '. W grze: src/nastawy/dzwiek.ts');
+  });
+
+  el('zap-json').addEventListener('click', () => {
+    const t = nastawyJSON();
+    zapiszPlik('nastawy-dzwieku.json', t);
+    stan2('zapisano nastawy-dzwieku.json — ' + ile(t));
+  });
+
+  el('zap-wczytaj').addEventListener('click', () => el('zap-plik').click());
+  el('zap-plik').addEventListener('change', (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        if (!wymagaStartu()) { stan2('najpierw „Obudź górę” — bez dźwięku nie ma czego nastawiać', true); return; }
+        const d = wczytajJSON(String(r.result));
+        odswiezStanUI();
+        Dyrygent.ustaw();
+        zbudujStrojOpis();
+        stan2('wczytano ' + f.name + (d.zapisano ? ' (zapis z ' + d.zapisano.slice(0, 16).replace('T', ' ') + ')' : ''));
+      } catch (blad) {
+        stan2('nie udało się wczytać: ' + blad.message, true);
+      }
+    };
+    r.readAsText(f);
+    e.target.value = '';
+  });
+
+  el('zap-podglad').addEventListener('click', () => {
+    const ta = el('zap-tekst');
+    if (ta.style.display === 'none') {
+      ta.value = nastawyTS();
+      ta.style.display = 'block';
+      el('zap-podglad').textContent = 'Ukryj podgląd';
+      stan2(ile(ta.value));
+    } else {
+      ta.style.display = 'none';
+      el('zap-podglad').textContent = 'Podgląd';
+    }
+  });
+
+  el('zap-kopiuj').addEventListener('click', async () => {
+    const t = nastawyTS();
+    try {
+      await navigator.clipboard.writeText(t);
+      stan2('skopiowano dzwiek.ts do schowka — ' + ile(t));
+    } catch (blad) {
+      /* bez zgody na schowek zostaje podgląd do zaznaczenia ręką */
+      const ta = el('zap-tekst');
+      ta.value = t; ta.style.display = 'block'; ta.select();
+      el('zap-podglad').textContent = 'Ukryj podgląd';
+      stan2('przeglądarka nie dała schowka — tekst zaznaczony, skopiuj ręcznie', true);
+    }
+  });
+
+  stan2('nic jeszcze nie zapisano');
+}
+
 function zbudujZdarzenia() {
   const dom = el('zdarzenia');
   const lista = [
@@ -1673,6 +2219,8 @@ document.addEventListener('visibilitychange', () => {
 
 zbudujOdslony();
 zbudujStan();
+zbudujStroj();
+zbudujZapis();
 zbudujWarstwy();
 zbudujZdarzenia();
 odswiezStanUI();
