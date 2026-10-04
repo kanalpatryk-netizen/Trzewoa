@@ -30,7 +30,9 @@
 - Uprawa przy spiżarni liczy tylko grzyb na podłodze w swoim pasie (wiszący nad siedzibą grzyb blokował ją i siedziba głodowała)
 - Nawrócony buntownik przestaje być celem — rycerze gonili go dalej i dobijali wiernych towarzyszy z warty; lud nie bije swoich (poza buntem)
 - Uprawa: gdy przy spiżarni nie ma podłogi (siedziba w pustej jaskini), sadzi szerzej (±14 kafli w bok, ±6 w pionie)
-- Na 16 światach: 14 wygranych, 2 partie trwają po 25 min, 0 porażek; zgonów z głodu łącznie 8 (na początku nocy ~37)
+- „Przemyśl i kop” do pokazanego gniazda: robotnik dochodzi zwykłą drogą jak najbliżej gniazda i stamtąd kopie wyliczoną trasą (BFS przez skałę z ominięciem ognia, wody i przepaści; gdy coś ją zagrodzi — liczy od nowa). Wcześniej w niektórych światach żadne gniazdo nie dawało się odkopać i rycerzy nie było wcale
+- Bot: przy pokazanym gnieździe wysyła jednego robotnika (wystarczy 6 wiary)
+- Na 16 światach: 15 wygranych, 1 partia trwa po 25 min, 0 porażek; zgonów z głodu łącznie 10 (na początku nocy ~37)
 
 ## Remake v1 (komputer) — etap 4
 - Nowa talia kart ludu: spisek rycerzy → bunt (zbuntowani rycerze w czerwonym obrysie, osobny klan,

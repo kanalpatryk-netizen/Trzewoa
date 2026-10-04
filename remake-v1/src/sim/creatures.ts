@@ -131,7 +131,9 @@ export interface Creature {
     /** początek tunelu — tunel trzyma się prostej stąd do celu */
     sx?: number; sy?: number;
     /** wraca na czoło tunelu (po jedzeniu, ucieczce) */
-    wraca?: boolean };
+    wraca?: boolean;
+    /** do pokazanego gniazda: wyliczona trasa (indeksy kafli) omijająca ogień, wodę i przepaści */
+    trasa?: number[] };
   /** Etap 2: ile razy tor się zaciął — po kilku robotnik się poddaje. */
   torBledy?: number;
 }
@@ -1080,7 +1082,9 @@ function planPrzemysl(sim: Sim, c: Creature,
   const t = c.tor;
   if (t.hx === t.tx && t.hy === t.ty) { koniecToru(sim, c, 'pusto'); return false; }
   // od ostatniego zamiaru tunel się nie przybliżył — kręci się zamiast kopać; po kilku razach się poddaje
-  const zostalo = Math.abs(t.tx - t.hx) + Math.abs(t.ty - t.hy);
+  // (po wyliczonej trasie liczy się to, ile jej zostało — objazd chwilowo oddala od celu w linii prostej)
+  const naTrasie = t.trasa ? t.trasa.indexOf(sim.world.idx(t.hx, t.hy)) : -1;
+  const zostalo = t.trasa && naTrasie >= 0 ? t.trasa.length - naTrasie : Math.abs(t.tx - t.hx) + Math.abs(t.ty - t.hy);
   if (t.ostatnie !== undefined && zostalo >= t.ostatnie && !t.wraca) {
     c.torBledy = (c.torBledy ?? 0) + 1;
     if (c.torBledy >= LUD.przemyslBledow) { koniecToru(sim, c, 'zgubiony'); return false; }
@@ -1125,6 +1129,21 @@ function wyznaczTor(sim: Sim, c: Creature): boolean {
   const ty = Math.max(2, Math.min(w.przedsionekY - 6, Math.round(g.y + (vx / L) * off) + sim.rng.int(3) - 1));
   c.tor = { gn: g.id, tx, ty, hx: cx, hy: cy, sx: cx, sy: cy, kroki: 0, limit: (Math.abs(tx - cx) + Math.abs(ty - cy)) * 2 + 40 };
   c.torBledy = 0;
+  // gniazdo pokazane: trasa wyliczona przez skałę (z ominięciem ognia, wody i przepaści) — zachłanny krok
+  // stawał przy pierwszej przeszkodzie i w niektórych światach żadne gniazdo nie dawało się odkopać
+  if (g.znany) {
+    // najpierw zwykłą drogą (klamry, jaskinie) jak najbliżej gniazda, stamtąd tunel — trasa tunelu nie
+    // przechodzi nad przepaściami, a do wielu gniazd prowadzi tylko przez otwartą jaskinię
+    let sx = cx, sy = cy;
+    for (const D of [3, 6, 10, 15, 22]) {
+      const d = szukajDrogi(sim, c, (_i, x, y) => stoi(sim, x, y) && Math.abs(x - g.x) + Math.abs(y - g.y) <= D, 8000);
+      if (d && d.length) { const k = d[d.length - 1]; sx = k % w.w; sy = (k / w.w) | 0; break; }
+    }
+    const trasa = trasaToru(sim, sx, sy, g.x, g.y);
+    if (trasa) {
+      c.tor = { gn: g.id, tx, ty, hx: sx, hy: sy, sx, sy, kroki: 0, limit: trasa.length * 2 + 40, trasa, wraca: sx !== cx || sy !== cy };
+    }
+  }
   zapisz(sim, 'praca', `${kto(sim, c)} dostał znak: kopie ku gniazdu #${g.id}, tor ${s} (gniazdo na torze ${g.blad})`, cx, cy);
   return true;
 }
@@ -1147,9 +1166,48 @@ function kafelToru(sim: Sim, x: number, y: number): boolean {
  * zbliża (główna oś przed boczną), a ogień albo wodę obchodzi bokiem — bez zawracania na kafel,
  * z którego przyszedł. Za dużo kroków — tor się kończy.
  */
+/** Remake v1: trasa tunelu do gniazda — BFS po kaflach, przez które tor może przejść (patrz `kafelToru`). */
+function trasaToru(sim: Sim, sx: number, sy: number, gx: number, gy: number): number[] | null {
+  const w = sim.world, W = w.w;
+  const start = w.idx(sx, sy);
+  const skad = new Map<number, number>([[start, -1]]);
+  const kolejka = [start];
+  for (let k = 0; k < kolejka.length && k < LUD.trasaToruLimit; k++) {
+    const i = kolejka[k];
+    const x = i % W, y = (i / W) | 0;
+    if (Math.abs(x - gx) + Math.abs(y - gy) <= LUD.gniazdoZasieg) {
+      const out: number[] = [];
+      for (let j = i; j !== -1; j = skad.get(j)!) out.push(j);
+      return out.reverse();
+    }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      const j = w.idx(nx, ny);
+      if (skad.has(j) || !kafelToru(sim, nx, ny)) continue;
+      skad.set(j, i);
+      kolejka.push(j);
+    }
+  }
+  return null;
+}
+
 function krokToru(sim: Sim, c: Creature, cx: number, cy: number): [number, number] | null {
   const t = c.tor!;
   if ((t.kroki ?? 0) > (t.limit ?? 200)) return null;
+  if (t.trasa) {
+    const w = sim.world;
+    const k = t.trasa.indexOf(w.idx(cx, cy));
+    const n = k >= 0 ? t.trasa[k + 1] : undefined;
+    if (n !== undefined) {
+      const nx = n % w.w, ny = (n / w.w) | 0;
+      if (Math.abs(nx - cx) + Math.abs(ny - cy) === 1 && kafelToru(sim, nx, ny)) return [nx, ny];
+    }
+    // zszedł z trasy albo coś ją zagrodziło — wylicza ją od nowa z miejsca, w którym stoi
+    const g = (sim.lud.gniazda ?? []).find((o) => o.id === t.gn);
+    const nowa = g ? trasaToru(sim, cx, cy, g.x, g.y) : null;
+    if (nowa && nowa.length > 1) { t.trasa = nowa; const m = nowa[1]; return [m % w.w, (m / w.w) | 0]; }
+    t.trasa = undefined;
+  }
   const dx = t.tx - cx, dy = t.ty - cy;
   // najpierw to, co zbliża; spośród tego — co trzyma się prostej od początku tunelu do celu
   // (schodkami „najpierw cały pion, potem poziom” tunel szedł w L i zahaczał o gniazdo z innego toru)

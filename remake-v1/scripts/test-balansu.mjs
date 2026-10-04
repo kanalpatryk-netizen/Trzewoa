@@ -66,6 +66,13 @@ function ruchGracza(sim: any) {
     for (const c of sim.creatures) if (n < 3 && !c.dead && c.rola === 'robotnik' && c.hunger < 0.4 && whisper(sim, 'przemysl', c)) n++;
     if (n) { sim._przemysl = sim.tick; sim._przemyslN = (sim._przemyslN ?? 0) + 1; }
   }
+  // gniazdo pokazane (sen, uśpiony boss): jeden robotnik wystarczy — tor trafia w nie bez zgadywania
+  if (role.robotnik >= 2 && role.rycerz < 6 && sim.wiara >= 6 && sim.tick - (sim._przemysl ?? -1e9) > 3600
+      && (sim.lud.gniazda ?? []).some((g: any) => g.znany && !g.odkryte)
+      && !sim.creatures.some((c: any) => !c.dead && (c.tor || c.przemysl !== undefined))) {
+    const r = sim.creatures.find((c: any) => !c.dead && c.rola === 'robotnik' && c.hunger < 0.5);
+    if (r && whisper(sim, 'przemysl', r)) { sim._przemysl = sim.tick; sim._przemyslN = (sim._przemyslN ?? 0) + 1; }
+  }
 
   // 1. głodujący dostają grzyb pod nogi
   let najgorszy: any = null;

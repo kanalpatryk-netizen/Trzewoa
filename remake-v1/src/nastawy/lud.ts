@@ -125,6 +125,8 @@ export const LUD = {
    * tor, którego nikt jeszcze nie sprawdził. Jeden trafia raz na trzy, trzech — na pewno.
    */
   przemyslModlitwa: 720, przemyslRozstaw: 8, przemyslTempo: 0.7, przemyslBledow: 4,
+  /** Do pokazanego gniazda trasa tunelu jest wyliczana (BFS) — najwyżej tyle kafli przeszukania. */
+  trasaToruLimit: 30000,
 
   /**
    * Weteran: po `weteranPo` tikach w ludzie (4 min), dopóki najedzony (głód poniżej `weteranGlod`)
