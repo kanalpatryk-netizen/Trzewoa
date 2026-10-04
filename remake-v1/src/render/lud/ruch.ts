@@ -106,13 +106,13 @@ function pchniecie(p: Poza, k: number): void {
   p.oczy = 1 - p.wysilek * 0.4;
 }
 
-/** Pobożny: pchnięcie laską trzymaną oburącz. */
+/** Pobożny: wyciąga krzyż procesyjny trzymany oburącz ku wrogowi i pcha nim jak włócznią. */
 function laskaWalka(p: Poza, k: number): void {
   klucze(p, k, [
-    [0.0, { rA: 0.72, eA: 0.85, narz: 1.85, tulow: 0.1, uA: 0.35, kA: 0.25, uB: -0.3, kB: 0.18, cios: 0, wysilek: 0.2 }],
-    [0.38, { rA: 0.12, eA: 1.35, narz: 1.95, tulow: -0.06, uA: 0.25, kA: 0.2, uB: -0.35, kB: 0.25, cios: 0, wysilek: 0.7 }, wejWyj],
-    [0.5, { rA: 1.12, eA: 0.12, narz: 1.42, tulow: 0.4, uA: 0.72, kA: 0.55, uB: -0.55, kB: 0.12, cios: 1, wysilek: 1 }, (t) => wej(t, 2.2)],
-    [0.66, { rA: 1.08, eA: 0.16, narz: 1.45, tulow: 0.36, cios: 0, wysilek: 0.5 }],
+    [0.0, { rA: 0.72, eA: 0.85, narz: 1.85 + PI, tulow: 0.1, uA: 0.35, kA: 0.25, uB: -0.3, kB: 0.18, cios: 0, wysilek: 0.2 }],
+    [0.38, { rA: 0.12, eA: 1.35, narz: 1.95 + PI, tulow: -0.06, uA: 0.25, kA: 0.2, uB: -0.35, kB: 0.25, cios: 0, wysilek: 0.7 }, wejWyj],
+    [0.5, { rA: 1.12, eA: 0.12, narz: 1.42 + PI, tulow: 0.4, uA: 0.72, kA: 0.55, uB: -0.55, kB: 0.12, cios: 1, wysilek: 1 }, (t) => wej(t, 2.2)],
+    [0.66, { rA: 1.08, eA: 0.16, narz: 1.45 + PI, tulow: 0.36, cios: 0, wysilek: 0.5 }],
   ]);
 }
 
@@ -160,7 +160,7 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
       if (f > 0.9) {
         const t = sin(((f - 0.9) / 0.1) * PI);
         const g: Partial<Poza> =
-          rola === 'robotnik' ? (id % 2 ? { rA: 1.95, eA: 1.3, glowa: -0.15 } : { rA: -0.65, eA: 1.6, rB: -0.7, eB: 1.5, tulow: -0.24, glowa: -0.22 })
+          rola === 'robotnik' ? (id % 2 ? { glowa: -0.12 } : { glowa: -0.5, tulow: -0.06 })
           : rola === 'pobozny' ? { rB: 0.45, eB: 1.75, glowa: 0.38, tulow: 0.08 }
           : { rA: 0.95, eA: 1.75, narz: 3.05, glowa: 0.05 };
         for (const k in g) { const kk = k as keyof Poza; p[kk] = lerp(p[kk], g[kk]!, t); }
@@ -203,7 +203,7 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
         tryb.oburacz = true; tryb.chwyt = 0.085;
       } else {
         laskaWalka(p, frac(w.zegar * 1.5 + id * 0.31));
-        tryb.oburacz = true; tryb.chwyt = 0.13;
+        tryb.oburacz = true; tryb.chwyt = -0.12;
       }
       break;
     }
@@ -284,8 +284,55 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
     default: break;
   }
 
+  // ---- nastrój: ludzie w trzewiach góry są wychudzeni, zgarbieni i boją się
+  const ziemia = p.wis < 0.5 && cz !== 'spi';
+  if (ziemia && cz !== 'walczy' && cz !== 'kopie') {
+    if (rola === 'robotnik') { p.tulow += 0.09; p.glowa += 0.08; }
+    if (rola === 'pobozny') { p.tulow += 0.05; p.glowa += 0.16; }
+  }
+  if (rola === 'rycerz' && (cz === 'idzie' || cz === 'biegnie')) {
+    // kamienny rycerz: ciężki krok, mniej wymachu rąk, głowa nieruchoma
+    p.uA *= 0.85; p.uB *= 0.85; p.kA *= 0.85; p.kB *= 0.85; p.glowa *= 0.4;
+  }
+  // strach: drżenie (szybkie, drobne) i skulenie
+  const strach = clamp((c.fear ?? 0) - 0.3, 0, 0.7);
+  if (strach > 0 && ziemia) {
+    p.tulow += 0.02 * strach * sin(czas * 0.09 + id) + strach * 0.08;
+    p.glowa += 0.03 * strach * sin(czas * 0.113 + id * 2) + strach * 0.06;
+    p.rA += 0.03 * strach * sin(czas * 0.1 + id); p.rB += 0.03 * strach * sin(czas * 0.097 + id + 1);
+  }
+  // szaleństwo z głębokości: co jakiś czas głowa szarpie się w bok, ciało drga
+  const mad = clamp(c.mad ?? 0, 0, 1);
+  if (mad > 0.2) {
+    const okno = Math.floor(czas / 700 + id * 0.37);
+    const traf = frac(Math.sin(okno * 12.9898 + id * 78.233) * 43758.5453);
+    if (traf < mad * 0.55) {
+      const t = (czas / 700 + id * 0.37) - okno;
+      const e = t < 0.18 ? Math.sin((t / 0.18) * PI) : 0;
+      const kier = traf < mad * 0.27 ? 1 : -1;
+      p.glowa += e * 0.7 * kier; p.tulow += e * 0.15 * kier;
+      p.rA += e * 0.4; p.eB += e * 0.5;
+    }
+  }
+  // modlitwa: kołysanie w przód i w tył, szept
+  if (cz === 'modli' && rola === 'pobozny') {
+    const kol = sin(czas * 0.0034 + id);
+    p.tulow += 0.07 * kol; p.glowa += 0.08 * kol;
+    p.usta = Math.max(p.usta, 0.18 * Math.max(0, sin(czas * 0.017 + id)));
+  }
+
   // tragarz: worek na plecach, bliższa dłoń na rzemieniu przy barku
   if (niesie && (cz === 'stoi' || cz === 'idzie' || cz === 'biegnie')) { p.rA = -0.32; p.eA = 2.35; p.tulow += 0.06; }
+  // fossor w drodze: dolabra na ramieniu (bliższa dłoń trzyma trzonek przy piersi),
+  // w dalszej dłoni lampka wysunięta przed siebie — świeci w ciemność korytarza
+  else if (rola === 'robotnik' && (cz === 'stoi' || cz === 'idzie' || cz === 'biegnie')) {
+    const q = w.faza * TAU, ruch = cz === 'stoi' ? 0 : cz === 'idzie' ? 1 : 1.6;
+    siegnij(p, 'A', 0.07 + 0.006 * ruch * sin(q), 0.085 - 0.004 * ruch * cos(q * 2));
+    const f = cz === 'stoi' ? frac(czas * 0.00011 + id * 0.43) : 0;
+    const unies = f > 0.9 && id % 2 ? sin(((f - 0.9) / 0.1) * PI) : 0;
+    siegnij(p, 'B', 0.16 + 0.03 * ruch * sin(q + PI) + unies * 0.05, 0.19 - unies * 0.22 - 0.012 * ruch);
+    if (unies > 0) p.glowa -= unies * 0.25;
+  }
   // świeżo przywołany (osłabiony) — zgarbiony; zatruty — chwieje się
   if ((c.slabyDo ?? -1) > sim.tick) { p.tulow += 0.1; p.glowa += 0.12; }
   if ((c.zatrutyDo ?? -1) > sim.tick) { p.tulow += 0.05 * sin(czas * 0.003 + id); p.oczy = Math.min(p.oczy, 0.7); }
