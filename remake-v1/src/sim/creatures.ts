@@ -1668,6 +1668,9 @@ function doDig(sim: Sim, c: Creature): void {
   }
   // zasięg po kaflach — sąsiedni kafel, także po skosie
   const near = Math.abs(c.jx - Math.floor(c.x)) <= 1 && Math.abs(c.jy - Math.floor(c.y)) <= 1;
+  // Remake v1: kopiący na linie albo przy ścianie trzyma chwyt — zsuwał się po chwili poza zasięg, wspinał
+  // z powrotem i kuł ułamek sekundy (czoło drogi nad liną kopali tak po kilka minut); w pustce nic nie trzyma
+  if (near && REMAKE && c.kopieDroge) c.wspina = sim.tick;
   if (near) digTile(sim, c, c.jx, c.jy);
   else idz(sim, c, c.jx, c.jy);
 }
