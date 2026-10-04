@@ -125,7 +125,19 @@ export function wykonajLudu(sim: Sim, e: Wydarzenie, id: string): boolean {
       return true;
     }
     case 'zalanie:zatkaj': return true;
-    case 'zalanie:odwroc': sim.flood(); return true;
+    case 'zalanie:odwroc': {
+      // „w pustą skałę z dala od ludu” — naprawdę z dala: losowa powódź trafiła kiedyś prosto nad obóz
+      // i utopiła czterech, choć gracz zapłacił za odwrócenie wody
+      const punkty = wszystkieSpizarnie(sim).map((o) => o.x);
+      let best = -1, bd = -1;
+      for (let k = 0; k < 24; k++) {
+        const x = 6 + sim.rng.int(w.w - 12);
+        const d = punkty.length ? Math.min(...punkty.map((p) => Math.abs(p - x))) : 999;
+        if (d > bd) { bd = d; best = x; }
+      }
+      sim.flood(best >= 0 ? best : undefined);
+      return true;
+    }
     case 'zalanie:plyn': {
       const x0 = e.x ?? 0, y0 = e.klan ?? 0;
       // woda leje się ze stropu nad obozem — kto stoi, zdąży uciec (pełny zalew topił pół obozu naraz)

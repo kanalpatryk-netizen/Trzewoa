@@ -33,6 +33,7 @@
 - „Przemyśl i kop” do pokazanego gniazda: robotnik dochodzi zwykłą drogą jak najbliżej gniazda i stamtąd kopie wyliczoną trasą (BFS przez skałę z ominięciem ognia, wody i przepaści; gdy coś ją zagrodzi — liczy od nowa). Wcześniej w niektórych światach żadne gniazdo nie dawało się odkopać i rycerzy nie było wcale
 - Bot: przy pokazanym gnieździe wysyła jednego robotnika (wystarczy 6 wiary)
 - Najazd ludzi wraca na powierzchnię po 1,5 min (wcześniej błąkał się, aż trafił na siedzibę)
+- Karta „Woda nad obozem” → „Odwróć wodę”: woda naprawdę spływa daleko od siedziby i obozów (losowa powódź potrafiła trafić prosto nad obóz i utopić kilku)
 - Sprawdzone też na 16 nowych światach (16–31): 16 wygranych; razem 30 z 32, 0 porażek
 - Na 16 światach: 15 wygranych, 1 partia trwa po 25 min, 0 porażek; zgonów z głodu łącznie 2 (na początku nocy ~37) — boss zasypia już po 2 min bez rycerzy (pielgrzymi czekający przy pustym obozie nie głodują)
 
