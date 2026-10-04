@@ -65,8 +65,8 @@ export function glebiaPod(sim: Sim, x: number, y: number, limit: number): number
  * bez dna to droga w jedną stronę (robotnicy lądowali przy rdzeniu w pół minuty).
  */
 export function przepasc(sim: Sim, x: number, y: number): boolean {
-  // Remake v1: w przepaść lud nie schodzi z własnej woli — tylko tam, gdzie już wisi lina (uchwyt).
-  // Wcześniej schodził wszędzie, wieszając liny, a potem wracał po nich w górę i w dół w kółko.
+  // lud nie spada, tylko schodzi po klamrach (creatures.ts) — przepaść przestała być pułapką
+  if (REMAKE && LUD.klamry) return false;
   return !stoi(sim, x, y) && !uchwyt(sim, x, y) && glebiaPod(sim, x, y, LUD.spadekMaks) > LUD.spadekMaks;
 }
 

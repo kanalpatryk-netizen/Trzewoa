@@ -88,34 +88,25 @@ export function rysujKlamry(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
   const y0 = Math.max(0, Math.floor(top)), y1 = Math.min(w.h - 1, Math.ceil(top + cam.vh / z));
   ctx.save();
   ctx.lineCap = 'round';
-  const lw = Math.max(1, z * 0.09);
-  for (let y = y0; y <= y1; y++) {
-    for (let x = x0; x <= x1; x++) {
-      const i = w.idx(x, y);
-      if (w.drabina[i] !== 1 || !w.ever[i] || !w.passable(x, y)) continue;
-      // na podłodze klamry nie są potrzebne — tylko tam, gdzie się wisi
-      if (w.solid(x, y + 1)) continue;
-      const px = (x - left) * z, py = (y - top) * z;
-      const lewa = w.solid(x - 1, y), prawa = w.solid(x + 1, y);
-      ctx.strokeStyle = 'rgba(182,168,140,0.85)';
-      ctx.lineWidth = lw;
-      if (lewa || prawa) {
-        // klamra w kształcie „ㄷ” wbita w ścianę
-        const sx = lewa ? px + z * 0.04 : px + z * 0.96, d = lewa ? 1 : -1;
-        for (const ky of [0.3, 0.75]) {
-          ctx.beginPath();
-          ctx.moveTo(sx, py + z * (ky - 0.1));
-          ctx.lineTo(sx + d * z * 0.28, py + z * (ky - 0.1));
-          ctx.lineTo(sx + d * z * 0.28, py + z * (ky + 0.1));
-          ctx.lineTo(sx, py + z * (ky + 0.1));
-          ctx.stroke();
-        }
-      } else {
-        // lina w pustce, z węzłem
-        ctx.beginPath(); ctx.moveTo(px + z * 0.5, py); ctx.lineTo(px + z * 0.5, py + z); ctx.stroke();
-        ctx.fillStyle = 'rgba(182,168,140,0.85)';
-        ctx.beginPath(); ctx.arc(px + z * 0.5, py + z * 0.5, lw * 1.2, 0, Math.PI * 2); ctx.fill();
-      }
+  const lw = Math.max(0.8, z * 0.05);
+  ctx.strokeStyle = 'rgba(182,168,140,0.5)';
+  ctx.lineWidth = lw;
+  // tylko liny w pustce — ciągłą kreską od kołka w górze do dołu; klamry przy ścianach nie są rysowane
+  // (ściana i tak daje chwyt, a setki znaczków zaśmiecały każdą jaskinię)
+  const lina = (x: number, y: number) => {
+    const i = w.idx(x, y);
+    return w.drabina[i] === 1 && !!w.ever[i] && w.passable(x, y) && !w.solid(x, y + 1) && !w.solid(x - 1, y) && !w.solid(x + 1, y);
+  };
+  for (let x = x0; x <= x1; x++) {
+    let y = y0;
+    while (y <= y1) {
+      if (!lina(x, y)) { y++; continue; }
+      const od = y;
+      while (y <= y1 && lina(x, y)) y++;
+      if (y - od < 2) continue;                       // pojedynczy kafel — to krok, nie lina
+      const px = (x + 0.5 - left) * z;
+      ctx.beginPath(); ctx.moveTo(px, (od - top) * z); ctx.lineTo(px, (y - top) * z); ctx.stroke();
+      if (od > 0 && w.solid(x, od - 1)) { ctx.fillStyle = 'rgba(182,168,140,0.7)'; ctx.fillRect(px - lw * 1.5, (od - top) * z, lw * 3, lw * 2); }
     }
   }
   ctx.restore();

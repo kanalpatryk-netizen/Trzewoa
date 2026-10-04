@@ -176,6 +176,8 @@ export const PLAN_DROGI = {
   minNacja: 8,
   /** Plan jest przeliczany najwyżej co tyle tików. */
   odswiezCo: 600,
+  /** Remake v1: czoło drogi stoi tyle tików (2 min), choć kopacze są w drodze — plan omija ten kafel przez `czoloOmijaj` (6 min). */
+  czoloStoi: 14400, czoloOmijaj: 43200,
   /**
    * WERSJA ANDROID: gracz nie drąży — góra sama otwiera drogę wiernym, póki ktoś nią idzie:
    * jeden kafel skały ze złotej kreski co tyle tików (od strony gniazda).

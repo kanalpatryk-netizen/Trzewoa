@@ -33,6 +33,9 @@ export interface StanLudu {
   siedzibaT: number;
   /** Karta spisku nie wróci przed tym tikiem (przerwa po poprzednim spisku). */
   spisekPo?: number;
+  /** Czoło drogi, które stoi mimo kopaczy (kafel, od kiedy, próbek, próbek z kopaczem) i kafle chwilowo omijane przez plan drogi. */
+  czolo?: { i: number; od: number; prob: number; zk: number };
+  omijaj?: [number, number][];
   /** Stara spiżarnia po przenosinach — robotnicy znoszą z niej jedzenie do nowej siedziby. */
   sklad: { x: number; y: number; ilosc: number } | null;
   /** Odcięte grupki (liczone przy przenosinach siedziby). */

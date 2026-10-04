@@ -270,6 +270,8 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     return;
   }
 
+  // Remake v1: lud wbija klamry tam, którędy idzie — droga w dół zostaje drogą powrotną
+  if (REMAKE && rolaPostaci(c) && w.inb(tx, ty)) w.drabina[w.idx(tx, ty)] = 1;
 
   // --- grawitacja
   // Kto właśnie się podciąga i ma ścianę pod ręką, trzyma się jej. Bez tego szyb, który
@@ -282,17 +284,15 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // Remake v1: pielgrzym na stopniach drogi wiernych trzyma się zawsze — krok w bok nad jaskinią
   // (bez świeżego chwytu) zrzucał go z drogi prosto w magmę pod spodem
   const naDrodzeWiernych = REMAKE && c.job === Job.PIELGRZYM && (w.prog[w.idx(tx, ty)] === 1 || (ty > 0 && w.prog[w.idx(tx, ty - 1)] === 1));
-  // Remake v1: kopiący trzyma się przy swoim kaflu — zsuwał się po linie poza zasięg, wracał, kuł ułamek
+  // Remake v1: kopacz drogi trzyma się przy czole — zsuwał się po linie poza zasięg, wracał, kuł ułamek
   // sekundy i znów zjeżdżał (jeden kafel drogi kopał tak po kilka minut)
-  const kopieTu = REMAKE && c.job === Job.DIG && !c.tor && w.solid(c.jx, c.jy) && Math.abs(c.jx - tx) <= 1 && Math.abs(c.jy - ty) <= 1;
+  const kopieTu = REMAKE && c.kopieDroge && c.job === Job.DIG && !c.tor && w.solid(c.jx, c.jy) && Math.abs(c.jx - tx) <= 1 && Math.abs(c.jy - ty) <= 1;
   const trzymaSie = naDrodzeWiernych || kopieTu || ((c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
     && (naStopniach || w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1)));
   if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
     // Remake v1: lud nie spada — schodzi powoli, wbijając klamry (droga w dół staje się drogą w górę);
     // swobodny lot w jaskinię bez dna łamał im kości albo kończył się w magmie
     if (REMAKE && LUD.klamry && rolaPostaci(c) && w.magma[w.idx(tx, Math.min(w.h - 1, ty + 1))] === 0) {
-      // tylko tu zostaje lina — w pustce, którą naprawdę zjechał (wcześniej klamra lądowała na każdym kaflu, po którym ktoś przeszedł)
-      if (!w.solid(tx - 1, ty) && !w.solid(tx + 1, ty)) w.drabina[w.idx(tx, ty)] = 1;
       c.vy = 0;
       c.y += LUD.zjazd;   // bez „chwytu” — inaczej klamra pod nogami trzymała go w powietrzu i stał tam
       return;
@@ -1002,7 +1002,10 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
     // przy małej liczbie robotników mniej kopaczy — ktoś musi zbierać jedzenie
     if (kopiacych < Math.min(LUD.drogaKopaczy, Math.max(1, liczRole(sim).robotnik - 2))) {
       const fx = cz % w.w, fy = (cz / w.w) | 0;
-      const d = droga((x, y) => Math.abs(x - fx) + Math.abs(y - fy) === 1 || (Math.abs(x - fx) === 1 && Math.abs(y - fy) === 1), LUD.dostawaLimit);
+      // najpierw miejsce, na którym da się stać albo trzymać ściany — nad pustką zjeżdżał po linie i wracał w kółko
+      const obok = (x: number, y: number) => Math.abs(x - fx) + Math.abs(y - fy) === 1 || (Math.abs(x - fx) === 1 && Math.abs(y - fy) === 1);
+      const d = droga((x, y) => obok(x, y) && (stoi(sim, x, y) || w.solid(x - 1, y) || w.solid(x + 1, y)), LUD.dostawaLimit)
+        ?? droga(obok, LUD.dostawaLimit);
       if (d) {
         naDroge(d); c.jx = fx; c.jy = fy; c.dig = 0; c.kopieDroge = true;
         zamiar('kopie drogę do rdzenia', Job.DIG, podroz(d) + Z);

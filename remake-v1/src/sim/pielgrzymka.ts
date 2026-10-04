@@ -104,7 +104,9 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
     }
     return true;
   };
-  const skala = (i: number) => doKopania(w.tile[i]) && w.magma[i] === 0 && bezpieczna(i);
+  // (czoło, do którego kopacze nie mogli dojść, plan chwilowo omija)
+  const omijaj = new Set((sim.lud?.omijaj ?? []).filter(([, do_]) => do_ > sim.tick).map(([i]) => i));
+  const skala = (i: number) => doKopania(w.tile[i]) && w.magma[i] === 0 && bezpieczna(i) && !omijaj.has(i);
   // czterech sąsiadów bez zawijania przez brzeg mapy — kafel x=0 nie sąsiaduje z x=175
   const sasiedzi = (i: number): number[] => {
     const x = i % W, out: number[] = [];
@@ -114,15 +116,6 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
     if (x < W - 1) out.push(i + 1);
     return out;
   };
-  // Remake v1: na trasie każde puste pole ma podłogę albo ścianę do trzymania (bez lin) — trasa liczy się
-  // od rdzenia, a idzie się nią w obie strony: „spadek” w planie był dla robotnika wspinaczką po powietrzu
-  // i czoło drogi wisiało nad szybem, do którego nie dało się dojść
-  const oparcie = (j: number) => {
-    if (!REMAKE) return true;
-    const x = j % W, y = (j / W) | 0;
-    return stoi(sim, x, y) || w.solid(x - 1, y) || w.solid(x + 1, y) || w.prog[j] === 1;
-  };
-  const wstawWolny = (j: number, d: number, od: number): void => { if (oparcie(j)) wstaw(j, d, od); };
   let meta = -1;
   for (let d = 0; zostalo > 0; d++) {
     const kubel = kubly[d % K];
@@ -135,7 +128,7 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
       if (skala(i)) {
         // wydrążony wąski korytarz: ściany z obu stron, więc wolno w każdą stronę
         for (const j of sasiedzi(i)) {
-          if (wolny(sim, j, plywa)) wstawWolny(j, d + 1, i);
+          if (wolny(sim, j, plywa)) wstaw(j, d + 1, i);
           else if (skala(j)) wstaw(j, d + KOSZT_SKALY, i);
         }
         continue;
@@ -144,9 +137,9 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
       const wisi = !naPodlodze && uchwyt(sim, x, y);
       // Remake v1: plan według tych samych zasad co lud — bez skoków w przepaść (inaczej
       // robotnik nie miał jak dojść do czoła drogi i nikt jej nie kopał)
-      if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa) && !(REMAKE && wisi && przepasc(sim, x, y + 1))) wstawWolny(i + W, d + 1, i);
+      if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa) && !(REMAKE && wisi && przepasc(sim, x, y + 1))) wstaw(i + W, d + 1, i);
       if (!naPodlodze && !wisi) continue;
-      if (y > 0 && wolny(sim, i - W, plywa) && uchwyt(sim, x, y - 1)) wstawWolny(i - W, d + 1, i);
+      if (y > 0 && wolny(sim, i - W, plywa) && uchwyt(sim, x, y - 1)) wstaw(i - W, d + 1, i);
       for (const dx of [-1, 1]) {
         const nx = x + dx;
         if (nx < 0 || nx >= W) continue;
@@ -156,7 +149,7 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
         if (wisi && !tamStoi) continue;
         if (!tamStoi && nadOgniem(sim, nx, y)) continue;
         if (REMAKE && przepasc(sim, nx, y)) continue;
-        wstawWolny(j, d + 1, i);
+        wstaw(j, d + 1, i);
       }
       // z podłogi albo z wiszenia można zacząć kuć w każdą stronę
       for (const j of sasiedzi(i)) if (skala(j)) wstaw(j, d + KOSZT_SKALY, i);
@@ -170,6 +163,27 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
   for (let k = meta; k !== -1; k = skad[k]) sciezka.push(k);
   sciezka.reverse();
   return { klan: klanId, tick: sim.tick, sciezka, kopac: sciezka.filter((i) => skala(i)) };
+}
+
+/**
+ * Remake v1: czoło drogi, które stoi, choć kopacze są do niego wysłani (wisi nad szybem bez podłogi,
+ * kopacz zjeżdża po linie i wraca w kółko) — po `czoloStoi` plan drogi omija ten kafel i liczy się od nowa.
+ */
+export function pilnujCzola(sim: Sim): void {
+  if (!REMAKE || !sim.lud) return;
+  const cz = czoloDrogi(sim);
+  const st = sim.lud.czolo;
+  if (!st || st.i !== cz) { sim.lud.czolo = { i: cz, od: sim.tick, prob: 0, zk: 0 }; return; }
+  if (cz < 0) return;
+  st.prob++;
+  if (sim.creatures.some((c) => !c.dead && c.kopieDroge)) st.zk++;
+  if (sim.tick - st.od < PLAN_DROGI.czoloStoi || st.zk < st.prob * 0.5) return;
+  sim.lud.omijaj = (sim.lud.omijaj ?? []).filter(([, do_]) => do_ > sim.tick);
+  sim.lud.omijaj.push([cz, sim.tick + PLAN_DROGI.czoloOmijaj]);
+  sim.lud.czolo = undefined;
+  const w = sim.world;
+  zapisz(sim, 'praca', `czoło drogi (${cz % w.w}, ${(cz / w.w) | 0}) stoi — plan je omija`, cz % w.w, (cz / w.w) | 0);
+  odswiezPlan(sim);
 }
 
 /** Remake v1: czoło drogi — pierwszy kafel skały na kresce od strony obozu (tam kopie robotnik), albo -1. */

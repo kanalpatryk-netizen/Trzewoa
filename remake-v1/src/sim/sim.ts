@@ -6,7 +6,7 @@ import { Race, RACES, RACE_COUNT, clanName } from './races';
 import { Creature, Job, Thought, makeCreature, stepCreature } from './creatures';
 import type { Efekt, RodzajEfektu } from '../render/efekty';
 import { tikRytualu, type StanRytualu } from './rytual';
-import { odswiezPlan, drazDrogeWiernym, type PlanDrogi } from './pielgrzymka';
+import { odswiezPlan, drazDrogeWiernym, pilnujCzola, type PlanDrogi } from './pielgrzymka';
 import { policzJedzeniePrzedsionka } from './rytual';
 import { nowyTik } from './droga';
 import { tikWydarzen, nowyStanWydarzen, kartaPlemienia, paraNacji, type StanWydarzen } from './wydarzenia';
@@ -1290,6 +1290,7 @@ export class Sim {
     if (this.tick % RYTUAL.coIleTikow === 0) tikRytualu(this, this.rytual);
     if (this.tick % PIELGRZYMKA.jedzenieCo === 0) this.jedzeniePrzedsionka = policzJedzeniePrzedsionka(this);
     if (this.tick % PLAN_DROGI.odswiezCo === 0) odswiezPlan(this);
+    if (this.tick % PLAN_DROGI.odswiezCo === 300) pilnujCzola(this);
     if (this.tick % PLAN_DROGI.drazenieCo === 0) drazDrogeWiernym(this);
     this.census();
     this.tides();
