@@ -663,6 +663,9 @@ export class Sim {
         if (!w.inb(x, y) || w.tile[w.idx(x, y)] !== T.AIR) continue;
         if (w.water[w.idx(x, y)] > 2 || w.magma[w.idx(x, y)] > 0) continue;
         if (!w.solid(x, y + 1)) continue;                 // musi mieć na czym stanąć
+        // Remake v1: nie przy rdzeniu i nie na drodze wiernych — ołtarz postawiony w szybie pęknięcia
+        // zagrodził jedyne wejście i skorupa pękała osiem razy na próżno
+        if (REMAKE && (Math.hypot(x - w.coreX, y - w.coreY) < LUD.strefaRdzenia || w.prog[w.idx(x, y)] === 1)) continue;
         if (c.race === Race.DWARF) {
           let hot = false;
           for (let dy = -L.kuzniaOgien; dy <= L.kuzniaOgien && !hot; dy++)

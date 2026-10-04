@@ -328,8 +328,10 @@ function osuszPekniecia(sim: Sim): void {
     for (let x = w.coreX - R.glebokoscPekniecia; x <= w.coreX + R.glebokoscPekniecia; x++) {
       if (!w.inb(x, y)) continue;
       const i = w.idx(x, y);
-      if (w.water[i] === 0 || w.tile[i] !== T.AIR) continue;
       const wSzybie = y <= w.coreY && R.kolumnyPekniec.includes(x - w.coreX);
+      // ołtarz (albo kuźnia) w szybie pęknięcia też go zagradzał — kamień go wypycha
+      if ((w.tile[i] === T.SHRINE || w.tile[i] === T.FORGE) && (wSzybie || wKomorze(sim, x, y))) w.tile[i] = T.AIR;
+      if (w.water[i] === 0 || w.tile[i] !== T.AIR) continue;
       if (wSzybie || wKomorze(sim, x, y)) w.water[i] = 0;
     }
   }
