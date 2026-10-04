@@ -1,6 +1,7 @@
 # Zmiany
 
 ## Remake v1 (komputer) — poprawki po etapie 4
+- Robotnik zbiera grzyb i „wraca do siedziby” także przy spiżarni obozu — przy siedzibie na jałowej półce wszyscy robotnicy (również kopacze drogi) wracali do pustej siedziby, utykali na jej skraju, a rycerze pod rdzeniem umierali z głodu
 - Tunel ku gniazdu w górę: kopacz trzyma się ścian szybu i nie zsuwa się co chwilę; zsunięcie się i powrót na ten sam kafel nie zużywa limitu kroków — tory do pokazanych gniazd kończyły się „ogień zagrodził” kilkanaście kafli przed celem, choć ognia nie było (boss usypiał po kilka razy, a gniazdo zostawało w skale)
 - Spisek rycerzy rzadszy: mniejsza waga w losowaniu i najwyżej jeden na 5 minut
 - Pobożni z księgą: gdy w ostatniej fali nie ma już gniazd ani rycerzy, pobożni unoszą księgi i razią Strażników z dystansu (cofają się, gdy wróg podejdzie); boss i słudzy biją ich — boss nie zasypia w tej sytuacji

@@ -1014,7 +1014,7 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
       // grzyb przy obozie zbierają także pod rdzeniem (obóz frontowy stoi przy warcie) — byle nie w przedsionku
       const wPrzedsionku = (x: number, y: number) => Math.abs(x - w.coreX) <= P.przedsionekX && Math.abs(y - w.przedsionekY) <= P.przedsionekY;
       const d = szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && przyObozie(x, y) && !wPrzedsionku(x, y) && !strefa(x, y), LUD.dostawaLimit)
-        ?? szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && wZasieguPracy(clan, x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, K.jedzenieLimit);
+        ?? szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && wStrefiePracy(sim, clan, x, y) && !strefa(x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, K.jedzenieLimit);
       if (d) { naDroge(d); zamiar('zbiera grzyb do spiżarni', Job.ZBIERA, podroz(d)); return; }
     }
   }
@@ -1022,8 +1022,8 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   const przyRdzeniu = Math.hypot(c.x - w.coreX, c.y - w.coreY) < LUD.strefaRdzenia;
   // (po ucieczce od ognia nie wraca od razu — droga do siedziby prowadziła obok magmy i kręcił się w kółko)
   const swiezoOdOgnia = sim.tick - (c.odOgnia ?? -1e9) < Z;
-  if ((przyRdzeniu || !wZasieguPracy(clan, c.x, c.y)) && !swiezoOdOgnia) {
-    const d = droga((x, y) => wZasieguPracy(clan, x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia && stoi(sim, x, y) && !sim.przyMagmie(x, y, 3), LUD.dostawaLimit);
+  if ((przyRdzeniu || !wStrefiePracy(sim, clan, c.x, c.y, 2)) && !swiezoOdOgnia) {
+    const d = droga((x, y) => wStrefiePracy(sim, clan, x, y) && !strefa(x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia && stoi(sim, x, y) && !sim.przyMagmie(x, y, 3), LUD.dostawaLimit);
     if (d) { naDroge(d); zamiar('wraca do siedziby', Job.WANDER, podroz(d)); return; }
     c.jx = clan.hx; c.jy = clan.hy;
     zamiar('wkopuje się z powrotem do siedziby', Job.WANDER, Z);
@@ -1038,7 +1038,7 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   // 3. zbiera grzyb, gdy w najbliższej spiżarni mało
   const sp = najblizszaSpizarnia(sim, c.x, c.y, false);
   if (sp && sp.ilosc < LUD.zapasDo) {
-    const d = szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && wZasieguPracy(clan, x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, K.jedzenieLimit);
+    const d = szukajDrogi(sim, c, (i, x, y) => w.tile[i] === T.FUNGUS && wStrefiePracy(sim, clan, x, y) && !strefa(x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia, K.jedzenieLimit);
     if (d) { naDroge(d); zamiar('zbiera grzyb do spiżarni', Job.ZBIERA, podroz(d)); return; }
   }
   // 4. przekopuje korytarz — jeden kierunek przez cały zamiar, kafel po kafelku
@@ -1508,6 +1508,17 @@ function doWander(sim: Sim, c: Creature): void {
 /** Remake v1: czy kafel leży w prostokącie pracy robotników wokół siedziby. */
 function wZasieguPracy(klan: Sim['clans'][number], x: number, y: number): boolean {
   return Math.abs(x - klan.hx) <= LUD.robotnikZasieg.x && Math.abs(y - klan.hy) <= LUD.robotnikZasieg.y;
+}
+
+/**
+ * Remake v1: gdzie robotnik zbiera grzyb i dokąd wraca — przy siedzibie albo przy spiżarni obozu
+ * (siedziba na jałowej półce, a grzyb przy obozie: wszyscy robotnicy wracali do pustej siedziby
+ * i lud wymierał z głodu). `zapas` poszerza strefę — kto stoi tuż przy jej skraju, już jest „u siebie”.
+ */
+function wStrefiePracy(sim: Sim, klan: Sim['clans'][number], x: number, y: number, zapas = 0): boolean {
+  const X = LUD.robotnikZasieg.x + zapas, Y = LUD.robotnikZasieg.y + zapas;
+  if (Math.abs(x - klan.hx) <= X && Math.abs(y - klan.hy) <= Y) return true;
+  return sim.lud.spizarnie.some((s) => Math.abs(x - s.x) <= X && Math.abs(y - s.y) <= Y);
 }
 
 /** Remake v1: ile pustych kafli ziała pod (x, y) — do pierwszej podłogi (najwyżej limit+1). */
