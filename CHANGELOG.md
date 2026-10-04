@@ -25,6 +25,7 @@
 - Głodny w płytkiej wodzie najpierw idzie jeść; głodny „czekający z dala od ognia” w odciętej kieszeni wkopuje się do spiżarni
 - Głodny, do którego żaden Strażnik nie jest blisko (12 kafli), nie ucieka przed falą, tylko idzie jeść (na skraju strefy uciekali w kółko i umierali z głodu)
 - Idący wyliczoną drogą przechodzi obok magmy bez ucieczki, jeśli następny kafel jest wolny od ognia (droga szybem przy magmie była przerywana co sekundę i robotnicy dreptali w kółko do śmierci)
+- Samouczek i README opisują sen bossa i trafianie w pokazane gniazdo
 - Wskazówka przy śpiącym bossie nie odsyła do „Przemyśl i kop”, gdy wszystkie gniazda są już odkopane
 - Pasek „Śniący Kamień śpi w ścianie · wróci za m:ss · zbierz rycerzy” i wskazówka „teraz:” prowadząca do świecącego gniazda; w czasie fali wstęga mówi, że skorupa nie pęka
 - Uprawa przy spiżarni liczy tylko grzyb na podłodze w swoim pasie (wiszący nad siedzibą grzyb blokował ją i siedziba głodowała)

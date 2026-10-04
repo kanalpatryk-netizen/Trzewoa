@@ -199,7 +199,7 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true,
       },
       {
-        tekst: 'Szepnij robotnikowi „przemyśl i kop”: uklęknie, poprosi o znak i wykopie tunel ku gniazdu. Znak jest niedokładny — jeden trafia raz na trzy, trzech na pewno.',
+        tekst: 'Szepnij robotnikowi „przemyśl i kop”: uklęknie, poprosi o znak i wykopie tunel ku gniazdu. Znak jest niedokładny — jeden trafia raz na trzy, trzech na pewno. W gniazdo świecące (pokazane) trafia zawsze.',
         rozumiem: true,
       },
     ],
@@ -216,7 +216,7 @@ export const ROZDZIALY: Rozdzial[] = [
         wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
       },
       {
-        tekst: 'Śniącego Kamienia rani tylko rycerz. Słabnie, gdy pod rdzeniem modli się trzech pobożnych, a zasypaną przez niego drogę odkopują robotnicy.',
+        tekst: 'Śniącego Kamienia rani tylko rycerz. Słabnie, gdy pod rdzeniem modli się trzech pobożnych, a zasypaną przez niego drogę odkopują robotnicy. Gdy przez 2 minuty nie ma przed nim rycerza, zapada w ścianę na 4 minuty i zdradza jedno gniazdo — wtedy zbierz rycerzy.',
         rozumiem: true,
       },
     ],
