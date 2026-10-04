@@ -35,7 +35,7 @@
 - Karta „Woda nad obozem” → „Odwróć wodę”: woda naprawdę spływa daleko od siedziby i obozów (losowa powódź potrafiła trafić prosto nad obóz i utopić kilku)
 - Ołtarzy nie stawia się przy rdzeniu ani na drodze wiernych, a ołtarz w szybie pęknięcia kamień wypycha (zagrodzone jedyne wejście: skorupa pękała 8 razy i wygranej nie było)
 - W czasie fali głodny nie-rycerz nie idzie jeść do spiżarni w strefie Strażników (boss wybijał ich tam po kolei)
-- Wynik bota (ostatni pomiar, 64 światy): 58 wygranych, 0 porażek, 6 partii trwa po 25 min; mediana partii ok. 9 min.
+- Wynik bota (ostatni pomiar, 64 światy): 59 wygranych, 0 porażek, 5 partii trwa po 25 min; mediana partii ok. 9 min.
   Przebiegi są chaotyczne — jedna inna karta zmienia całą partię; wersja tuż przed ostatnią poprawką miała 61/64.
   Zgonów z głodu na 16 pierwszych światach: z ~37 na początku poprawek do kilku; w magmie 0
 
