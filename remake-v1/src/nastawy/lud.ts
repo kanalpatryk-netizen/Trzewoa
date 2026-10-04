@@ -125,6 +125,8 @@ export const LUD = {
    * tor, którego nikt jeszcze nie sprawdził. Jeden trafia raz na trzy, trzech — na pewno.
    */
   przemyslModlitwa: 720, przemyslRozstaw: 8, przemyslTempo: 0.7, przemyslBledow: 4,
+  /** Tunel zagrodzony najdalej tyle kafli (w kratkach) od gniazda — rycerze słyszą kopanie i przebijają się sami. */
+  gniazdoUslyszy: 6,
   /** Do pokazanego gniazda trasa tunelu jest wyliczana (BFS) — najwyżej tyle kafli przeszukania. */
   trasaToruLimit: 30000,
 

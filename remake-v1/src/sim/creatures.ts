@@ -10,7 +10,7 @@ import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi } fro
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi } from './pielgrzymka';
-import { gniazdaWSkale, obudzGniazdo } from './lud';
+import { gniazdaWSkale, obudzGniazdo, podloga } from './lud';
 import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy } from './straznicy';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { zajecieBuntownika } from './bunt';
@@ -1286,6 +1286,12 @@ function koniecToru(sim: Sim, c: Creature, czemu: 'pusto' | 'zagrodzone' | 'zgub
     for (let yy = g.y - r; yy <= g.y + r; yy++) for (let xx = g.x - r; xx <= g.x + r; xx++) {
       if (sim.world.passable(xx, yy)) { obudzGniazdo(sim, g); return; }
     }
+  }
+  // tunel zagrodził ogień albo woda tuż przy gnieździe — rycerze słyszą kopanie i przebijają się sami
+  // (gniazda przy magmie nie dawały się odkopać wcale i w części światów rycerzy nie było przez całą grę)
+  if (g && !g.odkryte && czemu === 'zagrodzone' && Math.abs(Math.floor(c.x) - g.x) + Math.abs(Math.floor(c.y) - g.y) <= LUD.gniazdoUslyszy) {
+    obudzGniazdo(sim, g, podloga(sim, Math.floor(c.x), Math.floor(c.y), 3) ?? [Math.floor(c.x), Math.floor(c.y)]);
+    return;
   }
   const napis = czemu === 'pusto' ? 'tu pusto' : czemu === 'zagrodzone' ? 'ogień zagrodził' : 'zgubił tunel';
   sim.efekt(c.x, c.y, 'mysl', napis);

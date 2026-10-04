@@ -501,7 +501,8 @@ function dokopane(sim: Sim, g: Gniazdo): boolean {
 }
 
 /** Budzi gniazdo: komora się otwiera, rycerze wstają i przyłączają się do ludu — od razu jako weterani. */
-export function obudzGniazdo(sim: Sim, g: Gniazdo): void {
+/** Budzi gniazdo; `wyjscie` — rycerze przebili się sami do tego miejsca (tunel zagrodzony tuż przy gnieździe). */
+export function obudzGniazdo(sim: Sim, g: Gniazdo, wyjscie?: [number, number]): void {
   const w = sim.world;
   const klan = klanLudu(sim);
   g.odkryte = true;
@@ -524,7 +525,7 @@ export function obudzGniazdo(sim: Sim, g: Gniazdo): void {
     }
   }
   for (let i = 0; i < g.rycerzy; i++) {
-    const c = sim.spawn(Race.GOBLIN, klan.id, g.x - 1 + (i % 3), g.y);
+    const c = wyjscie ? sim.spawn(Race.GOBLIN, klan.id, wyjscie[0] + (i % 3) - 1, wyjscie[1]) : sim.spawn(Race.GOBLIN, klan.id, g.x - 1 + (i % 3), g.y);
     if (!c) continue;
     nadajRole(sim, c, 'rycerz');
     c.age = 0;
