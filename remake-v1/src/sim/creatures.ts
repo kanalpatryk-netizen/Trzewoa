@@ -284,10 +284,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // Remake v1: pielgrzym na stopniach drogi wiernych trzyma się zawsze — krok w bok nad jaskinią
   // (bez świeżego chwytu) zrzucał go z drogi prosto w magmę pod spodem
   const naDrodzeWiernych = REMAKE && c.job === Job.PIELGRZYM && (w.prog[w.idx(tx, ty)] === 1 || (ty > 0 && w.prog[w.idx(tx, ty - 1)] === 1));
-  // Remake v1: kopacz drogi trzyma się przy czole — zsuwał się po linie poza zasięg, wracał, kuł ułamek
-  // sekundy i znów zjeżdżał (jeden kafel drogi kopał tak po kilka minut)
-  const kopieTu = REMAKE && c.kopieDroge && c.job === Job.DIG && !c.tor && w.solid(c.jx, c.jy) && Math.abs(c.jx - tx) <= 1 && Math.abs(c.jy - ty) <= 1;
-  const trzymaSie = naDrodzeWiernych || kopieTu || ((c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
+  const trzymaSie = naDrodzeWiernych || ((c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
     && (naStopniach || w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1)));
   if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
     // Remake v1: lud nie spada — schodzi powoli, wbijając klamry (droga w dół staje się drogą w górę);
