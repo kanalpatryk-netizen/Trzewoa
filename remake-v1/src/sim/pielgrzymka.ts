@@ -114,6 +114,15 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
     if (x < W - 1) out.push(i + 1);
     return out;
   };
+  // Remake v1: na trasie każde puste pole ma podłogę albo ścianę do trzymania (bez lin) — trasa liczy się
+  // od rdzenia, a idzie się nią w obie strony: „spadek” w planie był dla robotnika wspinaczką po powietrzu
+  // i czoło drogi wisiało nad szybem, do którego nie dało się dojść
+  const oparcie = (j: number) => {
+    if (!REMAKE) return true;
+    const x = j % W, y = (j / W) | 0;
+    return stoi(sim, x, y) || w.solid(x - 1, y) || w.solid(x + 1, y) || w.prog[j] === 1;
+  };
+  const wstawWolny = (j: number, d: number, od: number): void => { if (oparcie(j)) wstaw(j, d, od); };
   let meta = -1;
   for (let d = 0; zostalo > 0; d++) {
     const kubel = kubly[d % K];
@@ -126,7 +135,7 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
       if (skala(i)) {
         // wydrążony wąski korytarz: ściany z obu stron, więc wolno w każdą stronę
         for (const j of sasiedzi(i)) {
-          if (wolny(sim, j, plywa)) wstaw(j, d + 1, i);
+          if (wolny(sim, j, plywa)) wstawWolny(j, d + 1, i);
           else if (skala(j)) wstaw(j, d + KOSZT_SKALY, i);
         }
         continue;
@@ -135,9 +144,9 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
       const wisi = !naPodlodze && uchwyt(sim, x, y);
       // Remake v1: plan według tych samych zasad co lud — bez skoków w przepaść (inaczej
       // robotnik nie miał jak dojść do czoła drogi i nikt jej nie kopał)
-      if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa) && !(REMAKE && wisi && przepasc(sim, x, y + 1))) wstaw(i + W, d + 1, i);
+      if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa) && !(REMAKE && wisi && przepasc(sim, x, y + 1))) wstawWolny(i + W, d + 1, i);
       if (!naPodlodze && !wisi) continue;
-      if (y > 0 && wolny(sim, i - W, plywa) && uchwyt(sim, x, y - 1)) wstaw(i - W, d + 1, i);
+      if (y > 0 && wolny(sim, i - W, plywa) && uchwyt(sim, x, y - 1)) wstawWolny(i - W, d + 1, i);
       for (const dx of [-1, 1]) {
         const nx = x + dx;
         if (nx < 0 || nx >= W) continue;
@@ -147,7 +156,7 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
         if (wisi && !tamStoi) continue;
         if (!tamStoi && nadOgniem(sim, nx, y)) continue;
         if (REMAKE && przepasc(sim, nx, y)) continue;
-        wstaw(j, d + 1, i);
+        wstawWolny(j, d + 1, i);
       }
       // z podłogi albo z wiszenia można zacząć kuć w każdą stronę
       for (const j of sasiedzi(i)) if (skala(j)) wstaw(j, d + KOSZT_SKALY, i);
