@@ -5,7 +5,7 @@ import { rolaPostaci, NAZWA_ROLI, stanyPostaci } from '../sim/lud';
 import { aktywnyBoss } from '../sim/boss';
 import { rysujGrafike } from '../grafiki/grafiki';
 import { Creature, Job } from '../sim/creatures';
-import { Verb, TOOLS, affordable, cost, whisper, modliSie, moznaPrzemyslec } from '../powers/powers';
+import { Verb, TOOLS, affordable, cost, whisper, modliSie, moznaPrzemyslec, moznaKopacLosowo } from '../powers/powers';
 import { SERIF, creatureName, creatureNameCelownik } from '../render/overlay';
 import { Plate } from '../render/plate';
 import { rysujStany } from '../render/stany';
@@ -476,7 +476,7 @@ export class Ui {
     ctx.fillStyle = 'rgba(224,168,96,0.8)';
     ctx.fillText(napisSzeptu, x + cw / 2, yM - rozm * 1.15);
     // okaleczyć może się tylko pobożny, i tylko raz — innym tej myśli nie pokazujemy
-    const tools = c.straznik || c.buntownik ? [] : TOOLS.szept.filter((t) => (t.id !== 'okalecz' || (rolaPostaci(c) === 'pobozny' && !c.okaleczony)) && (t.id !== 'przerwij' || modliSie(c)) && (t.id !== 'przemysl' || moznaPrzemyslec(sim, c)));
+    const tools = c.straznik || c.buntownik ? [] : TOOLS.szept.filter((t) => (t.id !== 'okalecz' || (rolaPostaci(c) === 'pobozny' && !c.okaleczony)) && (t.id !== 'przerwij' || modliSie(c)) && (t.id !== 'przemysl' || moznaPrzemyslec(sim, c)) && (t.id !== 'kopLosowo' || moznaKopacLosowo(c)));
     const size = Math.max(13, Math.min(17, cw * 0.05));
     ctx.font = `${size}px ${SERIF}`;
     for (let k = 0; k < tools.length; k++) {

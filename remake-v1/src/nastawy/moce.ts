@@ -18,6 +18,7 @@ export const KOSZTY = {
     przerwij: { krew: 0, wiara: 0, otchlan: 0 },
     // etap 2: robotnik modli się o znak, gdzie w skale śpią rycerze
     przemysl: { krew: 0, wiara: 6, otchlan: 0 },
+    kopLosowo: { krew: 0, wiara: 4, otchlan: 0 },
   },
   znak: {
     objawienie: { krew: 0, wiara: 30, otchlan: 0 },

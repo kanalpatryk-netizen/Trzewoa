@@ -61,6 +61,8 @@ export const STRAZNICY = {
    * gniazda), czekają z dala od rdzenia — pojedynczo ginęli od razu. Gdy gniazd już nie ma, idą, ilu jest.
    */
   rycerzyNaBossa: 3,
+  /** Czekający rycerz broni się, gdy Strażnik (albo boss) podejdzie bliżej niż tyle kafli. */
+  rycerzBroniSieOd: 4,
   /** Głodny z ludu nie ucieka przed falą (idzie jeść), dopóki żaden Strażnik nie jest bliżej niż tyle kafli. */
   glodnyNieUciekaOd: 12,
   /** Wiara za pokonaną falę. */

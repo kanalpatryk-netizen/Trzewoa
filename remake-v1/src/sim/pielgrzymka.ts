@@ -177,7 +177,10 @@ export function pilnujCzola(sim: Sim): void {
   if (cz < 0) return;
   st.prob++;
   if (sim.creatures.some((c) => !c.dead && c.kopieDroge)) st.zk++;
-  if (sim.tick - st.od < PLAN_DROGI.czoloStoi || st.zk < st.prob * 0.5) return;
+  // czoło przy samej magmie — robotnicy tam nie kopią (płonęli), więc nie ma na co czekać; inaczej wszyscy
+  // „odpoczywali przy spiżarni”, a droga stała po kilkanaście minut
+  const w0 = sim.world, przyOgniu = sim.przyMagmie(cz % w0.w, (cz / w0.w) | 0, 2);
+  if (!przyOgniu && (sim.tick - st.od < PLAN_DROGI.czoloStoi || st.zk < st.prob * 0.5)) return;
   sim.lud.omijaj = (sim.lud.omijaj ?? []).filter(([, do_]) => do_ > sim.tick);
   sim.lud.omijaj.push([cz, sim.tick + PLAN_DROGI.czoloOmijaj]);
   sim.lud.czolo = undefined;

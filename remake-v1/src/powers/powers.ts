@@ -4,6 +4,7 @@ import { Race, RACES } from '../sim/races';
 import { Creature, Thought, Job } from '../sim/creatures';
 import { KOSZTY, MOCE, SKAZY } from '../nastawy/moce';
 import { odswiezPlan } from '../sim/pielgrzymka';
+import { nadOgniem } from '../sim/droga';
 import { rolaPostaci, maxHp, gniazdaWSkale } from '../sim/lud';
 import { LUD } from '../nastawy/lud';
 
@@ -26,6 +27,7 @@ export const TOOLS: Record<Verb, Tool[]> = {
     { id: 'okalecz', label: 'okalecz się', hint: 'pobożny upuszcza krwi: dostajesz krew, a on słabnie na zawsze' },
     { id: 'ofiaruj', label: 'ofiaruj', hint: 'oddaje ci życie — dużo krwi, jedna osoba mniej' },
     { id: 'przerwij', label: 'przerwij modlitwę', hint: 'wraca do swoich i przez minutę nie idzie się modlić' },
+    { id: 'kopLosowo', label: 'kop losowo', hint: 'rycerz wykopuje kilkanaście kafli skały obok siebie — na chybił trafił; trafi blisko śpiącego gniazda, to je zbudzi' },
     { id: 'przemysl', label: 'przemyśl i kop', hint: 'robotnik klęka, prosi o znak i kopie ku śpiącym rycerzom — znak jest niedokładny: jeden trafia raz na trzy, trzech na pewno (w świecące gniazdo — zawsze)' },
   ],
   znak: [
@@ -99,6 +101,37 @@ export function moznaPrzemyslec(sim: Sim, c: Creature): boolean {
   return rolaPostaci(c) === 'robotnik' && !c.tor && c.przemysl === undefined && gniazdaWSkale(sim).length > 0;
 }
 
+/** Szept „kop losowo” — tylko rycerz, który akurat tak nie kopie. */
+export function moznaKopacLosowo(c: Creature): boolean {
+  return rolaPostaci(c) === 'rycerz' && !c.losowo;
+}
+
+/** Kafle do „kop losowo”: błądzenie po litej skale od miejsca, w którym stoi rycerz — połączone, z dala od ognia, wody i rdzenia. */
+function kafleLosowo(sim: Sim, c: Creature): number[] {
+  const w = sim.world;
+  const cx = Math.floor(c.x), cy = Math.floor(c.y);
+  const dobry = (x: number, y: number) => w.inb(x, y) && w.solid(x, y) && w.hardness(x, y) > 0 && w.tile[w.idx(x, y)] !== T.CORE
+    && !sim.przyMagmie(x, y, 3) && !nadOgniem(sim, x, y) && w.water[w.idx(x, y - 1)] < 3 && Math.hypot(x - w.coreX, y - w.coreY) > 12 && y < w.przedsionekY - 4
+    && y >= cy - 1;   // w bok i w dół — do kafli nad głową nie ma jak podejść
+  const wybrane: number[] = [], jest = new Set<number>();
+  const brzeg: number[] = [];
+  const dodajSasiadow = (x: number, y: number) => {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (!dobry(nx, ny)) continue;
+      const i = w.idx(nx, ny);
+      if (!jest.has(i) && !brzeg.includes(i)) brzeg.push(i);
+    }
+  };
+  dodajSasiadow(cx, cy); dodajSasiadow(cx, cy - 1);
+  while (wybrane.length < LUD.losowoKafli && brzeg.length) {
+    const i = brzeg.splice(sim.rng.int(brzeg.length), 1)[0];
+    wybrane.push(i); jest.add(i);
+    dodajSasiadow(i % w.w, (i / w.w) | 0);
+  }
+  return wybrane;
+}
+
 /** Szept — najtańszy i najprecyzyjniejszy. Tak wysyła się wiernych pod rdzeń i robi proroków. */
 export function whisper(sim: Sim, tool: string, c: Creature): boolean {
   if (c.straznik) return false;     // Strażnicy Snu nie słuchają szeptów
@@ -107,6 +140,7 @@ export function whisper(sim: Sim, tool: string, c: Creature): boolean {
   if (tool === 'ofiaruj' && !rolaPostaci(c)) return false;
   if (tool === 'przerwij' && !modliSie(c)) return false;
   if (tool === 'przemysl' && !moznaPrzemyslec(sim, c)) return false;
+  if (tool === 'kopLosowo' && (!moznaKopacLosowo(c) || !kafleLosowo(sim, c).length)) return false;
   if (!pay(sim, 'szept', tool)) return false;
   if (tool === 'okalecz') {
     c.okaleczony = true;
@@ -125,6 +159,12 @@ export function whisper(sim: Sim, tool: string, c: Creature): boolean {
     c.bezModlitwyDo = sim.tick + LUD.przerwaModlitwy;
     c.wyprawa = false;
     sim.efekt(c.x, c.y, 'mysl', 'wraca');
+    return true;
+  }
+  if (tool === 'kopLosowo') {
+    c.losowo = kafleLosowo(sim, c);
+    c.droga = undefined; c.jt = 0;
+    sim.efekt(c.x, c.y, 'mysl', 'kop losowo');
     return true;
   }
   if (tool === 'przemysl') {

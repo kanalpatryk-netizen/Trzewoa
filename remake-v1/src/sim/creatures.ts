@@ -11,7 +11,7 @@ import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi } from './pielgrzymka';
 import { gniazdaWSkale, obudzGniazdo, podloga } from './lud';
-import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy, trybWiernych, rycerzeCzekaja, walczKsiega } from './straznicy';
+import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy, trybWiernych, rycerzeCzekaja, iluRycerzy, walczKsiega } from './straznicy';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { zajecieBuntownika } from './bunt';
 import { obozFrontowy, wszystkieSpizarnie as wszystkieSpizarnieLudu, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
@@ -99,6 +99,10 @@ export interface Creature {
   kierunek?: number;
   /** Remake v1: robotnik kopie drogę do rdzenia (złotą kreskę). */
   kopieDroge?: boolean;
+  /** Szept „kop losowo” (rycerz): kafle skały, które ma jeszcze wykopać. */
+  losowo?: number[];
+  /** …i od kiedy kopie pierwszy z nich (kafel, który nie daje się ruszyć, po chwili odpada). */
+  losowoOd?: { i: number; t: number };
   /** Remake v1: stojąc przy obozie, modli się (pobożny). */
   modliPrzyObozie?: boolean;
   /** Remake v1: wysłany pod rdzeń — wraca do pielgrzymki po każdym przerwaniu (ogień, ucieczka, posiłek). */
@@ -284,10 +288,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // Remake v1: pielgrzym na stopniach drogi wiernych trzyma się zawsze — krok w bok nad jaskinią
   // (bez świeżego chwytu) zrzucał go z drogi prosto w magmę pod spodem
   const naDrodzeWiernych = REMAKE && c.job === Job.PIELGRZYM && (w.prog[w.idx(tx, ty)] === 1 || (ty > 0 && w.prog[w.idx(tx, ty - 1)] === 1));
-  // Remake v1: kopacz drogi trzyma się przy czole — zsuwał się po linie poza zasięg, wracał, kuł ułamek
-  // sekundy i znów zjeżdżał (jeden kafel drogi kopał tak po kilka minut)
-  const kopieTu = REMAKE && c.kopieDroge && c.job === Job.DIG && !c.tor && w.solid(c.jx, c.jy) && Math.abs(c.jx - tx) <= 1 && Math.abs(c.jy - ty) <= 1;
-  const trzymaSie = naDrodzeWiernych || kopieTu || ((c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
+  const trzymaSie = naDrodzeWiernych || ((c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
     && (naStopniach || w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1)));
   if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
     // Remake v1: lud nie spada — schodzi powoli, wbijając klamry (droga w dół staje się drogą w górę);
@@ -772,6 +773,9 @@ function planujLud(sim: Sim, c: Creature): void {
   const czeka = rola === 'rycerz' && rycerzeCzekaja(sim);
   if ((falaZwykla(sim) || czeka) && (rola !== 'rycerz' || czeka) && !(rola === 'pobozny' && trybWiernych(sim)) && !glodnyBezpieczny && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas)) {
     // najchętniej do najbliższej spiżarni poza strefą (tam przeczeka i zje), inaczej byle dalej
+    // rycerz, który czeka na towarzyszy, staje tuż za skrajem strefy — tam, skąd wróci do walki
+    const skraj = czeka ? droga((x, y) => !wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas) && wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas + 6) && stoi(sim, x, y) && !sim.przyMagmie(x, y, 3), LUD.dostawaLimit) : null;
+    if (skraj) { naDroge(skraj); zamiar(`czeka na skraju, aż zbierze się ich dość (${iluRycerzy(sim)}/${STRAZNICY.rycerzyNaBossa})`, Job.WANDER, podroz(skraj)); return; }
     const sp = spizarnieWgOdleglosci(sim, c.x, c.y, false).find((o) => !wStrefieStraznikow(sim, o.x, o.y, STRAZNICY.ucieczkaZapas));
     const d = (sp ? droga((x, y) => Math.abs(x - sp.x) <= 3 && Math.abs(y - sp.y) <= 2 && stoi(sim, x, y), LUD.dostawaLimit) : null)
       ?? droga((x, y) => !wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas) && stoi(sim, x, y), LUD.dostawaLimit);
@@ -885,6 +889,32 @@ function planujLud(sim: Sim, c: Creature): void {
     }
   }
   if (rola === 'rycerz') {
+    // szept „kop losowo”: następny kafel z listy (już wykopane i nie do ruszenia odpadają)
+    if (c.losowo) {
+      // kafel, który od 15 s nie daje się ruszyć (ogień obok, nie da się do niego stanąć), odpada
+      if (c.losowoOd && c.losowo[0] === c.losowoOd.i && sim.tick - c.losowoOd.t > 1800) c.losowo.shift();
+      const lity = (i: number) => w.solid(i % w.w, (i / w.w) | 0) && w.hardness(i % w.w, (i / w.w) | 0) > 0;
+      // pierwszy z listy, do którego da się podejść (niedostępne odpadają, nie przerywają roboty)
+      while (c.losowo.length) {
+        const k = c.losowo[0];
+        if (!lity(k)) { c.losowo.shift(); continue; }
+        const fx = k % w.w, fy = (k / w.w) | 0;
+        const d = droga((x, y) => Math.abs(x - fx) <= 1 && Math.abs(y - fy) <= 1 && (x !== fx || y !== fy), LUD.dostawaLimit);
+        if (!d) { c.losowo.shift(); continue; }
+        if (!c.losowoOd || c.losowoOd.i !== k) c.losowoOd = { i: k, t: sim.tick };
+        naDroge(d); c.jx = fx; c.jy = fy; c.dig = 0;
+        zamiar(`kopie na chybił trafił — szuka śpiących rycerzy (zostało ${c.losowo.length})`, Job.DIG, podroz(d) + Z);
+        return;
+      }
+      c.losowo = undefined; c.losowoOd = undefined;
+      sim.efekt(c.x, c.y, 'mysl', 'skała pusta');
+    }
+    // za mało rycerzy na bossa — czekają na skraju strefy z bronią w ręku (nie uciekają do dalekiej spiżarni)
+    if (rycerzeCzekaja(sim)) {
+      c.jx = Math.floor(c.x); c.jy = Math.floor(c.y); c.droga = undefined;
+      zamiar(`czeka na skraju, aż zbierze się ich dość (${iluRycerzy(sim)}/${STRAZNICY.rycerzyNaBossa}) — broni się, gdy coś podejdzie`, Job.STOI, Z);
+      return;
+    }
     // pobożni modlą się pod rdzeniem — rycerze idą z nimi na wartę (jedzenie donoszą robotnicy,
     // a przy warcie powstaje obóz, który zaopatrują)
     if (wartaPotrzebna(sim) && !rycerzeCzekaja(sim)) {
@@ -1491,7 +1521,8 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
     c.dig = 0; c.jt = 0; return;
   }
   c.dig += RACES[c.race].digPower * mnoznik(sim, c, 'kopanie') * cechaNacji(sim.clans[c.clan]).kopanie * (1 + c.mad * K.kopanieOdSzalenstwa)
-    * (c.tor ? LUD.przemyslTempo : 1);   // ku znakowi kopie się powoli, ostrożnie
+    * (c.tor ? LUD.przemyslTempo : 1)    // ku znakowi kopie się powoli, ostrożnie
+    * (c.losowo ? LUD.losowoTempo : 1);  // rycerz z szeptem „kop losowo” kopie jak robotnik
   if (c.dig < hard * K.kopanieProg) return;
   c.dig = 0;
   // Remake v1: bez rudy i kryształów jako łupu — kopie się drogę, nie skarby
@@ -1658,6 +1689,8 @@ function doDig(sim: Sim, c: Creature): void {
   // etap 2: tunel ku znakowi rządzi się własnym krokiem
   if (c.tor) { doTor(sim, c); return; }
   if (w.get(c.jx, c.jy) === T.AIR || !w.inb(c.jx, c.jy)) {
+    // szept „kop losowo”: wykopany kafel — planer weźmie następny
+    if (c.losowo) { c.jt = 0; return; }
     // Remake v1: korytarz — następny kafel w tę samą stronę, dopóki trwa zamiar
     if (c.korytarz && sim.tick < (c.zamiarDo ?? 0) && kafelKorytarza(sim, c, c.jx + c.korytarz, c.jy)) { c.jx += c.korytarz; c.dig = 0; return; }
     // Remake v1: droga do rdzenia — następny kafel czoła, póki trwa zamiar (głodny bez dostawy ma pierwszeństwo)
@@ -1671,6 +1704,9 @@ function doDig(sim: Sim, c: Creature): void {
   }
   // zasięg po kaflach — sąsiedni kafel, także po skosie
   const near = Math.abs(c.jx - Math.floor(c.x)) <= 1 && Math.abs(c.jy - Math.floor(c.y)) <= 1;
+  // Remake v1: kopiący na linie albo przy ścianie trzyma chwyt — zsuwał się po chwili poza zasięg, wspinał
+  // z powrotem i kuł ułamek sekundy (czoło drogi nad liną kopali tak po kilka minut); w pustce nic nie trzyma
+  if (near && REMAKE && c.kopieDroge) c.wspina = sim.tick;
   if (near) digTile(sim, c, c.jx, c.jy);
   else idz(sim, c, c.jx, c.jy);
 }
