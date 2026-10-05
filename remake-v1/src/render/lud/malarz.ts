@@ -1,14 +1,15 @@
-import { clamp, cos, PI, sin, TAU, ton, type Pkt, type Rgb } from './matma';
+import { CIEN, clamp, cos, PI, sin, TAU, tonC, type Pkt, type Rgb } from './matma';
 import type { Szkielet, Stopa } from './szkielet';
 import type { Poza } from './poza';
 
 /**
- * Malarz zbiera części sylwetki (od tyłu do przodu) i maluje je w trzech przejściach:
- * jasna obwódka roli wokół całej sylwetki, ciemna kreska, wypełnienia ze szczegółami.
- * Kontur zostaje tylko na zewnątrz — jak w miedziorycie — a sylwetka czyta się na ciemnej skale.
+ * Malarz zbiera części sylwetki (od tyłu do przodu) i maluje je jak fresk:
+ * jasna aura tynku wokół całej sylwetki (żeby postać nie ginęła w mroku skały), kontur sinopią
+ * (czerwonobrązowy, jak rysunek pod freskiem), a w środku matowe, płaskie tony z twardo
+ * odciętym światłem i cieniem — bez plastikowych przejść. Duże płaszczyzny dostają fakturę tynku.
  *
  * Szczegółowość (lod) zależy od wielkości postaci w pikselach ekranu:
- * 0 — płaskie barwy (z daleka), 1 — cieniowanie, 2 — faktury, szwy, nity, refleksy.
+ * 0 — płaskie barwy (bardzo z daleka), 1 — światłocień i faktura, 2 — ornament, rysy, refleksy.
  */
 
 export interface Czesc {
@@ -18,11 +19,58 @@ export interface Czesc {
   po?: (g: CanvasRenderingContext2D) => void;
   /** cienka wewnętrzna kreska po wypełnieniu (oddziela bliższą kończynę od tułowia) */
   rys?: boolean;
+  /** faktura tynku na tej części */
+  tynk?: boolean;
   bezObrysu?: boolean;
 }
 
 /** Światło: z góry i z przodu. */
 const SW = { x: 0.45, y: -0.89 };
+
+// ------------------------------------------------------------------ faktura tynku
+
+let tynkPlotno: HTMLCanvasElement | null = null;
+const tynki = new WeakMap<CanvasRenderingContext2D, CanvasPattern>();
+
+/** Kafel tynku: biel (bez zmian przy mnożeniu), plamy pigmentu i drobne rysy. */
+function zrobTynk(): HTMLCanvasElement {
+  const n = 128;
+  const c = document.createElement('canvas');
+  c.width = n; c.height = n;
+  const g = c.getContext('2d')!;
+  g.fillStyle = '#fff'; g.fillRect(0, 0, n, n);
+  let z = 7919;
+  const los = () => ((z = (Math.imul(z, 1103515245) + 12345) >>> 0) / 4294967296);
+  for (let i = 0; i < 150; i++) {
+    const x = los() * n, y = los() * n, r = 2 + los() * 9;
+    g.fillStyle = `rgba(${90 + los() * 40 | 0},${70 + los() * 30 | 0},${50 + los() * 30 | 0},${0.05 + los() * 0.09})`;
+    g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+    // kafel się powtarza — plamy przy brzegu rysujemy też po drugiej stronie
+    for (const [dx, dy] of [[n, 0], [-n, 0], [0, n], [0, -n]]) { g.beginPath(); g.arc(x + dx, y + dy, r, 0, TAU); g.fill(); }
+  }
+  for (let i = 0; i < 900; i++) {
+    g.fillStyle = `rgba(40,28,20,${0.05 + los() * 0.12})`;
+    g.fillRect(los() * n, los() * n, 1, 1);
+  }
+  g.strokeStyle = 'rgba(46,30,20,0.45)'; g.lineWidth = 0.7;
+  for (let k = 0; k < 5; k++) {
+    let x = los() * n, y = los() * n;
+    g.beginPath(); g.moveTo(x, y);
+    for (let j = 0; j < 6; j++) { x += (los() - 0.5) * 22; y += (los() - 0.3) * 16; g.lineTo(x, y); }
+    g.stroke();
+  }
+  return c;
+}
+
+function tynk(g: CanvasRenderingContext2D): CanvasPattern | null {
+  let p = tynki.get(g);
+  if (p) return p;
+  if (typeof document === 'undefined') return null;
+  if (!tynkPlotno) tynkPlotno = zrobTynk();
+  p = g.createPattern(tynkPlotno, 'repeat') ?? undefined;
+  if (p) tynki.set(g, p);
+  return p ?? null;
+}
 
 export class Malarz {
   czesci: Czesc[] = [];
@@ -30,75 +78,67 @@ export class Malarz {
   readonly prosto: boolean;
 
   constructor(public g: CanvasRenderingContext2D, public h: number, pikseli: number, maksLod: 0 | 1 | 2 = 2) {
-    this.lod = Math.min(maksLod, pikseli < 34 ? 0 : pikseli < 92 ? 1 : 2) as 0 | 1 | 2;
+    this.lod = Math.min(maksLod, pikseli < 22 ? 0 : pikseli < 70 ? 1 : 2) as 0 | 1 | 2;
     this.prosto = this.lod === 0;
   }
 
-  /** Bryła walcowa: jasna krawędź od światła, cień, odbite światło na samym brzegu. */
-  bryla(a: Pkt, b: Pkt, r: number, kol: Rgb, dalej = false, sila = 1): string | CanvasGradient {
-    const baza = dalej ? -0.34 : 0;
-    // dalsze kończyny są w cieniu — z daleka i średnio blisko płaska barwa (oszczędność gradientów)
-    if (this.prosto || (dalej && this.lod < 2)) return ton(kol, baza - (this.prosto ? 0 : 0.06));
+  /** Bryła walcowa po freskowemu: pas światła, ton własny, pas cienia — odcięte twardo. */
+  bryla(a: Pkt, b: Pkt, r: number, kol: Rgb, dalej = false, sila = 1, cien: Rgb = CIEN.tkanina): string | CanvasGradient {
+    const baza = dalej ? -0.3 : 0;
+    if (this.prosto || (dalej && this.lod < 2)) return tonC(kol, baza - (this.prosto ? 0.02 : 0.08), cien);
     const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
     let nx = -dy / L, ny = dx / L;
     if (nx * SW.x + ny * SW.y < 0) { nx = -nx; ny = -ny; }
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
     const gr = this.g.createLinearGradient(mx + nx * r, my + ny * r, mx - nx * r, my - ny * r);
-    gr.addColorStop(0, ton(kol, baza + 0.3 * sila));
-    gr.addColorStop(0.32, ton(kol, baza + 0.06 * sila));
-    gr.addColorStop(0.78, ton(kol, baza - 0.34 * sila));
-    if (this.lod === 2) gr.addColorStop(1, ton(kol, baza - 0.16 * sila));
+    const sw = tonC(kol, baza + 0.14 * sila, cien), wl = tonC(kol, baza - 0.02, cien), ci = tonC(kol, baza - 0.34 * sila, cien);
+    gr.addColorStop(0, sw); gr.addColorStop(0.26, sw);
+    gr.addColorStop(0.26, wl); gr.addColorStop(0.66, wl);
+    gr.addColorStop(0.66, ci); gr.addColorStop(1, ci);
     return gr;
   }
 
-  /** Płaszczyzna (tułów, szata): z góry-przodu w dół-tył. */
-  plaszczyzna(x0: number, y0: number, x1: number, y1: number, kol: Rgb, dalej = false, sila = 1): string | CanvasGradient {
-    const baza = dalej ? -0.34 : 0;
-    if (this.prosto || (dalej && this.lod < 2)) return ton(kol, baza - (this.prosto ? 0 : 0.06));
+  /** Płaszczyzna (tułów, szata): matowa, z łagodnym przejściem ku cieniowi u dołu. */
+  plaszczyzna(x0: number, y0: number, x1: number, y1: number, kol: Rgb, dalej = false, sila = 1, cien: Rgb = CIEN.tkanina): string | CanvasGradient {
+    const baza = dalej ? -0.3 : 0;
+    if (this.prosto || (dalej && this.lod < 2)) return tonC(kol, baza - (this.prosto ? 0.02 : 0.08), cien);
     const gr = this.g.createLinearGradient(x0, y0, x1, y1);
-    gr.addColorStop(0, ton(kol, baza + 0.26 * sila));
-    gr.addColorStop(0.45, ton(kol, baza));
-    gr.addColorStop(1, ton(kol, baza - 0.4 * sila));
+    gr.addColorStop(0, tonC(kol, baza + 0.06 * sila, cien));
+    gr.addColorStop(0.55, tonC(kol, baza - 0.04 * sila, cien));
+    gr.addColorStop(1, tonC(kol, baza - 0.3 * sila, cien));
     return gr;
   }
 
-  /** Polerowana stal: wąski biały refleks, ciemne odbicie, jaśniejsza krawędź. */
-  metal(a: Pkt, b: Pkt, r: number, kol: Rgb, dalej = false): string | CanvasGradient {
-    const baza = dalej ? -0.32 : 0;
-    if (this.prosto || (dalej && this.lod < 2)) return ton(kol, baza - (this.prosto ? 0 : 0.08));
+  /** Metal po freskowemu: ton własny, wąski pas blasku (biel wapienna), twardy cień. */
+  metal(a: Pkt, b: Pkt, r: number, kol: Rgb, dalej = false, cien: Rgb = CIEN.metal): string | CanvasGradient {
+    const baza = dalej ? -0.3 : 0;
+    if (this.prosto || (dalej && this.lod < 2)) return tonC(kol, baza - (this.prosto ? 0.02 : 0.1), cien);
     const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy) || 1;
     let nx = -dy / L, ny = dx / L;
     if (nx * SW.x + ny * SW.y < 0) { nx = -nx; ny = -ny; }
     const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
     const gr = this.g.createLinearGradient(mx + nx * r, my + ny * r, mx - nx * r, my - ny * r);
-    if (this.lod === 2) {
-      gr.addColorStop(0, ton(kol, baza + 0.2));
-      gr.addColorStop(0.16, ton(kol, baza + 0.62));
-      gr.addColorStop(0.3, ton(kol, baza + 0.1));
-      gr.addColorStop(0.62, ton(kol, baza - 0.42));
-      gr.addColorStop(0.84, ton(kol, baza - 0.12));
-      gr.addColorStop(1, ton(kol, baza - 0.46));
-    } else {
-      gr.addColorStop(0.1, ton(kol, baza + 0.5));
-      gr.addColorStop(0.55, ton(kol, baza - 0.3));
-      gr.addColorStop(1, ton(kol, baza - 0.42));
-    }
+    const wl = tonC(kol, baza, cien), bl = tonC(kol, baza + 0.4, cien), ci = tonC(kol, baza - 0.38, cien);
+    gr.addColorStop(0, wl); gr.addColorStop(0.16, wl);
+    gr.addColorStop(0.16, bl); gr.addColorStop(0.28, bl);
+    gr.addColorStop(0.28, wl); gr.addColorStop(0.64, wl);
+    gr.addColorStop(0.64, ci); gr.addColorStop(1, ci);
     return gr;
   }
 
-  /** Kula (głowa, hełm, dłoń): światło z góry-przodu. */
-  kula(c: Pkt, r: number, kol: Rgb, dalej = false, polysk = 0): string | CanvasGradient {
-    const baza = dalej ? -0.34 : 0;
-    if (this.prosto || (dalej && this.lod < 2)) return ton(kol, baza);
-    const gr = this.g.createRadialGradient(c.x + r * 0.32, c.y - r * 0.42, r * 0.06, c.x, c.y, r * 1.12);
-    gr.addColorStop(0, ton(kol, baza + 0.3 + polysk * 0.4));
-    gr.addColorStop(0.55, ton(kol, baza));
-    gr.addColorStop(1, ton(kol, baza - 0.42));
+  /** Kula (głowa, dłoń): miękko, matowo, cień przy brzegu. */
+  kula(c: Pkt, r: number, kol: Rgb, dalej = false, polysk = 0, cien: Rgb = CIEN.tkanina): string | CanvasGradient {
+    const baza = dalej ? -0.3 : 0;
+    if (this.prosto || (dalej && this.lod < 2)) return tonC(kol, baza - 0.03, cien);
+    const gr = this.g.createRadialGradient(c.x + r * 0.3, c.y - r * 0.36, r * 0.1, c.x, c.y, r * 1.1);
+    gr.addColorStop(0, tonC(kol, baza + 0.1 + polysk * 0.25, cien));
+    gr.addColorStop(0.62, tonC(kol, baza - 0.03, cien));
+    gr.addColorStop(1, tonC(kol, baza - 0.36, cien));
     return gr;
   }
 
-  ksztalt(sciezka: Path2D, styl: string | CanvasGradient, po?: (g: CanvasRenderingContext2D) => void, rys = false): void {
-    this.czesci.push({ sciezka, styl, po, rys });
+  ksztalt(sciezka: Path2D, styl: string | CanvasGradient, po?: (g: CanvasRenderingContext2D) => void, rys = false, tynk = false): void {
+    this.czesci.push({ sciezka, styl, po, rys, tynk });
   }
 
   kreska(x1: number, y1: number, x2: number, y2: number, w: number, styl: string | CanvasGradient, po?: (g: CanvasRenderingContext2D) => void): void {
@@ -110,11 +150,14 @@ export class Malarz {
     this.czesci.push({ styl: '', po, bezObrysu: true });
   }
 
-  maluj(obwodka: string): void {
+  maluj(obwodka: Rgb): void {
     const g = this.g, h = this.h;
-    const jasna = clamp(h * 0.042, 1.25, 3.4), ciemna = clamp(h * 0.023, 0.85, 2.2);
+    // aura: jasny tynk z nutą barwy roli; z daleka mocniejsza, żeby postać nie ginęła w mroku
+    const jasna = clamp(h * 0.036, 1.2, 2.2), ciemna = clamp(h * 0.02, 0.85, 1.8);
+    const a = clamp(1.02 - h / 160, 0.42, 0.88);
+    const aura = `rgba(${(obwodka[0] * 0.4 + 222 * 0.6) | 0},${(obwodka[1] * 0.4 + 206 * 0.6) | 0},${(obwodka[2] * 0.4 + 170 * 0.6) | 0},${a.toFixed(2)})`;
     g.lineJoin = 'round'; g.lineCap = 'round';
-    for (const [szer, barwa] of [[jasna + ciemna, obwodka], [ciemna, 'rgba(14,9,7,0.96)']] as const) {
+    for (const [szer, barwa] of [[jasna + ciemna, aura], [ciemna, 'rgba(66,28,18,0.96)']] as const) {
       g.strokeStyle = barwa;
       for (const c of this.czesci) {
         if (c.bezObrysu) continue;
@@ -122,10 +165,16 @@ export class Malarz {
         else if (c.kreska) { const [x1, y1, x2, y2, w] = c.kreska; g.lineWidth = w + szer * 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
       }
     }
+    const wzor = this.lod > 0 ? tynk(g) : null;
     for (const c of this.czesci) {
       if (c.sciezka) {
         g.fillStyle = c.styl; g.fill(c.sciezka);
-        if (c.rys && !this.prosto) { g.strokeStyle = 'rgba(16,10,8,0.5)'; g.lineWidth = clamp(h * 0.011, 0.6, 1.4); g.stroke(c.sciezka); }
+        if (c.tynk && wzor) {
+          g.save(); g.globalCompositeOperation = 'multiply'; g.globalAlpha = this.lod === 2 ? 0.9 : 0.6;
+          g.fillStyle = wzor; g.fill(c.sciezka);
+          g.restore();
+        }
+        if (c.rys && !this.prosto) { g.strokeStyle = 'rgba(70,30,18,0.6)'; g.lineWidth = clamp(h * 0.01, 0.6, 1.3); g.stroke(c.sciezka); }
       } else if (c.kreska) {
         const [x1, y1, x2, y2, w] = c.kreska;
         g.strokeStyle = c.styl; g.lineWidth = w; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
@@ -260,60 +309,93 @@ export function naGlowie(s: Szkielet, kat: number, dx: number, dy: number): Pkt 
   return { x: s.glowa.x + (dx * c - dy * sn) * r, y: s.glowa.y + (dx * sn + dy * c) * r };
 }
 
+export interface OpcjeTwarzy {
+  brew?: string;
+  bezUcha?: boolean;
+  bezUst?: boolean;
+  /** 0..1 — szaleństwo z głębokości: oczy ciemnieją w puste oczodoły z punkcikiem światła */
+  puste?: number;
+  /** 0..1 — strach: brwi uniesione nad nosem, oczy szerzej */
+  strach?: number;
+  /** spojrzenie: 0 — przed siebie, 1 — w górę (modlitwa, ikona) */
+  wzrok?: number;
+}
+
 /**
- * Oko, brew, usta, ucho, rumieniec. lod 0 — tylko kropka oka.
+ * Twarz z profilu jak na ikonie i portrecie fajumskim: duże migdałowe oko z ciemną tęczówką
+ * pod ciężką powieką, wysoko wygięta brew, długi prosty nos, małe zamknięte usta, policzek
+ * w zielonkawym cieniu (verdaccio). lod 0 — sam punkt oka.
  */
-export function twarz(g: CanvasRenderingContext2D, s: Szkielet, kat: number, p: Poza, skora: Rgb, lod: number, opcje: { brew?: string; bezUcha?: boolean; bezUst?: boolean } = {}): void {
+export function twarz(g: CanvasRenderingContext2D, s: Szkielet, kat: number, p: Poza, skora: Rgb, lod: number, opcje: OpcjeTwarzy = {}): void {
   const r = s.rg;
   const P = (dx: number, dy: number) => naGlowie(s, kat, dx, dy);
-  const oko = P(0.56, -0.12);
-  const otw = clamp(p.oczy, 0, 1);
-  g.fillStyle = 'rgba(18,10,8,0.96)';
-  if (lod === 0) { g.fillRect(oko.x - r * 0.1, oko.y - r * 0.12 * otw, r * 0.2, Math.max(0.8, r * 0.24 * otw)); return; }
+  const oko = P(0.55, -0.1);
+  const strach = opcje.strach ?? 0, puste = opcje.puste ?? 0, wzrok = opcje.wzrok ?? 0;
+  const otw = clamp(p.oczy * (1 + strach * 0.3), 0, 1.3);
+  if (lod === 0) {
+    g.fillStyle = 'rgba(30,14,10,0.95)';
+    g.fillRect(oko.x - r * 0.14, oko.y - r * 0.1 * Math.min(1, otw), r * 0.28, Math.max(0.8, r * 0.2 * Math.min(1, otw)));
+    return;
+  }
+  // policzek w zielonkawym cieniu i ciepły ton na kości policzkowej
+  {
+    const pl = P(0.46, 0.4);
+    const gr = g.createRadialGradient(pl.x, pl.y, 0, pl.x, pl.y, r * 0.36);
+    gr.addColorStop(0, 'rgba(70,84,62,0.32)'); gr.addColorStop(1, 'rgba(70,84,62,0)');
+    g.fillStyle = gr; g.beginPath(); g.arc(pl.x, pl.y, r * 0.36, 0, TAU); g.fill();
+  }
   // ucho
   if (!opcje.bezUcha) {
-    const u = P(-0.12, 0.08);
-    g.fillStyle = ton(skora, -0.12);
-    g.beginPath(); g.ellipse(u.x, u.y, r * 0.17, r * 0.24, kat - 0.2, 0, TAU); g.fill();
-    if (lod === 2) { g.strokeStyle = ton(skora, -0.45, 0.8); g.lineWidth = Math.max(0.5, r * 0.05); g.beginPath(); g.arc(u.x + r * 0.02, u.y, r * 0.1, -1.2, 1.4); g.stroke(); }
+    const u = P(-0.14, 0.1);
+    g.fillStyle = tonC(skora, -0.22, CIEN.skora);
+    g.beginPath(); g.ellipse(u.x, u.y, r * 0.15, r * 0.22, kat - 0.2, 0, TAU); g.fill();
+    if (lod === 2) { g.strokeStyle = 'rgba(90,40,26,0.55)'; g.lineWidth = Math.max(0.5, r * 0.045); g.beginPath(); g.arc(u.x + r * 0.02, u.y, r * 0.09, -1.2, 1.4); g.stroke(); }
   }
-  // rumieniec
-  if (lod === 2) {
-    const pl = P(0.62, 0.3);
-    const gr = g.createRadialGradient(pl.x, pl.y, 0, pl.x, pl.y, r * 0.3);
-    gr.addColorStop(0, 'rgba(210,90,70,0.28)'); gr.addColorStop(1, 'rgba(210,90,70,0)');
-    g.fillStyle = gr; g.beginPath(); g.arc(pl.x, pl.y, r * 0.3, 0, TAU); g.fill();
-  }
-  // oko: białko, źrenica, błysk — przy zmrużeniu kreska
-  if (otw > 0.3) {
-    g.fillStyle = 'rgba(246,238,222,0.95)';
-    g.beginPath(); g.ellipse(oko.x, oko.y, r * 0.15, r * 0.13 * otw, kat, 0, TAU); g.fill();
-    g.fillStyle = 'rgba(30,18,12,0.98)';
-    g.beginPath(); g.ellipse(oko.x + r * 0.05, oko.y + r * 0.01, r * 0.085, r * 0.11 * otw, kat, 0, TAU); g.fill();
-    if (lod === 2) {
-      g.fillStyle = 'rgba(255,255,250,0.95)'; g.beginPath(); g.arc(oko.x + r * 0.08, oko.y - r * 0.04, Math.max(0.4, r * 0.035), 0, TAU); g.fill();
-      g.strokeStyle = 'rgba(30,16,12,0.8)'; g.lineWidth = Math.max(0.5, r * 0.05);
-      g.beginPath(); g.ellipse(oko.x, oko.y, r * 0.15, r * 0.13 * otw, kat, PI * 1.05, PI * 1.95); g.stroke();
-    }
-  } else {
-    g.strokeStyle = 'rgba(30,16,12,0.9)'; g.lineWidth = Math.max(0.6, r * 0.07);
-    g.beginPath(); g.moveTo(oko.x - r * 0.14, oko.y + r * 0.01); g.quadraticCurveTo(oko.x, oko.y + r * 0.06, oko.x + r * 0.14, oko.y); g.stroke();
-  }
-  // brew — przy wysiłku ściągnięta w dół ku nosowi
-  const w = p.wysilek;
-  const b1 = P(0.38, -0.36 + w * 0.04), b2 = P(0.74, -0.34 + w * 0.12);
-  g.strokeStyle = opcje.brew ?? 'rgba(44,26,16,0.9)'; g.lineWidth = Math.max(0.7, r * 0.1);
-  g.beginPath(); g.moveTo(b1.x, b1.y); g.lineTo(b2.x, b2.y); g.stroke();
-  // usta
-  if (!opcje.bezUst) {
-    const u1 = P(0.66, 0.55), u2 = P(0.9, 0.52);
-    if (p.usta > 0.15) {
-      g.fillStyle = 'rgba(70,22,18,0.92)';
-      const um = P(0.8, 0.56);
-      g.beginPath(); g.ellipse(um.x, um.y + r * 0.04 * p.usta, r * 0.1, r * (0.04 + 0.11 * p.usta), kat, 0, TAU); g.fill();
+  // oko: duży migdał, tęczówka sięga powieki; spojrzenie może iść w górę
+  if (otw > 0.25) {
+    const wys = r * 0.11 * otw;
+    if (puste < 0.5) {
+      g.fillStyle = 'rgba(216,204,178,0.95)';
+      g.beginPath(); g.ellipse(oko.x, oko.y, r * 0.2, wys, kat, 0, TAU); g.fill();
+      const ix = oko.x + r * 0.06, iy = oko.y - wys * 0.25 * (1 + wzrok);
+      g.fillStyle = 'rgba(40,22,14,0.98)';
+      g.beginPath(); g.ellipse(ix, iy, r * 0.095, Math.min(wys * 1.05, r * 0.1), kat, 0, TAU); g.fill();
+      if (lod === 2) { g.fillStyle = 'rgba(250,236,206,0.85)'; g.beginPath(); g.arc(ix + r * 0.03, iy - r * 0.03, Math.max(0.35, r * 0.022), 0, TAU); g.fill(); }
     } else {
-      g.strokeStyle = w > 0.6 ? 'rgba(70,26,20,0.9)' : 'rgba(80,32,24,0.75)'; g.lineWidth = Math.max(0.5, r * 0.06);
-      g.beginPath(); g.moveTo(u1.x, u1.y); g.quadraticCurveTo((u1.x + u2.x) / 2, (u1.y + u2.y) / 2 + r * (w > 0.6 ? -0.03 : 0.05), u2.x, u2.y); g.stroke();
+      g.fillStyle = 'rgba(12,6,6,0.98)';
+      g.beginPath(); g.ellipse(oko.x, oko.y, r * 0.2, Math.max(wys, r * 0.07), kat, 0, TAU); g.fill();
+      g.fillStyle = `rgba(255,214,170,${0.5 + 0.4 * puste})`;
+      g.beginPath(); g.arc(oko.x + r * 0.05, oko.y, Math.max(0.4, r * 0.03), 0, TAU); g.fill();
+    }
+    // ciężka górna powieka i cienka dolna
+    g.strokeStyle = 'rgba(52,22,14,0.95)'; g.lineWidth = Math.max(0.6, r * 0.075);
+    g.beginPath(); g.ellipse(oko.x, oko.y, r * 0.2, wys + r * 0.01, kat, PI * 1.05, PI * 1.95); g.stroke();
+    if (lod === 2) { g.lineWidth = Math.max(0.4, r * 0.035); g.beginPath(); g.ellipse(oko.x, oko.y + r * 0.01, r * 0.18, wys, kat, PI * 0.15, PI * 0.85); g.stroke(); }
+  } else {
+    g.strokeStyle = 'rgba(52,22,14,0.95)'; g.lineWidth = Math.max(0.6, r * 0.075);
+    g.beginPath(); g.moveTo(oko.x - r * 0.18, oko.y); g.quadraticCurveTo(oko.x, oko.y + r * 0.06, oko.x + r * 0.19, oko.y); g.stroke();
+  }
+  // brew: wysoki łuk ikony; wysiłek ściąga, strach unosi
+  const w = p.wysilek;
+  const b1 = P(0.3, -0.36 + w * 0.06 - strach * 0.04), bc = P(0.56, -0.5 + w * 0.1 - strach * 0.08), b2 = P(0.84, -0.36 + w * 0.12 - strach * 0.12);
+  g.strokeStyle = opcje.brew ?? 'rgba(46,24,16,0.92)'; g.lineWidth = Math.max(0.7, r * 0.08);
+  g.beginPath(); g.moveTo(b1.x, b1.y); g.quadraticCurveTo(bc.x, bc.y, b2.x, b2.y); g.stroke();
+  // długi nos: linia sinopii od brwi wzdłuż grzbietu
+  {
+    const n1 = P(0.86, -0.3), n2 = P(1.02, 0.3);
+    g.strokeStyle = 'rgba(96,40,24,0.65)'; g.lineWidth = Math.max(0.45, r * 0.045);
+    g.beginPath(); g.moveTo(n1.x, n1.y); g.lineTo(n2.x, n2.y); g.stroke();
+  }
+  // małe usta
+  if (!opcje.bezUst) {
+    const u1 = P(0.72, 0.62), u2 = P(0.94, 0.58);
+    if (p.usta > 0.15) {
+      g.fillStyle = 'rgba(40,12,10,0.95)';
+      const um = P(0.84, 0.62);
+      g.beginPath(); g.ellipse(um.x, um.y + r * 0.04 * p.usta, r * 0.08, r * (0.035 + 0.11 * p.usta), kat, 0, TAU); g.fill();
+    } else {
+      g.strokeStyle = 'rgba(110,34,26,0.9)'; g.lineWidth = Math.max(0.5, r * 0.06);
+      g.beginPath(); g.moveTo(u1.x, u1.y); g.quadraticCurveTo((u1.x + u2.x) / 2, (u1.y + u2.y) / 2 + r * 0.02, u2.x, u2.y); g.stroke();
     }
   }
 }

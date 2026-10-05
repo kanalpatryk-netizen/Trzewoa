@@ -77,3 +77,21 @@ function tonLicz(c: Rgb, k: number, a: number): string {
 }
 
 export const mieszaj = (a: Rgb, b: Rgb, t: number): Rgb => [lerp(a[0], b[0], t), lerp(a[1], b[1], t), lerp(a[2], b[2], t)];
+
+/**
+ * Ton z barwnym cieniem, jak we fresku: k > 0 ku ciepłemu światłu świecy, k < 0 ku barwie cienia
+ * (skóra cieniuje się zielonkawo — verdaccio, tkanina w fioletową czerń, kamień w szarość).
+ */
+export function tonC(c: Rgb, k: number, cien: Rgb, a = 1): string {
+  if (k >= 0) return ton(c, k * 0.8, a);
+  const t = Math.min(1, -k);
+  return ton([c[0] + (cien[0] - c[0]) * t, c[1] + (cien[1] - c[1]) * t, c[2] + (cien[2] - c[2]) * t], 0, a);
+}
+
+/** Barwy cieni: tkanina, skóra (zieleń ziemi), metal, kamień. */
+export const CIEN = {
+  tkanina: [16, 10, 14] as Rgb,
+  skora: [58, 66, 52] as Rgb,
+  metal: [14, 16, 20] as Rgb,
+  kamien: [30, 28, 28] as Rgb,
+};

@@ -1,11 +1,14 @@
 import { clamp, cos, katOdc, kier, sin, type Pkt } from './matma';
 import type { Poza, Tryb } from './poza';
 
-/** Długości w ułamkach wzrostu h (od podeszwy do czubka głowy ≈ 0,99 h). */
+/**
+ * Długości w ułamkach wzrostu h (od podeszwy do czubka głowy ≈ 1 h). Proporcje jak na freskach
+ * i ikonach: mała głowa (ok. 1/6 wzrostu), wydłużony tułów i nogi, smukłe ramiona.
+ */
 export const D = {
-  glowa: 0.094, szyja: 0.038, tulow: 0.285,
-  udo: 0.228, golen: 0.218, kostka: 0.032, stopa: 0.072, pieta: 0.03,
-  ramie: 0.158, przed: 0.146,
+  glowa: 0.08, szyja: 0.042, tulow: 0.3,
+  udo: 0.236, golen: 0.228, kostka: 0.03, stopa: 0.068, pieta: 0.028,
+  ramie: 0.166, przed: 0.15,
 };
 
 export interface Stopa {
