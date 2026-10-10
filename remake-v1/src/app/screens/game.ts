@@ -45,6 +45,8 @@ import { zbierzObszaryHud, type ObszarHud } from '../obszary-hud';
 import { Straznik, type Alarm } from '../alarmy';
 import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { rysujWydarzenie, type PoleWyboru } from '../../render/wydarzenie';
+import { rysujMrok, rysujPatrzacego } from '../../render/mrok';
+import { MROK } from '../../nastawy/mrok';
 import { rozstrzygnij, type Wydarzenie } from '../../sim/wydarzenia';
 import { OknoAtlasu } from '../../atlas/okno';
 import { odkrycia } from '../../atlas/odkrycia';
@@ -149,6 +151,8 @@ export class EkranGry implements Ekran {
   private przyciskiRoli: { x: number; y: number; w: number; h: number; rola: 'pobozny' | 'robotnik' }[] = [];
   /** Wiersz „ze skały” tak, jak go narysowano — do testu nakładania. */
   private wierszSkaly: { x: number; y: number; w: number; h: number } | null = null;
+  /** Które zdarzenia Patrzącego już zabrzmiały (tik szeptu i zabrania). */
+  private slyszanyMrok: { szept?: number; zabrany?: number } = {};
   /** Linia „droga do wolności" na brzegu płyty — kliknięcie otwiera jej tablicę. */
   private drogaRect: ObszarDrogi | null = null;
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
@@ -376,6 +380,7 @@ export class EkranGry implements Ekran {
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if ((sim.lud.gniazda ?? []).some((g) => g.odkryte) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
+    if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
     if (sim.creatures.some((c) => !c.dead && c.boss)) odkrycia.odkryj('boss');
     if (this.ui.verb) cicho(`ryt-${this.ui.verb}`);
     if (this.pauza) cicho('pauza');
@@ -733,7 +738,14 @@ export class EkranGry implements Ekran {
         this.sim.sen,
         this.zamrozone(),
       );
-      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2));
+      // Ten, który patrzy: gdy podchodzi i gdy patrzy, muzyka gęstnieje jak przy zasypianiu
+      const mrok = this.sim.lud.mrok;
+      const napiecieMroku = mrok?.faza === 'patrzy' ? 0.75 : mrok?.faza === 'podchodzi' ? 0.45 : 0;
+      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2, napiecieMroku));
+      if (mrok) {
+        if (mrok.szeptT !== undefined && mrok.szeptT !== this.slyszanyMrok.szept) { this.slyszanyMrok.szept = mrok.szeptT; this.app.muzyka.szept(); }
+        if (mrok.zabranyT !== undefined && mrok.zabranyT !== this.slyszanyMrok.zabrany) { this.slyszanyMrok.zabrany = mrok.zabranyT; this.app.muzyka.zabranie(); }
+      }
     }
   }
 
@@ -798,6 +810,9 @@ export class EkranGry implements Ekran {
     rysujRdzen(ctx, sim, cam, teraz);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
+    // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
+    rysujMrok(ctx, sim, cam, teraz, this.pauza);
+    if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3);
     // droga pielgrzymów: którędy wierni zejdą pod rdzeń (przekopują ją sami — gracz nie drąży)
     const plan = aktualnyPlan(sim);
     if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
@@ -811,6 +826,7 @@ export class EkranGry implements Ekran {
     if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
     rysujZnacznikiLudu(ctx, sim, cam);
     rysujStraznikowWSkale(ctx, sim, cam, teraz);
+    rysujPatrzacego(ctx, sim, cam, teraz);
     if (this.pauza) {
       // czas stoi: świat przygasa, a na nim widać już tylko plan
       ctx.fillStyle = 'rgba(8,6,10,0.26)';

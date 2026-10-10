@@ -35,7 +35,7 @@ export const FRESKI = {
     'rasa-0': 'odlamek-biskup',
     'ryt-zasiej': 'ikona-ryt-zasiej', 'ryt-szept': 'ikona-ryt-szept', 'ryt-znak': 'ikona-ryt-znak',
     krew: 'diabel-1',
-    sen: 'diabel-2',
+    patrzacy: 'diabel-2',
     prorok: 'odlamek-swiety-2',
     oddanie: 'odlamek-swiety-1',
     pielgrzymka: 'wielblad',

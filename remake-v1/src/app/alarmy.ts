@@ -3,6 +3,8 @@ import { procentSkorupy } from '../sim/rytual';
 import { RYTUAL } from '../nastawy/rytual';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { aktywnyBoss } from '../sim/boss';
+import { MROK } from '../nastawy/mrok';
+import { NAZWA_ROLI, rolaPostaci } from '../sim/lud';
 
 /** Ile fal Strażników już się zaczęło. */
 function falRozpoczetych(sim: Sim): number {
@@ -37,6 +39,8 @@ export class Straznik {
   private fal = 0;
   private ostatnio = new Map<string, number>();
   private ostatniAlarm = -1e9;
+  /** Od kiedy Patrzący patrzy na tego, o którym już powiedzieliśmy. */
+  private mrokOd = -1;
   /** Rodzaje, przy których gracz poprosił, żeby go więcej nie zatrzymywać. */
   wyciszone = new Set<string>();
 
@@ -61,11 +65,13 @@ export class Straznik {
       : alarm.rodzaj === 'otwarta' ? 'rdzen'
       : alarm.rodzaj.startsWith('pekniecie') ? 'skorupa'
       : alarm.rodzaj === `fala-${STRAZNICY.fale.length}` ? 'boss'
-      : alarm.rodzaj.startsWith('fala-') ? 'straznicy' : undefined;
+      : alarm.rodzaj.startsWith('fala-') ? 'straznicy'
+      : alarm.rodzaj === 'mrok' ? 'patrzacy' : undefined;
     if (!alarm.kryzys && poziom !== 'wszystko') return null;
     if (this.wyciszone.has(alarm.rodzaj)) return null;
-    // nie częściej niż co kilkanaście sekund świata, a ten sam rodzaj rzadziej
-    if (sim.tick - this.ostatniAlarm < 1500) return null;
+    // nie częściej niż co kilkanaście sekund świata, a ten sam rodzaj rzadziej —
+    // oprócz Patrzącego: jego czas biegnie, więc ostrzeżenie przychodzi od razu
+    if (alarm.rodzaj !== 'mrok' && sim.tick - this.ostatniAlarm < 1500) return null;
     if (sim.tick - (this.ostatnio.get(alarm.rodzaj) ?? -1e9) < 5400) return null;
     this.ostatniAlarm = sim.tick;
     this.ostatnio.set(alarm.rodzaj, sim.tick);
@@ -73,6 +79,23 @@ export class Straznik {
   }
 
   private wykryj(sim: Sim): Alarm | null {
+    // Ten, który patrzy: ktoś został sam w ciemności, a czas na ratunek biegnie
+    const m = sim.lud.mrok;
+    if (m && m.faza === 'patrzy' && m.od !== this.mrokOd) {
+      this.mrokOd = m.od;
+      const c = sim.creatures.find((k) => k.id === m.cel && !k.dead);
+      if (c) {
+        const kto = NAZWA_ROLI[rolaPostaci(c) ?? 'pobozny'].toLowerCase();
+        return {
+          rodzaj: 'mrok', kryzys: true,
+          tytul: 'Coś patrzy z ciemności',
+          tekst: `Daleko od obozu ${kto} został sam i stoi jak wryty. W skale obok niego świecą oczy. Za ${Math.round(MROK.patrzyTikow / 120)} sekund go zabierze — dostaniesz jego krew, lud straci człowieka.`,
+          rada: 'Rzuć Cud tuż przy nim — światło przegoni to, co patrzy. Albo poślij do niego kogoś z ludu: we dwóch nie są samotni.',
+          cel: { x: c.x, y: c.y, tekst: 'tu patrzy' },
+        };
+      }
+    }
+
     // WERSJA ANDROID: wymieranie, dominacja i przypływy przychodzą jako karty wydarzeń
     // z wyborem (sim/wydarzenia.ts) — tu zostają tylko sen i kamienie milowe rytuału.
     // sen

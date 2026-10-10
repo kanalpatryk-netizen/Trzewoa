@@ -9,6 +9,8 @@ Wszystkie liczby gry. Każda ma komentarz: co robi i w którą stronę działa.
 | głód, walka, ruch stworzeń | `stworzenia.ts` |
 | karty wydarzeń: rytm i ceny | `wydarzenia.ts` |
 | koszty i siła rytów | `moce.ts` |
+| ciemność w górze i Ten, który patrzy (`MROK.wlaczony = false` wyłącza całość) | `mrok.ts` |
+| który fresk stoi gdzie | `wyglad/freski.ts` |
 | świat i rdzeń | `swiat.ts` |
 | kamera, tempo, ekran | `sterowanie.ts, ekran.ts` |
 | dźwięk, kolory | `dzwiek.ts, barwy.ts` |

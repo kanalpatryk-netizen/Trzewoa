@@ -187,6 +187,54 @@ export class Muzyka {
     }
   }
 
+  /**
+   * Szept z ciemności (Ten, który patrzy): kilka sylab szumu w paśmie mowy, z jednej strony,
+   * z długim echem korytarzy. Słów nie da się zrozumieć.
+   */
+  szept(strona = Math.random() < 0.5 ? -1 : 1): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.szum || !this.master) return;
+    let t = ctx.currentTime + 0.05;
+    const sylab = 5 + ((Math.random() * 5) | 0);
+    for (let i = 0; i < sylab; i++) {
+      const dl = 0.08 + Math.random() * 0.16;
+      const z = ctx.createBufferSource(); z.buffer = this.szum;
+      const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3.5;
+      const fr = 1800 + Math.random() * 2600;
+      f.frequency.setValueAtTime(fr, t);
+      f.frequency.exponentialRampToValueAtTime(fr * (0.6 + Math.random() * 0.5), t + dl);
+      const g = ctx.createGain();
+      const glos = N.szeptGlos * (0.6 + Math.random() * 0.5);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(glos, t + dl * 0.3);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dl);
+      const p = mikser.panorama(strona * (0.5 + Math.random() * 0.4));
+      z.connect(f); f.connect(g); g.connect(p); p.connect(this.master);
+      const s = ctx.createGain(); s.gain.value = 0.8; g.connect(s); s.connect(mikser.poglos);
+      z.start(t, Math.random() * 1.5); z.stop(t + dl + 0.05);
+      t += dl + 0.03 + Math.random() * 0.12;
+    }
+  }
+
+  /** Ktoś poszedł w ciemność: głuche uderzenie w głębi i szept z obu stron naraz. */
+  zabranie(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const t = ctx.currentTime + 0.05;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(62, t);
+    o.frequency.exponentialRampToValueAtTime(31, t + 1.6);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(N.zabranieGlos, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+    o.connect(g); g.connect(this.master);
+    const s = ctx.createGain(); s.gain.value = 0.7; g.connect(s); s.connect(mikser.poglos);
+    o.start(t); o.stop(t + 2);
+    this.szept(-1);
+    this.szept(1);
+  }
+
   /** Oddech, trzaski i chór — rzadkie zdarzenia, gęstsze z napięciem. */
   private planujNiepokoj(teraz: number): void {
     if (!this.szum) return;

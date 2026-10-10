@@ -18,6 +18,7 @@ import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
 import { LUDY } from '../nastawy/gora';
 import { CECHY } from '../nastawy/cechy';
 import { LUD } from '../nastawy/lud';
+import { MROK } from '../nastawy/mrok';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
@@ -338,6 +339,33 @@ function skorupa({ ctx, w, h, t }: Plotno): void {
 }
 
 /** Pismo w skale: blok litej skały z żarzącymi się znakami, które gasną w smudze światła. */
+/** Ten, który patrzy: lita, kreskowana skała, a w niej para oczu i blade światło lampki z boku. */
+function patrzacy({ ctx, w, h, t }: Plotno): void {
+  ctx.save();
+  ctx.fillStyle = '#0b0807';
+  ctx.fillRect(0, 0, w, h);
+  const blok = new Path2D();
+  blok.rect(0, 0, w, h);
+  kreskuj(ctx, blok, -0.7, 5, rgba(BARWA.atrament, 0.08), 1);
+  const l = ctx.createRadialGradient(w * 0.18, h * 0.78, 2, w * 0.18, h * 0.78, h * 0.5);
+  l.addColorStop(0, 'rgba(236,190,110,0.32)');
+  l.addColorStop(1, 'rgba(236,190,110,0)');
+  ctx.fillStyle = l;
+  ctx.fillRect(0, 0, w, h);
+  const mrug = Math.sin(t * 0.0009) > 0.93 ? 0.15 : 1;
+  for (const dx of [-1, 1]) {
+    const x = w * 0.62 + dx * h * 0.06, y = h * 0.4;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, h * 0.06);
+    g.addColorStop(0, 'rgba(255,170,110,0.95)');
+    g.addColorStop(1, 'rgba(160,30,20,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - h * 0.06, y - h * 0.06, h * 0.12, h * 0.12);
+    ctx.fillStyle = 'rgba(255,224,190,0.95)';
+    ctx.beginPath(); ctx.ellipse(x, y, h * 0.018, h * 0.009 * mrug, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
 function pismo({ ctx, w, h, t }: Plotno): void {
   ctx.save();
   ctx.fillStyle = '#0d0a09';
@@ -561,6 +589,12 @@ export const TABLICE: Tablica[] = [
     opis: 'W skale, do której nikt jeszcze nie zajrzał, widać znaki. Nikt z żyjących ich nie wyrył — były tu przed pierwszym goblinem. Gasną, gdy dojdzie do nich światło; w zatrzymanym czasie widać je wyraźniej.',
     kiedy: 'Nie da się ich przeczytać. Można tylko pójść tam, gdzie są, i patrzeć, jak znikają.',
     rycina: pismo,
+  },
+  {
+    id: 'patrzacy', grupa: 'prawa', nazwa: 'Ten, który patrzy', lacina: 'Qui in tenebris spectat',
+    opis: `Poza światłem lampek, obozów i rdzenia góra jest ciemna — i coś w tej ciemności jest. Przenika skałę, krąży wokół siedziby i wypatruje tego, kto został sam daleko od obozu (rycerzy nie rusza). Gdy go znajdzie, patrzy na niego: samotny staje jak wryty, w skale świecą oczy, a lampka przygasa. Po ${Math.round(MROK.patrzyTikow / 120)} sekundach zabiera go — krew zostaje dla ciebie. Potem na kilka minut cichnie.`,
+    kiedy: 'Nie puszczaj nikogo samego daleko od obozu. Gdy zobaczysz oczy — rzuć Cud tuż przy nich albo poślij kogoś do samotnego.',
+    rycina: patrzacy,
   },
 ];
 

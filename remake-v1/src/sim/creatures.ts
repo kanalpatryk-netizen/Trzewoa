@@ -115,6 +115,8 @@ export interface Creature {
   buntownik?: boolean;
   /** Etap 4: zatruty (zatrute plony) do tego tiku. */
   zatrutyDo?: number;
+  /** Patrzy na niego coś z ciemności (sim/mrok.ts): do tego tiku stoi jak wryty. */
+  zamarlyDo?: number;
   /** Etap 3: Strażnik Snu (przenika skałę, nie je); boss — id bossa z nastawy/boss.ts. */
   straznik?: boolean;
   boss?: string;
@@ -389,6 +391,15 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // przestrzeni nie ma się czego chwycić, żeby podciągnąć się do samego rdzenia.
   if (wolnoWejsc && sim.rytual.otwarta && wKomorze(sim, Math.floor(c.x), Math.floor(c.y))) {
     sim.reachCore(c); return;
+  }
+
+  // Remake v1: patrzy na niego coś z ciemności — stoi jak wryty i nie słyszy wołania (sim/mrok.ts).
+  // Ogień i woda są silniejsze od strachu: przed nimi ucieka mimo to.
+  if (REMAKE && c.zamarlyDo !== undefined && sim.tick < c.zamarlyDo && !sim.przyMagmie(tx, ty, 1) && w.water[w.idx(tx, ty)] < LUD.wodaUcieka) {
+    c.fear = 1;
+    c.droga = undefined;
+    c.zamiar = 'stoi jak wryty — coś patrzy na niego z ciemności'; c.zamiarDo = c.zamarlyDo;
+    return;
   }
 
   // --- ogień tuż obok: ucieka, zanim spłynie — wcześniej stali przy kuźni i czekali,
