@@ -7,11 +7,9 @@
  */
 export const MENU = {
   // ------------------------------------------------------------------ napisy
-  tytul: 'TRZEWIA1.1',
-  podtytul: 'Nie grasz bogiem, który rządzi podziemiem. Grasz podziemiem.',
-  /** Na telefonie: nadtytuł nad wstęgą i krótszy podtytuł. */
-  nadtytulWaski: 'anatomia góry',
-  podtytulWaski: 'Grasz podziemiem.',
+  tytul: 'TRZEWIA',
+  /** Rozstrzelony napis ugrem pod tytułem (szeroki / wąski ekran). */
+  podpisTytulu: 'remake v1.1 · anatomia góry, która śni', podpisTytuluWaski: 'remake v1.1',
   /** Napisy na ramie: górny i dolny (szeroki / wąski ekran). */
   ramaGora: 'Trzewia · remake v1.1 · anatomia góry, która śni', ramaGoraWaski: 'Trzewia · remake v1.1',
   ramaDol: 'Tab. I — przekrój góry z rdzeniem', ramaDolWaski: 'Tab. I',

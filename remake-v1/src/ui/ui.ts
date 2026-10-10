@@ -11,6 +11,8 @@ import { Plate } from '../render/plate';
 import { rysujStany } from '../render/stany';
 import { rysujPostac } from '../render/figury';
 import { ramaKarty } from '../render/ozdoby';
+import { krazekZIkona, maIkone } from '../render/fresk';
+import { FRESK } from '../nastawy/barwy';
 import { klawisze, nazwaKlawisza } from '../core/keybinds';
 import type { Rozkazy } from '../powers/rozkazy';
 import { STEROWANIE } from '../nastawy/sterowanie';
@@ -273,6 +275,8 @@ export class Ui {
 
   /** Symbol wyryty w kamieniu: najpierw rowek cienia, potem światło na krawędzi. */
   private rune(ctx: CanvasRenderingContext2D, x: number, y: number, s: number, id: Verb, on: boolean, ready: boolean, time: number): void {
+    // wycinek fresku w krążku rysuje już oprawa
+    if (maIkone(`ryt-${id}`)) return;
     // własna grafika (src/grafiki/pliki): ryt-<id>, np. ryt-zasiej.png
     if (rysujGrafike(ctx, `ryt-${id}`, x, y, s * 1.2, { alfa: on || ready ? 1 : 0.55, czas: time })) return;
     const glow = ready ? 0.6 + 0.22 * Math.sin(time * 0.0015 + x) : 0.16;
@@ -332,14 +336,22 @@ export class Ui {
       ctx.fillStyle = g;
       ctx.fillRect(x - r * 1.5, y - r * 1.5, r * 3, r * 3);
     }
-    ctx.fillStyle = on ? 'rgba(30,20,14,0.95)' : 'rgba(16,12,10,0.8)';
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
-    ctx.lineWidth = on ? 1.5 : 1;
-    ctx.strokeStyle = on ? `rgba(240,200,130,${0.85 + 0.15 * Math.sin(time * 0.004)})` : `rgba(207,194,166,${ready ? 0.42 : 0.14})`;
-    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
-    ctx.lineWidth = 1;
-    ctx.strokeStyle = `rgba(207,194,166,${on ? 0.35 : ready ? 0.16 : 0.06})`;
-    ctx.beginPath(); ctx.arc(x, y, r + 3.5, 0, Math.PI * 2); ctx.stroke();
+    if (krazekZIkona(ctx, `ryt-${v.id}`, x, y, r, on ? 'wlaczony' : ready ? 'zwykly' : 'uspiony')) {
+      if (on) {
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = `rgba(240,200,130,${0.7 + 0.3 * Math.sin(time * 0.004)})`;
+        ctx.beginPath(); ctx.arc(x, y, r + 5, 0, Math.PI * 2); ctx.stroke();
+      }
+    } else {
+      ctx.fillStyle = on ? 'rgba(30,20,14,0.95)' : 'rgba(16,12,10,0.8)';
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = on ? 1.5 : 1;
+      ctx.strokeStyle = on ? `rgba(240,200,130,${0.85 + 0.15 * Math.sin(time * 0.004)})` : `rgba(207,194,166,${ready ? 0.42 : 0.14})`;
+      ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = `rgba(207,194,166,${on ? 0.35 : ready ? 0.16 : 0.06})`;
+      ctx.beginPath(); ctx.arc(x, y, r + 3.5, 0, Math.PI * 2); ctx.stroke();
+    }
     // nazwa pod rytem — tylko gdy jest na nią miejsce między rytami
     const rozm = Math.max(10, Math.min(13, s * 0.36));
     // podpis mieści się, gdy między pierścieniami zostaje miejsce na jedną linijkę
@@ -348,8 +360,8 @@ export class Ui {
       ctx.font = `italic ${rozm}px ${SERIF}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillStyle = on ? 'rgba(244,214,160,0.95)' : `rgba(207,194,166,${ready ? 0.62 : 0.3})`;
-      ctx.fillText(v.label.toLowerCase(), x, y + r + 5, this.plate.left - 6);
+      ctx.fillStyle = on ? 'rgba(244,214,160,0.95)' : ready ? FRESK.tekst : 'rgba(207,194,166,0.35)';
+      ctx.fillText(v.label.toLowerCase(), x, y + r + 6, this.plate.left - 6);
     }
     // klawisz w rogu — na dotyku klawiatury nie ma, więc tylko na szerokim ekranie
     if (STEROWANIE.pokazKlawisze && !this.plate.waski) {

@@ -1,6 +1,8 @@
 import type { Plate } from './plate';
 import { SERIF } from './ink';
 import { rysujGrafike } from '../grafiki/grafiki';
+import { krazek, krazekZIkona } from './fresk';
+import { FRESK } from '../nastawy/barwy';
 import { TELEFON } from '../nastawy/ekran';
 
 export type AkcjaPrzycisku = 'pauza' | 'wolniej' | 'szybciej' | 'zapiski' | 'atlas' | 'legenda' | 'kamera' | 'zapis';
@@ -83,19 +85,18 @@ export function rysujPrzyciski(ctx: CanvasRenderingContext2D, lista: Przycisk[],
     const aktywny = b.wlaczony || podKursorem === b.akcja;
     ctx.save();
     ctx.translate(b.x, b.y);
-    ctx.strokeStyle = `rgba(216,200,172,${aktywny ? 0.95 : 0.5})`;
-    ctx.lineWidth = aktywny ? 1.6 : 1.1;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.arc(0, 0, b.r, 0, Math.PI * 2);
-    ctx.stroke();
-    if (b.wlaczony) {
-      ctx.fillStyle = 'rgba(206,176,120,0.18)';
-      ctx.fill();
+    // krążek tynku z wycinkiem fresku albo znakiem malowanym sinopią
+    const stan = b.wlaczony ? 'wlaczony' : podKursorem === b.akcja ? 'pod' : 'zwykly';
+    if (!krazekZIkona(ctx, `przycisk-${b.akcja}`, 0, 0, b.r, stan)) {
+      krazek(ctx, 0, 0, b.r, stan);
+      ctx.strokeStyle = FRESK.sinopia;
+      ctx.lineWidth = Math.max(2, b.r * 0.1);
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      // własna grafika (src/grafiki/pliki): przycisk-<akcja>, np. przycisk-pauza.png
+      if (!rysujGrafike(ctx, `przycisk-${b.akcja}`, 0, 0, b.r * 1.3, { czas: teraz })) znak(ctx, b.akcja, b.r * 0.52, teraz);
     }
-    // własna grafika (src/grafiki/pliki): przycisk-<akcja>, np. przycisk-pauza.png
-    if (!rysujGrafike(ctx, `przycisk-${b.akcja}`, 0, 0, b.r * 1.3, { czas: teraz })) znak(ctx, b.akcja, b.r * 0.52, teraz);
+    void aktywny;
     ctx.restore();
   }
 
