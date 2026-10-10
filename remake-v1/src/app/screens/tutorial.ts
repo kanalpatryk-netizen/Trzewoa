@@ -757,7 +757,7 @@ export class EkranSamouczka implements Ekran {
   private rysujFinal(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     const rozm = Math.max(16, Math.min(22, w / 56));
     const szer = Math.min(560, w - 32);
-    const tekst = `Umiesz już wszystko, czego trzeba na początek. Nad płytą zawsze stoi jedno zdanie: co teraz najpilniejsze — dotknij go, a kamera pojedzie na miejsce. Rasy, przypływy, woda, żar i zawały — resztę odkryjesz sam. W atlasie (przycisk z księgą) czekają już pierwsze tablice — kolejne odkryjesz, grając.`;
+    const tekst = `Umiesz już wszystko, czego trzeba na początek. Nad płytą zawsze stoi jedno zdanie: co teraz najpilniejsze — dotknij go, a kamera pojedzie na miejsce. Rozległe jaskinie, zawały i to, co patrzy z ciemności — resztę odkryjesz sam. W atlasie (przycisk z księgą) czekają już pierwsze tablice — kolejne odkryjesz, grając.`;
     ctx.save();
     ctx.fillStyle = 'rgba(6,4,3,0.55)';
     ctx.fillRect(0, 0, w, h);

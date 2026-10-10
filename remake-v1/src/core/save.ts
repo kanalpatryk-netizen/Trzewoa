@@ -1,6 +1,7 @@
 import { Sim } from '../sim/sim';
 import type { Creature } from '../sim/creatures';
 import { applyTaintEffect } from '../powers/powers';
+import { SWIAT } from '../nastawy/swiat';
 
 /**
  * Zapis stanu. Przy grze o pokoleniach i przypływach to nie wygoda, tylko narzędzie:
@@ -51,6 +52,8 @@ export function restore(json: string): Sim | null {
   const sim = new Sim(data.seed);          // ta sama góra, potem nadpisana stanem
   const w = sim.world;
   fromB64(data.tile, w.tile); fromB64(data.water, w.water); fromB64(data.magma, w.magma);
+  // Remake v1: w górze nie ma już wody ani lawy — stary zapis wraca suchy i zimny
+  if (!SWIAT.plyny) { w.water.fill(0); w.magma.fill(0); }
   fromB64(data.mem, w.mem); fromB64(data.ever, w.ever); fromB64(data.lastSeen, w.lastSeen);
   if (data.drabina) fromB64(data.drabina, w.drabina);
   if (data.slad) fromB64(data.slad, w.slad);

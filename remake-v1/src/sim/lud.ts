@@ -14,6 +14,8 @@ import { szukajDrogi, budzetDrog, nowyTik } from './droga';
 import { PIELGRZYMKA as P } from '../nastawy/rytual';
 import { Rng } from '../core/rng';
 import { tikStraznikow, falaTrwa, type StanStraznikow } from './straznicy';
+import { tikMroku, naKogoPatrzy, type StanMroku } from './mrok';
+import { MROK } from '../nastawy/mrok';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { tikBuntu } from './bunt';
 import { KARTY_LUDU } from '../nastawy/karty-ludu';
@@ -48,6 +50,8 @@ export interface StanLudu {
   gniazda?: Gniazdo[];
   /** Etap 3: fale Strażników Snu. */
   straznicy?: StanStraznikow;
+  /** Ten, który patrzy z ciemności (sim/mrok.ts). */
+  mrok?: StanMroku;
 }
 
 /** Gniazdo kamiennych rycerzy: śpią w litej skale, aż ktoś się do nich dokopie. */
@@ -204,6 +208,9 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   }
   if (c.zatrutyDo !== undefined && sim.tick < c.zatrutyDo) {
     out.push({ nazwa: 'zatruty', skutek: `−${Math.round((1 - KARTY_LUDU.zatrucie) * 100)}% siły, szybkości i kopania (zatrute plony)`, dobry: false, do: c.zatrutyDo });
+  }
+  if (naKogoPatrzy(sim) === c.id && sim.lud.mrok) {
+    out.push({ nazwa: 'patrzy na niego coś z ciemności', skutek: 'jeśli zostanie sam, zniknie — ocali go Cud tuż obok albo ktoś z ludu przy nim', dobry: false, do: sim.lud.mrok.od + MROK.patrzyTikow });
   }
   if (c.okaleczony) {
     out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false });
@@ -592,6 +599,7 @@ export function tikLudu(sim: Sim): void {
   if (sim.tick % LUD.uprawaCo === 0) uprawa(sim);
   tikStraznikow(sim);
   tikBuntu(sim);
+  tikMroku(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {
     pilnujSiedziby(sim);
     const klan = klanLudu(sim);

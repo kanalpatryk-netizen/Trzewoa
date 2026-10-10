@@ -24,8 +24,8 @@ export const SWIAT = {
   szansaNaZiemie: 0.4,
 
   jaskinie: {
-    /** Próg szumu: wyżej = mniej jaskiń. */
-    prog: 0.5,
+    /** Próg szumu: wyżej = mniej jaskiń. Remake v1: drobnych dziur mniej — kształt góry robią sale i galerie. */
+    prog: 0.6,
     /** Jak mocno próg faluje z głębokością (warstwy gęstsze i rzadsze). */
     falowanie: 0.1,
     /** Ile progu ubywa na dnie — głęboko jaskiń jest więcej. */
@@ -36,7 +36,7 @@ export const SWIAT = {
 
   komory: {
     /** Ile wielkich pustek, w których siadają gniazda. */
-    ile: 26,
+    ile: 10,
     /** Promień poziomy komory: od–do. */
     szerokoscOd: 5, szerokoscDo: 13,
     /** Promień pionowy komory: od–do. */
@@ -66,33 +66,57 @@ export const SWIAT = {
     krysztalySzansa: 0.45,
   },
 
-  woda: {
-    /** Ile zbiorników wody w górnej połowie. */
-    ile: 9,
-    /** Promień zbiornika: od–do. */
-    promienOd: 3, promienDo: 8,
-    /** Zbiorniki leżą najniżej na tej części wysokości góry. */
-    doGlebokosci: 0.55,
+  /**
+   * Remake v1: w górze nie ma wody ani lawy. Zamiast nich rozległe jaskinie:
+   * sale, galerie między nimi, kominy i groty w głębi.
+   */
+  plyny: false as boolean,
+
+  sale: {
+    /** Ile wielkich sal od pierwszej warstwy skały w głąb. */
+    ile: 13,
+    /** Pierwsza sala tyle kafli pod powierzchnią; ostatnia na tej części wysokości góry. */
+    odPowierzchni: 12, doGlebokosci: 0.76,
+    /** Promień poziomy i pionowy sali: od–do. */
+    szerokoscOd: 10, szerokoscDo: 22,
+    wysokoscOd: 5, wysokoscDo: 10,
+    /** Jak bardzo brzeg sali jest poszarpany (0 = gładka elipsa). */
+    poszarpanie: 0.55,
+    /** Dno sali: część promienia pionowego pod środkiem (płaska podłoga). */
+    podloga: 0.55,
+    /** Filar mniej więcej co tyle kafli szerokości sali. */
+    filarCo: 11,
+    /** Nacieki (stalaktyty i stalagmity) na kafel szerokości. */
+    naciekiNaKafel: 0.35,
   },
 
-  magma: {
-    /** Ile jezior magmy na dnie. */
-    ile: 10,
-    /** Jeziora zaczynają się na tej części wysokości… */
-    od: 0.74,
-    /** …i zajmują pas o takiej wysokości. */
-    pas: 0.22,
-    /** Rozmiar pustki pod jeziorem: szerokość i wysokość od–do. */
-    szerokoscOd: 4, szerokoscDo: 11,
-    wysokoscOd: 2, wysokoscDo: 5,
-    /** Promień plamy magmy. */
-    promien: 7,
+  galerie: {
+    /** Promień korytarza od–do (kafle). */
+    promienOd: 1.3, promienDo: 2.6,
+    /** Jak bardzo korytarz się wije (radiany odchylenia). */
+    krety: 1.6,
+    /** Szansa, że sala łączy się jeszcze z drugą najbliższą. */
+    drugaSzansa: 0.45,
+    /** Dłuższych połączeń nie kopie (kafle). */
+    najdluzsza: 70,
   },
 
-  /** Ile tików osypywania ziemi i spływania płynów przed pierwszą klatką. */
+  kominy: {
+    /** Ile pionowych szybów z sal w dół; ich promień i długość od–do. */
+    ile: 7, promien: 1.4, dlugoscOd: 10, dlugoscDo: 26,
+  },
+
+  groty: {
+    /** Niskie, szerokie groty w głębi (tam, gdzie dawniej było jezioro magmy). */
+    ile: 8,
+    od: 0.74, pas: 0.16,
+    szerokoscOd: 6, szerokoscDo: 14,
+    wysokoscOd: 2.5, wysokoscDo: 5,
+  },
+
+  /** Ile tików osypywania ziemi przed pierwszą klatką. */
   osypywanieNaStart: 160,
-  splywanieNaStart: 220,
-  /** Dodatkowe spływanie płynów w nowej grze, zanim zasiedlimy gniazda. */
+  /** Dodatkowe spływanie płynów w nowej grze, zanim zasiedlimy gniazda (bez płynów nic nie robi). */
   splywaniePrzedZasiedleniem: 900,
 };
 

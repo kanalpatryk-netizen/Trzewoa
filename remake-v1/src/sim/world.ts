@@ -125,21 +125,8 @@ export class World {
       }
     }
 
-    // Woda: kilka zbiorników w górnej połowie.
-    for (let k = 0; k < S.woda.ile; k++) {
-      const cx = 8 + rng.int(w - 16);
-      const cy = SURFACE_Y + 10 + rng.int((h * S.woda.doGlebokosci) | 0);
-      const r = rng.range(S.woda.promienOd, S.woda.promienDo);
-      this.blob(cx, cy, r, (i) => { if (PASSABLE[tile[i]] === 1) this.water[i] = 8; });
-    }
-
-    // Magma: dno góry.
-    for (let k = 0; k < S.magma.ile; k++) {
-      const cx = 6 + rng.int(w - 12);
-      const cy = ((h * S.magma.od) | 0) + rng.int((h * S.magma.pas) | 0);
-      this.ellipse(cx, cy, rng.range(S.magma.szerokoscOd, S.magma.szerokoscDo), rng.range(S.magma.wysokoscOd, S.magma.wysokoscDo), T.AIR);
-      this.blob(cx, cy, S.magma.promien, (i) => { if (PASSABLE[tile[i]] === 1) this.magma[i] = 8; });
-    }
+    // Remake v1: w górze nie ma ani wody, ani lawy — są za to rozległe jaskinie.
+    this.rzezbJaskinie();
 
     // Rdzeń — ty. Zamknięty w skorupie, której nikt nie przekopie:
     // wejście otwiera dopiero rytuał wielu wiernych, nie jeden zdeterminowany goblin.
@@ -152,9 +139,122 @@ export class World {
 
     // Zejście się osypuje, zanim gracz spojrzy — świat ma startować stabilny.
     for (let k = 0; k < S.osypywanieNaStart; k++) this.tickSoil(k);
-    for (let k = 0; k < S.splywanieNaStart; k++) this.tickFluids(k);
 
     this.unknown = this.w * this.h;
+  }
+
+  /**
+   * Rozległe jaskinie (Remake v1): wielkie sale z płaską podłogą, filarami i naciekami,
+   * kręte galerie, które łączą sale między sobą, kominy w pionie i niskie groty w głębi
+   * (tam, gdzie dawniej leżały jeziora magmy). Liczby w SWIAT.sale / galerie / kominy / groty.
+   */
+  private rzezbJaskinie(): void {
+    const { w, h, rng } = this;
+    const S = SWIAT;
+    const sale: { x: number; y: number; rx: number; ry: number }[] = [];
+    // sale: od pierwszej warstwy pod ziemią do głębi, równo rozrzucone w pionie
+    for (let k = 0; k < S.sale.ile; k++) {
+      const pas = (k + rng.next()) / S.sale.ile;
+      const y = Math.round(SURFACE_Y + S.sale.odPowierzchni + pas * (h * S.sale.doGlebokosci - SURFACE_Y - S.sale.odPowierzchni));
+      const rx = rng.range(S.sale.szerokoscOd, S.sale.szerokoscDo), ry = rng.range(S.sale.wysokoscOd, S.sale.wysokoscDo);
+      const x = Math.round(rx + 3 + rng.next() * (w - rx * 2 - 6));
+      this.sala(x, y, rx, ry);
+      sale.push({ x, y, rx, ry });
+    }
+    // groty w głębi: niskie i szerokie
+    for (let k = 0; k < S.groty.ile; k++) {
+      const y = Math.round(h * (S.groty.od + rng.next() * S.groty.pas));
+      const rx = rng.range(S.groty.szerokoscOd, S.groty.szerokoscDo), ry = rng.range(S.groty.wysokoscOd, S.groty.wysokoscDo);
+      const x = Math.round(rx + 3 + rng.next() * (w - rx * 2 - 6));
+      this.sala(x, y, rx, ry);
+      sale.push({ x, y, rx, ry });
+    }
+    // galerie: każda sala łączy się z najbliższą sąsiadką i czasem z drugą
+    for (let a = 0; a < sale.length; a++) {
+      const odl = sale.map((b, j) => ({ j, d: j === a ? 1e9 : Math.hypot(b.x - sale[a].x, (b.y - sale[a].y) * 1.6) })).sort((p, q) => p.d - q.d);
+      const ile = rng.chance(S.galerie.drugaSzansa) ? 2 : 1;
+      for (let n = 0; n < ile && n < odl.length; n++) {
+        const b = sale[odl[n].j];
+        if (odl[n].d > S.galerie.najdluzsza) continue;
+        this.galeria(sale[a].x, sale[a].y + sale[a].ry * 0.4, b.x, b.y + b.ry * 0.4);
+      }
+    }
+    // kominy: pionowe szyby z sali w dół
+    for (let k = 0; k < S.kominy.ile; k++) {
+      const s0 = sale[rng.int(sale.length)];
+      this.komin(s0.x + rng.range(-s0.rx * 0.6, s0.rx * 0.6), s0.y, rng.range(S.kominy.dlugoscOd, S.kominy.dlugoscDo));
+    }
+  }
+
+  /** Sala: nieregularna elipsa z płaską podłogą, filary od dna do stropu, stalaktyty i stalagmity. */
+  private sala(cx: number, cy: number, rx: number, ry: number): void {
+    const { noise, rng, tile } = this;
+    const S = SWIAT.sale;
+    const podloga = S.podloga;                       // część promienia pod środkiem, gdzie kończy się sala
+    for (let y = Math.floor(cy - ry - 2); y <= cy + ry + 2; y++) {
+      for (let x = Math.floor(cx - rx - 3); x <= cx + rx + 3; x++) {
+        if (!this.inb(x, y) || y < SURFACE_Y + 3 || x < 1 || x > this.w - 2) continue;
+        const dx = (x - cx) / rx, dy = (y - cy) / ry;
+        const brzeg = 1 + (noise.fbm(300 + x * 0.13, 700 + y * 0.17, 3) - 0.5) * S.poszarpanie;
+        if (dy > podloga + (noise.fbm(x * 0.2, 40, 2) - 0.5) * 0.12) continue;        // płaskie dno
+        if (dx * dx + dy * dy <= brzeg * brzeg) tile[y * this.w + x] = T.AIR;
+      }
+    }
+    const dno = Math.floor(cy + ry * podloga);
+    // filary: kolumny skały od dna do stropu
+    const filarow = Math.floor(rx / S.filarCo * rng.next() * 2);
+    for (let f = 0; f < filarow; f++) {
+      const fx = Math.round(cx + rng.range(-rx * 0.7, rx * 0.7));
+      const gruby = 2 + (rng.chance(0.4) ? 1 : 0);
+      for (let y = dno; y > cy - ry - 2; y--) {
+        if (!this.inb(fx, y)) break;
+        const i = y * this.w + fx;
+        if (PASSABLE[tile[i]] !== 1 && y < dno - 1) break;
+        for (let gx = 0; gx < gruby; gx++) if (this.inb(fx + gx, y)) tile[i + gx] = T.ROCK;
+      }
+    }
+    // nacieki: zęby ze stropu i z dna
+    const naciekow = Math.floor(rx * S.naciekiNaKafel);
+    for (let n = 0; n < naciekow; n++) {
+      const nx = Math.round(cx + rng.range(-rx * 0.85, rx * 0.85));
+      const zDolu = rng.chance(0.4);
+      const dl = 1 + rng.int(zDolu ? 2 : 3);
+      if (zDolu) {
+        for (let k = 0; k < dl; k++) if (this.inb(nx, dno - k) && PASSABLE[tile[(dno - k) * this.w + nx]] === 1 && !this.passable(nx, dno - k + 1)) tile[(dno - k) * this.w + nx] = T.ROCK; else break;
+      } else {
+        let y = Math.floor(cy);
+        while (y > 1 && this.passable(nx, y - 1)) y--;
+        for (let k = 0; k < dl; k++) if (this.inb(nx, y + k) && PASSABLE[tile[(y + k) * this.w + nx]] === 1) tile[(y + k) * this.w + nx] = T.ROCK;
+      }
+    }
+  }
+
+  /** Galeria: kręty korytarz z punktu do punktu, o zmiennej szerokości. */
+  private galeria(x0: number, y0: number, x1: number, y1: number): void {
+    const { noise, rng } = this;
+    const S = SWIAT.galerie;
+    let x = x0, y = y0;
+    const krokow = Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 1.6);
+    const ziarno = rng.next() * 100;
+    for (let k = 0; k < krokow; k++) {
+      const a = Math.atan2(y1 - y, x1 - x) + (noise.fbm(ziarno + k * 0.08, 5, 2) - 0.5) * S.krety;
+      x += Math.cos(a) * 0.8; y += Math.sin(a) * 0.8;
+      // galeria nie przecina boków góry ani nie wychodzi pod niebo
+      x = Math.max(3, Math.min(this.w - 4, x)); y = Math.max(SURFACE_Y + 4, Math.min(this.h - 3, y));
+      const r = S.promienOd + (S.promienDo - S.promienOd) * noise.fbm(ziarno + 50 + k * 0.05, 9, 2);
+      this.ellipse(x, y, r * 1.25, r, T.AIR);
+      if (Math.hypot(x1 - x, y1 - y) < 1.5) break;
+    }
+  }
+
+  /** Komin: pionowy szyb, lekko falujący na boki. */
+  private komin(x: number, y: number, dl: number): void {
+    const { noise, rng } = this;
+    const z = rng.next() * 100;
+    for (let k = 0; k < dl; k++) {
+      const xx = Math.max(3, Math.min(this.w - 4, x + (noise.fbm(z + k * 0.09, 3, 2) - 0.5) * 6));
+      this.ellipse(xx, y + k, SWIAT.kominy.promien, 1.2, T.AIR);
+    }
   }
 
   /**
@@ -193,20 +293,11 @@ export class World {
     }
   }
 
-  private blob(cx: number, cy: number, r: number, fn: (i: number) => void): void {
-    for (let y = Math.floor(cy - r); y <= cy + r; y++) {
-      for (let x = Math.floor(cx - r); x <= cx + r; x++) {
-        if (!this.inb(x, y)) continue;
-        const dx = x - cx, dy = y - cy;
-        if (dx * dx + dy * dy <= r * r) fn(y * this.w + x);
-      }
-    }
-  }
-
   // ------------------------------------------------------------------- płyny
 
   /** Woda i magma jako objętość w kafelku, nie jako kafelek. */
   tickFluids(tick: number): void {
+    if (!SWIAT.plyny) return;
     const { w, h, tile, water, magma, prog } = this;
     this.flip = !this.flip;
     const doMagma = tick % 3 === 0;

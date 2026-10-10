@@ -75,6 +75,8 @@ export const NIEPOKOJ = {
   trzaskCo: 7, trzaskRozrzut: 14, trzaskGlos: 0.09,
   /** Chór bez słów: co tyle s (+ losowo), głośność, długość frazy; formanty samogłosek. */
   chorCo: 38, chorRozrzut: 30, chorGlos: 0.022, chorDlugosc: 9,
+  /** Ten, który patrzy: szept z ciemności (głośność sylab) i głuche uderzenie, gdy kogoś zabiera. */
+  szeptGlos: 0.05, zabranieGlos: 0.16,
   formanty: [[730, 1090], [570, 840], [300, 870], [440, 1020]] as [number, number][],
 };
 

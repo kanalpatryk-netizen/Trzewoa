@@ -25,13 +25,13 @@ i otwórz w przeglądarce.
 - **Zamiary:** każdy ma cel na ~10 s (widać go na karcie postaci), zamiast co chwilę losować zajęcie.
 - **Aureole:** jasna — wzmocnienie, czerwona — osłabienie; karta mówi, co to i kiedy minie.
 - **Kamienni rycerze** śpią w gniazdach zamurowanych w skale (5 gniazd, po 2–3 rycerzy, na różnych
-  głębokościach, z dala od magmy). Gdy ktoś z ludu jest blisko, gniazdo słabo się żarzy. Kto się do
+  głębokościach, w litej skale). Gdy ktoś z ludu jest blisko, gniazdo słabo się żarzy. Kto się do
   niego dokopie, budzi rycerzy — od razu weteranów. Ze skały rycerzy się nie przywołuje.
 - **Szept „Przemyśl i kop”** (robotnik, 6 wiary): klęka, prosi o znak, potem powoli kopie tunel ku
   najbliższemu gniazdu. Znak jest niedokładny — gniazdo leży na jednym z trzech torów; każdy kopacz
   bierze tor jeszcze niesprawdzony. Jeden trafia mniej więcej raz na trzy, trzech — na pewno.
   W gniazdo **pokazane** (karta snu albo uśpiony boss) trafia bez zgadywania: robotnik dochodzi jak
-  najbliżej i kopie wyliczoną trasą. Gdy ogień lub woda zagrodzi tunel tuż przy gnieździe (≤6 kafli),
+  najbliżej i kopie wyliczoną trasą. Gdy coś zagrodzi tunel tuż przy gnieździe (≤6 kafli),
   rycerze słyszą kopanie i przebijają się sami.
 - **Szept „kop losowo”** (tylko rycerz, 4 wiary): wykopuje ~10 połączonych kafli skały obok siebie (w bok i w dół), kopiąc jak robotnik — na chybił trafił; trafi blisko śpiącego gniazda, to je budzi.
 - **Weterani:** po 4 minutach w ludzie, póki najedzony, a lud wierny — +30% siły, szybkości, kopania
@@ -48,7 +48,7 @@ i otwórz w przeglądarce.
   Gdy wszystkie gniazda są już rozkopane, a rycerzy brak, boss nie zasypia: pobożni unoszą księgi
   i razią Strażników z dystansu (9 kafli, cofają się, gdy wróg podejdzie), a boss i jego słudzy biją ich.
 - **Nowa talia kart:** spisek rycerzy (rzadki — najwyżej raz na 5 min; zostawiony po 2 min wybucha buntem — część rycerzy zmienia barwy
-  i bije lud; wierni rycerze ruszają na nich sami), zatrute plony, woda nad obozem, zawał nad drogą
+  i bije lud; wierni rycerze ruszają na nich sami), zatrute plony, zawał nad drogą
   wiernych, sen o kamiennych rycerzach (pokazuje gniazdo). Liczby: `src/nastawy/karty-ludu.ts`.
 - **Postacie ludu** (`src/render/postacie.ts`, kod w `src/render/lud/`): kończyny z mięśniami, dłonie z kciukiem,
   buty z podeszwą, głowy z profilu (oczy, brwi, usta, uszy, brody); robotnik — czapka z lampką i snopem światła, chusta,
@@ -61,6 +61,9 @@ i otwórz w przeglądarce.
   worek i wstążki mają bezwładność, a zmiana czynności przechodzi płynnie. Szczegółowość rośnie z przybliżeniem;
   przy jakości „szybka” (albo gdy auto tnie jakość) bez najdrobniejszych detali. Dawny rysunek: ustawienia → „Nowe postacie”.
 - **Klamry** widać przy ścianach szybów (zaczepy) i w pustce (liny).
+- **Mrok i Ten, który patrzy** (`src/sim/mrok.ts`, nastawy w `src/nastawy/mrok.ts`): świat widać w pełni tylko w świetle
+  lampek, aureol, obozów, rdzenia i Cudu. W ciemności krąży coś, co wypatruje samotnych daleko od obozu (nie rycerzy)
+  i po 15 s patrzenia zabiera ich (stoją wtedy jak wryci); gra staje i ostrzega. Odpędza je Cud tuż obok albo ktoś z ludu, kto podejdzie.
 - **Bez snu góry.** Przegrywasz dopiero, gdy nie da się już wygrać: nie ma pobożnych,
   a nawet ofiara ze wszystkich nie da krwi na nowego.
 
