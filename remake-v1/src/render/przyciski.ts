@@ -88,7 +88,7 @@ export function rysujPrzyciski(ctx: CanvasRenderingContext2D, lista: Przycisk[],
     // krążek tynku z wycinkiem fresku albo znakiem malowanym sinopią
     const stan = b.wlaczony ? 'wlaczony' : podKursorem === b.akcja ? 'pod' : 'zwykly';
     if (!krazekZIkona(ctx, `przycisk-${b.akcja}`, 0, 0, b.r, stan)) {
-      krazek(ctx, 0, 0, b.r, stan);
+      krazek(ctx, 0, 0, b.r, stan, `przycisk-${b.akcja}`);
       ctx.strokeStyle = FRESK.sinopia;
       ctx.lineWidth = Math.max(2, b.r * 0.1);
       ctx.lineCap = 'round';

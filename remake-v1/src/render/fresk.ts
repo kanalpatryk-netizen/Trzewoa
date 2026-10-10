@@ -1,6 +1,8 @@
 import { FRESK } from '../nastawy/barwy';
 import { FRESK_SWIATA as FS } from '../nastawy/wyglad/fresk-swiata';
 import { glif } from './tajemnica';
+import { pyl, napisyNaScianie, plynnie, wolnoRuszac } from './nastroj';
+import { NASTROJ } from '../nastawy/wyglad/nastroj';
 import tynkUrl from '../grafiki/tekstury/tynk.jpg';
 import zlotoUrl from '../grafiki/tekstury/zloto.jpg';
 
@@ -141,6 +143,11 @@ export function scianaKrypty(ctx: CanvasRenderingContext2D, w: number, h: number
   ctx.fillStyle = l;
   ctx.fillRect(0, 0, w, h);
   ctx.restore();
+  // pył w świetle i pismo, które samo pojawia się w tynku (teraz = 0 — ściana stoi)
+  if (teraz > 0 && wolnoRuszac()) {
+    pyl(ctx, w, h, teraz, cx, cy);
+    napisyNaScianie(ctx, w, h, teraz);
+  }
 }
 
 // ------------------------------------------------------------------ ramy i tablice
@@ -225,7 +232,10 @@ function pismoNaRamie(ctx: CanvasRenderingContext2D, x: number, y: number, w: nu
     const dlBoku = pozioma ? w : h;
     const start = pas * 3 + los(3) * Math.max(1, dlBoku - pas * 6 - dl * krok);
     ctx.save();
-    ctx.strokeStyle = `rgba(236,214,170,${0.55 * jasnosc})`;
+    const [zr, zg, zb] = FRESK.zar;
+    ctx.strokeStyle = `rgba(${zr},${zg},${zb},${0.75 * jasnosc})`;
+    ctx.shadowColor = `rgba(${zr},${zg},${zb},${0.65 * jasnosc})`;
+    ctx.shadowBlur = Math.max(4, pas * 0.8);
     ctx.lineWidth = Math.max(0.8, pas * 0.09);
     ctx.lineCap = 'round';
     for (let i = 0; i < dl; i++) {
@@ -272,25 +282,50 @@ export function tablica(ctx: CanvasRenderingContext2D, x: number, y: number, w: 
   ctx.restore();
 }
 
-/** Krążek tynku z obrzeżem sinopii — podkład pod ryt albo przycisk. */
-export function krazek(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, stan: 'zwykly' | 'pod' | 'wlaczony' | 'uspiony' = 'zwykly'): void {
+/**
+ * Krążek tynku z obrzeżem sinopii — podkład pod ryt albo przycisk. W spoczynku kamień w cieniu;
+ * pod kursorem (albo wybrany) płynnie się rozjaśnia, dostaje ciepłą poświatę, a po obrzeżu
+ * krąży błysk jak odbicie płomienia. `klucz` — czyj to krążek (do płynnego przejścia).
+ */
+export function krazek(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, stan: 'zwykly' | 'pod' | 'wlaczony' | 'uspiony' = 'zwykly', klucz?: string): number {
+  const cel = stan === 'pod' || stan === 'wlaczony' ? 1 : 0;
+  const sw = klucz ? plynnie(klucz, cel) : cel;
   ctx.save();
-  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  if (sw > 0.01) {
+    const g = ctx.createRadialGradient(x, y, r * 0.7, x, y, r * 2);
+    g.addColorStop(0, `rgba(226,160,90,${NASTROJ.poswiataKrazka * sw})`);
+    g.addColorStop(1, 'rgba(226,160,90,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - r * 2, y - r * 2, r * 4, r * 4);
+  }
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
   ctx.beginPath(); ctx.arc(x + 1, y + 3, r + 1.5, 0, Math.PI * 2); ctx.fill();
   const p = new Path2D(); p.arc(x, y, r, 0, Math.PI * 2);
   pigment(ctx, p, stan === 'wlaczony' ? FRESK.krazekWlaczony : FRESK.krazek);
   const g = ctx.createRadialGradient(x - r * 0.3, y - r * 0.4, r * 0.1, x, y, r);
-  g.addColorStop(0, stan === 'pod' ? 'rgba(255,236,200,0.22)' : 'rgba(255,236,200,0.08)');
-  g.addColorStop(1, 'rgba(30,16,8,0.45)');
+  g.addColorStop(0, `rgba(255,226,180,${0.05 + 0.15 * sw})`);
+  g.addColorStop(1, 'rgba(16,8,4,0.55)');
   ctx.fillStyle = g; ctx.fill(p);
   ctx.lineWidth = Math.max(1.6, r * 0.09);
   ctx.strokeStyle = FRESK.sinopia;
   ctx.stroke(p);
   ctx.lineWidth = 1.2;
-  ctx.strokeStyle = `rgba(227,214,182,${stan === 'pod' || stan === 'wlaczony' ? 0.75 : 0.38})`;
+  ctx.strokeStyle = `rgba(206,170,112,${0.2 + 0.5 * sw})`;
   ctx.beginPath(); ctx.arc(x, y, r + 2.2, 0, Math.PI * 2); ctx.stroke();
-  if (stan === 'uspiony') { ctx.fillStyle = 'rgba(20,12,8,0.45)'; ctx.fill(p); }
+  if (sw > 0.05 && wolnoRuszac()) {
+    // błysk krąży po obrzeżu
+    const a = (typeof performance !== 'undefined' ? performance.now() : 0) * 0.0014 + x * 0.01;
+    const [zr, zg, zb] = FRESK.zar;
+    ctx.lineCap = 'round';
+    ctx.lineWidth = 1.8;
+    ctx.shadowColor = `rgba(${zr},${zg},${zb},${0.8 * sw})`;
+    ctx.shadowBlur = 6;
+    ctx.strokeStyle = `rgba(250,206,140,${NASTROJ.blyskKrazka * sw})`;
+    ctx.beginPath(); ctx.arc(x, y, r + 2.2, a, a + 0.8); ctx.stroke();
+  }
+  if (stan === 'uspiony') { ctx.fillStyle = 'rgba(12,7,5,0.5)'; ctx.fill(p); }
   ctx.restore();
+  return sw;
 }
 
 // ------------------------------------------------------------------ ikony z fresków
@@ -318,13 +353,23 @@ export const maIkone = (nazwa: string): boolean => !!IKONY[`../grafiki/ikony/${n
  */
 export function krazekZIkona(ctx: CanvasRenderingContext2D, nazwa: string, x: number, y: number, r: number, stan: 'zwykly' | 'pod' | 'wlaczony' | 'uspiony' = 'zwykly'): boolean {
   if (!maIkone(nazwa)) return false;
-  krazek(ctx, x, y, r, stan);
+  const sw = krazek(ctx, x, y, r, stan, nazwa);
   const o = ikona(nazwa);
   if (!o) return true;
   ctx.save();
   ctx.beginPath(); ctx.arc(x, y, r * 0.86, 0, Math.PI * 2); ctx.clip();
   if (stan === 'uspiony') ctx.globalAlpha *= 0.45;
   ctx.drawImage(o, x - r * 0.9, y - r * 0.9, r * 1.8, r * 1.8);
+  // w spoczynku wycinek tonie w cieniu i traci barwę; pod kursorem wraca do światła
+  const cien = 1 - sw;
+  if (cien > 0.01) {
+    ctx.globalCompositeOperation = 'saturation';
+    ctx.fillStyle = `rgba(128,128,128,${NASTROJ.ikonaSzarosc * cien})`;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.fillStyle = `rgba(10,6,4,${NASTROJ.ikonaCien * cien})`;
+    ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
   // wycinek leży w tynku krążka, nie na nim: cień przy brzegu
   const g = ctx.createRadialGradient(x, y, r * 0.5, x, y, r * 0.88);
   g.addColorStop(0, 'rgba(20,10,6,0)'); g.addColorStop(1, 'rgba(20,10,6,0.5)');

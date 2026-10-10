@@ -46,6 +46,8 @@ import { Straznik, type Alarm } from '../alarmy';
 import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { rysujWydarzenie, type PoleWyboru } from '../../render/wydarzenie';
 import { rysujMrok, rysujPatrzacego } from '../../render/mrok';
+import { wolnoRuszac } from '../../render/nastroj';
+import { NASTROJ } from '../../nastawy/wyglad/nastroj';
 import { MROK } from '../../nastawy/mrok';
 import { rozstrzygnij, type Wydarzenie } from '../../sim/wydarzenia';
 import { OknoAtlasu } from '../../atlas/okno';
@@ -106,6 +108,8 @@ export class EkranGry implements Ekran {
   /** Pilnuje klatek w trybie jakości „auto” — przy zadyszce rycina tanieje. */
   private straz = new StrazKlatek();
   private poswiata = new Poswiata();
+  /** Ostatnio widziane wiara, krew, jedzenie — zmiana żarzy się chwilę (render/nastroj.ts). */
+  private zmianyZasobow = new Map<string, { n: number; t: number; wiecej: boolean }>();
   private tajemnica = new Tajemnica();
   /** Ile znaków pisma w skale było w ostatniej klatce — po nich odkrywa się ich tablica. */
   private znakowWidac = 0;
@@ -431,10 +435,11 @@ export class EkranGry implements Ekran {
     const { sim } = this;
     const klan = klanLudu(sim);
     const czesci: [string, string, string][] = [
-      ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(236,214,160,1)'],
-      ['krew', `${Math.floor(sim.krew)}`, 'rgba(226,120,100,1)'],
-      ['jedzenie', `${klan?.stock ?? 0}`, 'rgba(170,200,130,1)'],
+      ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(222,200,150,1)'],
+      ['krew', `${Math.floor(sim.krew)}`, 'rgba(206,104,86,1)'],
+      ['jedzenie', `${klan?.stock ?? 0}`, 'rgba(150,178,114,1)'],
     ];
+    const teraz = performance.now();
     ctx.save();
     const rozm = Math.max(13, Math.min(17, w / 30));
     const y = plate.niski ? plate.y - plate.top * 0.3 : plate.y - plate.top * 0.34;
@@ -445,10 +450,23 @@ export class EkranGry implements Ekran {
     const odst = rozm * 1.1;
     let x = plate.x + 10;
     for (const [e, l, kol] of czesci) {
-      ctx.font = fE; ctx.fillStyle = 'rgba(190,178,156,0.9)';
+      ctx.font = fE; ctx.fillStyle = 'rgba(160,146,124,0.85)';
       ctx.fillText(e + ' ', x, y); x += kaw(e + ' ', fE);
+      // liczba, która się zmieniła, żarzy się chwilę: złotem, gdy rośnie, krwią, gdy maleje
+      const z = this.zmianyZasobow.get(e);
+      const n = Number(l);
+      if (!z || z.n !== n) this.zmianyZasobow.set(e, { n, t: z ? teraz : -1e9, wiecej: !z || n > z.n });
+      const zm = this.zmianyZasobow.get(e)!;
+      const k = wolnoRuszac() ? Math.max(0, 1 - (teraz - zm.t) / NASTROJ.liczbaZar) : 0;
       ctx.font = fL; ctx.fillStyle = kol;
-      ctx.fillText(l, x, y); x += kaw(l, fL) + odst;
+      if (k > 0) {
+        ctx.save();
+        ctx.shadowColor = zm.wiecej ? `rgba(240,196,120,${0.9 * k})` : `rgba(214,50,32,${0.9 * k})`;
+        ctx.shadowBlur = 10 * k;
+        ctx.fillText(l, x, y);
+        ctx.restore();
+      } else ctx.fillText(l, x, y);
+      x += kaw(l, fL) + odst;
     }
     ctx.restore();
   }
@@ -474,7 +492,7 @@ export class EkranGry implements Ekran {
     const tlo = new Path2D(); tlo.rect(x0, y, x1 - x0, h);
     pigment(ctx, tlo, FRESK.tablicaCiemna);
     const kolejnosc: Rola[] = ['pobozny', 'robotnik', 'rycerz'];
-    const PIG: Record<Rola, string> = { pobozny: '#cfc2a2', robotnik: '#a8743a', rycerz: '#4d6676' };
+    const PIG: Record<Rola, string> = { pobozny: '#958a72', robotnik: '#7a552f', rycerz: '#3a4f5c' };
     let cx = x0;
     for (const r of kolejnosc) {
       const n = role[r];
@@ -487,8 +505,18 @@ export class EkranGry implements Ekran {
     }
     // światło lampki z góry, cień u dołu wstęgi
     const cien = ctx.createLinearGradient(0, y, 0, y + h);
-    cien.addColorStop(0, 'rgba(255,230,190,0.12)'); cien.addColorStop(1, 'rgba(20,10,6,0.35)');
+    cien.addColorStop(0, 'rgba(255,230,190,0.06)'); cien.addColorStop(1, 'rgba(12,6,4,0.5)');
     ctx.fillStyle = cien; ctx.fill(tlo);
+    if (wolnoRuszac()) {
+      // blask lampki powoli przesuwa się po wstędze
+      const t = (performance.now() % 11000) / 11000;
+      const bx = x0 - 120 + (x1 - x0 + 240) * t;
+      const blask = ctx.createLinearGradient(bx - 90, 0, bx + 90, 0);
+      blask.addColorStop(0, 'rgba(255,214,160,0)');
+      blask.addColorStop(0.5, 'rgba(255,214,160,0.09)');
+      blask.addColorStop(1, 'rgba(255,214,160,0)');
+      ctx.fillStyle = blask; ctx.fill(tlo);
+    }
     ctx.strokeStyle = FRESK.sinopia; ctx.lineWidth = 2;
     ctx.strokeRect(x0, y, x1 - x0, h);
     ctx.strokeStyle = 'rgba(227,214,182,0.3)'; ctx.lineWidth = 1;
@@ -532,14 +560,14 @@ export class EkranGry implements Ekran {
       const sz = kaw(napis, fL) + 18;
       const wybrany = st.rola === rola;
       const [cr, cg, cb] = BARWA_ROLI[rola];
-      if (wybrany) tablicaTynku(ctx, x, yb - bh * 0.72, sz, bh, true);
+      if (wybrany) tablicaTynku(ctx, x, yb - bh * 0.72, sz, bh);
       else {
         ctx.strokeStyle = 'rgba(200,184,150,0.4)';
         ctx.lineWidth = 1;
         ctx.strokeRect(x + 0.5, yb - bh * 0.72 + 0.5, sz - 1, bh - 1);
       }
       void cr; void cg; void cb;
-      ctx.font = fL; ctx.fillStyle = wybrany ? FRESK.sinopia : 'rgba(200,188,166,0.7)';
+      ctx.font = fL; ctx.fillStyle = wybrany ? 'rgba(236,204,142,1)' : 'rgba(184,170,146,0.6)';
       ctx.fillText(napis, x + 9, yb);
       this.przyciskiRoli.push({ x, y: yb - bh * 0.72, w: sz, h: bh, rola });
       x += sz + 6;
@@ -860,7 +888,7 @@ export class EkranGry implements Ekran {
 
     drawSmoke(ctx, plate, sim, teraz);
     drawEyelid(ctx, plate, sim, teraz);
-    drawFrame(ctx, plate, teraz, oddech);
+    drawFrame(ctx, plate, teraz, oddech, this.ui.pointer);
     // w samouczku cel gry dochodzi dopiero na końcu — linia kroków by tylko rozpraszała
     // na telefonie wstęga leży na dole płyty, tam gdzie baner pauzy — w pauzie ustępuje mu miejsca
     // (także gdy trzymasz ryt — dół płyty zajmuje wtedy opis narzędzia — i gdy otwarta jest karta mieszkańca)
