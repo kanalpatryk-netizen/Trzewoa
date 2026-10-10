@@ -26,7 +26,7 @@ import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
-import { scianaKrypty, pigment, tablica as tablicaTynku } from '../../render/fresk';
+import { scianaKrypty, pigment, tablica as tablicaTynku, tynkSwiata } from '../../render/fresk';
 import { FRESK } from '../../nastawy/barwy';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
@@ -762,6 +762,7 @@ export class EkranGry implements Ekran {
     // odjeżdżałby spod postaci), a zmiany samego świata wystarczą trzydzieści razy na sekundę.
     const kameraRuszona = cam.x !== this.rysKam[0] || cam.y !== this.rysKam[1] || cam.zoom !== this.rysKam[2];
     if (kameraRuszona || (this.dirty && teraz - this.lastInk > 30) || teraz - this.lastInk > 150) {
+      eng.fresk = ustawienia.swiat !== 'rycina';
       eng.rebuild(sim, cam, teraz);
       this.lastInk = teraz; this.dirty = false;
       this.rysKam[0] = cam.x; this.rysKam[1] = cam.y; this.rysKam[2] = cam.zoom;
@@ -799,12 +800,17 @@ export class EkranGry implements Ekran {
       ctx.drawImage(eng.buf, 0, 0, cam.vw, cam.vh);
       ctx.restore();
     }
-    // rycina świata w ugrze, jak rysunek sinopią na tynku: biel kreski przechodzi w ciepły ochrowy
-    ctx.save();
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.fillStyle = FRESK.tonRyciny;
-    ctx.fillRect(0, 0, cam.vw, cam.vh);
-    ctx.restore();
+    if (eng.fresk) {
+      // fresk: faktura tynku przyklejona do świata — jedzie razem ze skałą, gdy przesuwasz kamerę
+      tynkSwiata(ctx, cam);
+    } else {
+      // rycina świata w ugrze, jak rysunek sinopią na tynku: biel kreski przechodzi w ciepły ochrowy
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.fillStyle = FRESK.tonRyciny;
+      ctx.fillRect(0, 0, cam.vw, cam.vh);
+      ctx.restore();
+    }
     this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.5);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     rysujRdzen(ctx, sim, cam, teraz);

@@ -1,4 +1,5 @@
 import { FRESK } from '../nastawy/barwy';
+import { FRESK_SWIATA as FS } from '../nastawy/wyglad/fresk-swiata';
 import { glif } from './tajemnica';
 import tynkUrl from '../grafiki/tekstury/tynk.jpg';
 import zlotoUrl from '../grafiki/tekstury/zloto.jpg';
@@ -48,6 +49,26 @@ export function pigment(ctx: CanvasRenderingContext2D, sciezka: Path2D, kolor: s
   ctx.globalAlpha *= sila;
   ctx.fillStyle = p;
   ctx.fill(sciezka);
+  ctx.restore();
+}
+
+/**
+ * Faktura tynku na świecie gry: mnożona na rysunek góry, zakotwiczona w świecie (kafel
+ * faktury to FRESK_SWIATA.tynkKafli kafli), więc jedzie razem ze skałą przy ruchu kamery.
+ */
+export function tynkSwiata(ctx: CanvasRenderingContext2D, cam: { x: number; y: number; zoom: number; vw: number; vh: number }): void {
+  const p = wzor(ctx, 'tynk');
+  if (!p) return;
+  const s = (FS.tynkKafli * cam.zoom) / 256;
+  const tx = cam.vw / 2 - cam.x * cam.zoom, ty = cam.vh / 2 - cam.y * cam.zoom;
+  ctx.save();
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.globalAlpha = FS.tynkKrycie;
+  p.setTransform(new DOMMatrix([s, 0, 0, s, tx, ty]));
+  ctx.fillStyle = p;
+  ctx.fillRect(0, 0, cam.vw, cam.vh);
+  // wzór jest wspólny dla całego płótna — inne rysunki na nim nie mogą dostać przesunięcia
+  p.setTransform(new DOMMatrix());
   ctx.restore();
 }
 

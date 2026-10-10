@@ -5,6 +5,7 @@ import { ustawienia, skalaRenderu } from '../core/settings-store';
 import { Camera } from './camera';
 
 import { TON_MAX, MATERIALY, MASA, type Kreskowanie } from '../nastawy/wyglad/rycina';
+import { FRESK_SWIATA as FS } from '../nastawy/wyglad/fresk-swiata';
 
 // materiały ryciny (ton, kąt, odstęp, krzyż, kropki, barwa) — nastawy/wyglad/rycina.ts
 type Hatch = Kreskowanie;
@@ -35,6 +36,24 @@ function barwyMaterialu(mat: number, depth: number, wy: number, out: Float32Arra
   out[o + 5] = tint ? (tint[2] * 2 + inkB) / 3 : inkB;
   const pasmo = 0.94 + 0.12 * Math.sin(wy * 0.21 + Math.sin(wy * 0.043) * 2.1);
   out[o + 6] = hat ? hat.tone * (1 - depth * 0.12) * pasmo : 0.2;
+}
+
+/**
+ * Fresk: pigment materiału na danej głębokości i barwa jego świetlika — 7 liczb od `o`,
+ * w tym samym układzie co `barwyMaterialu` (masa, kreska, ton), żeby miękkie przejścia
+ * między materiałami działały tak samo.
+ */
+function pigmentFresku(mat: number, depth: number, _wy: number, out: Float32Array, o: number): void {
+  const a = depth < 0.5 ? depth * 2 : (depth - 0.5) * 2;
+  const p0 = depth < 0.5 ? FS.gora : FS.srodek, p1 = depth < 0.5 ? FS.srodek : FS.dno;
+  let r = p0[0] + (p1[0] - p0[0]) * a, g = p0[1] + (p1[1] - p0[1]) * a, b = p0[2] + (p1[2] - p0[2]) * a;
+  const m = FS.materialy[mat];
+  if (m) { r += (m.barwa[0] - r) * m.wlasny; g += (m.barwa[1] - g) * m.wlasny; b += (m.barwa[2] - b) * m.wlasny; }
+  out[o] = r; out[o + 1] = g; out[o + 2] = b;
+  out[o + 3] = FS.swietlik[0] * 0.8 + r * 0.2;
+  out[o + 4] = FS.swietlik[1] * 0.8 + g * 0.2;
+  out[o + 5] = FS.swietlik[2] * 0.8 + b * 0.2;
+  out[o + 6] = 0.5;
 }
 
 /** Parametry kreski dla jednego materiału — liczone raz na kafel, nie raz na piksel. */
@@ -95,6 +114,11 @@ export class Engraver {
   private w9 = new Float32Array(9);
   private pA = nowaKreska();
   private pB = nowaKreska();
+  /** Świat malowany jak fresk (domyślnie) albo kreskowany jak rycina — ustawienia → „Rysunek świata”. */
+  fresk = true;
+  /** Szkic sinopii pod nieznanym: poziomice dużego, gładkiego szumu (0..1 na teksel). */
+  private szkic = new Float32Array(256 * 256);
+  private pig = new Float32Array(7);
   private lw = 0; private lh = 0; private lx0 = 0; private ly0 = 0;
 
   constructor() {
@@ -118,6 +142,28 @@ export class Engraver {
         const c = grid[y1 * G + x0], d = grid[y1 * G + x1];
         const top = a + (b - a) * sx, bot = c + (d - c) * sx;
         this.smooth[(y << 8) | x] = top + (bot - top) * sy;
+      }
+    }    // szkic sinopii: kilka poziomic szumu o dużym oczku — kreślone pędzlem linie, nie siatka
+    const G2 = 8, cell2 = 256 / G2;
+    const grid2 = new Float32Array(G2 * G2);
+    for (let i = 0; i < grid2.length; i++) grid2[i] = Math.random();
+    for (let y = 0; y < 256; y++) {
+      for (let x = 0; x < 256; x++) {
+        const gx = x / cell2, gy = y / cell2;
+        const x0 = Math.floor(gx) % G2, y0 = Math.floor(gy) % G2;
+        const x1 = (x0 + 1) % G2, y1 = (y0 + 1) % G2;
+        const fx = gx - Math.floor(gx), fy = gy - Math.floor(gy);
+        const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
+        const a = grid2[y0 * G2 + x0], b = grid2[y0 * G2 + x1];
+        const c = grid2[y1 * G2 + x0], d = grid2[y1 * G2 + x1];
+        const t = a + (b - a) * sx, u = c + (d - c) * sx;
+        const v = t + (u - t) * sy;
+        let k = 0;
+        for (const poziom of [0.32, 0.5, 0.68]) {
+          const odl = Math.abs(v - poziom) / 0.012;
+          if (odl < 1) k = Math.max(k, 1 - odl);
+        }
+        this.szkic[(y << 8) | x] = k;
       }
     }
   }
@@ -304,7 +350,7 @@ export class Engraver {
       const d = w.depth(wy);
       for (let x = 0; x < tilesX; x++) {
         const k = y * tilesX + x;
-        if (S[k] === 1) barwyMaterialu(R[k], d, wy, MK, k * 7);
+        if (S[k] === 1) (this.fresk ? pigmentFresku : barwyMaterialu)(R[k], d, wy, MK, k * 7);
       }
     }
     for (let y = 0; y < tilesY; y++) {
@@ -396,10 +442,31 @@ export class Engraver {
     const lw = this.lw;
     const F = this.fresh, L = this.light, A = this.angle, B = this.bliskosc, S = this.sol, R = this.rys;
     const MP = this.magmaP, WP = this.wodaP, MI = this.miek, RK = this.rogK;
+    const fresk = this.fresk, szkic = this.szkic, pig = this.pig;
+    /** Piksel nieznanego: ciemna ściana — a we fresku pod nią szkic sinopii. */
+    const nieznane = (o: number, gx: number, gy: number): void => {
+      const ziarno = smooth[(((gy * 2) & 255) << 8) | ((gx * 2) & 255)] * 5 + noise[((gy & 255) << 8) | (gx & 255)] * 4;
+      if (fresk) {
+        // szkic sinopii, urywany jak kreślony pędzlem
+        const k = szkic[(((gy >> 1) & 255) << 8) | ((gx >> 1) & 255)] * FS.szkicSila * (smooth[((((gy >> 2) + 61) & 255) << 8) | (((gx >> 2) + 17) & 255)] > 0.42 ? 1 : 0.25);
+        const nr = FS.nieznane[0] + ziarno * 0.6, ng = FS.nieznane[1] + ziarno * 0.5, nb = FS.nieznane[2] + ziarno * 0.45;
+        data[o] = nr + (FS.szkic[0] - nr) * k; data[o + 1] = ng + (FS.szkic[1] - ng) * k; data[o + 2] = nb + (FS.szkic[2] - nb) * k;
+      } else {
+        data[o] = 11 + ziarno; data[o + 1] = 9 + ziarno * 0.8; data[o + 2] = 8 + ziarno * 0.7;
+      }
+      data[o + 3] = 255;
+    };
 
     let depth = 0, pasmo = 1;
     let inkR = 0, inkG = 0, inkB = 0, rockR = 0, rockG = 0, rockB = 0;
     const ustaw = (P: Kreska, mat: number): void => {
+      if (fresk) {
+        pigmentFresku(mat, depth, 0, pig, 0);
+        P.mat = mat;
+        P.br = pig[0]; P.bg = pig[1]; P.bb = pig[2]; P.tr = pig[3]; P.tg = pig[4]; P.tb = pig[5];
+        P.toneC = 0.5; P.sp = 4; P.cross = 1; P.stip = 0;
+        return;
+      }
       const hat = H[mat];
       P.mat = mat;
       P.tr = inkR; P.tg = inkG; P.tb = inkB;
@@ -461,13 +528,8 @@ export class Engraver {
           // ciągnąć oko mniej niż to, co widać.
           for (let py = py0; py < py1; py++) {
             const gy = py + oy;
-            const row = py * aw, sy = (gy * 2) & 255, ny = gy & 255;
-            for (let px = px0; px < px1; px++) {
-              const gx = px + ox;
-              const ziarno = smooth[(sy << 8) | ((gx * 2) & 255)] * 5 + noise[(ny << 8) | (gx & 255)] * 4;
-              const o = (row + px) * 4;
-              data[o] = 11 + ziarno; data[o + 1] = 9 + ziarno * 0.8; data[o + 2] = 8 + ziarno * 0.7; data[o + 3] = 255;
-            }
+            const row = py * aw;
+            for (let px = px0; px < px1; px++) nieznane((row + px) * 4, px + ox, gy);
           }
           continue;
         }
@@ -549,15 +611,14 @@ export class Engraver {
             const ft = fa0 * (1 - fx) + fa1 * fx;
             const fr = ft <= 0.001 ? 0 : ft + (smooth[(nyS << 8) | ((gx * 0.35) & 255)] - 0.5) * 1.15;
             if (fr <= 0.06) {                            // Otchłań — ciemność bez rysunku
-              const ziarno = smooth[(((gy * 2) & 255) << 8) | ((gx * 2) & 255)] * 5 + noise[(ny << 8) | (gx & 255)] * 4;
-              data[o] = 11 + ziarno; data[o + 1] = 9 + ziarno * 0.8; data[o + 2] = 8 + ziarno * 0.7; data[o + 3] = 255;
+              nieznane(o, gx, gy);
               continue;
             }
             const lt = la0 * (1 - fx) + la1 * fx;
             const mem = fr < 1 ? fr : 1;
 
             // gładka ściana: twardość interpolowana między środkami kafli, z drżeniem rylca
-            let skala = lity, linia = 0;
+            let skala = lity, linia = 0, swP = 0;
             if (brzegowy) {
               const qx = fx < 0.5 ? 0 : 1;
               const u = fx < 0.5 ? fx + 0.5 : fx - 0.5;
@@ -578,6 +639,12 @@ export class Engraver {
                   linia = hw + 0.5 - d;
                   if (linia > 1) linia = 1;
                   if (linia > 0) linia *= (0.55 + 0.35 * podloga) * (mem < 0.7 ? mem / 0.7 : 1);
+                  // fresk: świetlik — jasny pas na krawędzi podłogi, tuż pod konturem
+                  if (fresk && skala && podloga > 0.35) {
+                    const grub = FS.swietlikGrubosc * zoom + 1;
+                    const t = 1 - (d - hw * 0.6) / grub;
+                    if (t > 0 && d > hw * 0.6) swP = (t > 1 ? 1 : t) * podloga * FS.swietlikSila * (mem < 0.7 ? mem / 0.7 : 1);
+                  }
                 }
               }
             }
@@ -608,10 +675,16 @@ export class Engraver {
             } else if (rodzaj === 2) {
               // woda: chłodna toń, poziome zmarszczki, jasne lustro na powierzchni
               const glab = (water || 3) / 8;
-              r = 16 + lt * 30; g = 30 + lt * 26 - glab * 6; b = 38 + lt * 12 + glab * 10;
               const fal = Math.sin(gx * 0.35 + fala * 3 + ty * 1.7) * 0.8;
               const pas = ((gy + fal) % 4 + 4) % 4 < 1;
-              if (pas && noise[(ny2 << 8) | (gx & 255)] > 0.25) { r += 34; g += 62; b += 70; }
+              if (fresk) {
+                // lapis z jasnymi falami malowanymi pędzlem
+                r = FS.woda[0] + lt * 30; g = FS.woda[1] + lt * 26 - glab * 6; b = FS.woda[2] + lt * 12 + glab * 8;
+                if (pas && noise[(ny2 << 8) | (gx & 255)] > 0.3) { r += (FS.fala[0] - r) * 0.6; g += (FS.fala[1] - g) * 0.6; b += (FS.fala[2] - b) * 0.6; }
+              } else {
+                r = 16 + lt * 30; g = 30 + lt * 26 - glab * 6; b = 38 + lt * 12 + glab * 10;
+                if (pas && noise[(ny2 << 8) | (gx & 255)] > 0.25) { r += 34; g += 62; b += 70; }
+              }
               if (lustro && fy < 0.28) { const k = 1 - fy / 0.28; r += 150 * k; g += 170 * k; b += 170 * k; }
               r = r * (0.35 + 0.65 * mem); g = g * (0.35 + 0.65 * mem); b = b * (0.35 + 0.65 * mem);
             } else if (rodzaj === 1) {
@@ -631,6 +704,56 @@ export class Engraver {
                 const sr = 30 + 70 * blask, sg = 10 + 12 * blask, sb = 12 + 12 * blask;
                 r = sr + (pr - sr) * kula; g = sg + (pg - sg) * kula; b = sb + (pb - sb) * kula;
                 edata[o] = r; edata[o + 1] = g * 0.6; edata[o + 2] = b * 0.6; edata[o + 3] = 255 * (0.25 + 0.6 * tetno) * (0.35 + 0.65 * kula);
+              } else if (fresk) {
+                // fresk: półki pigmentu jak góra z ikony — najjaśniejsza przy jaskini, w głębi ciemniej
+                const bl = ba0 * (1 - fx) + ba1 * fx;
+                let pr = pBr, pg = pBg, pb = pBb, sr = pTr, sg = pTg, sb = pTb;
+                if (miekko) {
+                  const ex = fx < 0.5 ? 1 - fx * 2 : fx * 2 - 1;
+                  let t = ex > ey ? ex : ey;
+                  t *= t;
+                  const fxi = 1 - fx;
+                  pr += (KR[0] * fxi + KR[7] * fx - pr) * t;
+                  pg += (KR[1] * fxi + KR[8] * fx - pg) * t;
+                  pb += (KR[2] * fxi + KR[9] * fx - pb) * t;
+                  sr += (KR[3] * fxi + KR[10] * fx - sr) * t;
+                  sg += (KR[4] * fxi + KR[11] * fx - sg) * t;
+                  sb += (KR[5] * fxi + KR[12] * fx - sb) * t;
+                }
+                // półki: obiegają jaskinie i schodzą stokiem; jasna górna krawędź, ciemny spód
+                const fal = (smooth[((((gy * 0.45) | 0) & 255) << 8) | (((gx * 0.3) | 0) & 255)] - 0.5) * FS.falowanie;
+                const pole = bl * FS.polkiOdJaskini + (ty + fy) * FS.polkiPion + fal;
+                const f = pole - Math.floor(pole);
+                let jas = (FS.jasnoscGlebi + (FS.jasnoscKrawedzi - FS.jasnoscGlebi) * bl) * (1 - f * FS.polkaCien * kontrast);
+                // smugi pędzla wzdłuż półek
+                jas *= 1 + (smooth[((gy & 255) << 8) | (((gx >> 2) + (gy >> 3)) & 255)] - 0.5) * 2 * FS.pedzel;
+                r = pr * jas; g = pg * jas; b = pb * jas;
+                // brzegi półek: świetlik u góry, kreska sinopii u dołu (grubość stała na ekranie)
+                const kr = FS.polkaKreska * FS.polkiPion / Math.max(1, zoom);
+                if (f < kr * 1.4) { const k = (1 - f / (kr * 1.4)) * FS.polkaSwietlikSila * kontrast; r += (sr - r) * k; g += (sg - g) * k; b += (sb - b) * k; }
+                else if (f > 1 - kr) { const k = (1 - (1 - f) / kr) * FS.polkaKreskaSila * kontrast; r += (FS.kontur[0] - r) * k; g += (FS.kontur[1] - g) * k; b += (FS.kontur[2] - b) * k; }
+                // pamięć: pigment blednie ku tynkowi, a gdzieniegdzie odpadł do gołego tynku
+                if (mem < 1) {
+                  const blak = (1 - mem) * 0.65;
+                  r += (FS.tynk[0] - r) * blak; g += (FS.tynk[1] - g) * blak; b += (FS.tynk[2] - b) * blak;
+                  if (smooth[((((gy >> 1) + 97) & 255) << 8) | (((gx >> 1) + 41) & 255)] > 1 - FS.ubytki * (1 - mem)) {
+                    r = FS.tynk[0] * 0.8; g = FS.tynk[1] * 0.8; b = FS.tynk[2] * 0.8;
+                  }
+                }
+                if (swP > 0) { r += (sr - r) * swP; g += (sg - g) * swP; b += (sb - b) * swP; }
+                const ciem = 0.5 + 0.5 * mem;
+                r = r * ciem + lt * 46; g = g * ciem + lt * 26; b = b * ciem + lt * 10;
+                // na skraju pamięci farba gaśnie w ciemną ścianę — bez tego nieznane miało brzeg z kafli
+                if (mem < 0.45) {
+                  const wid = mem / 0.45, w2 = wid * wid * (3 - 2 * wid);
+                  r = FS.nieznane[0] + (r - FS.nieznane[0]) * w2; g = FS.nieznane[1] + (g - FS.nieznane[1]) * w2; b = FS.nieznane[2] + (b - FS.nieznane[2]) * w2;
+                }
+                if (slad === 1) { r *= 1.08; g *= 1.06; b *= 1.04; } else if (slad === 2) { r *= 0.8; g *= 0.8; b *= 0.8; }
+                // ruda i kryształ: drobiny złota i szkła łapią światło
+                if ((mat === T.ORE || mat === T.CRYSTAL) && noise[(((gy * 5 + 7) & 255) << 8) | ((gx * 5 + 3) & 255)] > 0.99) {
+                  r = 255; g = mat === T.ORE ? 214 : 236; b = mat === T.ORE ? 120 : 255;
+                  if (mat === T.CRYSTAL) { edata[o] = 200; edata[o + 1] = 190; edata[o + 2] = 255; edata[o + 3] = 255; }
+                }
               } else {
                 // skała: ciemna masa, kreska gęstnieje i jaśnieje ku krawędzi jaskini
                 const bl = ba0 * (1 - fx) + ba1 * fx;
@@ -700,9 +823,19 @@ export class Engraver {
               const sciana = (smooth[((((gy * 0.7) | 0) & 255) << 8) | (((gx * 0.7) | 0) & 255)] - 0.5) * 12
                 + (smooth[(ny2 << 8) | ((gx * 3) & 255)] - 0.5) * 4;
               const pam = 0.3 + 0.7 * mem;
-              r = 11 + (airR - 11 + sciana + lt * 92) * pam;
-              g = 9 + (airG - 9 + sciana * 0.85 + lt * 56) * pam;
-              b = 8 + (airB - 8 + sciana * 0.7 + lt * 24) * pam;
+              if (fresk && tile === T.SKY) {
+                // niebo nad górą: przygaszone złoto tła ikony
+                r = 84 + sciana * 1.2; g = 62 + sciana; b = 30 + sciana * 0.6;
+              } else if (fresk) {
+                // grota z ikony: prawie czarna; jasność daje tylko światło — ogień, kuźnia, grzybnia
+                r = FS.grota[0] + czerwien * 8 + (sciana * 0.45 + lt * 92) * pam;
+                g = FS.grota[1] + (sciana * 0.38 + lt * 56) * pam;
+                b = FS.grota[2] + (sciana * 0.3 + lt * 24) * pam;
+              } else {
+                r = 11 + (airR - 11 + sciana + lt * 92) * pam;
+                g = 9 + (airG - 9 + sciana * 0.85 + lt * 56) * pam;
+                b = 8 + (airB - 8 + sciana * 0.7 + lt * 24) * pam;
+              }
               if (slad === 1) { r += 7; g += 5; b += 3; }
               // pył w powietrzu: rzadkie jasne ziarna
               if (!plaski && noise[(ny << 8) | ((gx * 3 + 17) & 255)] > 0.992 - lt * 0.01) { r += 30 * pam; g += 24 * pam; b += 18 * pam; }
@@ -739,7 +872,10 @@ export class Engraver {
             }
 
             // kontur rylcem na granicy skały — w tym samym miejscu, w którym ściana naprawdę jest
-            if (linia > 0) { r += (lr - r) * linia; g += (lg - g) * linia; b += (lb - b) * linia; }
+            if (linia > 0) {
+              if (fresk) { const k = linia * 0.9; r += (FS.kontur[0] - r) * k; g += (FS.kontur[1] - g) * k; b += (FS.kontur[2] - b) * k; }
+              else { r += (lr - r) * linia; g += (lg - g) * linia; b += (lb - b) * linia; }
+            }
             data[o] = r; data[o + 1] = g; data[o + 2] = b; data[o + 3] = 255;
             // do poświaty trafia tylko to, co naprawdę świeci
             if (rodzaj < 2 && lt > 0.25) {

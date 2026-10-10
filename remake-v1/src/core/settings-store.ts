@@ -33,6 +33,8 @@ export interface Settings {
   pelnyEkran: boolean;
   /** Remake v1: nowe postacie ludu (cieniowane, z ruchem wtórnym); wyłączone — stary rysunek z ryciny. */
   nowePostacie: boolean;
+  /** Rysunek świata na płycie: malowany jak fresk z ikony albo kreskowany jak dawna rycina. */
+  swiat: 'fresk' | 'rycina';
 }
 
 export const DOMYSLNE: Settings = {
@@ -61,6 +63,7 @@ export const DOMYSLNE: Settings = {
   wielkoscUI: 1,
   pelnyEkran: true,
   nowePostacie: true,
+  swiat: 'fresk',
 };
 
 /**
