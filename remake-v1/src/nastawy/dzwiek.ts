@@ -59,6 +59,25 @@ export const MUZYKA = {
   },
 };
 
+/**
+ * NIEPOKÓJ — warstwy pod muzyką, które nie dają się uspokoić: dudniący pomruk góry,
+ * oddech dobiegający z głębi, odległe trzaski skały i chór bez słów, który czasem
+ * przechodzi korytarzem. Wszystko gęstnieje z napięciem (sen i przewaga jednej krwi).
+ */
+export const NIEPOKOJ = {
+  /** Pomruk: dwa niskie tony rozstrojone o tyle Hz (dudnienie) i ich głośność w menu / w grze (+ napięcie). */
+  pomrukHz: 73.42, pomrukDudnienie: 0.45, pomrukMenu: 0.05, pomrukGra: 0.045, pomrukNapiecie: 0.06,
+  /** Dzwonienie w uszach przy dużym napięciu: wysoka sekunda mała, ledwo słyszalna. */
+  piskHz: 2349.3, piskGlos: 0.0035, piskOd: 0.45,
+  /** Oddech góry: szum w paśmie, co tyle s (+ losowo), głośność, długość wdechu i wydechu. */
+  oddechCo: 11, oddechRozrzut: 9, oddechGlos: 0.05, oddechWdech: 2.2, oddechWydech: 3.4,
+  /** Trzaski skały: co tyle s (+ losowo), głośność; z napięciem częściej. */
+  trzaskCo: 7, trzaskRozrzut: 14, trzaskGlos: 0.09,
+  /** Chór bez słów: co tyle s (+ losowo), głośność, długość frazy; formanty samogłosek. */
+  chorCo: 38, chorRozrzut: 30, chorGlos: 0.022, chorDlugosc: 9,
+  formanty: [[730, 1090], [570, 840], [300, 870], [440, 1020]] as [number, number][],
+};
+
 /** Rezonans świata: niski ton kamienia, praca i modlitwa. */
 export const REZONANS = {
   /** Udział rezonansu we wspólnej głośności. */

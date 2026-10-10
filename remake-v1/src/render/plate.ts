@@ -9,6 +9,7 @@ import { najwierniejsza } from '../sim/pielgrzymka';
 import { cost } from '../powers/powers';
 import { liczRole } from '../sim/lud';
 import { REMAKE } from '../nastawy/lud';
+import { ramaFresku } from './fresk';
 
 /**
  * `waski` — telefon (albo tablet) trzymany pionowo; `niski` — telefon trzymany poziomo.
@@ -121,48 +122,31 @@ function pasmoSpisu(p: Plate, vh: number): { y: number; h: number } {
   return { y: mt + p.bottom * 0.17, h: Math.max(12, p.bottom * 0.11) };
 }
 
+/**
+ * Rama płyty malowana jak obramowanie fresku (render/fresk.ts). W lewym pasie ramy namalowane
+ * oko: powieka bielą wapienną, źrenica czerwona — oddycha z rdzeniem i co jakiś czas mruga.
+ * Z czerwonego pasa wychodzi czasem nieznane pismo i gaśnie.
+ */
 export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number, oddech = 0.5): void {
+  const pas = p.waski || p.niski ? 6 : 9;
+  const gr = pas * 1.66;
+  ramaFresku(ctx, p.x - gr, p.y - gr, p.w + gr * 2, p.h + gr * 2, pas, time, p.waski || p.niski ? 0 : 2);
+  if (p.waski) return;
+  const ex = p.x - gr + pas / 2, ey = p.y + p.h / 2;
   ctx.save();
-  ctx.lineWidth = 1;
-  // rama oddycha razem z rdzeniem — ledwie, ale całość przestaje być martwym prostokątem
-  ctx.strokeStyle = `${INK}${0.4 + 0.1 * oddech})`;
-  ctx.strokeRect(p.x - 6.5, p.y - 6.5, p.w + 13, p.h + 13);
-  ctx.strokeStyle = `${INK}0.18)`;
-  ctx.strokeRect(p.x - 10.5, p.y - 10.5, p.w + 21, p.h + 21);
-  // narożniki: krótkie nacięcia rylca
-  const n = 9 + Math.sin(time * 0.0004) * 1.5;
-  ctx.strokeStyle = `${INK}0.5)`;
-  for (const [cx, cy, sx, sy] of [[p.x - 6, p.y - 6, 1, 1], [p.x + p.w + 6, p.y - 6, -1, 1],
-                                  [p.x - 6, p.y + p.h + 6, 1, -1], [p.x + p.w + 6, p.y + p.h + 6, -1, -1]]) {
-    ctx.beginPath();
-    ctx.moveTo(cx + sx * n, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy + sy * n);
-    ctx.stroke();
-    // zwój w rogu zewnętrznej ramy: trzewia zwinięte w ślimak
-    const ox = cx - sx * 4.5, oy = cy - sy * 4.5;
-    ctx.beginPath();
-    for (let i = 0; i <= 28; i++) {
-      const t = i / 28;
-      const k = t * Math.PI * 3.2 + (sx > 0 ? 0 : Math.PI) * (sy > 0 ? 1 : -1);
-      const r = 0.6 + t * 3.6;
-      const x = ox + Math.cos(k) * r * sx, y = oy + Math.sin(k) * r * sy;
-      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-    }
-    ctx.strokeStyle = `${INK}0.34)`;
-    ctx.stroke();
-    ctx.strokeStyle = `${INK}0.5)`;
-  }
-  // pionowe oko w lewej ramie: przerwa w zewnętrznej linii, powieka i źrenica, która
-  // oddycha razem z rdzeniem (pod płytą wchodziło na znaki spisu ras)
-  if (!p.waski) {
-    const ex = p.x - 10.5, ey = p.y + p.h / 2;
-    ctx.fillStyle = '#0b0807';
-    ctx.fillRect(ex - 3, ey - 13, 6, 26);
-    ctx.strokeStyle = `${INK}0.42)`;
-    ctx.beginPath();
-    ctx.moveTo(ex, ey - 10); ctx.quadraticCurveTo(ex + 6, ey, ex, ey + 10); ctx.quadraticCurveTo(ex - 6, ey, ex, ey - 10);
-    ctx.stroke();
-    ctx.fillStyle = `rgba(200,70,48,${0.35 + 0.45 * oddech})`;
-    ctx.beginPath(); ctx.ellipse(ex, ey, 0.9 + 0.3 * oddech, 1.8 + 0.6 * oddech, 0, 0, Math.PI * 2); ctx.fill();
+  // migdał oka na czerwonym pasie
+  const mrug = (time % 7300) < 160 ? 0.15 : 1;
+  const hw = pas * 0.62, hh = pas * 1.7;
+  const oko = new Path2D();
+  oko.moveTo(ex, ey - hh); oko.quadraticCurveTo(ex + hw * 1.6, ey, ex, ey + hh); oko.quadraticCurveTo(ex - hw * 1.6, ey, ex, ey - hh);
+  ctx.fillStyle = '#e9dcbc';
+  ctx.save(); ctx.translate(ex, ey); ctx.scale(mrug, 1); ctx.translate(-ex, -ey); ctx.fill(oko); ctx.restore();
+  ctx.strokeStyle = '#3a1208'; ctx.lineWidth = 1.2; ctx.stroke(oko);
+  if (mrug > 0.5) {
+    ctx.fillStyle = `rgba(150,30,18,${0.75 + 0.25 * oddech})`;
+    ctx.beginPath(); ctx.ellipse(ex, ey, hw * 0.55, hh * (0.3 + 0.12 * oddech), 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#120605';
+    ctx.beginPath(); ctx.ellipse(ex, ey, hw * 0.2, hh * (0.12 + 0.08 * oddech), 0, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 }

@@ -1,3 +1,5 @@
+import { ramaFresku, tablica, pigment } from './fresk';
+import { FRESK } from '../nastawy/barwy';
 import { BARWA, rgba } from './palette';
 import { SERIF, SERIF_TYTUL, kreska } from './ink';
 import { glif } from './tajemnica';
@@ -38,48 +40,17 @@ export function zwoj(ctx: CanvasRenderingContext2D, x: number, y: number, r: num
 }
 
 /**
- * Rama frontyspisu: podwójna linia, podziałka jak na mapie, zwoje w rogach, napisy
- * na górnym i dolnym marginesie. `napis` idzie u góry, `podpis` na dole.
+ * Rama ekranu malowana jak obramowanie fresku: pas czerwieni ziemi z perełkami, nitka bieli
+ * i pas ugru (render/fresk.ts). Napisy na marginesie leżą na tabliczkach ciemnego tynku
+ * przerzuconych przez górny i dolny pas. Z czerwonego pasa co jakiś czas wychodzi nieznane pismo.
  */
-export function ramaRyciny(ctx: CanvasRenderingContext2D, w: number, h: number, alfa: number, napis: string, podpis: string): void {
+export function ramaRyciny(ctx: CanvasRenderingContext2D, w: number, h: number, alfa: number, napis: string, podpis: string, teraz = 0): void {
   const R = RAMA;
   const m = Math.max(R.margines.min, Math.min(R.margines.max, w * R.margines.czesc));
   const d = Math.max(R.pas.min, Math.min(R.pas.max, w * R.pas.czesc));
   ctx.save();
-  ctx.lineWidth = 1;
-  // linia zewnętrzna i wewnętrzna, między nimi podziałka
-  ctx.strokeStyle = rgba(BARWA.atrament, R.alfaZewnetrzna * alfa);
-  ctx.strokeRect(m + 0.5, m + 0.5, w - m * 2 - 1, h - m * 2 - 1);
-  ctx.strokeStyle = rgba(BARWA.atrament, R.alfaWewnetrzna * alfa);
-  ctx.strokeRect(m + d + 0.5, m + d + 0.5, w - (m + d) * 2 - 1, h - (m + d) * 2 - 1);
-  ctx.strokeStyle = rgba(BARWA.atrament, R.alfaPodzialki * alfa);
-  ctx.beginPath();
-  const krok = Math.max(R.krok.min, Math.min(R.krok.max, w / R.krok.dzielnik));
-  for (let x = m + d + krok; x < w - m - d; x += krok) {
-    const dl = Math.round((x - m) / krok) % R.dlugaCo === 0 ? d : d * R.krotka;
-    ctx.moveTo(x, m); ctx.lineTo(x, m + dl);
-    ctx.moveTo(x, h - m); ctx.lineTo(x, h - m - dl);
-  }
-  for (let y = m + d + krok; y < h - m - d; y += krok) {
-    const dl = Math.round((y - m) / krok) % R.dlugaCo === 0 ? d : d * R.krotka;
-    ctx.moveTo(m, y); ctx.lineTo(m + dl, y);
-    ctx.moveTo(w - m, y); ctx.lineTo(w - m - dl, y);
-  }
-  ctx.stroke();
-  // rogi: kwadrat z rozetą i zwojami wychodzącymi na boki
-  ctx.strokeStyle = rgba(BARWA.atramentMocny, R.alfaRogow * alfa);
-  for (const [cx, cy, sx, sy] of [[m, m, 1, 1], [w - m, m, -1, 1], [m, h - m, 1, -1], [w - m, h - m, -1, -1]] as const) {
-    ctx.fillStyle = rgba(BARWA.sadza, R.alfaTlaRogu * alfa);
-    ctx.fillRect(cx + (sx > 0 ? 0 : -d), cy + (sy > 0 ? 0 : -d), d, d);
-    ctx.strokeRect(cx + (sx > 0 ? 0 : -d) + 0.5, cy + (sy > 0 ? 0 : -d) + 0.5, d - 1, d - 1);
-    ctx.beginPath();
-    ctx.arc(cx + sx * d / 2, cy + sy * d / 2, d * R.rozeta, 0, Math.PI * 2);
-    ctx.stroke();
-    ctx.lineWidth = 1;
-    zwoj(ctx, cx + sx * (d + d * 1.1), cy + sy * d * 0.5, d * R.zwojRogu, sx * sy);
-    zwoj(ctx, cx + sx * d * 0.5, cy + sy * (d + d * 1.1), d * R.zwojRogu, -sx * sy);
-  }
-  // napisy na marginesie, na tle, które przerywa podziałkę
+  ctx.globalAlpha *= alfa;
+  ramaFresku(ctx, m, m, w - m * 2, h - m * 2, d * 0.62, teraz, 2);
   const rozm = Math.max(R.napis.min, Math.min(R.napis.max, w / R.napis.dzielnik));
   ctx.font = `${rozm}px ${SERIF}`;
   ctx.textAlign = 'center';
@@ -89,10 +60,12 @@ export function ramaRyciny(ctx: CanvasRenderingContext2D, w: number, h: number, 
     const t = tekst.toUpperCase();
     const odst = rozm * R.napisRozstrzelenie;
     const szer = [...t].reduce((a, l) => a + ctx.measureText(l).width, 0) + odst * (t.length - 1);
-    ctx.fillStyle = rgba(BARWA.sadza, R.alfaTlaNapisu * alfa);
-    ctx.fillRect(w / 2 - szer / 2 - rozm, y - d / 2 + 1, szer + rozm * 2, d - 2);
-    ctx.fillStyle = rgba(BARWA.atrament, R.alfaNapisu * alfa);
+    const th = rozm * 1.9;
+    tablica(ctx, w / 2 - szer / 2 - rozm * 1.2, y - th / 2, szer + rozm * 2.4, th);
+    ctx.fillStyle = FRESK.tekst;
+    ctx.globalAlpha = alfa * R.alfaNapisu * 1.2;
     rozstrzel(ctx, t, w / 2, y + 0.5, odst);
+    ctx.globalAlpha = alfa;
   }
   ctx.restore();
 }
@@ -312,24 +285,12 @@ export function rzymska(n: number): string {
 export function ramaKarty(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, alfa = 1, tytul = '', akcent = false): void {
   const K = KARTA;
   ctx.save();
-  ctx.fillStyle = rgba(BARWA.sadza, K.tlo * alfa);
-  ctx.fillRect(x, y, w, h);
-  // cień pod kartą — leży na płycie, nie jest w nią wklejona
-  ctx.strokeStyle = `rgba(0,0,0,${0.5 * alfa})`;
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(x + 3, y + h + 1.5); ctx.lineTo(x + w + 1.5, y + h + 1.5); ctx.lineTo(x + w + 1.5, y + 3); ctx.stroke();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = rgba(akcent ? BARWA.zarBlady : BARWA.atrament, K.linia * alfa);
-  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-  ctx.strokeStyle = rgba(BARWA.atrament, K.liniaWew * alfa);
-  ctx.strokeRect(x + K.wciecie + 0.5, y + K.wciecie + 0.5, w - K.wciecie * 2 - 1, h - K.wciecie * 2 - 1);
-  const d = K.wciecie;
-  ctx.strokeStyle = rgba(akcent ? BARWA.zarBlady : BARWA.atramentMocny, K.rogi * alfa);
-  for (const [cx, cy] of [[x, y], [x + w - d, y], [x, y + h - d], [x + w - d, y + h - d]] as const) {
-    ctx.fillStyle = rgba(BARWA.sadza, alfa);
-    ctx.fillRect(cx, cy, d, d);
-    ctx.strokeRect(cx + 0.5, cy + 0.5, d - 1, d - 1);
-    ctx.beginPath(); ctx.arc(cx + d / 2, cy + d / 2, d * 0.18, 0, Math.PI * 2); ctx.stroke();
+  // karta to tablica ciemnego tynku z malowanym brzegiem — tekst na niej zostaje jasny
+  tablica(ctx, x, y, w, h, false, alfa);
+  if (akcent) {
+    ctx.strokeStyle = rgba(BARWA.zarBlady, 0.55 * alfa);
+    ctx.lineWidth = 1;
+    ctx.strokeRect(x - 2.5, y - 2.5, w + 5, h + 5);
   }
   if (tytul) {
     const r = K.tytulRozmiar;
@@ -339,16 +300,15 @@ export function ramaKarty(ctx: CanvasRenderingContext2D, x: number, y: number, w
     const t = tytul.toUpperCase();
     const odst = r * 0.32;
     const tw = [...t].reduce((a, l) => a + ctx.measureText(l).width, 0) + odst * (t.length - 1);
-    const pol = Math.min(tw / 2 + r, w / 2 - d * 2);
-    ctx.fillStyle = rgba(BARWA.sadza, alfa);
-    ctx.fillRect(x + w / 2 - pol, y - r * 0.6, pol * 2, r * 1.2);
-    ctx.fillStyle = rgba(akcent ? BARWA.zarBlady : BARWA.atrament, K.tytulAlfa * alfa);
+    const pol = Math.min(tw / 2 + r, w / 2 - 12);
+    // tytuł na wstędze czerwieni ziemi przerzuconej przez górny brzeg
+    const wst = new Path2D();
+    wst.rect(x + w / 2 - pol, y - r * 0.75, pol * 2, r * 1.5);
+    ctx.globalAlpha *= alfa;
+    pigment(ctx, wst, FRESK.czerwien);
+    ctx.strokeStyle = FRESK.sinopia; ctx.lineWidth = 1; ctx.stroke(wst);
+    ctx.fillStyle = FRESK.tekst;
     rozstrzel(ctx, t, x + w / 2, y + 0.5, odst);
-    ctx.fillStyle = rgba(BARWA.zarBlady, 0.7 * alfa);
-    for (const s of [-1, 1]) {
-      const rx = x + w / 2 + s * (pol - r * 0.35);
-      ctx.beginPath(); ctx.moveTo(rx, y - 2.5); ctx.lineTo(rx + 2.5, y); ctx.lineTo(rx, y + 2.5); ctx.lineTo(rx - 2.5, y); ctx.closePath(); ctx.fill();
-    }
   }
   ctx.restore();
 }

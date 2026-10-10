@@ -1,7 +1,7 @@
 import { BARWA, rgba } from './palette';
-import { KARTA } from '../nastawy/wyglad/ozdoby';
 
 import { KROJ, KROJ_TYTUL } from './fonts';
+import { scianaKrypty, tablica } from './fresk';
 
 export const SERIF = KROJ;
 export const SERIF_TYTUL = KROJ_TYTUL;
@@ -43,19 +43,9 @@ export function kreska(ctx: CanvasRenderingContext2D, x1: number, y1: number, x2
   ctx.stroke();
 }
 
-/** Tło ekranów poza grą: ciepła czerń z ziarnem i winietą. */
+/** Tło ekranów poza grą: ściana krypty — ciemny tynk w świetle lampki, ciemność w kątach oddycha. */
 export function tloSadzy(ctx: CanvasRenderingContext2D, w: number, h: number, t: number): void {
-  const g = ctx.createRadialGradient(w / 2, h * 0.45, Math.min(w, h) * 0.1, w / 2, h * 0.5, Math.max(w, h) * 0.8);
-  g.addColorStop(0, '#1a1210');
-  g.addColorStop(1, BARWA.sadza);
-  ctx.fillStyle = g;
-  ctx.fillRect(0, 0, w, h);
-  ctx.save();
-  ctx.globalAlpha = 0.05;
-  ctx.fillStyle = wzorKreski(ctx, rgba(BARWA.atrament, 0.6), 7, 1);
-  ctx.translate(Math.sin(t * 0.0002) * 3, Math.cos(t * 0.00017) * 3);
-  ctx.fillRect(-10, -10, w + 20, h + 20);
-  ctx.restore();
+  scianaKrypty(ctx, w, h, t, 0.5 + 0.5 * Math.sin(t * 0.0006));
 }
 
 /** Ryty tytuł: rowek cienia, potem światło na krawędzi liter. */
@@ -79,30 +69,9 @@ export function naciecie(ctx: CanvasRenderingContext2D, x: number, y: number, sz
   ctx.restore();
 }
 
-/** Panel z poszarpanym brzegiem — karta wsunięta w kamień, nie okno dialogowe. */
+/** Panel: tablica ciemnego tynku z malowanym brzegiem — karta wsunięta w ścianę krypty, nie okno dialogowe. */
 export function panel(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, alfa = 0.94): void {
-  // ta sama rama co karty w grze i ramy menu: podwójna linia i rogi z rozetami
-  const K = KARTA;
-  ctx.save();
-  ctx.fillStyle = rgba('#0d0a09', Math.min(1, alfa + 0.03));
-  ctx.fillRect(x, y, w, h);
-  ctx.strokeStyle = 'rgba(0,0,0,0.5)';
-  ctx.lineWidth = 3;
-  ctx.beginPath(); ctx.moveTo(x + 3, y + h + 1.5); ctx.lineTo(x + w + 1.5, y + h + 1.5); ctx.lineTo(x + w + 1.5, y + 3); ctx.stroke();
-  ctx.lineWidth = 1;
-  ctx.strokeStyle = rgba(BARWA.atrament, K.linia);
-  ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
-  ctx.strokeStyle = rgba(BARWA.atrament, K.liniaWew);
-  const d = K.wciecie;
-  ctx.strokeRect(x + d + 0.5, y + d + 0.5, w - d * 2 - 1, h - d * 2 - 1);
-  ctx.strokeStyle = rgba(BARWA.atramentMocny, K.rogi);
-  for (const [cx, cy] of [[x, y], [x + w - d, y], [x, y + h - d], [x + w - d, y + h - d]] as const) {
-    ctx.fillStyle = '#0d0a09';
-    ctx.fillRect(cx, cy, d, d);
-    ctx.strokeRect(cx + 0.5, cy + 0.5, d - 1, d - 1);
-    ctx.beginPath(); ctx.arc(cx + d / 2, cy + d / 2, d * 0.18, 0, Math.PI * 2); ctx.stroke();
-  }
-  ctx.restore();
+  tablica(ctx, x, y, w, h, false, Math.min(1, alfa + 0.06));
 }
 
 /** Tekst łamany na akapit o zadanej szerokości. Zwraca liczbę linii. */

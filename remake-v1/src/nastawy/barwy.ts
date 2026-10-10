@@ -35,3 +35,27 @@ export const ATRAMENT_GLEBI = {
   /** Dodatkowe przyciemnienie na dnie (0..1). */
   przyciemnienie: 0.2,
 };
+
+/**
+ * Pigmenty fresku — interfejs malowany jak ściana krypty oglądana przy lampce:
+ * ciemny tynk, ramy z czerwieni ziemi i ugru, kontury sinopią, biel wapienna na krawędziach.
+ * Faktura tynku pochodzi ze zdjęcia fresku z Faras (src/grafiki/tekstury).
+ */
+export const FRESK = {
+  /** Ściana: barwa przed nałożeniem faktury (faktura przyciemnia ją o ok. 1/3). */
+  sciana: '#5a4130',
+  /** Ciemność w kątach ściany (winieta) i jej krycie. */
+  mrok: '12,7,4', mrokAlfa: 0.78,
+  /** Pasy ramy: czerwień ziemi, ugier, biel wapienna; kontur sinopią. */
+  czerwien: '#8e3a22', ugier: '#a8783a', biel: '#e3d6b6', sinopia: '#5c1f12',
+  /** Tablice: ciemny tynk (tekst jasny) i jasny tynk (tekst sinopią). */
+  tablicaCiemna: '#4a3527', tablicaJasna: '#e8dcc0',
+  /** Krążki przycisków i rytów. */
+  krazek: '#c4b08a', krazekWlaczony: '#d9b56a',
+  /** Tekst: biel wapienna, przygaszona biel, czerwień napisów, złoto. */
+  tekst: '#e6d9bb', tekstCichy: '#a8977a', napisCzerwony: '#cf5a3a', zloto: '#d0a456',
+  /** Pigmenty wstęgi ludu i drobnych znaków. */
+  lapis: '#4d6676', zielen: '#7e8f5e', cynober: '#b8452a',
+  /** Ton, którym mnoży się rycina świata — biel kreski przechodzi w ugier. */
+  tonRyciny: '#ecc495',
+};

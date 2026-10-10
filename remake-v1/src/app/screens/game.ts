@@ -26,6 +26,8 @@ import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
+import { scianaKrypty, pigment, tablica as tablicaTynku } from '../../render/fresk';
+import { FRESK } from '../../nastawy/barwy';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujDrogeDoWolnosci, type ObszarDrogi } from '../../render/droga';
@@ -460,25 +462,29 @@ export class EkranGry implements Ekran {
     const rozm = telefon ? 13 : Math.max(13, Math.min(17, plate.w * 0.016));
     ctx.save();
     ctx.textBaseline = 'alphabetic';
-    // wstęga ról
-    ctx.strokeStyle = 'rgba(206,192,166,0.25)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(x0 + 0.5, y + 0.5, x1 - x0 - 1, h - 1);
+    // wstęga ról: trzy pasy pigmentu na tynku — biel wapienna, ugier, błękit lapis
+    const tlo = new Path2D(); tlo.rect(x0, y, x1 - x0, h);
+    pigment(ctx, tlo, FRESK.tablicaCiemna);
     const kolejnosc: Rola[] = ['pobozny', 'robotnik', 'rycerz'];
+    const PIG: Record<Rola, string> = { pobozny: '#cfc2a2', robotnik: '#a8743a', rycerz: '#4d6676' };
     let cx = x0;
     for (const r of kolejnosc) {
       const n = role[r];
       if (!n) continue;
       const bw = (x1 - x0) * (n / Math.max(1, razem));
-      const [cr, cg, cb] = BARWA_ROLI[r];
-      ctx.fillStyle = `rgba(${cr},${cg},${cb},0.22)`;
-      ctx.fillRect(cx, y, bw, h);
-      ctx.strokeStyle = `rgba(${cr},${cg},${cb},0.7)`;
-      ctx.beginPath();
-      for (let k = 0; k < bw + h; k += 5) { ctx.moveTo(cx + Math.min(bw, k), y + Math.max(0, k - bw)); ctx.lineTo(cx + Math.max(0, k - h), y + Math.min(h, k)); }
-      ctx.stroke();
+      const pas = new Path2D(); pas.rect(cx, y, bw, h);
+      pigment(ctx, pas, PIG[r]);
+      if (cx > x0) { ctx.strokeStyle = FRESK.sinopia; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, y); ctx.lineTo(cx, y + h); ctx.stroke(); }
       cx += bw;
     }
+    // światło lampki z góry, cień u dołu wstęgi
+    const cien = ctx.createLinearGradient(0, y, 0, y + h);
+    cien.addColorStop(0, 'rgba(255,230,190,0.12)'); cien.addColorStop(1, 'rgba(20,10,6,0.35)');
+    ctx.fillStyle = cien; ctx.fill(tlo);
+    ctx.strokeStyle = FRESK.sinopia; ctx.lineWidth = 2;
+    ctx.strokeRect(x0, y, x1 - x0, h);
+    ctx.strokeStyle = 'rgba(227,214,182,0.3)'; ctx.lineWidth = 1;
+    ctx.strokeRect(x0 - 2.5, y - 2.5, x1 - x0 + 5, h + 5);
     // podpisy w trzech stałych kolumnach — pod wąskim kawałkiem wstęgi nazwa się nie mieściła
     if (razem) {
       ctx.font = `${rozm}px ${SERIF}`;
@@ -515,12 +521,14 @@ export class EkranGry implements Ekran {
       const sz = kaw(napis, fL) + 18;
       const wybrany = st.rola === rola;
       const [cr, cg, cb] = BARWA_ROLI[rola];
-      ctx.fillStyle = wybrany ? 'rgba(80,58,30,0.8)' : 'rgba(20,15,12,0.6)';
-      ctx.fillRect(x, yb - bh * 0.72, sz, bh);
-      ctx.strokeStyle = wybrany ? `rgba(${cr},${cg},${cb},0.95)` : 'rgba(150,140,120,0.45)';
-      ctx.lineWidth = wybrany ? 1.5 : 1;
-      ctx.strokeRect(x + 0.5, yb - bh * 0.72 + 0.5, sz - 1, bh - 1);
-      ctx.font = fL; ctx.fillStyle = wybrany ? 'rgba(250,232,190,1)' : 'rgba(200,188,166,0.7)';
+      if (wybrany) tablicaTynku(ctx, x, yb - bh * 0.72, sz, bh, true);
+      else {
+        ctx.strokeStyle = 'rgba(200,184,150,0.4)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x + 0.5, yb - bh * 0.72 + 0.5, sz - 1, bh - 1);
+      }
+      void cr; void cg; void cb;
+      ctx.font = fL; ctx.fillStyle = wybrany ? FRESK.sinopia : 'rgba(200,188,166,0.7)';
       ctx.fillText(napis, x + 9, yb);
       this.przyciskiRoli.push({ x, y: yb - bh * 0.72, w: sz, h: bh, rola });
       x += sz + 6;
@@ -740,9 +748,6 @@ export class EkranGry implements Ekran {
       this.rysKam[0] = cam.x; this.rysKam[1] = cam.y; this.rysKam[2] = cam.zoom;
     }
 
-    ctx.fillStyle = '#0b0807';
-    ctx.fillRect(0, 0, w, h);
-
     const rate = (0.0007 + sim.sen * 0.0016) * (this.zamrozone() ? 0.12 : this.spowolnione() ? 0.45 : 1);
     const ruch = ustawienia.oddech && !ustawienia.ograniczRuch;
     const breath = ruch ? 1 + Math.sin(teraz * rate) * 0.0035 : 1;
@@ -751,6 +756,9 @@ export class EkranGry implements Ekran {
     // rdzeń oddycha tym samym rytmem, którym dudni skała — ciemność na brzegach
     // zaciska się i puszcza, znaki w nieznanym ledwo żarzą
     const oddech = ruch ? oddechRdzenia(sim, teraz, this.app.dzwiek.oddech(sim.sen)) : 0.5;
+
+    // ściana krypty pod płytą: tynk przy lampce, ciemność w kątach oddycha z rdzeniem
+    scianaKrypty(ctx, w, h, ruch ? teraz : 0, oddech, { x: (plate.x + plate.w / 2) / w, y: (plate.y + plate.h / 2) / h });
 
     ctx.save();
     ctx.beginPath();
@@ -772,6 +780,12 @@ export class EkranGry implements Ekran {
       ctx.drawImage(eng.buf, 0, 0, cam.vw, cam.vh);
       ctx.restore();
     }
+    // rycina świata w ugrze, jak rysunek sinopią na tynku: biel kreski przechodzi w ciepły ochrowy
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = FRESK.tonRyciny;
+    ctx.fillRect(0, 0, cam.vw, cam.vh);
+    ctx.restore();
     this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.5);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     rysujRdzen(ctx, sim, cam, teraz);

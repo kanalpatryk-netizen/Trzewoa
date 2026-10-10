@@ -1,16 +1,17 @@
 import type { Ekran } from '../screen';
 import type { Kontekst } from '../context';
 import type { Akcja } from '../../core/keybinds';
-import { Tajemnica } from '../../render/tajemnica';
 import { Frontyspis } from '../../render/frontyspis';
-import { ramaRyciny, kartusz, przerywnik, znakPozycji, rzymska, ramaKarty } from '../../render/ozdoby';
+import { ramaRyciny, rzymska, ramaKarty } from '../../render/ozdoby';
+import { scianaKrypty, tablica, tytulFresku } from '../../render/fresk';
+import { FRESK } from '../../nastawy/barwy';
 import { BARWA, rgba } from '../../render/palette';
-import { SERIF, tloSadzy, kreska } from '../../render/ink';
+import { SERIF, SERIF_TYTUL, kreska } from '../../render/ink';
 import { hasSave } from '../../core/save';
 import { ustawienia, ustaw } from '../../core/settings-store';
 import { TELEFON } from '../../nastawy/ekran';
 import { MENU as M } from '../../nastawy/wyglad/menu';
-import { RAMA, KARTUSZ } from '../../nastawy/wyglad/ozdoby';
+import { RAMA } from '../../nastawy/wyglad/ozdoby';
 import { GORA } from '../../nastawy/gora';
 import { RYTUAL } from '../../nastawy/rytual';
 
@@ -28,9 +29,19 @@ function opisTrudnosci(t: Trudnosc): string {
 
 /** Wewnętrzny odstęp od ramy (piksele). */
 const marginesRamy = (w: number): number => Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc));
-/** Gdzie kończy się podtytuł pod wstęgą tytułu (te same proporcje co w kartuszu). */
-const dolPodtytulu = (yTytul: number, rt: number): number =>
-  yTytul - rt * 0.95 + rt * KARTUSZ.wysokosc + Math.max(KARTUSZ.podtytul.min, rt * KARTUSZ.podtytul.czesc) * (KARTUSZ.podtytul.odstep + 0.4);
+/** Gdzie kończy się blok tytułu (tytuł i rozstrzelony napis pod nim — jak w tytulFresku). */
+const dolPodtytulu = (yTytul: number, rt: number): number => yTytul + rt * 0.42 + Math.max(10, rt * 0.14) * 0.6;
+
+/** Malowany przerywnik: nitka czerwieni ziemi z krzyżykiem pośrodku. */
+function przerywnik(ctx: CanvasRenderingContext2D, x: number, y: number, szer: number, alfa: number): void {
+  ctx.save();
+  ctx.globalAlpha *= alfa;
+  ctx.strokeStyle = FRESK.czerwien; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x - szer / 2, y); ctx.lineTo(x - 8, y); ctx.moveTo(x + 8, y); ctx.lineTo(x + szer / 2, y); ctx.stroke();
+  ctx.strokeStyle = FRESK.ugier; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 5); ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y); ctx.stroke();
+  ctx.restore();
+}
 
 interface Pozycja { id: string; etykieta: string; opis: string; aktywna: () => boolean; }
 
@@ -47,7 +58,6 @@ export class EkranMenu implements Ekran {
   private komunikatOd = 0;
   private trafienia: { x: number; y: number; w: number; h: number; i: number }[] = [];
   private wejscieOd = 0;
-  private tajemnica = new Tajemnica();
   private frontyspis = new Frontyspis();
   private pylki = Array.from({ length: M.pylkow }, (_, i) => ({
     x: (i * 137.5) % 1, y: (i * 61.8) % 1, v: 0.2 + ((i * 29) % 10) / 22, r: 0.6 + ((i * 17) % 10) / 9,
@@ -232,17 +242,16 @@ export class EkranMenu implements Ekran {
     const wejscie = Math.min(1, (teraz - this.wejscieOd) / M.wejscieMs);
     const ruch = ustawienia.oddech && !ustawienia.ograniczRuch;
     const czas = ruch ? teraz : 0;
-    tloSadzy(ctx, w, h, czas);
+    const oddech = ruch ? 0.5 + 0.5 * Math.sin(teraz * 0.0006) : 0.5;
+    scianaKrypty(ctx, w, h, czas, oddech, { x: 0.62, y: 0.6 });
     // układ pionowy także na tablecie trzymanym pionowo — szeroki wciskał spis w róg
     // (telefon trzymany poziomo, np. 640×360, zostaje przy układzie szerokim — pionowy spis
     // nie mieścił się w 360 px wysokości)
     const waski = h > w * M.pionowyOd || (w < M.waskiPonizej && h >= w);
     if (waski) this.ukladWaski(ctx, w, h, czas, wejscie);
     else this.ukladSzeroki(ctx, w, h, czas, wejscie);
-    // patyna i rytowana ciemność na brzegach — ta sama, co na płycie w grze
-    this.tajemnica.brzegi(ctx, { x: 0, y: 0, w, h }, ruch ? 0.5 + 0.5 * Math.sin(teraz * 0.0006) : 0.5);
     this.kurz(ctx, w, h, czas);
-    ramaRyciny(ctx, w, h, wejscie, waski ? M.ramaGoraWaski : M.ramaGora, waski ? M.ramaDolWaski : M.ramaDol);
+    ramaRyciny(ctx, w, h, wejscie, '', '', czas);
     this.stopka(ctx, w, h, teraz, wejscie);
     if (this.okno) this.rysujOkno(ctx, w, h, teraz);
   }
@@ -282,7 +291,7 @@ export class EkranMenu implements Ekran {
     const fy = Math.max(h * M.przekrojY, podDol + 6), fw = w - fx - m - w * 0.01, fh = h - fy - m - 4;
     this.frontyspis.rysuj(ctx, fx, fy, fw, fh, teraz, M.przekrojAlfa * wejscie, true);
 
-    kartusz(ctx, w / 2, yTytul, M.tytul, rt, wejscie, '', M.podtytul);
+    tytulFresku(ctx, w / 2, yTytul, M.tytul, rt, wejscie, M.podpisTytulu, SERIF_TYTUL, SERIF);
 
     this.trafienia = [];
     // (numer rzymski stoi dwa pisma w lewo od tytułu — nie może wyjść poza ramę)
@@ -320,30 +329,29 @@ export class EkranMenu implements Ekran {
       const y = start + i * odstep;
       const wybrane = i === this.wybrana;
       const alfa = (dostepna ? 1 : M.alfaNieaktywnej) * wejscieP;
-      // numer rzymski
-      ctx.font = `${rozmiar * 0.62}px ${SERIF}`;
+      // numer rzymski czerwienią, jak inicjał w księdze
+      ctx.font = `${rozmiar * 0.7}px ${SERIF_TYTUL}`;
       ctx.textAlign = 'right';
-      ctx.fillStyle = rgba(wybrane ? BARWA.zarBlady : BARWA.atramentCichy, (wybrane ? 0.95 : 0.6) * alfa);
-      ctx.fillText(rzymska(i + 1), lewy - rozmiar * 1.85, y - rozmiar * 0.05);
-      // znak pozycji w kółku
-      const ix = lewy - rozmiar * 0.95, iy = y - rozmiar * 0.33;
-      ctx.strokeStyle = rgba(wybrane ? BARWA.zarBlady : BARWA.atrament, (wybrane ? 0.95 : 0.5) * alfa);
-      ctx.lineWidth = wybrane ? 1.4 : 1;
-      ctx.beginPath(); ctx.arc(ix, iy, rozmiar * 0.62, 0, Math.PI * 2); ctx.stroke();
-      znakPozycji(ctx, p.id, ix, iy, rozmiar * 0.34);
-      // tytuł
+      ctx.fillStyle = rgba(FRESK.napisCzerwony, (wybrane ? 1 : 0.75) * alfa);
+      ctx.fillText(rzymska(i + 1), lewy - rozmiar * 0.5, y - rozmiar * 0.02);
+      // tytuł bielą wapienną
       ctx.textAlign = 'left';
       ctx.font = `${rozmiar}px ${SERIF}`;
-      ctx.fillStyle = rgba(wybrane ? BARWA.atramentMocny : BARWA.atrament, alfa * (wybrane ? 1 : 0.8));
+      ctx.fillStyle = rgba(FRESK.tekst, alfa * (wybrane ? 1 : 0.78));
       ctx.fillText(p.etykieta, lewy + rozmiar * 0.2, y);
       if (wybrane && dostepna) {
         const szer = ctx.measureText(p.etykieta).width;
-        ctx.strokeStyle = rgba(BARWA.zarBlady, 0.6 * alfa);
-        ctx.lineWidth = 1.1;
-        kreska(ctx, lewy + rozmiar * 0.2, y + rozmiar * 0.36, lewy + rozmiar * 0.2 + szer, y + rozmiar * 0.36, 0.9, 18);
-        // żarzący się wskaźnik po prawej, jak odnośnik na rycinie
-        ctx.fillStyle = rgba(BARWA.zarBlady, 0.6 + 0.4 * Math.sin(teraz * 0.004));
-        ctx.beginPath(); ctx.arc(lewy + rozmiar * 0.2 + szer + rozmiar * 0.7, y - rozmiar * 0.33, 2.4, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = rgba(FRESK.cynober, 0.9 * alfa);
+        ctx.lineWidth = 2;
+        kreska(ctx, lewy + rozmiar * 0.2, y + rozmiar * 0.32, lewy + rozmiar * 0.2 + szer, y + rozmiar * 0.32, 0.7, 18);
+        // płomyk lampki po prawej — drga
+        const fx = lewy + rozmiar * 0.2 + szer + rozmiar * 0.7, fy = y - rozmiar * 0.33;
+        const pl = 0.75 + 0.25 * Math.sin(teraz * 0.013) * Math.sin(teraz * 0.007);
+        const gl = ctx.createRadialGradient(fx, fy, 0, fx, fy, rozmiar * 0.7);
+        gl.addColorStop(0, `rgba(255,170,80,${0.35 * pl * alfa})`); gl.addColorStop(1, 'rgba(255,170,80,0)');
+        ctx.fillStyle = gl; ctx.fillRect(fx - rozmiar, fy - rozmiar, rozmiar * 2, rozmiar * 2);
+        ctx.fillStyle = `rgba(255,232,180,${pl * alfa})`;
+        ctx.beginPath(); ctx.ellipse(fx, fy, 1.8, 3.2 * pl, 0, 0, Math.PI * 2); ctx.fill();
       }
       this.trafienia.push({ x: lewy - rozmiar * 2.4, y: y - rozmiar * 1.1, w: Math.max(320, w * 0.32), h: rozmiar * 1.8, i });
     }
@@ -354,11 +362,14 @@ export class EkranMenu implements Ekran {
     przerywnik(ctx, lewy + w * 0.14, yOpis - rozmiar * 0.5, w * 0.26, wejscie);
     if (wyb) {
       ctx.font = `italic ${ro}px ${SERIF}`;
-      ctx.fillStyle = rgba(BARWA.atrament, 0.9 * wejscie);
+      ctx.fillStyle = rgba(FRESK.tekst, 0.72 * wejscie);
       const ostatnia = this.akapit(ctx, wyb.opis, lewy, yOpis + rozmiar * 0.6, w * M.opisSzerokosc, ro * M.opisInterlinia);
       if (!ustawienia.samouczekZrobiony) {
-        ctx.fillStyle = rgba(BARWA.zarBlady, 0.7 * wejscie);
-        ctx.fillText(M.zachetaSamouczek, lewy, ostatnia + ro * 1.5);
+        // zachęta na tabliczce jasnego tynku, pisana sinopią
+        const tw = ctx.measureText(M.zachetaSamouczek).width + ro * 1.6;
+        tablica(ctx, lewy - ro * 0.6, ostatnia + ro * 0.55, tw, ro * 1.9, true, wejscie);
+        ctx.fillStyle = rgba(FRESK.sinopia, wejscie);
+        ctx.fillText(M.zachetaSamouczek, lewy + ro * 0.2, ostatnia + ro * 1.75);
       }
     }
     ctx.restore();
@@ -389,7 +400,7 @@ export class EkranMenu implements Ekran {
     const liniiOpisu = this.linie(ctx, this.pozycje[this.wybrana]?.opis ?? '', w * 0.8);
     const fy = yOpisu + r * 1.35 * Math.max(0, liniiOpisu - 1) + r * 1.2;
     if (h - m - fy > 90) this.frontyspis.rysuj(ctx, m, fy, w - m * 2, h - m - fy, teraz, M.przekrojWaskiAlfa * wejscie, false);
-    kartusz(ctx, w / 2, yTytul, M.tytul, rt, wejscie, M.nadtytulWaski, M.podtytulWaski);
+    tytulFresku(ctx, w / 2, yTytul, M.tytul, rt, wejscie, M.podpisTytuluWaski, SERIF_TYTUL, SERIF);
     this.trafienia = [];
     ctx.save();
     for (let i = 0; i < this.pozycje.length; i++) {
@@ -401,14 +412,17 @@ export class EkranMenu implements Ekran {
       ctx.font = `${rozmiar}px ${SERIF}`;
       ctx.textAlign = 'center';
       const szer = ctx.measureText(p.etykieta).width;
-      ctx.strokeStyle = rgba(wybrane ? BARWA.zarBlady : BARWA.atrament, (wybrane ? 0.95 : 0.45) * alfa);
-      ctx.lineWidth = 1;
-      znakPozycji(ctx, p.id, w / 2 - szer / 2 - rozmiar * 0.9, y - rozmiar * 0.33, rozmiar * 0.32);
-      ctx.fillStyle = rgba(wybrane ? BARWA.atramentMocny : BARWA.atrament, alfa * (wybrane ? 1 : 0.8));
+      ctx.font = `${rozmiar * 0.62}px ${SERIF_TYTUL}`;
+      ctx.textAlign = 'right';
+      ctx.fillStyle = rgba(FRESK.napisCzerwony, (wybrane ? 1 : 0.7) * alfa);
+      ctx.fillText(rzymska(i + 1), w / 2 - szer / 2 - rozmiar * 0.45, y);
+      ctx.font = `${rozmiar}px ${SERIF}`;
+      ctx.textAlign = 'center';
+      ctx.fillStyle = rgba(FRESK.tekst, alfa * (wybrane ? 1 : 0.78));
       ctx.fillText(p.etykieta, w / 2, y);
       if (wybrane && dostepna) {
-        ctx.strokeStyle = rgba(BARWA.zarBlady, 0.6);
-        ctx.lineWidth = 1.1;
+        ctx.strokeStyle = rgba(FRESK.cynober, 0.9);
+        ctx.lineWidth = 2;
         kreska(ctx, w / 2 - szer / 2, y + rozmiar * 0.4, w / 2 + szer / 2, y + rozmiar * 0.4, 0.9, 16);
       }
       this.trafienia.push({ x: w * 0.08, y: y - rozmiar * 1.1, w: w * 0.84, h: rozmiar * 1.8, i });
@@ -419,7 +433,7 @@ export class EkranMenu implements Ekran {
       przerywnik(ctx, w / 2, yo - rozmiar * 0.4, w * 0.5, wejscie);
       ctx.font = `italic ${r}px ${SERIF}`;
       ctx.textAlign = 'center';
-      ctx.fillStyle = rgba(BARWA.atrament, 0.9 * wejscie);
+      ctx.fillStyle = rgba(FRESK.tekst, 0.72 * wejscie);
       this.akapit(ctx, wyb.opis, w / 2, yo + r * 1.2, w * 0.8, r * 1.35, 'center');
     }
     ctx.restore();
