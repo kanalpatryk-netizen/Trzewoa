@@ -6,6 +6,10 @@ import { kreskuj } from '../cutscene/art/common';
 import { naglowekDzialu } from './ozdoby';
 import { glif } from './tajemnica';
 import { ATLAS, MINIATURA as MN, TABLICA as TB } from '../nastawy/wyglad/atlas';
+import { FRESKI } from '../nastawy/wyglad/freski';
+import { FRESK } from '../nastawy/barwy';
+import { pigment, wzor } from './fresk';
+import { obrazFresku, wpiszFresk } from './freski';
 
 export interface PoleTablicy { akcja: string; x: number; y: number; w: number; h: number }
 export const wPolu = (p: PoleTablicy, x: number, y: number): boolean =>
@@ -38,6 +42,20 @@ function rama(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h:
   ctx.restore();
 }
 
+/**
+ * Fresk zamiast ryciny (FRESKI.atlas): wycinek malowidła na jasnym tynku. False, gdy
+ * tablica fresku nie ma albo obrazek (czy tynk) jeszcze się wczytuje — wtedy rycina.
+ */
+function rysujFresk(ctx: CanvasRenderingContext2D, t: Tablica, w: number, h: number): boolean {
+  const nazwa = FRESKI.atlas[t.id];
+  if (!nazwa || !obrazFresku(nazwa) || !wzor(ctx)) return false;
+  const tlo = new Path2D(); tlo.rect(0, 0, w, h);
+  pigment(ctx, tlo, FRESK.tablicaJasna);
+  const m = Math.min(w, h) * 0.07;
+  wpiszFresk(ctx, nazwa, m, m, w - m * 2, h - m * 2);
+  return true;
+}
+
 /** Rycina tablicy w zadanym prostokącie — przycięta, z winietą. */
 function rycina(ctx: CanvasRenderingContext2D, t: Tablica, x: number, y: number, w: number, h: number, teraz: number): void {
   ctx.save();
@@ -45,10 +63,11 @@ function rycina(ctx: CanvasRenderingContext2D, t: Tablica, x: number, y: number,
   ctx.rect(x, y, w, h);
   ctx.clip();
   ctx.translate(x, y);
-  t.rycina({ ctx, w, h, t: teraz, p: 1, takt: 99, taktP: 1 });
+  const fresk = rysujFresk(ctx, t, w, h);
+  if (!fresk) t.rycina({ ctx, w, h, t: teraz, p: 1, takt: 99, taktP: 1 });
   const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.max(w, h) * 0.75);
   g.addColorStop(0, 'rgba(0,0,0,0)');
-  g.addColorStop(1, 'rgba(8,5,4,0.7)');
+  g.addColorStop(1, `rgba(8,5,4,${fresk ? 0.45 : 0.7})`);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
   ctx.restore();
@@ -145,8 +164,10 @@ function miniatura(t: Tablica, w: number, h: number): HTMLCanvasElement {
     c = document.createElement('canvas');
     c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h));
     const cx = c.getContext('2d')!;
-    t.rycina({ ctx: cx, w: c.width, h: c.height, t: 4000, p: 1, takt: 99, taktP: 1 });
-    pamiecMiniatur.set(klucz, c);
+    const fresk = rysujFresk(cx, t, c.width, c.height);
+    if (!fresk) t.rycina({ ctx: cx, w: c.width, h: c.height, t: 4000, p: 1, takt: 99, taktP: 1 });
+    // fresk jeszcze się wczytuje: rycina tylko na tę klatkę, za chwilę przyjdzie obrazek
+    if (fresk || !FRESKI.atlas[t.id]) pamiecMiniatur.set(klucz, c);
   }
   return c;
 }

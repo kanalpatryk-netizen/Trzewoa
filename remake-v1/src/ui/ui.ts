@@ -12,6 +12,7 @@ import { rysujStany } from '../render/stany';
 import { rysujPostac } from '../render/figury';
 import { ramaKarty } from '../render/ozdoby';
 import { krazekZIkona, maIkone } from '../render/fresk';
+import { zlotaNisza, brzegNiszy } from '../render/freski';
 import { FRESK } from '../nastawy/barwy';
 import { klawisze, nazwaKlawisza } from '../core/keybinds';
 import type { Rozkazy } from '../powers/rozkazy';
@@ -396,36 +397,25 @@ export class Ui {
     ctx.save();
     ramaKarty(ctx, x, y, cw, ch, 1, 'mieszkaniec góry');
 
-    // nisza z sylwetką: łuk, kreskowana skała za plecami, podłoga
+    // nisza na złotym tle, jak na ikonie: łuk z perełkami, obrzeże czerwieni ziemi, podłoga
     const nw = cw * 0.3, nh = Math.min(ch, 290) * 0.5;
     const nx = x + 16, ny = y + 18;
-    const nisza = new Path2D();
-    nisza.moveTo(nx, ny + nh);
-    nisza.lineTo(nx, ny + nw / 2);
-    nisza.arc(nx + nw / 2, ny + nw / 2, nw / 2, Math.PI, 0);
-    nisza.lineTo(nx + nw, ny + nh);
-    nisza.closePath();
-    ctx.fillStyle = 'rgba(22,16,13,1)';
-    ctx.fill(nisza);
+    const nisza = zlotaNisza(ctx, nx, ny, nw, nh, time);
     ctx.save();
     ctx.clip(nisza);
-    ctx.strokeStyle = 'rgba(207,194,166,0.08)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    for (let d = -nh; d < nw + nh; d += 5) { ctx.moveTo(nx + d, ny + nh); ctx.lineTo(nx + d + nh, ny); }
-    ctx.stroke();
-    const blask = ctx.createRadialGradient(nx + nw / 2, ny + nh * 0.55, 2, nx + nw / 2, ny + nh * 0.55, nw * 0.7);
-    blask.addColorStop(0, 'rgba(230,200,150,0.14)');
-    blask.addColorStop(1, 'rgba(230,200,150,0)');
-    ctx.fillStyle = blask;
+    // cień postaci na złocie i ciemniejsza podłoga niszy
+    const podloga = ctx.createLinearGradient(0, ny + nh * 0.8, 0, ny + nh);
+    podloga.addColorStop(0, 'rgba(60,30,10,0)');
+    podloga.addColorStop(1, 'rgba(60,30,10,0.45)');
+    ctx.fillStyle = podloga;
     ctx.fillRect(nx, ny, nw, nh);
     ctx.translate(nx + nw / 2, ny + nh - 6);
     rysujPostac(ctx, sim, c, nh * 0.62, time);
     ctx.restore();
-    ctx.strokeStyle = 'rgba(214,196,160,0.6)';
-    ctx.lineWidth = 1.1;
-    ctx.stroke(nisza);
-    ctx.beginPath(); ctx.moveTo(nx - 4, ny + nh + 0.5); ctx.lineTo(nx + nw + 4, ny + nh + 0.5); ctx.stroke();
+    brzegNiszy(ctx, nisza, nx, ny, nw);
+    ctx.strokeStyle = FRESK.czerwien;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(nx - 4, ny + nh + 1); ctx.lineTo(nx + nw + 4, ny + nh + 1); ctx.stroke();
 
     // imię, ród, życie
     const tx = nx + nw + 16, tw = x + cw - 16 - tx;
@@ -483,7 +473,8 @@ export class Ui {
     ctx.fillStyle = 'rgba(224,168,96,0.8)';
     const napisSzeptu = 'S Z E P N I J   M U';
     const sw = ctx.measureText(napisSzeptu).width;
-    ctx.fillStyle = 'rgba(11,8,7,1)';
+    // podkład pod napisem w kolorze tablicy — kreska przerywnika urywa się przy słowach
+    ctx.fillStyle = FRESK.tablicaCiemna;
     ctx.fillRect(x + cw / 2 - sw / 2 - 8, yM - rozm * 1.4 - rozm * 0.5, sw + 16, rozm);
     ctx.fillStyle = 'rgba(224,168,96,0.8)';
     ctx.fillText(napisSzeptu, x + cw / 2, yM - rozm * 1.15);

@@ -7,6 +7,8 @@ import { SERIF, SERIF_TYTUL, tloSadzy, tytulRyty, kreska } from '../../render/in
 import { wyrok } from '../wyrok';
 import { podsumujPartie, OSIAGNIECIA, zdobyte, type Podsumowanie } from '../../core/osiagniecia';
 import { czasGry } from '../../core/swiat-dnia';
+import { wpiszFresk } from '../../render/freski';
+import { FRESKI } from '../../nastawy/wyglad/freski';
 
 /** Ekran końcowy: spisana legenda tego, czym byłeś dla tych, co w tobie mieszkali. */
 export class EkranKroniki implements Ekran {
@@ -51,13 +53,6 @@ export class EkranKroniki implements Ekran {
     const wejscie = Math.min(1, wiek / 1200);
     tloSadzy(ctx, w, h, teraz);
 
-    const { tytul, podtytul } = this.naglowek();
-    tytulRyty(ctx, tytul.toUpperCase(), w / 2, h * 0.13, Math.max(28, Math.min(58, w / 19)), wejscie);
-    ctx.textAlign = 'center';
-    ctx.font = `italic ${Math.max(14, Math.min(20, w / 58))}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.atrament, 0.75 * wejscie);
-    ctx.fillText(podtytul, w / 2, h * 0.175);
-
     // --- karta: prawdziwy papier z atramentem, bo to jest dokument, nie panel
     // niskie okno: drobniejsze pismo — wyrok, świat dnia i osiągnięcia muszą się zmieścić nad przyciskami
     const rozmiar = Math.max(10, Math.min(18, w / 74, h / 34));
@@ -90,6 +85,31 @@ export class EkranKroniki implements Ekran {
     }
     const kh = Math.min(h * 0.58, miejsceNaKarte, 90 + linie.length * rozmiar * 1.75);
     const kx = w / 2 - kw / 2, ky = h * 0.22;
+    // fresk końca: archanioł z kulą przy wygranej, smutny święty przy przegranej. Pod wyrokiem,
+    // gdy kronika jest krótka; obok karty, gdy jest tam miejsce; inaczej blado za tytułem
+    const wygrana = (this.sim?.ending ?? 'sen').startsWith('uwolnienie');
+    const fresk = wygrana ? FRESKI.koniecWygrana : FRESKI.koniecPrzegrana;
+    const freskAlfa = Math.min(1, Math.max(0, (wiek - 600) / 1600));
+    const podWyrokiem = ky + kh + rozmiar * 1.9 + wrH + rozmiar * 0.6;
+    const podSpodem = dolne - rozmiar * 2.4 - podWyrokiem;
+    const bokKroniki = (w - kw) / 2;
+    if (podSpodem >= h * FRESKI.koniecPodSpodemOd) {
+      const fh = Math.min(podSpodem, h * 0.36);
+      wpiszFresk(ctx, fresk, w / 2 - fh, podWyrokiem + (podSpodem - fh) / 2, fh * 2, fh, false, freskAlfa);
+    } else if (bokKroniki >= FRESKI.koniecOdMarginesu) {
+      const fw = bokKroniki - 32, fh = Math.min(h * 0.5, fw * 1.6);
+      const fy = Math.max(h * 0.2, Math.min(dolne - rozmiar * 3 - fh, ky + kh / 2 - fh / 2));
+      wpiszFresk(ctx, fresk, 16, fy, fw, fh, false, freskAlfa);
+    } else {
+      wpiszFresk(ctx, fresk, w * 0.2, h * 0.02, w * 0.6, h * 0.2, false, FRESKI.koniecZnakWodny * freskAlfa);
+    }
+
+    const { tytul, podtytul } = this.naglowek();
+    tytulRyty(ctx, tytul.toUpperCase(), w / 2, h * 0.13, Math.max(28, Math.min(58, w / 19)), wejscie);
+    ctx.textAlign = 'center';
+    ctx.font = `italic ${Math.max(14, Math.min(20, w / 58))}px ${SERIF}`;
+    ctx.fillStyle = rgba(BARWA.atrament, 0.75 * wejscie);
+    ctx.fillText(podtytul, w / 2, h * 0.175);
 
     ctx.save();
     ctx.translate(kx + kw / 2, ky + kh / 2);

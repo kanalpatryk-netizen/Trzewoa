@@ -231,11 +231,12 @@ export function tablica(ctx: CanvasRenderingContext2D, x: number, y: number, w: 
   ctx.fillStyle = 'rgba(0,0,0,0.45)';
   ctx.fillRect(x + 2, y + 4, w, h);
   const p = new Path2D(); p.rect(x, y, w, h);
-  pigment(ctx, p, jasna ? FRESK.tablicaJasna : FRESK.tablicaCiemna);
+  // jasny tynk dostaje słabszą fakturę — pismo na nim ma się czytać, nie ginąć w plamach
+  pigment(ctx, p, jasna ? FRESK.tablicaJasna : FRESK.tablicaCiemna, jasna ? 0.6 : 1);
   // światło lampki z góry, ciemność w dolnych rogach
   const g = ctx.createRadialGradient(x + w * 0.5, y + h * 0.25, 0, x + w * 0.5, y + h * 0.4, Math.max(w, h) * 0.8);
   g.addColorStop(0, jasna ? 'rgba(255,240,210,0.18)' : 'rgba(255,190,120,0.1)');
-  g.addColorStop(1, 'rgba(10,6,4,0.35)');
+  g.addColorStop(1, jasna ? 'rgba(10,6,4,0.22)' : 'rgba(10,6,4,0.35)');
   ctx.fillStyle = g;
   ctx.fill(p);
   const pas = Math.max(3, Math.min(6, Math.min(w, h) * 0.03));
