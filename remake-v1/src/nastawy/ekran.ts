@@ -41,9 +41,10 @@ export const TELEFON = {
   niskiPonizej: 520,
   /**
    * Telefon pionowo: u góry rada, z lewej kolumna rytów, pod płytą rząd przycisków,
-   * spis ras i pasek z krwią i Otchłanią. Przyciski nie leżą już na płycie.
+   * wstęga ludu z wierszem „ze skały” i pasek z krwią i dłońmi oddania. Przyciski nie
+   * leżą już na płycie. Przy 168 wiersz „ze skały” wchodził na rysę krwi.
    */
-  pion: { gora: 58, lewo: 50, prawo: 8, dol: 168, przyciskR: 22 },
+  pion: { gora: 58, lewo: 50, prawo: 8, dol: 190, przyciskR: 22 },
   /** Telefon poziomo: z lewej ryty, z prawej kolumna przycisków, pod płytą jeden cienki pasek. */
   poziom: { gora: 30, lewo: 60, prawo: 56, dol: 46, przyciskR: 20 },
 };

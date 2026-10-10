@@ -1,7 +1,7 @@
 import { FRESK } from '../nastawy/barwy';
 import { glif } from './tajemnica';
-import tynkUrl from '../grafiki/tekstury/tynk.jpg?inline';
-import zlotoUrl from '../grafiki/tekstury/zloto.jpg?inline';
+import tynkUrl from '../grafiki/tekstury/tynk.jpg';
+import zlotoUrl from '../grafiki/tekstury/zloto.jpg';
 
 /**
  * Interfejs jak ściana krypty: ciemny tynk w świetle lampki, ramy malowane pasami czerwieni
@@ -273,7 +273,7 @@ export function krazek(ctx: CanvasRenderingContext2D, x: number, y: number, r: n
 
 // ------------------------------------------------------------------ ikony z fresków
 
-const IKONY = import.meta.glob('../grafiki/ikony/*.jpg', { eager: true, query: '?inline', import: 'default' }) as Record<string, string>;
+const IKONY = import.meta.glob('../grafiki/ikony/*.jpg', { eager: true, import: 'default' }) as Record<string, string>;
 const ikony = new Map<string, HTMLImageElement>();
 
 function ikona(nazwa: string): HTMLImageElement | null {

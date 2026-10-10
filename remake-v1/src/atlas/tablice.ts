@@ -492,7 +492,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'oddanie', grupa: 'prawa', nazwa: 'Oddanie i modlitwa', lacina: 'Devotio',
-    opis: `Każda nacja ma oddanie: od 0 do 100%, jak mocno w ciebie wierzy — widać je nad płytą, w złotej studni i na karcie mieszkańca. Ślepy Lud zaczyna od ${proc(LUDY.oddanieStart.slepyLud)}, inni prawie od zera. Kto wierzy, ten się modli: przy ołtarzu (stawiają go z rudy — daj im ją, gdy karta zapyta), przy twoim Cudzie i pod rdzeniem. Każda modlitwa daje ci Wiarę i trochę podnosi oddanie. Najszybciej podniesie je Cud przy gnieździe. Przy ${proc(PIELGRZYMKA.oddanieNacji)} nacja sama wyśle wartę pod rdzeń.`,
+    opis: `Każda nacja ma oddanie: od 0 do 100%, jak mocno w ciebie wierzy — widać je nad płytą, w złożonych dłoniach, które napełniają się złotem, i na karcie mieszkańca. Ślepy Lud zaczyna od ${proc(LUDY.oddanieStart.slepyLud)}, inni prawie od zera. Kto wierzy, ten się modli: przy ołtarzu (stawiają go z rudy — daj im ją, gdy karta zapyta), przy twoim Cudzie i pod rdzeniem. Każda modlitwa daje ci Wiarę i trochę podnosi oddanie. Najszybciej podniesie je Cud przy gnieździe. Przy ${proc(PIELGRZYMKA.oddanieNacji)} nacja sama wyśle wartę pod rdzeń.`,
     kiedy: 'Najprościej: Cud przy gnieździe Ślepego Ludu, Nakarm przy przedsionku — i szepnij „módl się” trzem z nich (albo wybierz „poślij pod rdzeń” na karcie).',
     rycina: pielgrzymka,
   },

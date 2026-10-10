@@ -11,7 +11,7 @@
 
 /** Wszystkie pliki z `pliki/` jako adresy data: — wbudowane w kod gry. */
 const pliki = import.meta.glob('./pliki/*.{png,webp,jpg,jpeg,svg}', {
-  eager: true, query: '?inline', import: 'default',
+  eager: true, import: 'default',
 }) as Record<string, string>;
 
 interface Grafika { img: HTMLImageElement; klatek: number; gotowa: boolean }
