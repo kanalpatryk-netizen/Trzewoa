@@ -28,7 +28,7 @@ interface Uklad {
   droga: [number, number][];
   korytarz: [number, number][];
   rdzen: P & { R: number };
-  magma: P & { rx: number; ry: number };
+  grota: P & { rx: number; ry: number };
 }
 
 /** Półki skalne: wysokość rośnie z ziarnem, każda z płaskim wierzchem i skośną ścianą. */
@@ -104,7 +104,7 @@ export class Frontyspis {
       droga: F.droga.map(([x, y]) => [x * w, y * h] as [number, number]),
       korytarz: [[spizarnia.x + spizarnia.rx * 0.8, spizarnia.y + spizarnia.ry * 0.4], [w * 0.44, h * 0.47], [siedziba.x - siedziba.rx * 0.8, siedziba.y + siedziba.ry * 0.5]],
       rdzen: { x: w * F.rdzen.x, y: h * F.rdzen.y, R: Math.min(w, h) * F.rdzen.promien },
-      magma: nisza(F.magma),
+      grota: nisza(F.grota),
     };
   }
 
@@ -186,23 +186,22 @@ export class Frontyspis {
     g.strokeStyle = 'rgba(214,176,100,0.55)'; g.lineWidth = 1.4;
     linia(g, u.droga); g.stroke();
     g.setLineDash([]);
-    // żar w dole zbocza
+    // grota w dole zbocza: czarna pustka z naciekami — w tej górze nie ma ognia ani wody
     {
-      const e = u.magma;
+      const e = u.grota;
       const q = new Path2D(); q.ellipse(e.x, e.y, e.rx, e.ry, 0, 0, Math.PI * 2);
-      const gr = g.createRadialGradient(e.x, e.y - e.ry * 0.3, 0, e.x, e.y, e.rx);
-      gr.addColorStop(0, '#d0632e'); gr.addColorStop(1, '#5e1a0e');
-      pigment(g, q, gr, 0.6);
+      g.fillStyle = '#0c0705'; g.fill(q);
       g.save(); g.clip(q);
-      g.strokeStyle = 'rgba(255,190,110,0.5)'; g.lineWidth = 1.3;
-      for (let r = 0; r < 4; r++) {
-        g.beginPath();
-        const yy = e.y - e.ry * 0.6 + r * e.ry * 0.45;
-        for (let x = e.x - e.rx; x <= e.x + e.rx; x += 4) g.lineTo(x, yy + Math.sin(x * 0.12 + r) * e.ry * 0.12);
-        g.stroke();
+      g.fillStyle = '#3a2a20';
+      for (let k = 0; k < 7; k++) {
+        const nx = e.x - e.rx * 0.8 + (k / 6) * e.rx * 1.6, dl = e.ry * (0.35 + ((k * 37) % 5) * 0.09);
+        g.beginPath(); g.moveTo(nx - e.rx * 0.05, e.y - e.ry); g.lineTo(nx, e.y - e.ry + dl); g.lineTo(nx + e.rx * 0.05, e.y - e.ry); g.fill();
+        if (k % 2) { g.beginPath(); g.moveTo(nx - e.rx * 0.04, e.y + e.ry); g.lineTo(nx + e.rx * 0.02, e.y + e.ry - dl * 0.6); g.lineTo(nx + e.rx * 0.06, e.y + e.ry); g.fill(); }
       }
       g.restore();
       g.strokeStyle = FRESK.sinopia; g.lineWidth = 1.6; g.stroke(q);
+      g.strokeStyle = 'rgba(232,220,190,0.4)'; g.lineWidth = 1.1;
+      g.beginPath(); g.ellipse(e.x, e.y, e.rx, e.ry, 0, Math.PI * 1.1, Math.PI * 1.9); g.stroke();
     }
     // nisze: siedziba i spiżarnia — łuk, ciemne wnętrze, biel na górnej krawędzi
     for (const km of [u.siedziba, u.spizarnia]) {
@@ -343,12 +342,6 @@ export class Frontyspis {
     const { x: rx, y: ry, R } = u.rdzen;
     const S = u.siedziba, Z = u.spizarnia;
     ctx.globalCompositeOperation = 'lighter';
-    // żar faluje
-    const mg = ctx.createRadialGradient(u.magma.x, u.magma.y, 0, u.magma.x, u.magma.y, u.magma.rx * 1.6);
-    mg.addColorStop(0, `rgba(255,110,50,${F.magmaAlfa + F.magmaFalowanie * Math.sin(teraz * 0.002)})`);
-    mg.addColorStop(1, 'rgba(255,120,50,0)');
-    ctx.fillStyle = mg;
-    ctx.fillRect(u.magma.x - u.magma.rx * 2, u.magma.y - u.magma.rx * 2, u.magma.rx * 4, u.magma.rx * 4);
     // rdzeń: czerwona poświata z jaskini na zbocza
     const halo = ctx.createRadialGradient(rx, ry, 0, rx, ry, R * F.halo);
     halo.addColorStop(0, `rgba(255,120,80,${F.haloAlfa + F.haloTetno * uderz})`);

@@ -538,7 +538,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'wydarzenia', grupa: 'prawa', nazwa: 'Wydarzenia', lacina: 'Aestus',
-    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, powódź, zaraza, głód, spisek rycerzy, zatrute plony, woda nad obozem, zawał nad drogą wiernych, sen o kamiennych rycerzach. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku. Niektóre wracają: zostawiony spisek po dwóch minutach wybucha buntem — część rycerzy zmienia barwy i bije lud.',
+    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, zaraza, głód, spisek rycerzy, zatrute plony, zawał nad drogą wiernych, sen o kamiennych rycerzach. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku. Niektóre wracają: zostawiony spisek po dwóch minutach wybucha buntem — część rycerzy zmienia barwy i bije lud.',
     kiedy: 'Spisek gaś od razu, jeśli stać cię na krew. Zatrute plony lepiej spalić niż zjeść. Sen o rycerzach pokazuje gniazdo — warto.',
     rycina: cala(rysujPrzyplyw),
   },
@@ -550,7 +550,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'gniazda', grupa: 'prawa', nazwa: 'Kamienni rycerze', lacina: 'Equites saxei',
-    opis: `W każdej górze śpi ${LUD.gniazda} gniazd po ${LUD.gniazdoRycerzy.od}–${LUD.gniazdoRycerzy.do} rycerzy — z dala od magmy, wody i drogi do rdzenia. Gdy ktoś z ludu jest blisko, skała słabo się żarzy. Kto się dokopie, budzi ich: wychodzą od razu jako weterani.`,
+    opis: `W każdej górze śpi ${LUD.gniazda} gniazd po ${LUD.gniazdoRycerzy.od}–${LUD.gniazdoRycerzy.do} rycerzy — w litej skale, z dala od drogi do rdzenia. Gdy ktoś z ludu jest blisko, skała słabo się żarzy. Kto się dokopie, budzi ich: wychodzą od razu jako weterani.`,
     kiedy: 'Szepnij robotnikowi „przemyśl i kop”: klęka, prosi o znak i kopie tunel ku najbliższemu gniazdu. Znak jest niedokładny — jeden kopacz trafia raz na trzy, trzech razem na pewno.',
     rycina: postac(Race.GOBLIN, 'kopie'),
   },

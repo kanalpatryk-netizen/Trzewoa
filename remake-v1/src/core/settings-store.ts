@@ -63,7 +63,7 @@ export const DOMYSLNE: Settings = {
   wielkoscUI: 1,
   pelnyEkran: true,
   nowePostacie: true,
-  swiat: 'fresk',
+  swiat: 'rycina',
 };
 
 /**

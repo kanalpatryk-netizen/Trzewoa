@@ -11,6 +11,7 @@ import { KARTY_LUDU as K } from '../nastawy/karty-ludu';
 import { klanLudu, liczRole, rolaPostaci, wszystkieSpizarnie, gniazdaWSkale, grzybPrzy } from './lud';
 import { zbuntuj, nawroc, odejdz, buntownicy } from './bunt';
 import { falaTrwa } from './straznicy';
+import { SWIAT } from '../nastawy/swiat';
 
 const wybor = (id: string, tekst: string, skutek: string, krew = 0, wiara = 0): Wybor => ({ id, tekst, skutek, krew, wiara });
 const stac = (sim: Sim, w: Wybor) => sim.krew - sim.rezerwa.krew >= w.krew && sim.wiara - sim.rezerwa.wiara >= w.wiara;
@@ -55,7 +56,8 @@ export function kandydaciLudu(sim: Sim, st: StanWydarzen): Kandydat[] {
   // --- woda w obozie
   const oboz = sim.lud.spizarnie[0] ?? null;
   const gdzie = oboz ?? (lud ? { x: lud.hx, y: lud.hy } : null);
-  if (surowe && gdzie) out.push({ rodzaj: 'zalanie', waga: 1.8, zbuduj: () => {
+  // Remake v1: w górze nie ma wody — karta „woda nad obozem” nie przychodzi
+  if (surowe && gdzie && SWIAT.plyny) out.push({ rodzaj: 'zalanie', waga: 1.8, zbuduj: () => {
     const wybory = [
       wybor('zatkaj', 'Zatkaj ją krwią', 'Krew zastygnie w szczelinie. Woda zostanie w skale.', K.zalanieZatkaj),
       wybor('odwroc', 'Odwróć wodę', 'Woda spłynie gdzie indziej — w pustą skałę z dala od ludu.', 0, K.zalanieOdwroc),

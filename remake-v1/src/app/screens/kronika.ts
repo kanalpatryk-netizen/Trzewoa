@@ -232,7 +232,7 @@ export class EkranKroniki implements Ekran {
     return `Świat dnia ${data}: ${teraz} · ${naj} · próba ${d.wynik.proby}`;
   }
 
-  /** „Nowe osiągnięcia: Przebudzenie, Jak magma (3 z 11)”; pusto, gdy nic nowego. */
+  /** „Nowe osiągnięcia: Przebudzenie, Jak kamień w studnię (3 z 11)”; pusto, gdy nic nowego. */
   private linijkaOsiagniec(): string {
     const nowe = this.podsumowanie?.nowe ?? [];
     if (!nowe.length) return '';

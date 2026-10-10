@@ -12,7 +12,7 @@ export const FRESKI = {
   /** Ilustracja po lewej stronie karty, według rodzaju wydarzenia. */
   wydarzenia: {
     najazd: 'wielblad', plemie: 'wielblad',
-    powodz: 'smok', zalanie: 'smok', zawal: 'smok',
+    zawal: 'smok',
     zaraza: 'diabel-2', spisek: 'diabel-2',
     zyla: 'diabel-3', wojna: 'diabel-3', plony: 'diabel-3',
     dlug: 'diabel-1', klotnia: 'diabel-1', bunt: 'diabel-1',

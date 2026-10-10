@@ -328,7 +328,7 @@ function kandydaci(sim: Sim, st: StanWydarzen): { waga: number; zbuduj: Budownic
   return [...out.filter((k) => KARTY_REMAKE.has(k.rodzaj)), ...kandydaciLudu(sim, st)];
 }
 
-const KARTY_REMAKE = new Set(['najazd', 'powodz', 'zaraza', 'glod', 'znak', 'warta', 'dlug', 'wymiera']);
+const KARTY_REMAKE = new Set(['najazd', 'zaraza', 'glod', 'znak', 'warta', 'dlug', 'wymiera']);
 
 /** v4 beta: spełnia skutki odroczone, którym przyszła pora. */
 function spelnijOdroczone(sim: Sim): void {

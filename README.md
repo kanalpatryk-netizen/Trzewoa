@@ -6,7 +6,7 @@ Wygrywasz, gdy wierni dokopią się do twojego rdzenia.
 | | |
 |---|---|
 | 📱 Android | [**Trzewia.apk**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/android-apk/Trzewia.apk) |
-| ⚗️ **Remake v1** (komputer, etap 1) | [**trzewia-remake-v1.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-remake-v1.html) — jeden lud: pobożni, robotnicy, rycerze; krew; wędrowna siedziba; oprawa jak freski w krypcie; mrok, a w nim Ten, który patrzy · [więcej](remake-v1) |
+| ⚗️ **Remake v1** (komputer, etap 1) | [**trzewia-remake-v1.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-remake-v1.html) — jeden lud: pobożni, robotnicy, rycerze; krew; wędrowna siedziba; oprawa jak freski w krypcie; rozległe jaskinie; mrok, a w nim Ten, który patrzy · [więcej](remake-v1) |
 | 🧪 **v4.2 beta** (komputer) | [**trzewia-v4.2-beta.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-v4.2-beta.html) — drożejące wybory, mniej krwi, jaśniejszy świat · [więcej](v4.2-beta) |
 | 🧪 **v4.1 beta** (komputer) | [**trzewia-v4.1-beta.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-v4.1-beta.html) — cechy nacji, łańcuchy kart, świat dnia, osiągnięcia · [więcej](v4.1-beta) |
 | 🧪 **v4 beta** (komputer) | [**trzewia-v4-beta.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-v4-beta.html) — nowości + dziennik dewelopera · [więcej](v4-beta) |

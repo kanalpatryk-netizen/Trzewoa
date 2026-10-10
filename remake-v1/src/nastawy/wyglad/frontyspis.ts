@@ -33,8 +33,8 @@ export const FRONTYSPIS = {
   pielgrzymow: 3, tempoPielgrzymow: 0.000025,
   /** Rdzeń: położenie i promień (część krótszego boku obrazu). */
   rdzen: { x: 0.5, y: 0.86, promien: 0.05 },
-  /** Kieszeń żaru (magmy) w dole zbocza. */
-  magma: { x: 0.22, y: 0.8, rx: 0.08, ry: 0.035 },
+  /** Grota z naciekami w dole zbocza (w tej górze nie ma ani ognia, ani wody). */
+  grota: { x: 0.22, y: 0.8, rx: 0.08, ry: 0.04 },
 
   // ------------------------------------------------------------- skorupa
   /** Ile bloków w pierścieniu skorupy. */
@@ -49,8 +49,6 @@ export const FRONTYSPIS = {
   // ------------------------------------------------------------ animacja
   /** Poświata rdzenia: zasięg (× promień) i krycie (podstawa + tętno). */
   halo: 7, haloAlfa: 0.45, haloTetno: 0.15,
-  /** Poświata żaru: krycie i falowanie. */
-  magmaAlfa: 0.12, magmaFalowanie: 0.04,
   /** Krycie postaci (biel wapienna). */
   sylwetki: 0.85,
   /** Rycerz w gnieździe otwiera oczy co tyle ms, na taką część okresu. */

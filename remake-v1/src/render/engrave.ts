@@ -114,8 +114,8 @@ export class Engraver {
   private w9 = new Float32Array(9);
   private pA = nowaKreska();
   private pB = nowaKreska();
-  /** Świat malowany jak fresk (domyślnie) albo kreskowany jak rycina — ustawienia → „Rysunek świata”. */
-  fresk = true;
+  /** Świat kreskowany jak rycina (domyślnie) albo malowany jak fresk (próba) — ustawienia → „Rysunek świata”. */
+  fresk = false;
   /** Szkic sinopii pod nieznanym: poziomice dużego, gładkiego szumu (0..1 na teksel). */
   private szkic = new Float32Array(256 * 256);
   private pig = new Float32Array(7);
