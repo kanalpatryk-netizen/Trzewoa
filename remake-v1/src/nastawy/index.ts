@@ -19,6 +19,7 @@ export { MENU } from './wyglad/menu';
 export { FRONTYSPIS } from './wyglad/frontyspis';
 export { EKRAN_USTAWIEN } from './wyglad/ustawienia';
 export { ATLAS, MINIATURA, TABLICA } from './wyglad/atlas';
+export { FRESKI } from './wyglad/freski';
 export { RDZEN_WYGLAD } from './wyglad/rdzen';
 export { TON_MAX, MATERIALY, MASA } from './wyglad/rycina';
 export { BUDOWA, MAKS_KROKOW_NA_SEKUNDE } from './wyglad/postacie';

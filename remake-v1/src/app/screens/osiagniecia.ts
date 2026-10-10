@@ -5,11 +5,13 @@ import { BARWA, rgba } from '../../render/palette';
 import { SERIF, tloSadzy, tytulRyty, kreska } from '../../render/ink';
 import { OSIAGNIECIA, zdobyte } from '../../core/osiagniecia';
 import { dzisiaj, wynikDnia, czasGry } from '../../core/swiat-dnia';
+import { medalion } from '../../render/freski';
+import { FRESKI } from '../../nastawy/wyglad/freski';
 
 /**
  * OSIĄGNIĘCIA (v4.1 beta) — spis celów dodatkowych i wynik dzisiejszego świata dnia.
- * Zdobyte świecą złotem, niezdobyte są przygaszone, ale ich opis widać — to podpowiedź,
- * jak grać inaczej.
+ * Każde ma medalion z fresku (FRESKI.medaliony): zdobyte w kolorze, niezdobyte wyblakłe
+ * i przygaszone, ale ich opis widać — to podpowiedź, jak grać inaczej.
  */
 export class EkranOsiagniec implements Ekran {
   nazwa = 'osiagniecia';
@@ -60,31 +62,17 @@ export class EkranOsiagniec implements Ekran {
       const x = lewy0 + kol * (szerKol + 32), y = gora + nr * wiersz + rozmiar;
       const ma = maja.has(o.id);
       const alfa = wejscie * (ma ? 1 : 0.7);
-      // znaczek: złota gwiazda zdobytego, pusty krąg niezdobytego
-      ctx.save();
-      ctx.translate(x + rozmiar * 0.5, y - rozmiar * 0.35);
-      ctx.strokeStyle = rgba(ma ? BARWA.zarBlady : BARWA.atramentCichy, alfa);
-      ctx.fillStyle = rgba(BARWA.zarBlady, 0.85 * alfa);
-      ctx.lineWidth = 1.2;
-      ctx.beginPath();
-      if (ma) {
-        for (let k = 0; k <= 10; k++) {
-          const a = -Math.PI / 2 + k * (Math.PI / 5), r = (k % 2 ? 0.42 : 1) * rozmiar * 0.55;
-          if (k === 0) ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r); else ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
-        }
-        ctx.fill();
-      } else {
-        ctx.arc(0, 0, rozmiar * 0.42, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-      ctx.restore();
+      // medalion z fresku: zdobyty w kolorze, niezdobyty wyblakły
+      const r = Math.min(rozmiar * 1.15, wiersz * 0.42);
+      medalion(ctx, FRESKI.medaliony[o.id] ?? 'zloto', x + r, y - rozmiar * 0.35 + (zOpisem ? rozmiar * 0.5 : 0), r, ma, wejscie);
+      const tx = x + r * 2 + rozmiar * 0.6;
       ctx.font = `${rozmiar}px ${SERIF}`;
       ctx.fillStyle = rgba(ma ? BARWA.atramentMocny : BARWA.atrament, alfa);
-      ctx.fillText(o.nazwa, x + rozmiar * 1.4, y, szerKol - rozmiar * 1.4);
+      ctx.fillText(o.nazwa, tx, y, szerKol - (tx - x));
       if (zOpisem) {
         ctx.font = `italic ${rozmiar * 0.8}px ${SERIF}`;
         ctx.fillStyle = rgba(ma ? BARWA.zarBlady : BARWA.atramentCichy, 0.9 * alfa);
-        ctx.fillText(o.opis, x + rozmiar * 1.4, y + rozmiar * 1.15, szerKol - rozmiar * 1.4);
+        ctx.fillText(o.opis, tx, y + rozmiar * 1.15, szerKol - (tx - x));
       }
     });
 

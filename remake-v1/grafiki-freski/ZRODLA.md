@@ -1,7 +1,14 @@
 # Grafiki z fresków — źródła i licencje
 
 Elementy wycięte ze zdjęć średniowiecznych malowideł ściennych do interfejsu i ilustracji gry.
-Gra jeszcze ich nie używa (folder nie trafia do budowy). Podgląd całości: [`podglad.jpg`](podglad.jpg).
+Ten folder to pełne wycinki i oryginały; nie trafia do budowy. Podgląd całości: [`podglad.jpg`](podglad.jpg).
+
+**Co gra z nich bierze:** pomniejszone kopie w [`src/grafiki/freski/`](../src/grafiki/freski)
+(ilustracje do 420 px w WebP z przezroczystością, fryz, medaliony 128 px), ikony rytów i przycisków
+w [`src/grafiki/ikony/`](../src/grafiki/ikony) i tekstury w [`src/grafiki/tekstury/`](../src/grafiki/tekstury).
+Gdzie który stoi: [`src/nastawy/wyglad/freski.ts`](../src/nastawy/wyglad/freski.ts): karta wydarzenia
+(fryz z tancerzami u góry, wycinek po lewej, dobrany do wydarzenia), karta mieszkańca (złota nisza),
+tablice atlasu, medaliony osiągnięć i ekran końca (smutny święty przy przegranej, archanioł Michał przy wygranej).
 
 **Jak powstały:** kształt wycięcia wyznaczył Gemini (zielone tło), a piksele pochodzą z oryginałów
 w folderze [`oryginaly/`](oryginaly). Nic nie jest przemalowane. Jedyny wyjątek to trzy diabły,
@@ -43,7 +50,7 @@ Bez niego zdjęcie nie jest objęte tą licencją.
 | `bestie/lew.png` | lew | z kawałkiem liścia rośliny przy pysku |
 | `bestie/wielblad.png` | wielblad | |
 | `ornamenty/roslina.png`, `arkady.png`, `pas-ornament-lew.png` | lew | |
-| `ornamenty/pas-tancerze.png` | smok | fryz z tancerzami i zwierzętami |
+| `ornamenty/pas-tancerze.png` | smok | fryz z tancerzami i zwierzętami; w grze środkowy pas `fryz-tancerze.jpg` |
 | `portrety/portret-chrystus-kuszenie.png`, `portret-aniol-kuszenie.png` | kuszenie | kadr 3:4 |
 | `portrety/portret-archaniol-michal.png`, `portret-archaniol-gabriel.png` | pedret | kadr 3:4, mała rozdzielczość |
 | `ikony/ryt-szept.png` | anna | usta z palcem |

@@ -17,3 +17,7 @@ Najlepiej przezroczyste tło i kwadratowe ryty/przyciski. Po dodaniu: `npm run d
 
 **Nowe miejsce na grafikę w kodzie:** `rysujGrafike(ctx, 'klucz', x, y, wysokość)` z [`grafiki.ts`](grafiki.ts)
 — zwraca `false`, gdy pliku nie ma, więc wystarczy `if (!rysujGrafike(...)) stareRysowanie()`.
+
+**Freski:** wycinki malowideł, których gra używa na kartach, w atlasie, w osiągnięciach i na ekranie
+końca, leżą w [`freski/`](freski), a to, gdzie który stoi, ustawia [`nastawy/wyglad/freski.ts`](../nastawy/wyglad/freski.ts).
+Pełne wycinki, oryginały i licencje: [`grafiki-freski/`](../../grafiki-freski/ZRODLA.md).
