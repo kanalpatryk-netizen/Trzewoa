@@ -50,6 +50,8 @@ Bez niego zdjęcie nie jest objęte tą licencją.
 | `ikony/przycisk-kamera.png` | anna | oko |
 | `ikony/przycisk-zapis.png` | biskup | księga |
 | `ikony/ryt-znak.png` | michal | kula w dłoni |
+| `ikony/ryt-zasiej.png` | lew | kiełkująca roślina |
+| `ikony/przycisk-zapiski.png` | anna | greckie litery z napisu |
 | `tekstury/tekstura-tynk.png` | anna | kafel 256 px, bezszwowy |
 | `tekstury/tekstura-zloto.png` | swiety2 | złoto nimbu, kafel 256 px, bezszwowy |
 
