@@ -35,7 +35,7 @@ import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
-import { computePlate, obszarSpisu, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
+import { computePlate, obszarSpisu, obszarOddania, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
 import { seed, sign, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
@@ -147,6 +147,8 @@ export class EkranGry implements Ekran {
   private radaRect: { x: number; y: number; w: number; h: number } | null = null;
   /** Remake v1: przyciski przełącznika „kogo wydaje skała” w pasku u góry. */
   private przyciskiRoli: { x: number; y: number; w: number; h: number; rola: 'pobozny' | 'robotnik' }[] = [];
+  /** Wiersz „ze skały” tak, jak go narysowano — do testu nakładania. */
+  private wierszSkaly: { x: number; y: number; w: number; h: number } | null = null;
   /** Linia „droga do wolności" na brzegu płyty — kliknięcie otwiera jej tablicę. */
   private drogaRect: ObszarDrogi | null = null;
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
@@ -455,7 +457,8 @@ export class EkranGry implements Ekran {
     const { sim } = this;
     const o = obszarSpisu(plate, vh);
     const h = o.h / 2.4, y = o.y + h * 0.4;
-    const x0 = o.x, x1 = o.x + o.w;
+    const x0 = o.x;
+    let x1 = o.x + o.w;
     const role = liczRole(sim);
     const razem = role.pobozny + role.robotnik + role.rycerz;
     const telefon = plate.waski || plate.niski;
@@ -507,6 +510,10 @@ export class EkranGry implements Ekran {
     const yb = y + h + rozm * 2.9;
     const kaw = (t: string, f: string) => { ctx.font = f; return ctx.measureText(t).width; };
     const fE = `italic ${rozm * 0.95}px ${SERIF}`, fL = `${rozm * 1.05}px ${SERIF}`;
+    const bh = rozm * 1.6;
+    // telefon w pionie: wiersz schodzi na wysokość dłoni oddania — kończy się przed nimi
+    const od = obszarOddania(plate, vh);
+    if (yb - bh * 0.72 < od.y + od.h && yb + bh * 0.28 > od.y) x1 = Math.min(x1, od.x - 10);
     let x = x0;
     ctx.textAlign = 'left';
     // „ze skały:” tylko gdy starczy miejsca na przyciski i odliczanie w jednym wierszu
@@ -515,7 +522,6 @@ export class EkranGry implements Ekran {
     ctx.font = fE; ctx.fillStyle = 'rgba(190,178,156,0.9)';
     if (zEtykieta) { ctx.fillText('ze skały:', x, yb); x += kaw('ze skały: ', fE) + 2; }
     this.przyciskiRoli = [];
-    const bh = rozm * 1.6;
     for (const rola of ['robotnik', 'pobozny'] as const) {
       const napis = rola === 'robotnik' ? 'robotnik' : 'pobożny';
       const sz = kaw(napis, fL) + 18;
@@ -540,6 +546,7 @@ export class EkranGry implements Ekran {
     const wersje = sim.krew >= koszt ? [`za ${zaS} s · ${koszt} krwi`, `${zaS} s · ${koszt} kr.`, `${zaS} s`] : [`brak krwi (${koszt})`, `brak krwi`];
     const opis = wersje.find((t) => kaw(t, fE) <= miejsce) ?? wersje[wersje.length - 1];
     ctx.fillText(opis, x + 4, yb);
+    this.wierszSkaly = { x: x0, y: yb - bh * 0.72, w: x + 4 + kaw(opis, fE) - x0, h: bh };
     ctx.restore();
   }
 
@@ -934,7 +941,7 @@ export class EkranGry implements Ekran {
   obszaryHud(): ObszarHud[] {
     return zbierzObszaryHud({
       plate: this.plate, vh: this.app.h, ui: this.ui, przyciski: this.przyciski,
-      droga: this.drogaRect, rada: this.radaRect, menu: this.menuRect(),
+      droga: this.drogaRect, rada: this.radaRect, menu: this.menuRect(), skala: this.wierszSkaly,
     });
   }
 

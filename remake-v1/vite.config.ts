@@ -30,6 +30,7 @@ function shotPlugin(): Plugin {
 export default defineConfig({
   base: './',
   plugins: [shotPlugin()],
-  build: { target: 'es2019' },
+  // Gra wychodzi jako jeden plik HTML, więc każdy obrazek ma trafić do kodu jako data:.
+  build: { target: 'es2019', assetsInlineLimit: () => true },
   server: { host: true, port: 5180 },
 });

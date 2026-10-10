@@ -5,7 +5,7 @@ import { obszarOddania, obszarSpisu, type Obszar } from '../../../render/plate';
 import { wylosuj } from '../../../sim/wydarzenia';
 import { PIELGRZYMKA, RYTUAL } from '../../../nastawy/rytual';
 
-/** Próg pielgrzymki w procentach — samouczek mówi tę samą liczbę, co studnia oddania. */
+/** Próg pielgrzymki w procentach — samouczek mówi tę samą liczbę, co dłonie oddania. */
 const PROG = `${Math.round(PIELGRZYMKA.oddanieNacji * 100)}%`;
 
 /**
@@ -88,7 +88,7 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarZasobow(s.gra.plate) }),
       },
       {
-        tekst: `Oddanie: jak mocno lud w ciebie wierzy. Złota studnia pokazuje to samo — od kreski (${PROG}) pobożni sami idą pod twój rdzeń.`,
+        tekst: `Oddanie: jak mocno lud w ciebie wierzy. Złożone dłonie napełniają się złotem — od kreski (${PROG}) pobożni sami idą pod twój rdzeń.`,
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOddania(s.gra.plate, s.vh) }),
       },
     ],

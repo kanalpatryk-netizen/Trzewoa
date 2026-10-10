@@ -18,7 +18,7 @@ type Prost = { x: number; y: number; w: number; h: number };
  */
 export function zbierzObszaryHud(d: {
   plate: Plate; vh: number; ui: Ui; przyciski: Przycisk[];
-  droga: Prost | null; rada: Prost | null; menu: Prost;
+  droga: Prost | null; rada: Prost | null; menu: Prost; skala?: Prost | null;
 }): ObszarHud[] {
   const { plate: p, vh } = d;
   const out: ObszarHud[] = [];
@@ -40,6 +40,7 @@ export function zbierzObszaryHud(d: {
   if (ustawienia.spisRas) dodaj('spis', obszarSpisu(p, vh));
   dodaj('krew', obszarKrwi(p, vh));
   if (ustawienia.skalaGlebokosci && !p.waski && !p.niski) dodaj('minimapa', obszarMinimapy(p));
+  dodaj('ze skały', d.skala);
   dodaj('droga', d.droga);
   dodaj('rada', d.rada);
   return out;

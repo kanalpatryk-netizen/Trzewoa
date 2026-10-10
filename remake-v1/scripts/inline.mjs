@@ -14,6 +14,16 @@ html = html.replace(/<link rel="stylesheet"[^>]*href="([^"]+)"[^>]*>/g, (_m, hre
   return `<style>\n${css}\n</style>`;
 });
 
+// Każdy obrazek ma siedzieć w środku jako data:. Obrazek wydany jako osobny plik znaczy, że
+// po pobraniu samego HTML-a grafiki znikną — wtedy lepiej przerwać niż wydać taką grę.
+const pliki = (d) => fs.readdirSync(d, { withFileTypes: true })
+  .flatMap((e) => (e.isDirectory() ? pliki(path.join(d, e.name)) : [path.join(d, e.name)]));
+const obrazki = pliki(dist).filter((f) => /\.(png|jpe?g|webp|gif|svg|avif)$/i.test(f));
+if (obrazki.length) {
+  console.error(`Nie wbudowane w HTML: ${obrazki.map((f) => path.relative(dist, f)).join(', ')}`);
+  process.exit(1);
+}
+
 const out = path.resolve('trzewia.html');
 fs.writeFileSync(out, html);
 console.log(`${out} — ${(fs.statSync(out).size / 1024).toFixed(1)} kB`);

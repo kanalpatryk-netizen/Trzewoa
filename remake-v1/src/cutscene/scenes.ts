@@ -76,7 +76,7 @@ export const SCENY: Record<string, Scena> = {
       'Nie ma pasków ani liczb. Zasoby są rzeczami, które widzisz w ramie obrazu.',
       'Wiara zbiera się pod sklepieniem jak dym ofiarny. Bierze się z modlitwy przy ołtarzach i kuźniach, a najwięcej z ofiary, którą składają sami.',
       'Krew podnosi się w szczelinie u dołu. Płaci ci ją każda śmierć w twoich trzewiach — cudza wojna jest twoim dochodem.',
-      'Złota studnia w ramie to oddanie: jak mocno wierzy w ciebie najwierniejsza nacja. Gdy przekroczy kreskę, jej wierni sami zejdą pod twój rdzeń.',
+      'Złożone dłonie w ramie to oddanie. Napełniają się złotem tym bardziej, im mocniej wierzy w ciebie najwierniejsza nacja. Gdy złoto przekroczy kreskę, jej wierni sami zejdą pod twój rdzeń.',
     ],
   },
 
