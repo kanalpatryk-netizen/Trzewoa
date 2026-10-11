@@ -19,6 +19,8 @@ import { LUDY } from '../nastawy/gora';
 import { CECHY } from '../nastawy/cechy';
 import { LUD } from '../nastawy/lud';
 import { MROK } from '../nastawy/mrok';
+import { DLON } from '../nastawy/dlon';
+import { rysujDlonLokalnie, rysujOczyOtchlani } from '../render/dlon';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
@@ -340,6 +342,20 @@ function skorupa({ ctx, w, h, t }: Plotno): void {
 
 /** Pismo w skale: blok litej skały z żarzącymi się znakami, które gasną w smudze światła. */
 /** Ten, który patrzy: lita, kreskowana skała, a w niej para oczu i blade światło lampki z boku. */
+/** Dłoń z otchłani: oczy w ciemności i dłoń zaciskająca się nad maleńką postacią. */
+function dlonOtchlani({ ctx, w, h, t }: Plotno): void {
+  ctx.save();
+  ctx.fillStyle = '#060303';
+  ctx.fillRect(0, 0, w, h);
+  const z = Math.min(w, h) / 16;
+  rysujOczyOtchlani(ctx, w * 0.62, h * 0.24, z, 1, 1, w * 0.4, h * 0.75, t);
+  ctx.translate(w * 0.38, h * 0.52);
+  ctx.rotate(0.55);
+  ctx.scale(z * 0.95, z * 0.95);
+  rysujDlonLokalnie(ctx, 0.55 + 0.25 * Math.sin(t * 0.0012), 1);
+  ctx.restore();
+}
+
 function patrzacy({ ctx, w, h, t }: Plotno): void {
   ctx.save();
   ctx.fillStyle = '#0b0807';
@@ -595,6 +611,12 @@ export const TABLICE: Tablica[] = [
     opis: `Poza światłem lampek, obozów i rdzenia góra jest ciemna — i coś w tej ciemności jest. Przenika skałę, krąży wokół siedziby i wypatruje tego, kto został sam daleko od obozu (rycerzy nie rusza). Gdy go znajdzie, patrzy na niego: samotny staje jak wryty, w skale świecą oczy, a lampka przygasa. Po ${Math.round(MROK.patrzyTikow / 120)} sekundach zabiera go — krew zostaje dla ciebie. Potem na kilka minut cichnie.`,
     kiedy: 'Nie puszczaj nikogo samego daleko od obozu. Gdy zobaczysz oczy — rzuć Cud tuż przy nich albo poślij kogoś do samotnego.',
     rycina: patrzacy,
+  },
+  {
+    id: 'dlon', grupa: 'prawa', nazwa: 'Dłoń z otchłani', lacina: 'Manus ex abysso',
+    opis: `Tylko w Koszmarze, i rzadko. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu na samym jej brzegu, w ciemności otwierają się wielkie czerwone oczy, a on (czasem dwoje naraz) staje jak wryty. Po ${Math.round((DLON.oczy + DLON.siega) / 120)} sekundach z otchłani wysuwa się ogromna dłoń, chwyta ich i cofa się w ciemność. Nie zostają nawet kości — krew i tak spływa do ciebie.`,
+    kiedy: 'Nie stawiaj ludu na brzegu nieznanego daleko od obozu. Gdy otworzą się oczy — rzuć Cud przy nich, zanim dłoń chwyci.',
+    rycina: dlonOtchlani,
   },
 ];
 

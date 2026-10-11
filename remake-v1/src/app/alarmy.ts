@@ -4,6 +4,7 @@ import { RYTUAL } from '../nastawy/rytual';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { aktywnyBoss } from '../sim/boss';
 import { MROK } from '../nastawy/mrok';
+import { DLON } from '../nastawy/dlon';
 import { NAZWA_ROLI, rolaPostaci } from '../sim/lud';
 
 /** Ile fal Strażników już się zaczęło. */
@@ -41,6 +42,8 @@ export class Straznik {
   private ostatniAlarm = -1e9;
   /** Od kiedy Patrzący patrzy na tego, o którym już powiedzieliśmy. */
   private mrokOd = -1;
+  /** Od kiedy patrzą oczy z otchłani, o których już powiedzieliśmy. */
+  private dlonOd = -1;
   /** Rodzaje, przy których gracz poprosił, żeby go więcej nie zatrzymywać. */
   wyciszone = new Set<string>();
 
@@ -66,12 +69,13 @@ export class Straznik {
       : alarm.rodzaj.startsWith('pekniecie') ? 'skorupa'
       : alarm.rodzaj === `fala-${STRAZNICY.fale.length}` ? 'boss'
       : alarm.rodzaj.startsWith('fala-') ? 'straznicy'
-      : alarm.rodzaj === 'mrok' ? 'patrzacy' : undefined;
+      : alarm.rodzaj === 'mrok' ? 'patrzacy'
+      : alarm.rodzaj === 'dlon' ? 'dlon' : undefined;
     if (!alarm.kryzys && poziom !== 'wszystko') return null;
     if (this.wyciszone.has(alarm.rodzaj)) return null;
     // nie częściej niż co kilkanaście sekund świata, a ten sam rodzaj rzadziej —
     // oprócz Patrzącego: jego czas biegnie, więc ostrzeżenie przychodzi od razu
-    if (alarm.rodzaj !== 'mrok' && sim.tick - this.ostatniAlarm < 1500) return null;
+    if (alarm.rodzaj !== 'mrok' && alarm.rodzaj !== 'dlon' && sim.tick - this.ostatniAlarm < 1500) return null;
     if (sim.tick - (this.ostatnio.get(alarm.rodzaj) ?? -1e9) < 5400) return null;
     this.ostatniAlarm = sim.tick;
     this.ostatnio.set(alarm.rodzaj, sim.tick);
@@ -79,6 +83,22 @@ export class Straznik {
   }
 
   private wykryj(sim: Sim): Alarm | null {
+    // Koszmar: z otchłani patrzą oczy — za chwilę wysunie się dłoń
+    const d = sim.lud.dlon;
+    // (dopiero gdy oczy są już otwarte — karta zatrzymuje czas, a z nią obraz)
+    if (d && d.faza === 'oczy' && sim.tick - d.od >= 90 && d.od !== this.dlonOd) {
+      this.dlonOd = d.od;
+      const ile = d.ofiary.length;
+      const zostalo = Math.max(1, Math.round((DLON.oczy + DLON.siega - (sim.tick - d.od)) / 120));
+      return {
+        rodzaj: 'dlon', kryzys: true,
+        tytul: 'Otchłań otworzyła oczy',
+        tekst: `Na brzegu nieznanego otworzyły się wielkie czerwone oczy. ${ile > 1 ? 'Dwoje z ludu stoi' : 'Ktoś z ludu stoi'} jak wryty. Za ${zostalo} sekund z ciemności wysunie się dłoń i zabierze ${ile > 1 ? 'ich' : 'go'} w otchłań — bez śladu.`,
+        rada: 'Rzuć Cud przy oczach albo przy nich, zanim dłoń chwyci — światło odepchnie ją z powrotem w ciemność.',
+        cel: { x: d.cx, y: d.cy, tekst: 'tu sięgnie dłoń' },
+      };
+    }
+
     // Ten, który patrzy: ktoś został sam w ciemności, a czas na ratunek biegnie
     const m = sim.lud.mrok;
     if (m && m.faza === 'patrzy' && m.od !== this.mrokOd) {

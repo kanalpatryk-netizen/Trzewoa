@@ -47,6 +47,7 @@ import { Straznik, type Alarm } from '../alarmy';
 import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { rysujWydarzenie, type PoleWyboru } from '../../render/wydarzenie';
 import { rysujMrok, rysujPatrzacego } from '../../render/mrok';
+import { rysujDlon } from '../../render/dlon';
 import { wolnoRuszac } from '../../render/nastroj';
 import { NASTROJ } from '../../nastawy/wyglad/nastroj';
 import { MROK } from '../../nastawy/mrok';
@@ -157,6 +158,7 @@ export class EkranGry implements Ekran {
   private wierszSkaly: { x: number; y: number; w: number; h: number } | null = null;
   /** Które zdarzenia Patrzącego już zabrzmiały (tik szeptu i zabrania). */
   private slyszanyMrok: { szept?: number; zabrany?: number } = {};
+  private slyszanaDlon: { oczy?: number; chwyt?: number } = {};
   /** Linia „droga do wolności" na brzegu płyty — kliknięcie otwiera jej tablicę. */
   private drogaRect: ObszarDrogi | null = null;
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
@@ -393,6 +395,7 @@ export class EkranGry implements Ekran {
     if ((sim.lud.gniazda ?? []).some((g) => g.odkryte) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
+    if (sim.lud.dlon?.widziana) odkrycia.odkryj('dlon');
     if (sim.creatures.some((c) => !c.dead && c.boss)) odkrycia.odkryj('boss');
     if (this.ui.verb) cicho(`ryt-${this.ui.verb}`);
     if (this.pauza) cicho('pauza');
@@ -781,10 +784,17 @@ export class EkranGry implements Ekran {
       // Ten, który patrzy: gdy podchodzi i gdy patrzy, muzyka gęstnieje jak przy zasypianiu
       const mrok = this.sim.lud.mrok;
       const napiecieMroku = mrok?.faza === 'patrzy' ? 0.75 : mrok?.faza === 'podchodzi' ? 0.45 : 0;
-      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2, napiecieMroku));
+      // dłoń z otchłani: od otwarcia oczu do chwytu muzyka jest na granicy
+      const dlon = this.sim.lud.dlon;
+      const napiecieDloni = dlon && dlon.faza !== 'brak' && dlon.faza !== 'gasnie' ? (dlon.faza === 'oczy' ? 0.85 : 1) : 0;
+      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2, napiecieMroku, napiecieDloni));
       if (mrok) {
         if (mrok.szeptT !== undefined && mrok.szeptT !== this.slyszanyMrok.szept) { this.slyszanyMrok.szept = mrok.szeptT; this.app.muzyka.szept(); }
         if (mrok.zabranyT !== undefined && mrok.zabranyT !== this.slyszanyMrok.zabrany) { this.slyszanyMrok.zabrany = mrok.zabranyT; this.app.muzyka.zabranie(); }
+      }
+      if (dlon) {
+        if (dlon.oczyT !== undefined && dlon.oczyT !== this.slyszanaDlon.oczy) { this.slyszanaDlon.oczy = dlon.oczyT; this.app.muzyka.otchlan(); }
+        if (dlon.chwytT !== undefined && dlon.chwytT !== this.slyszanaDlon.chwyt) { this.slyszanaDlon.chwyt = dlon.chwytT; this.app.muzyka.zabranie(); }
       }
     }
   }
@@ -874,6 +884,7 @@ export class EkranGry implements Ekran {
     rysujZnacznikiLudu(ctx, sim, cam);
     rysujStraznikowWSkale(ctx, sim, cam, teraz);
     rysujPatrzacego(ctx, sim, cam, teraz);
+    rysujDlon(ctx, sim, cam, teraz);
     if (this.pauza) {
       // czas stoi: świat przygasa, a na nim widać już tylko plan
       ctx.fillStyle = 'rgba(8,6,10,0.26)';

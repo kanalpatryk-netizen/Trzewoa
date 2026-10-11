@@ -216,6 +216,40 @@ export class Muzyka {
     }
   }
 
+  /**
+   * Otchłań otwiera oczy (Koszmar): bardzo niski, narastający pomruk — dwa rozstrojone tony
+   * pod szumem, który rośnie i opada jak oddech czegoś ogromnego.
+   */
+  otchlan(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const t = ctx.currentTime + 0.05;
+    const glos = N.otchlanGlos;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(glos, t + 1.4);
+    g.gain.exponentialRampToValueAtTime(glos * 0.6, t + 2.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 4.2);
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 180;
+    for (const [hz, typ] of [[38, 'sawtooth'], [38.9, 'sawtooth'], [57, 'triangle']] as [number, OscillatorType][]) {
+      const o = ctx.createOscillator(); o.type = typ;
+      o.frequency.setValueAtTime(hz * 0.9, t);
+      o.frequency.exponentialRampToValueAtTime(hz, t + 1.6);
+      o.connect(f);
+      o.start(t); o.stop(t + 4.4);
+    }
+    if (this.szum) {
+      const z = ctx.createBufferSource(); z.buffer = this.szum; z.loop = true;
+      const fz = ctx.createBiquadFilter(); fz.type = 'lowpass'; fz.frequency.value = 260;
+      const gz = ctx.createGain(); gz.gain.value = 0.8;
+      z.connect(fz); fz.connect(gz); gz.connect(f);
+      z.start(t); z.stop(t + 4.4);
+    }
+    f.connect(g); g.connect(this.master);
+    const s = ctx.createGain(); s.gain.value = 0.6; g.connect(s); s.connect(mikser.poglos);
+    this.szept(-1);
+  }
+
   /** Ktoś poszedł w ciemność: głuche uderzenie w głębi i szept z obu stron naraz. */
   zabranie(): void {
     const ctx = this.ctx;

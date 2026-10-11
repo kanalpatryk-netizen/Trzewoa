@@ -77,6 +77,8 @@ export const NIEPOKOJ = {
   chorCo: 38, chorRozrzut: 30, chorGlos: 0.022, chorDlugosc: 9,
   /** Ten, który patrzy: szept z ciemności (głośność sylab) i głuche uderzenie, gdy kogoś zabiera. */
   szeptGlos: 0.05, zabranieGlos: 0.16,
+  /** Pomruk otchłani, gdy otwierają się oczy (Koszmar: dłoń z otchłani). */
+  otchlanGlos: 0.22,
   formanty: [[730, 1090], [570, 840], [300, 870], [440, 1020]] as [number, number][],
 };
 

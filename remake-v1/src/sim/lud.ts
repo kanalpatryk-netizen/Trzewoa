@@ -15,6 +15,8 @@ import { PIELGRZYMKA as P } from '../nastawy/rytual';
 import { Rng } from '../core/rng';
 import { tikStraznikow, falaTrwa, type StanStraznikow } from './straznicy';
 import { tikMroku, naKogoPatrzy, type StanMroku } from './mrok';
+import { tikDloni, type StanDloni } from './dlon';
+import { DLON } from '../nastawy/dlon';
 import { MROK } from '../nastawy/mrok';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { tikBuntu } from './bunt';
@@ -52,6 +54,8 @@ export interface StanLudu {
   straznicy?: StanStraznikow;
   /** Ten, który patrzy z ciemności (sim/mrok.ts). */
   mrok?: StanMroku;
+  /** Koszmar: dłoń z otchłani (sim/dlon.ts). */
+  dlon?: StanDloni;
 }
 
 /** Gniazdo kamiennych rycerzy: śpią w litej skale, aż ktoś się do nich dokopie. */
@@ -211,6 +215,10 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   }
   if (naKogoPatrzy(sim) === c.id && sim.lud.mrok) {
     out.push({ nazwa: 'patrzy na niego coś z ciemności', skutek: 'jeśli zostanie sam, zniknie — ocali go Cud tuż obok albo ktoś z ludu przy nim', dobry: false, do: sim.lud.mrok.od + MROK.patrzyTikow });
+  }
+  const d = sim.lud.dlon;
+  if (d && (d.faza === 'oczy' || d.faza === 'siega') && d.ofiary.includes(c.id)) {
+    out.push({ nazwa: 'patrzą na niego oczy z otchłani', skutek: 'dłoń zaraz go zabierze — odpędzi ją tylko Cud przy oczach', dobry: false, do: d.od + (d.faza === 'oczy' ? DLON.oczy + DLON.siega : DLON.siega) });
   }
   if (c.okaleczony) {
     out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false });
@@ -600,6 +608,7 @@ export function tikLudu(sim: Sim): void {
   tikStraznikow(sim);
   tikBuntu(sim);
   tikMroku(sim);
+  tikDloni(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {
     pilnujSiedziby(sim);
     const klan = klanLudu(sim);

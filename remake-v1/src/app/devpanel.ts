@@ -13,6 +13,7 @@ import { wylosuj, wymusLancuch, KARTY_LANCUCHA, KARTY_W_GRZE } from '../sim/wyda
 import { klanLudu, liczRole, nadajRole, podloga, stanyPostaci, NAZWA_ROLI, type Rola } from '../sim/lud';
 import { najwierniejsza } from '../sim/pielgrzymka';
 import { devMrok, opisMroku, naKogoPatrzy } from '../sim/mrok';
+import { devDlon, opisDloni } from '../sim/dlon';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 import { TEMPO } from '../nastawy/sterowanie';
 import { mnoznikNapis } from '../render/przyciski';
@@ -177,6 +178,11 @@ export class PanelDewelopera {
       this.przycisk('wywołaj', () => this.pokazWynik(devMrok(this.gra.sim(), 'wyjdz')), 'wychodzi teraz i idzie do najbardziej samotnego'),
       this.przycisk('cofnij', () => this.pokazWynik(devMrok(this.gra.sim(), 'cofnij')), 'wraca w głąb na 3 minuty'),
     );
+    const dlon = this.wiersz();
+    const dlonNapis = document.createElement('span');
+    dlonNapis.textContent = 'Dłoń z otchłani:';
+    dlonNapis.style.color = '#9a8f7a';
+    dlon.append(dlonNapis, this.przycisk('wywołaj', () => this.pokazWynik(devDlon(this.gra.sim())), 'od razu, także poza Koszmarem — przy kimś na brzegu nieznanego'));
     const widok = this.wiersz();
     widok.append(
       this.pole('bez ciemności', DEV.bezMroku, (v) => { DEV.bezMroku = v; }),
@@ -330,6 +336,7 @@ export class PanelDewelopera {
       `lud ${r.pobozny + r.robotnik + r.rycerz}: pobożni ${r.pobozny} · robotnicy ${r.robotnik} · rycerze ${r.rycerz} · jedzenie ${klan?.stock ?? 0}`,
       `wiara ${Math.floor(sim.wiara)} · krew ${Math.floor(sim.krew)} · oddanie ${Math.round((wierni?.devotion ?? 0) * 100)}% · sen ${Math.round(sim.sen * 100)}% · pęknięć ${sim.rytual.pekniecia}${sim.rytual.otwarta ? ' · rdzeń otwarty' : ''}`,
       opisMroku(sim),
+      opisDloni(sim),
     ];
     this.stanSwiata.textContent = linie.join('\n');
   }

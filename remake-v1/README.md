@@ -64,6 +64,10 @@ i otwórz w przeglądarce.
 - **Mrok i Ten, który patrzy** (`src/sim/mrok.ts`, nastawy w `src/nastawy/mrok.ts`): świat widać w pełni tylko w świetle
   lampek, aureol, obozów, rdzenia i Cudu. W ciemności krąży coś, co wypatruje samotnych daleko od obozu (nie rycerzy)
   i po 15 s patrzenia zabiera ich (stoją wtedy jak wryci); gra staje i ostrzega. Odpędza je Cud tuż obok albo ktoś z ludu, kto podejdzie.
+- **Dłoń z otchłani (tylko Koszmar, rzadko)** (`src/sim/dlon.ts`, rysunek `src/render/dlon.ts`, nastawy `src/nastawy/dlon.ts`):
+  gdy ktoś z ludu stoi daleko od obozu na brzegu nieznanego, w ciemności otwierają się wielkie czerwone oczy, a z otchłani
+  wysuwa się ogromna dłoń, chwyta jedną albo dwie postacie i cofa się z nimi (bez kości). Gra staje i ostrzega; Cud przy oczach
+  przed chwytem ją odpędza. Najwcześniej po 6 min, najwyżej 2 razy na partię.
 - **Bez snu góry.** Przegrywasz dopiero, gdy nie da się już wygrać: nie ma pobożnych,
   a nawet ofiara ze wszystkich nie da krwi na nowego.
 

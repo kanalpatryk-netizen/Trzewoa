@@ -8,6 +8,7 @@ import { nadOgniem } from '../sim/droga';
 import { rolaPostaci, maxHp, gniazdaWSkale } from '../sim/lud';
 import { LUD } from '../nastawy/lud';
 import { odpedzMrok } from '../sim/mrok';
+import { odpedzDlon } from '../sim/dlon';
 
 /**
  * Trzy ryty wersji na telefon: Nakarm (grzyb), Szepnij (jedna myśl w jedną głowę)
@@ -224,6 +225,7 @@ export function sign(sim: Sim, tool: string, tx: number, ty: number): boolean {
   for (let i = 0; i < 8; i++) sim.spark(tx + 0.5, ty + 0.5, 'pray');
   // światło Cudu przegania to, co patrzy z ciemności
   odpedzMrok(sim, tx + 0.5, ty + 0.5);
+  odpedzDlon(sim, tx + 0.5, ty + 0.5);
   const names = [...seen].map((i) => sim.clans[i].name).slice(0, 3).join(', ');
   sim.log(tool === 'objawienie'
     ? `Znak rozbłysł w skale. Widzieli go: ${names || 'nikt'}.`
