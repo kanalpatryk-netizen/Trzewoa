@@ -49,7 +49,7 @@ export interface Tablica {
 }
 
 export const NAZWY_GRUP: Record<Grupa, string> = {
-  rasy: 'Twój lud i obcy',
+  rasy: 'Twój lud',
   ryty: 'Trzy ryty',
   zasoby: 'Czym płacisz i czym żyją',
   prawa: 'Prawa góry',
@@ -405,18 +405,12 @@ function pismo({ ctx, w, h, t }: Plotno): void {
 // ---------------------------------------------------------------- tablice
 
 export const TABLICE: Tablica[] = [
-  // lud i obcy
+  // lud
   {
     id: 'rasa-0', grupa: 'rasy', nazwa: 'Pobożni', lacina: 'Gens pia',
     opis: `Twój jedyny lud. Nikt się w nim nie rodzi: co ${Math.round(LUD.wyjscieCo / 120)} sekund skała wydaje nowego — robotnika za ${LUD.koszt.robotnik} krwi albo pobożnego za ${LUD.koszt.pobozny} (wybierasz pod paskiem ról), najwyżej ${LUD.limit} naraz. Świeży ze skały przez minutę jest osłabiony. Rycerzy skała nie wydaje — śpią w gniazdach w skale. Mieszkają przy siedzibie, a odcięte grupki zakładają obozy.`,
     kiedy: 'Pilnuj, żeby zawsze był ktoś, kto się modli, i żeby została krew na nowego pobożnego. Pobożny może się okaleczyć (krew, ale słabnie na zawsze), a każdego możesz złożyć w ofierze.',
     rycina: postac(Race.GOBLIN, 'modli'),
-  },
-  {
-    id: 'rasa-4', grupa: 'rasy', nazwa: 'Ludzie', lacina: 'Advenae superni',
-    opis: 'Nie mieszkają w tobie. Schodzą z powierzchni po rudę i sławę i zabijają każdego, na kogo trafią; po kilku minutach wracają na górę. Gdy góra się zawali, schodzą i wychodzą szczeliną tuż pod gruzem.',
-    kiedy: 'Przy karcie najazdu: zawal im wejście (nikt nie zginie) albo wpuść ich — każda ich śmierć to twoja krew, ale rycerze muszą być pod ręką.',
-    rycina: postac(Race.HUMAN, 'idzie'),
   },
   // ryty
   {
