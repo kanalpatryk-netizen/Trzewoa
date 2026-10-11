@@ -14,7 +14,8 @@ const PISMO = {
   cena: '#7e2c16', cenaNie: '#c0301c', ramka: 'rgba(142,58,34,0.8)', ramkaNie: 'rgba(110,90,70,0.4)', stopka: 'rgba(90,64,44,0.8)',
 };
 
-export interface PoleWyboru { i: number; x: number; y: number; w: number; h: number }
+/** Pole karty: wybór `i` albo (pokaz) link „pokaż miejsce” — kamera jedzie tam tylko na prośbę gracza. */
+export interface PoleWyboru { i: number; x: number; y: number; w: number; h: number; pokaz?: boolean }
 
 /**
  * Karta wydarzenia: co się dzieje, a pod spodem wybory — każdy jako duże pole z ceną
@@ -89,10 +90,28 @@ export function rysujWydarzenie(ctx: CanvasRenderingContext2D, p: Plate, sim: Si
 
   const lx = x + ilW + rz * 1.1;
   let yy = y + fh + rz * 1.4;
+  const pola: PoleWyboru[] = [];
   ctx.textAlign = 'left';
   ctx.font = `${rz * 0.66}px ${SERIF}`;
   ctx.fillStyle = PISMO.naglowek;
-  ctx.fillText('W Y D A R Z E N I E   ·   C Z A S   S T O I', lx, yy, wew);
+  // „pokaż miejsce ›” po prawej od nagłówka (gdy wydarzenie ma miejsce) — na wąskiej karcie nagłówek krótszy
+  let naglowek = 'W Y D A R Z E N I E   ·   C Z A S   S T O I';
+  const link = 'pokaż miejsce ›';
+  ctx.font = `italic ${rz * 0.82}px ${SERIF}`;
+  const lw = e.cel ? ctx.measureText(link).width : 0;
+  ctx.font = `${rz * 0.66}px ${SERIF}`;
+  if (e.cel && ctx.measureText(naglowek).width + lw + rz > wew) naglowek = 'W Y D A R Z E N I E';
+  const zLinkiem = !!e.cel && ctx.measureText(naglowek).width + lw + rz <= wew;
+  ctx.fillText(naglowek, lx, yy, wew);
+  if (zLinkiem) {
+    ctx.font = `italic ${rz * 0.82}px ${SERIF}`;
+    ctx.textAlign = 'right';
+    ctx.fillStyle = PISMO.cena;
+    ctx.fillText(link, lx + wew, yy);
+    const lh = Math.max(rz * 1.6, 30);
+    pola.push({ i: -1, pokaz: true, x: lx + wew - lw - 8, y: yy - rz * 0.55 - lh / 2, w: lw + 16, h: lh });
+    ctx.textAlign = 'left';
+  }
   yy += rz * 1.6;
   ctx.font = `${rz * 1.25}px ${SERIF}`;
   ctx.fillStyle = PISMO.tytul;
@@ -103,7 +122,6 @@ export function rysujWydarzenie(ctx: CanvasRenderingContext2D, p: Plate, sim: Si
   akapit(ctx, e.tekst, lx, yy, wew, rz * 1.15);
   yy += u.lTekst * rz * 1.15 + rz * 0.1;
 
-  const pola: PoleWyboru[] = [];
   e.wybory.forEach((w, i) => {
     const b = przyc[i];
     const ok = stac(i);

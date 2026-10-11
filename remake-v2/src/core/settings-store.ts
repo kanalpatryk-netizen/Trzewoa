@@ -7,6 +7,8 @@ export interface Settings {
   efekty: boolean;         // dźwięki gestów: szkic, pauza, ostrzeżenia, atlas
   jakosc: 'auto' | 'ostra' | 'szybka';
   kameraZaZyciem: boolean;
+  /** Karta wydarzenia i ostrzeżenie same wiozą kamerę na miejsce (wyłączone: tylko znacznik i strzałka przy krawędzi). */
+  kameraDoWydarzen: boolean;
   autoZoom: boolean;
   oddech: boolean;         // powolne falowanie całego rysunku
   ograniczRuch: boolean;   // mniej drgań: dla oczu, które tego nie znoszą
@@ -43,6 +45,7 @@ export const DOMYSLNE: Settings = {
   efekty: true,
   jakosc: 'auto',
   kameraZaZyciem: true,
+  kameraDoWydarzen: false,
   autoZoom: false,
   oddech: true,
   ograniczRuch: false,

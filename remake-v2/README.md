@@ -10,6 +10,9 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu).
 ## Co nowego w v2
 - **Obserwatorium** — cztery okna gry naraz, w każdym gra bot (opis niżej).
 - **Bot w grze** — gra sam w oknach obserwatorium (`src/app/bot.ts`).
+- **Kamera nie jeździ sama do wydarzeń** — karta i ostrzeżenie tylko zaznaczają miejsce (poza ekranem: strzałka
+  przy krawędzi); dotknięcie strzałki albo „pokaż miejsce ›” na karcie wiezie tam kamerę. Dawne zachowanie:
+  ustawienia → „Kamera do wydarzeń”.
 - Gra wychodzi od najnowszego stanu Remake v1 — z **dłonią z otchłani** (tylko Koszmar, rzadko; klatki z modelu 3D,
   zawsze wznosi się z dołu, z otchłani pod ofiarą), mroczniejszym interfejsem, zwykłym czasem i linami przy ścianie.
   Odtąd nowe rzeczy trafiają do v2.

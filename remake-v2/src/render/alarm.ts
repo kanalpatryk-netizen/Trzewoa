@@ -3,7 +3,7 @@ import type { Alarm } from '../app/alarmy';
 import { SERIF, panel, akapit, linieAkapitu } from './ink';
 import { BARWA, rgba } from './palette';
 
-export interface PoleAlarmu { akcja: 'planuj' | 'pusc' | 'wycisz' | 'tablica'; x: number; y: number; w: number; h: number }
+export interface PoleAlarmu { akcja: 'planuj' | 'pusc' | 'wycisz' | 'tablica' | 'pokaz'; x: number; y: number; w: number; h: number }
 
 /**
  * Karta sytuacji przy auto-pauzie: co się stało, dlaczego to ważne i co możesz
@@ -34,7 +34,27 @@ export function rysujAlarm(ctx: CanvasRenderingContext2D, p: Plate, a: Alarm, te
   ctx.textAlign = 'left';
   ctx.font = `${rozm * 0.7}px ${SERIF}`;
   ctx.fillStyle = a.kryzys ? 'rgba(226,120,100,0.95)' : rgba(BARWA.zarBlady, 0.9);
-  ctx.fillText((a.kryzys ? 'KRYZYS · CZAS STANĄŁ' : 'WYDARZENIE · CZAS STANĄŁ').split('').join(' '), lx, yy);
+  const naglowek = (a.kryzys ? 'KRYZYS · CZAS STANĄŁ' : 'WYDARZENIE · CZAS STANĄŁ').split('').join(' ');
+  ctx.fillText(naglowek, lx, yy);
+  // „pokaż miejsce ›” po prawej od nagłówka (na wąskiej płycie przy „co możesz” — w rogu stoi klepsydra);
+  // kamera jedzie tam tylko na prośbę gracza
+  const pola: PoleAlarmu[] = [];
+  const nw = ctx.measureText(naglowek).width;
+  const pokaz = (wiersz: number, zajete: number): void => {
+    if (!a.cel) return;
+    ctx.save();
+    ctx.font = `italic ${rozm * 0.85}px ${SERIF}`;
+    const link = 'pokaż miejsce ›';
+    const lw = ctx.measureText(link).width;
+    if (lx + zajete + rozm + lw <= x + szer - 18) {
+      ctx.textAlign = 'right';
+      ctx.fillStyle = rgba(BARWA.zarBlady, 0.95);
+      ctx.fillText(link, x + szer - 18, wiersz);
+      pola.push({ akcja: 'pokaz', x: x + szer - 18 - lw / 2, y: wiersz - rozm * 0.3, w: lw + 16, h: Math.max(rozm * 1.6, 30) });
+    }
+    ctx.restore();
+  };
+  if (!p.waski) pokaz(yy, nw);
   yy += rozm * 1.6;
   ctx.font = `${rozm * 1.3}px ${SERIF}`;
   ctx.fillStyle = rgba(BARWA.atramentMocny, 1);
@@ -49,6 +69,7 @@ export function rysujAlarm(ctx: CanvasRenderingContext2D, p: Plate, a: Alarm, te
   ctx.font = `${rozm * 0.7}px ${SERIF}`;
   ctx.fillStyle = rgba(BARWA.zarBlady, 0.95);
   ctx.fillText('C O   M O Ż E S Z', lx, yy);
+  if (p.waski) pokaz(yy, ctx.measureText('C O   M O Ż E S Z').width);
   yy += rozm * 1.25;
   ctx.fillStyle = rgba(BARWA.zarBlady, 0.9);
   ctx.beginPath();
@@ -60,7 +81,6 @@ export function rysujAlarm(ctx: CanvasRenderingContext2D, p: Plate, a: Alarm, te
 
   // przyciski
   const by = y + wys - rozm * 1.3;
-  const pola: PoleAlarmu[] = [];
   const przycisk = (akcja: PoleAlarmu['akcja'], tekst: string, px: number, glowny: boolean): number => {
     ctx.font = `${rozm * 0.98}px ${SERIF}`;
     const bw = ctx.measureText(tekst).width + rozm * 1.5, bh = rozm * 1.8;

@@ -34,7 +34,7 @@ import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujDrogeDoWolnosci, type ObszarDrogi } from '../../render/droga';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
-import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
+import { etykietyKolonii, podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
 import { computePlate, obszarSpisu, obszarOddania, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
@@ -195,6 +195,8 @@ export class EkranGry implements Ekran {
 
   /** Okienko logów i narzędzi (tryb deweloperski, v4 beta). */
   private panelDev: PanelDewelopera | null = null;
+  /** Znacznik miejsca z karty wydarzenia — znika razem z kartą. */
+  private celKarty: Cel | null = null;
   /** Okno obserwatorium: kiedy partia się skończyła (czas ekranu) i kiedy ostatnio wysłano stan. */
   private botKoniecOd = 0;
   private botStanOd = 0;
@@ -317,6 +319,24 @@ export class EkranGry implements Ekran {
     this.dirty = true;
   }
 
+  /** „pokaż miejsce” na karcie: kamera jedzie tam, a miejsce ląduje pod kartą (`czesc` płyty niżej; skala zostaje). */
+  private pokazPodKarta(c: { x: number; y: number }, czesc: number): void {
+    this.pokazMiejsce(c.x, c.y);
+    this.cam.y = this.camTarget.y = c.y - (this.plate.h * czesc) / this.cam.zoom;
+    this.cam.clamp(this.sim.world.w, this.sim.world.h);
+    this.dirty = true;
+  }
+
+  /** Dotknięcie strzałki celu przy krawędzi płyty wiezie kamerę na miejsce (skala zostaje). */
+  private dotknijStrzalki(x: number, y: number): boolean {
+    if (!this.cel) return false;
+    const s = strzalkaCelu(this.cam, this.cel);
+    if (!s || Math.hypot(x - this.plate.x - s.x, y - this.plate.y - s.y) > Math.max(30, POLE_PALCA * 0.6)) return false;
+    this.pokazMiejsce(this.cel.x, this.cel.y);
+    this.dirty = true;
+    return true;
+  }
+
   /** Gracz chwyta kamerę: automat milczy, ale tylko przez chwilę (patrz krok()). */
   przejmijKamere(): void {
     this.recznaKamera = true;
@@ -430,10 +450,15 @@ export class EkranGry implements Ekran {
     this.ui.verb = null; this.ui.tool = null;
     this.painting = false;
     if (e.cel) {
-      this.pokazMiejsce(e.cel.x, e.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
-      // karta stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
-      this.cam.y = this.camTarget.y = e.cel.y - (this.plate.h * 0.25) / this.cam.zoom;
-      this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      // kamera zostaje tam, gdzie ją zostawiłeś — miejsce jest tylko zaznaczone (poza kadrem: strzałka przy
+      // krawędzi, dotknięcie jej wiezie kamerę). Sama jedzie tylko z ustawieniem „Kamera do wydarzeń” i w samouczku.
+      if (ustawienia.kameraDoWydarzen || this.nasluch) {
+        this.pokazMiejsce(e.cel.x, e.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+        // karta stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
+        this.cam.y = this.camTarget.y = e.cel.y - (this.plate.h * 0.25) / this.cam.zoom;
+        this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      }
+      this.cel = this.celKarty = { x: e.cel.x, y: e.cel.y, r: 5, tekst: e.cel.tekst };
     }
     odkrycia.odkryj('wydarzenia', false);
     if (ustawienia.efekty) this.app.gesty.alarm(true);
@@ -617,10 +642,13 @@ export class EkranGry implements Ekran {
     this.nasluch?.({ typ: 'pauza', stoi: true });
     this.ui.selected = null;
     if (a.cel) {
-      this.pokazMiejsce(a.cel.x, a.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
-      // karta sytuacji stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
-      this.cam.y = this.camTarget.y = a.cel.y - (this.plate.h * 0.2) / this.cam.zoom;
-      this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      // jak przy karcie wydarzenia: miejsce zaznaczone, kamera stoi (chyba że „Kamera do wydarzeń”)
+      if (ustawienia.kameraDoWydarzen) {
+        this.pokazMiejsce(a.cel.x, a.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+        // karta sytuacji stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
+        this.cam.y = this.camTarget.y = a.cel.y - (this.plate.h * 0.2) / this.cam.zoom;
+        this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      }
       this.cel = { x: a.cel.x, y: a.cel.y, r: 5, tekst: a.cel.tekst };
       this.radaOd = performance.now();             // podpowiedź nie nadpisze celu alarmu od razu
     }
@@ -686,6 +714,11 @@ export class EkranGry implements Ekran {
 
   krok(dt: number, teraz: number): void {
     if (BOT.wlaczony) this.krokObserwowanej(teraz);
+    // karta wydarzenia rozstrzygnięta — jej znacznik znika, wraca cel podpowiedzi
+    if (this.celKarty && !this.sim.wydarzenia.biezace) {
+      if (this.cel === this.celKarty) this.cel = this.rada?.cel ?? null;
+      this.celKarty = null;
+    }
     // okienko dewelopera: tylko w grze (nie w samouczku) i tylko z włączonym trybem
     const dev = ustawienia.trybDeweloperski && !this.nasluch;
     if (dev && !this.panelDev) this.panelDev = new PanelDewelopera({
@@ -802,7 +835,7 @@ export class EkranGry implements Ekran {
       if (!stara || czas > 25000 || nowa.waga > stara.waga + 25 || nowa.tekst === stara.tekst) {
         if (!stara || nowa.tekst !== stara.tekst) this.radaOd = teraz;
         this.rada = nowa;
-        if (!this.ui.verb) this.cel = nowa.cel ?? null;
+        if (!this.ui.verb && !this.sim.wydarzenia.biezace) this.cel = nowa.cel ?? null;
       }
     }
 
@@ -1233,8 +1266,15 @@ export class EkranGry implements Ekran {
       // karta wydarzenia: dotknięcie wyboru go wykonuje; dotknięcie reszty karty nic nie robi,
       // a poza kartą można przesuwać płytę i patrzeć, o czym mowa
       const b = this.polaWydarzenia.find((q) => e.clientX >= q.x && e.clientX <= q.x + q.w && e.clientY >= q.y && e.clientY <= q.y + q.h);
-      if (b) { this.wybierzWydarzenie(b.i); return; }
-      const g = this.polaWydarzenia[0], d = this.polaWydarzenia[this.polaWydarzenia.length - 1];
+      if (b) {
+        // „pokaż miejsce”: kamera jedzie tam na prośbę — miejsce ląduje pod kartą
+        if (b.pokaz) { const c = this.celKarty ?? this.sim.wydarzenia.biezace?.cel; if (c) this.pokazPodKarta(c, 0.25); }
+        else this.wybierzWydarzenie(b.i);
+        return;
+      }
+      if (this.dotknijStrzalki(e.clientX, e.clientY)) return;
+      const wybory = this.polaWydarzenia.filter((q) => !q.pokaz);
+      const g = wybory[0], d = wybory[wybory.length - 1];
       if (e.clientX >= g.x - 20 && e.clientX <= g.x + g.w + 20 && e.clientY >= this.plate.y && e.clientY <= d.y + d.h + 30) return;
     }
     if (faza === 'dol' && !this.zapiski) {
@@ -1242,6 +1282,7 @@ export class EkranGry implements Ekran {
       for (const b of this.polaAlarmu) {
         if (Math.abs(e.clientX - b.x) > b.w / 2 || Math.abs(e.clientY - b.y) > Math.max(b.h / 2, POLE_PALCA / 2)) continue;
         if (b.akcja === 'pusc') this.ustawPauze(false);
+        else if (b.akcja === 'pokaz') { if (this.alarm?.cel) this.pokazPodKarta(this.alarm.cel, 0.2); }
         else if (b.akcja === 'tablica' && this.alarm?.tablica) {
           odkrycia.odkryj(this.alarm.tablica, false);
           this.atlas.otworzTablice(this.alarm.tablica);
@@ -1255,6 +1296,8 @@ export class EkranGry implements Ekran {
         this.dirty = true;
         return;
       }
+      // strzałka przy krawędzi (cel poza kadrem): dotknięcie wiezie tam kamerę
+      if (e.button !== 2 && this.dotknijStrzalki(e.clientX, e.clientY)) return;
       // baner pauzy: cofnij, skreśl wszystko, puść czas
       for (const b of this.polaBanera) {
         if (Math.abs(e.clientX - b.x) > b.w / 2 + 4 || Math.abs(e.clientY - b.y) > Math.max(b.h / 2, POLE_PALCA / 2)) continue;
