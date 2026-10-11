@@ -203,4 +203,4 @@ export function zbudujLancuchLudu(sim: Sim, karta: string): Wydarzenie | null {
 }
 
 /** Karty ludu w kolejności — dla okienka dewelopera. */
-export const KARTY_LUDU_RODZAJE = ['spisek', 'plony', 'zalanie', 'zawal', 'sen'];
+export const KARTY_LUDU_RODZAJE = ['spisek', 'plony', ...(SWIAT.plyny ? ['zalanie'] : []), 'zawal', 'sen'];

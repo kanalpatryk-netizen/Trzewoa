@@ -1,5 +1,6 @@
 import type { Plate } from './plate';
 import { SERIF } from './ink';
+import { mnoznikNapis } from './przyciski';
 
 export type StanCzasu = 'stoi' | 'zwalnia' | 'plynie';
 
@@ -13,8 +14,8 @@ export function miejsceKlepsydry(p: Plate): { x: number; y: number; r: number; s
 }
 
 /**
- * Klepsydra przy krawędzi płyty: widać, czy czas stoi, sączy się, czy leci,
- * i ile razy szybciej. Bez tego gracz nie wiedział, czemu świat nagle zamarł.
+ * Klepsydra przy krawędzi płyty: widać, czy czas stoi, sączy się, czy płynie. Mnożnik
+ * (×2, ×½…) pojawia się tylko w trybie deweloperskim — w grze czas jest jeden.
  */
 export function rysujTempo(
   ctx: CanvasRenderingContext2D, p: Plate, stan: StanCzasu, mnoznik: number, teraz: number,
@@ -47,7 +48,7 @@ export function rysujTempo(
   ctx.textAlign = 'right';
   ctx.font = `italic ${s * 0.82}px ${SERIF}`;
   ctx.fillStyle = `rgba(216,200,172,${stan === 'stoi' ? puls : 0.8})`;
-  const podpis = stan === 'stoi' ? 'czas stoi' : stan === 'zwalnia' ? 'czas sączy się' : `×${mnoznik}`;
+  const podpis = stan === 'stoi' ? 'czas stoi' : stan === 'zwalnia' ? 'czas sączy się' : mnoznik === 1 ? '' : `×${mnoznikNapis(mnoznik)}`;
   ctx.fillText(podpis, -s * 0.8, s * 0.36);
   ctx.restore();
 }

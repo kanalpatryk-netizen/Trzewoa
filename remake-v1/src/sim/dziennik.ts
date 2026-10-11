@@ -21,8 +21,8 @@ export const DZIENNIK = {
 
 /** Narzędzia dewelopera, które sięgają do pętli gry. */
 export const DEV = {
-  /** Tempo ponad zwykłe ×3 (0 = bez nadpisania). */
-  tempo: 0,
+  /** Mnożnik czasu (1 = zwykły czas). Działa tylko w trybie deweloperskim — w grze czas jest jeden. */
+  mnoznik: 1,
   /** Pauza dewelopera: świat stoi, idzie tylko o `krokow` tików na żądanie. */
   pauza: false,
   krokow: 0,
@@ -33,6 +33,12 @@ export const DEV = {
   kursor: null as { x: number; y: number } | null,
   /** Średni czas jednego kroku symulacji w ms. */
   msKroku: 0,
+  /** Rysunek bez ciemności (mrok i Patrzący działają dalej — tylko ich nie widać). */
+  bezMroku: false,
+  /** Na płycie: to, czego gracz nie widzi — Patrzący (w każdej fazie) i gniazda rycerzy. */
+  pokazUkryte: true,
+  /** Na płycie: drogi wszystkich postaci, nie tylko śledzonej. */
+  pokazDrogi: false,
 };
 
 export function zapisz(sim: Sim, kat: KategoriaWpisu, tekst: string, x?: number, y?: number): void {

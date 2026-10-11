@@ -26,6 +26,8 @@ export interface StanMroku {
   /** Dokąd dryfuje, krążąc. */
   kx: number; ky: number;
   ofiary: number;
+  /** Ile razy zaczął na kogoś patrzeć (dla okienka dewelopera). */
+  polowania?: number;
   /** Ktoś już widział jego oczy — atlas ma tablicę. */
   widziany?: boolean;
   /** Tik ostatniego zdarzenia, które słychać (szept, zabranie, przegnanie) — ekran gra wtedy dźwięk. */
@@ -163,6 +165,7 @@ export function tikMroku(sim: Sim): void {
       m.faza = 'patrzy';
       m.od = sim.tick;
       m.widziany = true;
+      m.polowania = (m.polowania ?? 0) + 1;
       m.szeptT = sim.tick;
       cel.fear = 1;
       // stoi jak wryty: sam już nie odejdzie — uratuje go Cud albo ktoś, kto do niego przyjdzie
@@ -203,4 +206,41 @@ export function odpedzMrok(sim: Sim, tx: number, ty: number): boolean {
 export function naKogoPatrzy(sim: Sim): number | null {
   const m = sim.lud.mrok;
   return m && m.faza === 'patrzy' ? m.cel : null;
+}
+
+// ---------------------------------------------------------------- tryb deweloperski
+
+/** Narzędzie dewelopera: Patrzący wychodzi od razu i idzie do najbardziej samotnego — albo cofa się w głąb. */
+export function devMrok(sim: Sim, co: 'wyjdz' | 'cofnij'): string {
+  if (!sim.lud.mrok) sim.lud.mrok = nowyStan(sim);
+  const m = sim.lud.mrok;
+  if (co === 'cofnij') {
+    const cel = m.cel !== null ? sim.creatures.find((c) => c.id === m.cel) : undefined;
+    if (cel) cel.zamarlyDo = undefined;
+    zgas(sim, m, MROK.przerwaPoCudzie);
+    zapisz(sim, 'swiat', 'Patrzący cofnięty (narzędzie)');
+    return 'Patrzący cofnął się w głąb (3 min).';
+  }
+  m.faza = 'krazy';
+  m.przerwaDo = sim.tick;
+  nowyPunktKrazenia(sim, m);
+  const c = wypatrz(sim);
+  if (!c) return `Patrzący krąży, ale nikt nie jest sam (samotny: nikt z ludu bliżej niż ${MROK.samotnyBezLudu} kafli, ${MROK.samotnyOdObozu}+ od obozu).`;
+  m.faza = 'podchodzi'; m.cel = c.id; m.od = sim.tick;
+  m.x = c.x + 6; m.y = c.y - 1;
+  zapisz(sim, 'swiat', `Patrzący wywołany — idzie do #${c.id}`, c.x, c.y);
+  return `Patrzący idzie do #${c.id}.`;
+}
+
+/** Jedna linijka o stanie Patrzącego — dla okienka dewelopera. */
+export function opisMroku(sim: Sim): string {
+  const m = sim.lud.mrok;
+  if (!MROK.wlaczony) return 'Patrzący: wyłączony (MROK.wlaczony)';
+  const mmss = (t: number) => { const s = Math.max(0, Math.ceil(t / 120)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  if (!m) return `Patrzący: jeszcze śpi — wyjdzie po ${mmss(MROK.pierwszyPo - sim.tick)}`;
+  const ile = ` · polowań ${m.polowania ?? 0}, ofiar ${m.ofiary}`;
+  if (m.faza === 'czeka') return `Patrzący: w głębi — wraca za ${mmss(m.przerwaDo - sim.tick)}${ile}`;
+  if (m.faza === 'krazy') return `Patrzący: krąży (${Math.round(m.x)}, ${Math.round(m.y)}), szuka samotnych${ile}`;
+  if (m.faza === 'podchodzi') return `Patrzący: podchodzi do #${m.cel}${ile}`;
+  return `Patrzący: patrzy na #${m.cel} — zabierze za ${mmss(MROK.patrzyTikow - (sim.tick - m.od))}${ile}`;
 }

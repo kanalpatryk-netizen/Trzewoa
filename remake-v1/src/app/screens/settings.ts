@@ -8,7 +8,7 @@ import { Tajemnica } from '../../render/tajemnica';
 import { ramaRyciny, kartusz, naglowekDzialu, dopasujKartusz } from '../../render/ozdoby';
 import { EKRAN_USTAWIEN as U } from '../../nastawy/wyglad/ustawienia';
 import { RAMA } from '../../nastawy/wyglad/ozdoby';
-import { TEMPO, STEROWANIE } from '../../nastawy/sterowanie';
+import { STEROWANIE } from '../../nastawy/sterowanie';
 import { pelnyEkran, wyjdzZPelnegoEkranu } from '../../core/android';
 
 type Wiersz =
@@ -47,7 +47,7 @@ export class EkranUstawien implements Ekran {
     const proc = (v: number) => `${Math.round(v * 100)}%`;
     this.wiersze = [
       { typ: 'naglowek', tekst: 'Deweloper' },
-      { typ: 'przelacznik', etykieta: 'Tryb deweloperski', opis: 'w grze liczby świata: wiara, krew, oddanie, żywi, dominacja, tik', czytaj: () => ustawienia.trybDeweloperski, zmien: (v) => ustaw('trybDeweloperski', v) },
+      { typ: 'przelacznik', etykieta: 'Tryb deweloperski', opis: 'okienko dziennika i narzędzi, liczby świata, tempo czasu (¼–20×)', czytaj: () => ustawienia.trybDeweloperski, zmien: (v) => ustaw('trybDeweloperski', v) },
       { typ: 'naglowek', tekst: 'Dźwięk' },
       { typ: 'suwak', etykieta: 'Głośność', opis: 'jedna dla muzyki, skały i gestów', min: 0, max: 1, krok: 0.1, czytaj: () => ustawienia.glosnosc, zmien: (v) => { ustaw('glosnosc', v); this.app.muzyka.glosnosc(v); this.app.dzwiek.odswiezGlosnosc(); this.app.gesty.odswiezGlosnosc(); this.app.gesty.klik(); }, format: proc },
       { typ: 'przelacznik', etykieta: 'Muzyka', opis: 'powolne akordy kamienia i uderzenia w metal', czytaj: () => ustawienia.muzyka, zmien: (v) => { ustaw('muzyka', v); if (v) this.app.muzyka.start(); else this.app.muzyka.stop(); } },
@@ -73,7 +73,6 @@ export class EkranUstawien implements Ekran {
       { typ: 'wybor', etykieta: 'Góra', opis: 'łaskawa wolniej zasypia, koszmar szybciej i z mniejszą krwią — dla nowej gry', opcje: ['łaskawa', 'surowa', 'koszmar'], czytaj: () => ustawienia.trudnosc, zmien: (v) => ustaw('trudnosc', v as typeof ustawienia.trudnosc) },
       { typ: 'wybor', etykieta: 'Auto-pauza', opis: 'gra sama zatrzymuje czas, gdy trzeba decydować', opcje: ['kryzysy', 'wszystko', 'wyłączona'], czytaj: () => ustawienia.autoPauza, zmien: (v) => ustaw('autoPauza', v as typeof ustawienia.autoPauza) },
       { typ: 'wybor', etykieta: 'Nowe tablice', opis: 'przy pierwszym spotkaniu tablica atlasu otwiera się sama', opcje: ['pokazuj', 'tylko w atlasie'], czytaj: () => ustawienia.tablice, zmien: (v) => ustaw('tablice', v as typeof ustawienia.tablice) },
-      { typ: 'suwak', etykieta: 'Tempo czasu', opis: 'ile tików świata przypada na klatkę', min: 1, max: TEMPO.max, krok: 1, czytaj: () => ustawienia.tempo, zmien: (v) => ustaw('tempo', v), format: (v) => `${v}×` },
       { typ: 'przelacznik', etykieta: 'Kamera za życiem', opis: 'sama wraca tam, gdzie jest najgęściej — dopóki jej nie chwycisz', czytaj: () => ustawienia.kameraZaZyciem, zmien: (v) => ustaw('kameraZaZyciem', v) },
       { typ: 'przelacznik', etykieta: 'Automatyczne przybliżanie', opis: 'kamera sama dobiera skalę do wielkości kolonii', czytaj: () => ustawienia.autoZoom, zmien: (v) => ustaw('autoZoom', v) },
       { typ: 'przelacznik', etykieta: 'Autozapis', opis: 'stan góry co minutę do pamięci przeglądarki', czytaj: () => ustawienia.autozapis, zmien: (v) => ustaw('autozapis', v) },

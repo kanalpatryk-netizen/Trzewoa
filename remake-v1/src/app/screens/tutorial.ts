@@ -58,8 +58,6 @@ export class EkranSamouczka implements Ekran {
   vh = 720;
   /** W trakcie przygotowania rozdziału gra też coś zgłasza — to nie są ruchy gracza. */
   private ustawianie = false;
-  /** Tempo sprzed samouczka: nauka przyspieszania nie może zostawić gracza na ×3. */
-  private tempoPrzed = 1;
 
   private pola: { dalej: Pole | null; wstecz: Pole | null; pomin: Pole | null; karta: Pole | null; graj: Pole | null; menu: Pole | null; zwin?: Pole | null } =
     { dalej: null, wstecz: null, pomin: null, karta: null, graj: null, menu: null };
@@ -168,7 +166,6 @@ export class EkranSamouczka implements Ekran {
     const dom = this.gniazdoGoblinow();
     if (dom) this.gra.sim.odsunKlany(Race.SPINNER, dom.x, dom.y);   // Prządki uczą się na osobnej scenie
     this.gra.wejdz({ tryb: 'samouczek' });
-    this.tempoPrzed = ustawienia.tempo;
     this.app.muzyka.ustawScene('samouczek');
     this.idx = 0;
     this.faza = 'scena';
@@ -191,7 +188,6 @@ export class EkranSamouczka implements Ekran {
     this.ostatniEtap = -1;
     this.wskazaneId = -1;
     this.celeEtapow.clear();
-    g.tempoMnoznik = 1;
     g.zapiski = false;
     g.ui.verb = null; g.ui.tool = null; g.ui.selected = null;
     g.cel = null;
@@ -312,13 +308,11 @@ export class EkranSamouczka implements Ekran {
 
   private graj(): void {
     this.gra.dozwolone = null;
-    ustawienia.tempo = this.tempoPrzed;
     this.app.idz('menu', { nowaGra: true });   // pierwsza prawdziwa góra: najpierw okno trudności
   }
 
   private doMenu(): void {
     this.gra.dozwolone = null;
-    ustawienia.tempo = this.tempoPrzed;
     this.app.idz('menu', this.faza === 'final' ? { komunikat: 'Samouczek skończony. Pierwsze tablice czekają w atlasie.' } : undefined);
   }
 

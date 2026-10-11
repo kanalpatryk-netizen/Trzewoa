@@ -13,6 +13,7 @@ import { rysujTempo } from '../../render/tempo';
 import { PanelDewelopera } from '../devpanel';
 import { DEV } from '../../sim/dziennik';
 import { rysujDev } from '../../render/dev';
+import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, liczRole, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 
 /** Barwy ról w panelu LUD (te same odcienie co obrys postaci na płycie). */
@@ -57,7 +58,7 @@ import { tablica } from '../../atlas/tablice';
 import { Race } from '../../sim/races';
 import { Job } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
-import { ustawienia, ustaw, jakoscAuto } from '../../core/settings-store';
+import { ustawienia, jakoscAuto } from '../../core/settings-store';
 import { StrazKlatek } from '../../render/straz-klatek';
 import { mikser } from '../../core/mikser';
 import type { Akcja } from '../../core/keybinds';
@@ -120,7 +121,6 @@ export class EkranGry implements Ekran {
   nasluch: ((z: ZdarzenieGry) => void) | null = null;
   /** Samouczek może odciąć część czasowników. */
   dozwolone: Set<string> | null = null;
-  tempoMnoznik = 1;
   /** Miejsce, na które gra wprost każe patrzeć (samouczek, podpowiedzi). */
   cel: Cel | null = null;
   /** Czy rysować podpisy nacji. */
@@ -194,10 +194,19 @@ export class EkranGry implements Ekran {
 
   constructor(private app: Kontekst) {}
 
-  /** Kroki symulacji na klatkę: tempo gracza (najwyżej ×3) albo nadpisanie z okienka dewelopera. */
+  /** Mnożnik czasu: w grze zawsze 1 (zwykły czas), w trybie deweloperskim z przycisków i okienka. */
   private tempoTeraz(): number {
-    if (DEV.tempo && ustawienia.trybDeweloperski) return DEV.tempo;
-    return Math.min(TEMPO.max, Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik)));
+    return ustawienia.trybDeweloperski ? DEV.mnoznik : 1;
+  }
+
+  /** Tryb deweloperski: następny / poprzedni mnożnik czasu z TEMPO.mnozniki. */
+  private zmienTempo(o: 1 | -1): void {
+    const M = TEMPO.mnozniki;
+    let i = M.findIndex((m) => m >= DEV.mnoznik);
+    if (i < 0) i = M.length - 1;
+    DEV.mnoznik = M[Math.max(0, Math.min(M.length - 1, i + o))];
+    this.ui.say(DEV.mnoznik === 1 ? 'Czas zwykły.' : `Czas ×${DEV.mnoznik} (tryb deweloperski).`, this.sim.tick);
+    this.nasluch?.({ typ: 'tempo' });
   }
 
   wyjdz(): void {
@@ -210,7 +219,6 @@ export class EkranGry implements Ekran {
     this.pauza = false;
     this.straz.zeruj();
     this.slad = null;
-    if (ustawienia.tempo < 1) ustaw('tempo', 1);
     const tryb = (dane as { tryb?: string } | undefined)?.tryb;
     if (tryb === 'nowa') this.nowaGra();
     else if (tryb === 'dnia') {
@@ -644,7 +652,7 @@ export class EkranGry implements Ekran {
     if (teraz.strona !== s.strona && teraz.strona !== 'zamkniete') g.kartka();
   }
 
-  krok(_dt: number, teraz: number): void {
+  krok(dt: number, teraz: number): void {
     // okienko dewelopera: tylko w grze (nie w samouczku) i tylko z włączonym trybem
     const dev = ustawienia.trybDeweloperski && !this.nasluch;
     if (dev && !this.panelDev) this.panelDev = new PanelDewelopera({
@@ -666,12 +674,16 @@ export class EkranGry implements Ekran {
     if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
     this.sluchaj();
     if (!this.zamrozone()) {
-      let kroki = this.tempoTeraz();
+      // zwykły czas: tyle tików na sekundę, niezależnie od tego, ile klatek pokazuje ekran
+      let kroki: number;
       if (dev && DEV.pauza) { kroki = DEV.krokow; DEV.krokow = 0; }
-      else if (this.spowolnione()) {
-        this.reszta += kroki * 0.25;
-        kroki = Math.floor(this.reszta);
-        this.reszta -= kroki;
+      else {
+        const naSekunde = TEMPO.tikowNaSekunde * this.tempoTeraz() * (this.spowolnione() ? 0.25 : 1);
+        this.reszta += (dt / 1000) * naSekunde;
+        const cale = Math.floor(this.reszta);
+        this.reszta -= cale;
+        // wolny komputer: świat zwalnia, zamiast nadrabiać bez końca
+        kroki = Math.min(Math.max(TEMPO.maxNaKlatke, Math.ceil(naSekunde / 20)), cale);
       }
       const t0 = performance.now();
       for (let i = 0; i < kroki; i++) this.sim.step();
@@ -902,7 +914,7 @@ export class EkranGry implements Ekran {
     this.ui.draw(ctx, sim, teraz);
     this.przyciski = rozmiescPrzyciski(plate, h, {
       pauza: this.pauza, zapiski: this.zapiski, legenda: this.legenda, noweTablice: odkrycia.niezobaczone,
-      tempo: this.tempoTeraz(),
+      tempo: this.tempoTeraz(), dev: ustawienia.trybDeweloperski,
     });
     const podPrzyciskiem = przyciskPod(this.przyciski, this.ui.pointer.x, this.ui.pointer.y);
     rysujPrzyciski(ctx, this.przyciski, podPrzyciskiem?.akcja ?? null, teraz);
@@ -920,12 +932,13 @@ export class EkranGry implements Ekran {
       ctx.font = `${Math.max(14, w / 74)}px "Trzewia Tekst", Georgia, serif`;
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(236,222,190,0.95)';
+      const sek = Math.floor(sim.tick / TEMPO.tikowNaSekunde);
       const linie = [
         `wiara ${Math.round(sim.wiara)}`,
         `krew ${Math.round(sim.krew)}`,
         `oddanie ${Math.round((najwierniejsza(sim)?.devotion ?? 0) * 100)}%`,
         `żywych ${sim.creatures.reduce((n, c) => n + (c.dead ? 0 : 1), 0)}`,
-        `tik ${sim.tick}`,
+        `${Math.floor(sek / 60)}:${String(sek % 60).padStart(2, '0')} · tik ${sim.tick}${this.tempoTeraz() !== 1 ? ` · ×${mnoznikNapis(this.tempoTeraz())}` : ''}`,
       ];
       // na dole płyty po prawej — u góry stoją dziennik dewelopera i podpis Cudu
       linie.forEach((l, i) => ctx.fillText(l, plate.x + plate.w - 12, plate.y + plate.h - 14 - (linie.length - 1 - i) * 20));
@@ -1402,8 +1415,9 @@ export class EkranGry implements Ekran {
         this.app.idz('menu');
         break;
       case 'pauza': this.ustawPauze(!this.pauza); break;
-      case 'szybciej': ustawienia.tempo = Math.min(TEMPO.max, ustawienia.tempo + 1); this.nasluch?.({ typ: 'tempo' }); break;
-      case 'wolniej': ustawienia.tempo = Math.max(1, ustawienia.tempo - 1); this.nasluch?.({ typ: 'tempo' }); break;
+      // tempo czasu tylko w trybie deweloperskim — w grze czas jest jeden
+      case 'szybciej': if (ustawienia.trybDeweloperski) this.zmienTempo(1); break;
+      case 'wolniej': if (ustawienia.trybDeweloperski) this.zmienTempo(-1); break;
       case 'zapis': ui.say(this.zapisujAuto && saveToStorage(sim) ? 'Zapisane.' : 'Nie tutaj.', sim.tick); break;
       case 'wczytaj': {
         // w samouczku zapis gracza nie ma prawa podmienić góry, na której się uczy

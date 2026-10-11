@@ -4,7 +4,7 @@
  *   z graczem   — rozsądny automat: sieje grzyb przy głodujących, stawia Znak przy
  *                 dominującej rasie, karmi i osłania drogę pielgrzymów.
  *                 Cel: Uwolnienie po 45–70 minutach.
- * Minuta = 7200 tików (tempo ×2 przy 60 klatkach).
+ * Minuta = 7200 tików (zwykły czas gry: 120 tików na sekundę).
  *
  *   node scripts/test-balansu.mjs [ziaren] [maks. minut]
  */

@@ -1,4 +1,3 @@
-import { TEMPO } from '../nastawy/sterowanie';
 /** Ustawienia gracza — jedno miejsce, z którego czyta cała gra. */
 export interface Settings {
   trybDeweloperski: boolean; // podgląd liczb świata i narzędzia dla twórcy
@@ -6,7 +5,6 @@ export interface Settings {
   muzyka: boolean;
   rezonans: boolean;       // dźwięk świata: kucie, modlitwa, kamień
   efekty: boolean;         // dźwięki gestów: szkic, pauza, ostrzeżenia, atlas
-  tempo: number;           // tików symulacji na klatkę
   jakosc: 'auto' | 'ostra' | 'szybka';
   kameraZaZyciem: boolean;
   autoZoom: boolean;
@@ -43,7 +41,6 @@ export const DOMYSLNE: Settings = {
   muzyka: true,
   rezonans: true,
   efekty: true,
-  tempo: 2,
   jakosc: 'auto',
   kameraZaZyciem: true,
   autoZoom: false,
@@ -81,8 +78,6 @@ function wczytaj(): Settings {
     const raw = localStorage.getItem(KLUCZ);
     if (!raw) return { ...DOMYSLNE };
     const u: Settings = { ...DOMYSLNE, ...JSON.parse(raw) };
-    // najwyżej ×3 — starsze zapisy miały do ×8
-    u.tempo = Math.min(TEMPO.max, Math.max(1, u.tempo));
     return u;
   } catch {
     return { ...DOMYSLNE };

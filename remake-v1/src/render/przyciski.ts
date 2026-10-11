@@ -18,20 +18,28 @@ export interface Przycisk {
 
 /**
  * Nacięcia przy dolnej krawędzi płyty. Wszystko, co dotąd dało się zrobić tylko
- * z klawiatury — pauza, tempo, zapiski, klucz, powrót kamery, zapis — ma tu swój znak,
+ * z klawiatury — pauza, zapiski, klucz, powrót kamery, zapis (a w trybie deweloperskim tempo) — ma tu swój znak,
  * bo na dotyku klawiatury nie ma wcale.
  */
+/** Mnożnik czasu do podpisu: ¼, ½, 2, 10… */
+export function mnoznikNapis(m: number): string {
+  return m === 0.25 ? '¼' : m === 0.5 ? '½' : String(m);
+}
+
 /** Lewa krawędź rzędu przycisków na szerokim ekranie — obok niego układa się Otchłań. */
 export function lewaKrawedzPrzyciskow(p: Plate): number {
   const r = Math.max(22, Math.min(26, p.w * 0.02));
   return p.x + p.w - r * 2.3 * 7 - r * 1.2 - r;
 }
 
-export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; zapiski: boolean; legenda: boolean; tempo: number; noweTablice?: number }): Przycisk[] {
+export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; zapiski: boolean; legenda: boolean; tempo: number; dev?: boolean; noweTablice?: number }): Przycisk[] {
   const wszystkie: { akcja: AkcjaPrzycisku; etykieta: string; wlaczony?: boolean }[] = [
     { akcja: 'pauza', etykieta: stan.pauza ? 'wznów' : 'pauza', wlaczony: stan.pauza },
-    { akcja: 'wolniej', etykieta: 'wolniej' },
-    { akcja: 'szybciej', etykieta: `szybciej (×${stan.tempo})` },
+    // tempo czasu tylko w trybie deweloperskim — w grze czas jest jeden
+    ...(stan.dev ? [
+      { akcja: 'wolniej' as const, etykieta: `wolniej (×${mnoznikNapis(stan.tempo)})` },
+      { akcja: 'szybciej' as const, etykieta: `szybciej (×${mnoznikNapis(stan.tempo)})` },
+    ] : []),
     { akcja: 'kamera', etykieta: 'wróć do swoich' },
     { akcja: 'zapiski', etykieta: 'zapiski', wlaczony: stan.zapiski },
     { akcja: 'atlas', etykieta: stan.noweTablice ? `atlas — nowe tablice: ${stan.noweTablice}` : 'atlas', wlaczony: !!stan.noweTablice },

@@ -7,6 +7,7 @@ import { migotLampy } from './fresk';
 import { glif } from './tajemnica';
 import { obrazFresku } from './freski';
 import { ustawienia } from '../core/settings-store';
+import { DEV } from '../sim/dziennik';
 
 /**
  * Ciemność w górze: świat jest widoczny tylko w świetle lampek robotników, aureol
@@ -34,6 +35,8 @@ function plamaSwiatla(): HTMLCanvasElement {
 
 export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number, pauza: boolean): void {
   if (!MROK.wlaczony || typeof document === 'undefined') return;
+  // tryb deweloperski: „bez ciemności” — mrok i Patrzący działają, tylko ich nie widać
+  if (DEV.bezMroku && ustawienia.trybDeweloperski) return;
   const k = MROK.skala;
   const W = Math.max(1, Math.ceil(cam.vw * k)), H = Math.max(1, Math.ceil(cam.vh * k));
   if (!warstwa) warstwa = document.createElement('canvas');
