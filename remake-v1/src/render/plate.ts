@@ -9,10 +9,11 @@ import { najwierniejsza } from '../sim/pielgrzymka';
 import { cost } from '../powers/powers';
 import { liczRole } from '../sim/lud';
 import { REMAKE } from '../nastawy/lud';
-import { ramaFresku, pigment } from './fresk';
+import { ramaFresku } from './fresk';
 import { FRESK } from '../nastawy/barwy';
 import { NASTROJ } from '../nastawy/wyglad/nastroj';
 import { plynnie, wolnoRuszac } from './nastroj';
+import { rysujZnakOddania } from './modlitwa';
 
 /**
  * `waski` — telefon (albo tablet) trzymany pionowo; `niski` — telefon trzymany poziomo.
@@ -395,52 +396,9 @@ function etykietaPionowa(ctx: CanvasRenderingContext2D, tekst: string, x: number
 }
 
 /**
- * Złożone do modlitwy dłonie w kwadracie 100×100. Opisana jest prawa dłoń, lewa to jej lustro;
- * między nimi zostaje szpara pod kciukami, jak na ikonach — dzięki niej nawet w 24 px
- * widać dłonie, a nie postać.
- */
-const DLON: (['M', number, number] | ['L', number, number] | ['C', number, number, number, number, number, number])[] = [
-  ['M', 50.4, 2],
-  ['C', 54, 2, 56, 5, 56.5, 10],       // środkowy palec
-  ['C', 59.5, 11.5, 61, 15, 61, 20],   // serdeczny
-  ['C', 64, 22, 65.5, 26, 65.5, 31],   // mały
-  ['C', 66.5, 41, 69.5, 52, 73.5, 61], // krawędź dłoni
-  ['L', 81, 67],                       // mankiet
-  ['L', 88, 100],                      // rękaw
-  ['L', 66, 100],
-  ['L', 64, 82],
-  ['L', 59, 77],                       // nadgarstek od środka
-  ['C', 55.5, 68, 52, 56, 51.4, 44],   // wnętrze dłoni pod kciukiem
-  ['C', 51, 30, 50.5, 14, 50.4, 2],
-];
-let dlonie: { obrys: Path2D; rysy: Path2D } | null = null;
-
-function zlozoneDlonie(): { obrys: Path2D; rysy: Path2D } {
-  if (dlonie) return dlonie;
-  const obrys = new Path2D();
-  const rysy = new Path2D();
-  for (const k of [1, -1]) {
-    const X = (v: number) => 50 + k * (v - 50);
-    for (const s of DLON) {
-      if (s[0] === 'M') obrys.moveTo(X(s[1]), s[2]);
-      else if (s[0] === 'L') obrys.lineTo(X(s[1]), s[2]);
-      else obrys.bezierCurveTo(X(s[1]), s[2], X(s[3]), s[4], X(s[5]), s[6]);
-    }
-    obrys.closePath();
-    // palce, kciuk i brzegi mankietu
-    rysy.moveTo(X(56.5), 10); rysy.bezierCurveTo(X(57), 20, X(59), 34, X(62), 44);
-    rysy.moveTo(X(61), 20); rysy.bezierCurveTo(X(61.5), 28, X(63), 36, X(65), 42);
-    rysy.moveTo(X(51.6), 46); rysy.bezierCurveTo(X(55), 44, X(57.5), 52, X(58.5), 60);
-    rysy.moveTo(X(73.5), 61); rysy.lineTo(X(64), 82);
-    rysy.moveTo(X(81), 67); rysy.lineTo(X(66), 86);
-  }
-  return (dlonie = { obrys, rysy });
-}
-
-/**
  * Oddanie najwierniejszej nacji — w miejscu, gdzie na komputerze stoi Otchłań.
- * Złożone dłonie napełniają się złotem od rękawów po czubki palców, a kreska w poprzek
- * to próg, od którego nacja sama wysyła wartę pod rdzeń. Bez tego oddanie było liczbą,
+ * Złożone dłonie (render/modlitwa.ts) napełniają się złotem od mankietu po czubki palców,
+ * a kreska w poprzek to próg, od którego nacja sama wysyła wartę pod rdzeń. Bez tego oddanie było liczbą,
  * której nikt nie widział, a „dlaczego nikt nie idzie pod rdzeń” — zagadką.
  */
 export function drawOddanie(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number): void {
@@ -449,54 +407,7 @@ export function drawOddanie(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, v
   const prog = PIELGRZYMKA.oddanieNacji;
   const dosc = oddanie > prog;
   const { x, y, h: bok } = obszarOddania(p, vh);
-  const { obrys, rysy } = zlozoneDlonie();
-  const s = bok / 100;
-  const poziom = 100 * (1 - Math.max(0, Math.min(1, oddanie)));
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(s, s);
-  // wierni idą pod rdzeń: za dłońmi tli się blask
-  if (dosc) {
-    const tetno = 0.5 + 0.5 * Math.sin(performance.now() * 0.0021);
-    const g = ctx.createRadialGradient(50, 34, 4, 50, 34, 66);
-    g.addColorStop(0, `rgba(240,200,120,${0.22 + 0.12 * tetno})`);
-    g.addColorStop(1, 'rgba(240,200,120,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(-20, -20, 140, 140);
-  }
-  ctx.fillStyle = 'rgba(14,9,6,0.96)';
-  ctx.fill(obrys);
-  const zalane = new Path2D();
-  zalane.rect(0, poziom, 100, 100 - poziom);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.save();
-  ctx.clip(obrys);
-  pigment(ctx, zalane, dosc ? FRESK.zloto : FRESK.ugier, 0.85, 'zloto');
-  // pod lustrem złota rysy malowane sinopią, nad nim — blady szkic na ciemnym
-  ctx.lineWidth = 1 / s;
-  if (bok >= 26) {
-    ctx.save(); ctx.clip(zalane);
-    ctx.strokeStyle = 'rgba(92,31,18,0.8)'; ctx.stroke(rysy);
-    ctx.restore();
-    ctx.strokeStyle = `${INK}0.22)`;
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 100, poziom); ctx.clip(); ctx.stroke(rysy); ctx.restore();
-  }
-  ctx.strokeStyle = 'rgba(255,236,186,0.95)';
-  ctx.lineWidth = 1.2 / s;
-  ctx.beginPath(); ctx.moveTo(0, poziom); ctx.lineTo(100, poziom); ctx.stroke();
-  ctx.restore();
-  ctx.strokeStyle = dosc ? 'rgba(246,216,142,0.95)' : `${INK}0.8)`;
-  ctx.lineWidth = 1.1 / s;
-  ctx.stroke(obrys);
-  // kreska progu pielgrzymki: w poprzek dłoni, żeby było widać, ile brakuje
-  const progY = 100 * (1 - prog);
-  ctx.strokeStyle = dosc ? 'rgba(246,216,142,0.95)' : 'rgba(246,216,142,0.6)';
-  ctx.lineWidth = 1 / s;
-  ctx.setLineDash([2 / s, 2 / s]);
-  ctx.beginPath(); ctx.moveTo(-5 / s, progY); ctx.lineTo(100, progY); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
+  rysujZnakOddania(ctx, x, y, bok, oddanie, prog, INK, performance.now());
   ctx.save();
   const ile = `${Math.floor(oddanie * 100)}%`;
   const dopisek = !klan ? 'nikt nie wierzy' : dosc ? 'idą pod rdzeń' : `pielgrzymka od ${Math.round(prog * 100)}%`;
