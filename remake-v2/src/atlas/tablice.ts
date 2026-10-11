@@ -20,6 +20,8 @@ import { CECHY } from '../nastawy/cechy';
 import { LUD } from '../nastawy/lud';
 import { MROK } from '../nastawy/mrok';
 import { DLON } from '../nastawy/dlon';
+import { WIADRO } from '../nastawy/wiadro';
+import { ZAWAL } from '../nastawy/zawal';
 import { lunaOtchlani, rysujKlatkeDloni } from '../render/dlon';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
@@ -452,7 +454,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'rasa-0', grupa: 'rasy', nazwa: 'Pobożni', lacina: 'Gens pia',
     opis: `Twój jedyny lud. Nikt się nie rodzi — co ${Math.round(LUD.wyjscieCo / 120)} sekund skała wydaje nowego za krew: pobożnego, który się modli, albo robotnika, który kopie drogę i donosi jedzenie. Rycerzy skała nie wydaje — śpią w gniazdach w skale.`,
-    kiedy: 'Pilnuj krwi i spiżarni. Pobożny może się okaleczyć (krew, ale słabnie na zawsze), a każdego możesz złożyć w ofierze. Bez pobożnych i bez krwi na nowego — przegrywasz.',
+    kiedy: 'Pilnuj krwi i wiader z jedzeniem. Pobożny może się okaleczyć (krew, ale słabnie na zawsze), a każdego możesz złożyć w ofierze. Bez pobożnych i bez krwi na nowego — przegrywasz.',
     rycina: postac(Race.GOBLIN, 'modli'),
   },
   {
@@ -488,9 +490,9 @@ export const TABLICE: Tablica[] = [
   // ryty
   {
     id: 'ryt-zasiej', grupa: 'ryty', nazwa: 'Nakarm', lacina: 'Semen causae',
-    opis: 'Nie rozkazujesz, dokąd iść — kładziesz w skale powód. Grzyb to jedzenie, ruda to materiał na ołtarze i kuźnie, kości są padliną, która też karmi.',
-    kiedy: 'Siej przy tych, których jest najmniej. Dosypywanie zwycięzcy przybliża sen.',
-    koszt: `grzyb ${kosztSlowami('zasiej', 'grzyb')}, ruda ${kosztSlowami('zasiej', 'ruda')}`,
+    opis: `Nie rozkazujesz, dokąd iść — dajesz powód, żeby żyli. Dotknij miejsca, a z góry, na linie, zjedzie tam dodatkowe wiadro z ${WIADRO.nakarmPorcji} porcjami jedzenia (na dno pustki pod palcem). Naraz zjeżdża tylko jedno takie wiadro.`,
+    kiedy: 'Spuszczaj je tam, gdzie głodują, a zwykłe wiadra nie sięgają — najczęściej warcie przy przedsionku rdzenia.',
+    koszt: `wiadro ${kosztSlowami('zasiej', 'grzyb')}`,
     rycina: cala(rysujZiarno),
   },
   {
@@ -529,8 +531,8 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'sen', grupa: 'prawa', nazwa: 'Przegrana', lacina: 'Casus',
-    opis: 'Przegrywasz, gdy nie da się już wygrać: nie żyje żaden pobożny, a nawet ofiara ze wszystkich nie da krwi na nowego. Najczęstsza droga do tego to głód — lud daleko od spiżarni, bez robotników, którzy noszą jedzenie.',
-    kiedy: 'Trzymaj robotników, zakładaj obozy ze spiżarniami i sadź przy nich grzyb. Nie wysyłaj pod rdzeń ostatniego pobożnego.',
+    opis: 'Przegrywasz, gdy nie da się już wygrać: nie żyje żaden pobożny, a nawet ofiara ze wszystkich nie da krwi na nowego. Najczęstsza droga do tego to głód — lud rozproszony daleko od wiader, bez robotników, którzy noszą jedzenie.',
+    kiedy: 'Trzymaj robotników i lud razem, a gdzie głodują — spuść wiadro rytem Nakarm. Nie wysyłaj pod rdzeń ostatniego pobożnego.',
     rycina: cala(rysujSpis),
   },
   {
@@ -577,13 +579,13 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'wydarzenia', grupa: 'prawa', nazwa: 'Wydarzenia', lacina: 'Aestus',
-    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, zaraza, głód, spisek rycerzy, zatrute plony, zawał nad drogą wiernych, sen o kamiennych rycerzach. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku. Niektóre wracają: zostawiony spisek po dwóch minutach wybucha buntem — część rycerzy zmienia barwy i bije lud.',
-    kiedy: 'Spisek gaś od razu, jeśli stać cię na krew. Zatrute plony lepiej spalić niż zjeść. Sen o rycerzach pokazuje gniazdo — warto.',
+    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, zaraza, głód, spisek rycerzy, zgniłe jedzenie w wiadrze, zawał nad drogą wiernych, sen o kamiennych rycerzach. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku. Niektóre wracają: zostawiony spisek po dwóch minutach wybucha buntem — część rycerzy zmienia barwy i bije lud.',
+    kiedy: 'Spisek gaś od razu, jeśli stać cię na krew. Zgniłe jedzenie lepiej oczyścić albo wylać, niż zjeść. Sen o rycerzach pokazuje gniazdo — warto.',
     rycina: cala(rysujPrzyplyw),
   },
   {
     id: 'role', grupa: 'prawa', nazwa: 'Role ludu', lacina: 'Officia',
-    opis: 'Pobożni modlą się i kruszą skorupę; stoją przy obozie najbliżej rdzenia. Robotnicy kopią drogę do rdzenia, zbierają grzyb do spiżarni, donoszą jedzenie stojącym i zaopatrują obóz frontowy. Rycerze mają miecz i cztery razy więcej życia; poza wartą pilnują obozu z jedzeniem, a w czasie fali walczą ze Strażnikami.',
+    opis: 'Pobożni modlą się i kruszą skorupę; stoją przy obozie najbliżej rdzenia. Robotnicy kopią drogę do rdzenia i donoszą jedzenie z wiader tym, którzy stoją na warcie. Rycerze mają miecz i cztery razy więcej życia; poza wartą pilnują obozu, a w czasie fali walczą ze Strażnikami. Gdy rycerzy zabraknie, robotnicy zakładają hełmy i walczą zamiast nich.',
     kiedy: 'Na karcie postaci widać jej zamiar i ile jeszcze go trzyma. Kogo wyda skała, wybierasz pod paskiem ról.',
     rycina: postac(Race.GOBLIN, 'kopie'),
   },
@@ -640,6 +642,31 @@ export const TABLICE: Tablica[] = [
     opis: `Tylko w Koszmarze, i rzadko. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu, a pod nim zaczyna się otchłań, spod ziemi sączy się czerwona łuna, a on (czasem dwoje naraz) staje jak wryty. Z głębi, zawsze od dołu, wznosi się ogromna dłoń — po ${Math.round((DLON.wstaje + DLON.siega) / 120)} sekundach sięga, chwyta ich i zapada się z nimi w ciemność. Nie zostają nawet kości — krew i tak spływa do ciebie.`,
     kiedy: 'Nie stawiaj ludu nad nieznanym daleko od obozu. Gdy otchłań pod kimś zaczerwieni się — rzuć Cud przy nim, zanim dłoń chwyci.',
     rycina: dlonOtchlani,
+  },
+  // Remake v2
+  {
+    id: 'wiadro', grupa: 'prawa', nazwa: 'Wiadro z jedzeniem', lacina: 'Situla panis',
+    opis: `Grzyba i spiżarni już nie ma. Co ${Math.round(WIADRO.co / 120)} sekund z góry, na linie, zjeżdża wiadro pełne jedzenia — do pierwszego odkrytego, pustego miejsca, do którego lud dojdzie, najbliżej tych, którzy najbardziej głodują. Przed zjazdem ze stropu sypie się pył. Każdy może z niego jeść; puste wiadro odjeżdża w górę. Kto umiera z głodu, a wiadro jeszcze jedzie, biegnie pod linę, wspina się po niej, wsiada do wiadra i je w drodze w dół.`,
+    kiedy: 'Liczba „jedzenie” nad płytą to porcje we wszystkich wiadrach. Gdy nie nadążają, spuść dodatkowe rytem Nakarm.',
+    rycina: postac(Race.GOBLIN, 'je'),
+  },
+  {
+    id: 'zawal', grupa: 'prawa', nazwa: 'Zawał', lacina: 'Ruina montis',
+    opis: `Góra zamyka się za ludem. Gdy przez ${Math.round(ZAWAL.czekaj / 120)} sekund nikogo z ludu nie ma wysoko nad najwyżej stojącym, skała nad nim się zawala: wszystko wyżej staje się litą skałą — razem z gniazdami kamiennych rycerzy, które tam spały, obozami i trupami. Mapa się skraca, a kamera nie wjeżdża już ponad gruz. W górę nie ma powrotu: lud nie ucieknie — musi walczyć.`,
+    kiedy: 'Szukaj rycerzy, zanim lud zejdzie niżej — gniazda nad zawałem przepadają na zawsze.',
+    rycina: cala(rysujGore),
+  },
+  {
+    id: 'helmy', grupa: 'prawa', nazwa: 'Hełmy robotników', lacina: 'Fossores armati',
+    opis: `Gdy nie zostanie ani jeden rycerz, robotnicy zakładają żelazne hełmy i biorą kilofy do walki: mają ${Math.round((LUD.helm.hp - 1) * 100)}% więcej życia i biją jak rycerze — trzymają wartę, bronią przed obcymi i walczą ze Strażnikami Snu. Gdy wrócą rycerze, hełmy zdejmują.`,
+    kiedy: 'To ostatnia obrona, nie zastępstwo — robotnik w hełmie nie kopie i nie nosi jedzenia, gdy trwa fala.',
+    rycina: postac(Race.GOBLIN, 'walczy'),
+  },
+  {
+    id: 'trupy', grupa: 'prawa', nazwa: 'Trupy', lacina: 'Corpora',
+    opis: `Kto z ludu umrze, nie znika: jego ciało leży tam, gdzie padł. Tylko zabranych przez ciemność i przez dłoń z otchłani nie ma. Gdy ciał jest więcej niż ${LUD.trupyMax}, najstarsze rozsypują się w kości.`,
+    kiedy: 'Trupy mówią, gdzie lud ginie — tam spuść wiadro albo poślij rycerzy.',
+    rycina: postac(Race.GOBLIN, 'spi'),
   },
 ];
 

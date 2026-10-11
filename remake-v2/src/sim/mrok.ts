@@ -9,7 +9,7 @@
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { MROK } from '../nastawy/mrok';
-import { rolaPostaci, klanLudu, NAZWA_ROLI } from './lud';
+import { rolaPostaci, klanLudu, NAZWA_ROLI, walczacy } from './lud';
 import { zapisz } from './dziennik';
 
 export type FazaMroku = 'czeka' | 'krazy' | 'podchodzi' | 'patrzy';
@@ -43,7 +43,7 @@ function lowna(c: Creature): boolean {
   if (c.dead || c.straznik || c.buntownik) return false;
   const r = rolaPostaci(c);
   if (!r) return false;
-  return !(MROK.rycerzeBezpieczni && r === 'rycerz');
+  return !(MROK.rycerzeBezpieczni && walczacy(c));
 }
 
 /** Światło obozów: siedziba i obozy (z nich lud nie ginie). */

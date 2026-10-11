@@ -7,7 +7,7 @@ import type { Sim } from '../sim/sim';
 import { Race } from '../sim/races';
 import type { Camera } from './camera';
 import { SERIF } from './ink';
-import { grzybPrzy, gniazdaWSkale } from '../sim/lud';
+import { gniazdaWSkale } from '../sim/lud';
 import { LUD } from '../nastawy/lud';
 
 /** Podpis w ciemnej ramce z kreską odniesienia do miejsca (sx, sy). */
@@ -57,7 +57,7 @@ export function rysujZnacznikiLudu(ctx: CanvasRenderingContext2D, sim: Sim, cam:
     ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   }
-  // obozy ze spiżarniami (siedziba ma swój podpis przy gnieździe)
+  // obozy (siedziba ma swój podpis przy gnieździe)
   for (const o of sim.lud.spizarnie) {
     const x = sx(o.x + 0.5), y = sy(o.y + 1);
     const r = Math.max(7, z * 0.9);
@@ -67,9 +67,7 @@ export function rysujZnacznikiLudu(ctx: CanvasRenderingContext2D, sim: Sim, cam:
     ctx.strokeStyle = 'rgba(240,214,164,0.98)'; ctx.lineWidth = 1.5; ctx.stroke();
     ctx.fillStyle = 'rgba(12,8,7,0.95)';
     ctx.beginPath(); ctx.moveTo(x - r * 0.25, y); ctx.lineTo(x, y - r * 0.6); ctx.lineTo(x + r * 0.25, y); ctx.closePath(); ctx.fill();
-    const barwa = o.ilosc > 0 ? 'rgba(240,214,164,0.98)' : 'rgba(226,150,120,0.95)';
-    const g = grzybPrzy(sim, o.x, o.y);
-    podpis(ctx, `obóz · spiżarnia ${o.ilosc}${g ? ` · grzyb obok ${g}` : ''}`, x, y - r * 1.3, barwa, rozmiar);
+    podpis(ctx, 'obóz', x, y - r * 1.3, 'rgba(240,214,164,0.98)', rozmiar);
   }
   ctx.restore();
 }

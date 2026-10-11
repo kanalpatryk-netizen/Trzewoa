@@ -6,7 +6,8 @@
  */
 export const KOSZTY = {
   zasiej: {
-    grzyb: { krew: 8, wiara: 0, otchlan: 0 },
+    // Remake v2: Nakarm spuszcza dodatkowe wiadro z jedzeniem (WIADRO.nakarmPorcji porcji) — jedno dotknięcie
+    grzyb: { krew: 30, wiara: 0, otchlan: 0 },
   },
   szept: {
     modl: { krew: 0, wiara: 8, otchlan: 0 },

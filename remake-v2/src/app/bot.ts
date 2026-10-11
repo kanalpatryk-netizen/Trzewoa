@@ -11,6 +11,7 @@ import { Job } from '../sim/creatures';
 import { rozstrzygnij } from '../sim/wydarzenia';
 import { gniazdaWSkale } from '../sim/lud';
 import { seed, sign, whisper } from '../powers/powers';
+import { porcjiWWiadrach } from '../sim/wiadro';
 
 export type StylBota = 'rozsadny' | 'budowniczy' | 'speedrun' | 'bierny';
 
@@ -43,9 +44,9 @@ function role(sim: Sim): { pobozny: number; robotnik: number; rycerz: number } {
   for (const c of zywi(sim)) if (!c.buntownik) r[(c.rola ?? 'pobozny') as keyof typeof r]++;
   return r;
 }
+/** Remake v2: jedzenie to porcje w wiadrach. */
 function jedzenie(sim: Sim): number {
-  const k = sim.clans.find((x) => !x.dead && x.race === Race.GOBLIN);
-  return (k ? k.stock : 0) + (sim.lud.spizarnie ?? []).reduce((s, o) => s + o.ilosc, 0);
+  return porcjiWWiadrach(sim);
 }
 const ktosNaTorze = (sim: Sim) => sim.creatures.some((c: C) => !c.dead && (c.tor || c.przemysl !== undefined));
 
@@ -60,7 +61,7 @@ export function kartaBota(sim: Sim, styl: StylBota): boolean {
   return true;
 }
 
-/** Wspólne dla budowniczego i speedrunu: grzyb najgłodniejszemu, rycerze z gniazd. */
+/** Wspólne dla budowniczego i speedrunu: wiadro najgłodniejszemu (ryt Nakarm), rycerze z gniazd. */
 function wspolne(sim: Sim): void {
   const p = pamiec(sim);
   const r = role(sim);
@@ -99,14 +100,12 @@ function rozsadny(sim: Sim): void {
     const c = zywi(sim).find((q) => q.rola === 'robotnik' && q.hunger < 0.5);
     if (c && whisper(sim, 'przemysl', c)) p.przemysl = sim.tick;
   }
-  // głodujący dostają grzyb pod nogi
+  // głodujący dostają wiadro (ryt Nakarm) tam, gdzie stoją
   let najg: C = null;
   for (const c of zywi(sim)) if (c.hunger >= 0.6 && (!najg || c.hunger > najg.hunger)) najg = c;
   if (najg && sim.krew > 70) seed(sim, 'grzyb', Math.round(najg.x), Math.round(najg.y));
-  // grzyb w przedsionku, żeby warta pod rdzeniem miała co jeść
-  if (sim.tick % 900 === 0 && sim.krew > 60 && sim.jedzeniePrzedsionka < 3) {
-    for (let k = 0; k < 4; k++) seed(sim, 'grzyb', w.coreX + (k - 2) * 3, w.przedsionekY);
-  }
+  // wiadro nad przedsionkiem, żeby warta pod rdzeniem miała co jeść
+  if (sim.tick % 900 === 0 && sim.krew > 60 && sim.jedzeniePrzedsionka < 3) seed(sim, 'grzyb', w.coreX, w.przedsionekY);
   // Cud przy ludzie — oddanie rośnie, a z nim rytuał
   if (sim.wiara >= 35 && sim.tick % 1200 === 0) {
     const k = sim.clans.find((x) => !x.dead && x.race === Race.GOBLIN);
@@ -140,7 +139,7 @@ function budowniczy(sim: Sim): void {
   // wymarsz pod rdzeń, gdy wszystkiego dużo (albo po 16 minutach)
   if (!p.wymarsz) {
     const plan = sim.planDrogi ? sim.planDrogi.kopac.length : 99;
-    const gotowy = zywi(sim).length >= 12 && jedzenie(sim) >= 150 && (r.rycerz >= 3 || !gniazdaWSkale(sim).length) && sim.krew >= 40 && plan === 0;
+    const gotowy = zywi(sim).length >= 12 && jedzenie(sim) >= 30 && (r.rycerz >= 3 || !gniazdaWSkale(sim).length) && sim.krew >= 40 && plan === 0;
     if (gotowy || sim.tick > 16 * M) p.wymarsz = sim.tick;
   }
   if (p.wymarsz && sim.tick % 600 === 0) {

@@ -105,11 +105,11 @@ export class EkranSamouczka implements Ekran {
         const x = Math.round(dom.x + Math.cos(a) * r), y = Math.round(dom.y + Math.sin(a) * r);
         if (!w.inb(x, y)) continue;
         if (w.tile[w.idx(x, y)] === T.AIR && !w.passable(x, y + 1) && w.water[w.idx(x, y)] === 0) {
-          return { x: x + 0.5, y: y + 0.5, r: 3, tekst: 'przeciągnij tutaj' };
+          return { x: x + 0.5, y: y + 0.5, r: 3, tekst: 'dotknij tutaj' };
         }
       }
     }
-    return { x: dom.x, y: dom.y, r: 3, tekst: 'przeciągnij tutaj' };
+    return { x: dom.x, y: dom.y, r: 3, tekst: 'dotknij tutaj' };
   }
 
   /** Lita skała tuż obok gniazda — tam ma powstać korytarz. */

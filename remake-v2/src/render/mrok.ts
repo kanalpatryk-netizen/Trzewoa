@@ -8,6 +8,7 @@ import { glif } from './tajemnica';
 import { obrazFresku } from './freski';
 import { ustawienia } from '../core/settings-store';
 import { DEV } from '../sim/dziennik';
+import { wiadra } from '../sim/wiadro';
 
 /**
  * Ciemność w górze: świat jest widoczny tylko w świetle lampek robotników, aureol
@@ -66,6 +67,8 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   if (klan) swiec(klan.hx + 0.5, klan.hy + 0.5, S.siedziba * (0.96 + 0.06 * migotLampy(teraz)));
   for (const o of sim.lud.obozy ?? []) swiec(o.x + 0.5, o.y + 0.5, S.oboz);
   for (const s of sim.lud.spizarnie ?? []) swiec(s.x + 0.5, s.y + 0.5, S.oboz * 0.8);
+  // wiadro z jedzeniem świeci ciepło (pełne mocniej) — widać je w ciemności, nawet gdy nikogo przy nim nie ma
+  for (const wd of wiadra(sim)) if (wd.faza !== 'zapowiedz') swiec(wd.x + 0.5, wd.y + 0.3, S.oboz * (wd.porcje > 0 ? 0.75 : 0.4));
   swiec(w.coreX + 0.5, w.coreY + 0.5, S.rdzen);
   for (const e of sim.efekty) if (e.rodzaj === 'cud') swiec(e.x, e.y, S.cud * (1 - e.t / e.max * 0.5));
 

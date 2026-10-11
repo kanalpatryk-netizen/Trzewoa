@@ -9,9 +9,11 @@ import { rolaPostaci, maxHp, gniazdaWSkale } from '../sim/lud';
 import { LUD } from '../nastawy/lud';
 import { odpedzMrok } from '../sim/mrok';
 import { odpedzDlon } from '../sim/dlon';
+import { wiadroNaZadanie } from '../sim/wiadro';
+import { REMAKE } from '../nastawy/lud';
 
 /**
- * Trzy ryty wersji na telefon: Nakarm (grzyb), Szepnij (jedna myśl w jedną głowę)
+ * Trzy ryty wersji na telefon: Nakarm (Remake v2: dodatkowe wiadro z jedzeniem), Szepnij (jedna myśl w jedną głowę)
  * i Cud (objawienie). Resztę — obronę, rudę, zarazy, powodzie — przynoszą karty wydarzeń
  * (sim/wydarzenia.ts), na które odpowiadasz wyborem.
  * Wewnętrzne nazwy zostały po dawnych rytach: „zasiej” to Nakarm, „znak” to Cud.
@@ -22,7 +24,7 @@ export interface Tool { id: string; label: string; hint: string; }
 
 export const TOOLS: Record<Verb, Tool[]> = {
   zasiej: [
-    { id: 'grzyb', label: 'grzyb', hint: 'jedzenie, które rośnie samo — przeciągnij tam, gdzie mieszkają' },
+    { id: 'grzyb', label: 'wiadro', hint: 'z góry zjedzie dodatkowe wiadro z jedzeniem — dotknij tam, gdzie mają je dostać' },
   ],
   szept: [
     { id: 'modl', label: 'módl się', hint: 'idzie pod twój rdzeń i modli się tam' },
@@ -66,6 +68,8 @@ function pay(sim: Sim, verb: Verb, tool: string): boolean {
 export function seed(sim: Sim, tool: string, tx: number, ty: number, zaplac = true): boolean {
   const w = sim.world;
   if (!w.inb(tx, ty)) return false;
+  // Remake v2: grzyba już nie ma — Nakarm spuszcza wiadro z jedzeniem
+  if (REMAKE && tool === 'grzyb') return nakarm(sim, tx, ty, zaplac) === null;
   if (zaplac && !pay(sim, 'zasiej', tool)) return false;
   const r = MOCE.zasiewPromien;
   const szansa = MOCE.zasiewSzansa;
@@ -87,6 +91,19 @@ export function seed(sim: Sim, tool: string, tx: number, ty: number, zaplac = tr
   sim.efekt(tx + 0.5, ty + 0.5, 'zasiew');
   for (let i = 0; i < 4; i++) sim.spark(tx + 0.5, ty + 0.5, tool === 'grzyb' ? 'spore' : 'glint');
   return true;
+}
+
+/**
+ * Remake v2: ryt Nakarm — z góry, na linie, zjeżdża dodatkowe wiadro z jedzeniem tam, gdzie wskażesz
+ * (na dno pustki pod tym miejscem). Zwraca powód odmowy albo null, gdy wiadro jedzie.
+ */
+export function nakarm(sim: Sim, tx: number, ty: number, zaplac = true): string | null {
+  if (zaplac && !affordable(sim, 'zasiej', 'grzyb')) return 'Nie starczy krwi na wiadro.';
+  const odmowa = wiadroNaZadanie(sim, tx, ty);
+  if (odmowa) return odmowa;
+  if (zaplac) pay(sim, 'zasiej', 'grzyb');
+  sim.efekt(tx + 0.5, ty + 0.5, 'zasiew');
+  return null;
 }
 
 const THOUGHTS: Record<string, Thought> = {

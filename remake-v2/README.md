@@ -10,6 +10,13 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu).
 ## Co nowego w v2
 - **Obserwatorium** — cztery okna gry naraz, w każdym gra bot (opis niżej).
 - **Bot w grze** — gra sam w oknach obserwatorium (`src/app/bot.ts`).
+- **Zawał od góry** — gdy przez 20 s nikogo z ludu nie ma wysoko, góra nad nim zawala się (razem z gniazdami
+  rycerzy, które tam spały). Kamera nie wjeżdża ponad gruz, mapa się skraca, a lud nie ucieknie w górę — musi walczyć.
+- **Wiadro z jedzeniem zamiast grzyba i spiżarni** — co 40 s z góry, na linie, zjeżdża wiadro pełne jedzenia
+  do pierwszego odkrytego, pustego miejsca przy najbardziej głodnych; każdy może z niego jeść. Kto umiera z głodu,
+  wspina się po linie do zjeżdżającego wiadra i je w drodze w dół. Ryt „Nakarm” spuszcza dodatkowe wiadro (30 krwi).
+- **Hełmy robotników** — gdy nie zostanie ani jeden rycerz, robotnicy zakładają hełmy i walczą zamiast nich.
+- **Trupy zostają** — zmarli leżą tam, gdzie padli (najstarsze rozsypują się w kości).
 - **Kamera nie jeździ sama do wydarzeń** — karta i ostrzeżenie tylko zaznaczają miejsce (poza ekranem: strzałka
   przy krawędzi); dotknięcie strzałki albo „pokaż miejsce ›” na karcie wiezie tam kamerę. Dawne zachowanie:
   ustawienia → „Kamera do wydarzeń”.
@@ -38,13 +45,13 @@ Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo.
 ## Co jest inaczej (od 4.2 beta)
 - **Jeden lud — Pobożni** — zamiast wielu ras. Trzy role:
   - **pobożni** — modlą się i schodzą pod rdzeń,
-  - **robotnicy** — kopią i znoszą jedzenie do spiżarni w siedzibie,
+  - **robotnicy** — kopią i donoszą jedzenie z wiader (v2; dawniej znosili je do spiżarni w siedzibie),
   - **rycerze** — miecz, dużo życia i obrażeń, wolni, prawie się nie modlą, nie uciekają.
 - **Nikt się nie rodzi.** Co 15 s skała wydaje nową postać tej roli, którą wybierzesz u góry ekranu
   (*ze skały: robotnik / pobożny*). Kosztuje **krew**, a nowy przez minutę jest osłabiony (−60%).
 - **Krew** to zasób: zapas na start, + za każdą śmierć, + ofiara (szept „ofiaruj”),
   + samookaleczenie pobożnego (szept „okalecz się” — krew teraz, on słabszy na zawsze).
-- **Jedzenie** leży w spiżarniach — w siedzibie i w każdym obozie. Robotnicy donoszą je pobożnym
+- **Jedzenie** (v2: w wiadrach, które zjeżdżają z góry — patrz wyżej; poniżej opis z v1) leży w spiżarniach — w siedzibie i w każdym obozie. Robotnicy donoszą je pobożnym
   i rycerzom tam, gdzie stoją (z najbliższego obozu z jedzeniem, a gdy tam pusto — z poprzedniego),
   a sami jedzą z najbliższej spiżarni. Rudy nie ma.
 - **Porządek pod rdzeniem:** pobożni modlą się w szeregu, rycerze stoją na warcie po bokach,

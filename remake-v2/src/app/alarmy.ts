@@ -179,7 +179,7 @@ export class Straznik {
         rodzaj: 'pekniecie-pierwsze', kryzys: true,
         tytul: `Skorupa zaczęła pękać — ${procentSkorupy(sim)}%`,
         tekst: `Modlitwa wiernych rozkuwa kamień, którego nie ruszy żaden kilof. Góra oddaje ci za to ${RYTUAL.nagrodaWiary} wiary.`,
-        rada: 'Pilnuj grzybu przy przedsionku, żeby warta nie umarła z głodu — i nie wpuszczaj pod rdzeń obcych.',
+        rada: 'Gdy warta przy przedsionku głoduje, spuść jej wiadro rytem „Nakarm” — i nie wpuszczaj pod rdzeń obcych.',
         cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, tekst: 'przedsionek' },
       };
     }

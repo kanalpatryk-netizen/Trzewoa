@@ -4,6 +4,8 @@
  * Kliknięcie wpisu z miejscem (x, y) przenosi kamerę w to miejsce. Położenie i zwinięcie
  * okienka zostają w pamięci przeglądarki.
  */
+import { wiadroTeraz, porcjiWWiadrach, doNastepnego } from '../sim/wiadro';
+import { stropGory } from '../sim/zawal';
 import type { Sim } from '../sim/sim';
 import { DZIENNIK, DEV, zapisz, kto, OPIS_PRACY, NAZWY_KAFLI, type KategoriaWpisu, type WpisDziennika } from '../sim/dziennik';
 import { Race } from '../sim/races';
@@ -162,7 +164,7 @@ export class PanelDewelopera {
     zasoby.append(
       this.przycisk('+100 wiary', () => { this.gra.sim().wiara += 100; }),
       this.przycisk('+100 krwi', () => { this.gra.sim().krew += 100; }),
-      this.przycisk('+100 jedzenia', () => { const k = klanLudu(this.gra.sim()); if (k) k.stock += 100; }, 'do spiżarni siedziby'),
+      this.przycisk('+ wiadro', () => { wiadroTeraz(this.gra.sim()); }, 'pełne wiadro zjeżdża od razu, przy najgłodniejszych'),
       this.przycisk('sen → 0', () => { this.gra.sim().sen = 0; }, 'powieka podnosi się'),
       this.przycisk('pęknij skorupę', () => wymusPekniecie(this.gra.sim())),
     );
@@ -328,12 +330,11 @@ export class PanelDewelopera {
 
   private pokazStan(sim: Sim): void {
     const r = liczRole(sim);
-    const klan = klanLudu(sim);
     const wierni = najwierniejsza(sim);
     const t = DEV.mnoznik === 1 ? 'czas zwykły' : `czas ×${mnoznikNapis(DEV.mnoznik)}`;
     const linie = [
       `${czas(sim.tick)} · tik ${sim.tick} · ${DEV.pauza ? 'pauza dewelopera' : t} · ${this.tikowNaSek} tik/s · ${this.fps} kl/s · krok ${DEV.msKroku.toFixed(2)} ms`,
-      `lud ${r.pobozny + r.robotnik + r.rycerz}: pobożni ${r.pobozny} · robotnicy ${r.robotnik} · rycerze ${r.rycerz} · jedzenie ${klan?.stock ?? 0}`,
+      `lud ${r.pobozny + r.robotnik + r.rycerz}: pobożni ${r.pobozny} · robotnicy ${r.robotnik} · rycerze ${r.rycerz} · jedzenie ${porcjiWWiadrach(sim)} porcji · wiadro za ${Math.ceil(doNastepnego(sim) / 120)} s${stropGory(sim) ? ` · strop ${stropGory(sim)}` : ''}`,
       `wiara ${Math.floor(sim.wiara)} · krew ${Math.floor(sim.krew)} · oddanie ${Math.round((wierni?.devotion ?? 0) * 100)}% · sen ${Math.round(sim.sen * 100)}% · pęknięć ${sim.rytual.pekniecia}${sim.rytual.otwarta ? ' · rdzeń otwarty' : ''}`,
       opisMroku(sim),
       opisDloni(sim),

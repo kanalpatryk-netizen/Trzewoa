@@ -84,7 +84,7 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g) => { g.sim.krew += 60; g.sim.wiara += 40; },
     etapy: [
       {
-        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew — z każdej śmierci i z ofiar. Jedzenie leży w spiżarniach. Wiarę i krew wydajesz na ryty, wybory i nowych ze skały.',
+        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew — z każdej śmierci i z ofiar. Jedzenie to porcje w wiadrach, które co 40 s zjeżdżają z góry na linie. Wiarę i krew wydajesz na ryty, wybory i nowych ze skały.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarZasobow(s.gra.plate) }),
       },
       {
@@ -101,7 +101,7 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę, zbierają grzyb i donoszą jedzenie. Rycerze bronią — i walczą ze Strażnikami Snu.',
+        tekst: 'Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę i donoszą jedzenie z wiader. Rycerze bronią — i walczą ze Strażnikami Snu. Gdy zabraknie rycerzy, robotnicy zakładają hełmy i walczą sami.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
       {
@@ -126,12 +126,12 @@ export const ROZDZIALY: Rozdzial[] = [
         wskaz: (s) => s.ryt('zasiej'), gotowe: (g) => g.ui.verb === 'zasiej',
       },
       {
-        tekst: 'Przeciągnij palcem po zaznaczonym miejscu.',
+        tekst: 'Dotknij zaznaczonego miejsca — tam zjedzie wiadro.',
         wskaz: (s) => { const c = s.miejsceNaGrzyb(); return c ? { typ: 'swiat', cel: c } : null; },
         gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'zasiej',
       },
     ],
-    koniec: 'Wyrósł grzyb. Pójdą jeść — im więcej jedzenia, tym więcej ich góra wyżywi.',
+    koniec: 'Z góry zjeżdża wiadro z jedzeniem. Pójdą jeść — a kto umiera z głodu, wespnie się po linie i zje jeszcze w drodze.',
   },
   {
     tytul: 'Zrób cud',
@@ -237,7 +237,7 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOddania(s.gra.plate, s.vh) }),
       },
       {
-        tekst: 'Pod rdzeniem jedzenie donoszą robotnicy — z obozu najbliżej rdzenia. Pilnuj, żeby w spiżarniach było co nosić.',
+        tekst: 'Wiadra zjeżdżają tam, gdzie lud najbardziej głoduje — także do warty pod rdzeniem. Gdy nie zdążą, spuść wiadro rytem „Nakarm”.',
         rozumiem: true,
         wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
         wskaz: (s) => { const w = s.gra.sim.world; return { typ: 'swiat', cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, r: 6, tekst: 'przedsionek' } }; },
@@ -251,11 +251,11 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Gdy nie zostanie żaden pobożny, a krwi nie starczy, by skała wydała nowego — to koniec. Najczęściej zabija głód: lud daleko od spiżarni.',
+        tekst: 'Gdy nie zostanie żaden pobożny, a krwi nie starczy, by skała wydała nowego — to koniec. Najczęściej zabija głód: lud rozproszony daleko od wiader.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
     ],
-    koniec: 'Zakładaj obozy ze spiżarniami, sadź grzyb przy nich i trzymaj robotników — to oni noszą jedzenie.',
+    koniec: 'Trzymaj lud razem, spuszczaj wiadra tam, gdzie głodują, i trzymaj robotników — to oni noszą jedzenie.',
   },
 ];
 

@@ -4,12 +4,10 @@ import { T } from './tiles';
 import { aktualnyPlan } from './pielgrzymka';
 import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
 import { REMAKE } from '../nastawy/lud';
-import { grzybPrzy } from './lud';
 
-/** Remake v1: podpis siedziby — ile w spiżarni i ile grzyba rośnie obok. */
-function podpisSiedziby(sim: Sim, k: Sim['clans'][number]): string {
-  const g = grzybPrzy(sim, k.hx, k.hy);
-  return `siedziba · spiżarnia ${k.stock}${g ? ` · grzyb obok ${g}` : ''}`;
+/** Remake v2: podpis siedziby (jedzenie jest w wiadrach, nie w spiżarni). */
+export function podpisSiedziby(_sim: Sim, _k: Sim['clans'][number]): string {
+  return 'siedziba';
 }
 
 export interface Podpowiedz { tekst: string; cel?: { x: number; y: number; r: number; tekst: string }; waga: number; }
@@ -94,7 +92,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     const w = sim.world;
     if (sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku) {
       kandydaci.push({
-        tekst: `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. Nakarm przedsionek nad rdzeniem — z tym jedzeniem ich warta przeżyje pod skorupą.`,
+        tekst: `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. ${REMAKE ? 'Spuść wiadro nad przedsionek rytem „Nakarm”' : 'Nakarm przedsionek nad rdzeniem'} — z tym jedzeniem ich warta przeżyje pod skorupą.`,
         cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'nakarm tutaj' },
         waga: 65,
       });
@@ -109,7 +107,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
         });
       } else {
         kandydaci.push({
-          tekst: `${najwierniejszy.name} schodzą pod twój rdzeń. Pilnuj, żeby grzyb przy przedsionku nie zniknął.`,
+          tekst: `${najwierniejszy.name} schodzą pod twój rdzeń. ${REMAKE ? 'Pilnuj, żeby wiadra docierały do warty przy przedsionku.' : 'Pilnuj, żeby grzyb przy przedsionku nie zniknął.'}`,
           cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'przedsionek' },
           waga: 35,
         });

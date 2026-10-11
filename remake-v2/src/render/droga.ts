@@ -1,5 +1,4 @@
 import { REMAKE } from '../nastawy/lud';
-import { grzybPrzy } from '../sim/lud';
 import type { Plate } from './plate';
 import { procentSkorupy } from '../sim/rytual';
 import { bossSpi, falaTrwa, trybWiernych, rycerzeCzekaja, iluRycerzy } from '../sim/straznicy';
@@ -58,7 +57,7 @@ export function terazDrogi(sim: Sim): Teraz {
     if (k.dead || k.pop < PIELGRZYMKA.minNacja || RACES[k.race].faithGain <= 0) continue;
     if (!najw || k.devotion > najw.devotion) najw = k;
   }
-  const gniazdo = (k: Sim['clans'][number]) => ({ x: k.hx, y: k.hy, r: 5, tekst: REMAKE ? `siedziba · spiżarnia ${k.stock}${grzybPrzy(sim, k.hx, k.hy) ? ` · grzyb obok ${grzybPrzy(sim, k.hx, k.hy)}` : ''}` : k.name });
+  const gniazdo = (k: Sim['clans'][number]) => ({ x: k.hx, y: k.hy, r: 5, tekst: REMAKE ? 'siedziba' : k.name });
   switch (kroki[biezacy]?.nazwa) {
     case 'wiara': {
       const lud = sim.clans.filter((k) => !k.dead && k.race === Race.GOBLIN && k.pop > 0).sort((a, b) => b.pop - a.pop)[0];

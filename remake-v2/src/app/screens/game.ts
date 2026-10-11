@@ -1,3 +1,7 @@
+import { rysujWiadra, rysujPrzodWiader } from '../../render/wiadro';
+import { rysujTrupy } from '../../render/trupy';
+import { stropGory } from '../../sim/zawal';
+import { porcjiWWiadrach } from '../../sim/wiadro';
 import { Sim, resetRaces } from '../../sim/sim';
 import { GORA } from '../../nastawy/gora';
 import { KAMERA, TEMPO, STEROWANIE } from '../../nastawy/sterowanie';
@@ -20,7 +24,7 @@ import { klanLudu, liczRole, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
 import { rysujZnacznikiLudu, rysujKlamry } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
-import { LUD } from '../../nastawy/lud';
+import { LUD, REMAKE } from '../../nastawy/lud';
 import { dzisiaj, ziarnoDnia, wynikDnia, czasGry } from '../../core/swiat-dnia';
 import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, type Przycisk } from '../../render/przyciski';
 import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
@@ -38,7 +42,7 @@ import { etykietyKolonii, podswietlCel, strzalkaCelu, type Cel } from '../../ren
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
 import { computePlate, obszarSpisu, obszarOddania, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
-import { seed, sign, TOOLS, type Verb } from '../../powers/powers';
+import { seed, sign, nakarm, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
 import { rysujRozkazy, rysujBanerPauzy, type PoleBanera } from '../../render/rozkazy';
 import { miejsceKlepsydry } from '../../render/tempo';
@@ -139,6 +143,9 @@ export class EkranGry implements Ekran {
   private lastSave = 0;
   private lastSound = 0;
   private reszta = 0;
+  /** Remake v2: ostatni zawał i ostatnie wiadro, które już było słychać. */
+  private slyszanyZawal: number | undefined;
+  private slyszaneWiadro: number | undefined;
   private rada: Podpowiedz | null = null;
   private radaOd = -1e9;
   /** Pauza żyje tylko w tej sesji — zapisana potrafiła uruchomić grę w bezruchu. */
@@ -429,10 +436,15 @@ export class EkranGry implements Ekran {
     if (sim.tick > 600) cicho('role');
     if (sim.tick > 4000) cicho('klamry');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
-    if ((sim.lud.gniazda ?? []).some((g) => g.odkryte) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
+    if ((sim.lud.gniazda ?? []).some((g) => g.odkryte && !g.zawalone) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
     if (sim.lud.dlon?.widziana) odkrycia.odkryj('dlon');
+    // Remake v2: wiadro, zawał, hełmy, trupy
+    if ((sim.lud.wiadra?.lista ?? []).some((wd) => wd.faza === 'stoi')) cicho('wiadro');
+    if ((sim.lud.zawal?.ile ?? 0) > 0) odkrycia.odkryj('zawal');
+    if (sim.lud.helmy) odkrycia.odkryj('helmy');
+    if (sim.lud.trupy?.length) cicho('trupy');
     if (sim.creatures.some((c) => !c.dead && c.boss)) odkrycia.odkryj('boss');
     if (this.ui.verb) cicho(`ryt-${this.ui.verb}`);
     if (this.pauza) cicho('pauza');
@@ -480,7 +492,7 @@ export class EkranGry implements Ekran {
   }
 
   /**
-   * Remake v1: pasek nad płytą — tylko trzy zasoby: wiara, krew i jedzenie w spiżarni.
+   * Remake v1: pasek nad płytą — tylko trzy zasoby: wiara, krew i jedzenie (Remake v2: porcje w wiadrach).
    * Role i przełącznik „ze skały” stoją w panelu LUD pod płytą (górny margines należy
    * do narzędzi rytu — wcześniej wszystko to nachodziło na siebie).
    */
@@ -490,7 +502,8 @@ export class EkranGry implements Ekran {
     const czesci: [string, string, string][] = [
       ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(222,200,150,1)'],
       ['krew', `${Math.floor(sim.krew)}`, 'rgba(206,104,86,1)'],
-      ['jedzenie', `${klan?.stock ?? 0}`, 'rgba(150,178,114,1)'],
+      // Remake v2: jedzenie to porcje w wiadrach, które już zjechały albo zjeżdżają
+      ['jedzenie', `${REMAKE ? porcjiWWiadrach(sim) : klan?.stock ?? 0}`, 'rgba(150,178,114,1)'],
     ];
     const teraz = performance.now();
     ctx.save();
@@ -761,6 +774,15 @@ export class EkranGry implements Ekran {
         }
       }
       if (dev && kroki > 0) DEV.msKroku = DEV.msKroku * 0.9 + ((performance.now() - t0) / kroki) * 0.1;
+      // Remake v2: zawał — kamera nie wjeżdża ponad strop (mapa skraca się razem z górą)
+      const strop = stropGory(this.sim);
+      if (strop !== this.cam.gora) {
+        this.cam.gora = strop;
+        this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      }
+      const zawalT = this.sim.lud.zawal?.ostatniT, wiadroT = this.sim.lud.wiadra?.zjazdT;
+      if (zawalT !== undefined && zawalT !== this.slyszanyZawal) { this.slyszanyZawal = zawalT; this.app.dzwiek.zawal(); }
+      if (wiadroT !== undefined && wiadroT !== this.slyszaneWiadro) { this.slyszaneWiadro = wiadroT; this.app.dzwiek.wiadro(); }
       // kamera za śledzoną postacią (okienko dewelopera)
       if (dev && DEV.sledz && DEV.sledzony >= 0) {
         const c = this.sim.creatures.find((q) => q.id === DEV.sledzony && !q.dead);
@@ -938,6 +960,9 @@ export class EkranGry implements Ekran {
     drawParticles(ctx, sim, cam);
     // liny są częścią góry: poza światłem lampek toną w mroku jak skała, do której są przypięte
     rysujKlamry(ctx, sim, cam);
+    // Remake v2: trupy leżą tam, gdzie padli; wiadra z jedzeniem zjeżdżają na linach
+    rysujTrupy(ctx, sim, cam, teraz);
+    rysujWiadra(ctx, sim, cam, teraz);
     // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
     rysujMrok(ctx, sim, cam, teraz, this.pauza);
     if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3);
@@ -948,6 +973,7 @@ export class EkranGry implements Ekran {
     }
     rysujZarys(ctx, sim, cam, teraz);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
+    rysujPrzodWiader(ctx, sim, cam, teraz);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
     if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
@@ -1155,7 +1181,12 @@ export class EkranGry implements Ekran {
     }
     const przedKrew = sim.krew, przedWiara = sim.wiara, przedOtchlan = sim.otchlan;
     let udane = false;
-    if (ui.verb === 'zasiej') udane = seed(sim, ui.tool, wx, wy);
+    if (ui.verb === 'zasiej' && REMAKE) {
+      // Remake v2: Nakarm — jedno wiadro na dotknięcie; powód odmowy mówi, co nie tak
+      const odmowa = nakarm(sim, wx, wy);
+      udane = odmowa === null;
+      if (odmowa) { ui.say(odmowa, sim.tick); this.app.gesty.odmowa(); this.dirty = true; return; }
+    } else if (ui.verb === 'zasiej') udane = seed(sim, ui.tool, wx, wy);
     else if (ui.verb === 'znak') { udane = sign(sim, ui.tool, wx, wy); if (udane) this.app.dzwiek.toll(); }
     else {
       const wx = this.cam.toWorldX(x - this.plate.x), wy = this.cam.toWorldY(y - this.plate.y);
@@ -1386,7 +1417,7 @@ export class EkranGry implements Ekran {
       if (ui.selected) { ui.selected = null; if (wpis) wpis.interfejs = true; return; }
       if (!this.naPlycie(e.clientX, e.clientY)) return;
       if (ui.verb === 'zasiej' && e.button !== 2) {
-        this.painting = true;
+        this.painting = !REMAKE;      // Remake v2: Nakarm to jedno wiadro, nie malowanie
         this.malowane.clear();
         this.kosztPociagniecia = { krew: 0, wiara: 0, otchlan: 0 };
         this.uzyj(e.clientX, e.clientY);

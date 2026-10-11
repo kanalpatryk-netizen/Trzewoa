@@ -8,6 +8,7 @@
  */
 import type { Sim } from '../sim/sim';
 import { Race } from '../sim/races';
+import { porcjiWWiadrach } from '../sim/wiadro';
 import { ustawienia } from '../core/settings-store';
 import { mikser } from '../core/mikser';
 import type { StylBota } from './bot';
@@ -118,7 +119,7 @@ export function wyslijStan(sim: Sim, ziarno: number, koniecOd: number): void {
     zywych, role,
     wiara: Math.round(sim.wiara),
     krew: Math.round(sim.krew),
-    jedzenie: Math.round((k ? k.stock : 0) + (sim.lud.spizarnie ?? []).reduce((s, o) => s + o.ilosc, 0)),
+    jedzenie: porcjiWWiadrach(sim),
     oddanie: k ? Math.round(k.devotion * 100) : 0,
     koszmar: !!sim.koszmar,
     koniec: sim.ending ?? null,

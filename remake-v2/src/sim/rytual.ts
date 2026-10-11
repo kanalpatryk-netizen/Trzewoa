@@ -1,4 +1,6 @@
 import type { Sim } from './sim';
+import { porcjiWWiadrach } from './wiadro';
+import { REMAKE } from '../nastawy/lud';
 import { zapisz } from './dziennik';
 import { T } from './tiles';
 import { Race } from './races';
@@ -258,8 +260,12 @@ export function pielgrzymowKlanu(sim: Sim, clanId: number): number {
   return n;
 }
 
-/** Grzyb i kości w suchej strefie przy przedsionku — tym żyje warta pod rdzeniem. */
+/**
+ * Jedzenie dla warty pod rdzeniem. Remake v2: porcje w wiadrach — robotnicy noszą je pobożnym
+ * pod rdzeń (dawniej: grzyb i kości w suchej strefie przy przedsionku).
+ */
 export function policzJedzeniePrzedsionka(sim: Sim): number {
+  if (REMAKE) return porcjiWWiadrach(sim);
   const w = sim.world;
   let n = 0;
   for (let y = w.coreY - P.jedzenieOd; y <= w.coreY - P.jedzenieDo; y++) {

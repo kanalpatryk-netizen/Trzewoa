@@ -192,7 +192,35 @@ function glowaRobotnika(r: Rysunek): void {
     if (st.broda && !m.prosto) broda(g, s, kat, st.broda, st.wlosy, m.lod);
   });
   m.ksztalt(nos(s, kat, 1.15), m.kula(naGlowie(s, kat, 1.05, 0.15), s.rg * 0.3, st.skora, false, 0, CIEN.skora));
-  wlosy(r, s, kat);
+  if (r.c.helm) helmRobotnika(r, s, kat);
+  else wlosy(r, s, kat);
+}
+
+/**
+ * Remake v2: hełm robotnika — gdy nie zostaje ani jeden rycerz, kopacze wkładają żelazne
+ * czepce i stają do walki. Prosty, okrągły garnek z nitowaną obręczą i krótką osłoną karku;
+ * bez złota i nosala rycerskiego hełmu, żeby z daleka nie mylić ich z rycerzami.
+ */
+function helmRobotnika(r: Rysunek, s: Szkielet, kat: number): void {
+  const { m, st, h } = r;
+  const P = (dx: number, dy: number) => naGlowie(s, kat, dx, dy);
+  const he = poGlowie(s, kat, [[-1.18, 0.5], [-1.2, -0.2], [-0.95, -0.85], [-0.3, -1.22], [0.4, -1.12], [0.92, -0.62], [1.12, -0.12], [1.18, -0.02], [0.4, -0.12], [-0.55, -0.05], [-0.8, 0.5]]);
+  m.ksztalt(he, m.metal(P(0.5, -1.2), P(-0.9, 0.3), s.rg, st.zelazo, false, CIEN.metal), (g) => {
+    if (m.prosto) return;
+    // obręcz z nitami
+    const o1 = P(-1.18, -0.1), o2 = P(1.14, -0.08);
+    g.strokeStyle = tonC(st.zelazo, -0.45, CIEN.metal); g.lineWidth = Math.max(0.8, h * 0.014); g.lineCap = 'butt';
+    g.beginPath(); g.moveTo(o1.x, o1.y); g.quadraticCurveTo(P(0, -0.2).x, P(0, -0.2).y, o2.x, o2.y); g.stroke();
+    g.lineCap = 'round';
+    // grzbiet od czoła ku karkowi
+    g.strokeStyle = tonC(st.zelazo, 0.35, CIEN.metal, 0.8); g.lineWidth = Math.max(0.5, h * 0.008);
+    const a = P(0.75, -0.75), b = P(-0.2, -1.2), c = P(-0.95, -0.7);
+    g.beginPath(); g.moveTo(a.x, a.y); g.quadraticCurveTo(b.x, b.y, c.x, c.y); g.stroke();
+    if (m.lod === 2) {
+      g.fillStyle = tonC(st.zelazo, 0.5, CIEN.metal);
+      for (let i = 0; i < 5; i++) { const q = P(-1.0 + i * 0.5, -0.14); g.beginPath(); g.arc(q.x, q.y, Math.max(0.4, h * 0.0035), 0, TAU); g.fill(); }
+    }
+  }, false, false);
 }
 
 /** Broda: 1 — wąsy, 2 — pełna broda, 3 — krótka broda przy żuchwie. Usta zostają widoczne. */

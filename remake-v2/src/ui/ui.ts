@@ -22,7 +22,7 @@ interface Hit { x: number; y: number; hw: number; hh: number; kind: 'verb' | 'to
 
 /** Co ryt robi — jedno zdanie w podpisie pod kursorem. */
 const SKUTKI: Record<Verb, string> = {
-  zasiej: 'przeciągnij palcem — wyrośnie grzyb, którym się najedzą',
+  zasiej: 'dotknij miejsca — z góry zjedzie tam wiadro z jedzeniem',
   szept: 'dotknij mieszkańca: „módl się” albo „prorokuj”',
   znak: 'dotknij przy gnieździe — ich oddanie rośnie',
 };

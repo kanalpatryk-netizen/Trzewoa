@@ -12,7 +12,7 @@ export const AKCJE: OpisAkcji[] = [
   { akcja: 'pauza', nazwa: 'Pauza i plan', opis: 'czas staje; rozkazy wydane w pauzie dzieją się naraz po jej zdjęciu' },
   { akcja: 'szybciej', nazwa: 'Szybciej', opis: 'tylko w trybie deweloperskim: przyspiesza czas (do ×20)' },
   { akcja: 'wolniej', nazwa: 'Wolniej', opis: 'tylko w trybie deweloperskim: zwalnia czas (do ×¼)' },
-  { akcja: 'zasiej', nazwa: 'Nakarm', opis: 'grzyb tam, gdzie mieszkają' },
+  { akcja: 'zasiej', nazwa: 'Nakarm', opis: 'wiadro z jedzeniem tam, gdzie wskażesz' },
   { akcja: 'szept', nazwa: 'Szepnij', opis: 'módl się albo prorokuj — jednej głowie' },
   { akcja: 'znak', nazwa: 'Cud', opis: 'objawienie — oddanie nacji rośnie' },
   { akcja: 'narzedzie1', nazwa: 'Narzędzie I', opis: 'pierwsze narzędzie wybranego czasownika' },

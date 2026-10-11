@@ -1,4 +1,5 @@
 import { Rng } from '../core/rng';
+import { stropGory } from './zawal';
 import { zapisz, kto } from './dziennik';
 import { World, SURFACE_Y } from './world';
 import { T, PASSABLE } from './tiles';
@@ -16,6 +17,8 @@ import { SWIAT } from '../nastawy/swiat';
 import { cechaNacji, losujCeche } from './cechy';
 import type { Podsumowanie } from '../core/osiagniecia';
 import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, zalozGniazda, type StanLudu } from './lud';
+import { zostawTrupa } from './trupy';
+import { wiadroTeraz } from './wiadro';
 import { LUD, REMAKE } from '../nastawy/lud';
 import { falaTrwa } from './straznicy';
 
@@ -216,7 +219,7 @@ export class Sim {
     const lud = this.newClan(Race.GOBLIN, hx, hy);
     lud.name = 'Pobożni';
     lud.cecha = undefined;
-    lud.stock = LUD.jedzenieStart;
+    lud.stock = REMAKE ? 0 : LUD.jedzenieStart;     // Remake v2: bez spiżarni — jedzenie zjeżdża w wiadrach
     for (const rola of ['pobozny', 'robotnik', 'rycerz'] as const) {
       for (let i = 0; i < LUD.start[rola]; i++) {
         // na podłodze przy siedzibie — postawieni obok niej spadali szybem i nie mieli jak wrócić
@@ -242,8 +245,8 @@ export class Sim {
     // przez pół góry, bo wtedy umiera, zanim gracz zdąży cokolwiek zrobić
     this.nakarmSwiat(Z.spizarnia);
 
-    // pierwsza grzybnia — tam, gdzie mokro
-    for (let k = 0; k < G.grzybniaStartProby; k++) {
+    // pierwsza grzybnia — tam, gdzie mokro (Remake v2: grzyba już nie ma)
+    for (let k = 0; k < (REMAKE ? 0 : G.grzybniaStartProby); k++) {
       const x = 2 + this.rng.int(w.w - 4), y = SURFACE_Y + this.rng.int(w.h - SURFACE_Y - 4);
       const i = w.idx(x, y);
       const wet = w.water[i] > 0 || w.water[w.idx(x, Math.min(w.h - 1, y + 1))] > 0;
@@ -517,7 +520,9 @@ export class Sim {
     this.fungusBudget += G.grzybniaZaSmierc * d.size;
     this.clans[c.clan].pop--;
     const x = Math.floor(c.x), y = Math.floor(c.y);
-    if (this.world.passable(x, y) && this.world.get(x, y) === T.AIR) this.world.set(x, y, T.BONES);
+    // Remake v2: ciało ludu zostaje na ziemi (sim/trupy.ts) — bez kości w kaflach
+    if (REMAKE) zostawTrupa(this, c, tag);
+    else if (this.world.passable(x, y) && this.world.get(x, y) === T.AIR) this.world.set(x, y, T.BONES);
     this.spark(c.x, c.y, 'hit');
     this.efekt(c.x, c.y, 'smierc');
     if (c.prophet) this.gdzie(c.x, c.y).log(`Prorok ${this.clans[c.clan].name} zginął ${why}.`, 'krew');
@@ -651,9 +656,9 @@ export class Sim {
     const clan = this.clans[c.clan];
     const cx = Math.floor(c.x), cy = Math.floor(c.y);
     const need = c.race === Race.GOBLIN ? L.kosztOltarza : c.race === Race.DWARF ? L.kosztKuzni : 0;
-    if (clan.stock < need) return false;
-    // Remake v1: ołtarz stawiają tylko pobożni i tylko z nadwyżki spiżarni (płacą jedzeniem)
-    if (REMAKE && c.race === Race.GOBLIN && (c.rola !== 'pobozny' || clan.stock < LUD.zapasDo / 2)) return false;
+    // Remake v2: ołtarz stawiają tylko pobożni, bez spiżarni — za darmo, ale najwyżej raz na `LUD.oltarzCo`
+    if (REMAKE && c.race === Race.GOBLIN) { if (c.rola !== 'pobozny' || this.tick < (this.lud.oltarzPo ?? 0)) return false; }
+    else if (clan.stock < need) return false;
     const R = L.budowaZasieg;
     let best: [number, number] | null = null;
     let bestD = 1e9;
@@ -689,8 +694,9 @@ export class Sim {
     // ołtarz i kuźnia są lite — postawione na kimś zamurowywały go żywcem
     if (this.creatures.some((o) => !o.dead && Math.floor(o.x) === c.jx && Math.floor(o.y) === c.jy)) return false;
     const clan = this.clans[c.clan];
-    if (c.race === Race.GOBLIN && clan.stock >= L.kosztOltarza) {
-      clan.stock -= L.kosztOltarza; w.set(c.jx, c.jy, T.SHRINE);
+    if (c.race === Race.GOBLIN && (REMAKE || clan.stock >= L.kosztOltarza)) {
+      if (REMAKE) this.lud.oltarzPo = this.tick + LUD.oltarzCo; else clan.stock -= L.kosztOltarza;
+      w.set(c.jx, c.jy, T.SHRINE);
       clan.devotion = Math.min(1, clan.devotion + L.oltarzOddanie);
       if (this.rng.chance(0.4)) this.gdzie(c.jx, c.jy).log(`${clan.name} postawili ci ołtarz.`, 'wiara',
         'oltarz', (n) => `${clan.name} postawili ci ${n} ołtarze.`);
@@ -1022,6 +1028,12 @@ export class Sim {
    * i pustą spiżarnią — bez tego nauka sprowadzała się do patrzenia na głód.
    */
   nakarmSwiat(ile = Z.nakarmJedzenie): void {
+    // Remake v2: zamiast grzyba przy gniazdach — wiadro z jedzeniem od razu
+    if (REMAKE) {
+      if (this.creatures.length) wiadroTeraz(this);
+      for (const c of this.creatures) if (!c.dead) c.hunger = Math.min(c.hunger, Z.nakarmGlod);
+      return;
+    }
     for (const klan of this.clans) if (!klan.dead) this.zapasy(klan, ile);
     this.fungusBudget += Z.nakarmGrzybnia;
     for (const c of this.creatures) if (!c.dead) c.hunger = Math.min(c.hunger, Z.nakarmGlod);
@@ -1035,6 +1047,8 @@ export class Sim {
    */
   zapasy(klan: Clan, ile: number): void {
     if (klan.race === Race.DWARF || klan.race === Race.HUMAN) return;
+    // Remake v2: jedzenie z kart i wydarzeń zjeżdża wiadrem (porcja na dwa dawne grzyby)
+    if (REMAKE) { wiadroTeraz(this, Math.max(4, Math.round(ile / 2))); return; }
     const w = this.world;
     const kafel = klan.race === Race.GOBLIN ? T.FUNGUS : T.BONES;
     let poszlo = 0;
@@ -1086,6 +1100,18 @@ export class Sim {
     let x = nadX ?? 8 + this.rng.int(w.w - 16), y = SURFACE_Y - 2;
     for (let k = 0; k < 40 && !w.passable(x, y); k++) {
       x = nadX !== undefined ? Math.max(8, Math.min(w.w - 9, nadX + this.rng.int(21) - 10)) : 8 + this.rng.int(w.w - 16);
+    }
+    // Remake v2: góra zawalona — schodzą szczeliną w gruzie, w pierwszą pustkę pod stropem
+    const strop = stropGory(this);
+    if (strop > y) {
+      let znalezione = false;
+      for (let k = 0; k < 80 && !znalezione; k++) {
+        const xx = nadX !== undefined && k < 20 ? Math.max(8, Math.min(w.w - 9, nadX + this.rng.int(21) - 10)) : 8 + this.rng.int(w.w - 16);
+        for (let yy = strop; yy < strop + 40 && yy < w.h - 1; yy++) {
+          if (w.passable(xx, yy) && w.solid(xx, yy + 1) && w.magma[w.idx(xx, yy)] === 0) { x = xx; y = yy; znalezione = true; break; }
+        }
+      }
+      if (!znalezione) return;
     }
     const clan = this.newClan(Race.HUMAN, x, y);
     const n = PP.ludzieIlu + this.rng.int(PP.ludzieRozrzut);
@@ -1242,7 +1268,7 @@ export class Sim {
     const w = this.world;
     w.tickFluids(this.tick);
     if (this.tick % 3 === 0) w.tickSoil(this.tick);
-    this.tickMycelium();
+    if (!REMAKE) this.tickMycelium();      // Remake v2: grzybnia nie rośnie
     this.rehash();
 
     for (const c of this.creatures) if (!c.dead) stepCreature(this, c);

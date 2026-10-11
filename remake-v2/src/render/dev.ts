@@ -57,7 +57,7 @@ export function rysujDev(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, t
       ctx.strokeStyle = g.odkryte ? 'rgba(150,150,150,0.6)' : 'rgba(120,230,140,0.85)';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(x - z * 1.5, y - z, z * 3, z * 2);
-      podpis(ctx, `gniazdo ${g.id}: ${g.rycerzy}${g.odkryte ? ' (rozkopane)' : ''}`, x, y - z * 1.3, g.odkryte ? '#aaa' : '#9fe0a8');
+      podpis(ctx, `gniazdo ${g.id}: ${g.rycerzy}${g.zawalone ? ' (pod zawałem)' : g.odkryte ? ' (rozkopane)' : ''}`, x, y - z * 1.3, g.odkryte ? '#aaa' : '#9fe0a8');
     }
     // Patrzący w każdej fazie, także gdy gracz go nie widzi
     const m = sim.lud.mrok;

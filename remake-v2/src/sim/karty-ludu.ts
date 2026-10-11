@@ -8,9 +8,10 @@ import type { Sim } from './sim';
 import type { Wydarzenie, Wybor, StanWydarzen } from './wydarzenia';
 import { T, PASSABLE } from './tiles';
 import { KARTY_LUDU as K } from '../nastawy/karty-ludu';
-import { klanLudu, liczRole, rolaPostaci, wszystkieSpizarnie, gniazdaWSkale, grzybPrzy } from './lud';
+import { klanLudu, liczRole, rolaPostaci, wszystkieSpizarnie, gniazdaWSkale } from './lud';
 import { zbuntuj, nawroc, odejdz, buntownicy } from './bunt';
 import { falaTrwa } from './straznicy';
+import { zabierzPorcje } from './wiadro';
 import { SWIAT } from '../nastawy/swiat';
 
 const wybor = (id: string, tekst: string, skutek: string, krew = 0, wiara = 0): Wybor => ({ id, tekst, skutek, krew, wiara });
@@ -34,7 +35,7 @@ export function kandydaciLudu(sim: Sim, st: StanWydarzen): Kandydat[] {
     sim.lud.spisekPo = sim.tick + K.spisekPrzerwa;
     const wybory = [
       wybor('stlum', `Zgładź spiskowców (${K.spisekSpiskowcow})`, `Zginą — spisek umrze z nimi. Ich śmierć to twoja krew.`, 0, K.spisekStlum),
-      wybor('przekup', 'Kup ich wierność', 'Dostaną krew i najlepsze miejsce przy spiżarni. Spisek się rozwieje.', K.spisekPrzekup),
+      wybor('przekup', 'Kup ich wierność', 'Dostaną krew i pierwsi sięgną do wiadra. Spisek się rozwieje.', K.spisekPrzekup),
       wybor('zostaw', 'Zostaw', 'Na razie nic. Ale spisek, którego nikt nie gasi, kiedyś wybucha.'),
     ];
     // rozsądnie: kupić wierność, gdy stać; zgładzić tylko, gdy rycerzy jest dużo (inaczej zostaw i licz na wiernych)
@@ -42,15 +43,15 @@ export function kandydaciLudu(sim: Sim, st: StanWydarzen): Kandydat[] {
     return { rodzaj: 'spisek', tytul: 'Rycerze knują', tekst: `Kilku rycerzy szepcze po kątach obozu. Mówią, że to oni bronią ludu — więc to oni powinni nim rządzić.`, wybory, domyslny: 2, rozsadny, cel: baza, od: sim.tick };
   } });
 
-  // --- zatrute plony
-  const sp = wszystkieSpizarnie(sim).filter((s) => grzybPrzy(sim, s.x, s.y) >= 3).sort((a, b) => b.ilosc - a.ilosc)[0];
+  // --- zgniłe jedzenie w wiadrze (Remake v2: dawne „zatrute plony” — grzyba i spiżarni już nie ma)
+  const sp = wszystkieSpizarnie(sim).filter((s) => s.ilosc >= 4).sort((a, b) => b.ilosc - a.ilosc)[0];
   if (surowe && sp) out.push({ rodzaj: 'plony', waga: 2, zbuduj: () => {
     const wybory = [
-      wybor('spal', 'Spal zarażony grzyb', 'Grzyb przy spiżarni spłonie — nikt się nie struje, ale jedzenia trzeba szukać dalej.', 0, K.plonySpal),
-      wybor('wyrzuc', 'Wyrzućcie zapasy', `Połowa jedzenia ze spiżarni pójdzie w przepaść. Grzyb odrośnie czysty.`),
+      wybor('spal', 'Oczyść je wiarą', 'Zgnilizna zniknie — nikt się nie struje.', 0, K.plonySpal),
+      wybor('wyrzuc', 'Wylejcie połowę', 'Połowa porcji z wiadra pójdzie w przepaść — reszta jest czysta.'),
       wybor('jedz', 'Niech jedzą', `Kilku z ludu się struje: przez minutę będą słabsi (−${Math.round((1 - K.zatrucie) * 100)}%). Ktoś może nie przeżyć.`),
     ];
-    return { rodzaj: 'plony', tytul: 'Zatrute plony', tekst: 'Grzyb przy spiżarni sczerniał od spodu. Kto go zje, ten się struje.', wybory, domyslny: 2, rozsadny: stac(sim, wybory[0]) ? 0 : 1, cel: { x: sp.x + 0.5, y: sp.y + 0.5, tekst: 'spiżarnia' }, od: sim.tick, x: sp.x, klan: sp.y };
+    return { rodzaj: 'plony', tytul: 'Zgniłe jedzenie w wiadrze', tekst: 'Jedzenie w wiadrze zzieleniało od spodu. Kto je zje, ten się struje.', wybory, domyslny: 2, rozsadny: stac(sim, wybory[0]) ? 0 : 1, cel: { x: sp.x + 0.5, y: sp.y + 0.5, tekst: 'wiadro' }, od: sim.tick, x: sp.x, klan: sp.y };
   } });
 
   // --- woda w obozie
@@ -106,11 +107,7 @@ export function wykonajLudu(sim: Sim, e: Wydarzenie, id: string): boolean {
       sim.wydarzenia.odroczone.push({ tick: sim.tick + K.buntPo, rodzaj: 'karta', karta: 'bunt' });
       return true;
     case 'plony:spal': {
-      const x0 = e.x ?? 0, y0 = e.klan ?? 0;
-      for (let y = y0 - K.plonyPromien; y <= y0 + K.plonyPromien; y++) for (let x = x0 - K.plonyPromien; x <= x0 + K.plonyPromien; x++) {
-        if (w.inb(x, y) && w.tile[w.idx(x, y)] === T.FUNGUS) w.tile[w.idx(x, y)] = T.AIR;
-      }
-      sim.efekt(x0 + 0.5, y0 + 0.5, 'cud');
+      sim.efekt((e.x ?? 0) + 0.5, (e.klan ?? 0) + 0.5, 'cud');
       return true;
     }
     case 'plony:wyrzuc': {
@@ -123,7 +120,7 @@ export function wykonajLudu(sim: Sim, e: Wydarzenie, id: string): boolean {
       for (let k = 0; k < K.plonyZatrutych && lud.length; k++) {
         const c = lud.splice(sim.rng.int(lud.length), 1)[0];
         c.zatrutyDo = sim.tick + K.zatrucieTikow;
-        if (k === 0 && sim.rng.chance(0.35)) sim.kill(c, 'otruty zgniłym grzybem', 'trucizna');
+        if (k === 0 && sim.rng.chance(0.35)) sim.kill(c, 'otruty zgniłym jedzeniem', 'trucizna');
       }
       return true;
     }
@@ -171,8 +168,7 @@ export function wykonajLudu(sim: Sim, e: Wydarzenie, id: string): boolean {
     case 'bunt:walcz': return true;
     case 'bunt:przemow': nawroc(sim, Math.ceil(buntownicy(sim).length / 2)); return true;
     case 'bunt:oddaj': {
-      const lud = klanLudu(sim);
-      if (lud) lud.stock = Math.max(0, lud.stock - K.buntOddajJedzenie);
+      zabierzPorcje(sim, K.buntOddajJedzenie);
       odejdz(sim);
       return true;
     }
@@ -192,7 +188,7 @@ export function zbudujLancuchLudu(sim: Sim, karta: string): Wydarzenie | null {
   const wybory = [
     wybor('walcz', 'Niech wierni ich pokonają', 'Wierni rycerze ruszą na zdrajców. Każda śmierć to twoja krew.'),
     wybor('przemow', 'Przemów do nich', `Połowa buntowników wróci do ludu.`, 0, K.buntPrzemow),
-    wybor('oddaj', 'Oddaj im zapasy', `Odejdą z góry z ${K.buntOddajJedzenie} jedzenia ze spiżarni siedziby.`),
+    wybor('oddaj', 'Oddaj im zapasy', `Odejdą z góry, zabierając do ${K.buntOddajJedzenie} porcji z wiader.`),
   ];
   return {
     rodzaj: 'bunt', tytul: 'Spisek się udał', lancuch: true, od: sim.tick,
