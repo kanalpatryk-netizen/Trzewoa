@@ -177,7 +177,7 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Wydarzenia',
-    wstep: 'Co chwilę coś się dzieje: najazd, zaraza, spisek rycerzy, zatrute plony, woda nad obozem. Czas wtedy staje, a ty wybierasz.',
+    wstep: 'Co chwilę coś się dzieje: najazd, zaraza, spisek rycerzy, zatrute plony, zawał nad drogą wiernych. Czas wtedy staje, a ty wybierasz.',
     czasowniki: [],
     przygotuj: (g) => { g.sim.krew += 40; g.sim.wiara += 40; },
     etapy: [

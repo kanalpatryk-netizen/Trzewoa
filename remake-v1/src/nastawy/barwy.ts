@@ -42,20 +42,22 @@ export const ATRAMENT_GLEBI = {
  * Faktura tynku pochodzi ze zdjęcia fresku z Faras (src/grafiki/tekstury).
  */
 export const FRESK = {
-  /** Ściana: barwa przed nałożeniem faktury (faktura przyciemnia ją o ok. 1/3). */
-  sciana: '#5a4130',
+  /** Ściana: barwa przed nałożeniem faktury (faktura przyciemnia ją o ok. 1/3). Prawie czarny, wilgotny tynk. */
+  sciana: '#3a2b23',
   /** Ciemność w kątach ściany (winieta) i jej krycie. */
-  mrok: '12,7,4', mrokAlfa: 0.78,
-  /** Pasy ramy: czerwień ziemi, ugier, biel wapienna; kontur sinopią. */
-  czerwien: '#8e3a22', ugier: '#a8783a', biel: '#e3d6b6', sinopia: '#5c1f12',
+  mrok: '5,3,2', mrokAlfa: 0.9,
+  /** Pasy ramy: zaschnięta krew, przygasłe złoto, przybrudzona biel; kontur prawie czarną sinopią. */
+  czerwien: '#5a2116', ugier: '#76582f', biel: '#b5a688', sinopia: '#2a0d07',
   /** Tablice: ciemny tynk (tekst jasny) i jasny tynk (tekst sinopią). */
-  tablicaCiemna: '#4a3527', tablicaJasna: '#e8dcc0',
-  /** Krążki przycisków i rytów. */
-  krazek: '#c4b08a', krazekWlaczony: '#d9b56a',
+  tablicaCiemna: '#2b1f19', tablicaJasna: '#d6c8aa',
+  /** Krążki przycisków i rytów: kamień w cieniu; wybrany — stare złoto. */
+  krazek: '#6c5e4d', krazekWlaczony: '#a3864e',
   /** Tekst: biel wapienna, przygaszona biel, czerwień napisów, złoto. */
-  tekst: '#e6d9bb', tekstCichy: '#a8977a', napisCzerwony: '#cf5a3a', zloto: '#d0a456',
+  tekst: '#d4c6a6', tekstCichy: '#8b7b63', napisCzerwony: '#c0533a', zloto: '#c49a50',
   /** Pigmenty wstęgi ludu i drobnych znaków. */
-  lapis: '#4d6676', zielen: '#7e8f5e', cynober: '#b8452a',
+  lapis: '#3d5463', zielen: '#68774e', cynober: '#9c3b24',
   /** Ton, którym mnoży się rycina świata — biel kreski przechodzi w ugier. */
   tonRyciny: '#ecc495',
+  /** Żar nieznanego pisma (ramy, ściana) — [r, g, b]. */
+  zar: [214, 110, 70] as [number, number, number],
 };

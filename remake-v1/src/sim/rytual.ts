@@ -309,7 +309,7 @@ function otworzSkorupe(sim: Sim, stan: StanRytualu, strona: Strona = 'gora'): vo
 
 /**
  * Postęp kruszenia całej skorupy w procentach (0–100) — jeden licznik zamiast etapów „1 z 5”.
- * Liczy się w tikach świata, więc przy szybszym czasie (×2, ×3) rośnie odpowiednio szybciej.
+ * Liczy się w tikach świata (zwykły czas: 120 na sekundę; szybciej tylko w trybie deweloperskim).
  */
 export function procentSkorupy(sim: Sim): number {
   const r = sim.rytual;

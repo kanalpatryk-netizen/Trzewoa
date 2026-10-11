@@ -24,7 +24,7 @@ const LUDY = [Race.GOBLIN, Race.DWARF, Race.SPINNER];
 
 export const OSIAGNIECIA: Osiagniecie[] = [
   { id: 'pierwsza', nazwa: 'Przebudzenie', opis: 'Wygraj pierwszą partię.', sprawdz: (_s, w) => w },
-  { id: 'szybko', nazwa: 'Jak magma', opis: `Wygraj w mniej niż ${CELE.szybkoMinut} minut czasu gry.`, sprawdz: (s, w) => w && s.tick < CELE.szybkoMinut * TIKOW_NA_MINUTE },
+  { id: 'szybko', nazwa: 'Jak kamień w studnię', opis: `Wygraj w mniej niż ${CELE.szybkoMinut} minut czasu gry.`, sprawdz: (s, w) => w && s.tick < CELE.szybkoMinut * TIKOW_NA_MINUTE },
   { id: 'koszmar', nazwa: 'Koszmar na jawie', opis: 'Wygraj na Koszmarze.', sprawdz: (s, w) => w && s.koszmar },
   {
     id: 'pelna', nazwa: 'Wszystkie krwie', opis: 'Wygraj tak, żeby do końca żyli Ślepy Lud, Żużlowcy i Prządki.',

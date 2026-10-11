@@ -337,7 +337,9 @@ export class Ui {
       ctx.fillStyle = g;
       ctx.fillRect(x - r * 1.5, y - r * 1.5, r * 3, r * 3);
     }
-    if (krazekZIkona(ctx, `ryt-${v.id}`, x, y, r, on ? 'wlaczony' : ready ? 'zwykly' : 'uspiony')) {
+    // pod kursorem ryt rozjaśnia się płynnie (render/nastroj.ts)
+    const pod = !on && ready && Math.hypot(this.pointer.x - x, this.pointer.y - y) <= r + 4;
+    if (krazekZIkona(ctx, `ryt-${v.id}`, x, y, r, on ? 'wlaczony' : pod ? 'pod' : ready ? 'zwykly' : 'uspiony')) {
       if (on) {
         ctx.lineWidth = 2;
         ctx.strokeStyle = `rgba(240,200,130,${0.7 + 0.3 * Math.sin(time * 0.004)})`;
@@ -361,7 +363,7 @@ export class Ui {
       ctx.font = `italic ${rozm}px ${SERIF}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'top';
-      ctx.fillStyle = on ? 'rgba(244,214,160,0.95)' : ready ? FRESK.tekst : 'rgba(207,194,166,0.35)';
+      ctx.fillStyle = on || pod ? 'rgba(244,214,160,0.95)' : ready ? FRESK.tekstCichy : 'rgba(207,194,166,0.3)';
       ctx.fillText(v.label.toLowerCase(), x, y + r + 6, this.plate.left - 6);
     }
     // klawisz w rogu — na dotyku klawiatury nie ma, więc tylko na szerokim ekranie

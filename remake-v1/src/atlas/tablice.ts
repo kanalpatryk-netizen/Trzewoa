@@ -18,6 +18,9 @@ import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
 import { LUDY } from '../nastawy/gora';
 import { CECHY } from '../nastawy/cechy';
 import { LUD } from '../nastawy/lud';
+import { MROK } from '../nastawy/mrok';
+import { DLON } from '../nastawy/dlon';
+import { lunaOtchlani, rysujKlatkeDloni } from '../render/dlon';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
@@ -337,6 +340,70 @@ function skorupa({ ctx, w, h, t }: Plotno): void {
   ctx.restore();
 }
 
+/** Dłoń z otchłani: z czerwonej łuny w dole wznosi się szponiasta dłoń — sięga po kogoś na półce skalnej. */
+function dlonOtchlani({ ctx, w, h, t }: Plotno): void {
+  ctx.save();
+  ctx.fillStyle = '#060303';
+  ctx.fillRect(0, 0, w, h);
+  const xw = w * 0.4;
+  lunaOtchlani(ctx, xw + h * 0.1, h * 1.02, h * 0.9, 0, 1.6, t);
+  // półka skalna i ten, po kogo sięga
+  const xf = xw + h * 0.15, yf = h * 0.27, u = h * 0.02;
+  ctx.fillStyle = '#1a0f0b';
+  ctx.beginPath();
+  ctx.moveTo(xf - h * 0.42, yf + u * 0.3); ctx.lineTo(xf - h * 0.2, yf - u * 0.2); ctx.lineTo(xf + h * 0.1, yf + u * 0.1); ctx.lineTo(xf + h * 0.36, yf - u * 0.3);
+  ctx.lineTo(xf + h * 0.33, yf + u * 2.6); ctx.lineTo(xf + h * 0.12, yf + u * 2.1); ctx.lineTo(xf - h * 0.1, yf + u * 3.2); ctx.lineTo(xf - h * 0.4, yf + u * 2.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(214,170,110,0.35)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(xf - h * 0.42, yf + u * 0.3); ctx.lineTo(xf - h * 0.2, yf - u * 0.2); ctx.lineTo(xf + h * 0.1, yf + u * 0.1); ctx.lineTo(xf + h * 0.36, yf - u * 0.3); ctx.stroke();
+  ctx.fillStyle = 'rgba(28,20,16,0.96)';
+  ctx.strokeStyle = 'rgba(214,190,150,0.55)';
+  ctx.lineWidth = Math.max(0.8, u * 0.3);
+  ctx.lineCap = 'round';
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(xf + s * u * 0.5, yf - u * 3); ctx.lineTo(xf + s * u * 0.8, yf); ctx.stroke(); }
+  ctx.beginPath(); ctx.ellipse(xf, yf - u * 4.6, u * 1.2, u * 2.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(xf, yf - u * 7.8, u * 1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // dłoń pnie się z dołu, palce drgają
+  const wzn = 0.02 * Math.sin(t * 0.0009);
+  rysujKlatkeDloni(ctx, xw, h * (1.12 + wzn), -Math.PI / 2 + 0.04 * Math.sin(t * 0.0007), (h * 0.84) / 25.5, 0.06 + 0.06 * Math.sin(t * 0.0021), 1, 1, 1);
+  // przedramię ginie w ciemności otchłani
+  const ciemno = ctx.createLinearGradient(0, h, 0, h * 0.6);
+  ciemno.addColorStop(0, 'rgba(6,3,3,0.92)');
+  ciemno.addColorStop(1, 'rgba(6,3,3,0)');
+  ctx.fillStyle = ciemno;
+  ctx.fillRect(0, h * 0.6, w, h * 0.4);
+  lunaOtchlani(ctx, xw + h * 0.1, h * 1.04, h * 0.6, 0, 0.8, t);
+  ctx.restore();
+}
+
+/** Ten, który patrzy: lita, kreskowana skała, a w niej para oczu i blade światło lampki z boku. */
+function patrzacy({ ctx, w, h, t }: Plotno): void {
+  ctx.save();
+  ctx.fillStyle = '#0b0807';
+  ctx.fillRect(0, 0, w, h);
+  const blok = new Path2D();
+  blok.rect(0, 0, w, h);
+  kreskuj(ctx, blok, -0.7, 5, rgba(BARWA.atrament, 0.08), 1);
+  const l = ctx.createRadialGradient(w * 0.18, h * 0.78, 2, w * 0.18, h * 0.78, h * 0.5);
+  l.addColorStop(0, 'rgba(236,190,110,0.32)');
+  l.addColorStop(1, 'rgba(236,190,110,0)');
+  ctx.fillStyle = l;
+  ctx.fillRect(0, 0, w, h);
+  const mrug = Math.sin(t * 0.0009) > 0.93 ? 0.15 : 1;
+  for (const dx of [-1, 1]) {
+    const x = w * 0.62 + dx * h * 0.06, y = h * 0.4;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, h * 0.06);
+    g.addColorStop(0, 'rgba(255,170,110,0.95)');
+    g.addColorStop(1, 'rgba(160,30,20,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - h * 0.06, y - h * 0.06, h * 0.12, h * 0.12);
+    ctx.fillStyle = 'rgba(255,224,190,0.95)';
+    ctx.beginPath(); ctx.ellipse(x, y, h * 0.018, h * 0.009 * mrug, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+}
+
 /** Pismo w skale: blok litej skały z żarzącymi się znakami, które gasną w smudze światła. */
 function pismo({ ctx, w, h, t }: Plotno): void {
   ctx.save();
@@ -510,7 +577,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'wydarzenia', grupa: 'prawa', nazwa: 'Wydarzenia', lacina: 'Aestus',
-    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, powódź, zaraza, głód, spisek rycerzy, zatrute plony, woda nad obozem, zawał nad drogą wiernych, sen o kamiennych rycerzach. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku. Niektóre wracają: zostawiony spisek po dwóch minutach wybucha buntem — część rycerzy zmienia barwy i bije lud.',
+    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, zaraza, głód, spisek rycerzy, zatrute plony, zawał nad drogą wiernych, sen o kamiennych rycerzach. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku. Niektóre wracają: zostawiony spisek po dwóch minutach wybucha buntem — część rycerzy zmienia barwy i bije lud.',
     kiedy: 'Spisek gaś od razu, jeśli stać cię na krew. Zatrute plony lepiej spalić niż zjeść. Sen o rycerzach pokazuje gniazdo — warto.',
     rycina: cala(rysujPrzyplyw),
   },
@@ -522,7 +589,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'gniazda', grupa: 'prawa', nazwa: 'Kamienni rycerze', lacina: 'Equites saxei',
-    opis: `W każdej górze śpi ${LUD.gniazda} gniazd po ${LUD.gniazdoRycerzy.od}–${LUD.gniazdoRycerzy.do} rycerzy — z dala od magmy, wody i drogi do rdzenia. Gdy ktoś z ludu jest blisko, skała słabo się żarzy. Kto się dokopie, budzi ich: wychodzą od razu jako weterani.`,
+    opis: `W każdej górze śpi ${LUD.gniazda} gniazd po ${LUD.gniazdoRycerzy.od}–${LUD.gniazdoRycerzy.do} rycerzy — w litej skale, z dala od drogi do rdzenia. Gdy ktoś z ludu jest blisko, skała słabo się żarzy. Kto się dokopie, budzi ich: wychodzą od razu jako weterani.`,
     kiedy: 'Szepnij robotnikowi „przemyśl i kop”: klęka, prosi o znak i kopie tunel ku najbliższemu gniazdu. Znak jest niedokładny — jeden kopacz trafia raz na trzy, trzech razem na pewno.',
     rycina: postac(Race.GOBLIN, 'kopie'),
   },
@@ -561,6 +628,18 @@ export const TABLICE: Tablica[] = [
     opis: 'W skale, do której nikt jeszcze nie zajrzał, widać znaki. Nikt z żyjących ich nie wyrył — były tu przed pierwszym goblinem. Gasną, gdy dojdzie do nich światło; w zatrzymanym czasie widać je wyraźniej.',
     kiedy: 'Nie da się ich przeczytać. Można tylko pójść tam, gdzie są, i patrzeć, jak znikają.',
     rycina: pismo,
+  },
+  {
+    id: 'patrzacy', grupa: 'prawa', nazwa: 'Ten, który patrzy', lacina: 'Qui in tenebris spectat',
+    opis: `Poza światłem lampek, obozów i rdzenia góra jest ciemna — i coś w tej ciemności jest. Przenika skałę, krąży wokół siedziby i wypatruje tego, kto został sam daleko od obozu (rycerzy nie rusza). Gdy go znajdzie, patrzy na niego: samotny staje jak wryty, w skale świecą oczy, a lampka przygasa. Po ${Math.round(MROK.patrzyTikow / 120)} sekundach zabiera go — krew zostaje dla ciebie. Potem na kilka minut cichnie.`,
+    kiedy: 'Nie puszczaj nikogo samego daleko od obozu. Gdy zobaczysz oczy — rzuć Cud tuż przy nich albo poślij kogoś do samotnego.',
+    rycina: patrzacy,
+  },
+  {
+    id: 'dlon', grupa: 'prawa', nazwa: 'Dłoń z otchłani', lacina: 'Manus ex abysso',
+    opis: `Tylko w Koszmarze, i rzadko. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu, a pod nim zaczyna się otchłań, spod ziemi sączy się czerwona łuna, a on (czasem dwoje naraz) staje jak wryty. Z głębi, zawsze od dołu, wznosi się ogromna dłoń — po ${Math.round((DLON.wstaje + DLON.siega) / 120)} sekundach sięga, chwyta ich i zapada się z nimi w ciemność. Nie zostają nawet kości — krew i tak spływa do ciebie.`,
+    kiedy: 'Nie stawiaj ludu nad nieznanym daleko od obozu. Gdy otchłań pod kimś zaczerwieni się — rzuć Cud przy nim, zanim dłoń chwyci.',
+    rycina: dlonOtchlani,
   },
 ];
 

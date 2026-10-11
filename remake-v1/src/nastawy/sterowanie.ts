@@ -24,9 +24,18 @@ export const KAMERA = {
   pokazZoom: 10,
 };
 
+/**
+ * CZAS GRY — jeden, zwykły: tyle tików świata na sekundę, niezależnie od odświeżania ekranu
+ * (dawniej liczony w klatkach — na ekranie 120 Hz świat biegł dwa razy szybciej).
+ * Przyspieszanie i zwalnianie jest tylko w trybie deweloperskim.
+ */
 export const TEMPO = {
-  /** Najwyższe tempo czasu (tików na klatkę). */
-  max: 3,
+  /** Tików świata na sekundę zwykłego czasu (TIKOW_NA_MINUTE / 60). */
+  tikowNaSekunde: 120,
+  /** Mnożniki czasu w trybie deweloperskim (przyciski ‹ ›, klawisze + −, okienko dewelopera). */
+  mnozniki: [0.25, 0.5, 1, 2, 3, 5, 10, 20],
+  /** Najwięcej tików w jednej klatce — wolny komputer zwalnia świat zamiast się dusić. */
+  maxNaKlatke: 60,
 };
 
 /** STEROWANIE PALCEM — tylko wersja Android (na telefonie nie ma klawiatury ani myszy). */

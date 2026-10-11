@@ -8,7 +8,7 @@ import { Tajemnica } from '../../render/tajemnica';
 import { ramaRyciny, kartusz, naglowekDzialu, dopasujKartusz } from '../../render/ozdoby';
 import { EKRAN_USTAWIEN as U } from '../../nastawy/wyglad/ustawienia';
 import { RAMA } from '../../nastawy/wyglad/ozdoby';
-import { TEMPO, STEROWANIE } from '../../nastawy/sterowanie';
+import { STEROWANIE } from '../../nastawy/sterowanie';
 import { pelnyEkran, wyjdzZPelnegoEkranu } from '../../core/android';
 
 type Wiersz =
@@ -47,7 +47,7 @@ export class EkranUstawien implements Ekran {
     const proc = (v: number) => `${Math.round(v * 100)}%`;
     this.wiersze = [
       { typ: 'naglowek', tekst: 'Deweloper' },
-      { typ: 'przelacznik', etykieta: 'Tryb deweloperski', opis: 'w grze liczby świata: wiara, krew, oddanie, żywi, dominacja, tik', czytaj: () => ustawienia.trybDeweloperski, zmien: (v) => ustaw('trybDeweloperski', v) },
+      { typ: 'przelacznik', etykieta: 'Tryb deweloperski', opis: 'okienko dziennika i narzędzi, liczby świata, tempo czasu (¼–20×)', czytaj: () => ustawienia.trybDeweloperski, zmien: (v) => ustaw('trybDeweloperski', v) },
       { typ: 'naglowek', tekst: 'Dźwięk' },
       { typ: 'suwak', etykieta: 'Głośność', opis: 'jedna dla muzyki, skały i gestów', min: 0, max: 1, krok: 0.1, czytaj: () => ustawienia.glosnosc, zmien: (v) => { ustaw('glosnosc', v); this.app.muzyka.glosnosc(v); this.app.dzwiek.odswiezGlosnosc(); this.app.gesty.odswiezGlosnosc(); this.app.gesty.klik(); }, format: proc },
       { typ: 'przelacznik', etykieta: 'Muzyka', opis: 'powolne akordy kamienia i uderzenia w metal', czytaj: () => ustawienia.muzyka, zmien: (v) => { ustaw('muzyka', v); if (v) this.app.muzyka.start(); else this.app.muzyka.stop(); } },
@@ -58,7 +58,8 @@ export class EkranUstawien implements Ekran {
       { typ: 'przelacznik', etykieta: 'Pełny ekran', opis: 'bez paska przeglądarki; „wstecz” telefonu zamyka go', czytaj: () => ustawienia.pelnyEkran, zmien: (v) => { ustaw('pelnyEkran', v); if (v) pelnyEkran(); else wyjdzZPelnegoEkranu(); } },
       { typ: 'suwak', etykieta: 'Wielkość obrazu', opis: 'napisy, ryty i płyta — ponad dopasowanie do ekranu', min: 0.8, max: 1.6, krok: 0.1, czytaj: () => ustawienia.wielkoscUI, zmien: (v) => ustaw('wielkoscUI', Math.round(v * 10) / 10), format: (v) => `${Math.round(v * 100)}%` },
       { typ: 'wybor', etykieta: 'Jakość ryciny', opis: 'ostra — pełna, szybka — połowa, auto — sama tanieje', opcje: ['auto', 'ostra', 'szybka'], czytaj: () => ustawienia.jakosc, zmien: (v) => { jakoscAuto.taniej = false; ustaw('jakosc', v as typeof ustawienia.jakosc); } },
-      { typ: 'suwak', etykieta: 'Siła kreskowania', opis: 'ile atramentu wchodzi w skałę', min: 0.75, max: 1.35, krok: 0.05, czytaj: () => ustawienia.kontrast, zmien: (v) => ustaw('kontrast', v), format: (v) => `${Math.round(v * 100)}%` },
+      { typ: 'wybor', etykieta: 'Rysunek świata', opis: 'rycina — kreskowanie; fresk — próba: góra malowana jak na ikonie', opcje: ['rycina', 'fresk'], czytaj: () => ustawienia.swiat ?? 'rycina', zmien: (v) => ustaw('swiat', v as typeof ustawienia.swiat) },
+      { typ: 'suwak', etykieta: 'Siła kreskowania', opis: 'rycina: ile atramentu wchodzi w skałę; fresk: jak wyraźne są półki skały', min: 0.75, max: 1.35, krok: 0.05, czytaj: () => ustawienia.kontrast, zmien: (v) => ustaw('kontrast', v), format: (v) => `${Math.round(v * 100)}%` },
       { typ: 'suwak', etykieta: 'Jasność świata', opis: 'jaśniej widać korytarze i mieszkańców', min: 1, max: 1.8, krok: 0.05, czytaj: () => ustawienia.jasnosc, zmien: (v) => ustaw('jasnosc', v), format: (v) => `${Math.round(v * 100)}%` },
       { typ: 'suwak', etykieta: 'Wielkość mieszkańców', opis: 'sylwetki w kaflach', min: 0.7, max: 2.2, krok: 0.1, czytaj: () => ustawienia.wielkoscSylwetek, zmien: (v) => ustaw('wielkoscSylwetek', v), format: (v) => `${v.toFixed(1)}×` },
       { typ: 'przelacznik', etykieta: 'Oddech kamienia', opis: 'powolne falowanie całego rysunku', czytaj: () => ustawienia.oddech, zmien: (v) => ustaw('oddech', v) },
@@ -72,7 +73,6 @@ export class EkranUstawien implements Ekran {
       { typ: 'wybor', etykieta: 'Góra', opis: 'łaskawa wolniej zasypia, koszmar szybciej i z mniejszą krwią — dla nowej gry', opcje: ['łaskawa', 'surowa', 'koszmar'], czytaj: () => ustawienia.trudnosc, zmien: (v) => ustaw('trudnosc', v as typeof ustawienia.trudnosc) },
       { typ: 'wybor', etykieta: 'Auto-pauza', opis: 'gra sama zatrzymuje czas, gdy trzeba decydować', opcje: ['kryzysy', 'wszystko', 'wyłączona'], czytaj: () => ustawienia.autoPauza, zmien: (v) => ustaw('autoPauza', v as typeof ustawienia.autoPauza) },
       { typ: 'wybor', etykieta: 'Nowe tablice', opis: 'przy pierwszym spotkaniu tablica atlasu otwiera się sama', opcje: ['pokazuj', 'tylko w atlasie'], czytaj: () => ustawienia.tablice, zmien: (v) => ustaw('tablice', v as typeof ustawienia.tablice) },
-      { typ: 'suwak', etykieta: 'Tempo czasu', opis: 'ile tików świata przypada na klatkę', min: 1, max: TEMPO.max, krok: 1, czytaj: () => ustawienia.tempo, zmien: (v) => ustaw('tempo', v), format: (v) => `${v}×` },
       { typ: 'przelacznik', etykieta: 'Kamera za życiem', opis: 'sama wraca tam, gdzie jest najgęściej — dopóki jej nie chwycisz', czytaj: () => ustawienia.kameraZaZyciem, zmien: (v) => ustaw('kameraZaZyciem', v) },
       { typ: 'przelacznik', etykieta: 'Automatyczne przybliżanie', opis: 'kamera sama dobiera skalę do wielkości kolonii', czytaj: () => ustawienia.autoZoom, zmien: (v) => ustaw('autoZoom', v) },
       { typ: 'przelacznik', etykieta: 'Autozapis', opis: 'stan góry co minutę do pamięci przeglądarki', czytaj: () => ustawienia.autozapis, zmien: (v) => ustaw('autozapis', v) },

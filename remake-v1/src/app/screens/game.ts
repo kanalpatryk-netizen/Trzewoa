@@ -13,6 +13,7 @@ import { rysujTempo } from '../../render/tempo';
 import { PanelDewelopera } from '../devpanel';
 import { DEV } from '../../sim/dziennik';
 import { rysujDev } from '../../render/dev';
+import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, liczRole, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 
 /** Barwy ról w panelu LUD (te same odcienie co obrys postaci na płycie). */
@@ -26,7 +27,7 @@ import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
-import { scianaKrypty, pigment, tablica as tablicaTynku } from '../../render/fresk';
+import { scianaKrypty, pigment, tablica as tablicaTynku, tynkSwiata } from '../../render/fresk';
 import { FRESK } from '../../nastawy/barwy';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
@@ -45,6 +46,11 @@ import { zbierzObszaryHud, type ObszarHud } from '../obszary-hud';
 import { Straznik, type Alarm } from '../alarmy';
 import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { rysujWydarzenie, type PoleWyboru } from '../../render/wydarzenie';
+import { rysujMrok, rysujPatrzacego } from '../../render/mrok';
+import { rysujDlon } from '../../render/dlon';
+import { wolnoRuszac } from '../../render/nastroj';
+import { NASTROJ } from '../../nastawy/wyglad/nastroj';
+import { MROK } from '../../nastawy/mrok';
 import { rozstrzygnij, type Wydarzenie } from '../../sim/wydarzenia';
 import { OknoAtlasu } from '../../atlas/okno';
 import { odkrycia } from '../../atlas/odkrycia';
@@ -53,7 +59,7 @@ import { tablica } from '../../atlas/tablice';
 import { Race } from '../../sim/races';
 import { Job } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
-import { ustawienia, ustaw, jakoscAuto } from '../../core/settings-store';
+import { ustawienia, jakoscAuto } from '../../core/settings-store';
 import { StrazKlatek } from '../../render/straz-klatek';
 import { mikser } from '../../core/mikser';
 import type { Akcja } from '../../core/keybinds';
@@ -104,6 +110,8 @@ export class EkranGry implements Ekran {
   /** Pilnuje klatek w trybie jakości „auto” — przy zadyszce rycina tanieje. */
   private straz = new StrazKlatek();
   private poswiata = new Poswiata();
+  /** Ostatnio widziane wiara, krew, jedzenie — zmiana żarzy się chwilę (render/nastroj.ts). */
+  private zmianyZasobow = new Map<string, { n: number; t: number; wiecej: boolean }>();
   private tajemnica = new Tajemnica();
   /** Ile znaków pisma w skale było w ostatniej klatce — po nich odkrywa się ich tablica. */
   private znakowWidac = 0;
@@ -114,7 +122,6 @@ export class EkranGry implements Ekran {
   nasluch: ((z: ZdarzenieGry) => void) | null = null;
   /** Samouczek może odciąć część czasowników. */
   dozwolone: Set<string> | null = null;
-  tempoMnoznik = 1;
   /** Miejsce, na które gra wprost każe patrzeć (samouczek, podpowiedzi). */
   cel: Cel | null = null;
   /** Czy rysować podpisy nacji. */
@@ -149,6 +156,9 @@ export class EkranGry implements Ekran {
   private przyciskiRoli: { x: number; y: number; w: number; h: number; rola: 'pobozny' | 'robotnik' }[] = [];
   /** Wiersz „ze skały” tak, jak go narysowano — do testu nakładania. */
   private wierszSkaly: { x: number; y: number; w: number; h: number } | null = null;
+  /** Które zdarzenia Patrzącego już zabrzmiały (tik szeptu i zabrania). */
+  private slyszanyMrok: { szept?: number; zabrany?: number } = {};
+  private slyszanaDlon: { wstaje?: number; chwyt?: number } = {};
   /** Linia „droga do wolności" na brzegu płyty — kliknięcie otwiera jej tablicę. */
   private drogaRect: ObszarDrogi | null = null;
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
@@ -186,10 +196,19 @@ export class EkranGry implements Ekran {
 
   constructor(private app: Kontekst) {}
 
-  /** Kroki symulacji na klatkę: tempo gracza (najwyżej ×3) albo nadpisanie z okienka dewelopera. */
+  /** Mnożnik czasu: w grze zawsze 1 (zwykły czas), w trybie deweloperskim z przycisków i okienka. */
   private tempoTeraz(): number {
-    if (DEV.tempo && ustawienia.trybDeweloperski) return DEV.tempo;
-    return Math.min(TEMPO.max, Math.max(1, Math.round(ustawienia.tempo * this.tempoMnoznik)));
+    return ustawienia.trybDeweloperski ? DEV.mnoznik : 1;
+  }
+
+  /** Tryb deweloperski: następny / poprzedni mnożnik czasu z TEMPO.mnozniki. */
+  private zmienTempo(o: 1 | -1): void {
+    const M = TEMPO.mnozniki;
+    let i = M.findIndex((m) => m >= DEV.mnoznik);
+    if (i < 0) i = M.length - 1;
+    DEV.mnoznik = M[Math.max(0, Math.min(M.length - 1, i + o))];
+    this.ui.say(DEV.mnoznik === 1 ? 'Czas zwykły.' : `Czas ×${DEV.mnoznik} (tryb deweloperski).`, this.sim.tick);
+    this.nasluch?.({ typ: 'tempo' });
   }
 
   wyjdz(): void {
@@ -202,7 +221,6 @@ export class EkranGry implements Ekran {
     this.pauza = false;
     this.straz.zeruj();
     this.slad = null;
-    if (ustawienia.tempo < 1) ustaw('tempo', 1);
     const tryb = (dane as { tryb?: string } | undefined)?.tryb;
     if (tryb === 'nowa') this.nowaGra();
     else if (tryb === 'dnia') {
@@ -376,6 +394,8 @@ export class EkranGry implements Ekran {
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if ((sim.lud.gniazda ?? []).some((g) => g.odkryte) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
+    if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
+    if (sim.lud.dlon?.widziana) odkrycia.odkryj('dlon');
     if (sim.creatures.some((c) => !c.dead && c.boss)) odkrycia.odkryj('boss');
     if (this.ui.verb) cicho(`ryt-${this.ui.verb}`);
     if (this.pauza) cicho('pauza');
@@ -426,10 +446,11 @@ export class EkranGry implements Ekran {
     const { sim } = this;
     const klan = klanLudu(sim);
     const czesci: [string, string, string][] = [
-      ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(236,214,160,1)'],
-      ['krew', `${Math.floor(sim.krew)}`, 'rgba(226,120,100,1)'],
-      ['jedzenie', `${klan?.stock ?? 0}`, 'rgba(170,200,130,1)'],
+      ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(222,200,150,1)'],
+      ['krew', `${Math.floor(sim.krew)}`, 'rgba(206,104,86,1)'],
+      ['jedzenie', `${klan?.stock ?? 0}`, 'rgba(150,178,114,1)'],
     ];
+    const teraz = performance.now();
     ctx.save();
     const rozm = Math.max(13, Math.min(17, w / 30));
     const y = plate.niski ? plate.y - plate.top * 0.3 : plate.y - plate.top * 0.34;
@@ -440,10 +461,23 @@ export class EkranGry implements Ekran {
     const odst = rozm * 1.1;
     let x = plate.x + 10;
     for (const [e, l, kol] of czesci) {
-      ctx.font = fE; ctx.fillStyle = 'rgba(190,178,156,0.9)';
+      ctx.font = fE; ctx.fillStyle = 'rgba(160,146,124,0.85)';
       ctx.fillText(e + ' ', x, y); x += kaw(e + ' ', fE);
+      // liczba, która się zmieniła, żarzy się chwilę: złotem, gdy rośnie, krwią, gdy maleje
+      const z = this.zmianyZasobow.get(e);
+      const n = Number(l);
+      if (!z || z.n !== n) this.zmianyZasobow.set(e, { n, t: z ? teraz : -1e9, wiecej: !z || n > z.n });
+      const zm = this.zmianyZasobow.get(e)!;
+      const k = wolnoRuszac() ? Math.max(0, 1 - (teraz - zm.t) / NASTROJ.liczbaZar) : 0;
       ctx.font = fL; ctx.fillStyle = kol;
-      ctx.fillText(l, x, y); x += kaw(l, fL) + odst;
+      if (k > 0) {
+        ctx.save();
+        ctx.shadowColor = zm.wiecej ? `rgba(240,196,120,${0.9 * k})` : `rgba(214,50,32,${0.9 * k})`;
+        ctx.shadowBlur = 10 * k;
+        ctx.fillText(l, x, y);
+        ctx.restore();
+      } else ctx.fillText(l, x, y);
+      x += kaw(l, fL) + odst;
     }
     ctx.restore();
   }
@@ -469,7 +503,7 @@ export class EkranGry implements Ekran {
     const tlo = new Path2D(); tlo.rect(x0, y, x1 - x0, h);
     pigment(ctx, tlo, FRESK.tablicaCiemna);
     const kolejnosc: Rola[] = ['pobozny', 'robotnik', 'rycerz'];
-    const PIG: Record<Rola, string> = { pobozny: '#cfc2a2', robotnik: '#a8743a', rycerz: '#4d6676' };
+    const PIG: Record<Rola, string> = { pobozny: '#958a72', robotnik: '#7a552f', rycerz: '#3a4f5c' };
     let cx = x0;
     for (const r of kolejnosc) {
       const n = role[r];
@@ -482,8 +516,18 @@ export class EkranGry implements Ekran {
     }
     // światło lampki z góry, cień u dołu wstęgi
     const cien = ctx.createLinearGradient(0, y, 0, y + h);
-    cien.addColorStop(0, 'rgba(255,230,190,0.12)'); cien.addColorStop(1, 'rgba(20,10,6,0.35)');
+    cien.addColorStop(0, 'rgba(255,230,190,0.06)'); cien.addColorStop(1, 'rgba(12,6,4,0.5)');
     ctx.fillStyle = cien; ctx.fill(tlo);
+    if (wolnoRuszac()) {
+      // blask lampki powoli przesuwa się po wstędze
+      const t = (performance.now() % 11000) / 11000;
+      const bx = x0 - 120 + (x1 - x0 + 240) * t;
+      const blask = ctx.createLinearGradient(bx - 90, 0, bx + 90, 0);
+      blask.addColorStop(0, 'rgba(255,214,160,0)');
+      blask.addColorStop(0.5, 'rgba(255,214,160,0.09)');
+      blask.addColorStop(1, 'rgba(255,214,160,0)');
+      ctx.fillStyle = blask; ctx.fill(tlo);
+    }
     ctx.strokeStyle = FRESK.sinopia; ctx.lineWidth = 2;
     ctx.strokeRect(x0, y, x1 - x0, h);
     ctx.strokeStyle = 'rgba(227,214,182,0.3)'; ctx.lineWidth = 1;
@@ -527,14 +571,14 @@ export class EkranGry implements Ekran {
       const sz = kaw(napis, fL) + 18;
       const wybrany = st.rola === rola;
       const [cr, cg, cb] = BARWA_ROLI[rola];
-      if (wybrany) tablicaTynku(ctx, x, yb - bh * 0.72, sz, bh, true);
+      if (wybrany) tablicaTynku(ctx, x, yb - bh * 0.72, sz, bh);
       else {
         ctx.strokeStyle = 'rgba(200,184,150,0.4)';
         ctx.lineWidth = 1;
         ctx.strokeRect(x + 0.5, yb - bh * 0.72 + 0.5, sz - 1, bh - 1);
       }
       void cr; void cg; void cb;
-      ctx.font = fL; ctx.fillStyle = wybrany ? FRESK.sinopia : 'rgba(200,188,166,0.7)';
+      ctx.font = fL; ctx.fillStyle = wybrany ? 'rgba(236,204,142,1)' : 'rgba(184,170,146,0.6)';
       ctx.fillText(napis, x + 9, yb);
       this.przyciskiRoli.push({ x, y: yb - bh * 0.72, w: sz, h: bh, rola });
       x += sz + 6;
@@ -611,7 +655,7 @@ export class EkranGry implements Ekran {
     if (teraz.strona !== s.strona && teraz.strona !== 'zamkniete') g.kartka();
   }
 
-  krok(_dt: number, teraz: number): void {
+  krok(dt: number, teraz: number): void {
     // okienko dewelopera: tylko w grze (nie w samouczku) i tylko z włączonym trybem
     const dev = ustawienia.trybDeweloperski && !this.nasluch;
     if (dev && !this.panelDev) this.panelDev = new PanelDewelopera({
@@ -633,12 +677,16 @@ export class EkranGry implements Ekran {
     if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
     this.sluchaj();
     if (!this.zamrozone()) {
-      let kroki = this.tempoTeraz();
+      // zwykły czas: tyle tików na sekundę, niezależnie od tego, ile klatek pokazuje ekran
+      let kroki: number;
       if (dev && DEV.pauza) { kroki = DEV.krokow; DEV.krokow = 0; }
-      else if (this.spowolnione()) {
-        this.reszta += kroki * 0.25;
-        kroki = Math.floor(this.reszta);
-        this.reszta -= kroki;
+      else {
+        const naSekunde = TEMPO.tikowNaSekunde * this.tempoTeraz() * (this.spowolnione() ? 0.25 : 1);
+        this.reszta += (dt / 1000) * naSekunde;
+        const cale = Math.floor(this.reszta);
+        this.reszta -= cale;
+        // wolny komputer: świat zwalnia, zamiast nadrabiać bez końca
+        kroki = Math.min(Math.max(TEMPO.maxNaKlatke, Math.ceil(naSekunde / 20)), cale);
       }
       const t0 = performance.now();
       for (let i = 0; i < kroki; i++) this.sim.step();
@@ -733,7 +781,21 @@ export class EkranGry implements Ekran {
         this.sim.sen,
         this.zamrozone(),
       );
-      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2));
+      // Ten, który patrzy: gdy podchodzi i gdy patrzy, muzyka gęstnieje jak przy zasypianiu
+      const mrok = this.sim.lud.mrok;
+      const napiecieMroku = mrok?.faza === 'patrzy' ? 0.75 : mrok?.faza === 'podchodzi' ? 0.45 : 0;
+      // dłoń z otchłani: od pierwszego drgnięcia otchłani do chwytu muzyka jest na granicy
+      const dlon = this.sim.lud.dlon;
+      const napiecieDloni = dlon && dlon.faza !== 'brak' && dlon.faza !== 'gasnie' ? (dlon.faza === 'wstaje' ? 0.85 : 1) : 0;
+      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2, napiecieMroku, napiecieDloni));
+      if (mrok) {
+        if (mrok.szeptT !== undefined && mrok.szeptT !== this.slyszanyMrok.szept) { this.slyszanyMrok.szept = mrok.szeptT; this.app.muzyka.szept(); }
+        if (mrok.zabranyT !== undefined && mrok.zabranyT !== this.slyszanyMrok.zabrany) { this.slyszanyMrok.zabrany = mrok.zabranyT; this.app.muzyka.zabranie(); }
+      }
+      if (dlon) {
+        if (dlon.wstajeT !== undefined && dlon.wstajeT !== this.slyszanaDlon.wstaje) { this.slyszanaDlon.wstaje = dlon.wstajeT; this.app.muzyka.otchlan(); }
+        if (dlon.chwytT !== undefined && dlon.chwytT !== this.slyszanaDlon.chwyt) { this.slyszanaDlon.chwyt = dlon.chwytT; this.app.muzyka.zabranie(); }
+      }
     }
   }
 
@@ -750,6 +812,7 @@ export class EkranGry implements Ekran {
     // odjeżdżałby spod postaci), a zmiany samego świata wystarczą trzydzieści razy na sekundę.
     const kameraRuszona = cam.x !== this.rysKam[0] || cam.y !== this.rysKam[1] || cam.zoom !== this.rysKam[2];
     if (kameraRuszona || (this.dirty && teraz - this.lastInk > 30) || teraz - this.lastInk > 150) {
+      eng.fresk = ustawienia.swiat !== 'rycina';
       eng.rebuild(sim, cam, teraz);
       this.lastInk = teraz; this.dirty = false;
       this.rysKam[0] = cam.x; this.rysKam[1] = cam.y; this.rysKam[2] = cam.zoom;
@@ -787,30 +850,41 @@ export class EkranGry implements Ekran {
       ctx.drawImage(eng.buf, 0, 0, cam.vw, cam.vh);
       ctx.restore();
     }
-    // rycina świata w ugrze, jak rysunek sinopią na tynku: biel kreski przechodzi w ciepły ochrowy
-    ctx.save();
-    ctx.globalCompositeOperation = 'multiply';
-    ctx.fillStyle = FRESK.tonRyciny;
-    ctx.fillRect(0, 0, cam.vw, cam.vh);
-    ctx.restore();
+    if (eng.fresk) {
+      // fresk: faktura tynku przyklejona do świata — jedzie razem ze skałą, gdy przesuwasz kamerę
+      tynkSwiata(ctx, cam);
+    } else {
+      // rycina świata w ugrze, jak rysunek sinopią na tynku: biel kreski przechodzi w ciepły ochrowy
+      ctx.save();
+      ctx.globalCompositeOperation = 'multiply';
+      ctx.fillStyle = FRESK.tonRyciny;
+      ctx.fillRect(0, 0, cam.vw, cam.vh);
+      ctx.restore();
+    }
     this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.5);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     rysujRdzen(ctx, sim, cam, teraz);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
+    // liny są częścią góry: poza światłem lampek toną w mroku jak skała, do której są przypięte
+    rysujKlamry(ctx, sim, cam);
+    // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
+    rysujMrok(ctx, sim, cam, teraz, this.pauza);
+    if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3);
     // droga pielgrzymów: którędy wierni zejdą pod rdzeń (przekopują ją sami — gracz nie drąży)
     const plan = aktualnyPlan(sim);
     if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
       rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, false);
     }
     rysujZarys(ctx, sim, cam, teraz);
-    rysujKlamry(ctx, sim, cam);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
     if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
     rysujZnacznikiLudu(ctx, sim, cam);
     rysujStraznikowWSkale(ctx, sim, cam, teraz);
+    rysujPatrzacego(ctx, sim, cam, teraz);
+    rysujDlon(ctx, sim, cam, teraz);
     if (this.pauza) {
       // czas stoi: świat przygasa, a na nim widać już tylko plan
       ctx.fillStyle = 'rgba(8,6,10,0.26)';
@@ -838,7 +912,7 @@ export class EkranGry implements Ekran {
 
     drawSmoke(ctx, plate, sim, teraz);
     drawEyelid(ctx, plate, sim, teraz);
-    drawFrame(ctx, plate, teraz, oddech);
+    drawFrame(ctx, plate, teraz, oddech, this.ui.pointer);
     // w samouczku cel gry dochodzi dopiero na końcu — linia kroków by tylko rozpraszała
     // na telefonie wstęga leży na dole płyty, tam gdzie baner pauzy — w pauzie ustępuje mu miejsca
     // (także gdy trzymasz ryt — dół płyty zajmuje wtedy opis narzędzia — i gdy otwarta jest karta mieszkańca)
@@ -852,7 +926,7 @@ export class EkranGry implements Ekran {
     this.ui.draw(ctx, sim, teraz);
     this.przyciski = rozmiescPrzyciski(plate, h, {
       pauza: this.pauza, zapiski: this.zapiski, legenda: this.legenda, noweTablice: odkrycia.niezobaczone,
-      tempo: this.tempoTeraz(),
+      tempo: this.tempoTeraz(), dev: ustawienia.trybDeweloperski,
     });
     const podPrzyciskiem = przyciskPod(this.przyciski, this.ui.pointer.x, this.ui.pointer.y);
     rysujPrzyciski(ctx, this.przyciski, podPrzyciskiem?.akcja ?? null, teraz);
@@ -870,12 +944,13 @@ export class EkranGry implements Ekran {
       ctx.font = `${Math.max(14, w / 74)}px "Trzewia Tekst", Georgia, serif`;
       ctx.textAlign = 'right';
       ctx.fillStyle = 'rgba(236,222,190,0.95)';
+      const sek = Math.floor(sim.tick / TEMPO.tikowNaSekunde);
       const linie = [
         `wiara ${Math.round(sim.wiara)}`,
         `krew ${Math.round(sim.krew)}`,
         `oddanie ${Math.round((najwierniejsza(sim)?.devotion ?? 0) * 100)}%`,
         `żywych ${sim.creatures.reduce((n, c) => n + (c.dead ? 0 : 1), 0)}`,
-        `tik ${sim.tick}`,
+        `${Math.floor(sek / 60)}:${String(sek % 60).padStart(2, '0')} · tik ${sim.tick}${this.tempoTeraz() !== 1 ? ` · ×${mnoznikNapis(this.tempoTeraz())}` : ''}`,
       ];
       // na dole płyty po prawej — u góry stoją dziennik dewelopera i podpis Cudu
       linie.forEach((l, i) => ctx.fillText(l, plate.x + plate.w - 12, plate.y + plate.h - 14 - (linie.length - 1 - i) * 20));
@@ -1352,8 +1427,9 @@ export class EkranGry implements Ekran {
         this.app.idz('menu');
         break;
       case 'pauza': this.ustawPauze(!this.pauza); break;
-      case 'szybciej': ustawienia.tempo = Math.min(TEMPO.max, ustawienia.tempo + 1); this.nasluch?.({ typ: 'tempo' }); break;
-      case 'wolniej': ustawienia.tempo = Math.max(1, ustawienia.tempo - 1); this.nasluch?.({ typ: 'tempo' }); break;
+      // tempo czasu tylko w trybie deweloperskim — w grze czas jest jeden
+      case 'szybciej': if (ustawienia.trybDeweloperski) this.zmienTempo(1); break;
+      case 'wolniej': if (ustawienia.trybDeweloperski) this.zmienTempo(-1); break;
       case 'zapis': ui.say(this.zapisujAuto && saveToStorage(sim) ? 'Zapisane.' : 'Nie tutaj.', sim.tick); break;
       case 'wczytaj': {
         // w samouczku zapis gracza nie ma prawa podmienić góry, na której się uczy

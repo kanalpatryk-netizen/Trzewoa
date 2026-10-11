@@ -187,6 +187,88 @@ export class Muzyka {
     }
   }
 
+  /**
+   * Szept z ciemności (Ten, który patrzy): kilka sylab szumu w paśmie mowy, z jednej strony,
+   * z długim echem korytarzy. Słów nie da się zrozumieć.
+   */
+  szept(strona = Math.random() < 0.5 ? -1 : 1): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.szum || !this.master) return;
+    let t = ctx.currentTime + 0.05;
+    const sylab = 5 + ((Math.random() * 5) | 0);
+    for (let i = 0; i < sylab; i++) {
+      const dl = 0.08 + Math.random() * 0.16;
+      const z = ctx.createBufferSource(); z.buffer = this.szum;
+      const f = ctx.createBiquadFilter(); f.type = 'bandpass'; f.Q.value = 3.5;
+      const fr = 1800 + Math.random() * 2600;
+      f.frequency.setValueAtTime(fr, t);
+      f.frequency.exponentialRampToValueAtTime(fr * (0.6 + Math.random() * 0.5), t + dl);
+      const g = ctx.createGain();
+      const glos = N.szeptGlos * (0.6 + Math.random() * 0.5);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(glos, t + dl * 0.3);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dl);
+      const p = mikser.panorama(strona * (0.5 + Math.random() * 0.4));
+      z.connect(f); f.connect(g); g.connect(p); p.connect(this.master);
+      const s = ctx.createGain(); s.gain.value = 0.8; g.connect(s); s.connect(mikser.poglos);
+      z.start(t, Math.random() * 1.5); z.stop(t + dl + 0.05);
+      t += dl + 0.03 + Math.random() * 0.12;
+    }
+  }
+
+  /**
+   * Otchłań otwiera oczy (Koszmar): bardzo niski, narastający pomruk — dwa rozstrojone tony
+   * pod szumem, który rośnie i opada jak oddech czegoś ogromnego.
+   */
+  otchlan(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const t = ctx.currentTime + 0.05;
+    const glos = N.otchlanGlos;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(glos, t + 1.4);
+    g.gain.exponentialRampToValueAtTime(glos * 0.6, t + 2.6);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 4.2);
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 180;
+    for (const [hz, typ] of [[38, 'sawtooth'], [38.9, 'sawtooth'], [57, 'triangle']] as [number, OscillatorType][]) {
+      const o = ctx.createOscillator(); o.type = typ;
+      o.frequency.setValueAtTime(hz * 0.9, t);
+      o.frequency.exponentialRampToValueAtTime(hz, t + 1.6);
+      o.connect(f);
+      o.start(t); o.stop(t + 4.4);
+    }
+    if (this.szum) {
+      const z = ctx.createBufferSource(); z.buffer = this.szum; z.loop = true;
+      const fz = ctx.createBiquadFilter(); fz.type = 'lowpass'; fz.frequency.value = 260;
+      const gz = ctx.createGain(); gz.gain.value = 0.8;
+      z.connect(fz); fz.connect(gz); gz.connect(f);
+      z.start(t); z.stop(t + 4.4);
+    }
+    f.connect(g); g.connect(this.master);
+    const s = ctx.createGain(); s.gain.value = 0.6; g.connect(s); s.connect(mikser.poglos);
+    this.szept(-1);
+  }
+
+  /** Ktoś poszedł w ciemność: głuche uderzenie w głębi i szept z obu stron naraz. */
+  zabranie(): void {
+    const ctx = this.ctx;
+    if (!ctx || !this.master) return;
+    const t = ctx.currentTime + 0.05;
+    const o = ctx.createOscillator(); o.type = 'sine';
+    o.frequency.setValueAtTime(62, t);
+    o.frequency.exponentialRampToValueAtTime(31, t + 1.6);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(N.zabranieGlos, t + 0.03);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
+    o.connect(g); g.connect(this.master);
+    const s = ctx.createGain(); s.gain.value = 0.7; g.connect(s); s.connect(mikser.poglos);
+    o.start(t); o.stop(t + 2);
+    this.szept(-1);
+    this.szept(1);
+  }
+
   /** Oddech, trzaski i chór — rzadkie zdarzenia, gęstsze z napięciem. */
   private planujNiepokoj(teraz: number): void {
     if (!this.szum) return;

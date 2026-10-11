@@ -328,7 +328,15 @@ function kandydaci(sim: Sim, st: StanWydarzen): { waga: number; zbuduj: Budownic
   return [...out.filter((k) => KARTY_REMAKE.has(k.rodzaj)), ...kandydaciLudu(sim, st)];
 }
 
-const KARTY_REMAKE = new Set(['najazd', 'powodz', 'zaraza', 'glod', 'znak', 'warta', 'dlug', 'wymiera']);
+const KARTY_REMAKE = new Set(['najazd', 'zaraza', 'glod', 'znak', 'warta', 'dlug', 'wymiera']);
+
+/** Karty, które naprawdę mogą wypaść w grze (z nazwami) — dla okienka dewelopera. */
+export const KARTY_W_GRZE: [string, string][] = [
+  ['najazd', 'Najazd'], ['zaraza', 'Zaraza'], ['glod', 'Głód'], ['znak', 'Prośba o znak'],
+  ['warta', 'Warta pod rdzeniem'], ['dlug', 'Głębia proponuje układ'], ['wymiera', 'Lud wymiera'],
+  ['spisek', 'Spisek rycerzy'], ['plony', 'Zatrute plony'], ['zawal', 'Zawał nad drogą wiernych'],
+  ['sen', 'Sen o kamiennych rycerzach'],
+];
 
 /** v4 beta: spełnia skutki odroczone, którym przyszła pora. */
 function spelnijOdroczone(sim: Sim): void {

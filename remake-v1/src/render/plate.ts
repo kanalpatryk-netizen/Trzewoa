@@ -11,6 +11,8 @@ import { liczRole } from '../sim/lud';
 import { REMAKE } from '../nastawy/lud';
 import { ramaFresku, pigment } from './fresk';
 import { FRESK } from '../nastawy/barwy';
+import { NASTROJ } from '../nastawy/wyglad/nastroj';
+import { plynnie, wolnoRuszac } from './nastroj';
 
 /**
  * `waski` — telefon (albo tablet) trzymany pionowo; `niski` — telefon trzymany poziomo.
@@ -126,29 +128,44 @@ function pasmoSpisu(p: Plate, vh: number): { y: number; h: number } {
 
 /**
  * Rama płyty malowana jak obramowanie fresku (render/fresk.ts). W lewym pasie ramy namalowane
- * oko: powieka bielą wapienną, źrenica czerwona — oddycha z rdzeniem i co jakiś czas mruga.
- * Z czerwonego pasa wychodzi czasem nieznane pismo i gaśnie.
+ * oko: powieka przybrudzoną bielą, źrenica czerwona — oddycha z rdzeniem, mruga nieregularnie
+ * i wodzi źrenicą za kursorem. Z czerwonego pasa wychodzi czasem nieznane pismo i gaśnie.
  */
-export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number, oddech = 0.5): void {
+export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number, oddech = 0.5, kursor?: { x: number; y: number }): void {
   const pas = p.waski || p.niski ? 6 : 9;
   const gr = pas * 1.66;
-  ramaFresku(ctx, p.x - gr, p.y - gr, p.w + gr * 2, p.h + gr * 2, pas, time, p.waski || p.niski ? 0 : 2);
+  ramaFresku(ctx, p.x - gr, p.y - gr, p.w + gr * 2, p.h + gr * 2, pas, time, p.waski || p.niski ? 0 : 3);
   if (p.waski) return;
   const ex = p.x - gr + pas / 2, ey = p.y + p.h / 2;
   ctx.save();
-  // migdał oka na czerwonym pasie
-  const mrug = (time % 7300) < 160 ? 0.15 : 1;
+  // migdał oka na czerwonym pasie; mruga nieregularnie (czasem dwa razy pod rząd)
+  const cyklMrugu = Math.floor(time / 5200);
+  const losMrugu = Math.sin(cyklMrugu * 91.7) * 4375.85 % 1;
+  const wCyklu = time % 5200;
+  const mrug = wCyklu < 150 || (losMrugu > 0.6 && wCyklu > 330 && wCyklu < 450) ? 0.15 : 1;
   const hw = pas * 0.62, hh = pas * 1.7;
+  // źrenica podąża za kursorem — powoli, jakby oko dopiero się budziło
+  const doX = kursor && wolnoRuszac() ? Math.max(-1, Math.min(1, (kursor.x - ex) / 420)) : 0;
+  const doY = kursor && wolnoRuszac() ? Math.max(-1, Math.min(1, (kursor.y - ey) / 320)) : 0;
+  const ox = plynnie('oko-x', doX, 420) * hw * NASTROJ.okoPodaza;
+  const oy = plynnie('oko-y', doY, 420) * hh * NASTROJ.okoPodaza;
   const oko = new Path2D();
   oko.moveTo(ex, ey - hh); oko.quadraticCurveTo(ex + hw * 1.6, ey, ex, ey + hh); oko.quadraticCurveTo(ex - hw * 1.6, ey, ex, ey - hh);
-  ctx.fillStyle = '#e9dcbc';
+  ctx.fillStyle = '#b9aa8c';
   ctx.save(); ctx.translate(ex, ey); ctx.scale(mrug, 1); ctx.translate(-ex, -ey); ctx.fill(oko); ctx.restore();
-  ctx.strokeStyle = '#3a1208'; ctx.lineWidth = 1.2; ctx.stroke(oko);
+  ctx.strokeStyle = '#1e0904'; ctx.lineWidth = 1.2; ctx.stroke(oko);
   if (mrug > 0.5) {
-    ctx.fillStyle = `rgba(150,30,18,${0.75 + 0.25 * oddech})`;
-    ctx.beginPath(); ctx.ellipse(ex, ey, hw * 0.55, hh * (0.3 + 0.12 * oddech), 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#120605';
-    ctx.beginPath(); ctx.ellipse(ex, ey, hw * 0.2, hh * (0.12 + 0.08 * oddech), 0, 0, Math.PI * 2); ctx.fill();
+    ctx.save();
+    ctx.clip(oko);
+    const [zr, zg, zb] = FRESK.zar;
+    ctx.shadowColor = `rgba(${zr},${zg},${zb},${0.5 + 0.3 * oddech})`;
+    ctx.shadowBlur = pas * 0.8;
+    ctx.fillStyle = `rgba(140,26,16,${0.75 + 0.25 * oddech})`;
+    ctx.beginPath(); ctx.ellipse(ex + ox, ey + oy, hw * 0.55, hh * (0.3 + 0.12 * oddech), 0, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#0c0403';
+    ctx.beginPath(); ctx.ellipse(ex + ox * 1.15, ey + oy * 1.15, hw * 0.2, hh * (0.12 + 0.08 * oddech), 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -625,11 +642,31 @@ export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim,
       : e.kind === 'otchlan' ? [226, 228, 236]
       : e.kind === 'koniec' ? [246, 226, 196]
       : [206, 194, 172];
+    // najnowsza linijka pisze się od lewej, a na końcu pióra tli się żar
+    const pisze = back === 0 && wolnoRuszac() ? Math.max(0, Math.min(1, age / NASTROJ.kronikaPisanie)) : 1;
+    const szer = ctx.measureText(text).width;
+    ctx.save();
+    if (pisze < 1) {
+      const doklad = 1 - Math.pow(1 - pisze, 2);
+      ctx.beginPath(); ctx.rect(x - 4, y - size * 1.3, (szer + 8) * doklad, size * 1.8); ctx.clip();
+    }
     ctx.lineWidth = 3;
     ctx.strokeStyle = `rgba(10,7,6,${fade * 0.8})`;
     ctx.strokeText(text, x, y);
     ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${fade})`;
     ctx.fillText(text, x, y);
+    ctx.restore();
+    if (pisze < 1) {
+      const doklad = 1 - Math.pow(1 - pisze, 2);
+      const [zr, zg, zb] = FRESK.zar;
+      const px = x + szer * doklad, py = y - size * 0.3;
+      const zar = ctx.createRadialGradient(px, py, 0, px, py, size * 0.7);
+      zar.addColorStop(0, `rgba(255,200,140,${0.8 * (1 - pisze)})`);
+      zar.addColorStop(0.4, `rgba(${zr},${zg},${zb},${0.45 * (1 - pisze)})`);
+      zar.addColorStop(1, `rgba(${zr},${zg},${zb},0)`);
+      ctx.fillStyle = zar;
+      ctx.fillRect(px - size, py - size, size * 2, size * 2);
+    }
   }
   ctx.restore();
 }

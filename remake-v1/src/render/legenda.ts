@@ -18,14 +18,6 @@ const POZYCJE: Pozycja[] = [
     rysuj: (c, x, y, s) => { c.strokeStyle = 'rgba(226,218,196,0.95)'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(x - s * 0.35, y + s * 0.2); c.lineTo(x + s * 0.35, y - s * 0.2); c.stroke(); c.beginPath(); c.arc(x - s * 0.35, y + s * 0.2, s * 0.09, 0, Math.PI * 2); c.stroke(); c.beginPath(); c.arc(x + s * 0.35, y - s * 0.2, s * 0.09, 0, Math.PI * 2); c.stroke(); },
   },
   {
-    nazwa: 'Woda', opis: 'kto nie pływa, ten tonie albo musi obejść',
-    rysuj: (c, x, y, s) => { c.strokeStyle = 'rgba(236,236,224,0.9)'; c.lineWidth = 1.4; for (let i = 0; i < 3; i++) { c.beginPath(); for (let k = 0; k <= 8; k++) { const px = x - s * 0.4 + (k / 8) * s * 0.8; const py = y - s * 0.2 + i * s * 0.2 + Math.sin(k) * s * 0.05; if (k === 0) c.moveTo(px, py); else c.lineTo(px, py); } c.stroke(); } },
-  },
-  {
-    nazwa: 'Magma', opis: 'zabija wszystko, ale daje Żużlowcom kuźnię',
-    rysuj: (c, x, y, s) => { const g = c.createRadialGradient(x, y, 0, x, y, s * 0.5); g.addColorStop(0, 'rgba(255,150,60,0.95)'); g.addColorStop(1, 'rgba(255,120,40,0)'); c.fillStyle = g; c.fillRect(x - s * 0.5, y - s * 0.5, s, s); },
-  },
-  {
     nazwa: 'Ołtarz i kuźnia', opis: 'przy nich się modlą — stąd bierze się Wiara',
     rysuj: (c, x, y, s) => { c.strokeStyle = 'rgba(240,206,150,0.95)'; c.lineWidth = 1.6; c.strokeRect(x - s * 0.25, y - s * 0.25, s * 0.5, s * 0.5); c.beginPath(); c.moveTo(x, y - s * 0.25); c.lineTo(x, y - s * 0.45); c.stroke(); },
   },
