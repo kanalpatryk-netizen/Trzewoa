@@ -856,6 +856,8 @@ export class EkranGry implements Ekran {
     rysujRdzen(ctx, sim, cam, teraz);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
+    // liny są częścią góry: poza światłem lampek toną w mroku jak skała, do której są przypięte
+    rysujKlamry(ctx, sim, cam);
     // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
     rysujMrok(ctx, sim, cam, teraz, this.pauza);
     if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3);
@@ -865,7 +867,6 @@ export class EkranGry implements Ekran {
       rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, false);
     }
     rysujZarys(ctx, sim, cam, teraz);
-    rysujKlamry(ctx, sim, cam);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
