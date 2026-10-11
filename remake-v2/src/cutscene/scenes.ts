@@ -21,8 +21,8 @@ export const SCENY: Record<string, Scena> = {
     linie: [
       'Nie jesteś bogiem, który rządzi podziemiem. Jesteś podziemiem — górą, która śni.',
       'Korytarze są twoimi żyłami, jaskinie płucami, a na samym dnie bije rdzeń: twoje serce, zamknięte w kamieniu.',
-      'W tobie mieszkają rasy. Żywisz się tym, że o tobie myślą: ich modlitwą, ich strachem i ich śmiercią.',
-      'Nie rozkazujesz im. Karmisz ich, szepczesz im do głów i decydujesz, co ich spotka — a one robią resztę.',
+      'W tobie mieszka jeden lud — Pobożni. Żywisz się tym, że o tobie myślą: ich modlitwą i ich śmiercią.',
+      'Nie rozkazujesz im. Spuszczasz im jedzenie, szepczesz do głów i czynisz cuda — a oni robią resztę. Jeśli uwierzą dość mocno, uwolnią twój rdzeń.',
     ],
   },
 
@@ -52,8 +52,8 @@ export const SCENY: Record<string, Scena> = {
     id: 'narzedzia', tytul: 'Czym działasz',
     rysunek: rysujOrgany,
     linie: [
-      'Masz trzy ryty: Nakarm, Szepnij i Cud. Płacisz Krwią (z każdej śmierci) i Wiarą (z każdej modlitwy).',
-      'Co chwilę coś się dzieje — najazd, zaraza, głód, prorok. Czas wtedy staje, a ty wybierasz, co z tym zrobić.',
+      'Masz trzy ryty: Nakarm (wiadro z jedzeniem z góry), Szepnij i Cud. Płacisz Krwią (z każdej śmierci) i Wiarą (z każdej modlitwy).',
+      'Każda góra to Koszmar: krwi jest mało, skorupa jest twarda, góra zawala się za ludem, a w ciemności coś patrzy. Co chwilę coś się dzieje — czas wtedy staje, a ty wybierasz.',
       'U dołu płyty zawsze widać, co teraz zrobić, żeby zbliżyć się do wolności. Zaraz pokażę ci wszystko palcem.',
     ],
   },

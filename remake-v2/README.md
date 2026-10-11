@@ -10,6 +10,13 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu).
 ## Co nowego w v2
 - **Obserwatorium** — cztery okna gry naraz, w każdym gra bot (opis niżej).
 - **Bot w grze** — gra sam w oknach obserwatorium (`src/app/bot.ts`).
+- **Tylko Koszmar** — nie ma już wyboru trudności (łaskawa / surowa): każda nowa gra to Koszmar — 80 krwi na start,
+  skorupa pęka wolniej (×0,7), dług u głębi boli bardziej, a z otchłani może przyjść dłoń. „Nowa gra” zaczyna się od razu.
+- **Bez świata dnia** — z menu, osiągnięć i ekranu końcowego zniknął „Świat dnia”.
+- **Samouczek, atlas i osiągnięcia od nowa** — 14 lekcji o tym, co jest w tej wersji (wiadra i Nakarm, ze skały,
+  pauza, zawał i hełmy, ciemność i dłoń, Strażnicy, droga do wolności); atlas bez ras, których tu nie ma
+  (Żużlowcy, Trole, Prządki, Grzybnia), bez proroka i cech nacji, z tablicami wiadra, zawału, hełmów i trupów;
+  14 nowych osiągnięć (m.in. „Ostatkiem sił”, „Kilofy zamiast mieczy”, „Bez powrotu”, „Wyrwani z dłoni”).
 - **Zawał od góry** — gdy przez 20 s nikogo z ludu nie ma wysoko, góra nad nim zawala się (razem z gniazdami
   rycerzy, które tam spały). Kamera nie wjeżdża ponad gruz, mapa się skraca, a lud nie ucieknie w górę — musi walczyć.
 - **Wiadro z jedzeniem zamiast grzyba i spiżarni** — co 40 s z góry, na linie, zjeżdża wiadro pełne jedzenia
@@ -20,14 +27,14 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu).
 - **Kamera nie jeździ sama do wydarzeń** — karta i ostrzeżenie tylko zaznaczają miejsce (poza ekranem: strzałka
   przy krawędzi); dotknięcie strzałki albo „pokaż miejsce ›” na karcie wiezie tam kamerę. Dawne zachowanie:
   ustawienia → „Kamera do wydarzeń”.
-- Gra wychodzi od najnowszego stanu Remake v1 — z **dłonią z otchłani** (tylko Koszmar, rzadko; klatki z modelu 3D,
+- Gra wychodzi od najnowszego stanu Remake v1 — z **dłonią z otchłani** (rzadko; klatki z modelu 3D,
   zawsze wznosi się z dołu, z otchłani pod ofiarą), mroczniejszym interfejsem, zwykłym czasem i linami przy ścianie.
   Odtąd nowe rzeczy trafiają do v2.
 
 ## Obserwatorium (`trzewia-remake-v2-obserwatorium.html`)
 Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo.
 - **Każde okno osobno:** tempo (×¼ … ×20), pauza, styl bota (*rozsądny*, *budowniczy*, *speedrun*, *bierny* — nic nie
-  robi), trudność (łaskawa / surowa / koszmar), ziarno świata (puste — losowe), „nowa partia”, „sama następna partia”
+  robi), ziarno świata (puste — losowe), „nowa partia”, „sama następna partia”
   (po końcu za 6 s zaczyna się następna) i dźwięk (tylko z jednego okna naraz). Nad oknem: czas gry, numer partii,
   ziarno i wynik; pod nim: lud (pobożni, robotnicy, rycerze), wiara, krew, jedzenie, ostatni wpis kroniki
   i historia partii (✓ uwolnienie / ✗ porażka, po ilu minutach).
@@ -101,7 +108,7 @@ Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo.
 - **Mrok i Ten, który patrzy** (`src/sim/mrok.ts`, nastawy w `src/nastawy/mrok.ts`): świat widać w pełni tylko w świetle
   lampek, aureol, obozów, rdzenia i Cudu. W ciemności krąży coś, co wypatruje samotnych daleko od obozu (nie rycerzy)
   i po 15 s patrzenia zabiera ich (stoją wtedy jak wryci); gra staje i ostrzega. Odpędza je Cud tuż obok albo ktoś z ludu, kto podejdzie.
-- **Dłoń z otchłani (tylko Koszmar, rzadko)** (`src/sim/dlon.ts`, rysunek `src/render/dlon.ts`, nastawy `src/nastawy/dlon.ts`):
+- **Dłoń z otchłani (rzadko; w v2 każda góra to Koszmar)** (`src/sim/dlon.ts`, rysunek `src/render/dlon.ts`, nastawy `src/nastawy/dlon.ts`):
   gdy ktoś z ludu stoi daleko od obozu, a pod nim zaczyna się nieznane, pod jego stopami żarzy się czerwona łuna i z głębi,
   zawsze od dołu, wznosi się ogromna dłoń, chwyta jedną albo dwie postacie i zapada się z nimi w dół (bez kości). Gra staje
   i ostrzega; Cud przy nich przed chwytem spycha ją z powrotem w otchłań. Najwcześniej po 6 min, najwyżej 2 razy na partię.
@@ -116,5 +123,5 @@ Film z rozgrywki (etap 4, jeszcze z v1): [`../remake-v1/film/remake-v1-etap4.web
 Stan po poprawkach (bot na 64 światach): 64 wygrane, 0 porażek, ~65 zgonów, średnio 10,4 min partii.
 
 Znane braki: gdy wszystkie gniazda są odkopane, a rycerze zginęli, bossa nie da się pokonać (zasypia
-i wraca w kółko); karta spisku często zabiera rycerzy; stare tablice atlasu o dawnych rasach zostały
-jako punkt odniesienia.
+i wraca w kółko); karta spisku często zabiera rycerzy. (v2: tablice atlasu o dawnych rasach usunięte;
+bez rycerzy walczą robotnicy w hełmach, a pobożni razią bossa księgami.)

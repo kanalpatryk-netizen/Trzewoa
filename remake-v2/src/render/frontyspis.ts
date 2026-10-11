@@ -9,7 +9,7 @@ import { FRONTYSPIS as F } from '../nastawy/wyglad/frontyspis';
 /**
  * Frontyspis: góra namalowana jak na ikonie — z piętrzących się półek skalnych o płaskich
  * wierzchach, podświetlonych bielą wapienną i obwiedzionych sinopią. Pokazuje grę:
- * wysoko siedziba ludu z lampką, obok spiżarnia z bladym grzybem, w skale zamurowane
+ * wysoko siedziba ludu z lampką, obok nisza, do której zjeżdża wiadro z jedzeniem, w skale zamurowane
  * gniazdo kamiennego rycerza, który czasem otwiera oczy, a zakosami w dół droga wiernych
  * do czarnej jaskini rdzenia — jak na ikonach Narodzenia — przy której w skale stoją
  * Strażnicy Snu. Nieruchomy obraz liczy się raz na rozmiar; co klatkę dochodzi to, co żyje.
@@ -355,20 +355,24 @@ export class Frontyspis {
     const gl = ctx.createRadialGradient(lx, ly, 0, lx, ly, S.rx * 1.2);
     gl.addColorStop(0, `rgba(255,170,80,${0.32 + 0.18 * ml})`); gl.addColorStop(1, 'rgba(255,150,60,0)');
     ctx.fillStyle = gl; ctx.fillRect(lx - S.rx * 1.3, ly - S.rx * 1.3, S.rx * 2.6, S.rx * 2.6);
-    // grzyb w spiżarni świeci blado zielono
-    const gg = ctx.createRadialGradient(Z.x, Z.y + Z.ry * 0.3, 0, Z.x, Z.y + Z.ry * 0.3, Z.rx * 1.1);
-    gg.addColorStop(0, `rgba(160,220,150,${0.16 + 0.05 * Math.sin(teraz * 0.0013)})`); gg.addColorStop(1, 'rgba(160,220,150,0)');
+    // Remake v2: wiadro z jedzeniem zjeżdża na linie do niszy — ciepła poświata zamiast bladego grzyba
+    const zjazd = 0.5 + 0.5 * Math.sin(teraz * 0.0004);
+    const wy = Z.y - Z.ry * 0.55 + zjazd * Z.ry * 0.85, wx = Z.x + Math.sin(teraz * 0.0021) * Z.rx * 0.04;
+    const gg = ctx.createRadialGradient(wx, wy, 0, wx, wy, Z.rx * 1.1);
+    gg.addColorStop(0, `rgba(255,190,110,${0.2 + 0.05 * Math.sin(teraz * 0.0013)})`); gg.addColorStop(1, 'rgba(255,170,90,0)');
     ctx.fillStyle = gg; ctx.fillRect(Z.x - Z.rx * 1.2, Z.y - Z.rx * 1.2, Z.rx * 2.4, Z.rx * 2.4);
     ctx.globalCompositeOperation = 'source-over';
     ctx.fillStyle = 'rgba(255,236,190,0.95)';
     ctx.beginPath(); ctx.ellipse(lx, ly - 1.5, 1.3, 2.4 + ml * 0.8, 0, 0, Math.PI * 2); ctx.fill();
-    // grzyby: blade kapelusze na podłodze spiżarni
-    for (let i = 0; i < F.spizarnia.grzybow; i++) {
-      const gx = Z.x - Z.rx * 0.7 + (i / Math.max(1, F.spizarnia.grzybow - 1)) * Z.rx * 1.4, gy = Z.y + Z.ry * 0.5;
-      ctx.fillStyle = 'rgba(214,214,186,0.9)';
-      ctx.fillRect(gx - 0.8, gy - 3.5, 1.6, 3.5);
-      ctx.beginPath(); ctx.ellipse(gx, gy - 3.5, 3, 2, 0, Math.PI, 0); ctx.fill();
-    }
+    // lina od stropu niszy i drewniane wiadro w obręczach, pełne jedzenia
+    ctx.strokeStyle = 'rgba(196,160,110,0.85)'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(Z.x, Z.y - Z.ry * 1.05); ctx.lineTo(wx, wy - 3.5); ctx.stroke();
+    ctx.fillStyle = 'rgba(150,104,58,0.95)';
+    ctx.beginPath(); ctx.moveTo(wx - 4, wy - 3); ctx.lineTo(wx + 4, wy - 3); ctx.lineTo(wx + 3, wy + 4); ctx.lineTo(wx - 3, wy + 4); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(60,56,54,0.9)'; ctx.lineWidth = 0.8;
+    ctx.beginPath(); ctx.moveTo(wx - 3.7, wy - 0.8); ctx.lineTo(wx + 3.7, wy - 0.8); ctx.moveTo(wx - 3.2, wy + 2.4); ctx.lineTo(wx + 3.2, wy + 2.4); ctx.stroke();
+    ctx.fillStyle = 'rgba(214,170,100,0.95)';
+    ctx.beginPath(); ctx.ellipse(wx, wy - 3.2, 3.4, 1.6, 0, Math.PI, 0); ctx.fill();
 
     // lud w siedzibie i pielgrzymi schodzący drogą wiernych — drobne postaci bieli wapiennej
     ctx.fillStyle = `rgba(232,220,190,${F.sylwetki})`;

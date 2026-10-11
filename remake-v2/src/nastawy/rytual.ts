@@ -35,8 +35,6 @@ export const RYTUAL = {
   podstawaOddania: 0.6,
   /** Każde kolejne pęknięcie idzie oporniej: dzielnik 1 + pęknięcia × opór. */
   oporNaPekniecie: 0.18,
-  /** Mnożnik tempa w trybie „łaskawa góra”. */
-  laskawaMnoznik: 1.3,
   /** v4 beta — mnożnik tempa w trybie Koszmar (skorupa twardsza). */
   koszmarMnoznik: 0.7,
   /** Na początku partii skorupa jest twardsza: tempo startuje od tego ułamka… */

@@ -204,6 +204,7 @@ function pilnujHelmow(sim: Sim): void {
     if (r === 'rycerz') rycerzy++; else if (r === 'robotnik') robotnikow++;
   }
   const helmy = rycerzy === 0;
+  if (helmy && robotnikow) sim.stat.helmy = 1;
   for (const c of sim.creatures) {
     if (c.dead || rolaPostaci(c) !== 'robotnik' || !!c.helm === helmy) continue;
     c.helm = helmy || undefined;
@@ -215,6 +216,18 @@ function pilnujHelmow(sim: Sim): void {
     if (helmy && robotnikow) sim.log('Nie został ani jeden rycerz. Robotnicy zakładają hełmy i biorą kilofy do walki.', 'krew');
     else if (!helmy && robotnikow) sim.log('Rycerze znów są w ludzie — robotnicy zdejmują hełmy i wracają do kopania.', 'swiat');
   }
+}
+
+/** Remake v2: do osiągnięć — najwięcej ludu i weteranów naraz. */
+function liczLud(sim: Sim): void {
+  let lud = 0, weteranow = 0;
+  for (const c of sim.creatures) {
+    if (c.dead || c.buntownik || !rolaPostaci(c)) continue;
+    lud++;
+    if (weteranStaz(sim, c)) weteranow++;
+  }
+  if (lud > sim.stat.ludMax) sim.stat.ludMax = lud;
+  if (weteranow > sim.stat.weteranowMax) sim.stat.weteranowMax = weteranow;
 }
 
 /** Etap 2: przesłużył już swoje w ludzie (staż weterana). */
@@ -616,7 +629,7 @@ export function tikLudu(sim: Sim): void {
   if (!sim.lud.spizarnie) sim.lud.spizarnie = [];
   wyjscieZeSkaly(sim);
   if (sim.tick % 30 === 0) pilnujGniazd(sim);
-  if (sim.tick % 60 === 0) pilnujHelmow(sim);
+  if (sim.tick % 60 === 0) { pilnujHelmow(sim); liczLud(sim); }
   tikWiader(sim);
   tikZawalu(sim);
   tikTrupow(sim);

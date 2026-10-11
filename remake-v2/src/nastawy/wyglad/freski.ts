@@ -18,7 +18,6 @@ export const FRESKI = {
     dlug: 'diabel-1', klotnia: 'diabel-1', bunt: 'diabel-1',
     obcy: 'lew', ruda: 'lew', sen: 'lew',
     glod: 'odlamek-swiety-1', wymiera: 'odlamek-swiety-1',
-    prorok: 'odlamek-swiety-2',
     znak: 'aniol-michal', warta: 'odlamek-michal',
     przysiega: 'odlamek-biskup',
   } as Record<string, string>,
@@ -50,8 +49,9 @@ export const FRESKI = {
   // ---------------------------------------------------------------- osiągnięcia
   /** Medalion przy każdym osiągnięciu. */
   medaliony: {
-    pierwsza: 'oko', szybko: 'smok', koszmar: 'diabel-2', pelna: 'diabel-1', pokoj: 'anna', dlug: 'diabel-3',
-    przysiega: 'aniol', proroctwo: 'swiety-2', lancuchy: 'wielblad', tlum: 'lew', dzien: 'zloto',
+    pierwsza: 'oko', szybko: 'smok', syci: 'zloto', ocaleni: 'anna', skromny: 'swiety-2', wspinaczka: 'wielblad',
+    kamienna: 'aniol', helmy: 'lew', weterani: 'aniol', ludna: 'lew', swiatlo: 'diabel-2', dlon: 'diabel-1',
+    dno: 'smok', dlug: 'diabel-3',
   } as Record<string, string>,
 
   // ---------------------------------------------------------------- koniec gry

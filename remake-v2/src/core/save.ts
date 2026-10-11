@@ -30,9 +30,9 @@ export function serialize(sim: Sim): string {
     v: VERSION,
     seed: sim.seed,
     tick: sim.tick,
-    wiara: sim.wiara, krew: sim.krew, sen: sim.sen, rytual: sim.rytual, lagodna: sim.lagodna, koszmar: sim.koszmar, stat: sim.stat, dug: sim.dug,
+    wiara: sim.wiara, krew: sim.krew, sen: sim.sen, rytual: sim.rytual, koszmar: sim.koszmar, stat: sim.stat, dug: sim.dug,
     // v4.1 beta: skutki odroczone i karty z łańcuchów przeżywają zapis (inaczej dług znikał po wczytaniu)
-    odroczone: sim.wydarzenia.odroczone, czekajace: sim.wydarzenia.czekajace, lud: sim.lud, kupione: sim.wydarzenia.kupione, swiatDnia: sim.swiatDnia,
+    odroczone: sim.wydarzenia.odroczone, czekajace: sim.wydarzenia.czekajace, lud: sim.lud, kupione: sim.wydarzenia.kupione,
     fungusBudget: sim.fungusBudget, nextTide: sim.nextTide, ending: sim.ending, przybyszow: sim.przybyszow,
     taints: sim.taints, nextId: sim.nextId, allForges: sim.allForges,
     chronicle: sim.chronicle.slice(-120),
@@ -60,15 +60,13 @@ export function restore(json: string): Sim | null {
 
   sim.tick = data.tick;
   sim.wiara = data.wiara; sim.krew = data.krew; sim.sen = data.sen;
-  sim.lagodna = !!data.lagodna;
-  sim.koszmar = !!data.koszmar;
+  sim.koszmar = true;     // Remake v2: tylko Koszmar — także stare zapisy z łaskawej i surowej góry
   if (data.stat) sim.stat = { ...sim.stat, ...data.stat };
   if (data.dug) sim.dug = data.dug;
   if (Array.isArray(data.odroczone)) sim.wydarzenia.odroczone = data.odroczone;
   if (Array.isArray(data.czekajace)) sim.wydarzenia.czekajace = data.czekajace;
   if (data.lud && typeof data.lud === 'object') sim.lud = { ...sim.lud, ...data.lud };
   if (data.kupione && typeof data.kupione === 'object') sim.wydarzenia.kupione = data.kupione;
-  if (typeof data.swiatDnia === 'string') sim.swiatDnia = data.swiatDnia;
   if (data.rytual) sim.rytual = { ...sim.rytual, ...data.rytual };   // stare zapisy nie znają nowych pól
   sim.fungusBudget = data.fungusBudget; sim.nextTide = data.nextTide; sim.ending = data.ending ?? null;
   sim.przybyszow = data.przybyszow ?? 0;

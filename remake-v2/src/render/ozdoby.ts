@@ -243,15 +243,6 @@ export function znakPozycji(ctx: CanvasRenderingContext2D, id: string, x: number
       ctx.moveTo(0, -s * 0.7); ctx.quadraticCurveTo(-s * 0.5, -s, -s, -s * 0.75); ctx.lineTo(-s, s * 0.7); ctx.quadraticCurveTo(-s * 0.5, s * 0.5, 0, s * 0.9);
       ctx.moveTo(0, -s * 0.7); ctx.quadraticCurveTo(s * 0.5, -s, s, -s * 0.75); ctx.lineTo(s, s * 0.7); ctx.quadraticCurveTo(s * 0.5, s * 0.5, 0, s * 0.9);
       break;
-    case 'dnia':        // słońce nad grzbietem — świt dnia
-      ctx.moveTo(-s, s * 0.55); ctx.lineTo(s, s * 0.55);
-      ctx.moveTo(s * 0.45, s * 0.55); ctx.arc(0, s * 0.55, s * 0.45, 0, Math.PI, true);
-      for (let i = 0; i < 5; i++) {
-        const a = Math.PI + (i + 0.5) * (Math.PI / 5);
-        ctx.moveTo(Math.cos(a) * s * 0.65, s * 0.55 + Math.sin(a) * s * 0.65);
-        ctx.lineTo(Math.cos(a) * s, s * 0.55 + Math.sin(a) * s);
-      }
-      break;
     case 'osiagniecia': // pięcioramienna gwiazda — wieniec celów
       for (let i = 0; i <= 5; i++) {
         const a = -Math.PI / 2 + i * (Math.PI * 4 / 5);

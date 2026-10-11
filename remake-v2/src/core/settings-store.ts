@@ -25,8 +25,6 @@ export interface Settings {
   autoPauza: 'wyłączona' | 'kryzysy' | 'wszystko';
   /** Nowa tablica atlasu: otwiera się sama przy pierwszym spotkaniu albo tylko trafia do atlasu. */
   tablice: 'pokazuj' | 'tylko w atlasie';
-  /** Łaskawa góra wolniej zasypia i daje więcej krwi na start — na pierwsze partie. */
-  trudnosc: 'łaskawa' | 'surowa' | 'koszmar';
   /** Mnożnik wielkości całego obrazu ponad automatyczne dopasowanie do ekranu. */
   wielkoscUI: number;
   /** Android: gra wchodzi na pełny ekran po „dotknij, aby się obudzić”. */
@@ -59,7 +57,6 @@ export const DOMYSLNE: Settings = {
   samouczekZrobiony: false,
   autoPauza: 'kryzysy',
   tablice: 'tylko w atlasie',
-  trudnosc: 'łaskawa',
   wielkoscUI: 1,
   pelnyEkran: true,
   nowePostacie: true,

@@ -334,6 +334,7 @@ export function krokNaLinie(sim: Sim, c: Creature): boolean {
     }
     if (wd.faza === 'zapowiedz') return true;   // wiadro jeszcze w skale — wisi pod stropem i czeka
     c.naWiadrze = true;
+    sim.stat.wspinaczek++;
     sim.efekt(bx, wd.y, 'mysl', 'jedzenie!');
   }
   // w wiadrze: jedzie z nim w dół i je

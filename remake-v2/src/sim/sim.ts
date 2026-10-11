@@ -88,7 +88,8 @@ export class Sim {
   nextId = 1;
   dug = 0;
   wiara = G.startWiara;
-  krew: number = LUD.krewStart;
+  /** Remake v2: zawsze Koszmar — na start mniej krwi (GORA.koszmarKrew). */
+  krew: number = Math.max(0, LUD.krewStart - G.koszmarKrew);
   /** Otchłań nie jest dochodem — jest miarą tego, o czym nikt nie pamięta. */
   get otchlan(): number { return this.world.unknown * OTCHLAN_PER_TILE; }
   sen = 0;                    // 0 = czuwasz, 1 = zasnąłeś na zawsze
@@ -121,17 +122,20 @@ export class Sim {
   /** W samouczku świat ma stać spokojnie — bez przypływów i wymierania nacji. */
   spokojnySwiat = false;
   /**
-   * Łaskawa góra: na pierwsze partie. Sen przychodzi wolniej, a modlitwa pod skorupą
-   * kruszy ją szybciej — reszta świata jest taka sama, więc nauka się nie marnuje.
+   * Koszmar: skorupa jest twardsza, krwi na start mniej, dług u głębi boli bardziej, a z otchłani
+   * może przyjść dłoń. Remake v2 ma tylko ten poziom — flaga zostaje dla czytelności warunków.
    */
-  lagodna = false;
-  /** v4 beta — Koszmar: sen przychodzi szybciej, skorupa jest twardsza, a krwi jest mniej. */
-  koszmar = false;
-  /** v4 beta — statystyki partii na ekran końcowy. */
-  stat = { urodzen: 0, kart: 0, szczyt: 0, walka: 0, dlug: 0, przysiega: 0, proroctwo: 0, lancuch: 0, podsumowana: 0 };
-  /** v4.1 beta — data świata dnia („2026-10-02”), gdy to on; zwykła góra nie ma daty. */
-  swiatDnia?: string;
-  /** v4.1 beta — podsumowanie skończonej partii (osiągnięcia, świat dnia); nie trafia do zapisu. */
+  koszmar = true;
+  /**
+   * v4 beta — statystyki partii na ekran końcowy i do osiągnięć (src/core/osiagniecia.ts).
+   * Remake v2: zgony ludu i z głodu, wspinaczki do wiadra, hełmy, Nakarm, przegnany Patrzący,
+   * odepchnięta dłoń, najwięcej weteranów i ludu naraz.
+   */
+  stat = {
+    urodzen: 0, kart: 0, szczyt: 0, walka: 0, dlug: 0, przysiega: 0, proroctwo: 0, lancuch: 0, podsumowana: 0,
+    ludZgonow: 0, zGlodu: 0, wspinaczek: 0, helmy: 0, nakarm: 0, przegnany: 0, odepchnieta: 0, weteranowMax: 0, ludMax: 0,
+  };
+  /** v4.1 beta — podsumowanie skończonej partii (osiągnięcia); nie trafia do zapisu. */
   podsumowanie?: Podsumowanie;
   /** Ile jedzenia rośnie w suchej strefie przy przedsionku — liczone co sekundę gry. */
   jedzeniePrzedsionka = 0;
@@ -519,6 +523,10 @@ export class Sim {
     this.krew += G.krewZaSmierc * d.size;
     this.fungusBudget += G.grzybniaZaSmierc * d.size;
     this.clans[c.clan].pop--;
+    if (c.race === Race.GOBLIN && !c.straznik) {
+      this.stat.ludZgonow++;
+      if (tag === 'wycieńczenie') this.stat.zGlodu++;
+    }
     const x = Math.floor(c.x), y = Math.floor(c.y);
     // Remake v2: ciało ludu zostaje na ziemi (sim/trupy.ts) — bez kości w kaflach
     if (REMAKE) zostawTrupa(this, c, tag);

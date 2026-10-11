@@ -101,7 +101,7 @@ export function nakarm(sim: Sim, tx: number, ty: number, zaplac = true): string 
   if (zaplac && !affordable(sim, 'zasiej', 'grzyb')) return 'Nie starczy krwi na wiadro.';
   const odmowa = wiadroNaZadanie(sim, tx, ty);
   if (odmowa) return odmowa;
-  if (zaplac) pay(sim, 'zasiej', 'grzyb');
+  if (zaplac) { pay(sim, 'zasiej', 'grzyb'); sim.stat.nakarm++; }
   sim.efekt(tx + 0.5, ty + 0.5, 'zasiew');
   return null;
 }

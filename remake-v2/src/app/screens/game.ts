@@ -3,7 +3,6 @@ import { rysujTrupy } from '../../render/trupy';
 import { stropGory } from '../../sim/zawal';
 import { porcjiWWiadrach } from '../../sim/wiadro';
 import { Sim, resetRaces } from '../../sim/sim';
-import { GORA } from '../../nastawy/gora';
 import { KAMERA, TEMPO, STEROWANIE } from '../../nastawy/sterowanie';
 import { ATLAS } from '../../nastawy/wyglad/atlas';
 import { Camera } from '../../render/camera';
@@ -25,7 +24,6 @@ const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228,
 import { rysujZnacznikiLudu, rysujKlamry } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
 import { LUD, REMAKE } from '../../nastawy/lud';
-import { dzisiaj, ziarnoDnia, wynikDnia, czasGry } from '../../core/swiat-dnia';
 import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, type Przycisk } from '../../render/przyciski';
 import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
@@ -62,7 +60,6 @@ import { OknoAtlasu } from '../../atlas/okno';
 import { odkrycia } from '../../atlas/odkrycia';
 import { SERIF } from '../../render/ink';
 import { tablica } from '../../atlas/tablice';
-import { Race } from '../../sim/races';
 import { Job } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
 import { ustawienia, jakoscAuto } from '../../core/settings-store';
@@ -243,15 +240,6 @@ export class EkranGry implements Ekran {
       BOT_GRA.nowaGra = (z) => this.nowaGra(z ?? ziarnoPartii());
       this.nowaGra(ziarnoPartii());
     }
-    else if (tryb === 'dnia') {
-      // v4.1 beta: świat dnia — ziarno z dzisiejszej daty, ta sama góra dla każdego
-      const data = dzisiaj();
-      this.nowaGra(ziarnoDnia(data));
-      this.sim.swiatDnia = data;
-      this.sim.log(`Świat dnia ${data} — ta sama góra dla każdego, kto gra dziś.`, 'swiat');
-      const w = wynikDnia(data);
-      this.ui.say(`Świat dnia ${data}. ${w.najlepszy !== null ? `Twój najlepszy czas dziś: ${czasGry(w.najlepszy)}.` : 'Dziś jeszcze go nie przeszedłeś.'}`, this.sim.tick);
-    }
     else if (tryb === 'wczytaj') {
       const s = loadFromStorage();
       if (s) {
@@ -287,10 +275,8 @@ export class EkranGry implements Ekran {
     if (BOT.wlaczony) {
       BOT.partia++;
       this.sim.wydarzenia.gracz = true;
-      if (BOT.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += GORA.laskawaKrew; }
-      if (BOT.trudnosc === 'koszmar') { this.sim.koszmar = true; this.sim.krew = Math.max(0, this.sim.krew - GORA.koszmarKrew); }
-    } else if (ustawienia.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += GORA.laskawaKrew; }
-    if (!BOT.wlaczony && ustawienia.trudnosc === 'koszmar') { this.sim.koszmar = true; this.sim.krew = Math.max(0, this.sim.krew - GORA.koszmarKrew); }
+    }
+    // Remake v2: jedna trudność — Koszmar (krew na start i reszta ustawia się w Sim)
     this.ui.verb = null; this.ui.tool = null; this.ui.selected = null;
     this.cam.zoom = KAMERA.start;
     this.doSerca(true);
@@ -411,17 +397,15 @@ export class EkranGry implements Ekran {
     const right = left + cam.vw / z, bottom = top + cam.vh / z;
     // drobne tablice nie przerywają — przycisk atlasu świeci, dopóki do niego nie zajrzysz
     const cicho = (id: string) => { odkrycia.odkryj(id, false); };
-    let prorok = false, pielgrzym = false;
+    let pielgrzym = false;
     for (const c of sim.creatures) {
       if (c.dead) continue;
-      if (c.prophet) prorok = true;
       if (c.job === Job.PIELGRZYM) pielgrzym = true;
       if (c.x >= left && c.x <= right && c.y >= top && c.y <= bottom) odkrycia.odkryj(`rasa-${c.race}`);
     }
-    if (sim.popByRace[Race.MYCELIUM] > 2 && sim.tick > 6000) odkrycia.odkryj('rasa-5');
-    if (prorok) odkrycia.odkryj('prorok');
     if (pielgrzym) odkrycia.odkryj('pielgrzymka');
-    if (sim.sen > 0.05) odkrycia.odkryj('sen');
+    // Remake v2: sen już nie rośnie — tablica „Przegrana” odkrywa się po trzech minutach albo przy pierwszej śmierci z głodu
+    if (sim.tick > 21600 || sim.stat.zGlodu > 0) cicho('sen');
     if (sim.rytual.pekniecia > 0 || sim.world.ever[sim.world.idx(sim.world.coreX, sim.world.coreY)]) odkrycia.odkryj('rdzen');
     // skorupę odkrywa się, gdy ktoś zacznie się przy niej modlić albo gdy pęknie
     if (sim.rytual.wierni >= 1 || sim.rytual.pekniecia > 0) odkrycia.odkryj('skorupa');
@@ -430,8 +414,6 @@ export class EkranGry implements Ekran {
     // wiara to serce drogi do wygranej — jej tablica wyskakuje sama przy pierwszej modlitwie
     if (sim.prayers > 0 && sim.tick > 600) odkrycia.odkryj('oddanie');
     if (sim.tick > 7000) cicho('pamiec');
-    // v4.1 beta: cechy nacji — raz na początku, żeby gracz wiedział, co znaczy „pobożni” na podpisie
-    if (sim.tick > 3600) cicho('cechy');
     // Remake v1: tablice ludu, gniazd, weteranów, Strażników i bossa
     if (sim.tick > 600) cicho('role');
     if (sim.tick > 4000) cicho('klamry');
@@ -1119,6 +1101,12 @@ export class EkranGry implements Ekran {
   /** Gdzie leży przycisk pod płytą — samouczek go wskazuje. */
   miejscePrzycisku(akcja: Przycisk['akcja']): Przycisk | null {
     return this.przyciski.find((b) => b.akcja === akcja) ?? null;
+  }
+
+  /** Samouczek: gdzie stoi przycisk „ze skały: pobożny / robotnik” (środek i promień w pikselach ekranu). */
+  miejsceRoli(rola: 'pobozny' | 'robotnik'): { x: number; y: number; r: number } | null {
+    const b = this.przyciskiRoli.find((q) => q.rola === rola);
+    return b ? { x: b.x + b.w / 2, y: b.y + b.h / 2, r: Math.max(b.w, b.h) * 0.6 } : null;
   }
 
   /** Trzy nacięcia w lewym górnym rogu płyty — wyjście do menu bez klawiatury. */

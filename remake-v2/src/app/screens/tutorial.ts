@@ -14,6 +14,7 @@ import { odkrycia } from '../../atlas/odkrycia';
 import { T, PASSABLE } from '../../sim/tiles';
 import { Race } from '../../sim/races';
 import { STEROWANIE } from '../../nastawy/sterowanie';
+import { wiadra } from '../../sim/wiadro';
 import { ROZDZIALY, type Rozdzial, type Wskazanie, type Gest, type Tekst } from './samouczek/rozdzialy';
 
 
@@ -26,7 +27,7 @@ const AKCJE_KLAWISZY = new Set<string>(Object.keys(klawisze));
 const tekstZ = (t: Tekst, s: EkranSamouczka): string => typeof t === 'function' ? t(s) : t;
 
 /**
- * Samouczek: dziesięć krótkich rozdziałów, każdy z listą czynności do odhaczenia.
+ * Samouczek: krótkie rozdziały (Remake v2 — czternaście), każdy z listą czynności do odhaczenia.
  * Palec zawsze wskazuje dokładnie to, w co trzeba kliknąć — ryt, słowo, przycisk
  * albo miejsce na płycie — a lista pokazuje, co już zrobione i co dalej.
  * Wcześniej było dwanaście filmów do przeczytania i polecenia w rodzaju „drugi ryt
@@ -128,17 +129,34 @@ export class EkranSamouczka implements Ekran {
     return null;
   }
 
-  /** Jeden goblin do szeptu — ten sam przez cały rozdział. */
-  wskazanyGoblin(tekst: string): Cel | null {
+  /** Jedna postać ludu do szeptu (najchętniej o danej roli) — ta sama przez cały rozdział. */
+  wskazanyGoblin(tekst: string, rola?: string): Cel | null {
     const sim = this.gra.sim;
     let c = sim.creatures.find((o) => o.id === this.wskazaneId && !o.dead);
     if (!c) {
       const dom = this.gniazdoGoblinow();
-      c = dom ? sim.nearestCreature(dom.x, dom.y, 30, (o) => o.race === Race.GOBLIN) ?? undefined
-        : sim.creatures.find((o) => !o.dead && o.race === Race.GOBLIN);
+      const ludu = (o: { race: number; rola?: string; straznik?: boolean }) => o.race === Race.GOBLIN && !o.straznik;
+      const pasuje = (o: { race: number; rola?: string; straznik?: boolean }) => ludu(o) && (!rola || o.rola === rola);
+      c = (dom ? sim.nearestCreature(dom.x, dom.y, 30, pasuje) ?? sim.nearestCreature(dom.x, dom.y, 30, ludu) : null)
+        ?? sim.creatures.find((o) => !o.dead && ludu(o)) ?? undefined;
       this.wskazaneId = c ? c.id : -1;
     }
     return c ? { x: c.x, y: c.y - 0.4, r: 2, tekst } : null;
+  }
+
+  /** Remake v2: wiadro z jedzeniem najbliżej ludu (stojące albo zjeżdżające). */
+  najblizszeWiadro(): Cel | null {
+    const dom = this.gniazdoGoblinow();
+    const lista = wiadra(this.gra.sim).filter((wd) => wd.faza !== 'odjezdza' && wd.porcje > 0);
+    if (!dom || !lista.length) return null;
+    const wd = lista.sort((a, b) => Math.hypot(a.x - dom.x, a.cel - dom.y) - Math.hypot(b.x - dom.x, b.cel - dom.y))[0];
+    return { x: wd.x + 0.5, y: Math.max(wd.y, wd.sufit) + 0.5, r: 3, tekst: 'wiadro z jedzeniem' };
+  }
+
+  /** Przycisk „ze skały” pod paskiem ról. */
+  rolaZeSkaly(rola: 'pobozny' | 'robotnik'): Wskazanie | null {
+    const m = this.gra.miejsceRoli(rola);
+    return m ? { typ: 'punkt', x: m.x, y: m.y, r: m.r } : null;
   }
 
   rdzen(): Cel {
@@ -162,9 +180,7 @@ export class EkranSamouczka implements Ekran {
   wejdz(): void {
     this.gra.nowaGra(ZIARNO_SAMOUCZKA);
     this.gra.sim.spokojnySwiat = true;      // stały świat: żadnych zaraz i najazdów w trakcie nauki
-    this.gra.sim.nakarmSwiat();             // i pełna spiżarnia, żeby nauka nie była patrzeniem na głód
-    const dom = this.gniazdoGoblinow();
-    if (dom) this.gra.sim.odsunKlany(Race.SPINNER, dom.x, dom.y);   // Prządki uczą się na osobnej scenie
+    this.gra.sim.nakarmSwiat();             // i wiadro z jedzeniem od razu, żeby nauka nie była patrzeniem na głód
     this.gra.wejdz({ tryb: 'samouczek' });
     this.app.muzyka.ustawScene('samouczek');
     this.idx = 0;
@@ -296,8 +312,9 @@ export class EkranSamouczka implements Ekran {
   private koniecNauki(): void {
     ustaw('samouczekZrobiony', true);
     // co pokazał samouczek, to trafia do atlasu — bez wyskakujących tablic
-    for (const id of ['rasa-0', 'ryt-ksztaltuj', 'ryt-zasiej', 'ryt-szept', 'ryt-znak',
-      'krew', 'wiara', 'oddanie', 'pamiec', 'sen', 'rdzen', 'prorok', 'pauza']) odkrycia.odkryj(id, false);
+    for (const id of ['rasa-0', 'ryt-zasiej', 'ryt-szept', 'ryt-znak', 'krew', 'wiara', 'wiadro', 'role',
+      'oddanie', 'pielgrzymka', 'wydarzenia', 'gniazda', 'zawal', 'helmy', 'trupy', 'patrzacy', 'dlon',
+      'straznicy', 'boss', 'droga', 'skorupa', 'rdzen', 'sen', 'pauza']) odkrycia.odkryj(id, false);
     this.faza = 'final';
     const g = this.gra;
     g.dozwolone = new Set();
@@ -308,7 +325,7 @@ export class EkranSamouczka implements Ekran {
 
   private graj(): void {
     this.gra.dozwolone = null;
-    this.app.idz('menu', { nowaGra: true });   // pierwsza prawdziwa góra: najpierw okno trudności
+    this.app.idz('gra', { tryb: 'nowa' });   // pierwsza prawdziwa góra (Remake v2: zawsze Koszmar)
   }
 
   private doMenu(): void {

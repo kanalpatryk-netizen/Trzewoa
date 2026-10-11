@@ -14,8 +14,6 @@ export const GORA = {
    * gracz miał dziesiątki tysięcy Wiary i każdy wybór na karcie wydarzenia był darmowy.
    */
   wiaraMax: 200, krewMax: 150,   // v4.2 beta: było 250 — krew się nie kończyła, płatne wybory nic nie kosztowały
-  /** Tryb „łaskawa góra”: tyle Krwi więcej na start. */
-  laskawaKrew: 100,
 
   // ------------------------------------------------------------- otchłań
   /** Ile Otchłani daje jeden zapomniany kafel (wydanie jej zasklepia tyle samo). */
@@ -40,11 +38,7 @@ export const GORA = {
   senOdPustki: 0.000022,
   /** Gdy nic nie usypia, sen cofa się o tyle na tik. */
   senCofaSie: 0.0005,
-  /** Tryb „łaskawa góra”: sen przychodzi w takim ułamku tempa. */
-  laskawaSen: 0.6,
-  /** v4 beta — Koszmar: sen przychodzi tyle razy szybciej… */
-  koszmarSen: 1.8,
-  /** …i tyle mniej Krwi na start. */
+  /** Koszmar (Remake v2 — jedyny poziom): tyle mniej Krwi na start (od LUD.krewStart). */
   koszmarKrew: 40,
   /** Progi, przy których dzwoni dzwon i kronika ostrzega. */
   senProgi: [0.25, 0.5, 0.8],

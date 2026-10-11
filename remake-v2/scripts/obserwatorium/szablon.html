@@ -86,12 +86,11 @@
 (() => {
   const TEMPA = [[0.25, '×¼'], [0.5, '×½'], [1, '×1 (zwykły)'], [2, '×2'], [3, '×3'], [5, '×5'], [10, '×10'], [20, '×20']];
   const STYLE = [['rozsadny', 'rozsądny'], ['budowniczy', 'budowniczy'], ['speedrun', 'speedrun'], ['bierny', 'bierny (nic nie robi)']];
-  const TRUDNOSCI = [['łaskawa', 'łaskawa'], ['surowa', 'surowa'], ['koszmar', 'koszmar']];
   const DOMYSLNE = [
-    { styl: 'rozsadny', trudnosc: 'surowa' },
-    { styl: 'budowniczy', trudnosc: 'surowa' },
-    { styl: 'speedrun', trudnosc: 'łaskawa' },
-    { styl: 'rozsadny', trudnosc: 'koszmar' },
+    { styl: 'rozsadny' },
+    { styl: 'budowniczy' },
+    { styl: 'speedrun' },
+    { styl: 'bierny' },
   ];
   const PAMIEC = 'trzewia:obserwatorium';
   let zapamietane = [];
@@ -127,7 +126,7 @@
   }
 
   function zbuduj(i) {
-    const ust = Object.assign({ styl: 'rozsadny', tempo: 1, pauza: false, trudnosc: 'surowa', ziarno: null, autoRestart: true, dzwiek: false }, DOMYSLNE[i], zapamietane[i] || {}, { pauza: false, dzwiek: false });
+    const ust = Object.assign({ styl: 'rozsadny', tempo: 1, pauza: false, ziarno: null, autoRestart: true, dzwiek: false }, DOMYSLNE[i], zapamietane[i] || {}, { pauza: false, dzwiek: false });
     const o = { i, ust, stan: null, historia: [], konczyl: false };
     const okno = el('div', 'okno');
     okno.style.gridColumn = ''; okno.style.gridRow = '';
@@ -159,13 +158,11 @@
     o.pauza.addEventListener('click', () => ustaw(o, { pauza: !o.ust.pauza }));
     o.stylSel = el('select'); opcje(o.stylSel, STYLE, ust.styl);
     o.stylSel.addEventListener('change', () => ustaw(o, { styl: o.stylSel.value }));
-    o.trud = el('select'); opcje(o.trud, TRUDNOSCI, ust.trudnosc);
-    o.trud.addEventListener('change', () => { ustaw(o, { trudnosc: o.trud.value }); });
     o.ziarno = el('input'); o.ziarno.type = 'number'; o.ziarno.placeholder = 'losowe'; o.ziarno.value = ust.ziarno ?? '';
     o.ziarno.title = 'Ziarno świata następnej partii (puste — losowe)';
     o.ziarno.addEventListener('change', () => ustaw(o, { ziarno: o.ziarno.value === '' ? null : Math.floor(+o.ziarno.value) }));
     const nowa = el('button', '', '⟳ nowa partia');
-    nowa.title = 'Zacznij od nowa (trudność i ziarno z pól obok)';
+    nowa.title = 'Zacznij od nowa (ziarno z pola obok; każda góra to Koszmar)';
     nowa.addEventListener('click', () => nowaPartia(o));
     o.auto = el('input'); o.auto.type = 'checkbox'; o.auto.checked = ust.autoRestart;
     o.auto.addEventListener('change', () => ustaw(o, { autoRestart: o.auto.checked }));
@@ -176,7 +173,7 @@
       for (const p of okna) if (p !== o && p.ust.dzwiek) ustaw(p, { dzwiek: false });
       ustaw(o, { dzwiek: wl });
     });
-    stery.append(lab('tempo', o.tempo), o.pauza, lab('bot', o.stylSel), lab('trudność', o.trud), lab('ziarno', o.ziarno), nowa, lab('sama następna partia', o.auto), o.dzwiek);
+    stery.append(lab('tempo', o.tempo), o.pauza, lab('bot', o.stylSel), lab('ziarno', o.ziarno), nowa, lab('sama następna partia', o.auto), o.dzwiek);
     o.hist = el('div', 'historia', '');
 
     okno.append(nag, ekran, o.dane, o.kronika, stery, o.hist);
@@ -190,7 +187,7 @@
 
   function nowaPartia(o) {
     o.konczyl = false;
-    wyslij(o, { trzewia: 'ustaw', zmiany: { trudnosc: o.ust.trudnosc, ziarno: o.ust.ziarno } });
+    wyslij(o, { trzewia: 'ustaw', zmiany: { ziarno: o.ust.ziarno } });
     wyslij(o, { trzewia: 'nowa', ziarno: o.ust.ziarno });
   }
 
@@ -198,7 +195,7 @@
     o.pauza.textContent = o.ust.pauza ? '▶ puść' : '⏸ pauza';
     o.pauza.classList.toggle('wl', o.ust.pauza);
     o.dzwiek.classList.toggle('wl', o.ust.dzwiek);
-    o.styl.textContent = `· bot: ${STYLE.find(([v]) => v === o.ust.styl)?.[1] ?? o.ust.styl} · ${o.ust.trudnosc}`;
+    o.styl.textContent = `· bot: ${STYLE.find(([v]) => v === o.ust.styl)?.[1] ?? o.ust.styl} · koszmar`;
   }
 
   // Esc w powiększonym oknie gry też wraca do wszystkich (okno gry ma ten sam początek co strona)

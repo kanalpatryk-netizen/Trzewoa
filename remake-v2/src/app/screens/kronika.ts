@@ -6,7 +6,6 @@ import { BARWA, rgba } from '../../render/palette';
 import { SERIF, SERIF_TYTUL, tloSadzy, tytulRyty, kreska } from '../../render/ink';
 import { wyrok } from '../wyrok';
 import { podsumujPartie, OSIAGNIECIA, zdobyte, type Podsumowanie } from '../../core/osiagniecia';
-import { czasGry } from '../../core/swiat-dnia';
 import { wpiszFresk } from '../../render/freski';
 import { FRESKI } from '../../nastawy/wyglad/freski';
 
@@ -21,7 +20,7 @@ export class EkranKroniki implements Ekran {
     { id: 'nowa', etykieta: 'Nowa gra' },
     { id: 'menu', etykieta: 'Wróć do menu' },
   ];
-  /** v4.1 beta: osiągnięcia i świat dnia z tej partii. */
+  /** v4.1 beta: osiągnięcia z tej partii. */
   private podsumowanie: Podsumowanie | null = null;
 
   constructor(private app: Kontekst) {}
@@ -31,8 +30,6 @@ export class EkranKroniki implements Ekran {
     this.od = performance.now();
     this.wybrana = 0;
     this.podsumowanie = this.sim ? podsumujPartie(this.sim) : null;
-    // świat dnia: „jeszcze raz” wraca do tej samej góry, nie do losowej
-    this.opcje[0] = this.sim?.swiatDnia ? { id: 'dnia', etykieta: 'Świat dnia jeszcze raz' } : { id: 'nowa', etykieta: 'Nowa gra' };
     this.app.muzyka.ustawScene('koniec');
     this.app.muzyka.ustawNapiecie(0.2);
   }
@@ -54,7 +51,7 @@ export class EkranKroniki implements Ekran {
     tloSadzy(ctx, w, h, teraz);
 
     // --- karta: prawdziwy papier z atramentem, bo to jest dokument, nie panel
-    // niskie okno: drobniejsze pismo — wyrok, świat dnia i osiągnięcia muszą się zmieścić nad przyciskami
+    // niskie okno: drobniejsze pismo — wyrok i osiągnięcia muszą się zmieścić nad przyciskami
     const rozmiar = Math.max(10, Math.min(18, w / 74, h / 34));
     const kw = Math.min(820, w * 0.78);
     // wyrok pod kartą: przyczyna, jak daleko zaszła droga i rada na następny raz —
@@ -66,7 +63,6 @@ export class EkranKroniki implements Ekran {
       ...zlam(ctx, wr.przyczyna, wrW).map((t) => ({ t, k: 'p' })),
       ...zlam(ctx, wr.etap, wrW).map((t) => ({ t, k: 'e' })),
       ...zlam(ctx, wr.statystyki, wrW).map((t) => ({ t, k: 's' })),
-      ...zlam(ctx, this.linijkaDnia(), wrW).map((t) => ({ t, k: 'e' })),
       ...zlam(ctx, this.linijkaOsiagniec(), wrW).map((t) => ({ t, k: 'e' })),
       ...zlam(ctx, `Następnym razem: ${wr.rada.charAt(0).toLowerCase()}${wr.rada.slice(1)}`, wrW).map((t) => ({ t, k: 'r' })),
     ] : [];
@@ -223,15 +219,6 @@ export class EkranKroniki implements Ekran {
     });
   }
 
-  /** „Świat dnia 2026-10-02: wygrana w 9:12 — nowy rekord dnia! (próba 3)”; pusto dla zwykłej góry. */
-  private linijkaDnia(): string {
-    const d = this.podsumowanie?.dzien, data = this.sim?.swiatDnia;
-    if (!d || !data) return '';
-    const naj = d.wynik.najlepszy !== null ? `najlepszy dziś ${czasGry(d.wynik.najlepszy)}` : 'dziś jeszcze bez wygranej';
-    const teraz = d.czas !== null ? `wygrana w ${czasGry(d.czas)}${d.rekord ? ' — nowy rekord dnia!' : ''}` : 'przegrana';
-    return `Świat dnia ${data}: ${teraz} · ${naj} · próba ${d.wynik.proby}`;
-  }
-
   /** „Nowe osiągnięcia: Przebudzenie, Jak kamień w studnię (3 z 11)”; pusto, gdy nic nowego. */
   private linijkaOsiagniec(): string {
     const nowe = this.podsumowanie?.nowe ?? [];
@@ -240,8 +227,7 @@ export class EkranKroniki implements Ekran {
   }
 
   private uruchom(id: string): void {
-    if (id === 'dnia') this.app.idz('gra', { tryb: 'dnia' });
-    else if (id === 'nowa') this.app.idz('menu', { nowaGra: true });   // najpierw okno trudności
+    if (id === 'nowa') this.app.idz('gra', { tryb: 'nowa' });
     else this.app.idz('menu');
   }
 

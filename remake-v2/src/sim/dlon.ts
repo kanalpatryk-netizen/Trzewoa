@@ -236,6 +236,7 @@ export function odpedzDlon(sim: Sim, tx: number, ty: number): boolean {
     if (c && !c.dead) { c.zamarlyDo = undefined; c.zamiarDo = sim.tick; c.fear = Math.max(c.fear, 0.6); }
   }
   d.odpedzona = true;
+  sim.stat.odepchnieta++;
   const u = Math.min(1, (sim.tick - d.od) / (d.faza === 'siega' ? DLON.siega : DLON.wstaje));
   d.odpedzonaU = d.faza === 'siega' ? 1 + u : u;
   // zapada się z powrotem w dół, skąd przyszła

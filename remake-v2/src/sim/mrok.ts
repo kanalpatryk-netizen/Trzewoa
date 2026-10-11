@@ -196,6 +196,7 @@ export function odpedzMrok(sim: Sim, tx: number, ty: number): boolean {
   if (Math.hypot(m.x - tx, m.y - ty) > MROK.cudPromien) return false;
   const cel = m.cel !== null ? sim.creatures.find((c) => c.id === m.cel) : undefined;
   m.przegnanyT = sim.tick;
+  sim.stat.przegnany++;
   sim.gdzie(m.x, m.y).log('Światło Cudu przegnało to, co patrzyło z ciemności.', 'wiara');
   if (cel && !cel.dead) { cel.fear = Math.max(cel.fear, 0.5); cel.zamarlyDo = undefined; }
   zgas(sim, m, MROK.przerwaPoCudzie);
