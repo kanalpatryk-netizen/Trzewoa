@@ -214,11 +214,11 @@ void main() {
   float Ldist = length(Ld);
   vec3 L1 = Ld / Ldist;
   float att = 1.0 / (1.0 + 0.0035 * Ldist * Ldist);
-  vec3 L2 = normalize(vec3(-0.75, 0.3, 0.6));     // czerwona łuna oczu zza dłoni
+  vec3 L2 = normalize(vec3(-0.75, 0.3, 0.6));     // czerwona łuna otchłani zza dłoni
   vec3 L3 = normalize(vec3(0.1, -1.0, -0.15));    // odblask otchłani od dołu
   float sh = cien(p + n * 0.08, L1, Ldist) * att * 1.9;
   float ao = okluzja(p, n);
-  float sh2 = cien(p + n * 0.08, L2, 26.0);              // łuna oczu dociera tylko do brzegów, nie do wnętrza dłoni
+  float sh2 = cien(p + n * 0.08, L2, 26.0);              // łuna otchłani dociera tylko do brzegów, nie do wnętrza dłoni
   // wklęsłości (bruzdy, fałdy, szpary między palcami) — ciemniejsze, jak brud w zmarszczkach
   float wkl = clamp(map(p + n * 0.18).x / 0.18, 0.0, 1.0);
   vec3 col;
@@ -252,7 +252,7 @@ void main() {
     float dif = clamp((dot(n, L1) + w) / (1.0 + w), 0.0, 1.0);
     vec3 sss = vec3(0.8, 0.22, 0.14) * pow(clamp((dot(n, L1) + 0.9) / 1.9, 0.0, 1.0), 3.0) * 0.16;
     col = alb * (vec3(1.0, 0.7, 0.46) * 1.5 * dif * sh + sss * att * 1.9);
-    // czerwona łuna oczu na obrysie
+    // czerwona łuna otchłani na obrysie
     float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 3.4);
     col += vec3(1.0, 0.07, 0.03) * 1.1 * fres * clamp(dot(n, L2) + 0.3, 0.0, 1.0) * mix(0.15, 1.0, sh2);
     col += alb * vec3(1.0, 0.1, 0.06) * 1.6 * clamp(dot(n, L2), 0.0, 1.0) * mix(0.1, 1.0, sh2);

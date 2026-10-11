@@ -20,7 +20,7 @@ import { CECHY } from '../nastawy/cechy';
 import { LUD } from '../nastawy/lud';
 import { MROK } from '../nastawy/mrok';
 import { DLON } from '../nastawy/dlon';
-import { rysujKlatkeDloni, rysujOczyOtchlani } from '../render/dlon';
+import { lunaOtchlani, rysujKlatkeDloni } from '../render/dlon';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
@@ -340,14 +340,40 @@ function skorupa({ ctx, w, h, t }: Plotno): void {
   ctx.restore();
 }
 
-/** Dłoń z otchłani: oczy w ciemności i szponiasta dłoń, która powoli zaciska palce. */
+/** Dłoń z otchłani: z czerwonej łuny w dole wznosi się szponiasta dłoń — sięga po kogoś na półce skalnej. */
 function dlonOtchlani({ ctx, w, h, t }: Plotno): void {
   ctx.save();
   ctx.fillStyle = '#060303';
   ctx.fillRect(0, 0, w, h);
-  const z = Math.min(w, h) / 16;
-  rysujOczyOtchlani(ctx, w * 0.66, h * 0.2, z * 0.8, 1, 1, w * 0.55, h * 0.7, t);
-  rysujKlatkeDloni(ctx, w * 0.08, h * 0.7, -0.22, (w * 0.8) / 25.5, 0.25 + 0.2 * Math.sin(t * 0.0012), 1, 1, 1);
+  const xw = w * 0.4;
+  lunaOtchlani(ctx, xw + h * 0.1, h * 1.02, h * 0.9, 0, 1.6, t);
+  // półka skalna i ten, po kogo sięga
+  const xf = xw + h * 0.15, yf = h * 0.27, u = h * 0.02;
+  ctx.fillStyle = '#1a0f0b';
+  ctx.beginPath();
+  ctx.moveTo(xf - h * 0.42, yf + u * 0.3); ctx.lineTo(xf - h * 0.2, yf - u * 0.2); ctx.lineTo(xf + h * 0.1, yf + u * 0.1); ctx.lineTo(xf + h * 0.36, yf - u * 0.3);
+  ctx.lineTo(xf + h * 0.33, yf + u * 2.6); ctx.lineTo(xf + h * 0.12, yf + u * 2.1); ctx.lineTo(xf - h * 0.1, yf + u * 3.2); ctx.lineTo(xf - h * 0.4, yf + u * 2.2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(214,170,110,0.35)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(xf - h * 0.42, yf + u * 0.3); ctx.lineTo(xf - h * 0.2, yf - u * 0.2); ctx.lineTo(xf + h * 0.1, yf + u * 0.1); ctx.lineTo(xf + h * 0.36, yf - u * 0.3); ctx.stroke();
+  ctx.fillStyle = 'rgba(28,20,16,0.96)';
+  ctx.strokeStyle = 'rgba(214,190,150,0.55)';
+  ctx.lineWidth = Math.max(0.8, u * 0.3);
+  ctx.lineCap = 'round';
+  for (const s of [-1, 1]) { ctx.beginPath(); ctx.moveTo(xf + s * u * 0.5, yf - u * 3); ctx.lineTo(xf + s * u * 0.8, yf); ctx.stroke(); }
+  ctx.beginPath(); ctx.ellipse(xf, yf - u * 4.6, u * 1.2, u * 2.2, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(xf, yf - u * 7.8, u * 1, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // dłoń pnie się z dołu, palce drgają
+  const wzn = 0.02 * Math.sin(t * 0.0009);
+  rysujKlatkeDloni(ctx, xw, h * (1.12 + wzn), -Math.PI / 2 + 0.04 * Math.sin(t * 0.0007), (h * 0.84) / 25.5, 0.06 + 0.06 * Math.sin(t * 0.0021), 1, 1, 1);
+  // przedramię ginie w ciemności otchłani
+  const ciemno = ctx.createLinearGradient(0, h, 0, h * 0.6);
+  ciemno.addColorStop(0, 'rgba(6,3,3,0.92)');
+  ciemno.addColorStop(1, 'rgba(6,3,3,0)');
+  ctx.fillStyle = ciemno;
+  ctx.fillRect(0, h * 0.6, w, h * 0.4);
+  lunaOtchlani(ctx, xw + h * 0.1, h * 1.04, h * 0.6, 0, 0.8, t);
   ctx.restore();
 }
 
@@ -611,8 +637,8 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'dlon', grupa: 'prawa', nazwa: 'Dłoń z otchłani', lacina: 'Manus ex abysso',
-    opis: `Tylko w Koszmarze, i rzadko. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu na samym jej brzegu, w ciemności otwierają się wielkie czerwone oczy, a on (czasem dwoje naraz) staje jak wryty. Po ${Math.round((DLON.oczy + DLON.siega) / 120)} sekundach z otchłani wysuwa się ogromna dłoń, chwyta ich i cofa się w ciemność. Nie zostają nawet kości — krew i tak spływa do ciebie.`,
-    kiedy: 'Nie stawiaj ludu na brzegu nieznanego daleko od obozu. Gdy otworzą się oczy — rzuć Cud przy nich, zanim dłoń chwyci.',
+    opis: `Tylko w Koszmarze, i rzadko. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu, a pod nim zaczyna się otchłań, spod ziemi sączy się czerwona łuna, a on (czasem dwoje naraz) staje jak wryty. Z głębi, zawsze od dołu, wznosi się ogromna dłoń — po ${Math.round((DLON.wstaje + DLON.siega) / 120)} sekundach sięga, chwyta ich i zapada się z nimi w ciemność. Nie zostają nawet kości — krew i tak spływa do ciebie.`,
+    kiedy: 'Nie stawiaj ludu nad nieznanym daleko od obozu. Gdy otchłań pod kimś zaczerwieni się — rzuć Cud przy nim, zanim dłoń chwyci.',
     rycina: dlonOtchlani,
   },
 ];

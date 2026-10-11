@@ -1,8 +1,8 @@
 /**
- * DŁOŃ Z OTCHŁANI (Remake v1, tylko Koszmar) — rzadkie wydarzenie: na brzegu nieznanego
- * otwierają się wielkie czerwone oczy, z ciemności wysuwa się ogromna dłoń, chwyta jedną
- * albo dwie postacie i cofa się z nimi w otchłań. Cud rzucony przy oczach, zanim dłoń
- * chwyci, odpędza ją. Kod: src/sim/dlon.ts, rysunek: src/render/dlon.ts.
+ * DŁOŃ Z OTCHŁANI (Remake v1, tylko Koszmar) — rzadkie wydarzenie: pod kimś z ludu porusza się
+ * otchłań, z głębi w dole wznosi się ogromna dłoń, chwyta jedną albo dwie postacie i cofa się
+ * z nimi w dół, w ciemność. Cud rzucony przy nich, zanim dłoń chwyci, odpycha ją.
+ * Kod: src/sim/dlon.ts, rysunek: src/render/dlon.ts.
  *
  * Tiki przeliczaj przez TIKOW_NA_MINUTE (7200 tików = minuta gry, 120 = sekunda).
  */
@@ -25,24 +25,26 @@ export const DLON = {
   // ---------------------------------------------------------------- kogo
   /** Ofiara stoi co najmniej tyle kafli od siedziby i obozów (tam jest światło)… */
   odObozu: 10,
-  /** …a otchłań (nieznane) zaczyna się przy niej: tyle kafli w promieniu do obejrzenia… */
+  /** …a pod nią zaczyna się otchłań (nieznane): tyle kafli w dół do obejrzenia (w pasie ±6 kafli)… */
   otchlanPromien: 10,
-  /** …i co najmniej tyle nieznanych kafli w tym promieniu. */
+  /** …i co najmniej tyle nieznanych kafli w tym pasie. */
   otchlanMin: 30,
+  /** Z jakiej głębi pod ofiarą wznosi się dłoń (kafle) i jak bardzo może się pochylić w bok (część pionu). */
+  glebia: 16, pochylenie: 0.45,
   /** Ofiara stoi co najmniej tyle kafli od lewej i prawej krawędzi świata (żeby kamera mogła pokazać całość). */
   odKrawedzi: 22,
   /** Drugi zabrany: ktoś z ludu najdalej tyle kafli od pierwszego — z taką szansą. */
   drugiDo: 3.5, drugiSzansa: 0.6,
 
   // ---------------------------------------------------------------- przebieg (tiki)
-  /** Oczy otwierają się i patrzą (ofiary stoją jak wryte), dłoń sięga, zaciska się, cofa, oczy gasną. */
-  oczy: 420, siega: 240, chwyta: 80, cofa: 260, gasnie: 220,
-  /** Cud bliżej niż tyle kafli od oczu albo ofiary, zanim dłoń chwyci, odpędza ją. */
+  /** Dłoń wznosi się z głębi (ofiary stoją jak wryte), sięga, zaciska się, cofa w dół, łuna gaśnie. */
+  wstaje: 420, siega: 240, chwyta: 80, cofa: 260, gasnie: 220,
+  /** Cud bliżej niż tyle kafli od ofiary albo brzegu otchłani pod nią, zanim dłoń chwyci, odpycha ją. */
   cudPromien: 12,
 
   // ---------------------------------------------------------------- wygląd (kafle)
-  /** Wielkość dłoni i oczu (mnożnik; 1 = dłoń od nadgarstka po palce ok. 5 kafli, a postać ma ok. 2,5). */
+  /** Wielkość dłoni (mnożnik; 1 = dłoń od nadgarstka po szpony ok. 5,4 kafla, a postać ma ok. 2,5). */
   wielkosc: 1.8,
-  /** Odstęp oczu (przed mnożnikiem) i jak głęboko w otchłani, za brzegiem nieznanego, się otwierają. */
-  oczyRozstaw: 4.2, oczyGlebiej: 9,
+  /** Czerwona łuna otchłani pod ofiarą: promień (kafle). */
+  lunaPromien: 6,
 };

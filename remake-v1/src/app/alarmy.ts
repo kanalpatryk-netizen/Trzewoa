@@ -42,7 +42,7 @@ export class Straznik {
   private ostatniAlarm = -1e9;
   /** Od kiedy Patrzący patrzy na tego, o którym już powiedzieliśmy. */
   private mrokOd = -1;
-  /** Od kiedy patrzą oczy z otchłani, o których już powiedzieliśmy. */
+  /** Od kiedy wznosi się dłoń z otchłani, o której już powiedzieliśmy. */
   private dlonOd = -1;
   /** Rodzaje, przy których gracz poprosił, żeby go więcej nie zatrzymywać. */
   wyciszone = new Set<string>();
@@ -83,18 +83,18 @@ export class Straznik {
   }
 
   private wykryj(sim: Sim): Alarm | null {
-    // Koszmar: z otchłani patrzą oczy — za chwilę wysunie się dłoń
+    // Koszmar: pod kimś z ludu porusza się otchłań — z głębi wznosi się dłoń
     const d = sim.lud.dlon;
-    // (dopiero gdy oczy są już otwarte — karta zatrzymuje czas, a z nią obraz)
-    if (d && d.faza === 'oczy' && sim.tick - d.od >= 90 && d.od !== this.dlonOd) {
+    // (dopiero gdy łuna już świeci i dłoń majaczy w dole — karta zatrzymuje czas, a z nią obraz)
+    if (d && d.faza === 'wstaje' && sim.tick - d.od >= 90 && d.od !== this.dlonOd) {
       this.dlonOd = d.od;
       const ile = d.ofiary.length;
-      const zostalo = Math.max(1, Math.round((DLON.oczy + DLON.siega - (sim.tick - d.od)) / 120));
+      const zostalo = Math.max(1, Math.round((DLON.wstaje + DLON.siega - (sim.tick - d.od)) / 120));
       return {
         rodzaj: 'dlon', kryzys: true,
-        tytul: 'Otchłań otworzyła oczy',
-        tekst: `Na brzegu nieznanego otworzyły się wielkie czerwone oczy. ${ile > 1 ? 'Dwoje z ludu stoi' : 'Ktoś z ludu stoi'} jak wryty. Za ${zostalo} sekund z ciemności wysunie się dłoń i zabierze ${ile > 1 ? 'ich' : 'go'} w otchłań — bez śladu.`,
-        rada: 'Rzuć Cud przy oczach albo przy nich, zanim dłoń chwyci — światło odepchnie ją z powrotem w ciemność.',
+        tytul: 'Coś wznosi się z otchłani',
+        tekst: `Pod stopami ${ile > 1 ? 'dwojga z ludu' : 'kogoś z ludu'} zaczerwieniła się otchłań i z głębi wznosi się ogromna dłoń. ${ile > 1 ? 'Stoją' : 'Stoi'} jak ${ile > 1 ? 'wryci' : 'wryty'}. Za ${zostalo} sekund sięgnie w górę i zabierze ${ile > 1 ? 'ich' : 'go'} w dół — bez śladu.`,
+        rada: 'Rzuć Cud przy nich, zanim dłoń chwyci — światło zepchnie ją z powrotem w otchłań.',
         cel: { x: d.cx, y: d.cy, tekst: 'tu sięgnie dłoń' },
       };
     }

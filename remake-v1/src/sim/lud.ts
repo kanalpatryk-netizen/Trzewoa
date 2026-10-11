@@ -217,8 +217,8 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
     out.push({ nazwa: 'patrzy na niego coś z ciemności', skutek: 'jeśli zostanie sam, zniknie — ocali go Cud tuż obok albo ktoś z ludu przy nim', dobry: false, do: sim.lud.mrok.od + MROK.patrzyTikow });
   }
   const d = sim.lud.dlon;
-  if (d && (d.faza === 'oczy' || d.faza === 'siega') && d.ofiary.includes(c.id)) {
-    out.push({ nazwa: 'patrzą na niego oczy z otchłani', skutek: 'dłoń zaraz go zabierze — odpędzi ją tylko Cud przy oczach', dobry: false, do: d.od + (d.faza === 'oczy' ? DLON.oczy + DLON.siega : DLON.siega) });
+  if (d && (d.faza === 'wstaje' || d.faza === 'siega') && d.ofiary.includes(c.id)) {
+    out.push({ nazwa: 'spod niego wznosi się dłoń z otchłani', skutek: 'zaraz go zabierze w dół — odpędzi ją tylko Cud tuż przy nim', dobry: false, do: d.od + (d.faza === 'wstaje' ? DLON.wstaje + DLON.siega : DLON.siega) });
   }
   if (c.okaleczony) {
     out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false });

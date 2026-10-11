@@ -65,9 +65,9 @@ i otwórz w przeglądarce.
   lampek, aureol, obozów, rdzenia i Cudu. W ciemności krąży coś, co wypatruje samotnych daleko od obozu (nie rycerzy)
   i po 15 s patrzenia zabiera ich (stoją wtedy jak wryci); gra staje i ostrzega. Odpędza je Cud tuż obok albo ktoś z ludu, kto podejdzie.
 - **Dłoń z otchłani (tylko Koszmar, rzadko)** (`src/sim/dlon.ts`, rysunek `src/render/dlon.ts`, nastawy `src/nastawy/dlon.ts`):
-  gdy ktoś z ludu stoi daleko od obozu na brzegu nieznanego, w ciemności otwierają się wielkie czerwone oczy, a z otchłani
-  wysuwa się ogromna dłoń, chwyta jedną albo dwie postacie i cofa się z nimi (bez kości). Gra staje i ostrzega; Cud przy oczach
-  przed chwytem ją odpędza. Najwcześniej po 6 min, najwyżej 2 razy na partię.
+  gdy ktoś z ludu stoi daleko od obozu, a pod nim zaczyna się nieznane, pod jego stopami żarzy się czerwona łuna i z głębi,
+  zawsze od dołu, wznosi się ogromna dłoń, chwyta jedną albo dwie postacie i zapada się z nimi w dół (bez kości). Gra staje
+  i ostrzega; Cud przy nich przed chwytem spycha ją z powrotem w otchłań. Najwcześniej po 6 min, najwyżej 2 razy na partię.
 - **Bez snu góry.** Przegrywasz dopiero, gdy nie da się już wygrać: nie ma pobożnych,
   a nawet ofiara ze wszystkich nie da krwi na nowego.
 

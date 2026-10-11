@@ -2,7 +2,7 @@
  * Renderuje arkusz klatek dłoni z otchłani (src/grafiki/dlon/dlon-z-otchlani.webp) z modelu 3D
  * w scripts/dlon/model.html: dłoń zbudowana z brył zlewających się w jedną (kości śródręcza,
  * ścięgna, żyły, stawy ze zmarszczkami, rogowe szpony), cieniowana promieniem (ray marching)
- * w WebGL — z cieniami, okluzją, fakturą skóry, czerwoną łuną oczu zza dłoni i ciepłym światłem
+ * w WebGL — z cieniami, okluzją, fakturą skóry, czerwoną łuną otchłani zza dłoni i ciepłym światłem
  * lampek od strony palców.
  *
  *   node scripts/dlon/renderuj.mjs            (potrzebny Playwright z Chromium)

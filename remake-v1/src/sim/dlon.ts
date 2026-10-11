@@ -2,10 +2,11 @@
  * DŁOŃ Z OTCHŁANI (Remake v1, tylko Koszmar). Liczby są w src/nastawy/dlon.ts.
  *
  * Otchłań to nieznane — ta część góry, której nikt nie widział albo o której już zapomniano.
- * Rzadko, gdy ktoś z ludu stoi daleko od światła obozu na samym brzegu nieznanego, w ciemności
- * otwierają się wielkie czerwone oczy. Ofiara (jedna, czasem dwie) staje jak wryta. Potem
- * z otchłani wysuwa się ogromna dłoń, chwyta je i cofa się w ciemność; oczy gasną. Nie zostają
- * nawet kości — krew i tak spływa do ciebie. Cud rzucony przy oczach, zanim dłoń chwyci, odpędza ją.
+ * Rzadko, gdy ktoś z ludu stoi daleko od światła obozu, a pod nim zaczyna się otchłań, spod ziemi
+ * sączy się czerwona łuna i z głębi powoli wznosi się ogromna dłoń. Ofiara (jedna, czasem dwie)
+ * staje jak wryta. Dłoń sięga w górę, chwyta je i cofa się z nimi w dół, w ciemność; łuna gaśnie.
+ * Nie zostają nawet kości — krew i tak spływa do ciebie. Cud rzucony przy nich, zanim dłoń chwyci,
+ * odpycha ją z powrotem w otchłań.
  */
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
@@ -15,7 +16,7 @@ import { zapisz } from './dziennik';
 import { MEM_SPAN, SURFACE_Y } from './world';
 import { T } from './tiles';
 
-export type FazaDloni = 'brak' | 'oczy' | 'siega' | 'chwyta' | 'cofa' | 'gasnie';
+export type FazaDloni = 'brak' | 'wstaje' | 'siega' | 'chwyta' | 'cofa' | 'gasnie';
 
 /** Stan wydarzenia (trafia do zapisu razem z ludem). */
 export interface StanDloni {
@@ -27,30 +28,31 @@ export interface StanDloni {
   ciszaDo: number;
   /** Ile razy w tej partii. */
   ile: number;
-  /** Oczy (głęboko w otchłani), brzeg otchłani (stąd wychodzi dłoń) i miejsce chwytu. */
+  /** Głębia otchłani pod ofiarą (stąd wznosi się dłoń), brzeg otchłani (tu wynurza się z ciemności) i miejsce chwytu. */
   ox: number; oy: number;
   bx: number; by: number;
   cx: number; cy: number;
   /** Kogo bierze (id) i jakie role miały zabrane postacie (dla rysunku w pięści). */
   ofiary: number[];
   zabrani: Rola[];
-  /** Cud odpędził ją przed chwytem. */
+  /** Cud odpędził ją przed chwytem — i jak wysoko już była (0..1 wznoszenie, 1..2 sięganie). */
   odpedzona?: boolean;
-  /** Ktoś już widział oczy — atlas ma tablicę. */
+  odpedzonaU?: number;
+  /** Ktoś już ją widział — atlas ma tablicę. */
   widziana?: boolean;
-  /** Tik, w którym otworzyły się oczy / dłoń zacisnęła się — ekran gra wtedy dźwięk. */
-  oczyT?: number;
+  /** Tik, w którym otchłań się poruszyła / dłoń zacisnęła się — ekran gra wtedy dźwięk. */
+  wstajeT?: number;
   chwytT?: number;
 }
 
-/** Biernik roli: „patrzą na pobożnego”, „zabrała robotnika”. */
+/** Biernik (i dopełniacz) roli: „zabrała robotnika”, „pod stopami pobożnego”. */
 const KOGO: Record<Rola, string> = { pobozny: 'pobożnego', robotnik: 'robotnika', rycerz: 'rycerza' };
 
 const DLUGOSC: Record<Exclude<FazaDloni, 'brak'>, number> = {
-  oczy: DLON.oczy, siega: DLON.siega, chwyta: DLON.chwyta, cofa: DLON.cofa, gasnie: DLON.gasnie,
+  wstaje: DLON.wstaje, siega: DLON.siega, chwyta: DLON.chwyta, cofa: DLON.cofa, gasnie: DLON.gasnie,
 };
 const NASTEPNA: Record<Exclude<FazaDloni, 'brak'>, FazaDloni> = {
-  oczy: 'siega', siega: 'chwyta', chwyta: 'cofa', cofa: 'gasnie', gasnie: 'brak',
+  wstaje: 'siega', siega: 'chwyta', chwyta: 'cofa', cofa: 'gasnie', gasnie: 'brak',
 };
 
 function nowyStan(): StanDloni {
@@ -87,9 +89,9 @@ function przyObozie(sim: Sim, x: number, y: number): boolean {
 }
 
 /**
- * Szuka ofiary na brzegu otchłani: ktoś z ludu daleko od obozu, przy kim zaczyna się dużo
- * nieznanego. Ustawia oczy, brzeg i miejsce chwytu. `wszedzie` — narzędzie dewelopera
- * (bierze najlepszego, nawet blisko obozu).
+ * Szuka ofiary nad otchłanią: ktoś z ludu daleko od obozu, pod kim (do kilkunastu kafli w dół)
+ * zaczyna się dużo nieznanego. Ustawia głębię, z której wzniesie się dłoń, brzeg otchłani pod
+ * ofiarą i miejsce chwytu. `wszedzie` — narzędzie dewelopera (bierze najlepszego, nawet blisko obozu).
  */
 function znajdzOfiare(sim: Sim, d: StanDloni, wszedzie = false): boolean {
   const R = DLON.otchlanPromien;
@@ -102,34 +104,31 @@ function znajdzOfiare(sim: Sim, d: StanDloni, wszedzie = false): boolean {
     // nie przy samej krawędzi świata — tam kamera nie dojedzie i całe zdarzenie byłoby z boku ekranu
     if (!wszedzie && (c.x < DLON.odKrawedzi || c.x > w.w - DLON.odKrawedzi)) continue;
     const x0 = Math.floor(c.x), y0 = Math.floor(c.y);
-    let ile = 0, sx = 0, sy = 0, bx = 0, by = 0, bd = 1e9;
-    for (let dy = -R; dy <= R; dy++) {
-      for (let dx = -R; dx <= R; dx++) {
-        const dd = Math.hypot(dx, dy);
-        if (dd > R || dd < 2) continue;
+    // otchłań pod ofiarą: pas szeroki na kilka kafli w lewo i w prawo, od stóp w dół
+    let ile = 0, sx = 0, bx = 0, by = 0, bd = 1e9;
+    for (let dy = 2; dy <= R + 4; dy++) {
+      for (let dx = -6; dx <= 6; dx++) {
         if (!wOtchlani(sim, x0 + dx, y0 + dy)) continue;
-        ile++; sx += dx; sy += dy;
+        ile++; sx += dx;
+        const dd = dy + Math.abs(dx) * 0.7;
         if (dd < bd) { bd = dd; bx = dx; by = dy; }
       }
     }
     if (ile < (wszedzie ? 1 : DLON.otchlanMin)) continue;
-    // kierunek w głąb otchłani: ku środkowi ciężkości nieznanego; brzeg — najbliższy nieznany kafel
-    const dl = Math.hypot(sx, sy) || 1;
-    const kx = sx / dl, ky = sy / dl;
-    const brzegX = x0 + bx + 0.5, brzegY = y0 + by + 0.5;
-    const ox = brzegX + kx * DLON.oczyGlebiej, oy = brzegY + ky * DLON.oczyGlebiej - 1;
-    // oczy muszą się zmieścić w głębi góry — nie na krawędzi świata ani w niebie
-    const mieszcza = ox >= 5 && ox <= w.w - 6 && oy >= SURFACE_Y + 4 && oy <= w.h - 5;
-    if (!mieszcza && !wszedzie) continue;
-    const ocena = ile * (0.7 + sim.rng.next() * 0.6) * (mieszcza ? 1 : 0.2);
-    if (!naj || ocena > naj.ocena) naj = { c, ocena, bx: brzegX, by: brzegY, ox, oy };
+    // dłoń idzie z dołu, lekko pochylona tam, gdzie otchłani więcej
+    const pochyl = Math.max(-DLON.pochylenie, Math.min(DLON.pochylenie, sx / ile / 4));
+    const ox = x0 + 0.5 + pochyl * DLON.glebia, oy = y0 + DLON.glebia;
+    const miesci = ox >= 5 && ox <= w.w - 6 && oy <= w.h - 3;
+    if (!miesci && !wszedzie) continue;
+    const ocena = ile * (0.7 + sim.rng.next() * 0.6) * (miesci ? 1 : 0.2);
+    if (!naj || ocena > naj.ocena) naj = { c, ocena, bx: x0 + bx + 0.5, by: y0 + by + 0.5, ox, oy };
   }
   if (!naj) return false;
   const { c } = naj;
   d.cx = c.x + 0.5; d.cy = c.y - 0.6;
-  d.bx = naj.bx; d.by = naj.by;
+  d.bx = naj.bx; d.by = Math.max(naj.by, c.y + 1.5);
   d.ox = Math.max(4, Math.min(w.w - 5, naj.ox));
-  d.oy = Math.max(SURFACE_Y + 4, Math.min(w.h - 5, naj.oy));
+  d.oy = Math.min(w.h - 3, Math.max(naj.oy, d.by + 3));
   d.ofiary = [c.id];
   if (sim.rng.next() < DLON.drugiSzansa) {
     let drugi: Creature | null = null, dd = DLON.drugiDo;
@@ -147,25 +146,26 @@ function znajdzOfiare(sim: Sim, d: StanDloni, wszedzie = false): boolean {
 }
 
 function zacznij(sim: Sim, d: StanDloni): void {
-  d.faza = 'oczy';
+  d.faza = 'wstaje';
   d.od = sim.tick;
-  d.oczyT = sim.tick;
+  d.wstajeT = sim.tick;
   d.widziana = true;
   d.odpedzona = false;
+  d.odpedzonaU = undefined;
   d.zabrani = [];
   for (const id of d.ofiary) {
     const c = sim.creatures.find((q) => q.id === id);
     if (!c) continue;
     c.fear = 1;
     // stoi jak wryty, aż dłoń chwyci (Cud go puszcza)
-    c.zamarlyDo = sim.tick + DLON.oczy + DLON.siega + DLON.chwyta;
-    c.zamiar = 'stoi jak wryty — z otchłani patrzą wielkie oczy';
+    c.zamarlyDo = sim.tick + DLON.wstaje + DLON.siega + DLON.chwyta;
+    c.zamiar = 'stoi jak wryty — spod ziemi, z otchłani, wznosi się dłoń';
     c.zamiarDo = c.zamarlyDo;
   }
   const pierwszy = sim.creatures.find((q) => q.id === d.ofiary[0]);
-  const kto = d.ofiary.length > 1 ? 'dwoje z ludu' : KOGO[(pierwszy && rolaPostaci(pierwszy)) ?? 'pobozny'];
-  sim.gdzie(d.cx, d.cy).log(`Na brzegu otchłani otworzyły się wielkie czerwone oczy. Patrzą na ${kto}.`, 'otchlan');
-  zapisz(sim, 'swiat', `Dłoń z otchłani: oczy otwarte, ofiary ${d.ofiary.map((i) => `#${i}`).join(', ')}`, d.cx, d.cy);
+  const kogo = d.ofiary.length > 1 ? 'dwojga z ludu' : KOGO[(pierwszy && rolaPostaci(pierwszy)) ?? 'pobozny'];
+  sim.gdzie(d.cx, d.cy).log(`Pod stopami ${kogo} poruszyła się otchłań. Z ciemności w dole wznosi się ogromna dłoń.`, 'otchlan');
+  zapisz(sim, 'swiat', `Dłoń z otchłani: wznosi się, ofiary ${d.ofiary.map((i) => `#${i}`).join(', ')}`, d.cx, d.cy);
 }
 
 /** Dłoń się zacisnęła: ofiary znikają w otchłani (bez kości — krew i tak spływa do ciebie). */
@@ -184,7 +184,7 @@ function chwyc(sim: Sim, d: StanDloni): void {
     if (bylo === T.AIR && sim.world.get(x, y) === T.BONES) sim.world.set(x, y, T.AIR);
     sim.efekty = sim.efekty.filter((e) => !(e.rodzaj === 'smierc' && e.x === c.x && e.y === c.y));
   }
-  if (nazwy.length) sim.gdzie(d.cx, d.cy).log(`Z otchłani wysunęła się ogromna dłoń i zabrała ${nazwy.join(' i ')}. Nie zostały nawet kości.`, 'krew');
+  if (nazwy.length) sim.gdzie(d.cx, d.cy).log(`Ogromna dłoń z otchłani zabrała w dół ${nazwy.join(' i ')}. Nie zostały nawet kości.`, 'krew');
 }
 
 /** Co tik symulacji (sam pilnuje rytmu). */
@@ -194,6 +194,8 @@ export function tikDloni(sim: Sim): void {
   if (!d && !sim.koszmar) return;
   if (!sim.lud.dlon) sim.lud.dlon = nowyStan();
   const s = sim.lud.dlon;
+  // zapis sprzed zmiany: faza nazywała się „oczy”
+  if ((s.faza as string) === 'oczy') s.faza = 'wstaje';
   if (s.faza === 'brak') {
     if (!sim.koszmar || sim.spokojnySwiat || sim.tick < s.losT) return;
     s.losT = sim.tick + DLON.losujCo;
@@ -203,7 +205,7 @@ export function tikDloni(sim: Sim): void {
     return;
   }
   // miejsce chwytu idzie za ofiarami (stoją, ale mogą się osunąć)
-  if (s.faza === 'oczy' || s.faza === 'siega') {
+  if (s.faza === 'wstaje' || s.faza === 'siega') {
     const zywe = s.ofiary.map((id) => sim.creatures.find((q) => q.id === id)).filter((c): c is Creature => !!c && !c.dead);
     if (!zywe.length) { s.faza = 'gasnie'; s.od = sim.tick; return; }
     s.cx = zywe.reduce((a, c) => a + c.x, 0) / zywe.length + 0.5;
@@ -223,20 +225,23 @@ export function tikDloni(sim: Sim): void {
   }
 }
 
-/** Cud rzucony w (tx, ty): jeśli oczy albo ofiara są blisko, a dłoń jeszcze nie chwyciła — odpędza ją. */
+/** Cud rzucony w (tx, ty): jeśli ofiara albo brzeg otchłani pod nią są blisko, a dłoń jeszcze nie chwyciła — odpycha ją. */
 export function odpedzDlon(sim: Sim, tx: number, ty: number): boolean {
   const d = sim.lud.dlon;
-  if (!d || (d.faza !== 'oczy' && d.faza !== 'siega')) return false;
-  const blisko = Math.hypot(d.ox - tx, d.oy - ty) <= DLON.cudPromien || Math.hypot(d.cx - tx, d.cy - ty) <= DLON.cudPromien;
+  if (!d || (d.faza !== 'wstaje' && d.faza !== 'siega')) return false;
+  const blisko = Math.hypot(d.bx - tx, d.by - ty) <= DLON.cudPromien || Math.hypot(d.cx - tx, d.cy - ty) <= DLON.cudPromien;
   if (!blisko) return false;
   for (const id of d.ofiary) {
     const c = sim.creatures.find((q) => q.id === id);
     if (c && !c.dead) { c.zamarlyDo = undefined; c.zamiarDo = sim.tick; c.fear = Math.max(c.fear, 0.6); }
   }
   d.odpedzona = true;
-  d.faza = d.faza === 'siega' ? 'cofa' : 'gasnie';
+  const u = Math.min(1, (sim.tick - d.od) / (d.faza === 'siega' ? DLON.siega : DLON.wstaje));
+  d.odpedzonaU = d.faza === 'siega' ? 1 + u : u;
+  // zapada się z powrotem w dół, skąd przyszła
+  d.faza = 'cofa';
   d.od = sim.tick;
-  sim.gdzie(d.cx, d.cy).log('Światło Cudu odepchnęło dłoń z powrotem w otchłań. Oczy się zamknęły.', 'wiara');
+  sim.gdzie(d.cx, d.cy).log('Światło Cudu odepchnęło dłoń z powrotem w otchłań.', 'wiara');
   zapisz(sim, 'swiat', 'Dłoń z otchłani odpędzona Cudem', d.cx, d.cy);
   return true;
 }
@@ -246,9 +251,9 @@ export function devDlon(sim: Sim): string {
   if (!sim.lud.dlon) sim.lud.dlon = nowyStan();
   const d = sim.lud.dlon;
   if (d.faza !== 'brak') return 'Dłoń już tu jest.';
-  if (!znajdzOfiare(sim, d) && !znajdzOfiare(sim, d, true)) return 'Nikt z ludu nie stoi przy otchłani (nieznanym).';
+  if (!znajdzOfiare(sim, d) && !znajdzOfiare(sim, d, true)) return 'Nikt z ludu nie stoi nad otchłanią (nieznanym).';
   zacznij(sim, d);
-  return `Oczy otwarte — dłoń sięgnie po ${d.ofiary.map((i) => `#${i}`).join(' i ')}.`;
+  return `Dłoń wznosi się z otchłani po ${d.ofiary.map((i) => `#${i}`).join(' i ')}.`;
 }
 
 /** Jedna linijka o stanie wydarzenia — dla okienka dewelopera. */
