@@ -20,7 +20,7 @@ import { CECHY } from '../nastawy/cechy';
 import { LUD } from '../nastawy/lud';
 import { MROK } from '../nastawy/mrok';
 import { DLON } from '../nastawy/dlon';
-import { rysujDlonLokalnie, rysujOczyOtchlani } from '../render/dlon';
+import { rysujKlatkeDloni, rysujOczyOtchlani } from '../render/dlon';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
@@ -340,22 +340,18 @@ function skorupa({ ctx, w, h, t }: Plotno): void {
   ctx.restore();
 }
 
-/** Pismo w skale: blok litej skały z żarzącymi się znakami, które gasną w smudze światła. */
-/** Ten, który patrzy: lita, kreskowana skała, a w niej para oczu i blade światło lampki z boku. */
-/** Dłoń z otchłani: oczy w ciemności i dłoń zaciskająca się nad maleńką postacią. */
+/** Dłoń z otchłani: oczy w ciemności i szponiasta dłoń, która powoli zaciska palce. */
 function dlonOtchlani({ ctx, w, h, t }: Plotno): void {
   ctx.save();
   ctx.fillStyle = '#060303';
   ctx.fillRect(0, 0, w, h);
   const z = Math.min(w, h) / 16;
-  rysujOczyOtchlani(ctx, w * 0.62, h * 0.24, z, 1, 1, w * 0.4, h * 0.75, t);
-  ctx.translate(w * 0.38, h * 0.52);
-  ctx.rotate(0.55);
-  ctx.scale(z * 0.95, z * 0.95);
-  rysujDlonLokalnie(ctx, 0.55 + 0.25 * Math.sin(t * 0.0012), 1);
+  rysujOczyOtchlani(ctx, w * 0.66, h * 0.2, z * 0.8, 1, 1, w * 0.55, h * 0.7, t);
+  rysujKlatkeDloni(ctx, w * 0.08, h * 0.7, -0.22, (w * 0.8) / 25.5, 0.25 + 0.2 * Math.sin(t * 0.0012), 1, 1, 1);
   ctx.restore();
 }
 
+/** Ten, który patrzy: lita, kreskowana skała, a w niej para oczu i blade światło lampki z boku. */
 function patrzacy({ ctx, w, h, t }: Plotno): void {
   ctx.save();
   ctx.fillStyle = '#0b0807';
@@ -382,6 +378,7 @@ function patrzacy({ ctx, w, h, t }: Plotno): void {
   ctx.restore();
 }
 
+/** Pismo w skale: blok litej skały z żarzącymi się znakami, które gasną w smudze światła. */
 function pismo({ ctx, w, h, t }: Plotno): void {
   ctx.save();
   ctx.fillStyle = '#0d0a09';

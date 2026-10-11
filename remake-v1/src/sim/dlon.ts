@@ -99,6 +99,8 @@ function znajdzOfiare(sim: Sim, d: StanDloni, wszedzie = false): boolean {
   for (const c of sim.creatures) {
     if (!moznaWziac(c)) continue;
     if (!wszedzie && przyObozie(sim, c.x, c.y)) continue;
+    // nie przy samej krawędzi świata — tam kamera nie dojedzie i całe zdarzenie byłoby z boku ekranu
+    if (!wszedzie && (c.x < DLON.odKrawedzi || c.x > w.w - DLON.odKrawedzi)) continue;
     const x0 = Math.floor(c.x), y0 = Math.floor(c.y);
     let ile = 0, sx = 0, sy = 0, bx = 0, by = 0, bd = 1e9;
     for (let dy = -R; dy <= R; dy++) {

@@ -29,6 +29,8 @@ export const DLON = {
   otchlanPromien: 10,
   /** …i co najmniej tyle nieznanych kafli w tym promieniu. */
   otchlanMin: 30,
+  /** Ofiara stoi co najmniej tyle kafli od lewej i prawej krawędzi świata (żeby kamera mogła pokazać całość). */
+  odKrawedzi: 22,
   /** Drugi zabrany: ktoś z ludu najdalej tyle kafli od pierwszego — z taką szansą. */
   drugiDo: 3.5, drugiSzansa: 0.6,
 
