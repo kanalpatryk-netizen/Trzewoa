@@ -17,6 +17,8 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu).
   pauza, zawał i hełmy, ciemność i dłoń, Strażnicy, droga do wolności); atlas bez ras, których tu nie ma
   (Żużlowcy, Trole, Prządki, Grzybnia) i bez ludzi z powierzchni, bez proroka i cech nacji, z tablicami wiadra, zawału, hełmów i trupów;
   14 nowych osiągnięć (m.in. „Ostatkiem sił”, „Kilofy zamiast mieczy”, „Bez powrotu”, „Wyrwani z dłoni”).
+- **Rycerz to krzyżowiec po bitwie** — kolczuga, brudny wapenrok z krwawym krzyżem, podarty płaszcz, hełm „głowa cukru”
+  albo otwarty z blizną na twarzy, wyszczerbiona tarcza ze strzałami, krew na mieczu; miękkie cieniowanie zamiast kanciastego.
 - **Zawał od góry** — gdy przez 20 s nikogo z ludu nie ma wysoko, góra nad nim zawala się (razem z gniazdami
   rycerzy, które tam spały). Kamera nie wjeżdża ponad gruz, mapa się skraca, a lud nie ucieknie w górę — musi walczyć.
 - **Wiadro z jedzeniem zamiast grzyba i spiżarni** — co 40 s z góry, na linie, zjeżdża wiadro pełne jedzenia

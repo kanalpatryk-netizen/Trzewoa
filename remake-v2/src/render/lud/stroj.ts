@@ -10,7 +10,8 @@ import { clamp, los, mieszaj, type Rgb } from './matma';
  *
  * - robotnik — fossor, kopacz katakumb: krótka tunika z clavi, kilof, gliniana lampka oliwna,
  * - pobożny — duchowny (diakon): długa jasna szata, czerwona stuła z krzyżykami, tonsura,
- * - rycerz — święty wojownik: zbroja łuskowa, czerwona chlamida, stożkowy hełm, tarcza migdałowa.
+ * - rycerz — krzyżowiec po bitwie (Remake v2): kolczuga, brudny wapenrok z krwawym krzyżem, podarty ciemny
+ *   płaszcz, garnczkowy albo otwarty hełm, wyszczerbiona tarcza z krzyżem — krew, blizny, bandaże.
  * Stałe cechy (karnacja, włosy, broda, barwy szat) losowane z numeru postaci.
  */
 export interface Stroj {
@@ -27,6 +28,8 @@ export interface Stroj {
   szata: Rgb; stula: Rgb;
   /** rycerz: zbroja łuskowa, spódnica tuniki, chlamida, hełm, skórzane pasy, tarcza */
   zbroja: Rgb; spodnica: Rgb; chlamida: Rgb; helm: Rgb; skorzane: Rgb; tarcza: Rgb; znak: Rgb;
+  /** Remake v2 — krzyżowiec: kolczuga, wapenrok (płócienna narzuta), krzyż, płaszcz, zaschnięta krew */
+  kolczuga: Rgb; wapenrok: Rgb; krzyz: Rgb; plaszcz: Rgb; krewSucha: Rgb;
   /** wspólne */
   zloto: Rgb; drewno: Rgb; zelazo: Rgb; glina: Rgb; buty: Rgb; krew: Rgb;
   /** stany widoczne na ciele */
@@ -48,6 +51,9 @@ const SZATY: Rgb[] = [[188, 176, 150], [180, 168, 140], [192, 184, 160]];
 const STULE: Rgb[] = [[128, 38, 30], [110, 34, 30], [96, 52, 40]];
 const SPODNICE: Rgb[] = [[60, 76, 88], [72, 84, 66], [88, 50, 46]];
 const CHLAMIDY: Rgb[] = [[132, 42, 32], [118, 36, 30], [144, 58, 36]];
+/** Krzyżowiec: płótno wapenroku (brudna kość, popiół), płaszcze (węgiel, umbra, wino tak ciemne, że prawie czarne). */
+const WAPENROKI: Rgb[] = [[164, 154, 134], [154, 146, 128], [170, 160, 140], [146, 138, 122]];
+const PLASZCZE: Rgb[] = [[44, 38, 36], [38, 34, 36], [52, 36, 32], [48, 30, 30]];
 
 export function stroj(rola: Rola, c: Creature, sim: Sim): Stroj {
   const l = (n: number) => los(c.id, n);
@@ -64,8 +70,10 @@ export function stroj(rola: Rola, c: Creature, sim: Sim): Stroj {
     tunika: wybierz(TUNIKI, 4), clavi: wybierz(CLAVI, 5), pas: [74, 52, 34], owijki: [130, 112, 86],
     szata: wybierz(SZATY, 10), stula: wybierz(STULE, 6),
     zbroja: bunt ? [70, 66, 62] : [134, 116, 80], spodnica: bunt ? [34, 26, 26] : wybierz(SPODNICE, 7),
-    chlamida: bunt ? [36, 22, 22] : wybierz(CHLAMIDY, 8), helm: bunt ? [62, 60, 60] : [112, 110, 104],
-    skorzane: [92, 62, 40], tarcza: bunt ? [30, 22, 22] : [118, 44, 32], znak: bunt ? [170, 30, 24] : [196, 160, 88],
+    chlamida: bunt ? [36, 22, 22] : wybierz(CHLAMIDY, 8), helm: bunt ? [54, 52, 52] : [98, 96, 94],
+    kolczuga: bunt ? [50, 48, 50] : [80, 80, 84], wapenrok: bunt ? [42, 36, 36] : wybierz(WAPENROKI, 11),
+    krzyz: bunt ? [158, 22, 16] : [130, 26, 22], plaszcz: bunt ? [26, 20, 20] : wybierz(PLASZCZE, 12), krewSucha: [86, 14, 12],
+    skorzane: [72, 50, 34], tarcza: bunt ? [34, 28, 28] : [146, 136, 116], znak: bunt ? [170, 30, 24] : [130, 26, 22],
     zloto: [184, 148, 78], drewno: [96, 68, 46], zelazo: [92, 92, 94], glina: [156, 92, 58], buty: [62, 44, 32], krew: [116, 20, 16],
     zatruty, okaleczony: !!c.okaleczony,
     szalenstwo: clamp(c.mad ?? 0, 0, 1), strach: clamp(c.fear ?? 0, 0, 1),
