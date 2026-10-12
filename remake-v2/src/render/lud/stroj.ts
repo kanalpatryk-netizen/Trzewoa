@@ -52,8 +52,10 @@ const STULE: Rgb[] = [[128, 38, 30], [110, 34, 30], [96, 52, 40]];
 const SPODNICE: Rgb[] = [[60, 76, 88], [72, 84, 66], [88, 50, 46]];
 const CHLAMIDY: Rgb[] = [[132, 42, 32], [118, 36, 30], [144, 58, 36]];
 /** Krzyżowiec: płótno wapenroku (brudna kość, popiół), płaszcze (węgiel, umbra, wino tak ciemne, że prawie czarne). */
-const WAPENROKI: Rgb[] = [[164, 154, 134], [154, 146, 128], [170, 160, 140], [146, 138, 122]];
-const PLASZCZE: Rgb[] = [[44, 38, 36], [38, 34, 36], [52, 36, 32], [48, 30, 30]];
+const WAPENROKI: Rgb[] = [[152, 142, 120], [144, 135, 116], [158, 148, 126], [138, 130, 112]];
+const PLASZCZE: Rgb[] = [[40, 35, 34], [34, 31, 34], [46, 34, 30], [44, 28, 28]];
+/** Tarcza: czerwone pole z krzyżem z kości albo brudnobiałe pole z krwawym krzyżem. */
+const TARCZE: [Rgb, Rgb][] = [[[104, 26, 22], [164, 152, 128]], [[104, 26, 22], [164, 152, 128]], [[146, 136, 114], [120, 22, 20]]];
 
 export function stroj(rola: Rola, c: Creature, sim: Sim): Stroj {
   const l = (n: number) => los(c.id, n);
@@ -63,6 +65,7 @@ export function stroj(rola: Rola, c: Creature, sim: Sim): Stroj {
   let skora = wybierz(SKORY, 1);
   if (zatruty) skora = mieszaj(skora, [128, 150, 96], 0.5);
   const stary = rola === 'pobozny' ? l(9) < 0.35 : l(9) < 0.15;
+  const tarcza = wybierz(TARCZE, 13);
   return {
     rola, bunt, obwodka: bunt ? OBWODKA.buntownik : OBWODKA[rola],
     skora, wlosy: stary ? [150, 144, 134] : wybierz(WLOSY, 2), stary,
@@ -70,10 +73,10 @@ export function stroj(rola: Rola, c: Creature, sim: Sim): Stroj {
     tunika: wybierz(TUNIKI, 4), clavi: wybierz(CLAVI, 5), pas: [74, 52, 34], owijki: [130, 112, 86],
     szata: wybierz(SZATY, 10), stula: wybierz(STULE, 6),
     zbroja: bunt ? [70, 66, 62] : [134, 116, 80], spodnica: bunt ? [34, 26, 26] : wybierz(SPODNICE, 7),
-    chlamida: bunt ? [36, 22, 22] : wybierz(CHLAMIDY, 8), helm: bunt ? [54, 52, 52] : [98, 96, 94],
-    kolczuga: bunt ? [50, 48, 50] : [80, 80, 84], wapenrok: bunt ? [42, 36, 36] : wybierz(WAPENROKI, 11),
-    krzyz: bunt ? [158, 22, 16] : [130, 26, 22], plaszcz: bunt ? [26, 20, 20] : wybierz(PLASZCZE, 12), krewSucha: [86, 14, 12],
-    skorzane: [72, 50, 34], tarcza: bunt ? [34, 28, 28] : [146, 136, 116], znak: bunt ? [170, 30, 24] : [130, 26, 22],
+    chlamida: bunt ? [36, 22, 22] : wybierz(CHLAMIDY, 8), helm: bunt ? [50, 48, 50] : [104, 104, 108],
+    kolczuga: bunt ? [54, 52, 54] : [84, 86, 92], wapenrok: bunt ? [46, 40, 38] : wybierz(WAPENROKI, 11),
+    krzyz: bunt ? [150, 18, 12] : [122, 22, 20], plaszcz: bunt ? [24, 18, 18] : wybierz(PLASZCZE, 12), krewSucha: [86, 14, 12],
+    skorzane: [66, 46, 32], tarcza: bunt ? [30, 26, 26] : tarcza[0], znak: bunt ? [160, 24, 16] : tarcza[1],
     zloto: [184, 148, 78], drewno: [96, 68, 46], zelazo: [92, 92, 94], glina: [156, 92, 58], buty: [62, 44, 32], krew: [116, 20, 16],
     zatruty, okaleczony: !!c.okaleczony,
     szalenstwo: clamp(c.mad ?? 0, 0, 1), strach: clamp(c.fear ?? 0, 0, 1),

@@ -72,10 +72,18 @@ function tynk(g: CanvasRenderingContext2D): CanvasPattern | null {
   return p ?? null;
 }
 
+/**
+ * Styl obrysu sylwetki: siła jasnej aury (0 — bez aury) i barwa ciemnego konturu; `spadek` — światło lampki
+ * słabnie ku stopom: od wysokości y0 (pełne) do y1 (przyciemnione o alfa), w układzie postaci.
+ */
+export interface Obrys { aura: number; kontur: string; spadek?: readonly [number, number, number] }
+
 export class Malarz {
   czesci: Czesc[] = [];
   readonly lod: 0 | 1 | 2;
   readonly prosto: boolean;
+  /** rola może go zmienić (rycerz: przygaszona aura, kontur tuszem zamiast sinopii) */
+  obrys: Obrys = { aura: 1, kontur: 'rgba(66,28,18,0.96)' };
 
   constructor(public g: CanvasRenderingContext2D, public h: number, pikseli: number, maksLod: 0 | 1 | 2 = 2) {
     this.lod = Math.min(maksLod, pikseli < 22 ? 0 : pikseli < 70 ? 1 : 2) as 0 | 1 | 2;
@@ -154,10 +162,11 @@ export class Malarz {
     const g = this.g, h = this.h;
     // aura: jasny tynk z nutą barwy roli; z daleka mocniejsza, żeby postać nie ginęła w mroku
     const jasna = clamp(h * 0.036, 1.2, 2.2), ciemna = clamp(h * 0.02, 0.85, 1.8);
-    const a = clamp(1.02 - h / 160, 0.42, 0.88);
+    const a = clamp(1.02 - h / 160, 0.42, 0.88) * this.obrys.aura;
     const aura = `rgba(${(obwodka[0] * 0.4 + 222 * 0.6) | 0},${(obwodka[1] * 0.4 + 206 * 0.6) | 0},${(obwodka[2] * 0.4 + 170 * 0.6) | 0},${a.toFixed(2)})`;
     g.lineJoin = 'round'; g.lineCap = 'round';
-    for (const [szer, barwa] of [[jasna + ciemna, aura], [ciemna, 'rgba(66,28,18,0.96)']] as const) {
+    for (const [szer, barwa] of [[jasna + ciemna, aura], [ciemna, this.obrys.kontur]] as const) {
+      if (barwa === aura && a < 0.01) continue;
       g.strokeStyle = barwa;
       for (const c of this.czesci) {
         if (c.bezObrysu) continue;
@@ -166,6 +175,12 @@ export class Malarz {
       }
     }
     const wzor = this.lod > 0 ? tynk(g) : null;
+    let spadek: CanvasGradient | null = null;
+    if (this.obrys.spadek && this.lod === 2) {
+      const [y0, y1, sa] = this.obrys.spadek;
+      spadek = g.createLinearGradient(0, y0, 0, y1);
+      spadek.addColorStop(0, 'rgba(6,4,4,0)'); spadek.addColorStop(1, `rgba(6,4,4,${sa})`);
+    }
     for (const c of this.czesci) {
       if (c.sciezka) {
         g.fillStyle = c.styl; g.fill(c.sciezka);
@@ -180,6 +195,7 @@ export class Malarz {
         g.strokeStyle = c.styl; g.lineWidth = w; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
       }
       if (c.po) c.po(g);
+      if (spadek && c.sciezka) { g.fillStyle = spadek; g.fill(c.sciezka); }
     }
   }
 }
