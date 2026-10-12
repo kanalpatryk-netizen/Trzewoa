@@ -25,6 +25,10 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu).
   wełniany kaptur z pelerynką (na głowie albo zsunięty), szorstka łatana tunika z podartym rąbkiem, skórzany fartuch,
   owijki na goleniach i przegubach, wychudzona twarz w sadzy, dolabra na ramieniu, gliniana lampka na łańcuszkach,
   worek z bochnem na plecach. Lud je teraz chleb z wiadra zamiast grzyba.
+- **Pobożny to diakon z krypty**, malowany tuszem jak reszta ludu; świeci mu modlitwa — nimb jak pierścień światła
+  obrysowuje go od tyłu, świeca i otwarta księga grzeją twarz. Zżółkła, ubłocona alba do ziemi z haftowanym rąbkiem,
+  karmazynowa stuła, sznur pokutny i różaniec, u części czarna kapa z kapturem; tonsura, krzyż z popiołu na czole,
+  krzyż procesyjny z ciemnego brązu. Okaleczony ma krwawe pręgi od bicza i bandaż, szaleniec płacze krwią.
 - **Zawał od góry** — gdy przez 20 s nikogo z ludu nie ma wysoko, góra nad nim zawala się (razem z gniazdami
   rycerzy, które tam spały). Kamera nie wjeżdża ponad gruz, mapa się skraca, a lud nie ucieknie w górę — musi walczyć.
 - **Wiadro z jedzeniem zamiast grzyba i spiżarni** — co 40 s z góry, na linie, zjeżdża wiadro pełne jedzenia

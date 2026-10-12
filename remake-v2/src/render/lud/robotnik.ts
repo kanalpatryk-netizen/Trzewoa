@@ -2,33 +2,12 @@ import { CIEN, clamp, cos, lerp, los, mieszaj, PI, sin, TAU, tonC, type Pkt, typ
 import { but, dlon, kolo, konczyna, naGlowie, podeszwa } from './malarz';
 import { kesChleba, lampa, migot, mlotek, muchy, odpryski, type Rysunek } from './wspolne';
 import { uderzenie } from './pamiec';
-import type { Szkielet, Stopa } from './szkielet';
+import type { Stopa } from './szkielet';
 import { dolabra } from './uzbrojenie';
 import { linia, poGlowie, twarzMroczna } from './twarz';
 import { bez, bryla, cienieRzucane, klaks, konczynaZgieta, kreskaTuszu, plisa, przesiak, swiatlocien, swiatloOsi, SW, SWB, tonBryly, warstwaKontr, warstwaTuszu, ziarno, type Warstwa } from './tusz';
 
-export { broda, poGlowie } from './twarz';
-
-/** Włosy: ciemna czapa krótkich loków nad czołem i z tyłu głowy; z bliska — pociągnięcia pędzla jaśniejszym tonem. */
-export function wlosy(r: Rysunek, s: Szkielet, kat: number, tonsura = false): void {
-  const { m, st } = r;
-  const pk: [number, number][] = tonsura
-    ? [[-1.06, 0.3], [-1.12, -0.25], [-0.9, -0.62], [-0.55, -0.66], [-0.6, -0.3], [-0.75, 0.0], [-0.72, 0.42], [-0.4, 0.62], [-0.85, 0.7]]
-    : [[-1.06, 0.4], [-1.14, -0.3], [-0.85, -0.92], [-0.1, -1.1], [0.58, -0.9], [0.86, -0.56], [0.6, -0.6], [0.18, -0.72], [-0.3, -0.52], [-0.55, -0.1], [-0.5, 0.42], [-0.8, 0.72]];
-  m.ksztalt(poGlowie(s, kat, pk), m.kula(naGlowie(s, kat, -0.3, -0.5), s.rg * 1.1, st.wlosy), (g) => {
-    if (m.lod < 2) return;
-    g.strokeStyle = tonC(st.wlosy, 0.3, CIEN.tkanina, 0.6); g.lineWidth = Math.max(0.4, s.rg * 0.045);
-    g.beginPath();
-    const kreski: [number, number, number, number][] = tonsura
-      ? [[-0.98, -0.3, -0.8, -0.5], [-0.98, 0.05, -0.78, -0.12], [-0.9, 0.38, -0.7, 0.2]]
-      : [[-0.9, -0.55, -0.55, -0.85], [-0.5, -0.82, -0.05, -0.98], [0.0, -0.95, 0.42, -0.86], [-1.0, -0.15, -0.8, -0.5], [-0.95, 0.25, -0.75, -0.05]];
-    for (const [x1, y1, x2, y2] of kreski) {
-      const a = naGlowie(s, kat, x1, y1), b = naGlowie(s, kat, x2, y2), c = naGlowie(s, kat, (x1 + x2) / 2 + 0.06, (y1 + y2) / 2 + 0.08);
-      g.moveTo(a.x, a.y); g.quadraticCurveTo(c.x, c.y, b.x, b.y);
-    }
-    g.stroke();
-  });
-}
+export { poGlowie } from './twarz';
 
 /**
  * Robotnik — kopacz z trzewi góry (Remake v2), malowany jak rycerz: mroczna ilustracja tuszem z twardym
@@ -516,7 +495,7 @@ function glowaKopacza(r: Rysunek, K: Kopacz, wKapturze: boolean): void {
   const sz = konczyna(s.bark, 0.024 * h, s.glowa, 0.022 * h);
   m.ksztalt(sz, tonBryly(m, skora, -0.32, s.bark, s.glowa, 0.05 * h, CIEN.skora));
   const sila = K.lampa ? K.mig * clamp(1.15 - Math.hypot(K.lampa.x - s.glowa.x, K.lampa.y - s.glowa.y) / (0.7 * h), 0, 1) : 0;
-  twarzMroczna(r, { skora, cien: wKapturze ? 0.72 : c.helm ? 0.85 : 0.12, sadza: true, blizna: los(c.id, 31) < 0.14, lampa: K.lampa, lampaSila: sila });
+  twarzMroczna(r, { skora, cien: wKapturze ? 0.72 : c.helm ? 0.85 : 0.12, sadza: true, blizna: los(c.id, 31) < 0.14, lampa: K.lampa, lampaSila: sila, ucho: !wKapturze && !c.helm });
   if (wKapturze) kapturKopacza(r, K, true);
   else {
     kapturKopacza(r, K, false);

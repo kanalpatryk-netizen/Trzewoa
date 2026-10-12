@@ -1,7 +1,7 @@
 import type { Sim } from '../../sim/sim';
 import type { Creature } from '../../sim/creatures';
 import type { Czynnosc } from '../figury';
-import { CIEN, clamp, cos, frac, kier, PI, sin, TAU, ton, tonC, type Pkt, type Rgb } from './matma';
+import { CIEN, cos, frac, kier, PI, sin, TAU, ton, tonC, type Pkt, type Rgb } from './matma';
 import { but, dlon, konczyna, podeszwa, wielokat, type Malarz } from './malarz';
 import type { Poza, Tryb } from './poza';
 import type { Szkielet, Stopa } from './szkielet';
@@ -218,44 +218,6 @@ export function miecz(m: Malarz, x: number, y: number, kat: number, h: number, s
   return czubek;
 }
 
-/**
- * Krzyż procesyjny pobożnego: smukłe drzewce do ziemi, na szczycie złoty krzyż o rozszerzonych
- * ramionach z tarczką pośrodku. `wahadlo` porusza zawieszonymi pod krzyżem frędzlami.
- */
-export function laska(m: Malarz, x: number, y: number, kat: number, h: number, st: Stroj, wahadlo: number, czas: number, doZiemi: boolean, id: number): Pkt {
-  const d = kier(kat);
-  const dol = doZiemi && d.y > 0.35 ? clamp(-y / d.y, 0.2 * h, 0.8 * h) : 0.45 * h;
-  const gora = 0.38 * h;
-  const ax = x + d.x * dol, ay = y + d.y * dol, bx = x - d.x * gora, by = y - d.y * gora;
-  m.kreska(ax, ay, bx, by, Math.max(1, h * 0.017), m.bryla({ x: ax, y: ay }, { x: bx, y: by }, h * 0.009, st.drewno));
-  const n = kier(kat - PI / 2);
-  const cx = bx - d.x * 0.075 * h, cy = by - d.y * 0.075 * h;
-  // krzyż o ramionach rozszerzonych na końcach
-  const ram = (ux: number, uy: number, L: number): number[] => {
-    const px = -uy, py = ux;
-    return [cx + px * 0.008 * h, cy + py * 0.008 * h, cx + ux * L + px * 0.016 * h, cy + uy * L + py * 0.016 * h, cx + ux * L - px * 0.016 * h, cy + uy * L - py * 0.016 * h, cx - px * 0.008 * h, cy - py * 0.008 * h];
-  };
-  const krzyz = new Path2D();
-  for (const [ux, uy, L] of [[-d.x, -d.y, 0.075 * h], [d.x, d.y, 0.07 * h], [n.x, n.y, 0.058 * h], [-n.x, -n.y, 0.058 * h]] as const) {
-    const pk = ram(ux, uy, L);
-    krzyz.moveTo(pk[0], pk[1]); for (let i = 2; i < pk.length; i += 2) krzyz.lineTo(pk[i], pk[i + 1]); krzyz.closePath();
-  }
-  krzyz.moveTo(cx + 0.017 * h, cy); krzyz.arc(cx, cy, 0.017 * h, 0, TAU);
-  m.ksztalt(krzyz, m.metal({ x: cx - n.x * 0.06 * h, y: cy - n.y * 0.06 * h }, { x: cx + n.x * 0.06 * h, y: cy + n.y * 0.06 * h }, 0.05 * h, st.zloto, false, CIEN.tkanina), (g) => {
-    if (m.prosto) return;
-    g.fillStyle = tonC(st.stula, 0.05, CIEN.tkanina);
-    g.beginPath(); g.arc(cx, cy, Math.max(0.6, 0.008 * h), 0, TAU); g.fill();
-    // dwa frędzle pod ramionami krzyża
-    g.strokeStyle = tonC(st.stula, -0.1, CIEN.tkanina); g.lineWidth = Math.max(0.6, h * 0.007);
-    for (const k of [1, -1]) {
-      const zx = cx + n.x * k * 0.05 * h + d.x * 0.01 * h, zy = cy + n.y * k * 0.05 * h + d.y * 0.01 * h;
-      const a = wahadlo * 0.7 + sin(czas * 0.004 + id + k) * 0.15;
-      g.beginPath(); g.moveTo(zx, zy); g.lineTo(zx + sin(a) * 0.035 * h, zy + cos(a) * 0.035 * h); g.stroke();
-    }
-  });
-  return { x: ax, y: ay };
-}
-
 /** Młotek (stawianie ołtarza). Zwraca obuch. */
 export function mlotek(m: Malarz, x: number, y: number, kat: number, h: number, st: Stroj): Pkt {
   const d = kier(kat), n = kier(kat - PI / 2);
@@ -419,27 +381,6 @@ export function krople(g: CanvasRenderingContext2D, x: number, y: number, h: num
     const tt = (t - 0.6) / 0.4;
     g.beginPath(); g.ellipse(x, y + h * 0.01 + tt * tt * h * 0.4, h * 0.005, h * 0.009, 0, 0, TAU); g.fill();
   }
-}
-
-/** Nimb jak na fresku: złota tarcza za głową, ryte promienie, przygaszony blask. */
-export function nimb(g: CanvasRenderingContext2D, x: number, y: number, r: number, sila: number, lod: number, zloto: Rgb): void {
-  if (sila <= 0.02) return;
-  poswiata(g, x, y, r * 1.8, [255, 214, 140], 0.16 * sila);
-  g.save();
-  g.globalAlpha = Math.min(1, sila);
-  const gr = g.createRadialGradient(x - r * 0.3, y - r * 0.3, r * 0.1, x, y, r);
-  gr.addColorStop(0, tonC(zloto, 0.25, CIEN.tkanina)); gr.addColorStop(0.8, tonC(zloto, -0.1, CIEN.tkanina)); gr.addColorStop(1, tonC(zloto, -0.45, CIEN.tkanina));
-  g.fillStyle = gr;
-  g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
-  g.strokeStyle = tonC(zloto, -0.6, CIEN.tkanina); g.lineWidth = Math.max(0.6, r * 0.06);
-  g.beginPath(); g.arc(x, y, r * 0.92, 0, TAU); g.stroke();
-  if (lod === 2) {
-    g.lineWidth = Math.max(0.4, r * 0.025);
-    g.beginPath();
-    for (let i = 0; i < 16; i++) { const a = (i / 16) * TAU; g.moveTo(x + Math.cos(a) * r * 0.55, y + Math.sin(a) * r * 0.55); g.lineTo(x + Math.cos(a) * r * 0.86, y + Math.sin(a) * r * 0.86); }
-    g.stroke();
-  }
-  g.restore();
 }
 
 /** Muchy krążą nad zatrutym. */

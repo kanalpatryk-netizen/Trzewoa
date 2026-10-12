@@ -5,7 +5,7 @@ import type { Rysunek } from './wspolne';
 import { KREW_SUCHA, KREW_SWIEZA, rgba, swiatlocien, SW } from './tusz';
 
 /**
- * Mroczna twarz z profilu (Remake v2) — dla rycerza w otwartym hełmie i dla kopacza w kapturze:
+ * Mroczna twarz z profilu (Remake v2) — dla rycerza w otwartym hełmie, kopacza w kapturze i pobożnego:
  * wymizerowana, z zapadniętym okiem w cieniu ronda albo kaptura, kilkudniowym zarostem; do wyboru blizna
  * ze szwami, strużka krwi spod hełmu, smugi sadzy i ciepłe światło lampki od dołu na policzku i żuchwie.
  * Szaleństwo z głębokości gasi oczy (pusty oczodół z iskrą), strach unosi brwi.
@@ -23,6 +23,14 @@ export interface OpcjeTwarzy {
   /** skąd świeci lampka (ciepło od dołu) i jak mocno 0..1 */
   lampa?: Pkt | null;
   lampaSila?: number;
+  /** krzyż z popiołu na czole (pobożny) */
+  popiol?: boolean;
+  /** krwawe łzy szaleńca 0..1 */
+  lzy?: number;
+  /** zmarszczki starca: na czole i w kąciku oka */
+  zmarszczki?: boolean;
+  /** ucho (gdy nie zakrywa go kaptur, czepiec ani hełm) */
+  ucho?: boolean;
 }
 
 export function twarzMroczna(r: Rysunek, o: OpcjeTwarzy): void {
@@ -46,10 +54,12 @@ export function twarzMroczna(r: Rysunek, o: OpcjeTwarzy): void {
         cg.addColorStop(0, `rgba(6,4,4,${0.92 * o.cien})`); cg.addColorStop(1, 'rgba(6,4,4,0)');
         g.fillStyle = cg; g.fill(tw);
       }
+      if (o.ucho) { const u = P(-0.2, 0.1); g.fillStyle = tonC(skora, -0.26, CIEN.skora); g.beginPath(); g.ellipse(u.x, u.y, rg * 0.14, rg * 0.21, kat - 0.2, 0, TAU); g.fill(); }
       g.fillStyle = puste >= 0.5 ? 'rgba(10,4,4,0.98)' : 'rgba(22,12,10,0.95)';
       g.beginPath(); g.ellipse(oko.x, oko.y, rg * 0.15, rg * 0.07 * clamp(p.oczy, 0.3, 1), kat, 0, TAU); g.fill();
       linia(g, [P(0.34, -0.3), P(0.6, -0.33), P(0.86, -0.24)], 'rgba(30,18,14,0.9)', Math.max(0.6, rg * 0.085));
       if (o.krew) linia(g, [P(0.5, -0.42), P(0.44, -0.1), P(0.5, 0.3), P(0.46, 0.62)], rgba(KREW_SWIEZA, 0.85), Math.max(0.6, rg * 0.07));
+      if (o.lzy) linia(g, [P(0.56, -0.02), P(0.6, 0.22), P(0.56, 0.46)], rgba(KREW_SWIEZA, 0.85 * o.lzy), Math.max(0.6, rg * 0.06));
       if (st.broda) brodaMroczna(g, s, kat, st.broda, mieszaj(st.wlosy, [20, 16, 14], 0.3), m.lod, id);
       return;
     }
@@ -60,6 +70,15 @@ export function twarzMroczna(r: Rysunek, o: OpcjeTwarzy): void {
       const gr = g.createRadialGradient(lp.x, lp.y, 0, lp.x, lp.y, Math.hypot(lp.x - s.glowa.x, lp.y - s.glowa.y) + rr * 0.6);
       gr.addColorStop(0, `rgba(255,170,96,${0.5 * o.lampaSila!})`); gr.addColorStop(0.75, `rgba(255,150,80,${0.22 * o.lampaSila!})`); gr.addColorStop(1, 'rgba(255,150,80,0)');
       g.fillStyle = gr; g.fill(tw);
+    }
+    // ucho: ciemniejsze od policzka, z zawiniętym brzegiem i cieniem w muszli
+    if (o.ucho) {
+      const u = P(-0.2, 0.1);
+      g.fillStyle = tonC(skora, -0.2, CIEN.skora); g.beginPath(); g.ellipse(u.x, u.y, rg * 0.15, rg * 0.22, kat - 0.2, 0, TAU); g.fill();
+      g.strokeStyle = 'rgba(40,20,16,0.6)'; g.lineWidth = Math.max(0.5, rg * 0.04);
+      g.beginPath(); g.ellipse(u.x + rg * 0.015, u.y, rg * 0.15, rg * 0.22, kat - 0.2, -1.9, 1.5); g.stroke();
+      plamka(g, u.x + rg * 0.03, u.y + rg * 0.02, rg * 0.08, rg * 0.12, kat - 0.2, [40, 20, 16], 0.5);
+      linia(g, [P(-0.1, -0.06), P(-0.02, 0.1), P(-0.1, 0.26)], 'rgba(30,16,14,0.3)', Math.max(0.4, rg * 0.035));
     }
     // zapadnięty oczodół w cieniu łuku brwiowego, światło na kości policzkowej, zapadnięty policzek pod nią
     plamka(g, oko.x - rg * 0.03, oko.y - rg * 0.02, rg * 0.32, rg * 0.21, kat - 0.1, [28, 14, 14], 0.55 + 0.2 * puste);
@@ -90,6 +109,25 @@ export function twarzMroczna(r: Rysunek, o: OpcjeTwarzy): void {
     // brew: nisko i ściągnięta; strach unosi ją nad nosem
     const w = p.wysilek;
     linia(g, [P(0.34, -0.3 + w * 0.04 - strach * 0.04), P(0.6, -0.33 + w * 0.08 - strach * 0.1), P(0.86, -0.24 + w * 0.08 - strach * 0.14)], 'rgba(30,18,14,0.92)', Math.max(0.7, rg * 0.085));
+    // zmarszczki starca: bruzdy na czole i kurze łapki w kąciku oka
+    if (o.zmarszczki) {
+      for (let i = 0; i < 2; i++) linia(g, [P(0.5, -0.48 - i * 0.1), P(0.68, -0.52 - i * 0.1), P(0.86, -0.46 - i * 0.1)], 'rgba(40,24,20,0.35)', Math.max(0.4, rg * 0.03));
+      for (let i = 0; i < 3; i++) linia(g, [P(0.42, -0.1 + (i - 1) * 0.04), P(0.3, -0.12 + (i - 1) * 0.1)], 'rgba(40,24,20,0.3)', Math.max(0.35, rg * 0.022));
+    }
+    // krzyż z popiołu na czole, rozmazany kciukiem
+    if (o.popiol) {
+      const k = P(0.74, -0.42);
+      plamka(g, k.x, k.y, rg * 0.16, rg * 0.12, kat, [44, 40, 38], 0.3);
+      const a = P(0.73, -0.55), b = P(0.75, -0.3), cL = P(0.65, -0.44), cP = P(0.84, -0.42);
+      g.strokeStyle = 'rgba(40,36,34,0.62)'; g.lineWidth = Math.max(0.6, rg * 0.065); g.lineCap = 'round';
+      g.beginPath(); g.moveTo(a.x, a.y); g.lineTo(b.x, b.y); g.moveTo(cL.x, cL.y); g.lineTo(cP.x, cP.y); g.stroke();
+    }
+    // krwawe łzy szaleńca: spod dolnej powieki po policzku
+    if (o.lzy) {
+      const l0 = P(0.56, -0.02), l1 = P(0.6, 0.22), l2 = P(0.56, 0.46);
+      linia(g, [l0, l1, l2], rgba(KREW_SWIEZA, 0.88 * o.lzy), Math.max(0.6, rg * 0.055));
+      g.fillStyle = rgba(KREW_SWIEZA, 0.9 * o.lzy); g.beginPath(); g.arc(l2.x, l2.y, Math.max(0.5, rg * 0.04), 0, TAU); g.fill();
+    }
     // bruzda od nosa ku kącikowi ust i usta zaciśnięte w kreskę (albo otwarte z wysiłku)
     linia(g, [P(0.86, 0.3), P(0.78, 0.45), P(0.74, 0.58)], 'rgba(40,22,18,0.45)', Math.max(0.4, rg * 0.035));
     if (p.usta > 0.15) {
@@ -215,34 +253,6 @@ export function linia(g: CanvasRenderingContext2D, pk: Pkt[], styl: string, szer
     g.lineTo(pk[pk.length - 1].x, pk[pk.length - 1].y);
   }
   g.stroke();
-}
-
-/** Broda: 1 — wąsy, 2 — pełna broda, 3 — krótka broda przy żuchwie. Usta zostają widoczne. */
-export function broda(g: CanvasRenderingContext2D, s: Szkielet, kat: number, typ: number, wlosy: readonly [number, number, number], lod: number): void {
-  g.fillStyle = tonC(wlosy, 0, CIEN.tkanina, 0.95);
-  if (typ === 1) {
-    g.fill(poGlowie(s, kat, [[0.66, 0.5], [0.98, 0.44], [1.03, 0.56], [0.92, 0.62], [0.8, 0.57], [0.68, 0.64], [0.6, 0.57]]));
-    return;
-  }
-  const pk: [number, number][] = typ === 2
-    ? [[-0.12, 0.05], [0.02, 0.42], [0.42, 0.6], [0.7, 0.55], [0.96, 0.46], [1.03, 0.6], [0.98, 0.92], [0.78, 1.28], [0.5, 1.22], [0.2, 0.98], [-0.06, 0.62]]
-    : [[-0.08, 0.2], [0.1, 0.5], [0.5, 0.66], [0.94, 0.68], [0.92, 0.88], [0.6, 1.02], [0.24, 0.9], [0.0, 0.62]];
-  g.fill(poGlowie(s, kat, pk));
-  if (lod === 2) {
-    // pasma brody jak na ikonie: równoległe pociągnięcia jaśniejszym tonem
-    g.strokeStyle = tonC(wlosy, 0.35, CIEN.tkanina, 0.5); g.lineWidth = Math.max(0.4, s.rg * 0.04);
-    g.beginPath();
-    const n = typ === 2 ? 4 : 3, dl = typ === 2 ? 0.5 : 0.25;
-    for (let i = 0; i < n; i++) {
-      const a = naGlowie(s, kat, 0.25 + i * 0.17, 0.66), b = naGlowie(s, kat, 0.22 + i * 0.16, 0.66 + dl);
-      g.moveTo(a.x, a.y); g.lineTo(b.x, b.y);
-    }
-    g.stroke();
-  }
-  // usta w brodzie
-  const u1 = naGlowie(s, kat, 0.74, 0.64), u2 = naGlowie(s, kat, 0.95, 0.6);
-  g.strokeStyle = 'rgba(60,18,12,0.9)'; g.lineWidth = Math.max(0.5, s.rg * 0.06);
-  g.beginPath(); g.moveTo(u1.x, u1.y); g.lineTo(u2.x, u2.y); g.stroke();
 }
 
 /** Ścieżka w układzie głowy (punkty w promieniach głowy). */
