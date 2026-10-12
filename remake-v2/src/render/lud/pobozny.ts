@@ -1,6 +1,6 @@
 import { CIEN, clamp, cos, lerp, mieszaj, PI, sin, TAU, tonC, type Pkt } from './matma';
 import { glowaProfil, konczyna, naGlowie, nos, twarz } from './malarz';
-import { grzyb, krople, laska, mlotek, muchy, nimb, para, poswiata, swieca, type Rysunek } from './wspolne';
+import { kesChleba, krople, laska, mlotek, muchy, nimb, para, poswiata, type Rysunek, swieca } from './wspolne';
 import { broda, wlosy } from './robotnik';
 import { uderzenie } from './pamiec';
 import type { Szkielet } from './szkielet';
@@ -299,7 +299,7 @@ export function rysujPoboznego(r: Rysunek): void {
       if (!m.prosto) { g.strokeStyle = 'rgba(70,36,24,0.7)'; g.lineWidth = Math.max(0.4, h * 0.004); g.beginPath(); g.moveTo(x + 0.002 * h, y + 0.008 * h); g.lineTo(x + 0.012 * h, y - 0.046 * h); g.stroke(); }
     });
   }
-  if (tryb.grzyb) m.szczegol((g) => grzyb(g, s.dlonA.x + 0.012 * h, s.dlonA.y - 0.012 * h, h, m.lod));
+  if (tryb.grzyb) m.szczegol((g) => kesChleba(g, s.dlonA.x + 0.012 * h, s.dlonA.y - 0.012 * h, h, m.lod));
   if (!m.prosto && st.zatruty) m.szczegol((g) => muchy(g, s.glowa.x, s.glowa.y, h, czas, c.id));
 }
 

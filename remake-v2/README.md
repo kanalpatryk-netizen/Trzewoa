@@ -21,6 +21,10 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu).
   zimne kontrświatło): kolczuga z ciemnej stali, wapenrok do kolan w plisach z krzyżem patée, podarty i we krwi, płaszcz
   w strzępach, hełm garnczkowy („głowa cukru” albo beczkowy) albo otwarty z blizną na twarzy, tarcza w kształcie żelazka
   ze strzałą i krwawym śladem dłoni, miecz we krwi; zmęczona poza — sztych oparty o ziemię, tarcza zwisa przy boku.
+- **Robotnik to kopacz w kapturze**, malowany tuszem jak rycerz i oświetlony własną lampką (ciepły blask drga z płomieniem):
+  wełniany kaptur z pelerynką (na głowie albo zsunięty), szorstka łatana tunika z podartym rąbkiem, skórzany fartuch,
+  owijki na goleniach i przegubach, wychudzona twarz w sadzy, dolabra na ramieniu, gliniana lampka na łańcuszkach,
+  worek z bochnem na plecach. Lud je teraz chleb z wiadra zamiast grzyba.
 - **Zawał od góry** — gdy przez 20 s nikogo z ludu nie ma wysoko, góra nad nim zawala się (razem z gniazdami
   rycerzy, które tam spały). Kamera nie wjeżdża ponad gruz, mapa się skraca, a lud nie ucieknie w górę — musi walczyć.
 - **Wiadro z jedzeniem zamiast grzyba i spiżarni** — co 40 s z góry, na linie, zjeżdża wiadro pełne jedzenia

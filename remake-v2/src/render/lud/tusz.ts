@@ -299,7 +299,7 @@ export function zaciek(g: CanvasRenderingContext2D, x: number, y: number, dl: nu
  * i głęboki cień przy brzegu, tusz. `gr` — grubość bryły (px), `a`→`b` — oś (cień biegnie wzdłuż niej).
  */
 export function kolcze(m: Malarz, g: CanvasRenderingContext2D, ksztalt: Path2D, h: number, gr: number, dalej: boolean, a?: Pkt, b?: Pkt, czesci?: readonly Path2D[]): void {
-  if (m.lod < 2) return;
+  if (!m.bogato) { if (m.lod === 2) kreskaTuszu(g, ksztalt, h, dalej ? 0.6 : 0.8); return; }
   const k = a && b ? swiatloOsi(a, b) : SWB;
   const wz = kolczuga(g, h);
   if (wz) { g.globalAlpha = (dalej ? 0.1 : 0.16) * wz[1]; g.fillStyle = wz[0]; g.fill(ksztalt); g.globalAlpha = 1; }
@@ -310,12 +310,12 @@ export function kolcze(m: Malarz, g: CanvasRenderingContext2D, ksztalt: Path2D, 
 }
 
 /**
- * Ton bryły: z bliska płaski (światłocień robią sierpy), ze średniej odległości gradient w poprzek osi a→b —
- * bez obcięć, które przy małych postaciach kosztują najwięcej.
+ * Ton bryły: z bliska płaski (światłocień robią sierpy), z daleka i ze średniej odległości gradient w poprzek
+ * osi a→b — bez obcięć, które przy małych postaciach kosztują najwięcej.
  */
 export function tonBryly(m: Malarz, kol: Rgb, baza: number, a: Pkt, b: Pkt, gr: number, cien: Rgb = CIEN.metal): string | CanvasGradient {
   const plaski = tonC(kol, baza, cien);
-  if (m.lod !== 1) return plaski;
+  if (m.prosto || m.bogato) return plaski;
   const k = swiatloOsi(a, b), r = gr / 2;
   const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
   const gr2 = m.g.createLinearGradient(mx + k.x * r, my + k.y * r, mx - k.x * r, my - k.y * r);
@@ -408,3 +408,26 @@ export function konczynaZgieta(a: Pkt, ra: number, b: Pkt, rb: number, c: Pkt, r
   p.closePath();
   return p;
 }
+
+// ------------------------------------------------------------------ płótno
+
+/** Dół jednej plisy od bieżącego punktu (A) do B: zaokrąglony łuk, czasem wydarty klin albo zwisający strzęp. */
+export function plisa(p: Path2D, A: Pkt, B: Pkt, h: number, id: number, szuf: number, skala = 1): void {
+  const z = los(id, szuf), dx = B.x - A.x, my = Math.max(A.y, B.y);
+  const opad = (0.011 + 0.012 * los(id, szuf + 1)) * h * skala;
+  if (z < 0.22) {
+    p.quadraticCurveTo(A.x + dx * 0.16, my + opad, A.x + dx * 0.34, my + opad * 0.9);
+    p.lineTo(A.x + dx * 0.48, my - (0.012 + 0.024 * los(id, szuf + 2)) * h);
+    p.lineTo(A.x + dx * 0.6, my + opad * 0.8);
+    p.quadraticCurveTo(A.x + dx * 0.86, my + opad * 1.1, B.x, B.y);
+  } else if (z > 0.8) {
+    const dl = (0.022 + 0.034 * los(id, szuf + 3)) * h;
+    p.quadraticCurveTo(A.x + dx * 0.12, my + opad, A.x + dx * 0.32, my + opad * 1.05);
+    p.lineTo(A.x + dx * 0.42, my + opad + dl);
+    p.lineTo(A.x + dx * 0.56, my + opad + dl * 0.72);
+    p.lineTo(A.x + dx * 0.64, my + opad * 1.05);
+    p.quadraticCurveTo(A.x + dx * 0.9, my + opad, B.x, B.y);
+  } else p.quadraticCurveTo(A.x + dx * 0.5, my + opad * 2, B.x, B.y);
+}
+
+export const bez = (p: Path2D, a: Pkt, b: Pkt, e: Pkt): void => p.bezierCurveTo(a.x, a.y, b.x, b.y, e.x, e.y);

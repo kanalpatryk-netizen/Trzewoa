@@ -85,9 +85,16 @@ export class Malarz {
   /** rola może go zmienić (rycerz: przygaszona aura, kontur tuszem zamiast sinopii) */
   obrys: Obrys = { aura: 1, kontur: 'rgba(66,28,18,0.96)' };
 
+  /** wysokość postaci w pikselach ekranu */
+  readonly px: number;
+  /** z bliska (lod 2 i ponad 150 px): najdroższe szczegóły — kontrświatło, cienie rzucane, faktury */
+  readonly bogato: boolean;
+
   constructor(public g: CanvasRenderingContext2D, public h: number, pikseli: number, maksLod: 0 | 1 | 2 = 2) {
     this.lod = Math.min(maksLod, pikseli < 22 ? 0 : pikseli < 70 ? 1 : 2) as 0 | 1 | 2;
     this.prosto = this.lod === 0;
+    this.px = pikseli;
+    this.bogato = this.lod === 2 && pikseli >= 150;
   }
 
   /** Bryła walcowa po freskowemu: pas światła, ton własny, pas cienia — odcięte twardo. */

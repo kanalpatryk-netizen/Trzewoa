@@ -1,11 +1,11 @@
 import { CIEN, clamp, cos, katOdc, kier, lerp, los, PI, sin, TAU, tonC, type Pkt, type Rgb } from './matma';
 import { but, dlon, podeszwa } from './malarz';
-import { grzyb, tulowSciezka, type Rysunek } from './wspolne';
+import { kesChleba, tulowSciezka, type Rysunek } from './wspolne';
 import { sladBroni, uderzenie } from './pamiec';
 import type { Stopa } from './szkielet';
 import { glowaKrzyzowca } from './helm';
 import { mieczKrzyzowca, sciezkaTarczy, strzala, tarcza } from './uzbrojenie';
-import { bryla, cienieRzucane, kolcze, konczynaZgieta, KREW, KREW_SUCHA, przesiak, rgba, rozbryzg, swiatlocien, swiatloOsi, SWB, tonBryly, zaciek, ziarno } from './tusz';
+import { bez, bryla, cienieRzucane, kolcze, konczynaZgieta, KREW, KREW_SUCHA, plisa, przesiak, rgba, rozbryzg, swiatlocien, swiatloOsi, SWB, tonBryly, warstwaTuszu, zaciek, ziarno } from './tusz';
 
 /**
  * Rycerz — krzyżowiec po bitwie (Remake v2), malowany jak mroczna ilustracja tuszem: twarde cienie
@@ -57,7 +57,7 @@ export function rysujRycerza(r: Rysunek): void {
   // kolczuga na tułowiu — widać ją na barkach, pod pachą i w rozcięciu wapenroku
   const tul = tulowSciezka(s, h, 0.08, 0.066, 1.1, 1.0);
   m.ksztalt(tul, tonBryly(m, st.kolczuga, -0.46, s.biodro, s.bark, 0.15 * h), (g) => {
-    if (m.lod === 2) cienieRzucane(g, tul, [[cienie.reka, 0.022 * h, 0.4], [cienie.glowa, 0.03 * h, 0.4]]);
+    if (m.bogato) cienieRzucane(g, tul, [[cienie.reka, 0.022 * h, 0.4], [cienie.glowa, 0.03 * h, 0.4]]);
     kolcze(m, g, tul, h, 0.15 * h, false, s.biodro, s.bark);
   });
   wapenrok(r, T, cienie);
@@ -91,10 +91,10 @@ export function rysujRycerza(r: Rysunek): void {
     const fb = new Path2D(); fb.arc(f.x, f.y, rr, 0, TAU);
     fb.moveTo(f.x + rr * 0.45, f.y); fb.arc(f.x, f.y, rr * 0.45, 0, TAU, true);
     m.ksztalt(fb, tonC([92, 90, 90], -0.1, CIEN.metal), (g) => {
-      if (m.lod === 2) swiatlocien(g, fb, [[rr * 0.5, 'rgba(4,4,8,0.6)'], [-rr * 0.25, 'rgba(255,248,232,0.5)']]);
+      if (m.bogato) swiatlocien(g, fb, [[rr * 0.5, 'rgba(4,4,8,0.6)'], [-rr * 0.25, 'rgba(255,248,232,0.5)']]);
     });
   }
-  if (tryb.grzyb) m.szczegol((g) => grzyb(g, s.dlonA.x + 0.012 * h, s.dlonA.y - 0.012 * h, h, m.lod));
+  if (tryb.grzyb) m.szczegol((g) => kesChleba(g, s.dlonA.x + 0.012 * h, s.dlonA.y - 0.012 * h, h, m.lod));
 }
 
 // ------------------------------------------------------------------ płaszcz
@@ -169,7 +169,8 @@ function plaszcz(r: Rysunek, T: Tulow): void {
     const bl = g.createLinearGradient(0, lerp(A.y, H.y, 0.55), 0, H.y + 0.08 * h);
     bl.addColorStop(0, 'rgba(46,34,24,0)'); bl.addColorStop(1, 'rgba(46,34,24,0.7)');
     g.fillStyle = bl; g.fill(pl);
-    if (m.lod === 2) {
+    if (m.lod === 2 && !m.bogato) swiatlocien(g, pl, [[0.035 * h, 'rgba(2,1,3,0.5)'], warstwaTuszu(h, 0.9)], SW_PLASZCZ, undefined, true);
+    if (m.bogato) {
       const z = ziarno(g);
       if (z) { g.globalCompositeOperation = 'soft-light'; g.fillStyle = z; g.fill(pl); g.globalCompositeOperation = 'source-over'; }
       // dziury po ostrzach
@@ -202,7 +203,7 @@ function noga(r: Rysunek, kol: Pkt, stp: Stopa, dalej: boolean): void {
   const nc = { x: kol.x + przodX * rk * 0.45, y: kol.y + przodY * rk * 0.45 };
   const nk = new Path2D(); nk.ellipse(nc.x, nc.y, rk * 0.62, rk * 0.92, -kn, 0, TAU);
   m.ksztalt(nk, tonC(st.helm, dalej ? -0.66 : -0.44, CIEN.metal), (g) => {
-    if (m.lod < 2) return;
+    if (!m.bogato) return;
     bryla(g, nk, h, [[rk * 0.5, 'rgba(2,2,6,0.55)'], [-rk * 0.16, dalej ? 'rgba(255,248,232,0.06)' : 'rgba(255,248,232,0.26)']], swiatloOsi(kol, stp.kostka), dalej ? 0.6 : 0.9, 0, undefined, m.lod < 2);
   });
   // but: ciemna skóra, rzemień w kostce, ostroga
@@ -210,7 +211,7 @@ function noga(r: Rysunek, kol: Pkt, stp: Stopa, dalej: boolean): void {
   m.ksztalt(b, tonC([44, 34, 28], dalej ? -0.55 : -0.3, CIEN.tkanina), (g) => {
     if (m.prosto) return;
     podeszwa(g, stp, h, 'rgba(8,6,6,0.95)');
-    if (m.lod === 2) {
+    if (m.bogato) {
       g.fillStyle = 'rgba(52,40,28,0.5)'; g.beginPath(); g.ellipse(stp.palce.x - 0.014 * h, stp.palce.y - 0.007 * h, 0.022 * h, 0.009 * h, -stp.kat, 0, TAU); g.fill();
       const ks = stp.kostka;
       g.strokeStyle = 'rgba(20,14,10,0.9)'; g.lineWidth = Math.max(0.6, h * 0.006); g.lineCap = 'butt';
@@ -219,7 +220,7 @@ function noga(r: Rysunek, kol: Pkt, stp: Stopa, dalej: boolean): void {
       g.strokeStyle = tonC(st.helm, dalej ? -0.4 : -0.05, CIEN.metal); g.lineWidth = Math.max(0.5, h * 0.0045); g.lineCap = 'round';
       g.beginPath(); g.moveTo(pc.x + 0.004 * h, pc.y - 0.022 * h); g.lineTo(pc.x - 0.022 * h, pc.y - 0.03 * h); g.stroke();
     }
-    if (m.lod === 2) bryla(g, b, h, [[0.016 * h, 'rgba(4,2,2,0.5)'], [-0.004 * h, dalej ? 'rgba(255,240,220,0.05)' : 'rgba(255,240,220,0.2)']], SWB, dalej ? 0.7 : 1);
+    if (m.bogato) bryla(g, b, h, [[0.016 * h, 'rgba(4,2,2,0.5)'], [-0.004 * h, dalej ? 'rgba(255,240,220,0.05)' : 'rgba(255,240,220,0.2)']], SWB, dalej ? 0.7 : 1);
   });
 }
 
@@ -231,7 +232,7 @@ function reka(r: Rysunek, bark: Pkt, lok: Pkt, dl: Pkt, przed: number, dalej: bo
   m.ksztalt(cala, tonBryly(m, st.kolczuga, dalej ? -0.68 : -0.46, bark, dl, r1 * 1.8), (g) => {
     kolcze(m, g, cala, h, r1 * 1.8, dalej, bark, dl);
     const ux = dl.x - lok.x, uy = dl.y - lok.y, LL = Math.hypot(ux, uy) || 1, nx = -uy / LL, ny = ux / LL;
-    if (m.lod === 2) {
+    if (m.bogato) {
       // kolczuga marszczy się w zgięciu łokcia
       g.save(); g.clip(cala);
       g.strokeStyle = 'rgba(2,2,6,0.5)'; g.lineWidth = Math.max(0.5, h * 0.0026); g.lineCap = 'round';
@@ -261,33 +262,12 @@ function reka(r: Rysunek, bark: Pkt, lok: Pkt, dl: Pkt, przed: number, dalej: bo
   });
   const d = dlon(dl, przed, 0.027 * h, piesc);
   m.ksztalt(d, tonC([50, 38, 30], dalej ? -0.5 : -0.2, CIEN.tkanina), (g) => {
-    if (m.lod < 2) return;
+    if (!m.bogato) return;
     swiatlocien(g, d, [[0.016 * h, 'rgba(6,4,4,0.5)'], [-0.004 * h, 'rgba(255,240,220,0.14)']], SWB);
   });
 }
 
 // ------------------------------------------------------------------ wapenrok
-
-/** Dół jednej plisy od bieżącego punktu (A) do B: zaokrąglony łuk, czasem wydarty klin albo zwisający strzęp. */
-function plisa(p: Path2D, A: Pkt, B: Pkt, h: number, id: number, szuf: number): void {
-  const z = los(id, szuf), dx = B.x - A.x, my = Math.max(A.y, B.y);
-  const opad = (0.011 + 0.012 * los(id, szuf + 1)) * h;
-  if (z < 0.22) {
-    p.quadraticCurveTo(A.x + dx * 0.16, my + opad, A.x + dx * 0.34, my + opad * 0.9);
-    p.lineTo(A.x + dx * 0.48, my - (0.012 + 0.024 * los(id, szuf + 2)) * h);
-    p.lineTo(A.x + dx * 0.6, my + opad * 0.8);
-    p.quadraticCurveTo(A.x + dx * 0.86, my + opad * 1.1, B.x, B.y);
-  } else if (z > 0.8) {
-    const dl = (0.022 + 0.034 * los(id, szuf + 3)) * h;
-    p.quadraticCurveTo(A.x + dx * 0.12, my + opad, A.x + dx * 0.32, my + opad * 1.05);
-    p.lineTo(A.x + dx * 0.42, my + opad + dl);
-    p.lineTo(A.x + dx * 0.56, my + opad + dl * 0.72);
-    p.lineTo(A.x + dx * 0.64, my + opad * 1.05);
-    p.quadraticCurveTo(A.x + dx * 0.9, my + opad, B.x, B.y);
-  } else p.quadraticCurveTo(A.x + dx * 0.5, my + opad * 2, B.x, B.y);
-}
-
-const bez = (p: Path2D, a: Pkt, b: Pkt, e: Pkt): void => p.bezierCurveTo(a.x, a.y, b.x, b.y, e.x, e.y);
 
 /** Krzyż patée (ramiona rozszerzone ku końcom) w układzie tułowia, w profilu nieco ściśnięty. */
 function krzyzPatee(x: number, y: number, kat: number, h: number, skala = 1): Path2D {
@@ -372,7 +352,7 @@ function wapenrok(r: Rysunek, T: Tulow, cienie: Cienie): void {
     if (m.prosto) { g.fillStyle = tonC(st.krzyz, 0, CIEN.tkanina); g.fill(krzyz); return; }
     g.save();
     g.clip(w);
-    if (m.lod === 2) {
+    if (m.bogato) {
       const z = ziarno(g);
       if (z) { g.globalCompositeOperation = 'soft-light'; g.fillStyle = z; g.fill(w); g.globalCompositeOperation = 'source-over'; }
     }
@@ -383,7 +363,7 @@ function wapenrok(r: Rysunek, T: Tulow, cienie: Cienie): void {
       g.fillStyle = `rgba(255,40,16,${0.12 + 0.06 * sin(czas * 0.004 + id)})`; g.fill(krzyz);
       g.restore();
     }
-    if (m.lod === 2) {
+    if (m.bogato) {
       g.fillStyle = tonC(st.wapenrok, -0.08, CIEN.tkanina, 0.55);
       for (let i = 0; i < 9; i++) {
         const q = T(0.36 + 0.55 * los(id, 340 + i), -0.01 + 0.08 * los(id, 350 + i));
@@ -400,7 +380,7 @@ function wapenrok(r: Rysunek, T: Tulow, cienie: Cienie): void {
       cien.lineTo(d.x + sz, d.y + 0.008 * h); cien.quadraticCurveTo(kx + sz * 0.45, ky, gp.x + 0.003 * h, gp.y);
       cien.closePath();
       g.fillStyle = 'rgba(22,12,10,0.36)'; g.fill(cien);
-      if (m.lod < 2) continue;
+      if (!m.bogato) continue;
       const bl = new Path2D();
       bl.moveTo(gp.x - 0.002 * h, gp.y); bl.quadraticCurveTo(kx - 0.004 * h, ky, d.x - 0.004 * h, d.y + 0.006 * h);
       bl.lineTo(d.x - sz * 0.55, d.y); bl.quadraticCurveTo(kx - sz * 0.35, ky, gp.x - 0.004 * h, gp.y);
@@ -439,7 +419,7 @@ function wapenrok(r: Rysunek, T: Tulow, cienie: Cienie): void {
       przesiak(g, ot.x, ot.y, (0.008 + 0.008 * los(id, 377 + i)) * h, id + 5 + i, 0.6, m.lod);
     }
     // cięcie: wąska szpara z kolczugą, nitki na brzegach, krew na dolnej wardze
-    if (m.lod === 2) {
+    if (m.bogato) {
       const c0 = T(0.56 + 0.08 * los(id, 370), -0.07), c1 = T(0.44 + 0.06 * los(id, 371), -0.01);
       const mx = (c0.x + c1.x) / 2, my = (c0.y + c1.y) / 2;
       const dx = c1.x - c0.x, dy = c1.y - c0.y, dl = Math.hypot(dx, dy) || 1, nx = -dy / dl, ny = dx / dl, sz = 0.01 * h;
@@ -460,16 +440,16 @@ function wapenrok(r: Rysunek, T: Tulow, cienie: Cienie): void {
       g.strokeStyle = 'rgba(12,8,8,0.8)'; g.lineWidth = Math.max(0.4, h * 0.0018); g.stroke(rz);
     }
     // cienie rzucane: ręka i głowa na pierś, tarcza na spódnicę, pas na płótno pod nim
-    if (m.lod === 2) {
+    if (m.bogato) {
       const pc = new Path2D();
       const a0 = T(PAS + 0.03, -0.08), a1 = T(PAS + 0.022, 0.08), b1 = T(PAS - 0.034, 0.078), b0 = T(PAS - 0.028, -0.08);
       pc.moveTo(a0.x, a0.y); pc.lineTo(a1.x, a1.y); pc.lineTo(b1.x, b1.y); pc.lineTo(b0.x, b0.y); pc.closePath();
       cienieRzucane(g, w, [[cienie.reka, 0.026 * h, 0.34], [cienie.glowa, 0.03 * h, 0.36], [cienie.tarcza, 0.04 * h, 0.4], [pc, 0.012 * h, 0.3, { x: 0, y: -1 }]], true);
     }
-    const wl: [number, string][] = m.lod === 2
+    const wl: [number, string][] = m.bogato
       ? [[0.05 * h, 'rgba(20,10,10,0.44)'], [0.016 * h, 'rgba(16,8,8,0.44)'], [-0.012 * h, 'rgba(255,240,210,0.14)']]
       : [[0.05 * h, 'rgba(20,10,10,0.55)'], [-0.012 * h, 'rgba(255,240,210,0.14)']];
-    bryla(g, w, h, wl, SWB, 1, m.lod === 2 ? 0.8 : 0, undefined, false, true);
+    bryla(g, w, h, wl, SWB, 1, m.bogato ? 0.8 : 0, undefined, false, true);
     g.restore();
   });
 }
@@ -485,7 +465,7 @@ function pas(r: Rysunek, T: Tulow, wPochwie: boolean): void {
   pa.lineTo(b1.x, b1.y); pa.quadraticCurveTo(T(PAS - 0.012, 0).x, T(PAS - 0.012, 0).y, b0.x, b0.y); pa.closePath();
   m.ksztalt(pa, tonC(st.skorzane, -0.25, CIEN.tkanina), (g) => {
     if (m.prosto) return;
-    if (m.lod === 2) bryla(g, pa, h, [[0.012 * h, 'rgba(6,4,4,0.5)'], [-0.003 * h, 'rgba(255,236,210,0.2)']], SW_PLASZCZ, 0.9);
+    if (m.bogato) bryla(g, pa, h, [[0.012 * h, 'rgba(6,4,4,0.5)'], [-0.003 * h, 'rgba(255,236,210,0.2)']], SW_PLASZCZ, 0.9);
     // sprzączka i koniec pasa
     const sq = T(PAS + 0.004, 0.058);
     const kon = new Path2D();
@@ -494,7 +474,7 @@ function pas(r: Rysunek, T: Tulow, wPochwie: boolean): void {
     g.strokeStyle = 'rgba(10,6,6,0.8)'; g.lineWidth = Math.max(0.4, h * 0.0018); g.stroke(kon);
     g.strokeStyle = 'rgba(30,30,34,0.95)'; g.lineWidth = Math.max(0.8, h * 0.0055);
     g.strokeRect(sq.x - 0.011 * h, sq.y - 0.016 * h, 0.022 * h, 0.026 * h);
-    if (m.lod === 2) { g.strokeStyle = 'rgba(255,248,232,0.4)'; g.lineWidth = Math.max(0.4, h * 0.002); g.beginPath(); g.moveTo(sq.x - 0.011 * h, sq.y - 0.016 * h); g.lineTo(sq.x + 0.011 * h, sq.y - 0.016 * h); g.stroke(); }
+    if (m.bogato) { g.strokeStyle = 'rgba(255,248,232,0.4)'; g.lineWidth = Math.max(0.4, h * 0.002); g.beginPath(); g.moveTo(sq.x - 0.011 * h, sq.y - 0.016 * h); g.lineTo(sq.x + 0.011 * h, sq.y - 0.016 * h); g.stroke(); }
   });
   if (!wPochwie) return;
   // rękojeść miecza wystaje z pochwy (pochwa na dalszym biodrze) — jelec, owinięty trzon, głowica
@@ -505,7 +485,7 @@ function pas(r: Rysunek, T: Tulow, wPochwie: boolean): void {
   m.kreska(q.x - n.x * 0.045 * h, q.y - n.y * 0.045 * h, q.x + n.x * 0.045 * h, q.y + n.y * 0.045 * h, Math.max(1, h * 0.011), tonC([70, 68, 70], -0.1, CIEN.metal));
   const gl = new Path2D(); gl.arc(tip.x, tip.y, Math.max(1, 0.014 * h), 0, TAU);
   m.ksztalt(gl, tonC([70, 68, 70], -0.05, CIEN.metal), (g) => {
-    if (!m.prosto) swiatlocien(g, gl, [[0.007 * h, 'rgba(4,4,8,0.6)'], [-0.003 * h, 'rgba(255,248,232,0.45)']]);
+    if (m.bogato) swiatlocien(g, gl, [[0.007 * h, 'rgba(4,4,8,0.6)'], [-0.003 * h, 'rgba(255,248,232,0.45)']]);
   });
   void c;
 }
@@ -526,7 +506,7 @@ function pochwa(r: Rysunek, T: Tulow): void {
     const ok = new Path2D(); ok.moveTo(...P(dl * 0.86, 0.02 * h)); ok.lineTo(...P(dl * 1.1, 0.02 * h)); ok.lineTo(...P(dl * 1.1, -0.02 * h)); ok.lineTo(...P(dl * 0.86, -0.02 * h)); ok.closePath();
     g.fill(ok);
     g.restore();
-    if (m.lod === 2) bryla(g, po, h, [[0.008 * h, 'rgba(4,2,2,0.5)']], SW_PLASZCZ, 0.7);
+    if (m.bogato) bryla(g, po, h, [[0.008 * h, 'rgba(4,2,2,0.5)']], SW_PLASZCZ, 0.7);
   });
 }
 

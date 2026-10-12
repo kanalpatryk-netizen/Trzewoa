@@ -1,7 +1,7 @@
 import { CIEN, clamp, kier, lerp, los, PI, sin, TAU, tonC, type Pkt, type Rgb } from './matma';
 import type { Malarz } from './malarz';
 import { poswiata, type Rysunek } from './wspolne';
-import { bryla, klaks, KREW, KREW_SUCHA, KREW_SWIEZA, rgba, rozbryzg, swiatlocien, zaciek, ziarno } from './tusz';
+import { bryla, klaks, KREW, KREW_SUCHA, KREW_SWIEZA, rgba, rozbryzg, swiatlocien, SWB, TUSZ, warstwaTuszu, zaciek, ziarno } from './tusz';
 
 /**
  * Uzbrojenie krzyżowca (Remake v2): tarcza w kształcie żelazka — wyszczerbiona, z odpryśniętą farbą,
@@ -79,7 +79,7 @@ export function tarcza(r: Rysunek, tx: number, ty: number, obr: number, skala: n
     g.fillStyle = tonC(znak, m.prosto ? -0.05 : 0, CIEN.tkanina); g.fill(krzyz);
     if (m.prosto) { g.restore(); return; }
     if (st.bunt) poswiata(g, ...P(0, ky), w * 1.3, [255, 46, 20], 0.22 + 0.08 * sin(czas * 0.004 + id));
-    if (m.lod === 2) {
+    if (m.bogato) {
       // drewno pod farbą: drobne, poszarpane odpryski przy brzegu i przy wyszczerbieniach
       for (let i = 0; i < 9; i++) {
         const j = Math.floor(los(id, 620 + i) * pk.length);
@@ -107,12 +107,12 @@ export function tarcza(r: Rysunek, tx: number, ty: number, obr: number, skala: n
       const [px, py] = P(hx, hy - w * 0.05);
       sm.moveTo(px + w * 0.24, py); sm.ellipse(px, py, w * 0.24, w * 0.15, obr, 0, TAU);
       g.fillStyle = rgba(KREW, 0.72); g.fill(sm);
-      if (m.lod === 2) { g.strokeStyle = rgba(KREW_SUCHA, 0.5); g.lineWidth = Math.max(0.4, h * 0.0016); g.stroke(sm); }
+      if (m.bogato) { g.strokeStyle = rgba(KREW_SUCHA, 0.5); g.lineWidth = Math.max(0.4, h * 0.0016); g.stroke(sm); }
     }
     const [rx, ry] = P(w * (0.25 - 0.4 * los(id, 670)), H * (0.12 + 0.2 * los(id, 671)));
     rozbryzg(g, rx, ry, w * 0.13, obr + PI * 0.15, id + 31, KREW, 0.8, m.lod);
     // cięcia po ciosach: ciemna szczelina z jasną wargą
-    if (m.lod === 2) {
+    if (m.bogato) {
       for (let i = 0; i < 3; i++) {
         const x0 = (los(id, 680 + i) - 0.5) * w * 1.3, y0 = (los(id, 690 + i) - 0.4) * H * 0.8;
         const dx = w * (0.25 + 0.2 * los(id, 700 + i)), dy = H * (0.04 + 0.06 * los(id, 710 + i));
@@ -127,13 +127,13 @@ export function tarcza(r: Rysunek, tx: number, ty: number, obr: number, skala: n
     }
     // okucie brzegu: ciemna skóra naciągnięta na krawędź (widać połowę kreski — reszta poza obcięciem)
     g.strokeStyle = 'rgba(30,20,16,0.95)'; g.lineWidth = Math.max(1, h * 0.016 * skala); g.stroke(tr);
-    if (m.lod === 2) {
+    if (m.bogato) {
       g.setLineDash([w * 0.12, w * 0.22, w * 0.05, w * 0.3]);
       g.strokeStyle = 'rgba(150,120,96,0.32)'; g.lineWidth = Math.max(0.4, h * 0.0024 * skala); g.stroke(tr);
       g.setLineDash([]);
     }
     // światłocień wypukłej tarczy: cień od tyłu i od szpica, blask przy przedniej krawędzi
-    bryla(g, tr, h, m.lod === 2
+    bryla(g, tr, h, m.bogato
       ? [[w * 0.42, 'rgba(10,6,8,0.42)'], [w * 0.14, 'rgba(10,6,8,0.45)'], [-w * 0.1, 'rgba(255,236,206,0.12)']]
       : [[w * 0.42, 'rgba(10,6,8,0.55)'], [-w * 0.1, 'rgba(255,236,206,0.12)']], { x: 0.78, y: -0.62 }, 1.1, 0, undefined, false, true);
     g.restore();
@@ -184,7 +184,7 @@ export function mieczKrzyzowca(m: Malarz, x: number, y: number, kat: number, h: 
     g.lineCap = 'round';
     g.strokeStyle = 'rgba(30,30,36,0.7)'; g.lineWidth = Math.max(0.5, sz * 0.32);
     g.beginPath(); g.moveTo(...P(j + dl * 0.02, 0)); g.lineTo(...P(j + dl * 0.68, 0)); g.stroke();
-    if (m.lod === 2) {
+    if (m.bogato) {
       g.strokeStyle = 'rgba(220,218,212,0.35)'; g.lineWidth = Math.max(0.35, sz * 0.1);
       g.beginPath(); g.moveTo(...P(j + dl * 0.02, sz * 0.2)); g.lineTo(...P(j + dl * 0.68, sz * 0.2)); g.stroke();
     }
@@ -202,7 +202,7 @@ export function mieczKrzyzowca(m: Malarz, x: number, y: number, kat: number, h: 
     for (let i = 6; i >= 1; i--) { const t = a0 + ((1 - a0) * i) / 6; kr.lineTo(...P(j + dl * t, -sz * (0.2 + 0.9 * los(id, 760 + i)))); }
     kr.closePath();
     g.fill(kr);
-    if (m.lod === 2) { g.fillStyle = 'rgba(255,214,200,0.22)'; g.beginPath(); g.ellipse(...P(j + dl * 0.86, sz * 0.3), dl * 0.06, sz * 0.12, Math.atan2(d.y, d.x), 0, TAU); g.fill(); }
+    if (m.bogato) { g.fillStyle = 'rgba(255,214,200,0.22)'; g.beginPath(); g.ellipse(...P(j + dl * 0.86, sz * 0.3), dl * 0.06, sz * 0.12, Math.atan2(d.y, d.x), 0, TAU); g.fill(); }
     g.restore();
     // zacieki z ostrza, gdy głownia wisi sztychem w dół
     if (d.y > 0.55 && m.lod === 2) {
@@ -224,7 +224,7 @@ export function mieczKrzyzowca(m: Malarz, x: number, y: number, kat: number, h: 
   je.quadraticCurveTo(...P(j + tj * 0.5, -lj * 0.45), ...P(j + 0.016 * h, -lj * 0.98));
   je.closePath();
   m.ksztalt(je, tonC(ZELAZO, bunt ? -0.3 : -0.05, CIEN.metal), (g) => {
-    if (m.lod < 2) return;
+    if (!m.bogato) return;
     swiatlocien(g, je, [[0.006 * h, 'rgba(6,6,10,0.55)'], [-0.003 * h, 'rgba(240,236,226,0.4)']]);
   });
   // rękojeść owinięta skórą i tarczowa głowica
@@ -234,7 +234,7 @@ export function mieczKrzyzowca(m: Malarz, x: number, y: number, kat: number, h: 
   rk.moveTo(r0x + n.x * rw, r0y + n.y * rw); rk.lineTo(r1x + n.x * rw * 0.85, r1y + n.y * rw * 0.85);
   rk.lineTo(r1x - n.x * rw * 0.85, r1y - n.y * rw * 0.85); rk.lineTo(r0x - n.x * rw, r0y - n.y * rw); rk.closePath();
   m.ksztalt(rk, tonC(skorzane, -0.35, CIEN.tkanina), (g) => {
-    if (m.lod < 2) return;
+    if (!m.bogato) return;
     g.strokeStyle = 'rgba(0,0,0,0.45)'; g.lineWidth = Math.max(0.4, h * 0.0016);
     g.beginPath();
     for (let i = 1; i < 6; i++) { const t = i / 6; const [qx, qy] = P(lerp(j - tj, -0.058 * h, t), 0); g.moveTo(qx + n.x * rw + d.x * rw, qy + n.y * rw + d.y * rw); g.lineTo(qx - n.x * rw - d.x * rw, qy - n.y * rw - d.y * rw); }
@@ -244,7 +244,7 @@ export function mieczKrzyzowca(m: Malarz, x: number, y: number, kat: number, h: 
   const rg = 0.016 * h;
   const glw = new Path2D(); glw.ellipse(gx, gy, rg * 0.75, rg, Math.atan2(d.y, d.x), 0, TAU);
   m.ksztalt(glw, tonC(ZELAZO, bunt ? -0.3 : -0.08, CIEN.metal), (g) => {
-    if (m.lod < 2) return;
+    if (!m.bogato) return;
     swiatlocien(g, glw, [[rg * 0.45, 'rgba(6,6,10,0.6)'], [-rg * 0.2, 'rgba(240,236,226,0.45)']]);
     if (m.lod === 2) { g.strokeStyle = 'rgba(10,10,12,0.6)'; g.lineWidth = Math.max(0.4, rg * 0.12); g.beginPath(); g.ellipse(gx, gy, rg * 0.38, rg * 0.55, Math.atan2(d.y, d.x), 0, TAU); g.stroke(); }
   });
@@ -282,4 +282,79 @@ export function strzala(g: CanvasRenderingContext2D, x: number, y: number, kat: 
   }
   // krew przy grocie
   if (lod > 0) { g.fillStyle = rgba(KREW, 0.8); g.beginPath(); g.ellipse(x, y, h * clamp(0.006, 0, 1), h * 0.0045, Math.atan2(d.y, d.x), 0, TAU); g.fill(); }
+}
+
+// ------------------------------------------------------------------ kilof kopacza
+
+/**
+ * Dolabra kopacza: trzonek z ciemnego drewna, wytarty do połysku tam, gdzie go chwytają, z żelazną
+ * tuleją; obuch ze szpicem w stronę ciosu i szerokim ostrzem z tyłu — ciemne żelazo, rdza, jasna krawędź.
+ * (x, y) — dłoń, kat — kierunek trzonka ku obuchowi. Zwraca szpic.
+ */
+export function dolabra(m: Malarz, x: number, y: number, kat: number, h: number, id: number, drewno: Rgb, zelazo: Rgb): Pkt {
+  const d = kier(kat), a = kier(kat - PI / 2);
+  const tylT = 0.13 * h, dl = 0.34 * h;
+  const ax = x - d.x * tylT, ay = y - d.y * tylT, ex = x + d.x * dl, ey = y + d.y * dl;
+  const r0 = Math.max(0.6, 0.0098 * h), r1 = Math.max(0.55, 0.0085 * h);
+  const tr = new Path2D();
+  tr.moveTo(ax + a.x * r0, ay + a.y * r0); tr.lineTo(ex + a.x * r1, ey + a.y * r1);
+  tr.lineTo(ex - a.x * r1, ey - a.y * r1); tr.lineTo(ax - a.x * r0, ay - a.y * r0);
+  tr.arc(ax, ay, r0, Math.atan2(-a.y, -a.x), Math.atan2(a.y, a.x), false);
+  tr.closePath();
+  let styl: string | CanvasGradient = tonC(drewno, -0.2, CIEN.tkanina);
+  if (m.lod > 0) {
+    const s1 = a.x * SWB.x + a.y * SWB.y > 0 ? 1 : -1;
+    const gr = m.g.createLinearGradient(x + a.x * r0 * s1, y + a.y * r0 * s1, x - a.x * r0 * s1, y - a.y * r0 * s1);
+    gr.addColorStop(0, tonC(drewno, 0.1, CIEN.tkanina)); gr.addColorStop(0.45, tonC(drewno, -0.15, CIEN.tkanina)); gr.addColorStop(1, tonC(drewno, -0.55, CIEN.tkanina));
+    styl = gr;
+  }
+  m.ksztalt(tr, styl, (g) => {
+    if (!m.bogato) return;
+    // słoje i wytarty, ciemny od potu chwyt przy dłoni
+    g.strokeStyle = tonC(drewno, -0.5, CIEN.tkanina, 0.5); g.lineWidth = Math.max(0.35, h * 0.0018);
+    g.beginPath();
+    for (const k of [-0.35, 0.3]) { g.moveTo(ax + a.x * r0 * k, ay + a.y * r0 * k); g.lineTo(ex + a.x * r1 * k, ey + a.y * r1 * k); }
+    g.stroke();
+    g.strokeStyle = 'rgba(20,12,8,0.45)'; g.lineWidth = r0 * 2; g.lineCap = 'butt';
+    g.beginPath(); g.moveTo(x - d.x * 0.04 * h, y - d.y * 0.04 * h); g.lineTo(x + d.x * 0.03 * h, y + d.y * 0.03 * h); g.stroke();
+    g.lineCap = 'round';
+    g.strokeStyle = 'rgba(12,8,8,0.7)'; g.lineWidth = Math.max(0.4, h * 0.002); g.stroke(tr);
+  });
+  const E = (da: number, dd: number): [number, number] => [ex + a.x * da * h + d.x * dd * h, ey + a.y * da * h + d.y * dd * h];
+  const ob = new Path2D();
+  ob.moveTo(...E(0.02, 0.018));
+  ob.quadraticCurveTo(...E(0.1, 0.012), ...E(0.15, -0.03));
+  ob.quadraticCurveTo(...E(0.085, -0.014), ...E(0.02, -0.018));
+  ob.lineTo(...E(-0.03, -0.016));
+  ob.quadraticCurveTo(...E(-0.07, -0.03), ...E(-0.085, -0.045));
+  ob.lineTo(...E(-0.095, 0.03));
+  ob.quadraticCurveTo(...E(-0.065, 0.02), ...E(-0.03, 0.018));
+  ob.closePath();
+  let st2: string | CanvasGradient = tonC(zelazo, -0.15, CIEN.metal);
+  if (m.lod > 0) {
+    const [g0x, g0y] = E(0, -0.03), [g1x, g1y] = E(0, 0.03);
+    const gr = m.g.createLinearGradient(g0x, g0y, g1x, g1y);
+    gr.addColorStop(0, tonC(zelazo, 0.12, CIEN.metal)); gr.addColorStop(0.5, tonC(zelazo, -0.15, CIEN.metal)); gr.addColorStop(1, tonC(zelazo, -0.5, CIEN.metal));
+    st2 = gr;
+  }
+  m.ksztalt(ob, st2, (g) => {
+    if (!m.bogato) { if (m.lod === 2) { g.strokeStyle = 'rgba(12,8,8,0.7)'; g.lineWidth = Math.max(0.4, h * 0.002); g.stroke(ob); } return; }
+    g.save(); g.clip(ob);
+    // rdza w zagłębieniach i jasna, wytarta krawędź szpica i ostrza
+    g.globalCompositeOperation = 'multiply';
+    g.fillStyle = 'rgba(170,96,52,0.55)';
+    for (let i = 0; i < 3; i++) {
+      const [qx, qy] = E(-0.07 + 0.17 * los(id, 1100 + i), -0.02 + 0.04 * los(id, 1110 + i));
+      g.beginPath(); g.ellipse(qx, qy, h * (0.006 + 0.008 * los(id, 1120 + i)), h * 0.005, kat, 0, TAU); g.fill();
+    }
+    g.globalCompositeOperation = 'source-over';
+    g.strokeStyle = 'rgba(236,228,214,0.6)'; g.lineWidth = Math.max(0.4, h * 0.0022);
+    g.beginPath(); g.moveTo(...E(0.04, -0.017)); g.quadraticCurveTo(...E(0.09, -0.015), ...E(0.145, -0.029));
+    g.moveTo(...E(-0.088, -0.04)); g.lineTo(...E(-0.094, 0.024)); g.stroke();
+    swiatlocien(g, ob, [[0.01 * h, 'rgba(4,4,8,0.5)'], [warstwaTuszu(h)[0], TUSZ]], SWB, undefined, true);
+    g.restore();
+    g.strokeStyle = 'rgba(12,8,8,0.7)'; g.lineWidth = Math.max(0.4, h * 0.002); g.stroke(ob);
+  });
+  const [tx, ty] = E(0.15, -0.03);
+  return { x: tx, y: ty };
 }

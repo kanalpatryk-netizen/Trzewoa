@@ -8,7 +8,8 @@ import { clamp, los, mieszaj, type Rgb } from './matma';
  * ziemi, umbra, czerń kostna, przyćmione złoto. Matowe, ciepłe, przygaszone jak malowidło
  * w krypcie oglądane przy lampce.
  *
- * - robotnik — fossor, kopacz katakumb: krótka tunika z clavi, kilof, gliniana lampka oliwna,
+ * - robotnik — kopacz z trzewi góry (Remake v2): kaptur z pelerynką, szorstka tunika, skórzany fartuch
+ *   z tyłu, owijki, kilof i gliniana lampka oliwna,
  * - pobożny — duchowny (diakon): długa jasna szata, czerwona stuła z krzyżykami, tonsura,
  * - rycerz — krzyżowiec po bitwie (Remake v2): kolczuga, brudny wapenrok z krwawym krzyżem, podarty ciemny
  *   płaszcz, garnczkowy albo otwarty hełm, wyszczerbiona tarcza z krzyżem — krew, blizny, bandaże.
@@ -24,6 +25,8 @@ export interface Stroj {
   stary: boolean;
   /** robotnik: tunika, clavi (pasy), pas, owijki */
   tunika: Rgb; clavi: Rgb; pas: Rgb; owijki: Rgb;
+  /** Remake v2 — kopacz: kaptur z pelerynką (naciągnięty albo zsunięty na kark, czasem z długim ogonem) i nogawice */
+  kaptur: Rgb; nogawice: Rgb; wKapturze: boolean; ogon: boolean;
   /** pobożny: szata (sticharion), stuła (orarion), haft */
   szata: Rgb; stula: Rgb;
   /** rycerz: zbroja łuskowa, spódnica tuniki, chlamida, hełm, skórzane pasy, tarcza */
@@ -45,7 +48,10 @@ const OBWODKA: Record<Rola | 'buntownik', Rgb> = {
 /** Karnacje jak na portretach fajumskich: oliwkowe, śniade, blade. */
 const SKORY: Rgb[] = [[182, 142, 104], [168, 128, 94], [196, 160, 122], [150, 112, 80], [188, 156, 124], [160, 124, 96]];
 const WLOSY: Rgb[] = [[38, 28, 22], [26, 20, 18], [66, 42, 28], [54, 40, 30]];
-const TUNIKI: Rgb[] = [[160, 140, 106], [150, 132, 100], [166, 148, 114], [142, 126, 98]];
+/** Kopacz (Remake v2): szorstka wełna w barwach ziemi — ugier, szarobrązowy, umbra. */
+const TUNIKI: Rgb[] = [[132, 106, 72], [120, 100, 74], [138, 112, 78], [114, 96, 72]];
+const KAPTURY: Rgb[] = [[86, 66, 48], [76, 68, 60], [102, 60, 44], [80, 78, 64], [94, 78, 54]];
+const NOGAWICE: Rgb[] = [[58, 50, 44], [50, 46, 42], [62, 52, 40]];
 const CLAVI: Rgb[] = [[108, 38, 28], [88, 40, 36], [76, 58, 40]];
 const SZATY: Rgb[] = [[188, 176, 150], [180, 168, 140], [192, 184, 160]];
 const STULE: Rgb[] = [[128, 38, 30], [110, 34, 30], [96, 52, 40]];
@@ -70,7 +76,8 @@ export function stroj(rola: Rola, c: Creature, sim: Sim): Stroj {
     rola, bunt, obwodka: bunt ? OBWODKA.buntownik : OBWODKA[rola],
     skora, wlosy: stary ? [150, 144, 134] : wybierz(WLOSY, 2), stary,
     broda: rola === 'pobozny' ? (stary ? 2 : l(3) < 0.35 ? 3 : 0) : rola === 'rycerz' ? (l(3) < 0.6 ? 3 : 0) : Math.floor(l(3) * 4),
-    tunika: wybierz(TUNIKI, 4), clavi: wybierz(CLAVI, 5), pas: [74, 52, 34], owijki: [130, 112, 86],
+    tunika: wybierz(TUNIKI, 4), clavi: wybierz(CLAVI, 5), pas: [74, 52, 34], owijki: [124, 108, 86],
+    kaptur: wybierz(KAPTURY, 14), nogawice: wybierz(NOGAWICE, 15), wKapturze: l(16) < 0.72, ogon: l(17) < 0.6,
     szata: wybierz(SZATY, 10), stula: wybierz(STULE, 6),
     zbroja: bunt ? [70, 66, 62] : [134, 116, 80], spodnica: bunt ? [34, 26, 26] : wybierz(SPODNICE, 7),
     chlamida: bunt ? [36, 22, 22] : wybierz(CHLAMIDY, 8), helm: bunt ? [50, 48, 50] : [104, 104, 108],

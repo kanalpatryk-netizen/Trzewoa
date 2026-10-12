@@ -271,16 +271,20 @@ export function mlotek(m: Malarz, x: number, y: number, kat: number, h: number, 
   return { x: ex + n.x * 0.045 * h, y: ey + n.y * 0.045 * h };
 }
 
-/** Grzyb jaskiniowy: blady, z zielonkawą poświatą — jedyne, co tu rośnie. */
-export function grzyb(g: CanvasRenderingContext2D, x: number, y: number, h: number, lod: number): void {
-  if (lod) poswiata(g, x, y - h * 0.035, h * 0.06, [170, 230, 170], 0.22);
-  g.fillStyle = 'rgb(196,190,166)';
-  g.fillRect(x - h * 0.007, y - h * 0.035, h * 0.014, h * 0.035);
-  g.fillStyle = 'rgb(214,214,186)';
-  g.beginPath(); g.ellipse(x, y - h * 0.035, h * 0.032, h * 0.022, 0, PI, 0); g.closePath(); g.fill();
-  if (lod) {
-    g.strokeStyle = 'rgba(120,130,96,0.8)'; g.lineWidth = Math.max(0.4, h * 0.004);
-    g.beginPath(); g.moveTo(x - h * 0.03, y - h * 0.036); g.lineTo(x + h * 0.03, y - h * 0.036); g.stroke();
+/** Kęs jedzenia z wiadra: kawał ciemnego chleba z jaśniejszym miąższem w miejscu ułamania. */
+export function kesChleba(g: CanvasRenderingContext2D, x: number, y: number, h: number, lod: number): void {
+  const r = h * 0.03;
+  g.fillStyle = 'rgb(120,78,40)';
+  g.beginPath(); g.ellipse(x, y - r * 0.7, r * 1.15, r * 0.8, -0.3, 0, TAU); g.fill();
+  if (lod === 0) return;
+  // ułamany brzeg: jasny miąższ
+  g.fillStyle = 'rgb(206,172,118)';
+  g.beginPath(); g.ellipse(x + r * 0.62, y - r * 0.82, r * 0.42, r * 0.62, -0.3, 0, TAU); g.fill();
+  g.fillStyle = 'rgba(255,224,170,0.35)';
+  g.beginPath(); g.ellipse(x - r * 0.35, y - r * 1.2, r * 0.5, r * 0.22, -0.3, 0, TAU); g.fill();
+  if (lod === 2) {
+    g.strokeStyle = 'rgba(30,16,8,0.8)'; g.lineWidth = Math.max(0.4, h * 0.0025);
+    g.beginPath(); g.ellipse(x, y - r * 0.7, r * 1.15, r * 0.8, -0.3, 0, TAU); g.stroke();
   }
 }
 
