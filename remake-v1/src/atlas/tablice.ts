@@ -12,10 +12,11 @@ import { rysujSzept } from '../cutscene/art/szept';
 import { rysujZnak } from '../cutscene/art/znak';
 import { rysujSpis } from '../cutscene/art/spis';
 import { rysujOrgany } from '../cutscene/art/organy';
+import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from '../render/relikwiarz';
 import { rysujPrzyplyw } from '../cutscene/art/przyplyw';
 import { glif } from '../render/tajemnica';
 import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
-import { LUDY } from '../nastawy/gora';
+import { GORA, LUDY } from '../nastawy/gora';
 import { CECHY } from '../nastawy/cechy';
 import { LUD } from '../nastawy/lud';
 import { MROK } from '../nastawy/mrok';
@@ -63,6 +64,25 @@ function kosztSlowami(v: Verb, narzedzie: string): string {
 
 /** Rysunek w pełni wykonany — przerywniki rysują się w takt narracji, tablica od razu cała. */
 const cala = (f: (p: Plotno) => void) => (p: Plotno) => f({ ...p, p: 1, takt: 99, taktP: 1 });
+
+/** Krew: ten sam relikwiarz co pod płytą, na kamiennej płycie ołtarza, krwi w nim dwie trzecie. */
+function rysujKrew({ ctx, w, h, t }: Plotno): void {
+  const wys = Math.min(h * 0.82, (w * 0.7) / RELIKWIARZ_PROPORCJA);
+  const cx = w / 2 + Math.min(w * 0.08, h * 0.2);
+  const dol = h * 0.9;
+  ctx.save();
+  const g = ctx.createRadialGradient(cx, dol - wys * 0.5, 4, cx, dol - wys * 0.5, wys * 0.75);
+  g.addColorStop(0, 'rgba(150,40,26,0.28)');
+  g.addColorStop(1, 'rgba(150,40,26,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(24,17,13,0.95)';
+  ctx.fillRect(cx - wys * 0.62, dol - wys * 0.015, wys * 1.24, wys * 0.06);
+  ctx.strokeStyle = 'rgba(206,192,166,0.45)'; ctx.lineWidth = 1;
+  ctx.strokeRect(cx - wys * 0.62, dol - wys * 0.015, wys * 1.24, wys * 0.06);
+  rysujRelikwiarz(ctx, cx - (wys * RELIKWIARZ_PROPORCJA) / 2, dol - wys, wys, GORA.krewMax * 0.66, GORA.krewMax, t, { pamietaj: false });
+  ctx.restore();
+}
 
 /** Tło rycin postaci: sklepienie jaskini kreskowane jak w atlasie. */
 function sklepienie(ctx: CanvasRenderingContext2D, w: number, h: number, ziarno: number): void {
@@ -510,9 +530,9 @@ export const TABLICE: Tablica[] = [
   // zasoby
   {
     id: 'krew', grupa: 'zasoby', nazwa: 'Krew', lacina: 'Sanguis',
-    opis: 'Liczba nad płytą i czerwona rysa pod nią. Płaci ci ją każda śmierć — także Strażników Snu i buntowników — szept „ofiaruj” i samookaleczenie pobożnego.',
-    kiedy: 'Wydajesz ją na nowych ze skały, na jedzenie (ryt Nakarm) i na wybory na kartach wydarzeń.',
-    rycina: cala(rysujOrgany),
+    opis: `Liczba nad płytą i relikwiarz pod nią: krew stoi w szklanej ampułce, a granaty w złotej oprawie żarzą się, gdy jej przybywa. Mieści się jej najwyżej ${GORA.krewMax} — pełna ampułka pulsuje, a nadmiar przepada. Płaci ci ją każda śmierć — także Strażników Snu i buntowników — szept „ofiaruj” i samookaleczenie pobożnego.`,
+    kiedy: 'Wydajesz ją na nowych ze skały, na jedzenie (ryt Nakarm) i na wybory na kartach wydarzeń. Nie trzymaj pełnej ampułki — to, co by przybyło, i tak przepadnie.',
+    rycina: cala(rysujKrew),
   },
   {
     id: 'wiara', grupa: 'zasoby', nazwa: 'Wiara', lacina: 'Fides',
