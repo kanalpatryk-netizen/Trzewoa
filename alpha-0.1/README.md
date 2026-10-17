@@ -27,6 +27,9 @@ Alphy są osobne — nie mieszają się z Remake v2.
   u góry; niżej trzy warstwy — płytka (miękka skała, żelazo), środkowa (małe jaskinie, pod nimi złoto), głęboka
   (twarda skała); dookoła rama nie do ruszenia; na dole, na środku, rdzeń pod szeroką kryptą. Drogę w dół trzeba
   wykuć, a kucie trwa (skała pęka pod kilofem coraz mocniej). Kto zszedł w głąb, dostaje jedzenie tam, gdzie stoi.
+- **Pomieszczenia:** „wyznacz pomieszczenie” (B) i szablon — sypialnia, warsztat, kuźnia, korytarz, szyb; kują je tylko
+  zaznaczeni robotnicy, którym plan wskażesz. W warsztacie złoto staje się wiarą (krzyż leci do licznika), w kuźni żelazo
+  — kolejnymi częściami zbroi rycerza, a sen w sypialni zdejmuje osłabienia. Wszystko z animacją.
 - **Kruszce:** nad płytą liczniki żelaza i złota. Bez ekwipunku: robotnik rozbija kafel rudy, a okruch sam leci
   łukiem do licznika, który podbija liczbę i błyska. Wskazana robotnikowi ruda to „kop żyłę” — wykuwa całą kępę.
 
@@ -41,8 +44,8 @@ Alphy są osobne — nie mieszają się z Remake v2.
      nad rdzeniem, wolniejsze kucie z pękającą skałą, wiadra dla tych, którzy zeszli w głąb.
    - ~~3b. Liczniki kruszców na ekranie (żelazo, złoto)~~ — zrobione (wyżej): bez ekwipunku, okruch leci do
      licznika, „kop żyłę”, tablica atlasu „Kruszce”.
-   - 3c. Szablony pomieszczeń do wykopania (sypialnia, warsztat, kuźnia, szyb). Złoto w warsztacie — dewocjonalia
-     i wiara; żelazo w kuźni — części zbroi rycerza.
+   - ~~3c. Szablony pomieszczeń do wykopania (sypialnia, warsztat, kuźnia, korytarz, szyb)~~ — zrobione (wyżej):
+     złoto w warsztacie — dewocjonalia i wiara; żelazo w kuźni — części zbroi rycerza; sypialnia zdejmuje osłabienia.
    - 3d. Ołtarz w środkowej warstwie z rytuałami — każdy z własną animacją.
    - 3e. Ruiny z zabytkami (wydarzenie: weź — premia i kara — albo zostaw).
    - 3f. Części zbroi widoczne na rycerzu.

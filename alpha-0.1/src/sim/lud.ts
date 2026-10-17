@@ -254,7 +254,7 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
     out.push({ nazwa: 'spod niego wznosi się dłoń z otchłani', skutek: 'zaraz go zabierze w dół — odpędzi ją tylko Cud tuż przy nim', dobry: false, do: d.od + (d.faza === 'wstaje' ? DLON.wstaje + DLON.siega : DLON.siega) });
   }
   if (c.okaleczony) {
-    out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false });
+    out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false, kiedy: 'póki nie wyśpi się w sypialni' });
   }
   return out;
 }

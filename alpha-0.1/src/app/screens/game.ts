@@ -1,6 +1,9 @@
 import { rysujWiadra, rysujPrzodWiader } from '../../render/wiadro';
 import { rysujKucie } from '../../render/kucie';
-import { Urobki, znaczekKruszcu } from '../../render/kruszce';
+import { Urobki, znaczekKruszcu, type CelLotu } from '../../render/kruszce';
+import { Pokoje, akcjaNaPomieszczeniu, type PodKursorem } from '../../render/pomieszczenia';
+import { probaPlanu, polozPlan, skreslPlan, pomieszczenieW, czyPokoj, type ProbaPlanu } from '../../sim/pomieszczenia';
+import { SZABLONY, NAZWA_POMIESZCZENIA, BIERNIK_POMIESZCZENIA, type RodzajPomieszczenia } from '../../nastawy/pomieszczenia';
 import { OKRUCH } from '../../nastawy/kruszce';
 import { rysujTrupy } from '../../render/trupy';
 import { porcjiWWiadrach } from '../../sim/wiadro';
@@ -21,7 +24,7 @@ import { rysujDev } from '../../render/dev';
 import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
-import { wydajGrupie, drogaGrupie, odwolajPolecenie } from '../../sim/polecenia';
+import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie } from '../../sim/polecenia';
 import { rysujZnacznikiLudu } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
 import { LUD, REMAKE } from '../../nastawy/lud';
@@ -101,7 +104,9 @@ export type ZdarzenieGry =
   | { typ: 'kamera'; rodzaj: 'przesun' | 'zoom' | 'powrot' }
   | { typ: 'rozkaz'; czasownik: string; narzedzie: string }
   | { typ: 'zaznaczono'; ile: number }
-  | { typ: 'polecenie'; rodzaj: 'idz' | 'droga' | 'odwolaj'; przyjeli: number }
+  | { typ: 'polecenie'; rodzaj: 'idz' | 'droga' | 'odwolaj' | 'pomieszczenie'; przyjeli: number }
+  | { typ: 'planowanie'; rodzaj: string }
+  | { typ: 'plan'; rodzaj: string }
   | { typ: 'pauza'; stoi: boolean }
   | { typ: 'tempo' }
   | { typ: 'wydarzenie'; rodzaj: string; wybor: string }
@@ -120,6 +125,13 @@ export class EkranGry implements Ekran {
   private zmianyZasobow = new Map<string, { n: number; t: number; wiecej: boolean }>();
   /** Alpha, etap 3b: okruchy rudy lecące do liczników żelaza i złota (render/kruszce.ts). */
   private urobki = new Urobki();
+  /** Alpha, etap 3c: rysunek planów i pomieszczeń (render/pomieszczenia.ts). */
+  private pokoje = new Pokoje();
+  /** Planujesz: szablon pod kursorem (null — nie planujesz). */
+  szablon: RodzajPomieszczenia | null = null;
+  private ostatniSzablon: RodzajPomieszczenia = 'warsztat';
+  /** Korytarz i szyb: kafel, od którego ciągniesz pas. */
+  private ciagniecie: { x: number; y: number } | null = null;
   private tajemnica = new Tajemnica();
   /** Ile znaków pisma w skale było w ostatniej klatce — po nich odkrywa się ich tablica. */
   private znakowWidac = 0;
@@ -195,7 +207,7 @@ export class EkranGry implements Ekran {
   recznaKamera = false;
   private ostatnieKlikniecie: { x: number; y: number } | null = null;
   private indeksWTlumie = 0;
-  private pointers = new Map<number, { x: number; y: number; sx: number; sy: number; moved: boolean; interfejs: boolean; przycisk: number }>();
+  private pointers = new Map<number, { x: number; y: number; sx: number; sy: number; moved: boolean; interfejs: boolean; przycisk: number; plan?: boolean }>();
   private pinch = 0;
   private srodekPinch: { x: number; y: number } | null = null;
   private painting = false;
@@ -212,7 +224,7 @@ export class EkranGry implements Ekran {
   private botStanOd = 0;
 
   constructor(private app: Kontekst) {
-    this.urobki.onDolot = (rodzaj) => this.app.dzwiek.kruszec(rodzaj === 'zloto');
+    this.urobki.onDolot = (rodzaj) => this.app.dzwiek.kruszec(rodzaj !== 'zelazo');
   }
 
   /** Mnożnik czasu: w grze zawsze 1 (zwykły czas), w trybie deweloperskim z przycisków i okienka. */
@@ -432,6 +444,9 @@ export class EkranGry implements Ekran {
     if (sim.tick > 4000) cicho('schody');
     // Alpha, etap 3b: pierwsza wykuta ruda odkrywa tablicę kruszców
     if (sim.urobek.length || sim.zelazo || sim.zloto) odkrycia.odkryj('kruszce');
+    // etap 3c: pierwszy plan — tablica pomieszczeń; gotowy warsztat, kuźnia, sypialnia — ich tablice
+    if (this.szablon || sim.pomieszczenia.length) odkrycia.odkryj('pomieszczenia');
+    for (const pom of sim.pomieszczenia) if (pom.gotowe && (pom.rodzaj === 'warsztat' || pom.rodzaj === 'kuznia' || pom.rodzaj === 'sypialnia')) odkrycia.odkryj(pom.rodzaj);
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
@@ -494,7 +509,8 @@ export class EkranGry implements Ekran {
     const { sim } = this;
     const klan = klanLudu(sim);
     const czesci: [string, string, string][] = [
-      ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(222,200,150,1)'],
+      // etap 3c: krzyż z warsztatu leci do licznika wiary — wiara rośnie, gdy doleci
+      ['wiara', `${Math.max(0, Math.floor(sim.wiara - this.urobki.wLocie('wiara')))}`, 'rgba(222,200,150,1)'],
       ['krew', `${Math.floor(sim.krew)}`, 'rgba(206,104,86,1)'],
       // Remake v2: jedzenie to porcje w wiadrach, które już zjechały albo zjeżdżają
       ['jedzenie', `${REMAKE ? porcjiWWiadrach(sim) : klan?.stock ?? 0}`, 'rgba(150,178,114,1)'],
@@ -515,7 +531,9 @@ export class EkranGry implements Ekran {
     for (const [e, l, kol] of czesci) {
       // kruszec: znaczek (sztabka, samorodek) przed podpisem; na wąskim ekranie sam znaczek, bez podpisu
       const kruszec = e === 'żelazo' ? 'zelazo' : e === 'złoto' ? 'zloto' : null;
-      const kb = kruszec ? this.urobki.blysk(kruszec, teraz) : 0;
+      const cel: CelLotu | null = kruszec ?? (e === 'wiara' ? 'wiara' : null);
+      const kb = cel ? this.urobki.blysk(cel, teraz) : 0;
+      if (cel === 'wiara') this.urobki.cele.wiara = { x: x + kaw(e + ' ', fE) + kaw(l, fL) / 2, y: y - rozm * 0.35 };
       if (kruszec) {
         const s = rozm * 1.25;
         znaczekKruszcu(ctx, kruszec, x + s / 2, y - rozm * 0.32, s, kb, this.urobki.dolot(kruszec));
@@ -537,7 +555,7 @@ export class EkranGry implements Ekran {
         ctx.save();
         ctx.translate(x + sz / 2, y - rozm * 0.35);
         ctx.scale(sk, sk);
-        ctx.shadowColor = kruszec === 'zloto' ? `rgba(255,214,110,${kb})` : `rgba(255,170,90,${kb})`;
+        ctx.shadowColor = cel === 'zloto' || cel === 'wiara' ? `rgba(255,214,110,${kb})` : `rgba(255,170,90,${kb})`;
         ctx.shadowBlur = 12 * kb;
         ctx.fillText(l, -sz / 2, rozm * 0.35);
         ctx.restore();
@@ -855,6 +873,8 @@ export class EkranGry implements Ekran {
     rysujRdzen(ctx, sim, cam, teraz);
     // Alpha, etap 3: skała napoczęta kilofem pęka coraz mocniej
     rysujKucie(ctx, sim, cam, teraz);
+    // etap 3c: wyposażenie gotowych pomieszczeń (stół, kowadło, posłania) — w mroku ginie jak skała
+    this.pokoje.rysujWnetrza(ctx, sim, cam, teraz);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
     // Remake v2: trupy leżą tam, gdzie padli; wiadra z jedzeniem zjeżdżają na linach
@@ -867,6 +887,11 @@ export class EkranGry implements Ekran {
     // a okruch rusza do licznika
     this.urobki.zbierz(sim, teraz);
     this.urobki.rysujNaMapie(ctx, cam, teraz);
+    // etap 3c: plany, ogień paleniska, złoto w tyglu, iskry, „z z z” — nad mrokiem; podgląd szablonu pod kursorem
+    this.pokoje.zbierz(sim, teraz, this.urobki);
+    this.pokoje.rysujNad(ctx, sim, cam, teraz, this.pomieszczeniePodKursorem());
+    const proba = this.probaPodKursorem();
+    if (proba) this.pokoje.podglad(ctx, sim, cam, proba, teraz, this.ciagniecie ? undefined : this.szablon && !czyPokoj(this.szablon) ? `${NAZWA_POMIESZCZENIA[this.szablon]} — przeciągnij` : undefined);
     // droga pielgrzymów: którędy wierni zejdą pod rdzeń (przekopują ją sami — gracz nie drąży)
     const plan = aktualnyPlan(sim);
     if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
@@ -919,7 +944,7 @@ export class EkranGry implements Ekran {
     const banerNaDole = (plate.waski || plate.niski) && (this.pauza || this.ui.verb !== null || !!this.ui.selected);
     this.drogaRect = !this.nasluch && !sim.ending && !banerNaDole ? rysujDrogeDoWolnosci(ctx, plate, sim, teraz) : null;
     if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) rysujMinimape(ctx, sim, cam, plate, teraz);
-    this.polaDruzyny = rysujDruzyne(ctx, sim, plate, h, this.zaznaczeni, this.ui.pointer, teraz);
+    this.polaDruzyny = rysujDruzyne(ctx, sim, plate, h, this.zaznaczeni, this.ui.pointer, teraz, this.szablon);
     drawOddanie(ctx, plate, sim, h);
     drawCrack(ctx, plate, sim, w, h, teraz);
     if (ustawienia.kronika) drawChronicle(ctx, plate, sim, w, h);
@@ -1022,6 +1047,11 @@ export class EkranGry implements Ekran {
     });
   }
 
+  /** Gdzie leży pole na pasku drużyny (np. „wyznacz pomieszczenie”) — samouczek je wskazuje. */
+  miejscePolaDruzyny(akcja: PoleDruzyny['akcja']): PoleDruzyny | null {
+    return this.polaDruzyny.find((p) => p.akcja === akcja) ?? null;
+  }
+
   /** Gdzie leży przycisk pod płytą — samouczek go wskazuje. */
   miejscePrzycisku(akcja: Przycisk['akcja']): Przycisk | null {
     return this.przyciski.find((b) => b.akcja === akcja) ?? null;
@@ -1095,6 +1125,9 @@ export class EkranGry implements Ekran {
     if (p.akcja === 'rola' && p.rola) this.zaznaczRole(p.rola, dokladaj);
     else if (p.akcja === 'droga') this.kopDroge();
     else if (p.akcja === 'odwolaj') this.odwolajRozkazy();
+    else if (p.akcja === 'pomieszczenia') this.przelaczSzablon(!!this.szablon);
+    else if (p.akcja === 'szablon' && p.szablon) this.ustawSzablon(p.szablon);
+    else if (p.akcja === 'koniecSzablonu') this.ustawSzablon(null);
     else this.odznacz();
     this.dirty = true;
   }
@@ -1135,6 +1168,73 @@ export class EkranGry implements Ekran {
     this.nasluch?.({ typ: 'polecenie', rodzaj: 'odwolaj', przyjeli: ile });
   }
 
+  // ------------------------------------------------------------- pomieszczenia (Alpha, etap 3c)
+
+  /** Planowanie: włącza (ostatni szablon) albo, gdy już planujesz, bierze następny szablon; `wylacz` — kończy. */
+  private przelaczSzablon(wylacz = false): void {
+    if (wylacz) { this.ustawSzablon(null); return; }
+    if (!this.szablon) { this.ustawSzablon(this.ostatniSzablon); return; }
+    this.ustawSzablon(SZABLONY[(SZABLONY.indexOf(this.szablon) + 1) % SZABLONY.length]);
+  }
+
+  /** Planowanie z tym szablonem (null — koniec). Samouczek też tu sięga. */
+  ustawSzablon(s: RodzajPomieszczenia | null): void {
+    const { ui, sim } = this;
+    this.szablon = s; this.ciagniecie = null;
+    if (s) {
+      this.ostatniSzablon = s;
+      ui.verb = null; ui.tool = null; ui.selected = null;     // ryt w ręku i karta odkładają się na czas planowania
+      ui.say(`Plan: ${NAZWA_POMIESZCZENIA[s]} — ${czyPokoj(s) ? 'dotknij skały, gdzie ma stanąć' : 'przeciągnij od miejsca, gdzie stoi lud'}. B — następny, Esc — koniec.`, sim.tick);
+      this.nasluch?.({ typ: 'planowanie', rodzaj: s });
+    }
+    this.dirty = true;
+  }
+
+  /** Kafel pod kursorem (albo null, gdy kursor jest poza płytą). */
+  private kafelPodKursorem(): [number, number] | null {
+    const p = this.ui.pointer;
+    if (!this.naPlycie(p.x, p.y)) return null;
+    const [x, y] = this.swiatPod(p.x, p.y);
+    return this.sim.world.inb(x, y) ? [x, y] : null;
+  }
+
+  /** Planujesz: jak wyglądałby plan pod kursorem (korytarz i szyb — od kafla, od którego ciągniesz). */
+  private probaPodKursorem(): ProbaPlanu | null {
+    if (!this.szablon || this.sim.ending) return null;
+    const k = this.kafelPodKursorem();
+    if (!k) return null;
+    if (czyPokoj(this.szablon)) return probaPlanu(this.sim, this.szablon, k[0], k[1]);
+    const s = this.ciagniecie;
+    return s ? probaPlanu(this.sim, this.szablon, s.x, s.y, k[0], k[1]) : probaPlanu(this.sim, this.szablon, k[0], k[1], k[0] + 1, k[1] + 1);
+  }
+
+  /** Pomieszczenie (albo plan) pod kursorem i co zrobią zaznaczeni, gdy go dotkniesz. */
+  private pomieszczeniePodKursorem(): PodKursorem | null {
+    if (this.szablon || this.ui.verb || this.sim.ending) return null;
+    const k = this.kafelPodKursorem();
+    const pom = k ? pomieszczenieW(this.sim, k[0], k[1]) : null;
+    if (!pom) return null;
+    const lud = this.zaznaczeniZywi();
+    if (!lud.length) return { pom, akcja: pom.gotowe ? `${NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż` : 'plan — zaznacz robotników i wskaż go', ok: true };
+    const rob = lud.filter((c) => rolaPostaci(c) === 'robotnik').length;
+    const { akcja, ok } = akcjaNaPomieszczeniu(pom, rob, lud.length - rob);
+    return { pom, akcja, ok };
+  }
+
+  /** Kładzie plan z próby (albo mówi, czemu tu nie wolno). */
+  private polozPlanZProby(p: ProbaPlanu | null): void {
+    const { ui, sim } = this;
+    this.ciagniecie = null;
+    if (!p) return;
+    if (!p.ok) { ui.say(`Tu nie: ${p.powod}.`, sim.tick); this.app.gesty.odmowa(); return; }
+    polozPlan(sim, p);
+    this.falaRozkazu = { x: p.x + p.w / 2, y: p.y + p.h, t: performance.now(), ok: true };
+    ui.say(`Wyznaczyłeś ${BIERNIK_POMIESZCZENIA[p.rodzaj]}. Zaznacz robotników i dotknij planu — wykują go.`, sim.tick);
+    this.app.gesty.klik();
+    this.nasluch?.({ typ: 'plan', rodzaj: p.rodzaj });
+    this.dirty = true;
+  }
+
   /**
    * Dotknięcie mapy bez rytu w ręku: postać z ludu pod palcem — zaznacza ją; inne miejsce, gdy ktoś jest
    * zaznaczony — rozkaz „idź tam” (robotnikowi wskazana skała to „kop tam”).
@@ -1158,15 +1258,18 @@ export class EkranGry implements Ekran {
       return;
     }
     const ids = this.zaznaczeniZywi().map((c) => c.id);
+    // etap 3c: plan albo pomieszczenie pod palcem — robotnicy kują plan, pracują w warsztacie i kuźni, każdy śpi w sypialni
+    const pom = pomieszczenieW(sim, Math.floor(fx), Math.floor(fy));
+    if (pom && !ids.length) { ui.say(pom.gotowe ? `${NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż.` : 'Plan — zaznacz robotników i wskaż go, a wykują.', sim.tick); return; }
     if (!ids.length) return;
-    const { przyjeli, odmowy } = wydajGrupie(sim, ids, Math.floor(fx), Math.floor(fy));
+    const { przyjeli, odmowy } = pom ? wydajNaPomieszczenie(sim, ids, pom) : wydajGrupie(sim, ids, Math.floor(fx), Math.floor(fy));
     this.falaRozkazu = { x: fx, y: fy, t: performance.now(), ok: przyjeli > 0 };
     if (!przyjeli) { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
     else {
       ui.say((przyjeli === 1 ? 'Idzie.' : `Idą: ${przyjeli}.`) + (odmowy.length ? ` Odmawia: ${odmowy.length}.` : ''), sim.tick);
       this.app.gesty.klik();
     }
-    this.nasluch?.({ typ: 'polecenie', rodzaj: 'idz', przyjeli });
+    this.nasluch?.({ typ: 'polecenie', rodzaj: pom ? 'pomieszczenie' : 'idz', przyjeli });
     this.dirty = true;
   }
 
@@ -1417,8 +1520,18 @@ export class EkranGry implements Ekran {
         return;
       }
       this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, moved: false, interfejs: false, przycisk: e.button });
-      if (this.pointers.size > 1) { this.painting = false; return; }
+      if (this.pointers.size > 1) { this.painting = false; this.ciagniecie = null; return; }
       if (sim.ending) return;
+      // etap 3c: planujesz — palec na mapie kładzie plan zamiast przesuwać kamerę
+      if (this.szablon && e.button !== 2 && this.naPlycie(e.clientX, e.clientY)) {
+        const wpisP = this.pointers.get(e.pointerId)!;
+        wpisP.plan = true;
+        if (!czyPokoj(this.szablon)) {
+          const [wx, wy] = this.swiatPod(e.clientX, e.clientY);
+          this.ciagniecie = { x: wx, y: wy };
+        }
+        return;
+      }
       const przedWyborem = ui.verb;
       const wybranaMysl = ui.selected;
       if (this.legenda) { this.legenda = false; return; }
@@ -1470,6 +1583,8 @@ export class EkranGry implements Ekran {
         return;
       }
       if (this.painting && p.przycisk !== 2) { this.uzyj(e.clientX, e.clientY); return; }
+      // planujesz: ciągnięcie wyznacza korytarz albo szyb — kamera stoi
+      if (p.plan) { this.dirty = true; return; }
       this.cam.x -= dx / this.cam.zoom; this.cam.y -= dy / this.cam.zoom;
       this.przejmijKamere();                           // przeciągnięcie to przejęcie kamery, nie sugestia
       this.cam.clamp(sim.world.w, sim.world.h);
@@ -1484,6 +1599,16 @@ export class EkranGry implements Ekran {
     if (!p) return;
     if (this.painting) { this.painting = false; this.malowane.clear(); return; }
     if (p.interfejs) return;
+    // etap 3c: planujesz — puszczenie kładzie plan (pokój pod palcem, korytarz i szyb od miejsca, gdzie zacząłeś)
+    if (p.plan) { this.polozPlanZProby(this.probaPodKursorem()); return; }
+    if (this.szablon && p.przycisk === 2 && !p.moved && this.naPlycie(p.sx, p.sy)) {
+      // prawy przycisk na planie skreśla go; gdzie indziej — kończy planowanie
+      const [wx, wy] = this.swiatPod(p.sx, p.sy);
+      const pom = pomieszczenieW(sim, wx, wy);
+      if (pom && !pom.gotowe) { skreslPlan(sim, pom); ui.say('Plan skreślony.', sim.tick); this.dirty = true; }
+      else this.ustawSzablon(null);
+      return;
+    }
     // w pauzie dotknięcie szkicu bez rytu w ręku (albo prawy przycisk) go skreśla
     if (!p.moved && this.pauza && this.rozkazy.ile && this.naPlycie(p.sx, p.sy) && (!ui.verb || p.przycisk === 2)) {
       const wx = this.cam.toWorldX(p.sx - this.plate.x), wy = this.cam.toWorldY(p.sy - this.plate.y);
@@ -1559,6 +1684,7 @@ export class EkranGry implements Ekran {
         if (ui.selected) { ui.selected = null; break; }
         if (this.alarm) { this.alarm = null; break; }
         if (ui.verb) { ui.verb = null; ui.tool = null; break; }
+        if (this.szablon) { this.ustawSzablon(null); break; }
         if (this.zaznaczeni.size) { this.odznacz(); break; }
         this.app.idz('menu');
         break;
@@ -1567,6 +1693,7 @@ export class EkranGry implements Ekran {
       case 'rycerz': this.zaznaczRole('rycerz'); break;
       case 'kopDroge': this.kopDroge(); break;
       case 'odwolaj': this.odwolajRozkazy(); break;
+      case 'planuj': if (!sim.ending) this.przelaczSzablon(); break;
       case 'pauza': this.ustawPauze(!this.pauza); break;
       // tempo czasu tylko w trybie deweloperskim — w grze czas jest jeden
       case 'szybciej': if (ustawienia.trybDeweloperski) this.zmienTempo(1); break;

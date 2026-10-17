@@ -31,7 +31,8 @@ export function serialize(sim: Sim): string {
     v: VERSION,
     seed: sim.seed,
     tick: sim.tick,
-    wiara: sim.wiara, krew: sim.krew, zelazo: sim.zelazo, zloto: sim.zloto, sen: sim.sen, rytual: sim.rytual, koszmar: sim.koszmar, stat: sim.stat, dug: sim.dug,
+    wiara: sim.wiara, krew: sim.krew, zelazo: sim.zelazo, zloto: sim.zloto, sen: sim.sen,
+    pomieszczenia: sim.pomieszczenia, nrPomieszczenia: sim.nrPomieszczenia, zbroja: sim.zbroja, rytual: sim.rytual, koszmar: sim.koszmar, stat: sim.stat, dug: sim.dug,
     // v4.1 beta: skutki odroczone i karty z łańcuchów przeżywają zapis (inaczej dług znikał po wczytaniu)
     odroczone: sim.wydarzenia.odroczone, czekajace: sim.wydarzenia.czekajace, lud: sim.lud, kupione: sim.wydarzenia.kupione,
     fungusBudget: sim.fungusBudget, nextTide: sim.nextTide, ending: sim.ending, przybyszow: sim.przybyszow,
@@ -65,6 +66,10 @@ export function restore(json: string): Sim | null {
   // Alpha, etap 3b: zapis sprzed kruszców nie zna liczników — zaczynają od zera
   sim.zelazo = typeof data.zelazo === 'number' ? data.zelazo : 0;
   sim.zloto = typeof data.zloto === 'number' ? data.zloto : 0;
+  // etap 3c: pomieszczenia i zbroja (zapis sprzed nich — pusto)
+  if (Array.isArray(data.pomieszczenia)) sim.pomieszczenia = data.pomieszczenia;
+  if (typeof data.nrPomieszczenia === 'number') sim.nrPomieszczenia = data.nrPomieszczenia;
+  if (Array.isArray(data.zbroja)) sim.zbroja = data.zbroja;
   sim.koszmar = true;     // Remake v2: tylko Koszmar — także stare zapisy z łaskawej i surowej góry
   if (data.stat) sim.stat = { ...sim.stat, ...data.stat };
   if (data.dug) sim.dug = data.dug;

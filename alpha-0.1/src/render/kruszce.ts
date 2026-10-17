@@ -12,12 +12,17 @@ import { wolnoRuszac } from './nastroj';
  *  - licznik podbija liczbę dopiero, gdy okruch doleci — błyska (złotem albo iskrą) i liczba na chwilę rośnie.
  * Symulacja tylko odkłada świeży urobek (sim.urobek, sim/kruszce.ts). Animacja idzie zegarem ekranu,
  * nie tikami gry — pauza ani tempo jej nie szarpią. Liczby: OKRUCH w src/nastawy/kruszce.ts.
+ * Etap 3c: tą samą drogą krzyż z warsztatu leci do licznika wiary (`dodaj('wiara', …)`, render/pomieszczenia.ts).
  */
 
-/** Barwy: sztabka i okruch żelaza (stal i rdza rudy), samorodek i okruch złota. */
-const BARWA: Record<RodzajKruszcu, { jasna: string; ciemna: string; obrys: string; blask: [number, number, number] }> = {
+/** Dokąd leci: licznik żelaza, złota albo wiary. */
+export type CelLotu = RodzajKruszcu | 'wiara';
+
+/** Barwy: sztabka i okruch żelaza (stal i rdza rudy), samorodek i okruch złota, złoty krzyż do licznika wiary. */
+const BARWA: Record<CelLotu, { jasna: string; ciemna: string; obrys: string; blask: [number, number, number] }> = {
   zelazo: { jasna: 'rgba(176,184,196,1)', ciemna: 'rgba(118,62,44,1)', obrys: 'rgba(22,18,20,0.95)', blask: [255, 196, 120] },
   zloto: { jasna: 'rgba(255,222,128,1)', ciemna: 'rgba(196,140,46,1)', obrys: 'rgba(48,30,6,0.95)', blask: [255, 220, 120] },
+  wiara: { jasna: 'rgba(255,244,200,1)', ciemna: 'rgba(212,160,60,1)', obrys: 'rgba(48,30,6,0.95)', blask: [255, 236, 170] },
 };
 
 /** Tani skrót liczby — stały kształt okrucha i kierunki iskier (rysunek nie sięga po los gry). */
@@ -27,17 +32,17 @@ function los(n: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-interface Lot { rodzaj: RodzajKruszcu; ile: number; x: number; y: number; od: number; ziarno: number }
+interface Lot { rodzaj: CelLotu; ile: number; x: number; y: number; od: number; ziarno: number }
 
 /** Okruchy w locie i błyski liczników — jedna para na ekran gry. */
 export class Urobki {
   private widziane = new WeakSet<Urobek>();
   private loty: Lot[] = [];
-  private doleciale: Record<RodzajKruszcu, number> = { zelazo: -1e9, zloto: -1e9 };
+  private doleciale: Record<CelLotu, number> = { zelazo: -1e9, zloto: -1e9, wiara: -1e9 };
   /** Gdzie na ekranie stoją znaczki liczników (ustawia je rysowanie liczników nad płytą). */
-  cele: Partial<Record<RodzajKruszcu, { x: number; y: number }>> = {};
+  cele: Partial<Record<CelLotu, { x: number; y: number }>> = {};
   /** Okruch doleciał — ekran gry daje cichy brzęk. */
-  onDolot: ((rodzaj: RodzajKruszcu) => void) | null = null;
+  onDolot: ((rodzaj: CelLotu) => void) | null = null;
 
   /** Bierze świeży urobek z symulacji — każdy kafel rudy to jeden okruch. */
   zbierz(sim: Sim, teraz: number): void {
@@ -49,20 +54,25 @@ export class Urobki {
     }
   }
 
+  /** Etap 3c: coś innego niż ruda leci do licznika (krzyż z warsztatu do wiary) — z kafla (x, y). */
+  dodaj(rodzaj: CelLotu, ile: number, x: number, y: number, teraz: number): void {
+    if (wolnoRuszac()) this.loty.push({ rodzaj, ile, x, y, od: teraz, ziarno: Math.round(x * 7919 + y * 104729 + teraz) });
+  }
+
   /** Ile kruszcu jest jeszcze w powietrzu — licznik pokazuje stan symulacji bez tego. */
-  wLocie(rodzaj: RodzajKruszcu): number {
+  wLocie(rodzaj: CelLotu): number {
     let n = 0;
     for (const l of this.loty) if (l.rodzaj === rodzaj) n += l.ile;
     return n;
   }
 
   /** Błysk licznika po doleceniu okrucha: 1 tuż po, 0 po OKRUCH.blyskMs. */
-  blysk(rodzaj: RodzajKruszcu, teraz: number): number {
+  blysk(rodzaj: CelLotu, teraz: number): number {
     return Math.max(0, 1 - (teraz - this.doleciale[rodzaj]) / OKRUCH.blyskMs);
   }
 
   /** Chwila ostatniego dolotu — ziarno kierunków iskier, stałe przez cały błysk. */
-  dolot(rodzaj: RodzajKruszcu): number { return this.doleciale[rodzaj]; }
+  dolot(rodzaj: CelLotu): number { return this.doleciale[rodzaj]; }
 
   /** W świecie (pod kamerą): rozbłysk w miejscu rozbitego kafla — złoty przy złocie, iskry przy żelazie. */
   rysujNaMapie(ctx: CanvasRenderingContext2D, cam: Camera, teraz: number): void {
@@ -70,7 +80,7 @@ export class Urobki {
     ctx.save();
     for (const l of this.loty) {
       const p = (teraz - l.od) / OKRUCH.rozbloskMs;
-      if (p < 0 || p > 1) continue;
+      if (p < 0 || p > 1 || l.rodzaj === 'wiara') continue;
       const sx = cam.toScreenX(l.x + 0.5), sy = cam.toScreenY(l.y + 0.5);
       if (sx < -z * 3 || sy < -z * 3 || sx > cam.vw + z * 3 || sy > cam.vh + z * 3) continue;
       const g = 1 - p;
@@ -161,19 +171,24 @@ export class Urobki {
       halo.addColorStop(1, `rgba(${r},${g},${bb},0)`);
       ctx.fillStyle = halo;
       ctx.fillRect(px - rozm * 2.6, py - rozm * 2.6, rozm * 5.2, rozm * 5.2);
-      // okruch: nieregularny wielokąt, obraca się w locie
-      const obrot = l.ziarno + t * 9;
       ctx.save();
       ctx.translate(px, py);
-      ctx.rotate(obrot);
       ctx.beginPath();
-      const n = 6;
-      for (let k = 0; k < n; k++) {
-        const a = (k / n) * Math.PI * 2;
-        const rr = rozm * (0.7 + 0.45 * los(l.ziarno + k * 17));
-        if (k === 0) ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); else ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+      if (l.rodzaj === 'wiara') {
+        // złoty krzyż z warsztatu: kołysze się w locie, nie koziołkuje
+        ctx.rotate(Math.sin(t * 7) * 0.25);
+        krzyz(ctx, rozm * 1.15);
+      } else {
+        // okruch: nieregularny wielokąt, obraca się w locie
+        ctx.rotate(l.ziarno + t * 9);
+        const n = 6;
+        for (let k = 0; k < n; k++) {
+          const a = (k / n) * Math.PI * 2;
+          const rr = rozm * (0.7 + 0.45 * los(l.ziarno + k * 17));
+          if (k === 0) ctx.moveTo(Math.cos(a) * rr, Math.sin(a) * rr); else ctx.lineTo(Math.cos(a) * rr, Math.sin(a) * rr);
+        }
+        ctx.closePath();
       }
-      ctx.closePath();
       const gr = ctx.createLinearGradient(-rozm, -rozm, rozm, rozm);
       gr.addColorStop(0, b.jasna);
       gr.addColorStop(1, b.ciemna);
@@ -190,6 +205,17 @@ export class Urobki {
     ctx.restore();
     this.loty = zostaja;
   }
+}
+
+/** Obrys krzyża (ramię `a` od środka w górę i w dół, poprzeczka nad środkiem) — do ścieżki bieżącej. */
+export function krzyz(ctx: CanvasRenderingContext2D, a: number): void {
+  const s = a * 0.26, r = -a * 0.32, b = a * 0.62;
+  const pkt: [number, number][] = [
+    [-s / 2, -a], [s / 2, -a], [s / 2, r - s / 2], [b, r - s / 2], [b, r + s / 2], [s / 2, r + s / 2],
+    [s / 2, a], [-s / 2, a], [-s / 2, r + s / 2], [-b, r + s / 2], [-b, r - s / 2], [-s / 2, r - s / 2],
+  ];
+  pkt.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+  ctx.closePath();
 }
 
 /**

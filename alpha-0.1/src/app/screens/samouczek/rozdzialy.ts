@@ -11,6 +11,22 @@ import { DLON } from '../../../nastawy/dlon';
 import { STRAZNICY } from '../../../nastawy/straznicy';
 import { KOSZTY } from '../../../nastawy/moce';
 import { wiadroTeraz } from '../../../sim/wiadro';
+import { probaPlanu } from '../../../sim/pomieszczenia';
+import { POMIESZCZENIA } from '../../../nastawy/pomieszczenia';
+import type { Sim } from '../../../sim/sim';
+
+/** Samouczek pomieszczeń: pierwsze miejsce w skale obok sali, gdzie wolno położyć warsztat (dolny rząd wnętrza). */
+function miejsceNaWarsztat(sim: Sim): { x: number; y: number } | null {
+  const s = sim.world.salaStart;
+  for (let dx = 0; dx < 40; dx++) for (const k of [1, -1]) for (const dy of [0, -1, 1]) {
+    const x = s.x + k * dx, y = s.y + dy;
+    const p = probaPlanu(sim, 'warsztat', x, y);
+    // w litej skale (najwyżej kolumna wejścia już pusta) — nie pod sklepieniem sali
+    const litych = p.kafle.filter((i) => sim.world.solid(i % sim.world.w, (i / sim.world.w) | 0)).length;
+    if (p.ok && litych >= p.kafle.length - p.h) return { x, y };
+  }
+  return null;
+}
 
 /** Próg pielgrzymki w procentach — samouczek mówi tę samą liczbę, co dłonie oddania. */
 const PROG = `${Math.round(PIELGRZYMKA.oddanieNacji * 100)}%`;
@@ -118,6 +134,34 @@ export const ROZDZIALY: Rozdzial[] = [
       },
     ],
     koniec: 'Każda postać ma swój zamiar — dotknij jej, a karta powie, co robi i ile jeszcze.',
+  },
+  {
+    tytul: 'Pomieszczenia',
+    wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb. Kują je robotnicy, którym plan wskażesz.',
+    czasowniki: [],
+    etapy: [
+      {
+        tekst: 'Dotknij „wyznacz pomieszczenie” pod płytą.', klawisz: 'planuj',
+        wskaz: (s) => { const p = s.gra.miejscePolaDruzyny('pomieszczenia'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: p.h / 2 + 4 } : null; },
+        gotowe: (g) => !!g.szablon,
+      },
+      {
+        tekst: 'Pod palcem masz plan warsztatu. Dotknij skały obok sali — tam, gdzie obrys świeci jasno.',
+        wejdz: (g) => g.ustawSzablon('warsztat'),
+        wskaz: (s) => { const m = miejsceNaWarsztat(s.gra.sim); return m ? { typ: 'swiat', cel: { x: m.x + 0.5, y: m.y - 0.5, r: 3, tekst: 'tutaj' } } : null; },
+        gotowe: (_g, z) => z?.typ === 'plan',
+      },
+      {
+        tekst: 'Zaznacz robotników (medalion albo A) i dotknij planu — wykują go.', klawisz: 'robotnicy',
+        wejdz: (g) => g.ustawSzablon(null),
+        gotowe: (_g, z) => z?.typ === 'polecenie' && z.rodzaj === 'pomieszczenie' && z.przyjeli > 0,
+      },
+      {
+        tekst: `Gotowy warsztat zamienia złoto w wiarę (${POMIESZCZENIA.warsztat.zlotoNaSztuke} złota — ${POMIESZCZENIA.warsztat.wiaraZaSztuke} wiary), kuźnia — żelazo w zbroję rycerza, a sen w sypialni zdejmuje osłabienia. Wolni robotnicy sami nic nie biorą: pracują ci, którym wskażesz.`,
+        rozumiem: true,
+      },
+    ],
+    koniec: 'Korytarz i szyb ciągniesz palcem od miejsca, gdzie stoi lud — szyb schodzi prostymi schodami, więc da się nim wrócić.',
   },
   {
     tytul: 'Jedzenie z góry',

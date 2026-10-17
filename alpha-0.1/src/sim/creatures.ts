@@ -15,6 +15,8 @@ import { STRAZNICY } from '../nastawy/straznicy';
 import { obozFrontowy, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
 import { obozyLudu, obozyWgOdleglosci, najblizszyOboz, walczacy, type MiejsceJedzenia } from './lud';
 import { wykutyKafel } from './kruszce';
+import { pomieszczenieId, kafleDoKucia, siegaPlanu, miejsceWPom, ktoryWPom } from './pomieszczenia';
+import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
 import { wiadroDoWspinaczki, wiadroId, krokNaLinie } from './wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
@@ -134,6 +136,10 @@ ksiegaT?: number;
   szalDo?: number;
   /** Alpha: rozkaz gracza (sim/polecenia.ts) — trzyma się go, aż go odwołasz. */
   polecenie?: Polecenie;
+  /** Alpha, etap 3c: co robi w pomieszczeniu — przy kowadle albo stole („buduje”), na posłaniu („spi”). Rysunek bierze z tego pozę. */
+  czynnosc?: 'buduje' | 'spi';
+  /** Ile tików już przespał w sypialni (sen zdejmuje osłabienia — sim/pomieszczenia.ts). */
+  snu?: number;
   /** Alpha: odmowa wykonania rozkazu — dymek nad głową i kręcenie głową. */
   odmowa?: Odmowa;
   /** Alpha: od kiedy przytrzymuje się ściany szybu, szukając zgubionej drogi (krótko — potem się zsuwa). */
@@ -796,6 +802,7 @@ function planujLud(sim: Sim, c: Creature): void {
   const kopal = !!c.kopieDroge;
   c.kopieDroge = false;
   c.modliPrzyObozie = false;
+  c.czynnosc = undefined;
   const naDroge = (droga: number[], cx?: number, cy?: number): void => {
     c.droga = droga; c.drogaI = 0; c.drogaKopie = false;
     if (cx !== undefined && cy !== undefined) { c.jx = cx; c.jy = cy; return; }
@@ -1148,6 +1155,40 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     return poddajSie('nie dojdę do czoła drogi');
   }
 
+  // etap 3c: warsztat, kuźnia, sypialnia — idzie na swoje miejsce przy stole, kowadle albo na posłaniu i tam zostaje
+  if (p.typ === 'praca' || p.typ === 'sen') {
+    const pom = pomieszczenieId(sim, p.pom);
+    if (!pom || !pom.gotowe) { c.polecenie = undefined; return false; }
+    const [mx, my, kier] = miejsceWPom(pom, ktoryWPom(sim, pom, c));
+    p.x = mx; p.y = my;
+    const nazwa = NAZWA_POMIESZCZENIA[pom.rodzaj];
+    if (Math.abs(cx - mx) <= 1 && cy === my && stoi(sim, cx, cy)) {
+      p.na = true; p.prob = 0;
+      c.jx = mx; c.jy = my; c.droga = undefined;
+      c.czynnosc = p.typ === 'praca' ? 'buduje' : 'spi';
+      // twarzą do stołu albo kowadła; śpiący — tak, żeby leżał na posłaniu
+      c.face = kier;
+      zamiar(p.typ === 'sen' ? 'śpi w sypialni — sen zdejmie osłabienia'
+        : pom.brak ? `czeka: ${nazwa} — ${pom.brak}` : pom.rodzaj === 'warsztat' ? 'robi krzyże ze złota w warsztacie' : 'kuje zbroję dla rycerza w kuźni', Job.STOI, Z);
+      return true;
+    }
+    const tam = (x: number, y: number) => Math.abs(x - mx) <= 1 && y === my && stoi(sim, x, y);
+    if (budzetDrog() <= 0) return brakCzasu();
+    const d = droga(tam, POLECENIA.szukanieDrogi);
+    if (d) { naDroge(d, mx, my); zamiar(p.typ === 'sen' ? 'idzie spać do sypialni' : `idzie pracować: ${nazwa}`, Job.WANDER, podroz(d) + 60); p.prob = 0; return true; }
+    return poddajSie('nie dojdę tam — nie ma drogi');
+  }
+
+  // etap 3c: plan pomieszczenia — wskazany kafel już wykuty: następny kafel planu (najbliższy odsłonięty)
+  if (p.typ === 'kop' && p.pom !== undefined) {
+    const pom = pomieszczenieId(sim, p.pom);
+    if (!pom || pom.gotowe) { c.polecenie = undefined; return false; }
+    if (!w.solid(p.x, p.y)) {
+      const nast = kafleDoKucia(sim, c, pom, 1)[0];
+      if (!nast) { c.polecenie = undefined; return false; }
+      p.x = nast[0]; p.y = nast[1]; p.na = false; p.prob = 0;
+    }
+  }
   // „kop żyłę” (etap 3b): wskazany kafel rudy wykuty — bierze następny odsłonięty kafel tej samej rudy
   if (p.typ === 'kop' && p.zyla && !w.solid(p.x, p.y)) {
     const nast = nastepnyKafelZyly(sim, c, p);
@@ -1157,15 +1198,28 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
   // „kop tam”: lity kafel jeszcze stoi — stojąc obok, kuje go
   if (p.typ === 'kop' && w.solid(p.x, p.y)) {
     if (w.hardness(p.x, p.y) <= 0) { c.polecenie = undefined; odmow(sim, c, 'tej skały nie ruszę'); return false; }
-    if (Math.abs(cx - p.x) <= 1 && Math.abs(cy - p.y) <= 1 && stoi(sim, cx, cy)) {
+    // plan pomieszczenia kuje się też nad głową (wnętrze ma 3 kafle wysokości)
+    const plan = pomieszczenieId(sim, p.pom);
+    const siega = (x: number, y: number, tx = p.x, ty = p.y) => plan ? siegaPlanu(x, y, tx, ty) : Math.abs(x - tx) <= 1 && Math.abs(y - ty) <= 1;
+    if (siega(cx, cy) && stoi(sim, cx, cy)) {
       c.jx = p.x; c.jy = p.y; c.dig = 0; c.droga = undefined;
-      zamiar(p.zyla ? `kuje żyłę ${p.zyla === 'zelazo' ? 'żelaza' : 'złota'} — tak kazałeś` : 'kuje tam, gdzie kazałeś', Job.DIG, Z);
+      zamiar(plan ? `kuje plan: ${NAZWA_POMIESZCZENIA[plan.rodzaj]} — tak kazałeś`
+        : p.zyla ? `kuje żyłę ${p.zyla === 'zelazo' ? 'żelaza' : 'złota'} — tak kazałeś` : 'kuje tam, gdzie kazałeś', Job.DIG, Z);
       return true;
     }
-    const obok = (x: number, y: number) => Math.abs(x - p.x) <= 1 && Math.abs(y - p.y) <= 1 && stoi(sim, x, y);
+    const obok = (x: number, y: number) => siega(x, y) && stoi(sim, x, y);
     if (budzetDrog() <= 0) return brakCzasu();
     const d = droga(obok, POLECENIA.szukanieDrogi);
-    if (d) { naDroge(d); zamiar('idzie kuć tam, gdzie kazałeś', Job.WANDER, podroz(d)); p.prob = 0; return true; }
+    if (d) { naDroge(d); zamiar(plan ? `idzie kuć plan: ${NAZWA_POMIESZCZENIA[plan.rodzaj]}` : 'idzie kuć tam, gdzie kazałeś', Job.WANDER, podroz(d)); p.prob = 0; return true; }
+    // plan: do tego kafla nie dojdzie — może do innego kafla planu
+    if (plan) {
+      for (const [x, y] of kafleDoKucia(sim, c, plan, 4)) {
+        if (x === p.x && y === p.y) continue;
+        if (budzetDrog() <= 0) return brakCzasu();
+        const d2 = droga((sx, sy) => siega(sx, sy, x, y) && stoi(sim, sx, sy), POLECENIA.szukanieDrogi);
+        if (d2) { p.x = x; p.y = y; naDroge(d2); zamiar(`idzie kuć plan: ${NAZWA_POMIESZCZENIA[plan.rodzaj]}`, Job.WANDER, podroz(d2)); p.prob = 0; return true; }
+      }
+    }
     if (budzetDrog() <= 1) return brakCzasu();
     const dk = wkopDroga(sim, c, (x, y) => x === p.x && y === p.y, POLECENIA.szukanieKopania);
     if (dk) { zamiar('przekopuje się tam, gdzie kazałeś', Job.WANDER, przekop(dk)); p.prob = 0; return true; }
@@ -1675,8 +1729,10 @@ function doDig(sim: Sim, c: Creature): void {
     c.jt = 0;
     return;
   }
-  // zasięg po kaflach — sąsiedni kafel, także po skosie
-  const near = Math.abs(c.jx - Math.floor(c.x)) <= 1 && Math.abs(c.jy - Math.floor(c.y)) <= 1;
+  // zasięg po kaflach — sąsiedni kafel, także po skosie (Alpha, etap 3c: kując plan pomieszczenia — też nad głową)
+  const near = c.polecenie?.typ === 'kop' && c.polecenie.pom !== undefined
+    ? siegaPlanu(Math.floor(c.x), Math.floor(c.y), c.jx, c.jy)
+    : Math.abs(c.jx - Math.floor(c.x)) <= 1 && Math.abs(c.jy - Math.floor(c.y)) <= 1;
   // Remake v2: kuje tylko stojąc — wisząc na ścianie (bez lin i klamer) zsuwa się, więc najpierw staje
   if (near && (!ludRuch(c) || stoi(sim, Math.floor(c.x), Math.floor(c.y)))) digTile(sim, c, c.jx, c.jy);
   else idz(sim, c, c.jx, c.jy);

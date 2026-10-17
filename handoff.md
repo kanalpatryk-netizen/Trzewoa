@@ -1,12 +1,12 @@
 # Handoff — Trzewia, Alpha 0.1
 
-Stan na 17.10.2026, ok. 13:15 UTC (po etapie 3b). Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
+Stan na 17.10.2026, po etapie 3c. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
-- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 oraz 3a i 3b etapu 3, a zostały 3c–3f, 4 i 5.
-- **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. **Etap 3b jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
-- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. **Nie zaczynaj 3c bez polecenia.**
+- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 oraz 3a, 3b i 3c etapu 3, a zostały 3d–3f, 4 i 5.
+- **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etap 3b jest na `main` i w wydaniu (PR #13, na prośbę użytkownika). **Etap 3c jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
+- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. **Nie zaczynaj 3d bez polecenia.**
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 
 ---
@@ -79,7 +79,9 @@ na ekranie”.
   - zapis i wczytanie trzymają liczby;
   - użytkownik dostał zrzut licznika i animacji.
 
-### 1.4 Etap 3c — szablony pomieszczeń i rzemiosło
+### 1.4 Etap 3c — szablony pomieszczeń i rzemiosło — ZROBIONE
+**Zrobione 17.10:** `src/sim/pomieszczenia.ts` (plan, `probaPlanu`, kucie, `tikPomieszczen`: warsztat, kuźnia, sen), `src/render/pomieszczenia.ts` (plany, podgląd, wyposażenie w skali postaci, ogień, iskry w takt młota — `fazaMlota` w `figury.ts`, „z z z”, zdarzenia), `src/nastawy/pomieszczenia.ts`. Rozkazy: „kop” z polem `pom`, nowe typy „praca” i „sen” (`wydajNaPomieszczenie` w `polecenia.ts`), pole `Creature.czynnosc` daje pozę. Krzyż z warsztatu leci do licznika wiary przez `Urobki.dodaj('wiara', …)`. UI: przycisk na pasku drużyny, listwa szablonów, klawisz B (`planuj`), przeciąganie korytarza i szybu, prawy przycisk skreśla plan. Atlas: 4 tablice; samouczek: rozdział „Pomieszczenia”. Zbroja (`sim.zbroja`) czeka na 3f. Poniżej pierwotny plan.
+
 **Cel:** gracz wybiera kształt (Sypialnia, Warsztat, Kuźnia, Szyb/Korytarz) i kładzie go na skale jako plan, a robotnicy
 sami go wykopują. Gotowe pomieszczenie działa:
 - w warsztacie ze złota powstają dewocjonalia, które dają wiarę;
@@ -409,8 +411,8 @@ Kod w `alpha-0.1` nie zmienił się od `7f06c42`, więc wyniki są aktualne.
 Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 
 ### 2.5 Lista zadań
-- **Zrobione:** etap 1, etap 2, 3a, 3b, Alpha w menu i w wydaniu, push po przywróceniu dostępu.
-- **Do zrobienia:** 3c, 3d, 3e, 3f, etap 4, etap 5.
+- **Zrobione:** etap 1, etap 2, 3a, 3b (w wydaniu), 3c (na gałęzi), Alpha w menu i w wydaniu.
+- **Do zrobienia:** 3d, 3e, 3f, etap 4, etap 5.
 
 ---
 
@@ -518,7 +520,8 @@ Od wklejenia planu (16.10), po kolei:
 | `26f26a5` | Opis obserwatorium Remake v2 w README i w notatkach wydania już nie wspomina wyboru trudności |
 | `6688432` (`main`) | Scalenie PR #12. Automat wystawił Alphę w wydaniu „gra” |
 | `f4a103b` | `handoff.md` |
-| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3b.** Liczniki żelaza i złota z animacją okruchów, „kop żyłę”, tablica „Kruszce”, porządki w podpowiedziach, sumowanie kroniki |
+| `8708eed` (`main`, PR #13) | **Etap 3b.** Liczniki żelaza i złota z animacją okruchów, „kop żyłę”, tablica „Kruszce”, porządki w podpowiedziach, sumowanie kroniki |
+| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3c.** Pomieszczenia: plany pod kursorem, kucie tylko przez zaznaczonych, warsztat (złoto → wiara), kuźnia (żelazo → zbroja), sypialnia (zdejmuje osłabienia), korytarz i szyb, atlas, samouczek |
 
 Wcześniej w tej samej sesji zrobiłem rzeczy, które są już na `main` (PR #7–#12):
 - freski w interfejsie, mroczny interfejs i muzyka niepokoju;
@@ -588,7 +591,7 @@ Potem odtwórz w brudnopisie narzędzia z Dodatku A: próby botów, zrzuty i map
 4. Dodaj tablicę atlasu „Kruszce”, odkrywaną przy pierwszej rudzie, i podpowiedź.
 5. Przejdź listę z 6.10, potem commit „Alpha 0.1, etap 3b: …” i push.
 
-### 6.4 Etap 3c
+### 6.4 Etap 3c — zrobione (17.10, gałąź `ccr-91477c56-dh7bgd`)
 1. Dodaj nastawy pomieszczeń: rozmiary, koszty, czasy.
 2. Napisz moduł pomieszczeń: plan, sprawdzanie, czy da się położyć, kucie przez rozkazy, stan i zapis.
 3. Zrób interfejs: przycisk przy medalionach, podgląd pod kursorem, klawisz.
