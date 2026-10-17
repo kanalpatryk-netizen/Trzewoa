@@ -10,7 +10,7 @@ import { Job } from './creatures';
 import { Race, RACES } from './races';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { procentSkorupy } from './rytual';
-import { rolaPostaci, mnoznik, maxHp, gniazdaWSkale } from './lud';
+import { rolaPostaci, mnoznik, maxHp, gniazdaWSkale, walczacy } from './lud';
 import { aktywnyBoss } from './boss';
 import { zapisz } from './dziennik';
 import { LUD } from '../nastawy/lud';
@@ -41,13 +41,14 @@ export function trybWiernych(sim: Sim): boolean {
   const st = sim.lud.straznicy;
   if (!st?.trwa || !S.fale[st.fala]?.boss) return false;
   if (gniazdaWSkale(sim).length > 0) return false;
-  return !sim.creatures.some((c) => !c.dead && rolaPostaci(c) === 'rycerz');
+  // (Remake v2: robotnicy w hełmach też się liczą — wtedy oni stają przeciw bossowi)
+  return !sim.creatures.some((c) => !c.dead && walczacy(c));
 }
 
-/** Ilu rycerzy jest w ludzie (bez buntowników). */
+/** Ilu walczących jest w ludzie: rycerze (bez buntowników) i — gdy rycerzy brak — robotnicy w hełmach. */
 export function iluRycerzy(sim: Sim): number {
   let n = 0;
-  for (const c of sim.creatures) if (!c.dead && !c.buntownik && rolaPostaci(c) === 'rycerz') n++;
+  for (const c of sim.creatures) if (!c.dead && !c.buntownik && walczacy(c)) n++;
   return n;
 }
 
@@ -89,7 +90,7 @@ export function falaZwykla(sim: Sim): boolean {
   if (!st?.trwa) return false;
   if (!S.fale[st.fala]?.boss) return true;
   if (sim.tick % 60 !== 0 && st.bezRycerzy !== undefined) return st.bezRycerzy;
-  st.bezRycerzy = !sim.creatures.some((c) => !c.dead && rolaPostaci(c) === 'rycerz' && wStrefieStraznikow(sim, c.x, c.y, S.ucieczkaZapas));
+  st.bezRycerzy = !sim.creatures.some((c) => !c.dead && walczacy(c) && wStrefieStraznikow(sim, c.x, c.y, S.ucieczkaZapas));
   return st.bezRycerzy;
 }
 
@@ -154,7 +155,7 @@ export function tikStraznikow(sim: Sim): void {
       st.fala++;
       sim.wiara += S.nagrodaWiary;
       // po wygranej fali rycerze odpoczywają — wracają do pełni sił (inaczej armia topniała z fali na falę)
-      for (const c of sim.creatures) if (!c.dead && rolaPostaci(c) === 'rycerz') c.hp = Math.max(c.hp, maxHp(sim, c));
+      for (const c of sim.creatures) if (!c.dead && walczacy(c)) c.hp = Math.max(c.hp, maxHp(sim, c));
       const w = sim.world;
       sim.gdzie(w.coreX, w.przedsionekY).log(
         st.fala >= S.fale.length ? 'Ostatni Strażnik Snu rozsypał się w pył. Nikt już nie strzeże twojego snu.'
@@ -259,7 +260,7 @@ function rycerzeDoWalki(sim: Sim): void {
   // za mało rycerzy na bossa — przerywają walkę i odchodzą spod rdzenia (planer prowadzi ich do obozu)
   if (rycerzeCzekaja(sim)) {
     for (const c of sim.creatures) {
-      if (c.dead || rolaPostaci(c) !== 'rycerz') continue;
+      if (c.dead || !walczacy(c)) continue;
       // broni się przed tym, co podeszło blisko — dalszych nie goni
       let blisko: Creature | null = null, bd = S.rycerzBroniSieOd;
       for (const s of wrogowie) { const d = Math.hypot(s.x - c.x, s.y - c.y); if (d < bd) { bd = d; blisko = s; } }
@@ -279,7 +280,7 @@ function rycerzeDoWalki(sim: Sim): void {
     return;
   }
   for (const c of sim.creatures) {
-    if (c.dead || rolaPostaci(c) !== 'rycerz') continue;
+    if (c.dead || !walczacy(c)) continue;
     const obecny = sim.creatureById(sim.target.get(c.id) ?? -1);
     // głodny rycerz najpierw je — walczy tylko z tym, co stoi tuż obok (dziesięciu rycerzy umarło z głodu,
     // goniąc Strażnika w skale: co pół sekundy ten przydział odbierał im drogę do spiżarni)
@@ -348,9 +349,9 @@ export function celStraznika(sim: Sim, c: Creature, limit: number): Creature | n
     if (o.dead || !rolaPostaci(o)) continue;
     if (Math.hypot(o.x - w.coreX, o.y - w.przedsionekY) > limit) continue;
     // uciekających spod rdzenia nie gonią — w wąskich szybach doganiali ich jednego po drugim
-    if (rolaPostaci(o) !== 'rycerz' && o.job === Job.WANDER && o.zamiar?.startsWith('odchodzi spod rdzenia')) continue;
-    // najpierw rycerze — warta staje między Strażnikami a modlącymi się
-    const d = Math.hypot(o.x - c.x, o.y - c.y) - (rolaPostaci(o) === 'rycerz' ? S.rycerzPierwszy : 0);
+    if (!walczacy(o) && o.job === Job.WANDER && o.zamiar?.startsWith('odchodzi spod rdzenia')) continue;
+    // najpierw walczący — warta staje między Strażnikami a modlącymi się
+    const d = Math.hypot(o.x - c.x, o.y - c.y) - (walczacy(o) ? S.rycerzPierwszy : 0);
     if (d < bd) { bd = d; best = o; }
   }
   return best;
@@ -362,7 +363,7 @@ export function ciosStraznika(sim: Sim, c: Creature, cel: Creature, sila: number
   cel.hp -= sila * (0.85 + sim.rng.next() * 0.3);
   sim.spark(cel.x, cel.y - 0.5, 'hit');
   if (cel.hp <= 0) { sim.kill(cel, c.boss ? `zmiażdżony przez: ${aktywnyBoss().nazwa}` : 'z ręki Strażnika Snu', 'straznik'); return; }
-  if (rolaPostaci(cel) !== 'rycerz') ranStraznika(sim, c, cel, RACES[cel.race].strength * mnoznik(sim, cel, 'sila') * S.oddajeCios);
+  if (!walczacy(cel)) ranStraznika(sim, c, cel, RACES[cel.race].strength * mnoznik(sim, cel, 'sila') * S.oddajeCios);
 }
 
 /** Krok Strażnika (zamiast zwykłego życia stworzenia). */

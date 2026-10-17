@@ -70,10 +70,10 @@ export class EkranUstawien implements Ekran {
       { typ: 'przelacznik', etykieta: 'Skala głębokości', opis: 'karby na prawym marginesie', czytaj: () => ustawienia.skalaGlebokosci, zmien: (v) => ustaw('skalaGlebokosci', v) },
 
       { typ: 'naglowek', tekst: 'Świat' },
-      { typ: 'wybor', etykieta: 'Góra', opis: 'łaskawa wolniej zasypia, koszmar szybciej i z mniejszą krwią — dla nowej gry', opcje: ['łaskawa', 'surowa', 'koszmar'], czytaj: () => ustawienia.trudnosc, zmien: (v) => ustaw('trudnosc', v as typeof ustawienia.trudnosc) },
       { typ: 'wybor', etykieta: 'Auto-pauza', opis: 'gra sama zatrzymuje czas, gdy trzeba decydować', opcje: ['kryzysy', 'wszystko', 'wyłączona'], czytaj: () => ustawienia.autoPauza, zmien: (v) => ustaw('autoPauza', v as typeof ustawienia.autoPauza) },
       { typ: 'wybor', etykieta: 'Nowe tablice', opis: 'przy pierwszym spotkaniu tablica atlasu otwiera się sama', opcje: ['pokazuj', 'tylko w atlasie'], czytaj: () => ustawienia.tablice, zmien: (v) => ustaw('tablice', v as typeof ustawienia.tablice) },
       { typ: 'przelacznik', etykieta: 'Kamera za życiem', opis: 'sama wraca tam, gdzie jest najgęściej — dopóki jej nie chwycisz', czytaj: () => ustawienia.kameraZaZyciem, zmien: (v) => ustaw('kameraZaZyciem', v) },
+      { typ: 'przelacznik', etykieta: 'Kamera do wydarzeń', opis: 'przy karcie wydarzenia i ostrzeżeniu sama jedzie na miejsce — wyłączone: tylko znacznik, a gdy miejsce jest poza ekranem, strzałka przy krawędzi (dotknij jej, żeby tam pojechać)', czytaj: () => ustawienia.kameraDoWydarzen, zmien: (v) => ustaw('kameraDoWydarzen', v) },
       { typ: 'przelacznik', etykieta: 'Automatyczne przybliżanie', opis: 'kamera sama dobiera skalę do wielkości kolonii', czytaj: () => ustawienia.autoZoom, zmien: (v) => ustaw('autoZoom', v) },
       { typ: 'przelacznik', etykieta: 'Autozapis', opis: 'stan góry co minutę do pamięci przeglądarki', czytaj: () => ustawienia.autozapis, zmien: (v) => ustaw('autozapis', v) },
 

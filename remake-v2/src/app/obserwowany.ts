@@ -8,11 +8,10 @@
  */
 import type { Sim } from '../sim/sim';
 import { Race } from '../sim/races';
+import { porcjiWWiadrach } from '../sim/wiadro';
 import { ustawienia } from '../core/settings-store';
 import { mikser } from '../core/mikser';
 import type { StylBota } from './bot';
-
-export type Trudnosc = 'łaskawa' | 'surowa' | 'koszmar';
 
 export interface UstawieniaBota {
   /** Numer okna (1–4) — wraca w każdej wiadomości. */
@@ -21,7 +20,6 @@ export interface UstawieniaBota {
   /** Mnożnik czasu (1 = zwykły). */
   tempo: number;
   pauza: boolean;
-  trudnosc: Trudnosc;
   /** Ziarno następnej partii; brak — losowe. */
   ziarno: number | null;
   /** Po końcu partii od razu następna. */
@@ -41,7 +39,7 @@ const surowe: Wejscie | null = (() => {
 export const BOT: UstawieniaBota & { wlaczony: boolean; partia: number } = {
   wlaczony: !!surowe,
   partia: 0,
-  okno: 1, styl: 'rozsadny', tempo: 1, pauza: false, trudnosc: 'surowa', ziarno: null, autoRestart: true, dzwiek: false,
+  okno: 1, styl: 'rozsadny', tempo: 1, pauza: false, ziarno: null, autoRestart: true, dzwiek: false,
   ...(surowe ?? {}),
 };
 
@@ -77,7 +75,6 @@ export function przygotujObserwowana(): void {
       if (z.styl) BOT.styl = z.styl;
       if (typeof z.tempo === 'number' && z.tempo > 0) BOT.tempo = Math.min(50, z.tempo);
       if (typeof z.pauza === 'boolean') BOT.pauza = z.pauza;
-      if (z.trudnosc) BOT.trudnosc = z.trudnosc;
       if (z.ziarno !== undefined) BOT.ziarno = z.ziarno;
       if (typeof z.autoRestart === 'boolean') BOT.autoRestart = z.autoRestart;
       if (typeof z.dzwiek === 'boolean') { BOT.dzwiek = z.dzwiek; zastosujDzwiek(); }
@@ -118,12 +115,12 @@ export function wyslijStan(sim: Sim, ziarno: number, koniecOd: number): void {
     zywych, role,
     wiara: Math.round(sim.wiara),
     krew: Math.round(sim.krew),
-    jedzenie: Math.round((k ? k.stock : 0) + (sim.lud.spizarnie ?? []).reduce((s, o) => s + o.ilosc, 0)),
+    jedzenie: porcjiWWiadrach(sim),
     oddanie: k ? Math.round(k.devotion * 100) : 0,
     koszmar: !!sim.koszmar,
     koniec: sim.ending ?? null,
     koniecOd,
     kronika: ostatni,
-    ustawienia: { styl: BOT.styl, tempo: BOT.tempo, pauza: BOT.pauza, trudnosc: BOT.trudnosc, ziarno: BOT.ziarno, autoRestart: BOT.autoRestart, dzwiek: BOT.dzwiek },
+    ustawienia: { styl: BOT.styl, tempo: BOT.tempo, pauza: BOT.pauza, ziarno: BOT.ziarno, autoRestart: BOT.autoRestart, dzwiek: BOT.dzwiek },
   }, '*');
 }

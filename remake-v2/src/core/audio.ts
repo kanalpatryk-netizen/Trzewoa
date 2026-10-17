@@ -177,6 +177,23 @@ export class Resonance {
     return Math.sin(this.ctx.currentTime * (0.5 + glod * 2));
   }
 
+  /** Remake v2: wiadro z jedzeniem wyłania się ze stropu — skrzyp kołowrotu i stuk drewna. */
+  wiadro(): void {
+    if (!this.ctx || !ustawienia.rezonans) return;
+    const t = this.ctx.currentTime;
+    for (let i = 0; i < 4; i++) this.knock(t + i * 0.11 + Math.random() * 0.03, 420 + i * 30 + Math.random() * 60, 0.05, 0.3, 0.35);
+    this.knock(t + 0.55, 210, 0.08, 0.2, 0.5);
+  }
+
+  /** Remake v2: góra zawala się nad ludem — długi, niski łoskot kamienia. */
+  zawal(): void {
+    if (!this.ctx || !ustawienia.rezonans) return;
+    const t = this.ctx.currentTime;
+    for (let i = 0; i < 14; i++) {
+      this.knock(t + i * 0.09 + Math.random() * 0.06, 52 + Math.random() * 40 - i * 1.5, 0.26 * (1 - i / 18), (Math.random() - 0.5) * 1.6, 0.8);
+    }
+  }
+
   /** Cud słychać jako uderzenie w skałę, nie jako fanfarę. */
   toll(): void {
     if (!this.ctx || !ustawienia.rezonans) return;

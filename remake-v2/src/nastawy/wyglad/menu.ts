@@ -22,12 +22,11 @@ export const MENU = {
   /** Pozycje spisu: etykieta i opis pod spisem. Kolejność = kolejność na ekranie. */
   pozycje: {
     wroc: { etykieta: 'Graj dalej', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś' },
-    nowa: { etykieta: 'Nowa gra', opis: 'nowa góra, nowi mieszkańcy, nowa legenda' },
-    dnia: { etykieta: 'Świat dnia', opis: 'jedna góra na cały dzień, ta sama dla każdego — pobij swój najlepszy czas' },
+    nowa: { etykieta: 'Nowa gra', opis: 'nowa góra i nowi mieszkańcy — zawsze Koszmar: twarda skorupa, mało krwi i dłoń z otchłani' },
     wczytaj: { etykieta: 'Wczytaj zapis', opis: 'ostatni zapis stanu góry' },
-    samouczek: { etykieta: 'Samouczek', opis: 'dwie plansze wstępu i osiem krótkich lekcji — palec pokazuje, gdzie dotknąć' },
-    bestiariusz: { etykieta: 'Atlas', opis: 'tablice ras i praw góry — odkrywasz je, grając' },
-    osiagniecia: { etykieta: 'Osiągnięcia', opis: 'cele dodatkowe i twoje wyniki świata dnia' },
+    samouczek: { etykieta: 'Samouczek', opis: 'dwie plansze wstępu i czternaście krótkich lekcji — palec pokazuje, gdzie dotknąć' },
+    bestiariusz: { etykieta: 'Atlas', opis: 'tablice ludu, rytów i praw góry — odkrywasz je, grając' },
+    osiagniecia: { etykieta: 'Osiągnięcia', opis: 'cele dodatkowe — zdobywasz je, grając' },
     ustawienia: { etykieta: 'Ustawienia', opis: 'dźwięk, obraz i świat' },
   },
 
@@ -73,20 +72,4 @@ export const MENU = {
   pylkow: 44, pylekAlfa: 0.05, pylekMigotanie: 0.07,
   /** Komunikat (np. po końcu gry) wisi tyle ms. */
   komunikatMs: 8000,
-
-  // ---------------------------------------------- okno „Nowa gra” (v4.1 beta)
-  /**
-   * Po „Nowa gra” (w menu, na ekranie końcowym i po samouczku) otwiera się okno z wyborem
-   * trudności. Opisy liczb (sen, skorupa, krew) liczą się z nastaw w gora.ts i rytual.ts.
-   */
-  oknoTrudnosci: {
-    tytul: 'nowa gra',
-    pytanie: 'Jaka ma być twoja góra?',
-    wroc: 'Wróć',
-    podpowiedz: '1–3 albo strzałki i Enter · Esc wraca',
-    ostatnio: 'ostatnio',
-    etykiety: { 'łaskawa': 'Łaskawa', surowa: 'Surowa', koszmar: 'Koszmar' },
-    /** Ciemność pod oknem i czas jej nadejścia (ms). */
-    przyciemnienie: 0.74, wejscieMs: 180,
-  },
 };

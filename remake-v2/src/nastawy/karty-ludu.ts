@@ -10,8 +10,8 @@ export const KARTY_LUDU = {
   spisekWaga: 1, spisekPrzerwa: 36000,
   /** Zostawiony spisek wraca jako bunt po tylu tikach (2 min); buntuje się taka część rycerzy (co najmniej 1). */
   buntPo: 14400, buntCzesc: 0.4,
-  /** Bunt: „przemów do nich” (wiara) zawraca połowę buntowników; „oddaj obóz” — odchodzą z jedzeniem. */
-  buntPrzemow: 14, buntOddajJedzenie: 30,
+  /** Bunt: „przemów do nich” (wiara) zawraca połowę buntowników; „oddaj zapasy” — odchodzą z porcjami z wiader. */
+  buntPrzemow: 14, buntOddajJedzenie: 12,
   /** Buntownik: cios co tyle tików, siła × rycerz; cel w promieniu (kafle). */
   buntCiosCo: 70, buntZasieg: 1.6, buntWidzi: 60,
 

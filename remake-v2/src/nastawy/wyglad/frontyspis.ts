@@ -19,8 +19,8 @@ export const FRONTYSPIS = {
   // ------------------------------------------------------------ elementy
   /** Siedziba ludu: nisza z lampką i mieszkańcami (ilu). */
   siedziba: { x: 0.55, y: 0.37, rx: 0.085, ry: 0.036, lud: 5 },
-  /** Spiżarnia: nisza z bladym, świecącym grzybem (ile grzybów). */
-  spizarnia: { x: 0.32, y: 0.47, rx: 0.06, ry: 0.03, grzybow: 5 },
+  /** Nisza, do której zjeżdża na linie wiadro z jedzeniem (Remake v2; dawniej spiżarnia z grzybem). */
+  spizarnia: { x: 0.32, y: 0.47, rx: 0.06, ry: 0.03 },
   /** Gniazdo kamiennego rycerza: zamurowana nisza w skale, w niej śpiący rycerz. */
   gniazdo: { x: 0.68, y: 0.6, rx: 0.05, ry: 0.07 },
   /** Strażnicy Snu: dwie postaci zatopione w skale po bokach jaskini rdzenia. */
@@ -60,7 +60,7 @@ export const FRONTYSPIS = {
   /** Treść odnośników a–f. */
   podpisy: {
     a: 'siedziba ludu',
-    b: 'spiżarnia',
+    b: 'wiadro z jedzeniem',
     c: 'gniazdo rycerza',
     d: 'droga wiernych',
     e: 'Strażnicy Snu',

@@ -1,5 +1,5 @@
 import { REMAKE } from '../nastawy/lud';
-import { grzybPrzy } from '../sim/lud';
+import { doNastepnego, porcjiWWiadrach } from '../sim/wiadro';
 import type { Sim } from '../sim/sim';
 import type { Camera } from './camera';
 import { RACES } from '../sim/races';
@@ -35,7 +35,7 @@ export function etykietyKolonii(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     const barwa = RACES[klan.race].color;
     const cecha = cechaNacji(klan).nazwa;
     // Remake v1: jeden lud — podpis mówi, że to siedziba i ile jest w spiżarni
-    const tekst = REMAKE ? `siedziba · spiżarnia ${klan.stock}${grzybPrzy(sim, klan.hx, klan.hy) ? ` · grzyb obok ${grzybPrzy(sim, klan.hx, klan.hy)}` : ''}` : `${klan.name} · ${klan.pop}${cecha ? ` · ${cecha}` : ''}`;
+    const tekst = REMAKE ? `siedziba · w wiadrach ${porcjiWWiadrach(sim)} · następne za ${Math.ceil(doNastepnego(sim) / 120)} s` : `${klan.name} · ${klan.pop}${cecha ? ` · ${cecha}` : ''}`;
     const szer = ctx.measureText(tekst).width;
     const lx = sx + 14, ly = sy - 18 - Math.sin(teraz * 0.001 + klan.id) * 2;
 
@@ -68,6 +68,20 @@ export function etykietyKolonii(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
  * Podświetlenie celu: pierścień, podpis i strzałka na krawędzi, gdy cel jest poza kadrem.
  * To jest jedyny element interfejsu, który wprost mówi „patrz tutaj".
  */
+/**
+ * Strzałka przy krawędzi płyty, gdy cel jest poza kadrem (współrzędne płyty), albo null, gdy cel widać.
+ * Rysunek (podswietlCel) i dotyk (ekran gry: dotknięcie strzałki wiezie tam kamerę) liczą ją tak samo.
+ */
+export function strzalkaCelu(cam: Camera, cel: Cel): { x: number; y: number; kat: number } | null {
+  const z = cam.zoom;
+  const left = cam.x - cam.vw / 2 / z, top = cam.y - cam.vh / 2 / z;
+  const sx = (cel.x - left) * z, sy = (cel.y - top) * z;
+  if (sx > 0 && sy > 0 && sx < cam.vw && sy < cam.vh) return null;
+  const cx = cam.vw / 2, cy = cam.vh / 2;
+  const kat = Math.atan2(sy - cy, sx - cx);
+  return { x: cx + Math.cos(kat) * (cam.vw / 2 - 52), y: cy + Math.sin(kat) * (cam.vh / 2 - 52), kat };
+}
+
 export function podswietlCel(ctx: CanvasRenderingContext2D, cam: Camera, cel: Cel, teraz: number): void {
   const z = cam.zoom;
   const left = cam.x - cam.vw / 2 / z, top = cam.y - cam.vh / 2 / z;
@@ -106,10 +120,9 @@ export function podswietlCel(ctx: CanvasRenderingContext2D, cam: Camera, cel: Ce
     }
   } else {
     // strzałka przy krawędzi z podpisem — sama strzałka nie mówi, dokąd prowadzi
-    const cx = cam.vw / 2, cy = cam.vh / 2;
-    const kat = Math.atan2(sy - cy, sx - cx);
-    const px = cx + Math.cos(kat) * (cam.vw / 2 - 52);
-    const py = cy + Math.sin(kat) * (cam.vh / 2 - 52);
+    const s = strzalkaCelu(cam, cel);
+    if (!s) { ctx.restore(); return; }
+    const { x: px, y: py, kat } = s;
     ctx.save();
     ctx.translate(px, py);
     ctx.rotate(kat);

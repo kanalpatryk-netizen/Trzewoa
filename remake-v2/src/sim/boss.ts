@@ -13,7 +13,7 @@ import { T } from './tiles';
 import { AKTYWNY_BOSS, SNIACY_KAMIEN as K, type IdBossa } from '../nastawy/boss';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { nowyStraznik, ruchStraznika, celStraznika, ciosStraznika, trybWiernych } from './straznicy';
-import { rolaPostaci } from './lud';
+import { rolaPostaci, walczacy } from './lud';
 
 export interface Boss {
   id: IdBossa;
@@ -69,7 +69,7 @@ const sniacyKamien: Boss = {
   ksiega: { zasieg: K.ksiegaZasieg, co: K.ksiegaCo, rana: K.ksiegaRana, cofa: K.ksiegaCofa, widzi: K.ksiegaWidzi },
   przyjmij(sim, _c, od, rana) {
     // (ostatnia deska: bez rycerzy i bez gniazd ranią go też pobożni — księgą)
-    if (K.tylkoRycerze && rolaPostaci(od) !== 'rycerz' && !(rolaPostaci(od) === 'pobozny' && trybWiernych(sim))) return 0;
+    if (K.tylkoRycerze && !walczacy(od) && !(rolaPostaci(od) === 'pobozny' && trybWiernych(sim))) return 0;
     return modlacych(sim) >= K.modlitwaWiernych ? rana * K.modlitwaRany : rana;
   },
 };

@@ -83,6 +83,9 @@ export type Czynnosc =
 
 /** Co widać: czynność wynika z zajęcia, ale i z tego, czy stworzenie w ogóle się rusza. */
 function czynnosc(c: Creature, r: Ruch, sim: Sim): Czynnosc {
+  // Remake v2: w zjeżdżającym wiadrze je, na linie pod nim się wspina
+  if (c.naWiadrze) return 'je';
+  if (c.naLinie !== undefined) return 'wspina';
   if (c.vy > 0.3) return 'spada';
   const wspina = (sim.tick - (c.wspina ?? -99)) < 4 && !sim.world.solid(Math.floor(c.x), Math.floor(c.y) + 1);
   if (wspina) return 'wspina';
@@ -1008,7 +1011,7 @@ function postacZeSzkicu(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h:
   const r = ruch(c, czas);
   const cz = czynnosc(c, r, sim);
   const hp = Math.max(8, Math.round(h));
-  const klucz = `${c.race}|${c.clan}|${c.rola ?? ''}|${cz}|${hp}|${(r.faza * 6) | 0}|${(r.zegar * 6) | 0}|${kier}|${cien ? 1 : 0}`;
+  const klucz = `${c.race}|${c.clan}|${c.rola ?? ''}${c.helm ? 'H' : ''}|${cz}|${hp}|${(r.faza * 6) | 0}|${(r.zegar * 6) | 0}|${kier}|${cien ? 1 : 0}`;
   const w = hp * 2.4, wys = hp * 2.1, stopy = hp * 1.6;
   let p = SZKICE.get(klucz);
   if (!p) {

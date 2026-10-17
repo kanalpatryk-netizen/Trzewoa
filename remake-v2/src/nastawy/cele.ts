@@ -1,14 +1,16 @@
 /**
- * CELE (v4.1 beta) — progi osiągnięć i pamięć świata dnia.
+ * CELE (Remake v2) — progi osiągnięć (src/core/osiagniecia.ts).
  * Tiki przeliczaj przez TIKOW_NA_MINUTE (7200 tików = minuta gry).
  */
 export const CELE = {
-  /** „Jak kamień w studnię”: wygrana szybciej niż w tyle minut czasu gry. */
-  szybkoMinut: 8,
-  /** „Ludna góra”: tylu mieszkańców naraz (bez grzybni i ludzi z powierzchni). */
-  tlum: 80,
-  /** „Wszystko wraca”: tyle kart z łańcuchów rozstrzygniętych w jednej partii. */
-  lancuchy: 3,
-  /** Świat dnia: ile ostatnich dni pamiętać w przeglądarce. */
-  dniPamieci: 30,
+  /** „Jak kamień w studnię”: wygrana szybciej niż w tyle minut czasu gry (bot na Koszmarze: 9–10 min). */
+  szybkoMinut: 10,
+  /** „Mało grobów”: wygrana, gdy z ludu zginęło najwyżej tylu. */
+  zgonowMaks: 3,
+  /** „Kamienna drużyna”: tyle gniazd kamiennych rycerzy obudzonych w jednej partii (z pięciu). */
+  gniazda: 3,
+  /** „Stara gwardia”: tylu weteranów naraz. */
+  weteranow: 6,
+  /** „Ludna góra”: tyle postaci ludu naraz (skała wydaje najwyżej 14; reszta to rycerze z gniazd). */
+  lud: 18,
 };

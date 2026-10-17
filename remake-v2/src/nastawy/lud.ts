@@ -151,4 +151,15 @@ export const LUD = {
 
   /** Co tyle tików sprawdzamy, czy da się jeszcze wygrać. */
   przegranaCo: 240,
+
+  // ---------------------------------------------------------------- Remake v2
+  /**
+   * Gdy w ludzie nie zostanie ani jeden rycerz, robotnicy zakładają hełmy i biorą kilofy do walki:
+   * życie i siła × tyle, walczą ze Strażnikami Snu i bossem jak rycerze (zdejmują hełmy, gdy rycerze wrócą).
+   */
+  helm: { hp: 1.8, sila: 3.2 },
+  /** Trupy ludu zostają na ziemi — najwyżej tyle naraz (najstarsze rozsypują się w kości). */
+  trupyMax: 40,
+  /** Pobożni stawiają ołtarz najwyżej raz na tyle tików (3 min) — bez spiżarni nie płacą jedzeniem. */
+  oltarzCo: 21600,
 };

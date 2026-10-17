@@ -1,0 +1,66 @@
+import type { Ekran } from '../screen';
+import type { Kontekst } from '../context';
+import type { Akcja } from '../../core/keybinds';
+import { tloSadzy } from '../../render/ink';
+import { OknoAtlasu } from '../../atlas/okno';
+import { Tajemnica } from '../../render/tajemnica';
+import { ramaRyciny } from '../../render/ozdoby';
+import { odkrycia } from '../../atlas/odkrycia';
+import { TABLICE } from '../../atlas/tablice';
+import { zLiczbami } from '../../atlas/okno';
+import { ATLAS as A } from '../../nastawy/wyglad/atlas';
+import { RAMA } from '../../nastawy/wyglad/ozdoby';
+
+/**
+ * Atlas z menu: te same tablice, co w grze — tylko te, które już odkryłeś.
+ * Zastąpił bestiariusz, który był jedną długą kartą tekstu.
+ */
+export class EkranBestiariusza implements Ekran {
+  nazwa = 'bestiariusz';
+  private okno = new OknoAtlasu();
+  private start: { x: number; y: number } | null = null;
+  private ostatniY = 0;
+  private przeciaga = false;
+  private strona = '';
+  private tajemnica = new Tajemnica();
+
+  constructor(private app: Kontekst) {}
+
+  wejdz(): void { this.okno.otworzAtlas(); this.strona = this.okno.strona; this.app.gesty.kartka(); }
+
+  krok(): void {
+    // zamknięte okno atlasu to powrót do menu
+    if (!this.okno.otwarte) { this.app.idz('menu'); return; }
+    if (this.okno.strona !== this.strona) { this.strona = this.okno.strona; this.app.gesty.kartka(); }
+  }
+
+  rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
+    tloSadzy(ctx, w, h, teraz);
+    this.tajemnica.brzegi(ctx, { x: 0, y: 0, w, h }, 0.5 + 0.5 * Math.sin(teraz * 0.0006));
+    this.okno.margines = Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc)) + 18;
+    this.okno.rysuj(ctx, w, h, teraz, false);
+    const waski = w < A.waskiPonizej;
+    ramaRyciny(ctx, w, h, 1, waski ? A.ramaGoraWaski : A.ramaGora, zLiczbami(waski ? A.ramaDolWaski : A.ramaDol, odkrycia.ile, TABLICE.length));
+  }
+
+  kolko(e: WheelEvent): void { this.okno.kolko(e.deltaY * A.przewinKolko); }
+
+  dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
+    if (faza === 'dol') { this.start = { x: e.clientX, y: e.clientY }; this.ostatniY = e.clientY; this.przeciaga = false; return; }
+    if (faza === 'ruch') {
+      this.okno.ruch(e.clientX, e.clientY);
+      if (!this.start) return;
+      if (Math.hypot(e.clientX - this.start.x, e.clientY - this.start.y) > 8) this.przeciaga = true;
+      if (this.przeciaga) { this.okno.kolko(-(e.clientY - this.ostatniY)); this.ostatniY = e.clientY; }
+      return;
+    }
+    // puszczenie bez przeciągania to kliknięcie
+    if (this.start && !this.przeciaga) this.okno.dotyk(e.clientX, e.clientY);
+    this.start = null;
+  }
+
+  klawisz(akcja: Akcja | null, e: KeyboardEvent): void {
+    if (akcja === 'menu' && e.key !== 'Escape') { this.app.idz('menu'); return; }
+    this.okno.klawisz(e.key);
+  }
+}

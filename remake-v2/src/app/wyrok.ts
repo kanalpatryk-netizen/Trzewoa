@@ -16,14 +16,13 @@ export interface Wyrok {
   statystyki: string;
 }
 
-/** v4 beta: czas, szczyt ludności, narodziny, zgony, wykopane bloki, karty, trudność. */
+/** v4 beta: czas, szczyt ludności, narodziny, zgony, wykopane bloki, karty. */
 export function statystyki(sim: Sim): string {
   let zgonow = 0;
   for (const n of sim.deaths.values()) zgonow += n;
   const sek = Math.floor(sim.tick / (TIKOW_NA_MINUTE / 60));
-  const tryb = sim.lagodna ? 'łaskawa' : sim.koszmar ? 'koszmar' : 'surowa';
   return `${Math.floor(sek / 60)}:${String(sek % 60).padStart(2, '0')} min · najwięcej dusz ${sim.stat.szczyt} · narodzin ${sim.stat.urodzen} · zgonów ${zgonow}`
-    + ` · bloków wykopanych ${sim.dug} · kart ${sim.stat.kart} · góra ${tryb}`;
+    + ` · bloków wykopanych ${sim.dug} · kart ${sim.stat.kart}`;
 }
 
 export function wyrok(sim: Sim): Wyrok {
@@ -43,9 +42,7 @@ export function wyrok(sim: Sim): Wyrok {
   if (rodzaj === 'uwolnienie') {
     return {
       przyczyna: 'Wierni przebili skorupę i uklękli przy rdzeniu.',
-      rada: sim.lagodna ? 'Spróbuj surowej góry (Ustawienia → Świat → Góra).'
-        : !sim.koszmar ? 'Spróbuj Koszmaru (Ustawienia → Świat → Góra) — sen przychodzi szybciej, a skorupa jest twardsza.'
-        : 'Wygrałeś Koszmar. Spróbuj szybciej — i tak, żeby nikt nie wymarł po drodze.',
+      rada: 'Spróbuj szybciej — i tak, żeby jak najmniej ludu zostało na ziemi jako trupy. Osiągnięcia podpowiadają, co jeszcze da się zrobić.',
       etap, statystyki: statystyki(sim),
     };
   }

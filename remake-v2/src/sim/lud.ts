@@ -21,6 +21,9 @@ import { MROK } from '../nastawy/mrok';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { tikBuntu } from './bunt';
 import { KARTY_LUDU } from '../nastawy/karty-ludu';
+import { tikWiader, zrodlaJedzenia, type StanWiader } from './wiadro';
+import { tikZawalu, type StanZawalu } from './zawal';
+import { tikTrupow, type Trup } from './trupy';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -44,7 +47,7 @@ export interface StanLudu {
   sklad: { x: number; y: number; ilosc: number } | null;
   /** Odcięte grupki (liczone przy przenosinach siedziby). */
   obozy: { x: number; y: number; ilu: number }[];
-  /** Spiżarnie obozów (siedziba ma swoją w `klan.stock`). Stara siedziba po przenosinach też tu trafia. */
+  /** Obozy frontowe — miejsca postoju pobożnych i rycerzy (Remake v2: bez jedzenia; nazwa została z czasów spiżarni). */
   spizarnie: Spizarnia[];
   /** tik założenia ostatniego obozu */
   obozT?: number;
@@ -56,6 +59,15 @@ export interface StanLudu {
   mrok?: StanMroku;
   /** Koszmar: dłoń z otchłani (sim/dlon.ts). */
   dlon?: StanDloni;
+  /** Remake v2: wiadra z jedzeniem (sim/wiadro.ts) — jedyne jedzenie ludu. */
+  wiadra?: StanWiader;
+  /** Remake v2: zawał od góry (sim/zawal.ts). */
+  zawal?: StanZawalu;
+  /** Remake v2: trupy ludu leżą na ziemi (sim/trupy.ts). */
+  trupy?: Trup[];
+  /** Remake v2: robotnicy w hełmach (brak rycerzy) i następny ołtarz nie wcześniej niż. */
+  helmy?: boolean;
+  oltarzPo?: number;
 }
 
 /** Gniazdo kamiennych rycerzy: śpią w litej skale, aż ktoś się do nich dokopie. */
@@ -68,6 +80,8 @@ export interface Gniazdo {
   proby: number[];
   /** Etap 4: pokazane kartą „sen o rycerzach” — świeci zawsze. */
   znany?: boolean;
+  /** Remake v2: pogrzebane zawałem razem ze śpiącymi rycerzami. */
+  zawalone?: boolean;
 }
 
 export interface Spizarnia { x: number; y: number; ilosc: number; /** tik założenia */ od?: number }
@@ -79,63 +93,66 @@ export interface MiejsceJedzenia {
   odloz(n: number): void;
 }
 
-/** Wszystkie spiżarnie: najpierw siedziba, potem obozy. */
+/**
+ * Remake v2: jedzenie leży już tylko w wiadrach (sim/wiadro.ts) — stojące na ziemi wiadra z porcjami.
+ * Nazwy „spiżarni” zostały w kodzie planera: tam, gdzie chodziło o jedzenie, teraz chodzi o wiadra.
+ */
 export function wszystkieSpizarnie(sim: Sim): MiejsceJedzenia[] {
+  return zrodlaJedzenia(sim);
+}
+
+/** Obozy ludu — siedziba i obozy frontowe: miejsca postoju (bez jedzenia). */
+export function obozyLudu(sim: Sim): MiejsceJedzenia[] {
   const out: MiejsceJedzenia[] = [];
   const klan = klanLudu(sim);
-  if (klan) out.push({
-    x: klan.hx, y: klan.hy, ilosc: klan.stock, baza: true,
-    wez: (n) => { const k = Math.min(n, klan.stock); klan.stock -= k; return k; },
-    odloz: (n) => { klan.stock += n; },
-  });
-  for (const s of sim.lud.spizarnie) out.push({
-    x: s.x, y: s.y, ilosc: s.ilosc, baza: false,
-    wez: (n) => { const k = Math.min(n, s.ilosc); s.ilosc -= k; return k; },
-    odloz: (n) => { s.ilosc += n; },
-  });
+  const nic = { ilosc: 0, wez: () => 0, odloz: () => {} };
+  if (klan) out.push({ x: klan.hx, y: klan.hy, baza: true, ...nic });
+  for (const s of sim.lud.spizarnie) out.push({ x: s.x, y: s.y, baza: false, ...nic });
   return out;
 }
 
-/** Najbliższa spiżarnia (w linii prostej) — z jedzeniem albo dowolna. */
-export function najblizszaSpizarnia(sim: Sim, x: number, y: number, zJedzeniem: boolean): MiejsceJedzenia | null {
+/** Najbliższe wiadro (w linii prostej) — z jedzeniem albo dowolne stojące. */
+export function najblizszaSpizarnia(sim: Sim, x: number, y: number, _zJedzeniem: boolean): MiejsceJedzenia | null {
   let best: MiejsceJedzenia | null = null, bd = Infinity;
   for (const s of wszystkieSpizarnie(sim)) {
-    if (zJedzeniem && s.ilosc <= 0) continue;
     const d = Math.hypot(s.x - x, s.y - y);
     if (d < bd) { bd = d; best = s; }
   }
   return best;
 }
 
-/** Spiżarnie od najbliższej (w linii prostej) — z jedzeniem albo wszystkie. */
-export function spizarnieWgOdleglosci(sim: Sim, x: number, y: number, zJedzeniem: boolean): MiejsceJedzenia[] {
-  return wszystkieSpizarnie(sim).filter((s) => !zJedzeniem || s.ilosc > 0)
-    .sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+/** Wiadra z jedzeniem od najbliższego (w linii prostej). */
+export function spizarnieWgOdleglosci(sim: Sim, x: number, y: number, _zJedzeniem: boolean): MiejsceJedzenia[] {
+  return wszystkieSpizarnie(sim).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
 }
 
-/** Obóz frontowy: spiżarnia (siedziba albo obóz) najbliżej rdzenia — tam stacjonują pobożni i rycerze. */
+/** Najbliższy obóz (siedziba albo obóz frontowy) w linii prostej. */
+export function najblizszyOboz(sim: Sim, x: number, y: number): MiejsceJedzenia | null {
+  let best: MiejsceJedzenia | null = null, bd = Infinity;
+  for (const s of obozyLudu(sim)) {
+    const d = Math.hypot(s.x - x, s.y - y);
+    if (d < bd) { bd = d; best = s; }
+  }
+  return best;
+}
+
+/** Obozy od najbliższego (w linii prostej). */
+export function obozyWgOdleglosci(sim: Sim, x: number, y: number): MiejsceJedzenia[] {
+  return obozyLudu(sim).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y));
+}
+
+/** Obóz frontowy: obóz (siedziba albo obóz) najbliżej rdzenia — tam stacjonują pobożni i rycerze. */
 export function obozFrontowy(sim: Sim): MiejsceJedzenia | null {
   const w = sim.world;
   let best: MiejsceJedzenia | null = null, bd = Infinity;
-  for (const s of wszystkieSpizarnie(sim)) {
+  for (const s of obozyLudu(sim)) {
     const d = Math.hypot(s.x - w.coreX, s.y - w.coreY);
     if (d < bd) { bd = d; best = s; }
   }
   return best;
 }
 
-/** Ile grzyba rośnie przy spiżarni (w zasięgu, z którego robotnicy go do niej znoszą). */
-export function grzybPrzy(sim: Sim, x: number, y: number): number {
-  const w = sim.world;
-  const r = LUD.grzybPrzyObozie;
-  let n = 0;
-  for (let yy = y - r; yy <= y + r; yy++) for (let xx = x - r; xx <= x + r; xx++) {
-    if (w.inb(xx, yy) && w.tile[w.idx(xx, yy)] === T.FUNGUS) n++;
-  }
-  return n;
-}
-
-/** Spiżarnia stojąca na tym kaflu (albo tuż obok). */
+/** Wiadro z jedzeniem stojące na tym kaflu (albo tuż obok). */
 export function spizarniaW(sim: Sim, x: number, y: number): MiejsceJedzenia | null {
   return wszystkieSpizarnie(sim).find((s) => Math.abs(s.x - x) <= 1 && Math.abs(s.y - y) <= 1) ?? null;
 }
@@ -164,7 +181,53 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   if (c.okaleczony && (co === 'hp' || co === 'sila' || co === 'szybkosc')) v *= LUD.okaleczenie;
   if (co !== 'hp' && co !== 'glod' && weteranAktywny(sim, c)) v *= LUD.weteranPremia;
   if (c.zatrutyDo !== undefined && sim.tick < c.zatrutyDo && (co === 'sila' || co === 'szybkosc' || co === 'kopanie')) v *= KARTY_LUDU.zatrucie;
+  // Remake v2: robotnik w hełmie (rycerzy brak) — mocniejszy i walczy
+  if (c.helm && r === 'robotnik' && (co === 'hp' || co === 'sila')) v *= LUD.helm[co];
   return v;
+}
+
+/** Remake v2: kto walczy ze Strażnikami jak rycerz — rycerz albo robotnik w hełmie (gdy rycerzy brak). */
+export function walczacy(c: Creature): boolean {
+  const r = rolaPostaci(c);
+  return r === 'rycerz' || (r === 'robotnik' && !!c.helm);
+}
+
+/**
+ * Remake v2: gdy w ludzie nie ma ani jednego rycerza, robotnicy zakładają hełmy i biorą kilofy do walki
+ * (życie i siła rosną, walczą ze Strażnikami i bossem jak rycerze); gdy rycerze wrócą — zdejmują je.
+ */
+function pilnujHelmow(sim: Sim): void {
+  let rycerzy = 0, robotnikow = 0;
+  for (const c of sim.creatures) {
+    if (c.dead || c.buntownik) continue;
+    const r = rolaPostaci(c);
+    if (r === 'rycerz') rycerzy++; else if (r === 'robotnik') robotnikow++;
+  }
+  const helmy = rycerzy === 0;
+  if (helmy && robotnikow) sim.stat.helmy = 1;
+  for (const c of sim.creatures) {
+    if (c.dead || rolaPostaci(c) !== 'robotnik' || !!c.helm === helmy) continue;
+    c.helm = helmy || undefined;
+    if (!helmy) c.hp = Math.min(c.hp, maxHp(sim, c));
+    else sim.efekt(c.x, c.y - 0.6, 'mysl', 'hełm');
+  }
+  if (helmy !== !!sim.lud.helmy) {
+    sim.lud.helmy = helmy;
+    if (helmy && robotnikow) sim.log('Nie został ani jeden rycerz. Robotnicy zakładają hełmy i biorą kilofy do walki.', 'krew');
+    else if (!helmy && robotnikow) sim.log('Rycerze znów są w ludzie — robotnicy zdejmują hełmy i wracają do kopania.', 'swiat');
+  }
+}
+
+/** Remake v2: do osiągnięć — najwięcej ludu i weteranów naraz. */
+function liczLud(sim: Sim): void {
+  let lud = 0, weteranow = 0;
+  for (const c of sim.creatures) {
+    if (c.dead || c.buntownik || !rolaPostaci(c)) continue;
+    lud++;
+    if (weteranStaz(sim, c)) weteranow++;
+  }
+  if (lud > sim.stat.ludMax) sim.stat.ludMax = lud;
+  if (weteranow > sim.stat.weteranowMax) sim.stat.weteranowMax = weteranow;
 }
 
 /** Etap 2: przesłużył już swoje w ludzie (staż weterana). */
@@ -206,6 +269,9 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
     const klan = sim.clans[c.clan];
     const czemu = c.hunger >= LUD.weteranGlod ? 'głodny' : (klan && klan.devotion < LUD.weteranWiara) ? 'lud stracił wiarę' : 'osłabiony';
     out.push({ nazwa: 'weteran bez premii', skutek: `${premia} wróci, gdy to minie`, dobry: true, uspiony: true, kiedy: czemu });
+  }
+  if (c.helm && rolaPostaci(c) === 'robotnik') {
+    out.push({ nazwa: 'w hełmie — rycerzy brak', skutek: `życie ×${LUD.helm.hp}, siła ×${LUD.helm.sila}; walczy ze Strażnikami Snu jak rycerz`, dobry: true, kiedy: 'póki w ludzie nie ma rycerzy' });
   }
   if (c.slabyDo !== undefined && sim.tick < c.slabyDo) {
     out.push({ nazwa: 'osłabiony po wyjściu ze skały', skutek: `−${Math.round((1 - LUD.oslabienie) * 100)}% siły, szybkości, kopania i modlitwy`, dobry: false, do: c.slabyDo });
@@ -271,7 +337,7 @@ export function podloga(sim: Sim, x: number, y: number, promien = 6): [number, n
 }
 
 /** Środek największej grupy ludu (skupisko w promieniu 8 kafli) — bez pielgrzymów i warty pod rdzeniem. */
-function najwiekszaGrupa(sim: Sim, klanId: number): { x: number; y: number; ilu: number } | null {
+export function najwiekszaGrupa(sim: Sim, klanId: number): { x: number; y: number; ilu: number } | null {
   const lud = sim.creatures.filter((c) => !c.dead && c.clan === klanId && c.job !== Job.PIELGRZYM && c.job !== Job.WARTA);
   let best: { x: number; y: number; ilu: number } | null = null;
   for (const c of lud) {
@@ -358,18 +424,13 @@ function pilnujSiedziby(sim: Sim): void {
   if (!miejsce && !zalana) return;          // siedziba przenosi się tylko na porządną półkę…
   const gdzie = miejsce ?? podloga(sim, Math.floor(cel.x), Math.floor(cel.y), 10);   // …chyba że stara tonie
   if (!gdzie || wStrefie(gdzie[0], gdzie[1])) return;
-  // stara siedziba zostaje obozem ze swoją spiżarnią — robotnicy będą z niej brać (nic się nie teleportuje)
-  const reszta = klan.stock;
-  odlozDoObozu(sim, klan.hx, klan.hy, reszta);
-  klan.stock = 0;
+  // (Remake v2: siedziba nie ma już spiżarni — nic nie zostaje w starej)
   klan.hx = gdzie[0]; klan.hy = gdzie[1];
   if (w.passable(gdzie[0], gdzie[1])) w.set(gdzie[0], gdzie[1], T.NEST);
   sim.lud.siedzibaT = sim.tick;
   sim.lud.obozy = sim.lud.obozy.filter((o) => Math.hypot(o.x - gdzie[0], o.y - gdzie[1]) > 8);
   sim.efekt(gdzie[0] + 0.5, gdzie[1] + 0.5, 'cud');
-  sim.gdzie(gdzie[0] + 0.5, gdzie[1] + 0.5).log(
-    reszta > 0 ? `${klan.name} przenieśli siedzibę. W starym obozie zostało ${reszta} jedzenia — robotnicy będą z niego brać.` : `${klan.name} przenieśli siedzibę tam, gdzie jest ich najwięcej.`,
-    'swiat');
+  sim.gdzie(gdzie[0] + 0.5, gdzie[1] + 0.5).log(`${klan.name} przenieśli siedzibę tam, gdzie jest ich najwięcej.`, 'swiat');
 }
 
 /**
@@ -391,7 +452,7 @@ function sprawdzPrzegrana(sim: Sim): void {
 
 /**
  * Miejsce na obóz albo siedzibę: płaska, szeroka półka (co najmniej `obozSzerokosc` kafli
- * podłogi z miejscem nad głową), sucha i z dala od magmy — najlepiej przy grzybie.
+ * podłogi z miejscem nad głową), sucha i z dala od magmy.
  * Wcześniej obóz stawał tam, gdzie akurat był środek grupy: w szybie, przy ogniu.
  */
 export function miejsceNaObozu(sim: Sim, gx: number, gy: number, rx = 16, ry = 9, minSzer = LUD.obozSzerokosc): [number, number] | null {
@@ -412,7 +473,7 @@ export function miejsceNaObozu(sim: Sim, gx: number, gy: number, rx = 16, ry = 9
       const szer = l + p + 1;
       if (szer < minSzer || Math.min(l, p) < Math.floor(minSzer / 2)) continue;      // na środku półki, nie na krawędzi
       if (sim.przyMagmie(x, y, 5) || Math.hypot(x - w.coreX, y - w.coreY) < P.przedsionekX + 2) continue;
-      const wynik = szer * 2 + Math.min(15, grzybPrzy(sim, x, y)) * 1.5 - Math.hypot(x - gx, (y - gy) * 1.5) * 0.6;
+      const wynik = szer * 2 - Math.hypot(x - gx, (y - gy) * 1.5) * 0.6;
       if (wynik > bs) { bs = wynik; best = [x, y]; }
     }
   }
@@ -420,12 +481,7 @@ export function miejsceNaObozu(sim: Sim, gx: number, gy: number, rx = 16, ry = 9
   return best ?? (minSzer > 3 ? miejsceNaObozu(sim, gx, gy, rx, ry, 3) : null);
 }
 
-/** Dokłada jedzenie do spiżarni obozu w (x, y) — albo zakłada tam obóz. */
-function odlozDoObozu(sim: Sim, x: number, y: number, ile: number): void {
-  const jest = sim.lud.spizarnie.find((s) => Math.abs(s.x - x) <= 3 && Math.abs(s.y - y) <= 3);
-  if (jest) jest.ilosc += ile;
-  else sim.lud.spizarnie.push({ x, y, ilosc: ile, od: sim.tick });
-}
+
 
 /**
  * Obozy ze spiżarniami: gdzie stacjonuje co najmniej `obozMin` pobożnych lub rycerzy daleko
@@ -442,7 +498,7 @@ function pilnujObozow(sim: Sim, klan: Sim['clans'][number]): void {
     for (const o of grupa) wzieci.add(o.id);
     if (grupa.length < LUD.obozMinStacjonujacych || sim.lud.spizarnie.length >= LUD.obozyMaks) continue;
     let gx = grupa.reduce((s, o) => s + o.x, 0) / grupa.length, gy = grupa.reduce((s, o) => s + o.y, 0) / grupa.length;
-    const daleko = wszystkieSpizarnie(sim).every((s) => Math.hypot(s.x - gx, s.y - gy) > LUD.obozOdleglosc);
+    const daleko = obozyLudu(sim).every((s) => Math.hypot(s.x - gx, s.y - gy) > LUD.obozOdleglosc);
     if (!daleko) continue;
     if (Math.hypot(gx - w.coreX, gy - w.coreY) < LUD.strefaRdzenia) {
       gx = w.coreX + (gx < w.coreX ? -1 : 1) * (P.przedsionekX + LUD.wartaOdstep);
@@ -451,14 +507,14 @@ function pilnujObozow(sim: Sim, klan: Sim['clans'][number]): void {
     if (sim.tick - (sim.lud.obozT ?? -1e9) < LUD.obozPrzerwa) continue;
     const m = miejsceNaObozu(sim, gx, gy, 20, 12);
     if (!m) continue;   // nie ma szerokiej i wysokiej półki — obozu tu nie będzie
-    if (wszystkieSpizarnie(sim).some((s) => Math.hypot(s.x - m[0], s.y - m[1]) <= LUD.obozOdleglosc)) continue;
+    if (obozyLudu(sim).some((s) => Math.hypot(s.x - m[0], s.y - m[1]) <= LUD.obozOdleglosc)) continue;
     sim.lud.spizarnie.push({ x: m[0], y: m[1], ilosc: 0, od: sim.tick });
     sim.lud.obozT = sim.tick;
-    sim.gdzie(m[0] + 0.5, m[1] + 0.5).log(`${klan.name} rozbili obóz — robotnicy będą tu donosić jedzenie.`, 'swiat', 'oboz');
+    sim.gdzie(m[0] + 0.5, m[1] + 0.5).log(`${klan.name} rozbili obóz bliżej rdzenia.`, 'swiat', 'oboz');
   }
   // pusty obóz bez nikogo w pobliżu znika
   const zywi = sim.creatures.filter((c) => !c.dead && c.clan === klan.id);
-  sim.lud.spizarnie = sim.lud.spizarnie.filter((s) => s.ilosc > 0 || sim.tick - (s.od ?? 0) < LUD.obozZycie || zywi.some((c) => Math.hypot(c.x - s.x, c.y - s.y) < 15));
+  sim.lud.spizarnie = sim.lud.spizarnie.filter((s) => sim.tick - (s.od ?? 0) < LUD.obozZycie || zywi.some((c) => Math.hypot(c.x - s.x, c.y - s.y) < 15));
 }
 
 // ------------------------------------------------------------ gniazda rycerzy (etap 2)
@@ -565,46 +621,18 @@ function pilnujGniazd(sim: Sim): void {
   for (const g of gniazdaWSkale(sim)) if (dokopane(sim, g)) obudzGniazdo(sim, g);
 }
 
-/**
- * Uprawa grzyba przy spiżarniach: gdzie przy spiżarni jest robotnik, a grzyba mało, odrasta nowy —
- * na podłodze, w suchym miejscu. Bez tego grzyb wokół siedziby kończył się po kilku minutach
- * i cały lud wymierał z głodu, choć robotnicy żyli.
- */
-function uprawa(sim: Sim): void {
-  const w = sim.world;
-  for (const sp of wszystkieSpizarnie(sim)) {
-    // liczy tylko grzyb na podłodze w obszarze, w którym sam sadzi — wiszący w powietrzu nad siedzibą
-    // (nie do zebrania) blokował uprawę i siedziba głodowała przy trzystu grzybach na mapie
-    const R = LUD.uprawaZasieg, H = LUD.uprawaWPionie;
-    let rosnie = 0;
-    for (let y = sp.y - H; y <= sp.y + H; y++) for (let x = sp.x - R; x <= sp.x + R; x++) {
-      if (w.inb(x, y + 1) && w.tile[w.idx(x, y)] === T.FUNGUS && w.solid(x, y + 1)) rosnie++;
-    }
-    if (rosnie >= LUD.uprawaDo) continue;
-    const jest = sim.creatures.some((c) => !c.dead && rolaPostaci(c) === 'robotnik' && Math.hypot(c.x - sp.x, c.y - sp.y) <= LUD.uprawaZasieg);
-    if (!jest) continue;
-    // najpierw tuż przy spiżarni; gdy tam nie ma podłogi (siedziba w pustej jaskini) — szerzej
-    for (let proba = 0; proba < 24; proba++) {
-      const r = proba < 12 ? LUD.uprawaPromien : R, h = proba < 12 ? 3 : H;
-      const x = sp.x + sim.rng.int(r * 2 + 1) - r;
-      const y = sp.y + sim.rng.int(h * 2 + 1) - h;
-      if (!w.inb(x, y + 1) || w.tile[w.idx(x, y)] !== T.AIR || !w.solid(x, y + 1)) continue;
-      if (w.water[w.idx(x, y)] > 2 || w.magma[w.idx(x, y)] > 0 || (Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1)) continue;
-      w.tile[w.idx(x, y)] = T.FUNGUS;
-      break;
-    }
-  }
-}
-
 /** Wołane z sim.step() co tik. */
 export function tikLudu(sim: Sim): void {
   if (sim.spokojnySwiat || sim.ending) return;
-  // stary zapis: „stara spiżarnia” staje się obozem
-  if (sim.lud.sklad) { odlozDoObozu(sim, sim.lud.sklad.x, sim.lud.sklad.y, sim.lud.sklad.ilosc); sim.lud.sklad = null; }
+  // stary zapis: „stara spiżarnia” przepada (jedzenie jest już tylko w wiadrach)
+  if (sim.lud.sklad) sim.lud.sklad = null;
   if (!sim.lud.spizarnie) sim.lud.spizarnie = [];
   wyjscieZeSkaly(sim);
   if (sim.tick % 30 === 0) pilnujGniazd(sim);
-  if (sim.tick % LUD.uprawaCo === 0) uprawa(sim);
+  if (sim.tick % 60 === 0) { pilnujHelmow(sim); liczLud(sim); }
+  tikWiader(sim);
+  tikZawalu(sim);
+  tikTrupow(sim);
   tikStraznikow(sim);
   tikBuntu(sim);
   tikMroku(sim);

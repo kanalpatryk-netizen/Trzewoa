@@ -13,7 +13,7 @@ export const ATLAS = {
   postep: 'odkryte {ile} z {z} tablic — resztę znajdziesz w górze',
   podpowiedz: 'przeciągnij, żeby przewijać',
   /** Napisy na ramie ekranu atlasu w menu (szeroki / wąski ekran). */
-  ramaGora: 'Atlas trzewi · tablice ras, rytów i praw góry', ramaGoraWaski: 'Atlas',
+  ramaGora: 'Atlas trzewi · tablice ludu, rytów i praw góry', ramaGoraWaski: 'Atlas',
   ramaDol: 'odkryte {ile} z {z} · przeciągnij, żeby przewijać', ramaDolWaski: 'odkryte {ile} z {z}',
   waskiPonizej: 700,
   /** Tablica „Droga do wolności” otwiera się sama po tylu tikach nowej gry (przy domyślnym tempie 2× i 60 klatkach: 2400 ≈ 20 s). */

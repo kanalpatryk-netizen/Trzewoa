@@ -153,7 +153,13 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
       p.tulow = 0.03 + 0.02 * wg + p.oddech * 0.01;
       p.glowa = 0.06 * szum(czas * 0.0003, id + 5);
       p.rA = 0.07 + p.oddech * 0.03; p.eA = 0.24; p.rB = -0.05 - p.oddech * 0.02; p.eB = 0.22;
-      if (rola === 'rycerz') { p.rA = 0.22; p.eA = 0.62; p.narz = 0.48 + 0.04 * wg; p.rB = 0.45; p.eB = 1.05; p.tarcza = 0.15; p.uA = 0.12; p.uB = -0.12; }
+      if (rola === 'rycerz') {
+        // po bitwie: ciężko oddycha, garbi się, głowa opuszczona; sztych oparty o ziemię, tarcza zwisa przy boku
+        p.tulow = 0.13 + 0.02 * wg + p.oddech * 0.035; p.glowa = 0.24 + 0.05 * szum(czas * 0.0003, id + 5);
+        p.uA = 0.2; p.kA = 0.2 + 0.06 * Math.max(0, wg); p.uB = -0.16; p.kB = 0.14 + 0.06 * Math.max(0, -wg);
+        p.rA = 0.06; p.eA = 0.42 + p.oddech * 0.04; p.narz = 0.56 + 0.03 * wg;
+        p.rB = 0.04; p.eB = 0.5; p.tarcza = 0;
+      }
       if (rola === 'pobozny') { p.rA = 0.34; p.eA = 0.75; p.narz = 0.05 + 0.02 * wg; }
       // drobne gesty co kilka sekund
       const f = frac(czas * 0.00011 + id * 0.43);
@@ -169,7 +175,13 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
     }
     case 'idzie': {
       chod(p, w.faza, sila);
-      if (rola === 'rycerz') { const q = w.faza * TAU; p.rA = 0.24 - 0.12 * sin(q); p.eA = 0.6; p.narz = 0.75 - 0.12 * sin(q); p.rB = 0.48 + 0.05 * sin(q); p.eB = 1.0; p.tarcza = 0.2; }
+      if (rola === 'rycerz') {
+        // znużony marsz: miecz nisko, tarcza opuszczona, tułów pochylony
+        const q = w.faza * TAU;
+        p.rA = 0.18 - 0.1 * sin(q); p.eA = 0.45; p.narz = 0.85 - 0.1 * sin(q);
+        p.rB = 0.18 + 0.06 * sin(q); p.eB = 0.7; p.tarcza = 0.08;
+        p.tulow += 0.06; p.glowa += 0.08;
+      }
       if (rola === 'pobozny') {
         // szata do ziemi — krótszy krok
         const q = w.faza * TAU; p.uA *= 0.72; p.uB *= 0.72; p.kA *= 0.85; p.kB *= 0.85;

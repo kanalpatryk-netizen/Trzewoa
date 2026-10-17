@@ -7,6 +7,8 @@ export interface Settings {
   efekty: boolean;         // dźwięki gestów: szkic, pauza, ostrzeżenia, atlas
   jakosc: 'auto' | 'ostra' | 'szybka';
   kameraZaZyciem: boolean;
+  /** Karta wydarzenia i ostrzeżenie same wiozą kamerę na miejsce (wyłączone: tylko znacznik i strzałka przy krawędzi). */
+  kameraDoWydarzen: boolean;
   autoZoom: boolean;
   oddech: boolean;         // powolne falowanie całego rysunku
   ograniczRuch: boolean;   // mniej drgań: dla oczu, które tego nie znoszą
@@ -23,8 +25,6 @@ export interface Settings {
   autoPauza: 'wyłączona' | 'kryzysy' | 'wszystko';
   /** Nowa tablica atlasu: otwiera się sama przy pierwszym spotkaniu albo tylko trafia do atlasu. */
   tablice: 'pokazuj' | 'tylko w atlasie';
-  /** Łaskawa góra wolniej zasypia i daje więcej krwi na start — na pierwsze partie. */
-  trudnosc: 'łaskawa' | 'surowa' | 'koszmar';
   /** Mnożnik wielkości całego obrazu ponad automatyczne dopasowanie do ekranu. */
   wielkoscUI: number;
   /** Android: gra wchodzi na pełny ekran po „dotknij, aby się obudzić”. */
@@ -43,6 +43,7 @@ export const DOMYSLNE: Settings = {
   efekty: true,
   jakosc: 'auto',
   kameraZaZyciem: true,
+  kameraDoWydarzen: false,
   autoZoom: false,
   oddech: true,
   ograniczRuch: false,
@@ -56,7 +57,6 @@ export const DOMYSLNE: Settings = {
   samouczekZrobiony: false,
   autoPauza: 'kryzysy',
   tablice: 'tylko w atlasie',
-  trudnosc: 'łaskawa',
   wielkoscUI: 1,
   pelnyEkran: true,
   nowePostacie: true,

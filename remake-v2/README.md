@@ -10,14 +10,43 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu).
 ## Co nowego w v2
 - **Obserwatorium** — cztery okna gry naraz, w każdym gra bot (opis niżej).
 - **Bot w grze** — gra sam w oknach obserwatorium (`src/app/bot.ts`).
-- Gra wychodzi od najnowszego stanu Remake v1 — z **dłonią z otchłani** (tylko Koszmar, rzadko; klatki z modelu 3D,
+- **Tylko Koszmar** — nie ma już wyboru trudności (łaskawa / surowa): każda nowa gra to Koszmar — 80 krwi na start,
+  skorupa pęka wolniej (×0,7), dług u głębi boli bardziej, a z otchłani może przyjść dłoń. „Nowa gra” zaczyna się od razu.
+- **Bez świata dnia** — z menu, osiągnięć i ekranu końcowego zniknął „Świat dnia”.
+- **Samouczek, atlas i osiągnięcia od nowa** — 14 lekcji o tym, co jest w tej wersji (wiadra i Nakarm, ze skały,
+  pauza, zawał i hełmy, ciemność i dłoń, Strażnicy, droga do wolności); atlas bez ras, których tu nie ma
+  (Żużlowcy, Trole, Prządki, Grzybnia) i bez ludzi z powierzchni, bez proroka i cech nacji, z tablicami wiadra, zawału, hełmów i trupów;
+  14 nowych osiągnięć (m.in. „Ostatkiem sił”, „Kilofy zamiast mieczy”, „Bez powrotu”, „Wyrwani z dłoni”).
+- **Rycerz to krzyżowiec po bitwie**, malowany jak mroczna ilustracja tuszem (twarde cienie, kontur grubszy w cieniu,
+  zimne kontrświatło): kolczuga z ciemnej stali, wapenrok do kolan w plisach z krzyżem patée, podarty i we krwi, płaszcz
+  w strzępach, hełm garnczkowy („głowa cukru” albo beczkowy) albo otwarty z blizną na twarzy, tarcza w kształcie żelazka
+  ze strzałą i krwawym śladem dłoni, miecz we krwi; zmęczona poza — sztych oparty o ziemię, tarcza zwisa przy boku.
+- **Robotnik to kopacz w kapturze**, malowany tuszem jak rycerz i oświetlony własną lampką (ciepły blask drga z płomieniem):
+  wełniany kaptur z pelerynką (na głowie albo zsunięty), szorstka łatana tunika z podartym rąbkiem, skórzany fartuch,
+  owijki na goleniach i przegubach, wychudzona twarz w sadzy, dolabra na ramieniu, gliniana lampka na łańcuszkach,
+  worek z bochnem na plecach. Lud je teraz chleb z wiadra zamiast grzyba.
+- **Pobożny to diakon z krypty**, malowany tuszem jak reszta ludu; świeci mu modlitwa — nimb jak pierścień światła
+  obrysowuje go od tyłu, świeca i otwarta księga grzeją twarz. Zżółkła, ubłocona alba do ziemi z haftowanym rąbkiem,
+  karmazynowa stuła, sznur pokutny i różaniec, u części czarna kapa z kapturem; tonsura, krzyż z popiołu na czole,
+  krzyż procesyjny z ciemnego brązu. Okaleczony ma krwawe pręgi od bicza i bandaż, szaleniec płacze krwią.
+- **Zawał od góry** — gdy przez 20 s nikogo z ludu nie ma wysoko, góra nad nim zawala się (razem z gniazdami
+  rycerzy, które tam spały). Kamera nie wjeżdża ponad gruz, mapa się skraca, a lud nie ucieknie w górę — musi walczyć.
+- **Wiadro z jedzeniem zamiast grzyba i spiżarni** — co 40 s z góry, na linie, zjeżdża wiadro pełne jedzenia
+  do pierwszego odkrytego, pustego miejsca przy najbardziej głodnych; każdy może z niego jeść. Kto umiera z głodu,
+  wspina się po linie do zjeżdżającego wiadra i je w drodze w dół. Ryt „Nakarm” spuszcza dodatkowe wiadro (30 krwi).
+- **Hełmy robotników** — gdy nie zostanie ani jeden rycerz, robotnicy zakładają hełmy i walczą zamiast nich.
+- **Trupy zostają** — zmarli leżą tam, gdzie padli (najstarsze rozsypują się w kości).
+- **Kamera nie jeździ sama do wydarzeń** — karta i ostrzeżenie tylko zaznaczają miejsce (poza ekranem: strzałka
+  przy krawędzi); dotknięcie strzałki albo „pokaż miejsce ›” na karcie wiezie tam kamerę. Dawne zachowanie:
+  ustawienia → „Kamera do wydarzeń”.
+- Gra wychodzi od najnowszego stanu Remake v1 — z **dłonią z otchłani** (rzadko; klatki z modelu 3D,
   zawsze wznosi się z dołu, z otchłani pod ofiarą), mroczniejszym interfejsem, zwykłym czasem i linami przy ścianie.
   Odtąd nowe rzeczy trafiają do v2.
 
 ## Obserwatorium (`trzewia-remake-v2-obserwatorium.html`)
 Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo.
 - **Każde okno osobno:** tempo (×¼ … ×20), pauza, styl bota (*rozsądny*, *budowniczy*, *speedrun*, *bierny* — nic nie
-  robi), trudność (łaskawa / surowa / koszmar), ziarno świata (puste — losowe), „nowa partia”, „sama następna partia”
+  robi), ziarno świata (puste — losowe), „nowa partia”, „sama następna partia”
   (po końcu za 6 s zaczyna się następna) i dźwięk (tylko z jednego okna naraz). Nad oknem: czas gry, numer partii,
   ziarno i wynik; pod nim: lud (pobożni, robotnicy, rycerze), wiara, krew, jedzenie, ostatni wpis kroniki
   i historia partii (✓ uwolnienie / ✗ porażka, po ilu minutach).
@@ -35,13 +64,13 @@ Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo.
 ## Co jest inaczej (od 4.2 beta)
 - **Jeden lud — Pobożni** — zamiast wielu ras. Trzy role:
   - **pobożni** — modlą się i schodzą pod rdzeń,
-  - **robotnicy** — kopią i znoszą jedzenie do spiżarni w siedzibie,
+  - **robotnicy** — kopią i donoszą jedzenie z wiader (v2; dawniej znosili je do spiżarni w siedzibie),
   - **rycerze** — miecz, dużo życia i obrażeń, wolni, prawie się nie modlą, nie uciekają.
 - **Nikt się nie rodzi.** Co 15 s skała wydaje nową postać tej roli, którą wybierzesz u góry ekranu
   (*ze skały: robotnik / pobożny*). Kosztuje **krew**, a nowy przez minutę jest osłabiony (−60%).
 - **Krew** to zasób: zapas na start, + za każdą śmierć, + ofiara (szept „ofiaruj”),
   + samookaleczenie pobożnego (szept „okalecz się” — krew teraz, on słabszy na zawsze).
-- **Jedzenie** leży w spiżarniach — w siedzibie i w każdym obozie. Robotnicy donoszą je pobożnym
+- **Jedzenie** (v2: w wiadrach, które zjeżdżają z góry — patrz wyżej; poniżej opis z v1) leży w spiżarniach — w siedzibie i w każdym obozie. Robotnicy donoszą je pobożnym
   i rycerzom tam, gdzie stoją (z najbliższego obozu z jedzeniem, a gdy tam pusto — z poprzedniego),
   a sami jedzą z najbliższej spiżarni. Rudy nie ma.
 - **Porządek pod rdzeniem:** pobożni modlą się w szeregu, rycerze stoją na warcie po bokach,
@@ -91,7 +120,7 @@ Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo.
 - **Mrok i Ten, który patrzy** (`src/sim/mrok.ts`, nastawy w `src/nastawy/mrok.ts`): świat widać w pełni tylko w świetle
   lampek, aureol, obozów, rdzenia i Cudu. W ciemności krąży coś, co wypatruje samotnych daleko od obozu (nie rycerzy)
   i po 15 s patrzenia zabiera ich (stoją wtedy jak wryci); gra staje i ostrzega. Odpędza je Cud tuż obok albo ktoś z ludu, kto podejdzie.
-- **Dłoń z otchłani (tylko Koszmar, rzadko)** (`src/sim/dlon.ts`, rysunek `src/render/dlon.ts`, nastawy `src/nastawy/dlon.ts`):
+- **Dłoń z otchłani (rzadko; w v2 każda góra to Koszmar)** (`src/sim/dlon.ts`, rysunek `src/render/dlon.ts`, nastawy `src/nastawy/dlon.ts`):
   gdy ktoś z ludu stoi daleko od obozu, a pod nim zaczyna się nieznane, pod jego stopami żarzy się czerwona łuna i z głębi,
   zawsze od dołu, wznosi się ogromna dłoń, chwyta jedną albo dwie postacie i zapada się z nimi w dół (bez kości). Gra staje
   i ostrzega; Cud przy nich przed chwytem spycha ją z powrotem w otchłań. Najwcześniej po 6 min, najwyżej 2 razy na partię.
@@ -106,5 +135,5 @@ Film z rozgrywki (etap 4, jeszcze z v1): [`../remake-v1/film/remake-v1-etap4.web
 Stan po poprawkach (bot na 64 światach): 64 wygrane, 0 porażek, ~65 zgonów, średnio 10,4 min partii.
 
 Znane braki: gdy wszystkie gniazda są odkopane, a rycerze zginęli, bossa nie da się pokonać (zasypia
-i wraca w kółko); karta spisku często zabiera rycerzy; stare tablice atlasu o dawnych rasach zostały
-jako punkt odniesienia.
+i wraca w kółko); karta spisku często zabiera rycerzy. (v2: tablice atlasu o dawnych rasach usunięte;
+bez rycerzy walczą robotnicy w hełmach, a pobożni razią bossa księgami.)

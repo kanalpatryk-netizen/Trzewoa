@@ -4,7 +4,7 @@ import { makeCreature, type Creature } from '../sim/creatures';
 import { cost, type Verb } from '../powers/powers';
 import { rysujPostac, type Czynnosc } from '../render/figury';
 import { BARWA, rgba } from '../render/palette';
-import { kreskuj, kropkuj, pseudo, type Plotno } from '../cutscene/art/common';
+import { kreskuj, kropkuj, type Plotno } from '../cutscene/art/common';
 import { rysujGore } from '../cutscene/art/gora';
 import { rysujPamiec } from '../cutscene/art/pamiec';
 import { rysujZiarno } from '../cutscene/art/ziarno';
@@ -16,11 +16,15 @@ import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from '../render/relikwiarz';
 import { rysujPrzyplyw } from '../cutscene/art/przyplyw';
 import { glif } from '../render/tajemnica';
 import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
-import { GORA, LUDY } from '../nastawy/gora';
-import { CECHY } from '../nastawy/cechy';
-import { LUD } from '../nastawy/lud';
+import { GORA } from '../nastawy/gora';
+import { STRAZNICY } from '../nastawy/straznicy';
+import { MOCE } from '../nastawy/moce';
+import { WYDARZENIA } from '../nastawy/wydarzenia';
+import { LUD, type Rola } from '../nastawy/lud';
 import { MROK } from '../nastawy/mrok';
 import { DLON } from '../nastawy/dlon';
+import { WIADRO } from '../nastawy/wiadro';
+import { ZAWAL } from '../nastawy/zawal';
 import { lunaOtchlani, rysujKlatkeDloni } from '../render/dlon';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
@@ -46,9 +50,9 @@ export interface Tablica {
 }
 
 export const NAZWY_GRUP: Record<Grupa, string> = {
-  rasy: 'Ci, którzy w tobie mieszkają',
-  ryty: 'Cztery ryty',
-  zasoby: 'Czym płacisz',
+  rasy: 'Twój lud',
+  ryty: 'Trzy ryty',
+  zasoby: 'Czym płacisz i czym żyją',
   prawa: 'Prawa góry',
 };
 
@@ -122,79 +126,32 @@ function sklepienie(ctx: CanvasRenderingContext2D, w: number, h: number, ziarno:
   ctx.restore();
 }
 
-/** Atrapa świata dla figur — rysunek potrzebuje tylko barwy klanu. */
-const atrapy = new Map<number, { sim: Sim; c: Creature }>();
-function atrapa(rasa: Race): { sim: Sim; c: Creature } {
-  let a = atrapy.get(rasa);
+/** Atrapa świata dla figur — rysunek potrzebuje tylko barwy klanu (i roli postaci ludu). */
+const atrapy = new Map<string, { sim: Sim; c: Creature }>();
+function atrapa(rasa: Race, rola?: Rola, helm?: boolean): { sim: Sim; c: Creature } {
+  const klucz = `${rasa}|${rola ?? ''}|${helm ? 1 : 0}`;
+  let a = atrapy.get(klucz);
   if (!a) {
     const sim = { clans: [{ race: rasa, tint: 0 }] } as unknown as Sim;
-    a = { sim, c: makeCreature(rasa, 0, 0, 0, 900 + rasa) };
-    atrapy.set(rasa, a);
+    const c = makeCreature(rasa, 0, 0, 0, 900 + rasa);
+    if (rola) c.rola = rola;
+    if (helm) c.helm = true;
+    a = { sim, c };
+    atrapy.set(klucz, a);
   }
   return a;
 }
 
-function postac(rasa: Race, czyn: Czynnosc, skala = 1): (p: Plotno) => void {
+function postac(rasa: Race, czyn: Czynnosc, skala = 1, rola?: Rola, helm?: boolean): (p: Plotno) => void {
   return ({ ctx, w, h, t }) => {
     sklepienie(ctx, w, h, rasa);
-    const { sim, c } = atrapa(rasa);
+    const { sim, c } = atrapa(rasa, rola, helm);
     const wys = h * 0.5 * skala;
     ctx.save();
     ctx.translate(w / 2, h * 0.82);
     rysujPostac(ctx, sim, c, wys, t, czyn);
     ctx.restore();
   };
-}
-
-function grzybnia({ ctx, w, h, t }: Plotno): void {
-  sklepienie(ctx, w, h, 7);
-  ctx.save();
-  // kępy zarodni wyrastające ze zwłok: blade kości, na nich świecąca narośl
-  for (let k = 0; k < 7; k++) {
-    const x = w * (0.15 + 0.7 * pseudo(k * 3.1)), y = h * 0.82;
-    const r = h * (0.08 + 0.1 * pseudo(k * 1.9));
-    const kepa = new Path2D();
-    kepa.ellipse(x, y, r * 1.3, r, 0, Math.PI, 0);
-    const blask = 0.5 + 0.5 * Math.sin(t * 0.002 + k);
-    ctx.fillStyle = `rgba(${40 + 30 * blask},${70 + 60 * blask},${34 + 20 * blask},0.85)`;
-    ctx.fill(kepa);
-    kropkuj(ctx, kepa, 260, `rgba(170,230,130,${0.5 + 0.4 * blask})`, k);
-  }
-  ctx.strokeStyle = 'rgba(220,210,190,0.7)';
-  ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(w * 0.42, h * 0.8); ctx.lineTo(w * 0.58, h * 0.74);
-  ctx.moveTo(w * 0.45, h * 0.74); ctx.lineTo(w * 0.56, h * 0.81);
-  ctx.stroke();
-  ctx.restore();
-}
-
-function prorok({ ctx, w, h, t }: Plotno): void {
-  sklepienie(ctx, w, h, 3);
-  const { sim, c } = atrapa(Race.GOBLIN);
-  ctx.save();
-  // promienie za głową proroka
-  ctx.strokeStyle = 'rgba(246,214,140,0.35)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let i = 0; i < 24; i++) {
-    const a = (i / 24) * Math.PI * 2 + t * 0.0002;
-    ctx.moveTo(w / 2 + Math.cos(a) * h * 0.12, h * 0.46 + Math.sin(a) * h * 0.12);
-    ctx.lineTo(w / 2 + Math.cos(a) * h * 0.3, h * 0.46 + Math.sin(a) * h * 0.3);
-  }
-  ctx.stroke();
-  ctx.translate(w / 2, h * 0.82);
-  rysujPostac(ctx, sim, c, h * 0.5, t, 'modli');
-  ctx.restore();
-  // wierni w półmroku po bokach — mniejsi, dalej
-  for (const [dx, s] of [[-0.38, 0.48], [0.38, 0.48], [-0.25, 0.6], [0.25, 0.6]] as [number, number][]) {
-    ctx.save();
-    ctx.globalAlpha = 0.55;
-    ctx.translate(w / 2 + dx * w, h * 0.82);
-    ctx.scale(dx < 0 ? 1 : -1, 1);
-    rysujPostac(ctx, sim, c, h * 0.5 * s, t + dx * 1000, 'modli');
-    ctx.restore();
-  }
 }
 
 function pielgrzymka({ ctx, w, h, t }: Plotno): void {
@@ -468,77 +425,53 @@ function pismo({ ctx, w, h, t }: Plotno): void {
 // ---------------------------------------------------------------- tablice
 
 export const TABLICE: Tablica[] = [
-  // rasy
+  // lud
   {
     id: 'rasa-0', grupa: 'rasy', nazwa: 'Pobożni', lacina: 'Gens pia',
-    opis: `Twój jedyny lud. Nikt się nie rodzi — co ${Math.round(LUD.wyjscieCo / 120)} sekund skała wydaje nowego za krew: pobożnego, który się modli, albo robotnika, który kopie drogę i donosi jedzenie. Rycerzy skała nie wydaje — śpią w gniazdach w skale.`,
-    kiedy: 'Pilnuj krwi i spiżarni. Pobożny może się okaleczyć (krew, ale słabnie na zawsze), a każdego możesz złożyć w ofierze. Bez pobożnych i bez krwi na nowego — przegrywasz.',
+    opis: `Twój jedyny lud. Nikt się w nim nie rodzi: co ${Math.round(LUD.wyjscieCo / 120)} sekund skała wydaje nowego — robotnika za ${LUD.koszt.robotnik} krwi albo pobożnego za ${LUD.koszt.pobozny} (wybierasz pod paskiem ról), najwyżej ${LUD.limit} naraz. Świeży ze skały przez minutę jest osłabiony. Rycerzy skała nie wydaje — śpią w gniazdach w skale. Mieszkają przy siedzibie, a odcięte grupki zakładają obozy.`,
+    kiedy: 'Pilnuj, żeby zawsze był ktoś, kto się modli, i żeby została krew na nowego pobożnego. Pobożny może się okaleczyć (krew, ale słabnie na zawsze), a każdego możesz złożyć w ofierze.',
     rycina: postac(Race.GOBLIN, 'modli'),
-  },
-  {
-    id: 'rasa-1', grupa: 'rasy', nazwa: 'Żużlowcy', lacina: 'Fabri scoriae',
-    opis: 'Nie rodzą się — wykuwa się ich w kuźni z trzech bryłek rudy. Żyją z ciepła ognia i giną, gdy kuźnia wygaśnie. Obłęd głębi ima się ich słabiej niż innych.',
-    kiedy: 'Gdy odsłoni się ruda, daj ją Żużlowcom — wykują z niej nowych kowali. Grzyba nie jedzą: żyją z ciepła kuźni.',
-    rycina: postac(Race.DWARF, 'kopie'),
-  },
-  {
-    id: 'rasa-2', grupa: 'rasy', nazwa: 'Trole', lacina: 'Qui nimis fodit',
-    opis: 'Trolem nikt się nie rodzi — zostaje nim ten, kto kopał za głęboko i wrócił inny. Silny, powolny, nie czci nikogo. Głodny poluje, a gdy nie ma na kogo, zasypia w skale.',
-    kiedy: 'Rodzą się z szaleńców — przy karcie żyły szaleństwa „zostaw” daje nowych trolów, „zasklep” ich nie da.',
-    rycina: postac(Race.TROLL, 'stoi', 0.95),
-  },
-  {
-    id: 'rasa-3', grupa: 'rasy', nazwa: 'Prządki', lacina: 'Textrices servorum',
-    opis: 'Nie podbijają — przejmują. Biorą słabszych w jarzmo, przerabiają cudze dzieci na swoje, a głodne wysysają tych, których wzięły. Rosną wyłącznie cudzym kosztem.',
-    kiedy: 'Potrzebują sąsiadów słabszych od siebie. Nakarm je, gdy głodują; gdy zaczną wojnę, karta „pierwsza krew” pozwoli ich rozdzielić.',
-    rycina: postac(Race.SPINNER, 'stoi', 0.8),
-  },
-  {
-    id: 'rasa-4', grupa: 'rasy', nazwa: 'Ludzie', lacina: 'Advenae superni',
-    opis: 'Nie mieszkają w tobie. Schodzą z powierzchni po rudę i sławę, zabierają, co znajdą, i wracają na górę. Nie liczą się do wstęgi warstw.',
-    kiedy: 'Gdy przyjdzie karta najazdu: zawal wejście, wpuść ich albo poprowadź na najliczniejszych. Każda ich śmierć to twoja krew.',
-    rycina: postac(Race.HUMAN, 'idzie'),
-  },
-  {
-    id: 'rasa-5', grupa: 'rasy', nazwa: 'Grzybnia', lacina: 'Caro in fungum',
-    opis: 'Nie ma jednostek i nie czci cię wcale. Rośnie ze zwłok — każda śmierć to paliwo na kilka kafli. Obcym parzy stopy, Ślepemu Ludowi daje jeść.',
-    kiedy: 'Wyrasta sama po każdej rzezi. Gdzie jej za dużo, zmyje ją powódź z karty wydarzenia.',
-    rycina: grzybnia,
   },
   // ryty
   {
-    id: 'ryt-zasiej', grupa: 'ryty', nazwa: 'Nakarm', lacina: 'Semen causae',
-    opis: 'Nie rozkazujesz, dokąd iść — kładziesz w skale powód. Grzyb to jedzenie, ruda to materiał na ołtarze i kuźnie, kości są padliną, która też karmi.',
-    kiedy: 'Siej przy tych, których jest najmniej. Dosypywanie zwycięzcy przybliża sen.',
-    koszt: `grzyb ${kosztSlowami('zasiej', 'grzyb')}, ruda ${kosztSlowami('zasiej', 'ruda')}`,
+    id: 'ryt-zasiej', grupa: 'ryty', nazwa: 'Nakarm', lacina: 'Situla de caelo',
+    opis: `Dotknij miejsca, a z góry, na linie, zjedzie tam dodatkowe wiadro z ${WIADRO.nakarmPorcji} porcjami jedzenia — na dno pustki pod palcem, w miejsce, które ktoś już widział. Naraz zjeżdża tylko jedno takie wiadro.`,
+    kiedy: 'Spuszczaj je tam, gdzie głodują, a zwykłe wiadra nie sięgają — najczęściej warcie przy przedsionku rdzenia i grupkom odciętym od siedziby.',
+    koszt: `wiadro ${kosztSlowami('zasiej', 'grzyb')}`,
     rycina: cala(rysujZiarno),
   },
   {
     id: 'ryt-szept', grupa: 'ryty', nazwa: 'Szepnij', lacina: 'Susurrus',
-    opis: 'Dotykasz jednej głowy. „Módl się” posyła go pod twój rdzeń: idzie tam jako wierny i modli się pod skorupą. „Prorokuj” odrywa go z garstką wiernych w nową nację.',
-    kiedy: 'Trzech wysłanych „módl się” wystarczy, żeby skorupa zaczęła pękać. Prorok rozbija nację, która zjada resztę.',
-    koszt: `módl się ${kosztSlowami('szept', 'modl')}, prorok ${kosztSlowami('szept', 'prorok')}`,
+    opis: '„Szepnij”, potem dotknij jednej postaci i wybierz słowo na jej karcie. „Módl się” posyła pobożnego pod twój rdzeń od razu, bez względu na wiarę ludu. „Okalecz się” — pobożny upuszcza krwi: dostajesz krew, a on słabnie na zawsze. „Ofiaruj” — oddaje ci życie za dużo krwi. „Przerwij modlitwę” zawraca spod rdzenia. „Przemyśl i kop” (robotnik) — klęka, prosi o znak i kopie ku śpiącym rycerzom. „Kop losowo” (rycerz) — wykopuje kawałek skały obok siebie.',
+    kiedy: 'Trzech wysłanych „módl się” wystarczy, żeby skorupa zaczęła pękać. „Przemyśl i kop” szepnij trzem robotnikom naraz — jeden trafia w gniazdo raz na trzy, trzech na pewno.',
+    koszt: `módl się ${kosztSlowami('szept', 'modl')}, okalecz się ${kosztSlowami('szept', 'okalecz')}, ofiaruj ${kosztSlowami('szept', 'ofiaruj')}, przemyśl i kop ${kosztSlowami('szept', 'przemysl')}, kop losowo ${kosztSlowami('szept', 'kopLosowo')}`,
     rycina: cala(rysujSzept),
   },
   {
     id: 'ryt-znak', grupa: 'ryty', nazwa: 'Cud', lacina: 'Signum manifestum',
-    opis: 'Jawny cud widziany w promieniu dwudziestu sześciu kafli. Podnosi oddanie nacji i gasi strach. Zostaje świecący glif — modlitwa przy nim liczy się podwójnie.',
-    kiedy: 'Stawiaj przy gnieździe nacji, którą chcesz doprowadzić do rdzenia. Jedno, dwa objawienia i sama wyśle wartę.',
+    opis: `Jawny cud widziany w promieniu ${MOCE.znakZasieg} kafli. Każdy, kto go widzi, wierzy mocniej (+${proc(MOCE.objawienieOddanie)}) i mniej się boi, a oddanie ludu rośnie o ${proc(MOCE.objawienieNacja)}. Zostaje świecący znak w skale, przy którym pobożni się modlą. Światło Cudu przegania Tego, który patrzy (do ${MROK.cudPromien} kafli od niego) i odpycha dłoń z otchłani (do ${DLON.cudPromien} kafli).`,
+    kiedy: 'Przy siedzibie, żeby lud uwierzył dość mocno i sam ruszył pod rdzeń — i zawsze tam, gdzie z ciemności patrzą oczy albo spod ziemi bije czerwona łuna.',
     koszt: kosztSlowami('znak', 'objawienie'),
     rycina: cala(rysujZnak),
   },
   // zasoby
   {
     id: 'krew', grupa: 'zasoby', nazwa: 'Krew', lacina: 'Sanguis',
-    opis: `Liczba nad płytą i relikwiarz pod nią: krew stoi w szklanej ampułce, a granaty w złotej oprawie żarzą się, gdy jej przybywa. Mieści się jej najwyżej ${GORA.krewMax} — pełna ampułka pulsuje, a nadmiar przepada. Płaci ci ją każda śmierć — także Strażników Snu i buntowników — szept „ofiaruj” i samookaleczenie pobożnego.`,
-    kiedy: 'Wydajesz ją na nowych ze skały, na jedzenie (ryt Nakarm) i na wybory na kartach wydarzeń. Nie trzymaj pełnej ampułki — to, co by przybyło, i tak przepadnie.',
+    opis: `Liczba nad płytą i relikwiarz pod nią: krew stoi w szklanej ampułce, a granaty w złotej oprawie żarzą się, gdy jej przybywa. Na Koszmarze zaczynasz z ${Math.max(0, LUD.krewStart - GORA.koszmarKrew)}, mieści się jej najwyżej ${GORA.krewMax} — pełna ampułka pulsuje, a nadmiar przepada. Płaci ci ją każda śmierć — także Strażników Snu, buntowników i ludzi z powierzchni — ofiara (+${LUD.ofiaraKrew}) i samookaleczenie pobożnego (+${LUD.okaleczenieKrew}).`,
+    kiedy: 'Wydajesz ją na nowych ze skały, na wiadra rytem Nakarm i na wybory na kartach wydarzeń. Zawsze trzymaj zapas na nowego pobożnego, ale nie pełną ampułkę — to, co by przybyło, i tak przepadnie.',
     rycina: cala(rysujKrew),
   },
   {
     id: 'wiara', grupa: 'zasoby', nazwa: 'Wiara', lacina: 'Fides',
-    opis: 'Liczba nad płytą — twój zapas. Rośnie za każdym razem, gdy ktoś się do ciebie modli: przy ołtarzu, kuźni, twoim Cudzie, a najmocniej pod rdzeniem. Mieści się jej najwyżej 200. Nie myl jej z oddaniem: Wiara to twoja waluta, oddanie to to, jak mocno wierzy nacja.',
-    kiedy: 'Płacisz nią za szept, Cud i wybory na kartach wydarzeń. Więcej w tablicy Oddanie i modlitwa.',
+    opis: `Liczba nad płytą — twój zapas, najwyżej ${GORA.wiaraMax}. Rośnie za każdym razem, gdy ktoś się do ciebie modli: przy ołtarzu (pobożni stawiają je sami), przy znaku po Cudzie, a najmocniej pod rdzeniem; +${STRAZNICY.nagrodaWiary} za każdą pokonaną falę Strażników. Nie myl jej z oddaniem: wiara to twoja waluta, oddanie to to, jak mocno wierzy lud.`,
+    kiedy: 'Płacisz nią za szepty, Cud i wybory na kartach wydarzeń.',
     rycina: cala(rysujOrgany),
+  },
+  {
+    id: 'wiadro', grupa: 'zasoby', nazwa: 'Wiadro z jedzeniem', lacina: 'Situla panis',
+    opis: `Jedyne jedzenie ludu — grzyba ani spiżarni nie ma. Co ${Math.round(WIADRO.co / 120)} sekund z góry, na linie, zjeżdża wiadro pełne jedzenia (${WIADRO.porcjiNaGlowe} porcji na każdego z ludu), najwyżej ${WIADRO.maks} pełnych naraz — do pierwszego odkrytego, pustego miejsca, do którego lud dojdzie, przy tych, którzy najbardziej głodują. Przed zjazdem ze stropu sypie się pył. Każdy może z niego jeść, robotnicy donoszą z niego jedzenie warcie; puste odjeżdża w górę. Kto umiera z głodu (${proc(WIADRO.wspinaczkaOd)} głodu), a wiadro jeszcze jedzie, wspina się po linie, wsiada do niego i je w drodze w dół.`,
+    kiedy: 'Liczba „jedzenie” nad płytą to porcje we wszystkich wiadrach. Gdy nie nadążają, spuść dodatkowe rytem Nakarm.',
+    rycina: postac(Race.GOBLIN, 'je'),
   },
   // prawa góry
   {
@@ -549,15 +482,9 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'sen', grupa: 'prawa', nazwa: 'Przegrana', lacina: 'Casus',
-    opis: 'Przegrywasz, gdy nie da się już wygrać: nie żyje żaden pobożny, a nawet ofiara ze wszystkich nie da krwi na nowego. Najczęstsza droga do tego to głód — lud daleko od spiżarni, bez robotników, którzy noszą jedzenie.',
-    kiedy: 'Trzymaj robotników, zakładaj obozy ze spiżarniami i sadź przy nich grzyb. Nie wysyłaj pod rdzeń ostatniego pobożnego.',
+    opis: `Przegrywasz, gdy nie da się już wygrać: nie żyje żaden pobożny, a nawet ofiara ze wszystkich nie da krwi na nowego (${LUD.koszt.pobozny}). Przegrywasz też, gdy do rdzenia dojdzie ktoś, kto w ciebie nie wierzy. Najczęstsza droga do porażki to głód — lud rozproszony daleko od wiader, bez robotników, którzy noszą jedzenie.`,
+    kiedy: 'Trzymaj lud razem i robotników przy życiu, spuszczaj wiadra tam, gdzie głodują. Nie wysyłaj pod rdzeń ostatniego pobożnego.',
     rycina: cala(rysujSpis),
-  },
-  {
-    id: 'prorok', grupa: 'prawa', nazwa: 'Prorok', lacina: 'Propheta',
-    opis: 'Szept „prorokuj" albo karta „prorok” odrywa od nacji jednego z garstką wiernych. Nowa nacja od razu ma urazę do dawnej — a wojny z twojego szeptu cofają sen.',
-    kiedy: 'Najlepiej w największej nacji zwycięskiej krwi.',
-    rycina: prorok,
   },
   {
     id: 'droga', grupa: 'prawa', nazwa: 'Droga do wolności', lacina: 'Via liberationis',
@@ -567,97 +494,109 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'skorupa', grupa: 'prawa', nazwa: 'Skorupa rdzenia', lacina: 'Testa cordis',
-    opis: `Kamień wokół rdzenia — nie da się go rozkuć. Pęka tylko pod modlitwą: gdy przy rdzeniu (do 16 kafli) stoi naraz co najmniej trzech wiernych (z dowolnych nacji), każdy z oddaniem od ${proc(RYTUAL.minOddanie)}. Kuje nacja, której jest tam najwięcej — jej postęp zostaje przy niej. Każde pęknięcie wyjmuje jeden kafel od góry, od strony przedsionka; zwykle trzeba ich około pięciu, każde idzie wolniej od poprzedniego.`,
-    kiedy: 'Trzymaj trzech i więcej razem, najedzonych i wierzących. Przy 20, 45, 70 i 90% wychodzą Strażnicy Snu — dopóki żyją, skorupa nie pęka.',
+    opis: `Kamień wokół rdzenia — nie da się go rozkuć. Pęka tylko pod modlitwą: gdy przy rdzeniu stoi naraz co najmniej ${RYTUAL.potrzebaWiernych} wiernych, każdy z oddaniem od ${proc(RYTUAL.minOddanie)}. Każde pęknięcie wyjmuje jeden kafel od strony przedsionka; zwykle trzeba ich około pięciu, każde idzie wolniej od poprzedniego, a na Koszmarze skorupa jest twardsza (${proc(RYTUAL.koszmarMnoznik)} tempa).`,
+    kiedy: `Trzymaj pod rdzeniem trzech i więcej, najedzonych i wierzących. Przy ${STRAZNICY.fale.map((f) => `${f.prog}`).join(', ')}% wychodzą Strażnicy Snu — dopóki żyją, skorupa nie pęka.`,
     rycina: skorupa,
   },
   {
     id: 'rdzen', grupa: 'prawa', nazwa: 'Rdzeń', lacina: 'Cor montis',
-    opis: `Gdy przez skorupę prowadzi przejście, wierni sami schodzą do środka — nie musisz ich prowadzić. Kto dotknie rdzenia albo wejdzie do pustej komory wokół niego, kończy grę: wierzący (nacja ponad ${proc(RYTUAL.uwolnienieNacja)} albo on sam ponad ${proc(RYTUAL.uwolnienieWlasne)}) cię uwalnia, bezbożny zabija.`,
-    kiedy: 'Wierni muszą zdążyć pierwsi: karm wartę i nie wpuszczaj pod rdzeń obcych.',
+    opis: `Gdy przez skorupę prowadzi przejście, wierni sami schodzą do środka — nie musisz ich prowadzić. Kto dotknie rdzenia, kończy grę: wierzący (lud ponad ${proc(RYTUAL.uwolnienieNacja)} oddania albo on sam ponad ${proc(RYTUAL.uwolnienieWlasne)}) cię uwalnia, bezbożny zabija. Dopóki trwa fala Strażników, rdzenia nie dotknie nikt.`,
+    kiedy: 'Wierni muszą zdążyć pierwsi: karm wartę i nie wpuszczaj pod rdzeń ludzi z powierzchni.',
     rycina: cala(rysujGore),
   },
   {
     id: 'oddanie', grupa: 'prawa', nazwa: 'Oddanie i modlitwa', lacina: 'Devotio',
-    opis: `Każda nacja ma oddanie: od 0 do 100%, jak mocno w ciebie wierzy — widać je nad płytą, w złożonych dłoniach, które napełniają się złotem, i na karcie mieszkańca. Ślepy Lud zaczyna od ${proc(LUDY.oddanieStart.slepyLud)}, inni prawie od zera. Kto wierzy, ten się modli: przy ołtarzu (stawiają go z rudy — daj im ją, gdy karta zapyta), przy twoim Cudzie i pod rdzeniem. Każda modlitwa daje ci Wiarę i trochę podnosi oddanie. Najszybciej podniesie je Cud przy gnieździe. Przy ${proc(PIELGRZYMKA.oddanieNacji)} nacja sama wyśle wartę pod rdzeń.`,
-    kiedy: 'Najprościej: Cud przy gnieździe Ślepego Ludu, Nakarm przy przedsionku — i szepnij „módl się” trzem z nich (albo wybierz „poślij pod rdzeń” na karcie).',
+    opis: `Oddanie to to, jak mocno lud w ciebie wierzy — od 0 do 100%, widać je w złożonych dłoniach pod płytą, które napełniają się złotem, i na karcie postaci. Kto wierzy, ten się modli: przy ołtarzu, przy znaku po Cudzie i pod rdzeniem. Każda modlitwa daje ci wiarę i trochę podnosi oddanie. Najszybciej podniesie je Cud przy siedzibie. Przy ${proc(PIELGRZYMKA.oddanieNacji)} lud sam wyśle wartę pod rdzeń.`,
+    kiedy: 'Najprościej: Cud przy siedzibie, wiadra dla warty — i szepnij „módl się” trzem pobożnym (albo wybierz „poślij” na karcie warty).',
     rycina: pielgrzymka,
   },
   {
-    id: 'cechy', grupa: 'prawa', nazwa: 'Cechy nacji', lacina: 'Mores gentium',
-    opis: `Każda nacja rodzi się z jedną cechą — widać ją na podpisie przy gnieździe i na karcie mieszkańca. ${CECHY.map((c) => `${c.nazwa.charAt(0).toUpperCase()}${c.nazwa.slice(1)}: ${c.opis}.`).join(' ')}`,
-    kiedy: 'Pod rdzeń najlepiej posyłać pobożnych. Wojowniczych trzymaj z dala od słabszych krwi — albo kieruj na najliczniejszych.',
-    rycina: cala(rysujSpis),
-  },
-  {
-    id: 'pielgrzymka', grupa: 'prawa', nazwa: 'Pielgrzymka', lacina: 'Peregrinatio',
-    opis: `Gdy oddanie nacji przekroczy ${proc(PIELGRZYMKA.oddanieNacji)}, najwyżej pięciu najwierniejszych samo schodzi pod rdzeń i modli się pod skorupą — o ile przy przedsionku jest co jeść albo spod rdzenia da się wrócić do gniazda. Nie chcesz czekać? Szepnij „módl się” — wysłany idzie od razu, bez względu na wiarę swojej nacji.`,
-    kiedy: 'Nakarm przedsionek — drogę wierni przekopią sami, złota kreska pokazuje którędy.',
+    id: 'pielgrzymka', grupa: 'prawa', nazwa: 'Warta pod rdzeniem', lacina: 'Peregrinatio',
+    opis: `Gdy oddanie ludu przekroczy ${proc(PIELGRZYMKA.oddanieNacji)}, od ${PIELGRZYMKA.minPielgrzymow} do ${PIELGRZYMKA.maxPielgrzymow} najwierniejszych, najedzonych pobożnych samo schodzi pod rdzeń i modli się pod skorupą. Czekają przy obozie, aż robotnicy dokopią drogę (złotą kreskę), a rycerze idą z nimi na wartę. Szept „módl się” posyła pobożnego od razu, bez względu na wiarę ludu.`,
+    kiedy: 'Warta głoduje pierwsza — gdy wiadra do niej nie sięgają, spuść jej wiadro rytem Nakarm.',
     rycina: pielgrzymka,
   },
   {
     id: 'wydarzenia', grupa: 'prawa', nazwa: 'Wydarzenia', lacina: 'Aestus',
-    opis: 'Mniej więcej co minutę coś się dzieje: najazd z powierzchni, zaraza, głód, spisek rycerzy, zatrute plony, zawał nad drogą wiernych, sen o kamiennych rycerzach. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku. Niektóre wracają: zostawiony spisek po dwóch minutach wybucha buntem — część rycerzy zmienia barwy i bije lud.',
-    kiedy: 'Spisek gaś od razu, jeśli stać cię na krew. Zatrute plony lepiej spalić niż zjeść. Sen o rycerzach pokazuje gniazdo — warto.',
+    opis: `Co ${Math.round(WYDARZENIA.odstep / 120)}–${Math.round((WYDARZENIA.odstep + WYDARZENIA.rozrzut) / 120)} sekund coś się dzieje: ludzie schodzą z powierzchni, nadchodzi zaraza, lud głoduje albo prosi o znak, pobożni chcą zejść pod rdzeń, głębia proponuje układ, rycerze knują spisek, jedzenie w wiadrze gnije, strop nad drogą wiernych pęka, pobożnym śnią się kamienni rycerze. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku. Zostawiony spisek po dwóch minutach wybucha buntem: część rycerzy zmienia barwy i bije lud.`,
+    kiedy: 'Spisek gaś od razu, jeśli stać cię na krew. Zgniłe jedzenie lepiej oczyścić albo wylać, niż zjeść. Sen o rycerzach pokazuje gniazdo — warto.',
     rycina: cala(rysujPrzyplyw),
   },
   {
     id: 'role', grupa: 'prawa', nazwa: 'Role ludu', lacina: 'Officia',
-    opis: 'Pobożni modlą się i kruszą skorupę; stoją przy obozie najbliżej rdzenia. Robotnicy kopią drogę do rdzenia, zbierają grzyb do spiżarni, donoszą jedzenie stojącym i zaopatrują obóz frontowy. Rycerze mają miecz i cztery razy więcej życia; poza wartą pilnują obozu z jedzeniem, a w czasie fali walczą ze Strażnikami.',
+    opis: 'Pobożni modlą się i kruszą skorupę; stoją przy obozie najbliżej rdzenia. Robotnicy kopią drogę do rdzenia i donoszą jedzenie z wiader tym, którzy stoją na warcie. Rycerze mają miecz i cztery razy więcej życia; poza wartą pilnują obozu, a w czasie fali walczą ze Strażnikami. Gdy rycerzy zabraknie, robotnicy zakładają hełmy i walczą zamiast nich.',
     kiedy: 'Na karcie postaci widać jej zamiar i ile jeszcze go trzyma. Kogo wyda skała, wybierasz pod paskiem ról.',
-    rycina: postac(Race.GOBLIN, 'kopie'),
+    rycina: postac(Race.GOBLIN, 'kopie', 1, 'robotnik'),
   },
   {
     id: 'gniazda', grupa: 'prawa', nazwa: 'Kamienni rycerze', lacina: 'Equites saxei',
-    opis: `W każdej górze śpi ${LUD.gniazda} gniazd po ${LUD.gniazdoRycerzy.od}–${LUD.gniazdoRycerzy.do} rycerzy — w litej skale, z dala od drogi do rdzenia. Gdy ktoś z ludu jest blisko, skała słabo się żarzy. Kto się dokopie, budzi ich: wychodzą od razu jako weterani.`,
-    kiedy: 'Szepnij robotnikowi „przemyśl i kop”: klęka, prosi o znak i kopie tunel ku najbliższemu gniazdu. Znak jest niedokładny — jeden kopacz trafia raz na trzy, trzech razem na pewno.',
-    rycina: postac(Race.GOBLIN, 'kopie'),
+    opis: `W każdej górze śpi ${LUD.gniazda} gniazd po ${LUD.gniazdoRycerzy.od}–${LUD.gniazdoRycerzy.do} rycerzy — w litej skale, z dala od drogi do rdzenia. Gdy ktoś z ludu jest blisko, skała słabo się żarzy. Kto się dokopie, budzi ich: wychodzą od razu jako weterani. Gniazda nad zawałem przepadają razem ze śpiącymi.`,
+    kiedy: 'Szepnij robotnikowi „przemyśl i kop”: klęka, prosi o znak i kopie tunel ku najbliższemu gniazdu. Znak jest niedokładny — jeden kopacz trafia raz na trzy, trzech razem na pewno. Szukaj wcześnie, zanim zawał zamknie górę.',
+    rycina: postac(Race.GOBLIN, 'stoi', 0.9, 'rycerz'),
   },
   {
     id: 'weterani', grupa: 'prawa', nazwa: 'Weterani i aureole', lacina: 'Veterani',
-    opis: `Kto przeżyje w ludzie ${Math.round(LUD.weteranPo / 7200)} minuty, staje się weteranem: póki najedzony, a lud wierny, ma +${Math.round((LUD.weteranPremia - 1) * 100)}% siły, szybkości, kopania i modlitwy. Jasna aureola znaczy wzmocnienie, czerwona — osłabienie (świeżo ze skały, okaleczony, zatruty).`,
+    opis: `Kto przeżyje w ludzie ${Math.round(LUD.weteranPo / 7200)} minuty, staje się weteranem: póki najedzony, a lud wierny, ma +${Math.round((LUD.weteranPremia - 1) * 100)}% siły, szybkości, kopania i modlitwy. Jasna aureola znaczy wzmocnienie (weteran, hełm), czerwona — osłabienie (świeżo ze skały, okaleczony, zatruty).`,
     kiedy: 'Karta postaci mówi, jaki to stan i kiedy minie. Weterana warto karmić — głodny traci premię.',
     rycina: postac(Race.GOBLIN, 'modli'),
   },
   {
     id: 'straznicy', grupa: 'prawa', nazwa: 'Strażnicy Snu', lacina: 'Custodes somni',
-    opis: 'Skorupa ma strażników. Przy 20, 45 i 70% skruszenia wychodzą spod niej fale — z każdą silniejsi. Przenikają skałę, nie odchodzą daleko od rdzenia i biją najpierw rycerzy. Dopóki fala trwa, skorupa nie pęka i nikt nie wejdzie do rdzenia.',
-    kiedy: 'W czasie fali pobożni i robotnicy sami odchodzą spod rdzenia — walczą rycerze. Pasek nad płytą mówi, ilu zostało.',
+    opis: `Skorupa ma strażników. Przy ${STRAZNICY.fale.filter((f) => !f.boss).map((f) => `${f.prog}`).join(', ')}% skruszenia wychodzą spod niej fale — z każdą silniejsi. Przenikają skałę, nie odchodzą daleko od rdzenia i biją najpierw rycerzy. Dopóki fala trwa, skorupa nie pęka i nikt nie wejdzie do rdzenia. Za pokonaną falę dostajesz ${STRAZNICY.nagrodaWiary} wiary.`,
+    kiedy: 'W czasie fali pobożni i robotnicy sami odchodzą spod rdzenia — walczą rycerze (a gdy ich brak, robotnicy w hełmach). Pasek nad płytą mówi, ilu zostało.',
     rycina: skorupa,
   },
   {
     id: 'boss', grupa: 'prawa', nazwa: 'Śniący Kamień', lacina: 'Lapis somnians',
-    opis: 'Ostatnia fala, przy 90% skorupy. Wielki strażnik wychodzi ze ściany przedsionka. Rani go tylko rycerz. Na bossa rycerze ruszają dopiero we trzech — mniej czeka na skraju i broni się, gdy coś podejdzie (gdy gniazd już nie ma, idą, ilu jest). Co jakiś czas uderza w ziemię i zasypuje kawałek drogi wiernych. Gdy pod rdzeniem modli się trzech pobożnych, słabnie — bez modlitwy się zrasta. Gdy przez 2 minuty nie ma przed nim żadnego rycerza, zapada w ścianę na 4 minuty (skorupa wtedy nie pęka) i we śnie zdradza jedno gniazdo rycerzy. Gdy gniazda są już rozkopane, a rycerzy brak, nie zasypia — wtedy pobożni unoszą księgi i razią go z dystansu.',
+    opis: `Ostatnia fala, przy ${STRAZNICY.fale.find((f) => f.boss)?.prog ?? 90}% skorupy. Wielki strażnik wychodzi ze ściany przedsionka. Rani go tylko rycerz albo robotnik w hełmie. Rycerze ruszają na niego dopiero we trzech — mniej czeka na skraju i broni się, gdy coś podejdzie (gdy gniazd już nie ma, idą, ilu jest). Co jakiś czas uderza w ziemię i zasypuje kawałek drogi wiernych. Gdy pod rdzeniem modli się trzech pobożnych, słabnie — bez modlitwy się zrasta. Gdy przez 2 minuty nie ma przed nim nikogo do walki, zapada w ścianę na 4 minuty i we śnie zdradza jedno gniazdo rycerzy. Gdy gniazda są już rozkopane, a walczących brak, pobożni unoszą księgi i razią go z dystansu.`,
     kiedy: 'Wszyscy rycerze pod rdzeń, trzech pobożnych do modlitwy, robotnicy przy drodze. Życie bossa widać na pasku nad płytą.',
     rycina: skorupa,
   },
   {
+    id: 'zawal', grupa: 'prawa', nazwa: 'Zawał', lacina: 'Ruina montis',
+    opis: `Góra zamyka się za ludem. Gdy przez ${Math.round(ZAWAL.czekaj / 120)} sekund nikogo z ludu nie ma wysoko nad najwyżej stojącym, skała nad nim się zawala: wszystko wyżej staje się litą skałą — razem z gniazdami kamiennych rycerzy, które tam spały, obozami, wiadrami i trupami. Mapa się skraca, a kamera nie wjeżdża już ponad gruz. W górę nie ma powrotu: lud nie ucieknie — musi walczyć. Pierwszy zawał najwcześniej po minucie.`,
+    kiedy: 'Szukaj rycerzy, zanim lud zejdzie niżej — gniazda nad zawałem przepadają na zawsze.',
+    rycina: cala(rysujGore),
+  },
+  {
+    id: 'helmy', grupa: 'prawa', nazwa: 'Hełmy robotników', lacina: 'Fossores armati',
+    opis: `Gdy nie zostanie ani jeden rycerz, robotnicy zakładają żelazne hełmy i biorą kilofy do walki: mają ${Math.round((LUD.helm.hp - 1) * 100)}% więcej życia i biją jak rycerze — trzymają wartę, bronią przed obcymi, walczą ze Strażnikami Snu i z bossem. Gdy wrócą rycerze, hełmy zdejmują.`,
+    kiedy: 'To ostatnia obrona, nie zastępstwo — w czasie fali robotnik w hełmie walczy zamiast kopać i nosić jedzenie.',
+    rycina: postac(Race.GOBLIN, 'walczy', 1, 'robotnik', true),
+  },
+  {
+    id: 'trupy', grupa: 'prawa', nazwa: 'Trupy', lacina: 'Corpora',
+    opis: `Kto z ludu umrze, nie znika: jego ciało leży tam, gdzie padł. Tylko zabranych przez ciemność i przez dłoń z otchłani nie ma. Gdy ciał jest więcej niż ${LUD.trupyMax}, najstarsze rozsypują się w kości; zawał grzebie te nad gruzem.`,
+    kiedy: 'Trupy mówią, gdzie lud ginie — tam spuść wiadro albo poślij rycerzy.',
+    rycina: postac(Race.GOBLIN, 'spi'),
+  },
+  {
     id: 'klamry', grupa: 'prawa', nazwa: 'Klamry', lacina: 'Fibulae',
-    opis: 'Lud nie spada: nad pustką schodzi powoli, wbijając w ścianę żelazne klamry, a w otwartej pustce wiesza linę. Którędy zszedł, tamtędy wróci.',
+    opis: 'Lud nie spada: nad pustką schodzi powoli, wbijając w ścianę żelazne klamry, a w otwartej pustce wiesza linę. Którędy zszedł, tamtędy wróci — chyba że góra się zawali.',
     kiedy: 'Klamry widać przy ścianach szybów i jaskiń. Nie trzeba ich budować — powstają same.',
     rycina: postac(Race.GOBLIN, 'wspina'),
   },
   {
     id: 'pauza', grupa: 'prawa', nazwa: 'Pauza', lacina: 'Tempus suspensum',
-    opis: 'Czas możesz zatrzymać. Rozkazy wydane w pauzie rysują się jako szkice, rezerwują koszt i dzieją się naraz, gdy puścisz czas.',
+    opis: 'Czas możesz zatrzymać. Rozkazy wydane w pauzie (Nakarm, Cud) rysują się jako szkice, rezerwują koszt i dzieją się naraz, gdy puścisz czas. Przy kryzysach gra staje sama.',
     kiedy: 'Zatrzymuj świat, gdy musisz trafić — i przy każdym kryzysie.',
     rycina: pauza,
   },
   {
     id: 'pismo', grupa: 'prawa', nazwa: 'Pismo w skale', lacina: 'Scriptura ignota',
-    opis: 'W skale, do której nikt jeszcze nie zajrzał, widać znaki. Nikt z żyjących ich nie wyrył — były tu przed pierwszym goblinem. Gasną, gdy dojdzie do nich światło; w zatrzymanym czasie widać je wyraźniej.',
+    opis: 'W skale, do której nikt jeszcze nie zajrzał, widać znaki. Nikt z żyjących ich nie wyrył — były tu przed pierwszym z ludu. Gasną, gdy dojdzie do nich światło; w zatrzymanym czasie widać je wyraźniej.',
     kiedy: 'Nie da się ich przeczytać. Można tylko pójść tam, gdzie są, i patrzeć, jak znikają.',
     rycina: pismo,
   },
   {
     id: 'patrzacy', grupa: 'prawa', nazwa: 'Ten, który patrzy', lacina: 'Qui in tenebris spectat',
-    opis: `Poza światłem lampek, obozów i rdzenia góra jest ciemna — i coś w tej ciemności jest. Przenika skałę, krąży wokół siedziby i wypatruje tego, kto został sam daleko od obozu (rycerzy nie rusza). Gdy go znajdzie, patrzy na niego: samotny staje jak wryty, w skale świecą oczy, a lampka przygasa. Po ${Math.round(MROK.patrzyTikow / 120)} sekundach zabiera go — krew zostaje dla ciebie. Potem na kilka minut cichnie.`,
+    opis: `Poza światłem lampek, obozów i rdzenia góra jest ciemna — i coś w tej ciemności jest. Po ${Math.round(MROK.pierwszyPo / 7200)} minutach zaczyna krążyć w skale wokół siedziby i wypatruje tego, kto został sam daleko od obozu (rycerzy nie rusza). Gdy go znajdzie, patrzy na niego: samotny staje jak wryty, w skale świecą oczy, a lampka przygasa. Po ${Math.round(MROK.patrzyTikow / 120)} sekundach zabiera go — krew zostaje dla ciebie. Potem na kilka minut cichnie.`,
     kiedy: 'Nie puszczaj nikogo samego daleko od obozu. Gdy zobaczysz oczy — rzuć Cud tuż przy nich albo poślij kogoś do samotnego.',
     rycina: patrzacy,
   },
   {
     id: 'dlon', grupa: 'prawa', nazwa: 'Dłoń z otchłani', lacina: 'Manus ex abysso',
-    opis: `Tylko w Koszmarze, i rzadko. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu, a pod nim zaczyna się otchłań, spod ziemi sączy się czerwona łuna, a on (czasem dwoje naraz) staje jak wryty. Z głębi, zawsze od dołu, wznosi się ogromna dłoń — po ${Math.round((DLON.wstaje + DLON.siega) / 120)} sekundach sięga, chwyta ich i zapada się z nimi w ciemność. Nie zostają nawet kości — krew i tak spływa do ciebie.`,
+    opis: `Rzadko, najwcześniej po ${Math.round(DLON.pierwszaPo / 7200)} minutach i najwyżej ${DLON.maxNaPartie} razy w partii. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu, a pod nim zaczyna się otchłań, spod ziemi sączy się czerwona łuna, a on (czasem dwoje naraz) staje jak wryty. Z głębi, zawsze od dołu, wznosi się ogromna dłoń — po ${Math.round((DLON.wstaje + DLON.siega) / 120)} sekundach sięga, chwyta ich i zapada się z nimi w ciemność. Nie zostają nawet trupy — krew i tak spływa do ciebie.`,
     kiedy: 'Nie stawiaj ludu nad nieznanym daleko od obozu. Gdy otchłań pod kimś zaczerwieni się — rzuć Cud przy nim, zanim dłoń chwyci.',
     rycina: dlonOtchlani,
   },

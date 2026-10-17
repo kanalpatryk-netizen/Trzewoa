@@ -4,12 +4,11 @@ import type { Akcja } from '../../core/keybinds';
 import { BARWA, rgba } from '../../render/palette';
 import { SERIF, tloSadzy, tytulRyty, kreska } from '../../render/ink';
 import { OSIAGNIECIA, zdobyte } from '../../core/osiagniecia';
-import { dzisiaj, wynikDnia, czasGry } from '../../core/swiat-dnia';
 import { medalion } from '../../render/freski';
 import { FRESKI } from '../../nastawy/wyglad/freski';
 
 /**
- * OSIĄGNIĘCIA (v4.1 beta) — spis celów dodatkowych i wynik dzisiejszego świata dnia.
+ * OSIĄGNIĘCIA (Remake v2) — spis celów dodatkowych.
  * Każde ma medalion z fresku (FRESKI.medaliony): zdobyte w kolorze, niezdobyte wyblakłe
  * i przygaszone, ale ich opis widać — to podpowiedź, jak grać inaczej.
  */
@@ -19,7 +18,6 @@ export class EkranOsiagniec implements Ekran {
   private wybrana = 0;
   private trafienia: { x: number; y: number; w: number; h: number; id: string }[] = [];
   private opcje = [
-    { id: 'dnia', etykieta: 'Zagraj świat dnia' },
     { id: 'menu', etykieta: 'Wróć do menu' },
   ];
 
@@ -47,7 +45,7 @@ export class EkranOsiagniec implements Ekran {
     const kolumn = w >= 560 ? 2 : 1;
     const wierszy = Math.ceil(OSIAGNIECIA.length / kolumn);
     const gora = h * 0.11 + Math.max(48, Math.min(72, w / 18));
-    const dol = h * 0.78;
+    const dol = h * 0.84;
     const szerKol = Math.min(460, (w - 48) / kolumn - 16);
     let rozmiar = Math.max(11, Math.min(19, w / 60));
     while (rozmiar > 9 && wierszy * rozmiar * 2.6 > dol - gora) rozmiar -= 0.5;
@@ -76,20 +74,12 @@ export class EkranOsiagniec implements Ekran {
       }
     });
 
-    // świat dnia: dzisiejszy wynik
-    const data = dzisiaj(), wd = wynikDnia(data);
-    ctx.textAlign = 'center';
-    ctx.font = `italic ${Math.max(13, Math.min(17, w / 66))}px ${SERIF}`;
-    ctx.fillStyle = rgba(BARWA.zarBlady, 0.9 * wejscie);
-    const opis = wd.proby === 0 ? 'jeszcze nie grany'
-      : `${wd.najlepszy !== null ? `najlepszy czas ${czasGry(wd.najlepszy)}` : 'bez wygranej'} · prób ${wd.proby} · wygranych ${wd.wygrane}`;
-    ctx.fillText(`Świat dnia ${data}: ${opis}`, w / 2, h * 0.84, w - 32);
-
     // co dalej
     this.trafienia = [];
+    ctx.textAlign = 'center';
     const dolne = h * 0.93;
     this.opcje.forEach((op, i) => {
-      const ox = w / 2 + (i === 0 ? -1 : 1) * Math.min(220, w * 0.2);
+      const ox = w / 2;
       const wybrane = i === this.wybrana;
       ctx.font = `${Math.max(16, Math.min(24, w / 48))}px ${SERIF}`;
       ctx.fillStyle = rgba(wybrane ? BARWA.atramentMocny : BARWA.atrament, wybrane ? 0.98 : 0.7);
@@ -104,9 +94,8 @@ export class EkranOsiagniec implements Ekran {
     });
   }
 
-  private uruchom(id: string): void {
-    if (id === 'dnia') this.app.idz('gra', { tryb: 'dnia' });
-    else this.app.idz('menu');
+  private uruchom(_id: string): void {
+    this.app.idz('menu');
   }
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
@@ -117,7 +106,6 @@ export class EkranOsiagniec implements Ekran {
   }
 
   klawisz(akcja: Akcja | null, e: KeyboardEvent): void {
-    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') { this.wybrana = 1 - this.wybrana; return; }
     if (e.key === 'Enter' || e.key === ' ') { this.uruchom(this.opcje[this.wybrana].id); return; }
     if (akcja === 'menu') this.app.idz('menu');
   }

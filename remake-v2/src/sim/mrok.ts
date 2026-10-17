@@ -9,7 +9,7 @@
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { MROK } from '../nastawy/mrok';
-import { rolaPostaci, klanLudu, NAZWA_ROLI } from './lud';
+import { rolaPostaci, klanLudu, NAZWA_ROLI, walczacy } from './lud';
 import { zapisz } from './dziennik';
 
 export type FazaMroku = 'czeka' | 'krazy' | 'podchodzi' | 'patrzy';
@@ -43,7 +43,7 @@ function lowna(c: Creature): boolean {
   if (c.dead || c.straznik || c.buntownik) return false;
   const r = rolaPostaci(c);
   if (!r) return false;
-  return !(MROK.rycerzeBezpieczni && r === 'rycerz');
+  return !(MROK.rycerzeBezpieczni && walczacy(c));
 }
 
 /** Światło obozów: siedziba i obozy (z nich lud nie ginie). */
@@ -196,6 +196,7 @@ export function odpedzMrok(sim: Sim, tx: number, ty: number): boolean {
   if (Math.hypot(m.x - tx, m.y - ty) > MROK.cudPromien) return false;
   const cel = m.cel !== null ? sim.creatures.find((c) => c.id === m.cel) : undefined;
   m.przegnanyT = sim.tick;
+  sim.stat.przegnany++;
   sim.gdzie(m.x, m.y).log('Światło Cudu przegnało to, co patrzyło z ciemności.', 'wiara');
   if (cel && !cel.dead) { cel.fear = Math.max(cel.fear, 0.5); cel.zamarlyDo = undefined; }
   zgas(sim, m, MROK.przerwaPoCudzie);

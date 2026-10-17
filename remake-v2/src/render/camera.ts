@@ -4,6 +4,8 @@ import { KAMERA } from '../nastawy/sterowanie';
 export class Camera {
   x = 0; y = 0; zoom = 6;
   minZoom = KAMERA.min; maxZoom = KAMERA.max;
+  /** Remake v2: pierwszy żywy rząd świata — wyżej zawalona skała, kamera tam nie wjeżdża (0 — cała góra). */
+  gora = 0;
   constructor(public vw: number, public vh: number) {}
 
   /** Miękkie dojście do celu — kamera ma iść za tym, co się dzieje, nie stać w miejscu. */
@@ -16,7 +18,9 @@ export class Camera {
     this.zoom = Math.min(this.maxZoom, Math.max(this.minZoom, this.zoom));
     const halfW = this.vw / this.zoom / 2, halfH = this.vh / this.zoom / 2;
     this.x = Math.min(Math.max(this.x, halfW), Math.max(halfW, worldW - halfW));
-    this.y = Math.min(Math.max(this.y, halfH - 6), Math.max(halfH, worldH - halfH));
+    // nad stropem zawału widać jeszcze pas gruzu (3 kafle), wyżej już nic
+    const minY = this.gora > 0 ? this.gora - 3 + halfH : halfH - 6;
+    this.y = Math.min(Math.max(this.y, minY), Math.max(minY, worldH - halfH));
   }
 
   toScreenX(wx: number): number { return (wx - this.x) * this.zoom + this.vw / 2; }

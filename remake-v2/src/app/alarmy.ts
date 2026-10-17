@@ -46,6 +46,8 @@ export class Straznik {
   private dlonOd = -1;
   /** Rodzaje, przy których gracz poprosił, żeby go więcej nie zatrzymywać. */
   wyciszone = new Set<string>();
+  /** Ostatni sprawdzony odcinek 30 tików (sprawdzamy raz na odcinek). */
+  private odcinek = -1;
 
   private od(sim: Sim): void {
     if (this.sim === sim) return;
@@ -56,11 +58,17 @@ export class Straznik {
     this.otwarta = sim.rytual.otwarta;
     this.fal = falRozpoczetych(sim);
     this.ostatniAlarm = sim.tick;
+    this.odcinek = Math.floor(sim.tick / 30);
   }
 
   sprawdz(sim: Sim, poziom: PoziomPauzy): Alarm | null {
     this.od(sim);
-    if (poziom === 'wyłączona' || sim.ending || sim.tick % 30 !== 0) return null;
+    if (poziom === 'wyłączona' || sim.ending) return null;
+    // raz na każde 30 tików świata — klatka robi kilka tików naraz, więc nie „gdy tik dzieli się przez 30”:
+    // przy dwóch tikach na klatkę (ekran 60 Hz) i nieparzystym tiku alarm nie przychodził wcale
+    const odcinek = Math.floor(sim.tick / 30);
+    if (odcinek === this.odcinek) return null;
+    this.odcinek = odcinek;
     const alarm = this.wykryj(sim);
     if (!alarm) return null;
     alarm.tablica = alarm.rodzaj.startsWith('wymiera-') ? `rasa-${alarm.rodzaj.slice(8)}`
@@ -171,7 +179,7 @@ export class Straznik {
         rodzaj: 'pekniecie-pierwsze', kryzys: true,
         tytul: `Skorupa zaczęła pękać — ${procentSkorupy(sim)}%`,
         tekst: `Modlitwa wiernych rozkuwa kamień, którego nie ruszy żaden kilof. Góra oddaje ci za to ${RYTUAL.nagrodaWiary} wiary.`,
-        rada: 'Pilnuj grzybu przy przedsionku, żeby warta nie umarła z głodu — i nie wpuszczaj pod rdzeń obcych.',
+        rada: 'Gdy warta przy przedsionku głoduje, spuść jej wiadro rytem „Nakarm” — i nie wpuszczaj pod rdzeń obcych.',
         cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, tekst: 'przedsionek' },
       };
     }

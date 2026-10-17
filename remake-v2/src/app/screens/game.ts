@@ -1,5 +1,8 @@
+import { rysujWiadra, rysujPrzodWiader } from '../../render/wiadro';
+import { rysujTrupy } from '../../render/trupy';
+import { stropGory } from '../../sim/zawal';
+import { porcjiWWiadrach } from '../../sim/wiadro';
 import { Sim, resetRaces } from '../../sim/sim';
-import { GORA } from '../../nastawy/gora';
 import { KAMERA, TEMPO, STEROWANIE } from '../../nastawy/sterowanie';
 import { ATLAS } from '../../nastawy/wyglad/atlas';
 import { Camera } from '../../render/camera';
@@ -20,8 +23,7 @@ import { klanLudu, liczRole, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
 import { rysujZnacznikiLudu, rysujKlamry } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
-import { LUD } from '../../nastawy/lud';
-import { dzisiaj, ziarnoDnia, wynikDnia, czasGry } from '../../core/swiat-dnia';
+import { LUD, REMAKE } from '../../nastawy/lud';
 import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, type Przycisk } from '../../render/przyciski';
 import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
@@ -34,11 +36,11 @@ import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujDrogeDoWolnosci, type ObszarDrogi } from '../../render/droga';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
-import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
+import { etykietyKolonii, podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
 import { computePlate, obszarSpisu, obszarOddania, drawFrame, drawKrew, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
-import { seed, sign, TOOLS, type Verb } from '../../powers/powers';
+import { seed, sign, nakarm, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
 import { rysujRozkazy, rysujBanerPauzy, type PoleBanera } from '../../render/rozkazy';
 import { miejsceKlepsydry } from '../../render/tempo';
@@ -58,7 +60,6 @@ import { OknoAtlasu } from '../../atlas/okno';
 import { odkrycia } from '../../atlas/odkrycia';
 import { SERIF } from '../../render/ink';
 import { tablica } from '../../atlas/tablice';
-import { Race } from '../../sim/races';
 import { Job } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
 import { ustawienia, jakoscAuto } from '../../core/settings-store';
@@ -139,6 +140,9 @@ export class EkranGry implements Ekran {
   private lastSave = 0;
   private lastSound = 0;
   private reszta = 0;
+  /** Remake v2: ostatni zawał i ostatnie wiadro, które już było słychać. */
+  private slyszanyZawal: number | undefined;
+  private slyszaneWiadro: number | undefined;
   private rada: Podpowiedz | null = null;
   private radaOd = -1e9;
   /** Pauza żyje tylko w tej sesji — zapisana potrafiła uruchomić grę w bezruchu. */
@@ -195,6 +199,8 @@ export class EkranGry implements Ekran {
 
   /** Okienko logów i narzędzi (tryb deweloperski, v4 beta). */
   private panelDev: PanelDewelopera | null = null;
+  /** Znacznik miejsca z karty wydarzenia — znika razem z kartą. */
+  private celKarty: Cel | null = null;
   /** Okno obserwatorium: kiedy partia się skończyła (czas ekranu) i kiedy ostatnio wysłano stan. */
   private botKoniecOd = 0;
   private botStanOd = 0;
@@ -234,15 +240,6 @@ export class EkranGry implements Ekran {
       BOT_GRA.nowaGra = (z) => this.nowaGra(z ?? ziarnoPartii());
       this.nowaGra(ziarnoPartii());
     }
-    else if (tryb === 'dnia') {
-      // v4.1 beta: świat dnia — ziarno z dzisiejszej daty, ta sama góra dla każdego
-      const data = dzisiaj();
-      this.nowaGra(ziarnoDnia(data));
-      this.sim.swiatDnia = data;
-      this.sim.log(`Świat dnia ${data} — ta sama góra dla każdego, kto gra dziś.`, 'swiat');
-      const w = wynikDnia(data);
-      this.ui.say(`Świat dnia ${data}. ${w.najlepszy !== null ? `Twój najlepszy czas dziś: ${czasGry(w.najlepszy)}.` : 'Dziś jeszcze go nie przeszedłeś.'}`, this.sim.tick);
-    }
     else if (tryb === 'wczytaj') {
       const s = loadFromStorage();
       if (s) {
@@ -278,10 +275,8 @@ export class EkranGry implements Ekran {
     if (BOT.wlaczony) {
       BOT.partia++;
       this.sim.wydarzenia.gracz = true;
-      if (BOT.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += GORA.laskawaKrew; }
-      if (BOT.trudnosc === 'koszmar') { this.sim.koszmar = true; this.sim.krew = Math.max(0, this.sim.krew - GORA.koszmarKrew); }
-    } else if (ustawienia.trudnosc === 'łaskawa') { this.sim.lagodna = true; this.sim.krew += GORA.laskawaKrew; }
-    if (!BOT.wlaczony && ustawienia.trudnosc === 'koszmar') { this.sim.koszmar = true; this.sim.krew = Math.max(0, this.sim.krew - GORA.koszmarKrew); }
+    }
+    // Remake v2: jedna trudność — Koszmar (krew na start i reszta ustawia się w Sim)
     this.ui.verb = null; this.ui.tool = null; this.ui.selected = null;
     this.cam.zoom = KAMERA.start;
     this.doSerca(true);
@@ -315,6 +310,24 @@ export class EkranGry implements Ekran {
     this.przejmijKamere();
     this.cam.clamp(this.sim.world.w, this.sim.world.h);
     this.dirty = true;
+  }
+
+  /** „pokaż miejsce” na karcie: kamera jedzie tam, a miejsce ląduje pod kartą (`czesc` płyty niżej; skala zostaje). */
+  private pokazPodKarta(c: { x: number; y: number }, czesc: number): void {
+    this.pokazMiejsce(c.x, c.y);
+    this.cam.y = this.camTarget.y = c.y - (this.plate.h * czesc) / this.cam.zoom;
+    this.cam.clamp(this.sim.world.w, this.sim.world.h);
+    this.dirty = true;
+  }
+
+  /** Dotknięcie strzałki celu przy krawędzi płyty wiezie kamerę na miejsce (skala zostaje). */
+  private dotknijStrzalki(x: number, y: number): boolean {
+    if (!this.cel) return false;
+    const s = strzalkaCelu(this.cam, this.cel);
+    if (!s || Math.hypot(x - this.plate.x - s.x, y - this.plate.y - s.y) > Math.max(30, POLE_PALCA * 0.6)) return false;
+    this.pokazMiejsce(this.cel.x, this.cel.y);
+    this.dirty = true;
+    return true;
   }
 
   /** Gracz chwyta kamerę: automat milczy, ale tylko przez chwilę (patrz krok()). */
@@ -384,17 +397,15 @@ export class EkranGry implements Ekran {
     const right = left + cam.vw / z, bottom = top + cam.vh / z;
     // drobne tablice nie przerywają — przycisk atlasu świeci, dopóki do niego nie zajrzysz
     const cicho = (id: string) => { odkrycia.odkryj(id, false); };
-    let prorok = false, pielgrzym = false;
+    let pielgrzym = false;
     for (const c of sim.creatures) {
       if (c.dead) continue;
-      if (c.prophet) prorok = true;
       if (c.job === Job.PIELGRZYM) pielgrzym = true;
       if (c.x >= left && c.x <= right && c.y >= top && c.y <= bottom) odkrycia.odkryj(`rasa-${c.race}`);
     }
-    if (sim.popByRace[Race.MYCELIUM] > 2 && sim.tick > 6000) odkrycia.odkryj('rasa-5');
-    if (prorok) odkrycia.odkryj('prorok');
     if (pielgrzym) odkrycia.odkryj('pielgrzymka');
-    if (sim.sen > 0.05) odkrycia.odkryj('sen');
+    // Remake v2: sen już nie rośnie — tablica „Przegrana” odkrywa się po trzech minutach albo przy pierwszej śmierci z głodu
+    if (sim.tick > 21600 || sim.stat.zGlodu > 0) cicho('sen');
     if (sim.rytual.pekniecia > 0 || sim.world.ever[sim.world.idx(sim.world.coreX, sim.world.coreY)]) odkrycia.odkryj('rdzen');
     // skorupę odkrywa się, gdy ktoś zacznie się przy niej modlić albo gdy pęknie
     if (sim.rytual.wierni >= 1 || sim.rytual.pekniecia > 0) odkrycia.odkryj('skorupa');
@@ -403,16 +414,19 @@ export class EkranGry implements Ekran {
     // wiara to serce drogi do wygranej — jej tablica wyskakuje sama przy pierwszej modlitwie
     if (sim.prayers > 0 && sim.tick > 600) odkrycia.odkryj('oddanie');
     if (sim.tick > 7000) cicho('pamiec');
-    // v4.1 beta: cechy nacji — raz na początku, żeby gracz wiedział, co znaczy „pobożni” na podpisie
-    if (sim.tick > 3600) cicho('cechy');
     // Remake v1: tablice ludu, gniazd, weteranów, Strażników i bossa
     if (sim.tick > 600) cicho('role');
     if (sim.tick > 4000) cicho('klamry');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
-    if ((sim.lud.gniazda ?? []).some((g) => g.odkryte) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
+    if ((sim.lud.gniazda ?? []).some((g) => g.odkryte && !g.zawalone) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
     if (sim.lud.dlon?.widziana) odkrycia.odkryj('dlon');
+    // Remake v2: wiadro, zawał, hełmy, trupy
+    if ((sim.lud.wiadra?.lista ?? []).some((wd) => wd.faza === 'stoi')) cicho('wiadro');
+    if ((sim.lud.zawal?.ile ?? 0) > 0) odkrycia.odkryj('zawal');
+    if (sim.lud.helmy) odkrycia.odkryj('helmy');
+    if (sim.lud.trupy?.length) cicho('trupy');
     if (sim.creatures.some((c) => !c.dead && c.boss)) odkrycia.odkryj('boss');
     if (this.ui.verb) cicho(`ryt-${this.ui.verb}`);
     if (this.pauza) cicho('pauza');
@@ -430,10 +444,15 @@ export class EkranGry implements Ekran {
     this.ui.verb = null; this.ui.tool = null;
     this.painting = false;
     if (e.cel) {
-      this.pokazMiejsce(e.cel.x, e.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
-      // karta stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
-      this.cam.y = this.camTarget.y = e.cel.y - (this.plate.h * 0.25) / this.cam.zoom;
-      this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      // kamera zostaje tam, gdzie ją zostawiłeś — miejsce jest tylko zaznaczone (poza kadrem: strzałka przy
+      // krawędzi, dotknięcie jej wiezie kamerę). Sama jedzie tylko z ustawieniem „Kamera do wydarzeń” i w samouczku.
+      if (ustawienia.kameraDoWydarzen || this.nasluch) {
+        this.pokazMiejsce(e.cel.x, e.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+        // karta stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
+        this.cam.y = this.camTarget.y = e.cel.y - (this.plate.h * 0.25) / this.cam.zoom;
+        this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      }
+      this.cel = this.celKarty = { x: e.cel.x, y: e.cel.y, r: 5, tekst: e.cel.tekst };
     }
     odkrycia.odkryj('wydarzenia', false);
     if (ustawienia.efekty) this.app.gesty.alarm(true);
@@ -455,7 +474,7 @@ export class EkranGry implements Ekran {
   }
 
   /**
-   * Remake v1: pasek nad płytą — tylko trzy zasoby: wiara, krew i jedzenie w spiżarni.
+   * Remake v1: pasek nad płytą — tylko trzy zasoby: wiara, krew i jedzenie (Remake v2: porcje w wiadrach).
    * Role i przełącznik „ze skały” stoją w panelu LUD pod płytą (górny margines należy
    * do narzędzi rytu — wcześniej wszystko to nachodziło na siebie).
    */
@@ -465,7 +484,8 @@ export class EkranGry implements Ekran {
     const czesci: [string, string, string][] = [
       ['wiara', `${Math.floor(sim.wiara)}`, 'rgba(222,200,150,1)'],
       ['krew', `${Math.floor(sim.krew)}`, 'rgba(206,104,86,1)'],
-      ['jedzenie', `${klan?.stock ?? 0}`, 'rgba(150,178,114,1)'],
+      // Remake v2: jedzenie to porcje w wiadrach, które już zjechały albo zjeżdżają
+      ['jedzenie', `${REMAKE ? porcjiWWiadrach(sim) : klan?.stock ?? 0}`, 'rgba(150,178,114,1)'],
     ];
     const teraz = performance.now();
     ctx.save();
@@ -617,10 +637,13 @@ export class EkranGry implements Ekran {
     this.nasluch?.({ typ: 'pauza', stoi: true });
     this.ui.selected = null;
     if (a.cel) {
-      this.pokazMiejsce(a.cel.x, a.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
-      // karta sytuacji stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
-      this.cam.y = this.camTarget.y = a.cel.y - (this.plate.h * 0.2) / this.cam.zoom;
-      this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      // jak przy karcie wydarzenia: miejsce zaznaczone, kamera stoi (chyba że „Kamera do wydarzeń”)
+      if (ustawienia.kameraDoWydarzen) {
+        this.pokazMiejsce(a.cel.x, a.cel.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+        // karta sytuacji stoi u góry płyty — miejsce, o którym mówi, ląduje pod nią
+        this.cam.y = this.camTarget.y = a.cel.y - (this.plate.h * 0.2) / this.cam.zoom;
+        this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      }
       this.cel = { x: a.cel.x, y: a.cel.y, r: 5, tekst: a.cel.tekst };
       this.radaOd = performance.now();             // podpowiedź nie nadpisze celu alarmu od razu
     }
@@ -686,6 +709,11 @@ export class EkranGry implements Ekran {
 
   krok(dt: number, teraz: number): void {
     if (BOT.wlaczony) this.krokObserwowanej(teraz);
+    // karta wydarzenia rozstrzygnięta — jej znacznik znika, wraca cel podpowiedzi
+    if (this.celKarty && !this.sim.wydarzenia.biezace) {
+      if (this.cel === this.celKarty) this.cel = this.rada?.cel ?? null;
+      this.celKarty = null;
+    }
     // okienko dewelopera: tylko w grze (nie w samouczku) i tylko z włączonym trybem
     const dev = ustawienia.trybDeweloperski && !this.nasluch;
     if (dev && !this.panelDev) this.panelDev = new PanelDewelopera({
@@ -728,6 +756,15 @@ export class EkranGry implements Ekran {
         }
       }
       if (dev && kroki > 0) DEV.msKroku = DEV.msKroku * 0.9 + ((performance.now() - t0) / kroki) * 0.1;
+      // Remake v2: zawał — kamera nie wjeżdża ponad strop (mapa skraca się razem z górą)
+      const strop = stropGory(this.sim);
+      if (strop !== this.cam.gora) {
+        this.cam.gora = strop;
+        this.cam.clamp(this.sim.world.w, this.sim.world.h);
+      }
+      const zawalT = this.sim.lud.zawal?.ostatniT, wiadroT = this.sim.lud.wiadra?.zjazdT;
+      if (zawalT !== undefined && zawalT !== this.slyszanyZawal) { this.slyszanyZawal = zawalT; this.app.dzwiek.zawal(); }
+      if (wiadroT !== undefined && wiadroT !== this.slyszaneWiadro) { this.slyszaneWiadro = wiadroT; this.app.dzwiek.wiadro(); }
       // kamera za śledzoną postacią (okienko dewelopera)
       if (dev && DEV.sledz && DEV.sledzony >= 0) {
         const c = this.sim.creatures.find((q) => q.id === DEV.sledzony && !q.dead);
@@ -802,7 +839,7 @@ export class EkranGry implements Ekran {
       if (!stara || czas > 25000 || nowa.waga > stara.waga + 25 || nowa.tekst === stara.tekst) {
         if (!stara || nowa.tekst !== stara.tekst) this.radaOd = teraz;
         this.rada = nowa;
-        if (!this.ui.verb) this.cel = nowa.cel ?? null;
+        if (!this.ui.verb && !this.sim.wydarzenia.biezace) this.cel = nowa.cel ?? null;
       }
     }
 
@@ -905,6 +942,9 @@ export class EkranGry implements Ekran {
     drawParticles(ctx, sim, cam);
     // liny są częścią góry: poza światłem lampek toną w mroku jak skała, do której są przypięte
     rysujKlamry(ctx, sim, cam);
+    // Remake v2: trupy leżą tam, gdzie padli; wiadra z jedzeniem zjeżdżają na linach
+    rysujTrupy(ctx, sim, cam, teraz);
+    rysujWiadra(ctx, sim, cam, teraz);
     // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
     rysujMrok(ctx, sim, cam, teraz, this.pauza);
     if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3);
@@ -915,6 +955,7 @@ export class EkranGry implements Ekran {
     }
     rysujZarys(ctx, sim, cam, teraz);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
+    rysujPrzodWiader(ctx, sim, cam, teraz);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
     if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
@@ -1062,6 +1103,12 @@ export class EkranGry implements Ekran {
     return this.przyciski.find((b) => b.akcja === akcja) ?? null;
   }
 
+  /** Samouczek: gdzie stoi przycisk „ze skały: pobożny / robotnik” (środek i promień w pikselach ekranu). */
+  miejsceRoli(rola: 'pobozny' | 'robotnik'): { x: number; y: number; r: number } | null {
+    const b = this.przyciskiRoli.find((q) => q.rola === rola);
+    return b ? { x: b.x + b.w / 2, y: b.y + b.h / 2, r: Math.max(b.w, b.h) * 0.6 } : null;
+  }
+
   /** Trzy nacięcia w lewym górnym rogu płyty — wyjście do menu bez klawiatury. */
   private znakMenu(ctx: CanvasRenderingContext2D, teraz: number): void {
     const { x, y } = this.menuRect();
@@ -1122,7 +1169,12 @@ export class EkranGry implements Ekran {
     }
     const przedKrew = sim.krew, przedWiara = sim.wiara, przedOtchlan = sim.otchlan;
     let udane = false;
-    if (ui.verb === 'zasiej') udane = seed(sim, ui.tool, wx, wy);
+    if (ui.verb === 'zasiej' && REMAKE) {
+      // Remake v2: Nakarm — jedno wiadro na dotknięcie; powód odmowy mówi, co nie tak
+      const odmowa = nakarm(sim, wx, wy);
+      udane = odmowa === null;
+      if (odmowa) { ui.say(odmowa, sim.tick); this.app.gesty.odmowa(); this.dirty = true; return; }
+    } else if (ui.verb === 'zasiej') udane = seed(sim, ui.tool, wx, wy);
     else if (ui.verb === 'znak') { udane = sign(sim, ui.tool, wx, wy); if (udane) this.app.dzwiek.toll(); }
     else {
       const wx = this.cam.toWorldX(x - this.plate.x), wy = this.cam.toWorldY(y - this.plate.y);
@@ -1233,8 +1285,15 @@ export class EkranGry implements Ekran {
       // karta wydarzenia: dotknięcie wyboru go wykonuje; dotknięcie reszty karty nic nie robi,
       // a poza kartą można przesuwać płytę i patrzeć, o czym mowa
       const b = this.polaWydarzenia.find((q) => e.clientX >= q.x && e.clientX <= q.x + q.w && e.clientY >= q.y && e.clientY <= q.y + q.h);
-      if (b) { this.wybierzWydarzenie(b.i); return; }
-      const g = this.polaWydarzenia[0], d = this.polaWydarzenia[this.polaWydarzenia.length - 1];
+      if (b) {
+        // „pokaż miejsce”: kamera jedzie tam na prośbę — miejsce ląduje pod kartą
+        if (b.pokaz) { const c = this.celKarty ?? this.sim.wydarzenia.biezace?.cel; if (c) this.pokazPodKarta(c, 0.25); }
+        else this.wybierzWydarzenie(b.i);
+        return;
+      }
+      if (this.dotknijStrzalki(e.clientX, e.clientY)) return;
+      const wybory = this.polaWydarzenia.filter((q) => !q.pokaz);
+      const g = wybory[0], d = wybory[wybory.length - 1];
       if (e.clientX >= g.x - 20 && e.clientX <= g.x + g.w + 20 && e.clientY >= this.plate.y && e.clientY <= d.y + d.h + 30) return;
     }
     if (faza === 'dol' && !this.zapiski) {
@@ -1242,6 +1301,7 @@ export class EkranGry implements Ekran {
       for (const b of this.polaAlarmu) {
         if (Math.abs(e.clientX - b.x) > b.w / 2 || Math.abs(e.clientY - b.y) > Math.max(b.h / 2, POLE_PALCA / 2)) continue;
         if (b.akcja === 'pusc') this.ustawPauze(false);
+        else if (b.akcja === 'pokaz') { if (this.alarm?.cel) this.pokazPodKarta(this.alarm.cel, 0.2); }
         else if (b.akcja === 'tablica' && this.alarm?.tablica) {
           odkrycia.odkryj(this.alarm.tablica, false);
           this.atlas.otworzTablice(this.alarm.tablica);
@@ -1255,6 +1315,8 @@ export class EkranGry implements Ekran {
         this.dirty = true;
         return;
       }
+      // strzałka przy krawędzi (cel poza kadrem): dotknięcie wiezie tam kamerę
+      if (e.button !== 2 && this.dotknijStrzalki(e.clientX, e.clientY)) return;
       // baner pauzy: cofnij, skreśl wszystko, puść czas
       for (const b of this.polaBanera) {
         if (Math.abs(e.clientX - b.x) > b.w / 2 + 4 || Math.abs(e.clientY - b.y) > Math.max(b.h / 2, POLE_PALCA / 2)) continue;
@@ -1343,7 +1405,7 @@ export class EkranGry implements Ekran {
       if (ui.selected) { ui.selected = null; if (wpis) wpis.interfejs = true; return; }
       if (!this.naPlycie(e.clientX, e.clientY)) return;
       if (ui.verb === 'zasiej' && e.button !== 2) {
-        this.painting = true;
+        this.painting = !REMAKE;      // Remake v2: Nakarm to jedno wiadro, nie malowanie
         this.malowane.clear();
         this.kosztPociagniecia = { krew: 0, wiara: 0, otchlan: 0 };
         this.uzyj(e.clientX, e.clientY);

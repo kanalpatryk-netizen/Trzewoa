@@ -1,4 +1,6 @@
 import type { Sim } from './sim';
+import { porcjiWWiadrach } from './wiadro';
+import { REMAKE } from '../nastawy/lud';
 import { zapisz } from './dziennik';
 import { T } from './tiles';
 import { Race } from './races';
@@ -80,7 +82,7 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
     const przed = klan.rytual;
     // Zegar rytuału: przy czterech wiernych i pełnym oddaniu całe pięć pęknięć
     // zajmuje około dziesięciu–piętnastu minut nieprzerwanej warty.
-    const laska = sim.lagodna ? R.laskawaMnoznik : sim.koszmar ? R.koszmarMnoznik : 1;
+    const laska = sim.koszmar ? R.koszmarMnoznik : 1;
     // na początku partii skorupa jest twardsza — wygrana w pięć minut nie jest wygraną
     const wczesnie = R.wczesnieOd + (1 - R.wczesnieOd) * Math.min(1, sim.tick / (TIKOW_NA_MINUTE * R.wczesnieMinut));
     klan.rytual = Math.min(1, klan.rytual + R.tempo * laska * wczesnie * (Math.min(R.maxWiernychLiczonych, n) / R.normaWiernych) * (R.podstawaOddania + klan.devotion) / opor);
@@ -258,8 +260,12 @@ export function pielgrzymowKlanu(sim: Sim, clanId: number): number {
   return n;
 }
 
-/** Grzyb i kości w suchej strefie przy przedsionku — tym żyje warta pod rdzeniem. */
+/**
+ * Jedzenie dla warty pod rdzeniem. Remake v2: porcje w wiadrach — robotnicy noszą je pobożnym
+ * pod rdzeń (dawniej: grzyb i kości w suchej strefie przy przedsionku).
+ */
 export function policzJedzeniePrzedsionka(sim: Sim): number {
+  if (REMAKE) return porcjiWWiadrach(sim);
   const w = sim.world;
   let n = 0;
   for (let y = w.coreY - P.jedzenieOd; y <= w.coreY - P.jedzenieDo; y++) {
