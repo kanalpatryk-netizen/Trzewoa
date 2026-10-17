@@ -1,5 +1,7 @@
 import { rysujWiadra, rysujPrzodWiader } from '../../render/wiadro';
 import { rysujKucie } from '../../render/kucie';
+import { Urobki, znaczekKruszcu } from '../../render/kruszce';
+import { OKRUCH } from '../../nastawy/kruszce';
 import { rysujTrupy } from '../../render/trupy';
 import { porcjiWWiadrach } from '../../sim/wiadro';
 import { Sim, resetRaces } from '../../sim/sim';
@@ -116,6 +118,8 @@ export class EkranGry implements Ekran {
   private poswiata = new Poswiata();
   /** Ostatnio widziane wiara, krew, jedzenie — zmiana żarzy się chwilę (render/nastroj.ts). */
   private zmianyZasobow = new Map<string, { n: number; t: number; wiecej: boolean }>();
+  /** Alpha, etap 3b: okruchy rudy lecące do liczników żelaza i złota (render/kruszce.ts). */
+  private urobki = new Urobki();
   private tajemnica = new Tajemnica();
   /** Ile znaków pisma w skale było w ostatniej klatce — po nich odkrywa się ich tablica. */
   private znakowWidac = 0;
@@ -207,7 +211,9 @@ export class EkranGry implements Ekran {
   private botKoniecOd = 0;
   private botStanOd = 0;
 
-  constructor(private app: Kontekst) {}
+  constructor(private app: Kontekst) {
+    this.urobki.onDolot = (rodzaj) => this.app.dzwiek.kruszec(rodzaj === 'zloto');
+  }
 
   /** Mnożnik czasu: w grze zawsze 1 (zwykły czas), w trybie deweloperskim z przycisków i okienka. */
   private tempoTeraz(): number {
@@ -424,6 +430,8 @@ export class EkranGry implements Ekran {
     // Remake v2: bez lin — pierwszy, kto kuje sobie schody pod półkę, pokazuje nową zasadę
     if (sim.tick > 600 && sim.creatures.some((c) => !c.dead && c.drogaKopie)) odkrycia.odkryj('schody');
     if (sim.tick > 4000) cicho('schody');
+    // Alpha, etap 3b: pierwsza wykuta ruda odkrywa tablicę kruszców
+    if (sim.urobek.length || sim.zelazo || sim.zloto) odkrycia.odkryj('kruszce');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
@@ -490,6 +498,9 @@ export class EkranGry implements Ekran {
       ['krew', `${Math.floor(sim.krew)}`, 'rgba(206,104,86,1)'],
       // Remake v2: jedzenie to porcje w wiadrach, które już zjechały albo zjeżdżają
       ['jedzenie', `${REMAKE ? porcjiWWiadrach(sim) : klan?.stock ?? 0}`, 'rgba(150,178,114,1)'],
+      // Alpha, etap 3b: kruszce — licznik rośnie, gdy okruch z rozbitego kafla doleci (render/kruszce.ts)
+      ['żelazo', `${Math.max(0, sim.zelazo - this.urobki.wLocie('zelazo'))}`, 'rgba(184,192,204,1)'],
+      ['złoto', `${Math.max(0, sim.zloto - this.urobki.wLocie('zloto'))}`, 'rgba(236,196,96,1)'],
     ];
     const teraz = performance.now();
     ctx.save();
@@ -502,8 +513,16 @@ export class EkranGry implements Ekran {
     const odst = rozm * 1.1;
     let x = plate.x + 10;
     for (const [e, l, kol] of czesci) {
-      ctx.font = fE; ctx.fillStyle = 'rgba(160,146,124,0.85)';
-      ctx.fillText(e + ' ', x, y); x += kaw(e + ' ', fE);
+      // kruszec: znaczek (sztabka, samorodek) przed podpisem; na wąskim ekranie sam znaczek, bez podpisu
+      const kruszec = e === 'żelazo' ? 'zelazo' : e === 'złoto' ? 'zloto' : null;
+      const kb = kruszec ? this.urobki.blysk(kruszec, teraz) : 0;
+      if (kruszec) {
+        const s = rozm * 1.25;
+        znaczekKruszcu(ctx, kruszec, x + s / 2, y - rozm * 0.32, s, kb, this.urobki.dolot(kruszec));
+        this.urobki.cele[kruszec] = { x: x + s / 2, y: y - rozm * 0.32 };
+        x += s + rozm * 0.25;
+      }
+      if (!kruszec || !plate.waski) { ctx.font = fE; ctx.fillStyle = 'rgba(160,146,124,0.85)'; ctx.fillText(e + ' ', x, y); x += kaw(e + ' ', fE); }
       // liczba, która się zmieniła, żarzy się chwilę: złotem, gdy rośnie, krwią, gdy maleje
       const z = this.zmianyZasobow.get(e);
       const n = Number(l);
@@ -511,7 +530,18 @@ export class EkranGry implements Ekran {
       const zm = this.zmianyZasobow.get(e)!;
       const k = wolnoRuszac() ? Math.max(0, 1 - (teraz - zm.t) / NASTROJ.liczbaZar) : 0;
       ctx.font = fL; ctx.fillStyle = kol;
-      if (k > 0) {
+      if (kb > 0) {
+        // okruch doleciał: liczba podskakuje i żarzy się barwą kruszcu
+        const sk = 1 + (OKRUCH.podbicie - 1) * kb * kb;
+        const sz = kaw(l, fL);
+        ctx.save();
+        ctx.translate(x + sz / 2, y - rozm * 0.35);
+        ctx.scale(sk, sk);
+        ctx.shadowColor = kruszec === 'zloto' ? `rgba(255,214,110,${kb})` : `rgba(255,170,90,${kb})`;
+        ctx.shadowBlur = 12 * kb;
+        ctx.fillText(l, -sz / 2, rozm * 0.35);
+        ctx.restore();
+      } else if (k > 0) {
         ctx.save();
         ctx.shadowColor = zm.wiecej ? `rgba(240,196,120,${0.9 * k})` : `rgba(214,50,32,${0.9 * k})`;
         ctx.shadowBlur = 10 * k;
@@ -833,6 +863,10 @@ export class EkranGry implements Ekran {
     // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
     rysujMrok(ctx, sim, cam, teraz, this.pauza);
     if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3);
+    // etap 3b: rozbity kafel rudy błyska (złoto) albo sypie iskry (żelazo) — to światło, więc nad mrokiem —
+    // a okruch rusza do licznika
+    this.urobki.zbierz(sim, teraz);
+    this.urobki.rysujNaMapie(ctx, cam, teraz);
     // droga pielgrzymów: którędy wierni zejdą pod rdzeń (przekopują ją sami — gracz nie drąży)
     const plan = aktualnyPlan(sim);
     if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
@@ -922,6 +956,8 @@ export class EkranGry implements Ekran {
       linie.forEach((l, i) => ctx.fillText(l, plate.x + plate.w - 12, plate.y + plate.h - 14 - (linie.length - 1 - i) * 20));
       ctx.restore();
     }
+    // okruchy rudy lecą nad wszystkim, aż do liczników nad płytą
+    this.urobki.rysujLoty(ctx, plate, cam, teraz);
     if (this.legenda) rysujLegende(ctx, plate, w);
     const telefon = plate.waski || plate.niski;
     void telefon;

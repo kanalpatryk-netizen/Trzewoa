@@ -27,6 +27,8 @@ Alphy są osobne — nie mieszają się z Remake v2.
   u góry; niżej trzy warstwy — płytka (miękka skała, żelazo), środkowa (małe jaskinie, pod nimi złoto), głęboka
   (twarda skała); dookoła rama nie do ruszenia; na dole, na środku, rdzeń pod szeroką kryptą. Drogę w dół trzeba
   wykuć, a kucie trwa (skała pęka pod kilofem coraz mocniej). Kto zszedł w głąb, dostaje jedzenie tam, gdzie stoi.
+- **Kruszce:** nad płytą liczniki żelaza i złota. Bez ekwipunku: robotnik rozbija kafel rudy, a okruch sam leci
+  łukiem do licznika, który podbija liczbę i błyska. Wskazana robotnikowi ruda to „kop żyłę” — wykuwa całą kępę.
 
 ## W budowie (plan)
 1. ~~**Sprzątanie i stały start**~~ — zrobione (wyżej).
@@ -37,7 +39,8 @@ Alphy są osobne — nie mieszają się z Remake v2.
 3. **Mapa, pomieszczenia, rzemiosło**
    - ~~3a. Mapa według szkicu~~ — zrobione (wyżej): szyb z jedzeniem do sali, trzy warstwy, żelazo i złoto, krypta
      nad rdzeniem, wolniejsze kucie z pękającą skałą, wiadra dla tych, którzy zeszli w głąb.
-   - 3b. Liczniki kruszców na ekranie (żelazo, złoto) — bez ekwipunku.
+   - ~~3b. Liczniki kruszców na ekranie (żelazo, złoto)~~ — zrobione (wyżej): bez ekwipunku, okruch leci do
+     licznika, „kop żyłę”, tablica atlasu „Kruszce”.
    - 3c. Szablony pomieszczeń do wykopania (sypialnia, warsztat, kuźnia, szyb). Złoto w warsztacie — dewocjonalia
      i wiara; żelazo w kuźni — części zbroi rycerza.
    - 3d. Ołtarz w środkowej warstwie z rytuałami — każdy z własną animacją.

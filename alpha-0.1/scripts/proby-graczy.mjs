@@ -103,7 +103,7 @@ export function run(z: number, styl: string, minut: number) {
       const zam: any = {};
       for (const c of zywi(sim)) { const z = (c.zamiar ?? '-').replace(/[0-9#(].*$/, '').trim().slice(0, 30); zam[z] = (zam[z] ?? 0) + 1; }
       const kuje = sim.creatures.filter((c: any) => !c.dead && c.drogaKopie).length;
-      out.push(t(sim) + ' STAN pob=' + r.pobozny + ' rob=' + r.robotnik + ' ryc=' + r.rycerz + ' krew=' + Math.round(sim.krew) + ' wiara=' + Math.round(sim.wiara) + ' jedz=' + jedzenie(sim) + ' oddanie=' + (k ? k.devotion.toFixed(2) : '-') + ' plan=' + (sim.planDrogi ? nieWykopane(sim).length : '-') + ' pęk=' + sim.rytual.pekniecia + ' skorupa=' + procentSkorupy(sim) + '% fala=' + (sim.lud.straznicy ? sim.lud.straznicy.fala + (sim.lud.straznicy.trwa ? '!' : '') : '-') + ' kuje=' + kuje + ' | ' + Object.entries(zam).sort((a: any, b: any) => b[1] - a[1]).map(([a, b]) => b + '× ' + a).join('; '));
+      out.push(t(sim) + ' STAN pob=' + r.pobozny + ' rob=' + r.robotnik + ' ryc=' + r.rycerz + ' krew=' + Math.round(sim.krew) + ' wiara=' + Math.round(sim.wiara) + ' żel=' + sim.zelazo + ' zł=' + sim.zloto + ' jedz=' + jedzenie(sim) + ' oddanie=' + (k ? k.devotion.toFixed(2) : '-') + ' plan=' + (sim.planDrogi ? nieWykopane(sim).length : '-') + ' pęk=' + sim.rytual.pekniecia + ' skorupa=' + procentSkorupy(sim) + '% fala=' + (sim.lud.straznicy ? sim.lud.straznicy.fala + (sim.lud.straznicy.trwa ? '!' : '') : '-') + ' kuje=' + kuje + ' | ' + Object.entries(zam).sort((a: any, b: any) => b[1] - a[1]).map(([a, b]) => b + '× ' + a).join('; '));
     }
   }
   out.push('KONIEC ' + (sim.ending ?? 'brak (limit czasu)') + ' @' + t(sim) + ' wyjątków ' + wyjatki + ' zgonów ' + [...sim.deaths.values()].reduce((a: number, b: number) => a + b, 0));

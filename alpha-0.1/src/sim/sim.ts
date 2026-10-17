@@ -20,6 +20,7 @@ import { zostawTrupa } from './trupy';
 import { wiadroTeraz } from './wiadro';
 import { LUD, REMAKE } from '../nastawy/lud';
 import { falaTrwa } from './straznicy';
+import type { Urobek } from './kruszce';
 
 export interface Clan {
   id: number;
@@ -89,6 +90,11 @@ export class Sim {
   wiara = G.startWiara;
   /** Remake v2: zawsze Koszmar — na start mniej krwi (GORA.koszmarKrew). */
   krew: number = Math.max(0, LUD.krewStart - G.koszmarKrew);
+  /** Alpha, etap 3b: kruszce bez ekwipunku — wykuta ruda od razu podbija licznik (sim/kruszce.ts). */
+  zelazo = 0;
+  zloto = 0;
+  /** Świeży urobek: skąd leci okruch do licznika (render/kruszce.ts). Nie idzie do zapisu. */
+  urobek: Urobek[] = [];
   /** Otchłań nie jest dochodem — jest miarą tego, o czym nikt nie pamięta. */
   get otchlan(): number { return this.world.unknown * OTCHLAN_PER_TILE; }
   sen = 0;                    // 0 = czuwasz, 1 = zasnąłeś na zawsze
@@ -477,13 +483,15 @@ export class Sim {
     zapisz(this, 'swiat', text, poz?.[0], poz?.[1]);
     const last = this.chronicle[this.chronicle.length - 1];
     if (last && this.tick - last.tick < G.kronikaOkno) {
-      if (last.text === text) { last.tick = this.tick; return; }
+      // (najpierw klucz: drugi taki sam wpis z kluczem ma się doliczyć — wcześniej identyczny tekst
+      // tylko odświeżał wpis i „+1 żelaza” stało w miejscu, choć wykuto trzy)
       if (key && last.key === key) {
         last.n = (last.n ?? 1) + 1;
         last.text = agg ? agg(last.n) : text;
         last.tick = this.tick;
         return;
       }
+      if (last.text === text) { last.tick = this.tick; return; }
     }
     this.chronicle.push({ tick: this.tick, text, kind, key, n: 1, x: poz?.[0], y: poz?.[1] });
     if (this.chronicle.length > G.kronikaDlugosc) this.chronicle.shift();

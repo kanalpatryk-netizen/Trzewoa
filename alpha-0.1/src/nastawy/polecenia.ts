@@ -18,6 +18,13 @@ export const POLECENIA = {
   odmowaTikow: 300,
   /** Znacznik celu rozkazu świeci na płycie tyle tików po wydaniu. */
   znacznikTikow: 720,
+  /**
+   * Alpha, etap 3b: „kop żyłę” — robotnik, któremu wskażesz rudę, po wykuciu kafla bierze następny
+   * odsłonięty kafel tej samej rudy, najdalej tyle kafli od wskazanego…
+   */
+  zylaZasieg: 10,
+  /** …i najwyżej tyle kafli jednym rozkazem (potem trzyma posterunek jak po „kop tam”). */
+  zylaKafli: 40,
 };
 
 export const ODSTEPY = {

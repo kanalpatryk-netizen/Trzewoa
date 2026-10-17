@@ -14,10 +14,11 @@ import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStrazn
 import { STRAZNICY } from '../nastawy/straznicy';
 import { obozFrontowy, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
 import { obozyLudu, obozyWgOdleglosci, najblizszyOboz, walczacy, type MiejsceJedzenia } from './lud';
+import { wykutyKafel } from './kruszce';
 import { wiadroDoWspinaczki, wiadroId, krokNaLinie } from './wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
-import { odmow, type Polecenie, type Odmowa } from './polecenia';
+import { odmow, nastepnyKafelZyly, type Polecenie, type Odmowa } from './polecenia';
 import { SWIAT } from '../nastawy/swiat';
 import { LUD, REMAKE } from '../nastawy/lud';
 
@@ -1147,12 +1148,18 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     return poddajSie('nie dojdę do czoła drogi');
   }
 
+  // „kop żyłę” (etap 3b): wskazany kafel rudy wykuty — bierze następny odsłonięty kafel tej samej rudy
+  if (p.typ === 'kop' && p.zyla && !w.solid(p.x, p.y)) {
+    const nast = nastepnyKafelZyly(sim, c, p);
+    if (nast) { p.x = nast[0]; p.y = nast[1]; p.zylaIle = (p.zylaIle ?? 0) + 1; p.na = false; p.prob = 0; }
+    else { p.zyla = undefined; sim.efekt(c.x, c.y, 'mysl', 'żyła wykuta'); }
+  }
   // „kop tam”: lity kafel jeszcze stoi — stojąc obok, kuje go
   if (p.typ === 'kop' && w.solid(p.x, p.y)) {
     if (w.hardness(p.x, p.y) <= 0) { c.polecenie = undefined; odmow(sim, c, 'tej skały nie ruszę'); return false; }
     if (Math.abs(cx - p.x) <= 1 && Math.abs(cy - p.y) <= 1 && stoi(sim, cx, cy)) {
       c.jx = p.x; c.jy = p.y; c.dig = 0; c.droga = undefined;
-      zamiar('kuje tam, gdzie kazałeś', Job.DIG, Z);
+      zamiar(p.zyla ? `kuje żyłę ${p.zyla === 'zelazo' ? 'żelaza' : 'złota'} — tak kazałeś` : 'kuje tam, gdzie kazałeś', Job.DIG, Z);
       return true;
     }
     const obok = (x: number, y: number) => Math.abs(x - p.x) <= 1 && Math.abs(y - p.y) <= 1 && stoi(sim, x, y);
@@ -1533,6 +1540,8 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
   if (t === T.CORE) { sim.reachCore(c); return; }
   w.set(x, y, T.AIR);
   sim.dug++;
+  // Alpha, etap 3b: ruda wykuta przez lud od razu podbija licznik żelaza albo złota (bez noszenia)
+  if (rolaPostaci(c)) wykutyKafel(sim, t, x, y);
   if (DZIENNIK.wlaczony) zapisz(sim, 'blok', `blok (${x}, ${y}) zniszczony: ${NAZWY_KAFLI[t] ?? t} → pustka — kopał ${kto(sim, c)}`, x, y);
 }
 
