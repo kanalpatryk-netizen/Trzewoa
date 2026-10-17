@@ -2,17 +2,20 @@ import { Sim } from '../sim/sim';
 import { RACES, RACE_COUNT, Race, odmien } from '../sim/races';
 import { SERIF } from './overlay';
 import { ustawienia } from '../core/settings-store';
-import { lewaKrawedzPrzyciskow } from './przyciski';
+import { dolPrzyciskow, lewaKrawedzPrzyciskow } from './przyciski';
 import { EKRAN, TELEFON } from '../nastawy/ekran';
 import { PIELGRZYMKA } from '../nastawy/rytual';
 import { najwierniejsza } from '../sim/pielgrzymka';
 import { cost } from '../powers/powers';
 import { liczRole } from '../sim/lud';
-import { REMAKE } from '../nastawy/lud';
-import { ramaFresku, pigment } from './fresk';
+import { LUD, REMAKE } from '../nastawy/lud';
+import { GORA } from '../nastawy/gora';
+import { ramaFresku } from './fresk';
 import { FRESK } from '../nastawy/barwy';
 import { NASTROJ } from '../nastawy/wyglad/nastroj';
 import { plynnie, wolnoRuszac } from './nastroj';
+import { rysujZnakOddania } from './modlitwa';
+import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from './relikwiarz';
 
 /**
  * `waski` — telefon (albo tablet) trzymany pionowo; `niski` — telefon trzymany poziomo.
@@ -58,25 +61,26 @@ const TEL = {
   poziom: { spisY: 17, spisH: 9, oddanieBok: 24, spisCzesc: 0.46 },
 };
 
-/** Rysa Krwi pod płytą. */
+/**
+ * Relikwiarz krwi z podpisem. Na komputerze stoi od dołu marginesu aż pod przyciski i dłonie
+ * oddania — ma być wysoki, żeby z bliska było widać złotnictwo; na telefonie ma wysokość dłoni.
+ */
 export function obszarKrwi(p: Plate, vh: number): Obszar {
-  const mt = vh - p.bottom;
+  const o = obszarOddania(p, vh);
   if (p.waski) {
     // obok dłoni oddania, w dolnym rzędzie marginesu
-    const o = obszarOddania(p, vh);
-    const y = mt + TEL.pion.rzadY + 10;
-    return { x: p.x + 28, y, w: o.x - p.x - 28 - 16, h: vh - 8 - y };
+    return { x: p.x + 28, y: o.y, w: o.x - p.x - 28 - 16, h: o.h };
   }
   if (p.niski) {
-    const o = obszarOddania(p, vh);
     const x = o.x + o.w + 14;
-    // napis „KREW” nad rysą nie może wejść na ramę płyty
-    return { x, y: mt + 22, w: p.x + p.w - x, h: p.bottom - 28 };
+    return { x, y: o.y, w: p.x + p.w - x, h: o.h };
   }
   const cx0 = p.x + p.w * 0.6;
   const base = vh - p.bottom * 0.1;
-  const maxH = p.bottom * 0.34;
-  return { x: cx0, y: base - maxH, w: p.x + p.w - cx0, h: maxH };
+  const nadOddaniem = o.x + o.w > cx0 ? o.y + o.h : vh - p.bottom;
+  const gora = Math.max(dolPrzyciskow(p, vh), nadOddaniem) + 8;
+  const h = Math.max(p.bottom * 0.34, base - gora);
+  return { x: cx0, y: base - h, w: p.x + p.w - cx0, h };
 }
 
 /** Złożone dłonie oddania razem z podpisem (na komputerze w tym miejscu stoi Otchłań). */
@@ -304,66 +308,51 @@ function censusLine(sim: Sim): string {
   return 'Żadna krew nie góruje. Karmisz się z wielu naraz.';
 }
 
-/** Krew: ciecz w szczelinie skalnej u dołu płyty — nie pasek, tylko rysa, która się napełnia. */
-export function drawCrack(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vw: number, vh: number, time: number): void {
-  // skala liniowa: przy logarytmicznej „krwi masz dość" wyglądało na pół misy
-  const PELNA = 300;
-  const level = Math.min(1, sim.krew / PELNA);
-  // rysa, nie wykres słupkowy — geometria wspólna z samouczkiem
+/**
+ * Krew: relikwiarz z ampułką (render/relikwiarz.ts) — krew stoi w szkle, a obok napis, ile jej
+ * jest i co z tego wynika. Pełna ampułka to ostrzeżenie: więcej się nie zmieści, nadmiar przepada.
+ */
+export function drawKrew(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number, time: number): void {
   const o = obszarKrwi(p, vh);
-  const cx0 = o.x, cx1 = o.x + o.w, base = o.y + o.h, maxH = o.h;
-
-  // obrys rysy: postrzępiona góra, końce zbiegające się w szpic
-  const segs = 22;
-  const top: [number, number][] = [];
-  for (let i = 0; i <= segs; i++) {
-    const t = i / segs;
-    const x = cx0 + (cx1 - cx0) * t;
-    const taper = Math.min(1, Math.sin(t * Math.PI) * 1.9);
-    const jag = 0.82 + 0.18 * Math.sin(t * 17.3 + 1.1) * Math.sin(t * 5.7);
-    top.push([x, base - maxH * taper * jag]);
-  }
-
+  const max = GORA.krewMax;
+  const krew = Math.max(0, sim.krew);
+  rysujRelikwiarz(ctx, o.x, o.y, o.h, krew, max, time, { spokoj: ustawienia.ograniczRuch });
+  const pelna = krew >= max - 0.5;
+  const rola = sim.lud?.rola ?? 'robotnik';
+  const koszt = LUD.koszt[rola];
+  const kogo = rola === 'robotnik' ? 'robotnika' : 'pobożnego';
+  const tx = o.x + o.h * RELIKWIARZ_PROPORCJA + 8;
+  const miejsce = o.x + o.w - tx;
+  const rozm = p.niski ? 12 : Math.max(13, obszarOddania(p, vh).h * 0.3);
+  const font = `italic ${rozm}px ${SERIF}`;
   ctx.save();
-  // podpis organu nad jego lewym końcem
-  ctx.font = `9px ${SERIF}`;
+  ctx.font = font;
   ctx.textAlign = 'left';
-  ctx.fillStyle = 'rgba(224,168,96,0.6)';
-  ctx.fillText('K R E W', cx0, base - maxH - 4);
-  ctx.beginPath();
-  ctx.moveTo(cx0, base);
-  for (const [x, y] of top) ctx.lineTo(x, y);
-  ctx.lineTo(cx1, base);
-  ctx.closePath();
-  ctx.strokeStyle = `${INK}0.4)`;
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  ctx.clip();
-  const surface = base - Math.max(2, level * maxH);
-  const g = ctx.createLinearGradient(0, surface, 0, base);
-  g.addColorStop(0, 'rgba(104,22,20,0.88)');
-  g.addColorStop(1, 'rgba(26,4,5,0.96)');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(cx0 - 4, base + 4);
-  for (let x = cx0 - 4; x <= cx1 + 4; x += 6) {
-    ctx.lineTo(x, surface + Math.sin(x * 0.06 + time * 0.0012) * 1.6 + Math.sin(x * 0.017 - time * 0.0008) * 1.2);
+  const pasuje = (t: string) => ctx.measureText(t).width <= miejsce;
+  const ile = Math.floor(krew);
+  const napis = [`krew ${ile} z ${max}`, `krew ${ile}`].find(pasuje) ?? `${ile}`;
+  // dwie linijki: przy niskiej relikwii jak przy dłoniach oddania, przy wysokiej — w połowie wysokości
+  const y1 = p.niski ? o.y + o.h * 0.66 : o.h <= 50 ? o.y + o.h * 0.55 : o.y + o.h * 0.58 - rozm * 0.2;
+  const y2 = o.h <= 50 ? o.y + o.h * 0.95 : y1 + rozm * 1.3;
+  ctx.fillStyle = `${INK}0.9)`;
+  ctx.fillText(napis, tx, y1);
+  if (!p.niski) {
+    const tetno = ustawienia.ograniczRuch ? 1 : 0.5 + 0.5 * Math.sin(time * 0.0032);
+    let wersje: string[];
+    if (pelna) {
+      ctx.fillStyle = `rgba(236,128,100,${(0.7 + 0.3 * tetno).toFixed(3)})`;
+      wersje = ['pełna — nadmiar przepada', 'pełna — przepada', 'pełna'];
+    } else if (krew < koszt) {
+      ctx.fillStyle = 'rgba(226,120,100,0.95)';
+      wersje = [`za mało na ${kogo} (${koszt})`, `za mało (${koszt})`, 'za mało'];
+    } else {
+      ctx.fillStyle = `${INK}0.7)`;
+      wersje = ['płynie z każdej śmierci', 'z każdej śmierci', ''];
+    }
+    const t2 = wersje.find(pasuje) ?? '';
+    if (t2) ctx.fillText(t2, tx, y2);
   }
-  ctx.lineTo(cx1 + 4, base + 4);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(206,96,74,0.65)';
-  ctx.lineWidth = 1.2;
-  ctx.stroke();
-  // krew też jest ryciną: poziome kreski zamiast gładkiej plamy
-  ctx.strokeStyle = 'rgba(18,4,4,0.5)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let y = surface + 3; y < base; y += 3.5) { ctx.moveTo(cx0 - 4, y); ctx.lineTo(cx1 + 4, y); }
-  ctx.stroke();
   ctx.restore();
-  void vw;
 }
 
 /** Nacięcie progu na organie: „stać cię na…". Liczby zostają ukryte. */
@@ -395,52 +384,9 @@ function etykietaPionowa(ctx: CanvasRenderingContext2D, tekst: string, x: number
 }
 
 /**
- * Złożone do modlitwy dłonie w kwadracie 100×100. Opisana jest prawa dłoń, lewa to jej lustro;
- * między nimi zostaje szpara pod kciukami, jak na ikonach — dzięki niej nawet w 24 px
- * widać dłonie, a nie postać.
- */
-const DLON: (['M', number, number] | ['L', number, number] | ['C', number, number, number, number, number, number])[] = [
-  ['M', 50.4, 2],
-  ['C', 54, 2, 56, 5, 56.5, 10],       // środkowy palec
-  ['C', 59.5, 11.5, 61, 15, 61, 20],   // serdeczny
-  ['C', 64, 22, 65.5, 26, 65.5, 31],   // mały
-  ['C', 66.5, 41, 69.5, 52, 73.5, 61], // krawędź dłoni
-  ['L', 81, 67],                       // mankiet
-  ['L', 88, 100],                      // rękaw
-  ['L', 66, 100],
-  ['L', 64, 82],
-  ['L', 59, 77],                       // nadgarstek od środka
-  ['C', 55.5, 68, 52, 56, 51.4, 44],   // wnętrze dłoni pod kciukiem
-  ['C', 51, 30, 50.5, 14, 50.4, 2],
-];
-let dlonie: { obrys: Path2D; rysy: Path2D } | null = null;
-
-function zlozoneDlonie(): { obrys: Path2D; rysy: Path2D } {
-  if (dlonie) return dlonie;
-  const obrys = new Path2D();
-  const rysy = new Path2D();
-  for (const k of [1, -1]) {
-    const X = (v: number) => 50 + k * (v - 50);
-    for (const s of DLON) {
-      if (s[0] === 'M') obrys.moveTo(X(s[1]), s[2]);
-      else if (s[0] === 'L') obrys.lineTo(X(s[1]), s[2]);
-      else obrys.bezierCurveTo(X(s[1]), s[2], X(s[3]), s[4], X(s[5]), s[6]);
-    }
-    obrys.closePath();
-    // palce, kciuk i brzegi mankietu
-    rysy.moveTo(X(56.5), 10); rysy.bezierCurveTo(X(57), 20, X(59), 34, X(62), 44);
-    rysy.moveTo(X(61), 20); rysy.bezierCurveTo(X(61.5), 28, X(63), 36, X(65), 42);
-    rysy.moveTo(X(51.6), 46); rysy.bezierCurveTo(X(55), 44, X(57.5), 52, X(58.5), 60);
-    rysy.moveTo(X(73.5), 61); rysy.lineTo(X(64), 82);
-    rysy.moveTo(X(81), 67); rysy.lineTo(X(66), 86);
-  }
-  return (dlonie = { obrys, rysy });
-}
-
-/**
  * Oddanie najwierniejszej nacji — w miejscu, gdzie na komputerze stoi Otchłań.
- * Złożone dłonie napełniają się złotem od rękawów po czubki palców, a kreska w poprzek
- * to próg, od którego nacja sama wysyła wartę pod rdzeń. Bez tego oddanie było liczbą,
+ * Złożone dłonie (render/modlitwa.ts) napełniają się złotem od mankietu po czubki palców,
+ * a kreska w poprzek to próg, od którego nacja sama wysyła wartę pod rdzeń. Bez tego oddanie było liczbą,
  * której nikt nie widział, a „dlaczego nikt nie idzie pod rdzeń” — zagadką.
  */
 export function drawOddanie(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number): void {
@@ -449,54 +395,7 @@ export function drawOddanie(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, v
   const prog = PIELGRZYMKA.oddanieNacji;
   const dosc = oddanie > prog;
   const { x, y, h: bok } = obszarOddania(p, vh);
-  const { obrys, rysy } = zlozoneDlonie();
-  const s = bok / 100;
-  const poziom = 100 * (1 - Math.max(0, Math.min(1, oddanie)));
-  ctx.save();
-  ctx.translate(x, y);
-  ctx.scale(s, s);
-  // wierni idą pod rdzeń: za dłońmi tli się blask
-  if (dosc) {
-    const tetno = 0.5 + 0.5 * Math.sin(performance.now() * 0.0021);
-    const g = ctx.createRadialGradient(50, 34, 4, 50, 34, 66);
-    g.addColorStop(0, `rgba(240,200,120,${0.22 + 0.12 * tetno})`);
-    g.addColorStop(1, 'rgba(240,200,120,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(-20, -20, 140, 140);
-  }
-  ctx.fillStyle = 'rgba(14,9,6,0.96)';
-  ctx.fill(obrys);
-  const zalane = new Path2D();
-  zalane.rect(0, poziom, 100, 100 - poziom);
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  ctx.save();
-  ctx.clip(obrys);
-  pigment(ctx, zalane, dosc ? FRESK.zloto : FRESK.ugier, 0.85, 'zloto');
-  // pod lustrem złota rysy malowane sinopią, nad nim — blady szkic na ciemnym
-  ctx.lineWidth = 1 / s;
-  if (bok >= 26) {
-    ctx.save(); ctx.clip(zalane);
-    ctx.strokeStyle = 'rgba(92,31,18,0.8)'; ctx.stroke(rysy);
-    ctx.restore();
-    ctx.strokeStyle = `${INK}0.22)`;
-    ctx.save(); ctx.beginPath(); ctx.rect(0, 0, 100, poziom); ctx.clip(); ctx.stroke(rysy); ctx.restore();
-  }
-  ctx.strokeStyle = 'rgba(255,236,186,0.95)';
-  ctx.lineWidth = 1.2 / s;
-  ctx.beginPath(); ctx.moveTo(0, poziom); ctx.lineTo(100, poziom); ctx.stroke();
-  ctx.restore();
-  ctx.strokeStyle = dosc ? 'rgba(246,216,142,0.95)' : `${INK}0.8)`;
-  ctx.lineWidth = 1.1 / s;
-  ctx.stroke(obrys);
-  // kreska progu pielgrzymki: w poprzek dłoni, żeby było widać, ile brakuje
-  const progY = 100 * (1 - prog);
-  ctx.strokeStyle = dosc ? 'rgba(246,216,142,0.95)' : 'rgba(246,216,142,0.6)';
-  ctx.lineWidth = 1 / s;
-  ctx.setLineDash([2 / s, 2 / s]);
-  ctx.beginPath(); ctx.moveTo(-5 / s, progY); ctx.lineTo(100, progY); ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.restore();
+  rysujZnakOddania(ctx, x, y, bok, oddanie, prog, INK, performance.now());
   ctx.save();
   const ile = `${Math.floor(oddanie * 100)}%`;
   const dopisek = !klan ? 'nikt nie wierzy' : dosc ? 'idą pod rdzeń' : `pielgrzymka od ${Math.round(prog * 100)}%`;

@@ -36,7 +36,7 @@ import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
-import { computePlate, obszarSpisu, obszarOddania, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
+import { computePlate, obszarSpisu, obszarOddania, drawFrame, drawKrew, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
 import { seed, sign, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
@@ -921,7 +921,7 @@ export class EkranGry implements Ekran {
     if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) rysujMinimape(ctx, sim, cam, plate, teraz);
     this.rysujPanelLudu(ctx, plate, h);
     drawOddanie(ctx, plate, sim, h);
-    drawCrack(ctx, plate, sim, w, h, teraz);
+    drawKrew(ctx, plate, sim, h, teraz);
     if (ustawienia.kronika) drawChronicle(ctx, plate, sim, w, h);
     this.ui.draw(ctx, sim, teraz);
     this.przyciski = rozmiescPrzyciski(plate, h, {
