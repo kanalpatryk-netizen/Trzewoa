@@ -40,6 +40,11 @@ export const STRAZNICY = {
   rycerzWidzi: 40, rycerzCiosCo: 60, rycerzZasieg: 1.6,
   /** Strażnicy biorą na cel rycerza, choćby stał o tyle kafli dalej niż ktoś inny. */
   rycerzPierwszy: 12,
+  /**
+   * Alpha (jedno wiadro): rycerz najpierw bierze Strażnika, który stoi bliżej niż `groziOd` kafli od kogoś z ludu,
+   * kto nie walczy — choćby ten był o `rycerzBroni` kafli dalej niż inny.
+   */
+  groziOd: 6, rycerzBroni: 14,
   /** Kto nie jest rycerzem, oddaje zaatakowany słabszy cios (× siła roli × to). */
   oddajeCios: 0.6,
   /**

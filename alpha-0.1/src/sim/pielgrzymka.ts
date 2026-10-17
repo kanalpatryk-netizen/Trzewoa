@@ -3,7 +3,9 @@ import { zapisz, NAZWY_KAFLI } from './dziennik';
 import { RACES, Race } from './races';
 import { PASSABLE, T } from './tiles';
 import { WORLD_W, WORLD_H } from './world';
-import { wolny, stoi, uchwyt, nadOgniem, przepasc, szukajKopiac } from './droga';
+import { wolny, stoi, uchwyt, nadOgniem, przepasc, szukajKopiac, szukajDrogi, budzetDrog, nowyTik } from './droga';
+import { rolaPostaci } from './lud';
+import { zdarzenie } from './pomieszczenia';
 import { Job } from './creatures';
 import { PLAN_DROGI, PIELGRZYMKA } from '../nastawy/rytual';
 import { REMAKE } from '../nastawy/lud';
@@ -31,6 +33,10 @@ export interface PlanDrogi {
   kopac: number[];
   /** Alpha: droga schodami (nigdzie zeskoku wyższego niż o kafel; pod górę nie przejdzie się tylko na zakrętach). */
   dwukierunkowa?: boolean;
+  /** Alpha (jedno wiadro): kafle drogi, w których robotnicy dobijają szczebel — na zakrętach, żeby dało się wrócić. */
+  szczeble?: number[];
+  /** (kafle `sciezka` jako zbiór — liczony raz, przy pierwszym pytaniu; sim/droga.ts: podDroga) */
+  zbior?: Set<number>;
 }
 
 const KOSZT_SKALY = PLAN_DROGI.kosztSkaly;
@@ -95,7 +101,10 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0, dwukierunkowa =
   };
   // (czoło, do którego kopacze nie mogli dojść, plan chwilowo omija)
   const omijaj = new Set((sim.lud?.omijaj ?? []).filter(([, do_]) => do_ > sim.tick).map(([i]) => i));
-  const skala = (i: number) => doKopania(w.tile[i]) && w.magma[i] === 0 && bezpieczna(i) && !omijaj.has(i);
+  // (Alpha: nie przez kolumnę pod otworem z wiadrem — droga wiernych wykopana pod wiadrem sprowadzała je w głąb
+  // i lud w sali zostawał bez jedzenia; pogłębić szyb może tylko gracz)
+  const podWiadrem = (i: number) => i % W === w.szybWiadraX && ((i / W) | 0) > w.szybWiadraDol;
+  const skala = (i: number) => doKopania(w.tile[i]) && w.magma[i] === 0 && bezpieczna(i) && !omijaj.has(i) && !podWiadrem(i);
   // start: kafle osiągalne z siedziby — w pudle przy niej, a zapasowo dowolne (i w ostateczności tuż przy siedzibie)
   const starty: number[] = [];
   for (let i = 0; i < N; i++) {
@@ -118,7 +127,58 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0, dwukierunkowa =
   if (!r) return proba < 2 ? planujDroge(sim, klanId, proba + 1, dwukierunkowa) : dwukierunkowa ? planujDroge(sim, klanId, 0, false) : null;
   // kreska od przedsionka do siedziby (tak ją czytają kopacze i pielgrzymi — od końca)
   const sciezka = [r.start, ...r.droga].reverse();
-  return { klan: klanId, tick: sim.tick, sciezka, kopac: sciezka.filter((i) => skala(i)), dwukierunkowa };
+  return { klan: klanId, tick: sim.tick, sciezka, kopac: sciezka.filter((i) => skala(i)), dwukierunkowa, szczeble: szczebleDrogi(sim, sciezka) };
+}
+
+/**
+ * Alpha (jedno wiadro): szczeble na zakrętach drogi wiernych. Schodami da się zejść, ale tam, gdzie droga skręca,
+ * nie wejdzie się z powrotem — a jedzenie zjeżdża już tylko szybem do sali, więc kopacze w głębi i warta pod
+ * rdzeniem nie miały jak wrócić się najeść. Liczone na drodze wykopanej „w wyobraźni”: krok po kroku od przedsionka
+ * w górę; gdzie z kafla nie dojdzie się do następnego, szczebel w następnym, w tym, w obu albo w dwóch kolejnych.
+ */
+function szczebleDrogi(sim: Sim, sciezka: number[]): number[] {
+  const w = sim.world, W = w.w;
+  const zostalo = budzetDrog();
+  const bylo = sciezka.map((i) => w.tile[i]);
+  for (const i of sciezka) if (PASSABLE[w.tile[i]] !== 1) w.tile[i] = T.AIR;
+  const dojdzie = (a: number, b: number) => {
+    nowyTik(1);
+    const c = { x: (a % W) + 0.5, y: (a / W) | 0, race: Race.GOBLIN } as Parameters<typeof szukajDrogi>[1];
+    return !!szukajDrogi(sim, c, (i) => i === b, 80);
+  };
+  const szczeble: number[] = [];
+  for (let k = 0; k + 1 < sciezka.length; k++) {
+    const a = sciezka[k], b = sciezka[k + 1];
+    if (dojdzie(a, b)) continue;
+    for (const proba of [[b], [a], [a, b], [b, sciezka[k + 2] ?? b]]) {
+      const nowe = proba.filter((i) => !w.drabina[i]);
+      for (const i of nowe) w.drabina[i] = 1;
+      if (dojdzie(a, b)) { szczeble.push(...nowe); break; }
+      for (const i of nowe) w.drabina[i] = 0;
+    }
+  }
+  sciezka.forEach((i, k) => { w.tile[i] = bylo[k]; });
+  for (const i of szczeble) w.drabina[i] = 0;
+  nowyTik(zostalo);
+  return szczeble;
+}
+
+/**
+ * Alpha (jedno wiadro): robotnik, który stoi przy wykopanym zakręcie drogi wiernych, dobija w nim szczebel
+ * (ta sama drabina i to samo dobicie — błysk i pył — co przy drabinach z planu, render/pomieszczenia.ts).
+ */
+function dobijajSzczeble(sim: Sim, p: PlanDrogi): void {
+  const w = sim.world, W = w.w;
+  for (const i of p.szczeble ?? []) {
+    if (w.drabina[i] || PASSABLE[w.tile[i]] !== 1 || w.magma[i] > 0) continue;
+    const x = i % W, y = (i / W) | 0;
+    const kto = sim.creatures.find((c) => !c.dead && rolaPostaci(c) === 'robotnik' && Math.abs(c.x - (x + 0.5)) <= 2.5 && Math.abs(c.y - y) <= 2.5);
+    if (!kto) continue;
+    w.drabina[i] = 1;
+    zdarzenie(sim, { rodzaj: 'szczebel', x, y, tik: sim.tick });
+    zapisz(sim, 'praca', `robotnik #${kto.id} dobił szczebel na zakręcie drogi wiernych (${x}, ${y}) — tędy wróci się pod górę`, x, y);
+    return;
+  }
 }
 
 /**
@@ -266,6 +326,7 @@ export function drazDrogeWiernym(sim: Sim): void {
   // (powoli) tylko wtedy, gdy pielgrzymi czekają, a żaden robotnik akurat nie kopie
   if (REMAKE) {
     const w = sim.world;
+    dobijajSzczeble(sim, p);
     for (const i of p.sciezka) {
       w.prog[i] = 1;
       if (w.water[i] > 0 || w.magma[i] > 0) { w.water[i] = 0; w.magma[i] = 0; }

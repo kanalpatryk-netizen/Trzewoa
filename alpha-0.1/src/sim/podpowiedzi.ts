@@ -91,7 +91,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     // Warta pod rdzeniem żyje z tego, co rośnie przy przedsionku. Z grzybem schodzi
     // i bez drogi powrotnej; drogę do domu można jej wydrążyć, ale nie trzeba.
     const w = sim.world;
-    // (Alpha: kto zszedł w głąb, dostaje wiadro tam, gdzie stoi — warty nie trzeba karmić rytem)
+    // (Alpha: warcie jedzenie z jedynego wiadra donoszą robotnicy — Nakarm i tak spuszcza je tylko szybem do sali)
     if (!REMAKE && sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku) {
       kandydaci.push({
         tekst: `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. ${REMAKE ? 'Spuść wiadro nad przedsionek rytem „Nakarm”' : 'Nakarm przedsionek nad rdzeniem'} — z tym jedzeniem ich warta przeżyje pod skorupą.`,

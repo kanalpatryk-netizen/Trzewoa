@@ -22,7 +22,7 @@ export interface Tool { id: string; label: string; hint: string; }
 
 export const TOOLS: Record<Verb, Tool[]> = {
   zasiej: [
-    { id: 'grzyb', label: 'wiadro', hint: 'z góry zjedzie dodatkowe wiadro z jedzeniem — dotknij tam, gdzie mają je dostać' },
+    { id: 'grzyb', label: 'wiadro', hint: 'z góry, szybem, zjedzie dodatkowe jedzenie do wiadra — dotknij płyty' },
   ],
   szept: [
     { id: 'modl', label: 'módl się', hint: 'idzie pod twój rdzeń i modli się tam' },
@@ -88,15 +88,17 @@ export function seed(sim: Sim, tool: string, tx: number, ty: number, zaplac = tr
 }
 
 /**
- * Remake v2: ryt Nakarm — z góry, na linie, zjeżdża dodatkowe wiadro z jedzeniem tam, gdzie wskażesz
- * (na dno pustki pod tym miejscem). Zwraca powód odmowy albo null, gdy wiadro jedzie.
+ * Remake v2: ryt Nakarm — z góry, na linie, zjeżdża dodatkowe jedzenie. Alpha (decyzja użytkownika: wiadro jest
+ * jedno): zawsze szybem, do tego samego wiadra — miejsce dotknięcia nie ma znaczenia. Zwraca powód odmowy albo null.
  */
 export function nakarm(sim: Sim, tx: number, ty: number, zaplac = true): string | null {
   if (zaplac && !affordable(sim, 'zasiej', 'grzyb')) return 'Nie starczy krwi na wiadro.';
-  const odmowa = wiadroNaZadanie(sim, tx, ty);
+  const odmowa = wiadroNaZadanie(sim);
   if (odmowa) return odmowa;
   if (zaplac) { pay(sim, 'zasiej', 'grzyb'); sim.stat.nakarm++; }
-  sim.efekt(tx + 0.5, ty + 0.5, 'zasiew');
+  void tx; void ty;
+  // znak nad otworem, którym zjeżdża jedzenie (nie tam, gdzie dotknięto)
+  sim.efekt(sim.world.szybWiadraX + 0.5, sim.world.szybWiadraDol + 1, 'zasiew');
   return null;
 }
 

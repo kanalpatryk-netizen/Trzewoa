@@ -326,12 +326,25 @@ export function szukajKopiac(
 }
 
 /** Koszt kucia dla ludu: ziemia tanio, skała drożej; nie przy ogniu, wodzie, rdzeniu ani w skorupie. */
+/**
+ * Alpha (jedno wiadro): kafel tuż pod złotą kreską drogi wiernych, który sam do niej nie należy — jej podłoga.
+ * Tego nikt z ludu nie kuje (jak przy „kop żyłę” i planach pomieszczeń): wykuty stopień urywał drogę w obie strony
+ * i cała drużyna zostawała w krypcie, z dala od jedynego wiadra.
+ */
+export function podDroga(sim: Sim, i: number): boolean {
+  const p = sim.planDrogi;
+  if (!p || i < WORLD_W) return false;
+  const zbior = p.zbior ??= new Set(p.sciezka);
+  return zbior.has(i - WORLD_W) && !zbior.has(i);
+}
+
 export function kosztKuciaLudu(sim: Sim, mozeDoRdzenia = false): KosztKucia {
   const w = sim.world;
   return (i, x, y) => {
     const t = w.tile[i];
     const tw = HARDNESS[t];
     if (tw <= 0 || t === T.CORE) return -1;
+    if (podDroga(sim, i)) return -1;
     if (sim.przyMagmie(x, y, 2) || nadOgniem(sim, x, y)) return -1;
     for (let k = -1; k <= 1; k++) for (let j = -1; j <= 1; j++) if (w.inb(x + k, y + j) && w.water[w.idx(x + k, y + j)] > 2) return -1;
     if (!mozeDoRdzenia && Math.hypot(x - w.coreX, y - w.coreY) < LUD.strefaRdzenia) return -1;

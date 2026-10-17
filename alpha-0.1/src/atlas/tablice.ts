@@ -679,8 +679,8 @@ export const TABLICE: Tablica[] = [
   // ryty
   {
     id: 'ryt-zasiej', grupa: 'ryty', nazwa: 'Nakarm', lacina: 'Situla de caelo',
-    opis: `Dotknij miejsca, a z góry, na linie, zjedzie tam dodatkowe wiadro z ${WIADRO.nakarmPorcji} porcjami jedzenia — na dno pustki pod palcem, w miejsce, które ktoś już widział. Naraz zjeżdża tylko jedno takie wiadro.`,
-    kiedy: 'Spuszczaj je tam, gdzie głodują, a zwykłe wiadra nie sięgają — najczęściej warcie przy przedsionku rdzenia i grupkom odciętym od siedziby.',
+    opis: `Dotknij płyty, a z góry, tym samym szybem co zawsze, zjedzie ${WIADRO.nakarmPorcji} porcji jedzenia więcej — wiadro jest jedno: gdy stoi albo zjeżdża, dosypują do niego, a gdy go nie ma, zjeżdża od razu. Gdzie dotkniesz, nie ma znaczenia.`,
+    kiedy: 'Gdy jedzenia w wiadrze nie starcza do następnego zjazdu. Do tych, którzy zeszli w głąb, jedzenie dotrze tylko wtedy, gdy pogłębisz szyb pod wiadrem albo robotnicy im je zaniosą.',
     koszt: `wiadro ${kosztSlowami('zasiej', 'grzyb')}`,
     rycina: cala(rysujZiarno),
   },
@@ -713,14 +713,14 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'wiadro', grupa: 'zasoby', nazwa: 'Wiadro z jedzeniem', lacina: 'Situla panis',
-    opis: `Jedyne jedzenie ludu — grzyba ani spiżarni nie ma. Co ${Math.round(WIADRO.co / 120)} sekund z góry, na linie, zjeżdża wiadro pełne jedzenia (${WIADRO.porcjiNaGlowe} porcji na każdego z ludu) — szybem do sali z siedzibą, a gdy poprzednie jeszcze tam stoi, z góry do niego dosypują. Kto zszedł drogą wiernych w głąb i do sali już nie wróci (pod górę lud wchodzi najwyżej o stopień), dostaje wiadro tam, gdzie stoi — najwyżej ${WIADRO.maks} pełnych naraz, a odcięci od jedzenia i ponad to. Wiadro, do którego nikt już nie dojdzie, odjeżdża. Przed zjazdem ze stropu sypie się pył. Każdy może z niego jeść, i to do syta, robotnicy donoszą z niego jedzenie warcie; puste odjeżdża w górę. Kto umiera z głodu (${proc(WIADRO.wspinaczkaOd)} głodu), a wiadro jeszcze jedzie, wspina się po linie, wsiada do niego i je w drodze w dół.`,
-    kiedy: 'Liczba „jedzenie” nad płytą to porcje we wszystkich wiadrach. Gdy nie nadążają, spuść dodatkowe rytem Nakarm.',
+    opis: `Jedyne jedzenie ludu — grzyba ani spiżarni nie ma. Co ${Math.round(WIADRO.co / 120)} sekund z góry, na linie, zjeżdża wiadro pełne jedzenia (${WIADRO.porcjiNaGlowe} porcji na każdego z ludu) — zawsze tym samym, węższym otworem obok szybu ze światłem, do sali z siedzibą; gdy poprzednie jeszcze tam stoi, z góry do niego dosypują. Wiadro jest jedno i ma jeden punkt, w który spada: na dno kolumny pod otworem. Pod wiadrem w podłodze sali da się kuć — kto wykopie tam dziurę, sprowadzi wiadro niżej (lina sięga do dna kolumny), ale wtedy ci z sali do niego nie sięgną. Do tych, którzy zeszli w głąb, wiadro samo nie zjedzie — nigdzie poza tym szybem się nie pojawia; wracają po jedzenie drogą wiernych (na jej zakrętach są szczeble). Przed zjazdem ze stropu sypie się pył. Każdy może z niego jeść, i to do syta, robotnicy donoszą z niego jedzenie warcie; puste odjeżdża w górę. Kto umiera z głodu (${proc(WIADRO.wspinaczkaOd)} głodu), a wiadro jeszcze jedzie, wspina się po linie, wsiada do niego i je w drodze w dół.`,
+    kiedy: 'Liczba „jedzenie” nad płytą to porcje w wiadrze. Gdy nie starcza, dosyp rytem Nakarm; gdy lud pracuje głęboko, pogłęb szyb pod wiadrem.',
     rycina: postac(Race.GOBLIN, 'je'),
   },
   {
     id: 'kruszce', grupa: 'zasoby', nazwa: 'Kruszce', lacina: 'Ferrum et aurum',
     opis: `Żelazo i złoto — dwie liczby nad płytą, obok wiary, krwi i jedzenia. Nikt ich nie nosi: gdy robotnik rozbije kafel rudy, okruch sam leci do licznika i dodaje ${KRUSZCE.zelazoZaKafel} żelaza albo ${KRUSZCE.zlotoZaKafel} złota. Żelazo leży w kępach rdzawej rudy w płytkiej warstwie, tuż pod salą; złoto — w żółtych grudkach pod dnami jaskiń w warstwie środkowej, głębiej i twardsze. Wskaż zaznaczonemu robotnikowi rudę, a wykuje całą kępę — kafel po kaflu, najdalej ${POLECENIA.zylaZasieg} kafli od wskazanego. W dół schodzi stopniami, a podłogi pod złotą kreską drogi wiernych nie rusza.`,
-    kiedy: 'Kop, póki jest czas: z żelaza kuźnia wykuje zbroję dla rycerza, a ze złota warsztat zrobi krzyże i różańce, które zamienią się w wiarę. Po złoto trzeba zejść głęboko — a kto zejdzie, zwykle nie wraca.',
+    kiedy: 'Kop, póki jest czas: z żelaza kuźnia wykuje zbroję dla rycerza, a ze złota warsztat zrobi krzyże i różańce, które zamienią się w wiarę. Po złoto trzeba zejść głęboko — a jedzenie jest tylko w sali, więc pilnuj, żeby robotnik miał którędy wrócić (schodami, drabiną albo drogą wiernych).',
     rycina: kruszce,
   },
   {
@@ -745,7 +745,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'sen', grupa: 'prawa', nazwa: 'Przegrana', lacina: 'Casus',
     opis: 'Przegrywasz, gdy nie żyje już żaden pobożny — tylko ich modlitwa kruszy skorupę, a nowych nikt nie wyda. Przegrywasz też, gdy do rdzenia dojdzie ktoś, kto w ciebie nie wierzy. Najczęstsza droga do porażki to głód — lud rozproszony daleko od wiader, bez robotników, którzy noszą jedzenie.',
-    kiedy: 'Trzymaj lud razem i robotników przy życiu, spuszczaj wiadra tam, gdzie głodują. Nie wysyłaj pod rdzeń ostatniego pobożnego.',
+    kiedy: 'Trzymaj lud razem i robotników przy życiu — jedzenie jest tylko w wiadrze w sali, a warcie pod rdzeniem donoszą je robotnicy. Nie wysyłaj pod rdzeń ostatniego pobożnego.',
     rycina: cala(rysujSpis),
   },
   {
@@ -876,14 +876,14 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'drabina', grupa: 'prawa', nazwa: 'Drabina', lacina: 'Scala',
-    opis: `„Wyznacz pomieszczenie” → „drabina”: przeciągnij w górę od miejsca, gdzie stoi lud, do półki (${POMIESZCZENIA.drabinaMin}–${POMIESZCZENIA.drabinaMaks} szczebli). Drabinę wolno postawić tylko tam, gdzie na półkę nie da się wejść inaczej — gdy da się dojść stopniami albo inną drabiną, obrys jest czerwony. Budują ją zaznaczeni robotnicy, którym ją wskażesz: od dołu, szczebel po szczeblu, stojąc na tym, co już stoi. Po gotowej drabinie każdy z ludu wchodzi i schodzi w obie strony.`,
+    opis: `„Wyznacz pomieszczenie” → „drabina”: przeciągnij w górę od miejsca, gdzie stoi lud, do półki (${POMIESZCZENIA.drabinaMin}–${POMIESZCZENIA.drabinaMaks} szczebli). Drabinę wolno postawić tylko tam, gdzie na półkę nie da się wejść inaczej — gdy da się dojść stopniami albo inną drabiną, obrys jest czerwony. Budują ją zaznaczeni robotnicy, którym ją wskażesz: od dołu, szczebel po szczeblu, stojąc na tym, co już stoi. Po gotowej drabinie każdy z ludu wchodzi i schodzi w obie strony. Na zakrętach drogi wiernych szczeble dobijają sami robotnicy, którzy ją kopią — bez rozkazu.`,
     kiedy: 'Gdy ktoś zszedł w głąb i nie ma jak wrócić, albo gdy półka z rudą wisi za wysoko.',
     rycina: drabinaRycina,
   },
   {
     id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',
     opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie: musi wykuć sobie w skale schody albo zbudować drabinę. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy. Lina wisi tylko przy wiadrze z jedzeniem.',
-    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych schodzi schodami, bez zeskoków — ale na zakręcie, gdzie zmienia kierunek, pod górę trzeba by wejść o dwa stopnie, więc kto zejdzie, zwykle już nie wraca: jedzenie zjeżdża do niego.',
+    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych schodzi schodami, bez zeskoków — a na zakrętach, gdzie pod górę trzeba by wejść o dwa stopnie, robotnicy, kopiąc ją, dobijają szczeble. Kto nią zejdzie, wróci nią do sali, do wiadra. Podłogi pod drogą nikt z ludu nie kuje.',
     rycina: postac(Race.GOBLIN, 'wspina'),
   },
   {

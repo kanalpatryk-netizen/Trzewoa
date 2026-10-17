@@ -299,7 +299,11 @@ export class World {
     this.szybWiadraX = wx0; this.szybWiadraDol = wDol;
     // ołtarz pod szybem ze światłem: kamienny kopczyk pod nim i kamienna podłoga sali (wyjścia zostają na jej końcach)
     const O = S.oltarz;
-    for (let x = cx - S.sala.rx + O.wyjscie; x <= cx + S.sala.rx - O.wyjscie; x++) for (let y = dnoSali; y < dnoSali + O.podlogaRzedow; y++) tile[y * w + x] = T.STONE;
+    // (kolumna pod otworem z wiadrem zostaje do kucia — kto wykopie pod wiadrem dziurę, sprowadzi je niżej)
+    for (let x = cx - S.sala.rx + O.wyjscie; x <= cx + S.sala.rx - O.wyjscie; x++) {
+      if (x >= wx0 && x < wx0 + SW.szer) continue;
+      for (let y = dnoSali; y < dnoSali + O.podlogaRzedow; y++) tile[y * w + x] = T.STONE;
+    }
     for (let x = cx - (O.kopczykSzer >> 1); x <= cx + (O.kopczykSzer >> 1); x++) for (let y = dnoSali; y < dnoSali + O.kopczykGleb; y++) tile[y * w + x] = T.STONE;
     this.oltarz = { x: cx, y: dnoSali - 1 };
     this.salaOltarza = { x0: cx - S.sala.rx - 1, x1: cx + S.sala.rx + 1, y0: stropSali, y1: dnoSali - 1 };

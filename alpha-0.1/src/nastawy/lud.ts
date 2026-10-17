@@ -86,6 +86,11 @@ export const LUD = {
   pustoPonizej: 15,
   /** Przy takim głodzie niosący jedzenie zjada własny ładunek, zamiast paść z nim w rękach. */
   zjadaNiesione: 0.85,
+  /**
+   * Alpha (jedno wiadro): robotnik biorący z wiadra jedzenie dla kogoś najpierw sam się najada, jeśli jest choć
+   * tak głodny — droga pod rdzeń i z powrotem to kilkaset kafli, a wracał po swoje o pustym brzuchu.
+   */
+  kurierNajadaOd: 0.2,
   /** Stacjonujący ze spiżarnią z jedzeniem w tej odległości (kafle) je sam, gdy tylko zgłodnieje. */
   spizarniaObok: 10,
   /** Tak głodny stacjonujący bez dostawy odrywa kopacza drogi od pracy. */

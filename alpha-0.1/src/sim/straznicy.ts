@@ -260,22 +260,32 @@ function rycerzeDoWalki(sim: Sim): void {
     }
     return;
   }
+  // Alpha (jedno wiadro): najpierw ten Strażnik, który stoi przy bezbronnych — robotnicy nie czekają już w krypcie
+  // przy wiadrach, więc boss szedł prosto na modlących się, a rycerz bił tego, kto był najbliżej niego
+  const bezbronni = sim.creatures.filter((o) => !o.dead && rolaPostaci(o) && !walczacy(o));
+  const grozi = (s: Creature) => bezbronni.some((o) => Math.hypot(o.x - s.x, o.y - s.y) < S.groziOd);
+  const ktosGrozi = wrogowie.some(grozi);
   for (const c of sim.creatures) {
     if (c.dead || !walczacy(c)) continue;
     const obecny = sim.creatureById(sim.target.get(c.id) ?? -1);
     // głodny rycerz najpierw je — walczy tylko z tym, co stoi tuż obok (dziesięciu rycerzy umarło z głodu,
     // goniąc Strażnika w skale: co pół sekundy ten przydział odbierał im drogę do spiżarni)
     const glodny = c.hunger > LUD.glodSam;
-    if (c.job === Job.FIGHT && obecny && !obecny.dead && obecny.straznik && !(glodny && Math.hypot(obecny.x - c.x, obecny.y - c.y) > S.rycerzGlodnyWalczyOd)) continue;
-    let best: Creature | null = null, bd = glodny ? S.rycerzGlodnyWalczyOd : S.rycerzWidzi;
+    if (c.job === Job.FIGHT && obecny && !obecny.dead && obecny.straznik && !(glodny && Math.hypot(obecny.x - c.x, obecny.y - c.y) > S.rycerzGlodnyWalczyOd)
+        && (!ktosGrozi || grozi(obecny))) continue;
+    const widzi = glodny ? S.rycerzGlodnyWalczyOd : S.rycerzWidzi;
+    let best: Creature | null = null, bw = Infinity;
     for (const s of wrogowie) {
       const d = Math.hypot(s.x - c.x, s.y - c.y);
-      if (d < bd) { bd = d; best = s; }
+      if (d >= widzi) continue;
+      const wynik = d - (grozi(s) ? S.rycerzBroni : 0);
+      if (wynik < bw) { bw = wynik; best = s; }
     }
     if (!best) {
       if (glodny && c.job === Job.FIGHT && obecny?.straznik) { sim.target.delete(c.id); c.jt = 0; c.zamiarDo = sim.tick; }
       continue;
     }
+    if (best === obecny && c.job === Job.FIGHT) continue;
     sim.target.set(c.id, best.id);
     c.job = Job.FIGHT; c.jt = 600; c.droga = undefined;
     c.zamiar = best.boss ? `walczy z: ${aktywnyBoss().nazwa}` : 'walczy ze Strażnikiem Snu';

@@ -6,7 +6,7 @@ import { pielgrzymowKlanu, wKomorze } from './rytual';
 import { STWORZENIA as K } from '../nastawy/stworzenia';
 import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { LUDY, PRZYPLYWY as PP } from '../nastawy/gora';
-import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchwyt, ludRuch, szukajKopiac, kosztKuciaLudu, glebiaPod } from './droga';
+import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchwyt, ludRuch, szukajKopiac, kosztKuciaLudu, glebiaPod, podDroga } from './droga';
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi, nieWykopane } from './pielgrzymka';
@@ -1647,6 +1647,9 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
       && (sim.przyMagmie(x, y, K.kopanieOgienZasieg) || nadOgniem(sim, x, y))) {
     c.dig = 0; c.jt = 0; return;
   }
+  // Alpha (jedno wiadro): podłogi pod drogą wiernych nikt z ludu nie kuje — rycerz, idąc na przełaj, wykuł złoto
+  // spod stopnia, droga się urwała i cała drużyna umarła z głodu w krypcie, z dala od wiadra
+  if (REMAKE && rolaPostaci(c) && podDroga(sim, w.idx(x, y))) { c.dig = 0; c.jt = 0; c.droga = undefined; return; }
   const sila = RACES[c.race].digPower * mnoznik(sim, c, 'kopanie') * cechaNacji(sim.clans[c.clan]).kopanie * (1 + c.mad * K.kopanieOdSzalenstwa);
   // Alpha, etap 3: w górze z warstwami lud kuje wolniej — zejście ma trwać (SWIAT.warstwy.kucie); postęp zostaje
   // w kaflu (w.kucie), nie w kopaczu: rozkaz „kop drogę” odświeżał się co pół sekundy i zerował go, więc przy
@@ -1808,6 +1811,15 @@ function doDig(sim: Sim, c: Creature): void {
 function doZbiera(sim: Sim, c: Creature): void {
   if (Math.abs(c.jx - Math.floor(c.x)) > 1 || Math.abs(c.jy - Math.floor(c.y)) > 1) { idz(sim, c, c.jx, c.jy); return; }
   const sp = c.dostawaDla !== undefined ? spizarniaW(sim, c.jx, c.jy) : null;
+  // (Alpha, jedno wiadro: najpierw sam się najada — z jedzeniem pod rdzeń i z powrotem idzie się kilkaset kafli,
+  // a kurier, który ruszył w drogę głodny, padał kilka kafli przed wiadrem)
+  if (sp && c.hunger > LUD.kurierNajadaOd) {
+    for (let n = 0; n < 4 && c.hunger > WIADRO.najadaDo && sp.wez(1) > 0; n++) {
+      sim.meals++;
+      c.hunger = Math.max(0, c.hunger - LUD.posilek);
+    }
+    sim.spark(c.x, c.y - 0.5, 'spore');
+  }
   if (sp) c.carry += sp.wez(LUD.przenoszenie);
   // niesie głodnemu: przy następnym wyborze zajęcia carry > 0 → DOSTAWA
   c.carryT = 0;
@@ -2049,7 +2061,16 @@ function doFight(sim: Sim, c: Creature): void {
       walczKsiega(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); });
       return;
     }
-    walczZeStraznikiem(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); });
+    walczZeStraznikiem(sim, c, foe, (x, y) => {
+      // (Alpha, jedno wiadro: Strażnik przenika skałę — rycerz nie kuje za nim ani nie szuka obejścia, tylko staje na
+      // podłodze pod nim i czeka, aż zejdzie; idąc za nim, odchodził w bok krypty, a boss zgniatał modlących się)
+      if (REMAKE && rolaPostaci(c) && sim.world.solid(x, y)) {
+        const m = podStraznikiem(sim, x, y);
+        if (m) walkTo(sim, c, m[0], m[1], false);
+        return;
+      }
+      walkTo(sim, c, x, y);
+    });
     return;
   }
   const dist = Math.hypot(foe.x - c.x, foe.y - c.y);
@@ -2069,6 +2090,17 @@ function doFight(sim: Sim, c: Creature): void {
     }
   } else if (dist > K.walkaGubi) { sim.target.delete(c.id); c.jt = 0; }
   else walkTo(sim, c, foe.x, foe.y);
+}
+
+/** Alpha: podłoga pod Strażnikiem w skale (albo tuż obok) — tam czeka na niego rycerz; null, gdy nie ma jej blisko. */
+function podStraznikiem(sim: Sim, x: number, y: number): [number, number] | null {
+  const w = sim.world;
+  for (let dy = 0; dy <= 10; dy++) {
+    for (const dx of [0, -1, 1, -2, 2]) {
+      if (w.inb(x + dx, y + dy) && w.passable(x + dx, y + dy) && stoi(sim, x + dx, y + dy)) return [x + dx, y + dy];
+    }
+  }
+  return null;
 }
 
 function doFlee(sim: Sim, c: Creature): void {

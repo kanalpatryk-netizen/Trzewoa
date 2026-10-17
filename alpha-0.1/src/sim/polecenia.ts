@@ -21,7 +21,7 @@ import type { Creature } from './creatures';
 import { Job, Thought } from './creatures';
 import { POLECENIA as P } from '../nastawy/polecenia';
 import { rolaPostaci } from './lud';
-import { szukajDrogi, szukajKopiac, kosztKuciaLudu, budzetDrog, nowyTik, stoi } from './droga';
+import { szukajDrogi, szukajKopiac, kosztKuciaLudu, budzetDrog, nowyTik, stoi, podDroga } from './droga';
 import { czoloDrogi, nieWykopane } from './pielgrzymka';
 import { zapisz, kto } from './dziennik';
 import { kruszecKafla, type RodzajKruszcu } from './kruszce';
@@ -150,6 +150,8 @@ export function wydajPolecenie(sim: Sim, c: Creature, typ: 'idz' | 'droga', x: n
   if (w.solid(x, y)) {
     if (rola === 'robotnik' && w.hardness(x, y) > 0) {
       const cel = w.idx(x, y);
+      // (Alpha, jedno wiadro: podłoga drogi wiernych — wykuta urwałaby drogę do wiadra)
+      if (podDroga(sim, cel)) return odmow(sim, c, 'to podłoga drogi wiernych');
       // stoi obok albo dojdzie obok — kuje stamtąd; inaczej przekopuje się przez skałę
       const obok = (xx: number, yy: number) => Math.abs(xx - x) <= 1 && Math.abs(yy - y) <= 1 && stoi(sim, xx, yy);
       if (!drogaTeraz(sim, c, obok, P.szukanieDrogi) && !dokopieSie(sim, c, (i) => i === cel)) return odmow(sim, c, 'tam się nie dokopię');

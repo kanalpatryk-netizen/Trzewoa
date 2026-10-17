@@ -248,7 +248,7 @@ export function nastepnaCzesc(sim: Sim): (typeof P.kuznia.czesci)[number] | null
   return P.kuznia.czesci.find((c) => !sim.zbroja.includes(c.id)) ?? null;
 }
 
-function zdarzenie(sim: Sim, z: ZdarzeniePom): void {
+export function zdarzenie(sim: Sim, z: ZdarzeniePom): void {
   const l = sim.zdarzeniaPom;
   while (l.length && (l.length >= 32 || sim.tick - l[0].tik > 900)) l.shift();
   l.push(z);

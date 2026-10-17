@@ -109,7 +109,7 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g) => { g.sim.krew += 60; g.sim.wiara += 40; },
     etapy: [
       {
-        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrach, które zjeżdżają z góry. Wiarę i krew wydajesz na ryty i wybory na kartach.',
+        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrze, które zjeżdża z góry do sali. Wiarę i krew wydajesz na ryty i wybory na kartach.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarZasobow(s.gra.plate) }),
       },
       {
@@ -194,26 +194,26 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Jedzenie z góry',
-    wstep: 'Grzyba ani spiżarni nie ma. Jedzenie zjeżdża z góry w wiadrach, na linach.',
+    wstep: 'Grzyba ani spiżarni nie ma. Jedzenie zjeżdża z góry w jednym wiadrze, na linie, zawsze tym samym szybem.',
     przygotuj: (g, s) => { g.sim.krew += 60; if (!s.najblizszeWiadro()) wiadroTeraz(g.sim); },
     czasowniki: ['zasiej'],
     etapy: [
       {
-        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — szybem do sali, a tym, którzy zeszli w głąb i do sali nie wrócą, tam, gdzie stoją. Każdy może z niego jeść. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
+        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — węższym otworem do sali, na dno kolumny pod nim. Kto wykopie pod wiadrem dziurę, sprowadzi je niżej. Do tych w głębi samo nie zjedzie — zaniosą im robotnicy, a kto zszedł drogą wiernych, wróci nią po szczeblach na zakrętach. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
         rozumiem: true,
         wskaz: (s) => { const c = s.najblizszeWiadro(); return c ? { typ: 'swiat', cel: c } : null; },
       },
       {
-        tekst: 'Gdy wiadra nie nadążają, spuść własne. Wybierz ryt „Nakarm” po lewej.', klawisz: 'zasiej', cofa: true,
+        tekst: 'Gdy jedzenia nie starcza, dosyp. Wybierz ryt „Nakarm” po lewej.', klawisz: 'zasiej', cofa: true,
         wskaz: (s) => s.ryt('zasiej'), gotowe: (g) => g.ui.verb === 'zasiej',
       },
       {
-        tekst: 'Dotknij zaznaczonego miejsca — tam zjedzie wiadro.',
+        tekst: 'Dotknij płyty — jedzenie zjedzie szybem, do tego samego wiadra.',
         wskaz: (s) => { const c = s.miejsceNaGrzyb(); return c ? { typ: 'swiat', cel: c } : null; },
         gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'zasiej',
       },
     ],
-    koniec: `Z góry zjeżdża twoje wiadro — ${WIADRO.nakarmPorcji} porcji za ${KOSZTY.zasiej.grzyb.krew} krwi. Liczba „jedzenie” nad płytą to porcje we wszystkich wiadrach.`,
+    koniec: `Z góry zjeżdża ${WIADRO.nakarmPorcji} porcji więcej za ${KOSZTY.zasiej.grzyb.krew} krwi. Liczba „jedzenie” nad płytą to porcje w wiadrze.`,
   },
   {
     tytul: 'Zrób cud',

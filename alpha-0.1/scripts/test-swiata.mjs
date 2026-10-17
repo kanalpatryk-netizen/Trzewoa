@@ -3,6 +3,7 @@
  * wody ani kryształu — to jedyna droga, którą wierni schodzą do rytuału.
  * Alpha, etap 3d: ołtarz stoi w sali na kamiennym kopczyku, podłoga sali jest z kamienia, a z powierzchni
  * prowadzą do sali dwa otwory — szerszy nad ołtarzem (światło) i węższy, którym zjeżdża wiadro.
+ * Alpha (jedno wiadro): pod wiadrem podłoga nie jest z kamienia — gracz pogłębia szyb, kopiąc pod nim.
  *
  *   node scripts/test-swiata.mjs [ile światów]
  */
@@ -34,9 +35,12 @@ function bledyOltarza(w) {
   for (let dx = -(O.kopczykSzer >> 1); dx <= O.kopczykSzer >> 1; dx++) {
     for (let dy = 1; dy <= O.kopczykGleb; dy++) if (w.tile[w.idx(o.x + dx, o.y + dy)] !== T.STONE) { bledy.push('kopczyk pod ołtarzem da się podkopać'); dx = 99; break; }
   }
-  // podłoga sali: od ołtarza do wiadra — kamień pod stopami, wolno nad nimi (2 kafle)
+  // podłoga sali: od ołtarza do wiadra — kamień pod stopami, wolno nad nimi (2 kafle); pod samym wiadrem
+  // podłoga jest, ale da się ją wykopać (tak gracz sprowadza wiadro niżej)
+  const podWiadrem = w.tile[w.idx(w.szybWiadraX, o.y + 1)];
+  if (PASSABLE[podWiadrem] === 1 || podWiadrem === T.STONE || podWiadrem === T.CORE) bledy.push('pod wiadrem nie ma podłogi, którą da się wykopać');
   for (let x = Math.min(o.x, w.szybWiadraX); x <= Math.max(o.x, w.szybWiadraX); x++) {
-    if (w.tile[w.idx(x, o.y + 1)] !== T.STONE) { bledy.push('podłoga sali między ołtarzem a wiadrem nie jest z kamienia'); break; }
+    if (x !== w.szybWiadraX && w.tile[w.idx(x, o.y + 1)] !== T.STONE) { bledy.push('podłoga sali między ołtarzem a wiadrem nie jest z kamienia'); break; }
     if (!wolny(x, o.y) || !wolny(x, o.y - 1)) { bledy.push('droga od wiadra do ołtarza zagrodzona'); break; }
   }
   for (let y = SURFACE_Y - 1; y <= w.szybDol; y++) if (!wolny(w.szybX, y)) { bledy.push('szyb ze światłem zasypany'); break; }
