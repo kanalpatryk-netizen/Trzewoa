@@ -61,7 +61,7 @@ export const RYTUAL = {
   drogaStartPozaPromieniem: 17,
   /** …i obejmuje pudło: tyle w bok, w górę i w dół. */
   drogaPudloX: 24, drogaPudloGora: 30, drogaPudloDol: 24,
-  /** Pod wylotem pęknięcia od dołu okruchy osypują się w schody (lud wchodzi najwyżej o stopień) — najwyżej tyle stopni. */
+  /** Pod wylotem pęknięcia od dołu okruchy osypują się w ścianę do wspinaczki — najwyżej tyle kafli w dół. */
   osypiskoMax: 16,
   /** Kamień liczony w kolumnie nad rdzeniem (do kamieni milowych) — od tylu kafli. */
   kolumnaSkorupy: 16,

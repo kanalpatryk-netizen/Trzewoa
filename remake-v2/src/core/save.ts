@@ -38,9 +38,9 @@ export function serialize(sim: Sim): string {
     chronicle: sim.chronicle.slice(-120),
     clans: sim.clans.map((c) => ({ ...c, grudge: [...c.grudge] })),
     // droga to rachunek na chwilę — po wczytaniu i tak wyznaczy się na nowo
-    creatures: sim.creatures.filter((c) => !c.dead).map((c) => ({ ...c, droga: undefined, drogaI: undefined, drogaKopie: undefined })),
+    creatures: sim.creatures.filter((c) => !c.dead).map((c) => ({ ...c, droga: undefined, drogaI: undefined })),
     tile: toB64(w.tile), water: toB64(w.water), magma: toB64(w.magma),
-    mem: toB64(w.mem), ever: toB64(w.ever), lastSeen: toB64(w.lastSeen), slad: toB64(w.slad),
+    mem: toB64(w.mem), ever: toB64(w.ever), lastSeen: toB64(w.lastSeen), slad: toB64(w.slad), drabina: toB64(w.drabina),
   });
 }
 
@@ -55,6 +55,7 @@ export function restore(json: string): Sim | null {
   // Remake v1: w górze nie ma już wody ani lawy — stary zapis wraca suchy i zimny
   if (!SWIAT.plyny) { w.water.fill(0); w.magma.fill(0); }
   fromB64(data.mem, w.mem); fromB64(data.ever, w.ever); fromB64(data.lastSeen, w.lastSeen);
+  if (data.drabina) fromB64(data.drabina, w.drabina);
   if (data.slad) fromB64(data.slad, w.slad);
 
   sim.tick = data.tick;

@@ -1,0 +1,46 @@
+# Trzewia — Alpha 0.1 (komputer)
+
+Nowa gra, w budowie. Wychodzi od Remake v2 i przebudowuje go według wspólnego planu (stała drużyna, rozkazy dla
+wybranych postaci, pomieszczenia i rudy, ołtarz, dwie dłonie, Wielki Pomnik). Remake v2 zostaje bez zmian
+w [`../remake-v2/`](../remake-v2) (punkt odniesienia).
+
+**[⬇️ Pobierz trzewia-alpha-0.1.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.1.html)** — gra ·
+**[⬇️ Pobierz trzewia-alpha-0.1-obserwatorium.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.1-obserwatorium.html)** — obserwatorium.
+Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Zapisy, ustawienia, atlas i osiągnięcia
+Alphy są osobne — nie mieszają się z Remake v2.
+
+## Co jest inaczej niż w Remake v2
+- **Bez lin.** Lud wchodzi najwyżej o jeden stopień (kafel) i to tylko z miejsca, na którym stoi. Wyżej nie wejdzie —
+  wykuwa sobie schody w skale. W dół zsuwa się po ścianie albo skacze, ale nie z dużej wysokości. Lina została tylko
+  przy wiadrze z jedzeniem.
+
+## W budowie (plan)
+1. **Sprzątanie i stały start** — gra zaczyna się z 3 robotnikami, 2 pobożnymi i 1 rycerzem (dużo silniejszym niż
+   dotąd). Skała nie wydaje nowych postaci, nie ma gniazd kamiennych rycerzy, szeptów „przemyśl i kop” i „kop losowo”,
+   kart spisku rycerzy i snu o kamiennych rycerzach. Bez zawału od góry — mapa się nie skraca.
+2. **Sterowanie i odstępy** — trzy ikonki z miniaturami robotnika, pobożnego i rycerza (z liczbą) zamiast paska ludu.
+   Kliknięcie postaci zaznacza ją, kliknięcie miniatury — wszystkich tej roli. Rozkaz „idź tam”: pobożny i rycerz
+   odmawiają, gdy nie dojdą, robotnik przekopuje się sam. Robotnicy nie kopią już sami — tylko na rozkaz.
+   Postacie nie stoją jedna w drugiej: rozstawiają się, mijają i dopasowują krok.
+3. **Mapa, pomieszczenia, rzemiosło** — ta sama wielkość mapy (trochę szersza), trzy warstwy: płytka (miękka skała,
+   żelazo), środkowa (jaskinie, złoto, ołtarz, ruiny z zabytkami), głęboka (twarda skała, mrok, Wielki Pomnik na dnie).
+   Szablony pomieszczeń do wykopania (sypialnia, warsztat, kuźnia, szyb). Złoto w warsztacie — dewocjonalia i wiara;
+   żelazo w kuźni — części zbroi rycerza, widoczne na postaci. Ołtarz z rytuałami — każdy z własną animacją.
+4. **Dwie dłonie** — dłoń z otchłani przecina pazurem linę wiadra (jedzenie staje, póki ktoś nie wejdzie po linie
+   i jej nie sklei); dłoń anielska z góry: podkop, dar ludzi (robotnik w dłoni), dar krwi.
+5. **Finał, bot, samouczek** — Wielki Pomnik pęka od modlitwy, z gruzów wychodzi boss, a dłoń z otchłani mu pomaga;
+   bot pod nowe zasady; nowy samouczek, w którym kroki przewija się samemu.
+
+Grafika (menu, boss i Strażnicy, ikonki) i muzyka adaptacyjna — zadania zespołu (Paweł, Milan).
+
+## Obserwatorium (`trzewia-alpha-0.1-obserwatorium.html`)
+Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo. Każde okno osobno: tempo (×¼ … ×20),
+pauza, styl bota (*rozsądny*, *budowniczy*, *speedrun*, *bierny*), ziarno świata, „nowa partia”, „sama następna partia”
+i dźwięk. Kliknij okno — powiększa się na cały ekran; **Esc** wraca, klawisze **1–4** przełączają. Okna obserwatorium
+niczego nie zapisują w przeglądarce. Bot: `src/app/bot.ts`, tryb okna: `src/app/obserwowany.ts`, strona:
+`scripts/obserwatorium/szablon.html`, budowa: `npm run obserwatorium`.
+
+## Kod
+TypeScript + Vite, jeden plik HTML (`npm run pack`). Symulacja w `src/sim/`, liczby do strojenia w `src/nastawy/`,
+rysunek w `src/render/` (postacie ludu w `src/render/lud/`), ekrany w `src/app/screens/`.
+Testy: `npm test` (światy i skorupa), próby botów: `node scripts/proby-graczy.mjs`.

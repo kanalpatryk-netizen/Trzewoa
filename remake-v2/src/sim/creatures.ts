@@ -7,7 +7,7 @@ import { pielgrzymowKlanu, wKomorze } from './rytual';
 import { STWORZENIA as K } from '../nastawy/stworzenia';
 import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { LUDY, PRZYPLYWY as PP } from '../nastawy/gora';
-import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchwyt, ludRuch, szukajKopiac, kosztKuciaLudu, glebiaPod } from './droga';
+import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchwyt } from './droga';
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi } from './pielgrzymka';
@@ -83,10 +83,6 @@ export interface Creature {
   /** Wyznaczona droga do celu zajęcia (indeksy kafli) i miejsce na niej. Nie trafia do zapisu. */
   droga?: number[];
   drogaI?: number;
-  /** Remake v2: droga wiedzie przez skałę — lite kafle na niej kuje po kolei (szukajKopiac w droga.ts). */
-  drogaKopie?: boolean;
-  /** Remake v2: kierunek schodów, które kuje na przełaj pod górę (−1 / 1) — trzyma go, aż wejdzie na wysokość celu. */
-  schody?: number;
   /** Remake v1: rola w ludzie (pobożny, robotnik, rycerz); brak = pobożny. */
   rola?: Rola;
   /** Remake v1: do tego tiku jest osłabiony po wyjściu ze skały. */
@@ -301,15 +297,35 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     return;
   }
 
+  // Remake v1: lud wbija klamry tam, którędy idzie — droga w dół zostaje drogą powrotną
+  if (REMAKE && rolaPostaci(c) && w.inb(tx, ty)) w.drabina[w.idx(tx, ty)] = 1;
+
   // --- grawitacja
   // Kto właśnie się podciąga i ma ścianę pod ręką, trzyma się jej. Bez tego szyb, który
   // sami wykopali, był pułapką: wchodzili o pół kafla i spadali z powrotem, w kółko —
   // Żużlowcy potrafili tak przestać całe życie pod rudą, której nigdy nie dosięgli.
-  // Remake v2: lud nie ma już lin ani klamer — trzyma się ściany tylko przez chwilę: wchodząc na stopień
-  // albo schodząc szybem; w otwartej pustce spada (przepaści sam omija — droga.ts).
-  const trzymaSie = (c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
-    && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1));
+  // Na drodze wiernych (próg z pielgrzymka.ts) góra wykuła stopnie — tam trzyma się każdy,
+  // także ten, kto wyłazi na nią z wody albo z otwartej jaskini.
+  const naStopniach = w.prog[w.idx(tx, ty)] === 1 || (ty > 0 && w.prog[w.idx(tx, ty - 1)] === 1)
+    || w.drabina[w.idx(tx, ty)] === 1 || (ty > 0 && w.drabina[w.idx(tx, ty - 1)] === 1);
+  // Remake v1: pielgrzym na stopniach drogi wiernych trzyma się zawsze — krok w bok nad jaskinią
+  // (bez świeżego chwytu) zrzucał go z drogi prosto w magmę pod spodem
+  const naDrodzeWiernych = REMAKE && c.job === Job.PIELGRZYM && (w.prog[w.idx(tx, ty)] === 1 || (ty > 0 && w.prog[w.idx(tx, ty - 1)] === 1));
+  const trzymaSie = naDrodzeWiernych || ((c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
+    && (naStopniach || w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1)));
   if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
+    // Remake v1: lud nie spada — schodzi powoli, wbijając klamry (droga w dół staje się drogą w górę);
+    // swobodny lot w jaskinię bez dna łamał im kości albo kończył się w magmie
+    if (REMAKE && LUD.klamry && rolaPostaci(c) && w.magma[w.idx(tx, Math.min(w.h - 1, ty + 1))] === 0) {
+      c.vy = 0;
+      c.y += LUD.zjazd;   // bez „chwytu” — inaczej klamra pod nogami trzymała go w powietrzu i stał tam
+      return;
+    }
+    // nad samą magmą lud wbija klamrę i wisi (planer zawróci go w górę) — kopacz drogi zjeżdżał prosto w jezioro ognia
+    if (REMAKE && LUD.klamry && rolaPostaci(c)) {
+      c.vy = 0; c.wspina = sim.tick; c.jt = Math.min(c.jt, 1);
+      return;
+    }
     // Kto dopiero co się wspinał i ma ścianę pod ręką, zsuwa się po niej, zamiast lecieć.
     // Inaczej każda zmiana zamiaru w połowie szybu kończyła się upadkiem z całej wysokości.
     if ((c.wspina ?? -99) >= sim.tick - K.zsuwaSieTikow && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty))
@@ -423,7 +439,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     // i lud stał w kieszeni przy magmie, uciekając w miejscu, aż spłonął albo umarł z głodu
     if (REMAKE && rolaPostaci(c)) {
       const d = szukajDrogi(sim, c, (_i, x, y) => !sim.przyMagmie(x, y, 3) && stoi(sim, x, y), 3000);
-      if (d) { c.droga = d; c.drogaI = 0; c.drogaKopie = false; const k = d[d.length - 1]; c.jx = k % w.w; c.jy = (k / w.w) | 0; }
+      if (d) { c.droga = d; c.drogaI = 0; const k = d[d.length - 1]; c.jx = k % w.w; c.jy = (k / w.w) | 0; }
     }
   }
 
@@ -479,12 +495,12 @@ function pickJob(sim: Sim, c: Creature): void {
   const clan = sim.clans[c.clan];
   const oldX = c.jx, oldY = c.jy;
   c.jt = K.decyzjaTikow + sim.rng.int(K.decyzjaRozrzut);
-  c.droga = undefined; c.drogaI = 0; c.drogaKopie = false;
+  c.droga = undefined; c.drogaI = 0;
   // etap 4: zbuntowany rycerz nie ma planera ludu — szuka, kogo bić
   if (c.buntownik) { zajecieBuntownika(sim, c); return; }
   /** Zapamiętuje drogę i ustawia cel zajęcia na jej końcu (albo na podanym kaflu). */
   const naDroge = (droga: number[], cx?: number, cy?: number): void => {
-    c.droga = droga; c.drogaI = 0; c.drogaKopie = false;
+    c.droga = droga; c.drogaI = 0;
     if (cx !== undefined && cy !== undefined) { c.jx = cx; c.jy = cy; return; }
     const k = droga.length ? droga[droga.length - 1] : w.idx(Math.floor(c.x), Math.floor(c.y));
     c.jx = k % w.w; c.jy = (k / w.w) | 0;
@@ -775,7 +791,7 @@ function planujLud(sim: Sim, c: Creature): void {
   c.kopieDroge = false;
   c.modliPrzyObozie = false;
   const naDroge = (droga: number[], cx?: number, cy?: number): void => {
-    c.droga = droga; c.drogaI = 0; c.drogaKopie = false;
+    c.droga = droga; c.drogaI = 0;
     if (cx !== undefined && cy !== undefined) { c.jx = cx; c.jy = cy; return; }
     const k = droga.length ? droga[droga.length - 1] : w.idx(Math.floor(c.x), Math.floor(c.y));
     c.jx = k % w.w; c.jy = (k / w.w) | 0;
@@ -955,25 +971,8 @@ function planujLud(sim: Sim, c: Creature): void {
 }
 
 /**
- * Remake v2: droga z kopaniem do celu (`szukajKopiac`) — tędy wykuje sobie przejście, pod górę schodami.
- * Ustawia ją jako drogę postaci; false, gdy w zasięgu nie ma takiej drogi albo zabrakło budżetu tiku.
- */
-function wkopDroga(sim: Sim, c: Creature, cel: (x: number, y: number) => boolean, limit = 5000): number[] | null {
-  const w = sim.world;
-  const cx = Math.floor(c.x), cy = Math.floor(c.y);
-  if (!w.inb(cx, cy)) return null;
-  const r = szukajKopiac(sim, [w.idx(cx, cy)], (_i, x, y) => cel(x, y), { koszt: kosztKuciaLudu(sim), limit });
-  if (!r || !r.droga.length) return null;
-  c.droga = r.droga; c.drogaI = 0; c.drogaKopie = true;
-  const k = r.droga[r.droga.length - 1];
-  c.jx = k % w.w; c.jy = (k / w.w) | 0;
-  return r.droga;
-}
-
-/**
  * Remake v1: kto utknął w kieszeni, z której nie prowadzi żadna droga (zalało ją, osypała się),
  * wkopuje się w stronę najbliższej spiżarni — wcześniej „czekał” tam, aż umarł z głodu.
- * Remake v2: drogą z kopaniem (pod górę — schodami), a gdy takiej nie ma — na przełaj.
  */
 function wkopSieDoSpizarni(sim: Sim, c: Creature, zamiar: (opis: string, job: Job, jt: number) => void): boolean {
   // tylko głodny i tylko gdy szukanie drogi naprawdę się odbyło (pusty budżet to nie „nie ma drogi”) —
@@ -985,8 +984,7 @@ function wkopSieDoSpizarni(sim: Sim, c: Creature, zamiar: (opis: string, job: Jo
   const d = szukajDrogi(sim, c, (_i, x, y) => sps.some((o) => Math.abs(o.x - x) <= 1 && Math.abs(o.y - y) <= 1), LUD.doSpizarni);
   if (d || budzetDrog() < 1) return false;
   c.jx = sp.x; c.jy = sp.y; c.droga = undefined;
-  const dk = wkopDroga(sim, c, (x, y) => sps.some((o) => Math.abs(o.x - x) <= 2 && Math.abs(o.y - y) <= 1) && stoi(sim, x, y));
-  zamiar('wkopuje się z odciętej kieszeni do swoich', Job.WANDER, dk ? K.noszenieTikow + dk.length * K.tikowNaKafelKopania * 2 : LUD.zamiarTikow);
+  zamiar('wkopuje się z odciętej kieszeni do swoich', Job.WANDER, LUD.zamiarTikow);
   return true;
 }
 
@@ -1053,9 +1051,10 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
     // przy małej liczbie robotników mniej kopaczy — ktoś musi nosić jedzenie z wiadra
     if (kopiacych < Math.min(LUD.drogaKopaczy, Math.max(1, liczRole(sim).robotnik - 2))) {
       const fx = cz % w.w, fy = (cz / w.w) | 0;
-      // miejsce tuż przy czole, na którym da się stać — kuje się na podłodze, nie wisząc (Remake v2: bez lin i klamer)
+      // najpierw miejsce, na którym da się stać albo trzymać ściany — nad pustką zjeżdżał po linie i wracał w kółko
       const obok = (x: number, y: number) => Math.abs(x - fx) + Math.abs(y - fy) === 1 || (Math.abs(x - fx) === 1 && Math.abs(y - fy) === 1);
-      const d = droga((x, y) => obok(x, y) && stoi(sim, x, y), LUD.dostawaLimit);
+      const d = droga((x, y) => obok(x, y) && (stoi(sim, x, y) || w.solid(x - 1, y) || w.solid(x + 1, y)), LUD.dostawaLimit)
+        ?? droga(obok, LUD.dostawaLimit);
       if (d) {
         naDroge(d); c.jx = fx; c.jy = fy; c.dig = 0; c.kopieDroge = true;
         zamiar('kopie drogę do rdzenia', Job.DIG, podroz(d) + Z);
@@ -1068,13 +1067,9 @@ function planRobotnika(sim: Sim, c: Creature, clan: Sim['clans'][number],
   // (po ucieczce od ognia nie wraca od razu — droga do siedziby prowadziła obok magmy i kręcił się w kółko)
   const swiezoOdOgnia = sim.tick - (c.odOgnia ?? -1e9) < Z;
   if ((przyRdzeniu || !wStrefiePracy(sim, clan, c.x, c.y, 2)) && !swiezoOdOgnia) {
-    const wStrefie = (x: number, y: number) => wStrefiePracy(sim, clan, x, y) && !strefa(x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia && stoi(sim, x, y) && !sim.przyMagmie(x, y, 3);
-    const d = droga(wStrefie, LUD.dostawaLimit);
+    const d = droga((x, y) => wStrefiePracy(sim, clan, x, y) && !strefa(x, y) && Math.hypot(x - w.coreX, y - w.coreY) >= LUD.strefaRdzenia && stoi(sim, x, y) && !sim.przyMagmie(x, y, 3), LUD.dostawaLimit);
     if (d) { naDroge(d); zamiar('wraca do siedziby', Job.WANDER, podroz(d)); return; }
-    // Remake v2: drogi nie ma (lud wchodzi najwyżej na stopień) — wykuwa sobie schody do siedziby
-    c.jx = clan.hx; c.jy = clan.hy; c.droga = undefined;
-    const dk = wkopDroga(sim, c, wStrefie);
-    if (dk) { zamiar('kuje schody z powrotem do siedziby', Job.WANDER, K.noszenieTikow + dk.length * K.tikowNaKafelKopania * 2); return; }
+    c.jx = clan.hx; c.jy = clan.hy;
     zamiar('wkopuje się z powrotem do siedziby', Job.WANDER, Z);
     return;
   }
@@ -1187,7 +1182,7 @@ function wyznaczTor(sim: Sim, c: Creature): boolean {
   // „przemyśl i kop” dało jedno gniazdo)
   {
     const px = g.znany ? g.x : tx, py = g.znany ? g.y : ty;
-    // najpierw zwykłą drogą (stopnie, jaskinie) jak najbliżej celu, stamtąd tunel — trasa tunelu nie
+    // najpierw zwykłą drogą (klamry, jaskinie) jak najbliżej celu, stamtąd tunel — trasa tunelu nie
     // przechodzi nad przepaściami, a do wielu gniazd prowadzi tylko przez otwartą jaskinię
     let sx = cx, sy = cy;
     for (const D of [3, 6, 10, 15, 22]) {
@@ -1221,20 +1216,29 @@ export function kafelToru(sim: Sim, x: number, y: number): boolean {
  * zbliża (główna oś przed boczną), a ogień albo wodę obchodzi bokiem — bez zawracania na kafel,
  * z którego przyszedł. Za dużo kroków — tor się kończy.
  */
-/**
- * Remake v1: trasa tunelu do gniazda po kaflach, przez które tor może przejść (patrz `kafelToru`).
- * Remake v2: zasadami ludu (`szukajKopiac`) — pod górę wychodzą z tego schody po skosie, nie pionowy szyb,
- * po którym już nikt by nie wszedł. Trasa zaczyna się od kafla startu.
- */
+/** Remake v1: trasa tunelu do gniazda — BFS po kaflach, przez które tor może przejść (patrz `kafelToru`). */
 export function trasaToru(sim: Sim, sx: number, sy: number, gx: number, gy: number): number[] | null {
-  const w = sim.world;
+  const w = sim.world, W = w.w;
   const start = w.idx(sx, sy);
-  const r = szukajKopiac(sim, [start], (_i, x, y) => Math.abs(x - gx) + Math.abs(y - gy) <= LUD.gniazdoZasieg, {
-    koszt: (_i, x, y) => (kafelToru(sim, x, y) ? 1 + Math.round(w.hardness(x, y) * 2) : -1),
-    dozwolony: (_i, x, y) => kafelToru(sim, x, y),
-    limit: LUD.trasaToruLimit, zBudzetu: false,
-  });
-  return r ? [start, ...r.droga] : null;
+  const skad = new Map<number, number>([[start, -1]]);
+  const kolejka = [start];
+  for (let k = 0; k < kolejka.length && k < LUD.trasaToruLimit; k++) {
+    const i = kolejka[k];
+    const x = i % W, y = (i / W) | 0;
+    if (Math.abs(x - gx) + Math.abs(y - gy) <= LUD.gniazdoZasieg) {
+      const out: number[] = [];
+      for (let j = i; j !== -1; j = skad.get(j)!) out.push(j);
+      return out.reverse();
+    }
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      const j = w.idx(nx, ny);
+      if (skad.has(j) || !kafelToru(sim, nx, ny)) continue;
+      skad.set(j, i);
+      kolejka.push(j);
+    }
+  }
+  return null;
 }
 
 function krokToru(sim: Sim, c: Creature, cx: number, cy: number): [number, number] | null {
@@ -1280,7 +1284,6 @@ function doTor(sim: Sim, c: Creature): void {
     else { idz(sim, c, t.hx, t.hy, false); return; }
   }
   if (sim.tick >= (c.zamiarDo ?? 0)) { c.jt = 0; return; }   // co zamiar planer sprawdza głód i postęp
-  if (ludRuch(c)) { doTorLud(sim, c); return; }
   const cx = Math.floor(c.x), cy = Math.floor(c.y);
   // wszedł na kafel, który wykopał — to teraz czoło tunelu; zsunął się gdzie indziej — wraca na czoło
   if (cx !== t.hx || cy !== t.hy) {
@@ -1292,7 +1295,7 @@ function doTor(sim: Sim, c: Creature): void {
       const nowy = !t.byl.includes(w.idx(cx, cy));
       t.px = t.hx; t.py = t.hy; t.hx = cx; t.hy = cy; if (nowy) t.kroki = (t.kroki ?? 0) + 1;
     } else if (Math.abs(cx - t.hx) <= 2 && Math.abs(cy - t.hy) <= 2) {
-      // tuż obok czoła (zsunął się szybem, wrócił z jedzenia) — tunel rusza stąd
+      // tuż obok czoła (zsunął się po klamrach, wrócił z jedzenia) — tunel rusza stąd
       t.hx = cx; t.hy = cy; t.px = undefined; t.py = undefined; c.jx = cx; c.jy = cy;
     } else { c.jt = 0; return; }
   }
@@ -1325,53 +1328,6 @@ function doTor(sim: Sim, c: Creature): void {
     const v = RACES[c.race].speed * mnoznik(sim, c, 'szybkosc');
     c.x += Math.max(-v, Math.min(v, c.jx + 0.5 - c.x));
   }
-}
-
-/**
- * Remake v2: tunel ku znakowi dla ludu — trasą wyliczoną zasadami ludu: lite kafle kuje po kolei, stojąc na
- * podłodze, a pod górę schodami (przed wejściem na stopień wykuwa oba kafle — nad głową i na półce). Czoło
- * tunelu to najdalszy kafel trasy, na którym stanął. Bez trasy idzie ku znakowi na przełaj, kując schody.
- */
-function doTorLud(sim: Sim, c: Creature): void {
-  const w = sim.world;
-  const t = c.tor!;
-  const cx = Math.floor(c.x), cy = Math.floor(c.y);
-  if (!t.trasa) {
-    t.hx = cx; t.hy = cy;
-    if (Math.abs(cx - t.tx) + Math.abs(cy - t.ty) <= 1) { koniecToru(sim, c, 'pusto'); return; }
-    walkToLud(sim, c, t.tx, t.ty, true);
-    return;
-  }
-  const tr = t.trasa;
-  const k = tr.lastIndexOf(w.idx(cx, cy));
-  if (k < 0) {
-    // zsunął się z trasy — gdy stanie, liczy ją od nowa stąd
-    if (!stoi(sim, cx, cy)) return;
-    const g = (sim.lud.gniazda ?? []).find((o) => o.id === t.gn);
-    const nowa = g ? trasaToru(sim, cx, cy, g.znany ? g.x : t.tx, g.znany ? g.y : t.ty) : null;
-    if (!nowa || nowa.length < 2) { koniecToru(sim, c, 'zagrodzone'); return; }
-    t.trasa = nowa; t.hx = cx; t.hy = cy;
-    return;
-  }
-  // czoło: najdalszy kafel trasy, na którym stanął
-  if (k > tr.indexOf(w.idx(t.hx, t.hy))) { t.px = t.hx; t.py = t.hy; t.hx = cx; t.hy = cy; t.kroki = (t.kroki ?? 0) + 1; }
-  if (k >= tr.length - 1) { koniecToru(sim, c, 'pusto'); return; }
-  const next = tr[k + 1];
-  const nx = next % w.w, ny = (next / w.w) | 0;
-  const kuj = (x: number, y: number): void => {
-    if (!stoi(sim, cx, cy)) return;                // w locie nie kuje
-    if (!kafelToru(sim, x, y)) { t.trasa = undefined; return; }   // przy kaflu pojawił się ogień albo woda — od nowa
-    c.jx = x; c.jy = y;
-    digTile(sim, c, x, y);
-  };
-  if (w.solid(nx, ny)) { kuj(nx, ny); return; }
-  if (ny < cy) {
-    // wejście na stopień: najpierw wolna półka przed sobą
-    const n2 = tr[k + 2];
-    if (n2 !== undefined && w.solid(n2 % w.w, (n2 / w.w) | 0)) { kuj(n2 % w.w, (n2 / w.w) | 0); return; }
-  }
-  c.jx = nx; c.jy = ny;
-  krok(sim, c, next);
 }
 
 /** Koniec toru: gniazdo się obudziło, tor był pusty albo tunel zagrodził ogień. */
@@ -1423,8 +1379,6 @@ const PRZYCZYNA: Record<string, [string, string]> = {
 };
 
 function trzymajSieNaMiejscu(sim: Sim, c: Creature): void {
-  // Remake v2: lud nie wisi na ścianie bez końca (bez lin i klamer) — bez podłogi zsunie się na dno
-  if (ludRuch(c)) return;
   const cx = Math.floor(c.x), cy = Math.floor(c.y);
   if (REMAKE && rolaPostaci(c) && !stoi(sim, cx, cy) && uchwyt(sim, cx, cy)) { c.wspina = sim.tick; c.vy = 0; }
 }
@@ -1445,10 +1399,6 @@ function doStoi(sim: Sim, c: Creature): void {
  * po staremu. Zwraca true, gdy jest na miejscu.
  */
 function idz(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): boolean {
-  if (c.droga && c.drogaKopie) {
-    if (krokKopiac(sim, c)) return false;
-    c.droga = undefined; c.drogaKopie = false;
-  }
   if (c.droga) {
     const nast = nastepnyKafel(sim, c);
     if (nast >= 0) { krok(sim, c, nast); return false; }
@@ -1463,7 +1413,7 @@ function idz(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): bool
     const d = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - tx) <= 1 && Math.abs(y - ty) <= 1, 4000);
     if (!d) { c.jt = 0; c.droga = undefined; return false; }
     if (d.length) {
-      c.droga = d; c.drogaI = 0; c.drogaKopie = false;
+      c.droga = d; c.drogaI = 0;
       const nast = nastepnyKafel(sim, c);
       if (nast >= 0) { krok(sim, c, nast); return false; }
       c.droga = undefined;
@@ -1483,8 +1433,6 @@ function krok(sim: Sim, c: Creature, cel: number): void {
     * (w.tile[w.idx(cx, cy)] === T.WEB && c.race !== Race.SPINNER ? K.siecSpowalnia : 1);
   const doSrodka = (v: number) => Math.max(-speed, Math.min(speed, nx + 0.5 - v));
   if (ny < cy) {
-    // Remake v2: lud wchodzi w górę tylko z podłogi, na stopień — z wiszenia już nie (to straż na nieaktualną drogę)
-    if (ludRuch(c) && !stoi(sim, cx, cy)) { c.droga = undefined; return; }
     c.wspina = sim.tick;
     c.x += doSrodka(c.x);
     c.y -= speed * K.wspinanie;
@@ -1497,134 +1445,15 @@ function krok(sim: Sim, c: Creature, cel: number): void {
     c.face = dir;
     // z wiszenia na półkę — nie puszcza się, dopóki nie stanie
     if (!w.solid(cx, cy + 1) && w.solid(nx, cy + 1)) c.wspina = sim.tick;
+    // po klamrach w bok też się trzyma: nad pustką puszczał się, zjeżdżał szybem w dół i wspinał
+    // z powrotem — w kółko, aż umarł z głodu w połowie drogi
+    if (w.drabina[w.idx(cx, cy)] === 1 || w.drabina[cel] === 1) c.wspina = sim.tick;
     c.x += dir * speed;
   }
-}
-
-/**
- * Remake v2: krok drogą przez skałę (`c.drogaKopie`, z `szukajKopiac`): lity kafel na drodze kuje, stojąc na
- * podłodze (kafel pod sobą też — wtedy zsuwa się w wykuty szyb). Przed wejściem na stopień kuje oba kafle:
- * nad głową i ten na półce przed sobą — wisząc, już nie kuje. Zwraca false, gdy doszedł albo droga przestała
- * pasować (zsunął się z niej, coś nie do ruszenia).
- */
-function krokKopiac(sim: Sim, c: Creature): boolean {
-  const d = c.droga!;
-  const w = sim.world;
-  const cx = Math.floor(c.x), cy = Math.floor(c.y);
-  const cur = w.idx(cx, cy);
-  let i = c.drogaI ?? 0;
-  const dalej = d.indexOf(cur, i);
-  if (dalej >= 0) i = dalej + 1;
-  c.drogaI = i;
-  if (i >= d.length) return false;
-  const next = d[i];
-  const nx = next % w.w, ny = (next / w.w) | 0;
-  if (Math.abs(nx - cx) + Math.abs(ny - cy) !== 1) return false;
-  const naPodlodze = stoi(sim, cx, cy);
-  const kuj = (x: number, y: number): boolean => {
-    if (!naPodlodze) return true;                  // w locie nie kuje — najpierw stanie
-    if (w.hardness(x, y) <= 0) return false;       // nie do ruszenia — droga do wyrzucenia
-    digTile(sim, c, x, y);
-    return true;
-  };
-  if (w.solid(nx, ny)) return kuj(nx, ny);
-  if (ny < cy) {
-    // wejście na stopień: najpierw wolna półka przed sobą (kafel za stopniem)
-    const n2 = d[i + 1];
-    if (n2 !== undefined && w.solid(n2 % w.w, (n2 / w.w) | 0)) return kuj(n2 % w.w, (n2 / w.w) | 0);
-  }
-  krok(sim, c, next);
-  return true;
-}
-
-/**
- * Remake v2: lud na przełaj (bez wyliczonej drogi). Po podłodze idzie, na stopień (jeden kafel) wchodzi,
- * z niewysokiej półki zeskakuje, szybem się zsuwa — po ścianach się nie wspina. Cel wyżej niż o stopień:
- * gdy wolno mu kopać, kuje schody po skosie (kafel nad głową, potem stopień przed sobą — kafel pod stopniem
- * zostaje) i trzyma ich kierunek, aż wejdzie na wysokość celu — schody nie zawracają. Gdzie w bok jest za
- * mało miejsca, prowadzi go droga z kopaniem (`szukajKopiac`), nie ten krok na przełaj. True — na miejscu.
- */
-function walkToLud(sim: Sim, c: Creature, tx: number, ty: number, mayDig: boolean): boolean {
-  const w = sim.world;
-  const d = RACES[c.race];
-  const dx = tx + 0.5 - c.x, dy = ty + 0.5 - c.y;
-  if (Math.abs(dx) < K.naMiejscuX && Math.abs(dy) < K.naMiejscuY) { c.schody = undefined; return true; }
-  const cx = Math.floor(c.x), cy = Math.floor(c.y);
-  const ogien = (x: number, y: number) => {
-    for (let yy = y + 1; yy <= y + K.nadOgniemPatrzy && w.inb(x, yy); yy++) {
-      if (w.magma[w.idx(x, yy)] > 0) return true;
-      if (!w.passable(x, yy)) return false;
-    }
-    return false;
-  };
-  const free = (x: number, y: number) => w.passable(x, y) && w.water[w.idx(x, y)] <= K.toniePowyzej
-    && w.magma[w.idx(x, y)] === 0 && !ogien(x, y);
-  const speed = d.speed * mnoznik(sim, c, 'szybkosc') * (w.water[w.idx(cx, cy)] > K.wodaSpowalniaOd ? K.wodaSpowalnia : 1);
-  const kopie = mayDig && d.digPower > 0;
-  const daSieKuc = (x: number, y: number) => w.inb(x, y) && w.solid(x, y) && w.hardness(x, y) > 0 && w.get(x, y) !== T.CORE;
-  const wisi = (c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow;
-  const kier = Math.abs(dx) < 0.5 ? c.face : Math.sign(dx);
-
-  if (!stoi(sim, cx, cy)) {
-    // w powietrzu albo przy ścianie: dokańcza wejście na stopień — półka tuż obok, na tej wysokości
-    for (const k of [kier, -kier]) {
-      if (wisi && free(cx + k, cy) && stoi(sim, cx + k, cy)) { c.wspina = sim.tick; c.face = k; c.x += k * speed; return false; }
-    }
-    // spada albo zsuwa się; w locie odrobinę skręca ku celowi
-    if (Math.abs(dx) > 0.6 && free(cx + Math.sign(dx), cy)) c.x += Math.sign(dx) * speed * 0.5;
-    return false;
-  }
-
-  // cel w dole, prawie pod nogami: kuje podłogę (nie nad przepaścią ani nad ogniem) i zsuwa się w szyb
-  if (dy > 1.2 && Math.abs(dx) < 1 && kopie && daSieKuc(cx, cy + 1) && !ogien(cx, cy + 1)
-      && glebiaPod(sim, cx, cy + 1, LUD.spadekMaks) <= LUD.spadekMaks) {
-    digTile(sim, c, cx, cy + 1);
-    return false;
-  }
-
-  // cel wyżej niż stopień: schody po skosie w stronę celu, kierunek trzymany do końca (zawracając,
-  // wybiłby sobie stopień spod nóg — w dwóch wymiarach schody nie zawracają)
-  let dir = kier;
-  if (dy < -1.5 && kopie) {
-    if (c.schody === undefined) c.schody = Math.sign(dx) || c.face;
-    dir = c.schody;
-  } else c.schody = undefined;
-  c.face = dir;
-  const nx = cx + dir;
-  const wGore = dy < -1.5 && kopie;
-
-  // krok w bok: wolne i nie przepaść (na schodach — tylko gdy dalej jest na czym stanąć)
-  if (free(nx, cy) && !przepasc(sim, nx, cy)) {
-    c.x += dir * speed;
-    return false;
-  }
-  // stopień o jeden kafel: przed nim ściana, nad nią wolne, nad głową wolne — podciąga się i wchodzi
-  if (w.solid(nx, cy) && free(nx, cy - 1) && free(cx, cy - 1)) {
-    c.wspina = sim.tick;
-    c.y -= speed * K.stopien;
-    return false;
-  }
-  if (kopie && w.solid(nx, cy)) {
-    if (wGore) {
-      // schody: najpierw kafel nad głową, potem stopień przed sobą; kafel pod stopniem zostaje
-      if (daSieKuc(cx, cy - 1)) { digTile(sim, c, cx, cy - 1); return false; }
-      if (daSieKuc(nx, cy - 1)) { digTile(sim, c, nx, cy - 1); return false; }
-    } else if (daSieKuc(nx, cy)) { digTile(sim, c, nx, cy); return false; }
-  }
-  // cel niżej, a przed nim przepaść albo skała nie do ruszenia — kuje w dół tu, gdzie stoi
-  if (dy > 1.2 && kopie && daSieKuc(cx, cy + 1) && !ogien(cx, cy + 1) && glebiaPod(sim, cx, cy + 1, LUD.spadekMaks) <= LUD.spadekMaks) {
-    digTile(sim, c, cx, cy + 1);
-    return false;
-  }
-  // tędy nie przejdzie — obejście drugą stroną
-  const alt = cx - dir;
-  if (!wGore && free(alt, cy) && !przepasc(sim, alt, cy)) { c.x -= dir * speed * K.obejscie; c.face = -dir; return false; }
-  return false;
 }
 
 /** Idzie w stronę celu; jak trzeba, wygryza sobie drogę. Tunel to ślad ich potrzeb. */
 function walkTo(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): boolean {
-  if (ludRuch(c)) return walkToLud(sim, c, tx, ty, mayDig);
   const w = sim.world;
   const d = RACES[c.race];
   // do środka kafla, nie do jego lewej krawędzi: stworzenie stojące na granicy
@@ -1653,7 +1482,7 @@ function walkTo(sim: Sim, c: Creature, tx: number, ty: number, mayDig = true): b
     * (w.tile[w.idx(cx, cy)] === T.WEB && c.race !== Race.SPINNER ? K.siecSpowalnia : 1);
 
   // ściana pod ręką: przy niej da się wisieć i podciągać
-  const sciana = (x: number, y: number) => w.solid(x - 1, y) || w.solid(x + 1, y);
+  const sciana = (x: number, y: number) => w.solid(x - 1, y) || w.solid(x + 1, y) || (w.inb(x, y) && w.drabina[w.idx(x, y)] === 1);
   const kopie = mayDig && d.digPower > 0;
   const wisi = (c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow;
 
@@ -1750,7 +1579,7 @@ function doWander(sim: Sim, c: Creature): void {
   // (głodny przerywa długi spacer — planer najpierw szuka jedzenia; robotnik „odchodzący spod rdzenia” doszedł
   // aż do siedziby i padł tam z głodu, wciąż w tym samym zamiarze)
   if (REMAKE && rolaPostaci(c) && c.carry === 0 && c.hunger > LUD.glodSam && (sim.tick + c.id) % 60 === 0) { c.jt = 0; return; }
-  if (REMAKE && rolaPostaci(c)) { idz(sim, c, c.jx, c.jy, !wZasieguPracy(sim.clans[c.clan], c.x, c.y) || !!c.zamiar?.startsWith('wkopuje') || !!c.zamiar?.startsWith('kuje schody')); return; }
+  if (REMAKE && rolaPostaci(c)) { idz(sim, c, c.jx, c.jy, !wZasieguPracy(sim.clans[c.clan], c.x, c.y) || !!c.zamiar?.startsWith('wkopuje')); return; }
   walkTo(sim, c, c.jx, c.jy, sim.rng.chance(K.spacerKopie));
 }
 
@@ -1883,7 +1712,7 @@ function doDostawa(sim: Sim, c: Creature): void {
   if (Math.abs(c.jx - Math.floor(komu.x)) > 3 || Math.abs(c.jy - Math.floor(komu.y)) > 3) {
     c.jx = Math.floor(komu.x); c.jy = Math.floor(komu.y); c.droga = undefined;
     const droga = szukajDrogi(sim, c, (_i, x, y) => Math.abs(x - c.jx) <= 1 && Math.abs(y - c.jy) <= 1, LUD.dostawaLimit);
-    if (droga) { c.droga = droga; c.drogaI = 0; c.drogaKopie = false; }
+    if (droga) { c.droga = droga; c.drogaI = 0; }
   }
   idz(sim, c, c.jx, c.jy);
 }
@@ -1928,8 +1757,10 @@ function doDig(sim: Sim, c: Creature): void {
   }
   // zasięg po kaflach — sąsiedni kafel, także po skosie
   const near = Math.abs(c.jx - Math.floor(c.x)) <= 1 && Math.abs(c.jy - Math.floor(c.y)) <= 1;
-  // Remake v2: kuje tylko stojąc — wisząc na ścianie (bez lin i klamer) zsuwa się, więc najpierw staje
-  if (near && (!ludRuch(c) || stoi(sim, Math.floor(c.x), Math.floor(c.y)))) digTile(sim, c, c.jx, c.jy);
+  // Remake v1: kopiący na linie albo przy ścianie trzyma chwyt — zsuwał się po chwili poza zasięg, wspinał
+  // z powrotem i kuł ułamek sekundy (czoło drogi nad liną kopali tak po kilka minut); w pustce nic nie trzyma
+  if (near && REMAKE && c.kopieDroge) c.wspina = sim.tick;
+  if (near) digTile(sim, c, c.jx, c.jy);
   else idz(sim, c, c.jx, c.jy);
 }
 
@@ -2060,7 +1891,7 @@ function doPielgrzym(sim: Sim, c: Creature): void {
         const naKresce = plan ? new Set(plan.sciezka) : null;
         const d = szukajDrogi(sim, c, (i, x, y) => (naKresce !== null && naKresce.has(i) && !w.solid(x, y))
           || (Math.abs(x - w.coreX) < P.przedsionekX && Math.abs(y - w.przedsionekY) < P.przedsionekY), LUD.dostawaLimit);
-        if (d) { c.droga = d; c.drogaI = 0; c.drogaKopie = false; }
+        if (d) { c.droga = d; c.drogaI = 0; }
       }
       if (c.droga) {
         const n = nastepnyKafel(sim, c);
@@ -2123,7 +1954,7 @@ export function wyslijDoRdzenia(sim: Sim, c: Creature, jt: number): boolean {
   // od dołu i z boku do wiszącego w komorze rdzenia nie ma się jak podciągnąć)
   const droga = szukajDrogi(sim, c, (_i, x, y) => (sim.rytual.otwarta && wKomorze(sim, x, y)) || (Math.abs(x - w.coreX) <= 3 && Math.abs(y - w.coreY) <= 3
     && (w.get(x, y + 1) === T.CORE || w.get(x - 1, y) === T.CORE || w.get(x + 1, y) === T.CORE || w.get(x, y - 1) === T.CORE)), RYTUAL.zejscieLimitDrogi);
-  c.droga = droga ?? undefined; c.drogaI = 0; c.drogaKopie = false;
+  c.droga = droga ?? undefined; c.drogaI = 0;
   return true;
 }
 

@@ -249,10 +249,6 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true,
       },
       {
-        tekst: 'Lud nie ma lin: w górę wchodzi najwyżej o jeden stopień, a wyżej musi wykuć sobie schody. W dół zsuwa się szybem albo zeskakuje z niewysokiej półki — zejść łatwo, wrócić długo.',
-        rozumiem: true,
-      },
-      {
         tekst: 'Gdy nie zostanie ani jeden rycerz, robotnicy zakładają hełmy i walczą zamiast nich. A kto umrze, nie znika — jego ciało leży tam, gdzie padł.',
         rozumiem: true,
       },

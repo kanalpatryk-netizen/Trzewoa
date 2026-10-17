@@ -3,7 +3,7 @@ import { zapisz, NAZWY_KAFLI } from './dziennik';
 import { RACES, Race } from './races';
 import { PASSABLE, T } from './tiles';
 import { WORLD_W, WORLD_H } from './world';
-import { wolny, stoi, uchwyt, nadOgniem, przepasc, szukajKopiac } from './droga';
+import { wolny, stoi, uchwyt, nadOgniem, przepasc } from './droga';
 import { Job } from './creatures';
 import { PLAN_DROGI } from '../nastawy/rytual';
 import { REMAKE, LUD } from '../nastawy/lud';
@@ -17,10 +17,6 @@ import { REMAKE, LUD } from '../nastawy/lud';
  * Plan to najtańsza droga od przedsionka do gniazda, z tą samą fizyką co chodzenie
  * (wspinać się trzeba przy ścianie, z krawędzi się spada), w której skała jest
  * dozwolona, ale drogo — każdy kafel skały to kafel do wydrążenia.
- *
- * Remake v2: lud nie ma już lin ani klamer i wchodzi najwyżej o stopień, więc plan liczy się tak,
- * jak pójdą — od siedziby w dół pod rdzeń (szybem się zsuwają, skałę kują po drodze); trasa nie musi
- * się dać przejść pod górę. Kafle planu wciąż trzymają się sucho (próg), ale nie są już drabiną.
  */
 export interface PlanDrogi {
   klan: number;
@@ -32,7 +28,10 @@ export interface PlanDrogi {
 }
 
 const KOSZT_SKALY = PLAN_DROGI.kosztSkaly;
+const K = KOSZT_SKALY + 1;
 const N = WORLD_W * WORLD_H;
+const odl = new Int32Array(N);
+const skad = new Int32Array(N);
 
 /** Co da się wydrążyć rytem: lita skała, ziemia i ruda — ale nie ołtarz, kuźnia ani skorupa. */
 export function doKopania(t: number): boolean {
@@ -55,12 +54,12 @@ function osiagalneZBazy(sim: Sim, hx: number, hy: number): void {
   for (let g = 0; g < kolejka.length && kolejka.length < 8000; g++) {
     const i = kolejka[g];
     const x = i % W, y = (i / W) | 0;
+    if (w.prog[i] === 1) for (const j of [i - W, i + W, x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1]) if (j >= 0 && j < N && w.prog[j] === 1 && wolny(sim, j, false)) dodaj(j);
     const naPodlodze = stoi(sim, x, y);
     const wisi = !naPodlodze && uchwyt(sim, x, y);
     if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, false) && !(wisi && przepasc(sim, x, y + 1))) dodaj(i + W);
     if (!naPodlodze && !wisi) continue;
-    // w górę tylko z podłogi, na stopień (Remake v2)
-    if (naPodlodze && y > 0 && wolny(sim, i - W, false)) dodaj(i - W);
+    if (y > 0 && wolny(sim, i - W, false) && uchwyt(sim, x, y - 1)) dodaj(i - W);
     for (const dx of [-1, 1]) {
       const nx = x + dx;
       if (nx < 0 || nx >= W) continue;
@@ -78,8 +77,24 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
   const w = sim.world, W = w.w;
   const klan = sim.clans[klanId];
   if (!klan) return null;
-  if (proba === 0) osiagalneZBazy(sim, klan.hx, klan.hy);
+  if (REMAKE && proba === 0) osiagalneZBazy(sim, klan.hx, klan.hy);
   const plywa = RACES[klan.race].swims;
+  odl.fill(0x3fffffff);
+  const kubly: number[][] = Array.from({ length: K }, () => []);
+  let zostalo = 0;
+  const wstaw = (j: number, d: number, od: number): void => {
+    if (d >= odl[j]) return;
+    odl[j] = d; skad[j] = od;
+    kubly[d % K].push(j); zostalo++;
+  };
+  // start: środek przedsionka ± 2 kafle w pionie i ± 4 w poziomie
+  for (let y = w.przedsionekY - 2; y <= w.przedsionekY + 2; y++) {
+    for (let x = w.coreX - 4; x <= w.coreX + 4; x++) {
+      if (!w.inb(x, y)) continue;
+      const i = w.idx(x, y);
+      if (wolny(sim, i, plywa)) wstaw(i, 0, -1);
+    }
+  }
   // skały przy ogniu i przy wodzie nie ruszamy: przebity strop zalałby drogę i gniazdo
   const bezpieczna = (i: number) => {
     const x = i % W;
@@ -92,23 +107,61 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
   // (czoło, do którego kopacze nie mogli dojść, plan chwilowo omija)
   const omijaj = new Set((sim.lud?.omijaj ?? []).filter(([, do_]) => do_ > sim.tick).map(([i]) => i));
   const skala = (i: number) => doKopania(w.tile[i]) && w.magma[i] === 0 && bezpieczna(i) && !omijaj.has(i);
-  // start: kafle osiągalne z siedziby — w pudle przy niej, a zapasowo dowolne (i w ostateczności tuż przy siedzibie)
-  const starty: number[] = [];
-  for (let i = 0; i < N; i++) {
-    if (!wolny(sim, i, plywa)) continue;
-    const x = i % W, y = (i / W) | 0;
-    const blisko = proba === 0 ? zBazy[i] === 1 && Math.abs(x - klan.hx) <= 12 && Math.abs(y - klan.hy) <= 8
-      : proba === 1 ? zBazy[i] === 1 : Math.abs(x - klan.hx) <= 3 && Math.abs(y - klan.hy) <= 3;
-    if (blisko) starty.push(i);
+  // czterech sąsiadów bez zawijania przez brzeg mapy — kafel x=0 nie sąsiaduje z x=175
+  const sasiedzi = (i: number): number[] => {
+    const x = i % W, out: number[] = [];
+    if (i - W >= 0) out.push(i - W);
+    if (i + W < N) out.push(i + W);
+    if (x > 0) out.push(i - 1);
+    if (x < W - 1) out.push(i + 1);
+    return out;
+  };
+  let meta = -1;
+  for (let d = 0; zostalo > 0; d++) {
+    const kubel = kubly[d % K];
+    while (kubel.length) {
+      const i = kubel.pop()!;
+      zostalo--;
+      if (odl[i] !== d) continue;
+      const x = i % W, y = (i / W) | 0;
+      if ((REMAKE && proba === 0 ? zBazy[i] === 1 && Math.abs(x - klan.hx) <= 12 && Math.abs(y - klan.hy) <= 8 : REMAKE && proba === 1 ? zBazy[i] === 1 : Math.abs(x - klan.hx) <= 3 && Math.abs(y - klan.hy) <= 3) && !skala(i)) { meta = i; break; }
+      if (skala(i)) {
+        // wydrążony wąski korytarz: ściany z obu stron, więc wolno w każdą stronę
+        for (const j of sasiedzi(i)) {
+          if (wolny(sim, j, plywa)) wstaw(j, d + 1, i);
+          else if (skala(j)) wstaw(j, d + KOSZT_SKALY, i);
+        }
+        continue;
+      }
+      const naPodlodze = stoi(sim, x, y);
+      const wisi = !naPodlodze && uchwyt(sim, x, y);
+      // Remake v1: plan według tych samych zasad co lud — bez skoków w przepaść (inaczej
+      // robotnik nie miał jak dojść do czoła drogi i nikt jej nie kopał)
+      if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa) && !(REMAKE && wisi && przepasc(sim, x, y + 1))) wstaw(i + W, d + 1, i);
+      if (!naPodlodze && !wisi) continue;
+      if (y > 0 && wolny(sim, i - W, plywa) && uchwyt(sim, x, y - 1)) wstaw(i - W, d + 1, i);
+      for (const dx of [-1, 1]) {
+        const nx = x + dx;
+        if (nx < 0 || nx >= W) continue;
+        const j = i + dx;
+        if (!wolny(sim, j, plywa)) continue;
+        const tamStoi = stoi(sim, nx, y);
+        if (wisi && !tamStoi) continue;
+        if (!tamStoi && nadOgniem(sim, nx, y)) continue;
+        if (REMAKE && przepasc(sim, nx, y)) continue;
+        wstaw(j, d + 1, i);
+      }
+      // z podłogi albo z wiszenia można zacząć kuć w każdą stronę
+      for (const j of sasiedzi(i)) if (skala(j)) wstaw(j, d + KOSZT_SKALY, i);
+    }
+    if (meta >= 0) break;
+    if (d > N * KOSZT_SKALY) break;
   }
-  // meta: przedsionek (środek ± 4 kafle w poziomie i ± 2 w pionie)
-  const wPrzedsionku = (x: number, y: number) => Math.abs(x - w.coreX) <= 4 && Math.abs(y - w.przedsionekY) <= 2;
-  const r = szukajKopiac(sim, starty, (_i, x, y) => wPrzedsionku(x, y), {
-    koszt: (i) => (skala(i) ? KOSZT_SKALY : -1), limit: N, plywa, zBudzetu: false,
-  });
-  if (!r) return proba < 2 ? planujDroge(sim, klanId, proba + 1) : null;
-  // kreska od przedsionka do siedziby (tak ją czytają kopacze i pielgrzymi — od końca)
-  const sciezka = [r.start, ...r.droga].reverse();
+  // Remake v1: zapasowo — dowolny kafel osiągalny z siedziby, a w ostateczności dawny warunek
+  if (meta < 0) return REMAKE && proba < 2 ? planujDroge(sim, klanId, proba + 1) : null;
+  const sciezka: number[] = [];
+  for (let k = meta; k !== -1; k = skad[k]) sciezka.push(k);
+  sciezka.reverse();
   return { klan: klanId, tick: sim.tick, sciezka, kopac: sciezka.filter((i) => skala(i)) };
 }
 

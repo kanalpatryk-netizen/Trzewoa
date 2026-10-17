@@ -5,7 +5,7 @@ import { zapisz } from './dziennik';
 import { T } from './tiles';
 import { Race } from './races';
 import { Job, wyslijDoRdzenia } from './creatures';
-import { wolny, stoi, uchwyt, nadOgniem, przepasc } from './droga';
+import { wolny, stoi, uchwyt, nadOgniem } from './droga';
 import { RYTUAL as R, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 import { RDZEN } from '../nastawy/swiat';
@@ -166,9 +166,8 @@ export function wKomorze(sim: Sim, x: number, y: number): boolean {
 }
 
 /**
- * Czy spoza skorupy da się DOJŚĆ do rdzenia — tą samą fizyką, którą ma lud: po podłodze
- * się chodzi, w górę wchodzi najwyżej o stopień (Remake v2: bez lin i klamer), z krawędzi
- * spada, ale w przepaść sam nie skacze. Wcześniej wystarczało,
+ * Czy spoza skorupy da się DOJŚĆ do rdzenia — tą samą fizyką, którą mają stworzenia:
+ * po podłodze się chodzi, przy ścianie wspina, z krawędzi spada. Wcześniej wystarczało,
  * że powietrze łączy się z rdzeniem, więc pęknięcie od dołu, którego wylot wisiał nad
  * jaskinią, ogłaszało „drogę otworem”, a wierni stali pod nim do końca gry.
  * Liczone najwyżej co kilkadziesiąt tików, w pudle wokół rdzenia.
@@ -199,11 +198,10 @@ export function drogaDoRdzenia(sim: Sim): boolean {
     if (przyRdzeniu(x, y)) return true;
     const naPodlodze = stoi(sim, x, y);
     const wisi = !naPodlodze && uchwyt(sim, x, y);
-    // spada, dopóki nie ma na czym stanąć ani czego się złapać; z krawędzi w przepaść nie skacze
-    if (!naPodlodze && y + 1 <= y1 && wolny(sim, i + W, false) && !(REMAKE && wisi && przepasc(sim, x, y + 1))) dodaj(i + W);
+    // spada, dopóki nie ma na czym stanąć ani czego się złapać
+    if (!naPodlodze && y + 1 <= y1 && wolny(sim, i + W, false)) dodaj(i + W);
     if (!naPodlodze && !wisi) continue;
-    // w górę: Remake v2 tylko z podłogi, na jeden stopień; dawniej po każdej ścianie
-    if (y - 1 >= y0 && wolny(sim, i - W, false) && (REMAKE ? naPodlodze : uchwyt(sim, x, y - 1))) dodaj(i - W);
+    if (y - 1 >= y0 && wolny(sim, i - W, false) && uchwyt(sim, x, y - 1)) dodaj(i - W);
     for (const dx of [-1, 1]) {
       const nx = x + dx;
       if (!wPudle(nx, y)) continue;
@@ -212,7 +210,6 @@ export function drogaDoRdzenia(sim: Sim): boolean {
       const tamStoi = stoi(sim, nx, y);
       if (wisi && !tamStoi) continue;            // z wiszenia tylko na półkę
       if (!tamStoi && nadOgniem(sim, nx, y)) continue;
-      if (REMAKE && przepasc(sim, nx, y)) continue;
       dodaj(j);
     }
   }
@@ -224,33 +221,26 @@ const OSYPISKO_NA: Record<number, boolean> = { [T.AIR]: true, [T.FUNGUS]: true, 
 
 /**
  * Wylot pęknięcia od dołu albo z boku bywa zawieszony nad jaskinią. Okruchy skorupy
- * osypują się pod nim w schody: pierwszy stopień tuż pod wylotem, każdy następny o kafel
- * niżej i o kafel w bok, aż do dna — lud wchodzi najwyżej o stopień, po ścianie się nie
- * wdrapie, a nacja, która wykuła przejście, musi móc z niego skorzystać.
+ * osypują się pod nim w ścianę, po której da się wspiąć z podłogi do szybu —
+ * inaczej nacja, która wykuła przejście, nie mogłaby z niego skorzystać.
  */
 function podeprzyjWylot(sim: Sim, x: number, y: number): void {
   const w = sim.world;
-  if (!w.inb(x, y + 1) || !wolny(sim, w.idx(x, y + 1), false) || stoi(sim, x, y + 1)) return;
-  const pusty = (xx: number, yy: number) => w.inb(xx, yy) && wolny(sim, w.idx(xx, yy), false);
-  // nie zasypujemy nikogo żywcem
-  const ktos = (xx: number, yy: number) => sim.creatures.some((c) => !c.dead && Math.floor(c.x) === xx && Math.floor(c.y) === yy);
-  // stopnie schodzą w tę stronę, z której pierwszej da się je oprzeć o dno
-  for (const dx of [-1, 1]) {
-    const stopnie: [number, number][] = [];
-    let dno = false;
-    for (let k = 0; k <= R.osypiskoMax; k++) {
-      const sx = x + k * dx, sy = y + 2 + k;
-      // nad stopniem miejsce, by na nim stanąć i wejść wyżej
-      if (!pusty(sx, sy - 1) || !pusty(sx, sy - 2)) break;
-      if (!w.inb(sx, sy)) break;
-      if (w.solid(sx, sy)) { dno = true; break; }
-      if (!OSYPISKO_NA[w.tile[w.idx(sx, sy)]] || ktos(sx, sy)) break;
-      stopnie.push([sx, sy]);
+  for (let yy = y + 1; yy <= y + R.osypiskoMax && w.inb(x, yy); yy++) {
+    if (!wolny(sim, w.idx(x, yy), false) || stoi(sim, x, yy)) return;
+    if (uchwyt(sim, x, yy)) continue;
+    let postawiony = false;
+    for (const dx of [-1, 1]) {
+      const nx = x + dx;
+      if (!w.inb(nx, yy) || !OSYPISKO_NA[w.tile[w.idx(nx, yy)]]) continue;
+      // nie zasypujemy nikogo żywcem
+      if (sim.creatures.some((c) => !c.dead && Math.floor(c.x) === nx && Math.floor(c.y) === yy)) continue;
+      // kamień skorupy: tego nikt nie rozkopie, więc wejście nie zniknie pod kilofami
+      w.set(nx, yy, T.STONE);
+      postawiony = true;
+      break;
     }
-    if (!dno) continue;
-    // kamień skorupy: tego nikt nie rozkopie, więc wejście nie zniknie pod kilofami
-    for (const [sx, sy] of stopnie) w.set(sx, sy, T.STONE);
-    return;
+    if (!postawiony) return;
   }
 }
 

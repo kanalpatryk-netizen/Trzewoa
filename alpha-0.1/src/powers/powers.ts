@@ -1,0 +1,266 @@
+import { Sim } from '../sim/sim';
+import { T, PASSABLE } from '../sim/tiles';
+import { Race, RACES } from '../sim/races';
+import { Creature, Thought, Job } from '../sim/creatures';
+import { KOSZTY, MOCE, SKAZY } from '../nastawy/moce';
+import { odswiezPlan } from '../sim/pielgrzymka';
+import { nadOgniem } from '../sim/droga';
+import { rolaPostaci, maxHp, gniazdaWSkale } from '../sim/lud';
+import { LUD } from '../nastawy/lud';
+import { odpedzMrok } from '../sim/mrok';
+import { odpedzDlon } from '../sim/dlon';
+import { wiadroNaZadanie } from '../sim/wiadro';
+import { REMAKE } from '../nastawy/lud';
+
+/**
+ * Trzy ryty wersji na telefon: Nakarm (Remake v2: dodatkowe wiadro z jedzeniem), Szepnij (jedna myśl w jedną głowę)
+ * i Cud (objawienie). Resztę — obronę, rudę, zarazy, powodzie — przynoszą karty wydarzeń
+ * (sim/wydarzenia.ts), na które odpowiadasz wyborem.
+ * Wewnętrzne nazwy zostały po dawnych rytach: „zasiej” to Nakarm, „znak” to Cud.
+ */
+export type Verb = 'zasiej' | 'szept' | 'znak';
+
+export interface Tool { id: string; label: string; hint: string; }
+
+export const TOOLS: Record<Verb, Tool[]> = {
+  zasiej: [
+    { id: 'grzyb', label: 'wiadro', hint: 'z góry zjedzie dodatkowe wiadro z jedzeniem — dotknij tam, gdzie mają je dostać' },
+  ],
+  szept: [
+    { id: 'modl', label: 'módl się', hint: 'idzie pod twój rdzeń i modli się tam' },
+    { id: 'okalecz', label: 'okalecz się', hint: 'pobożny upuszcza krwi: dostajesz krew, a on słabnie na zawsze' },
+    { id: 'ofiaruj', label: 'ofiaruj', hint: 'oddaje ci życie — dużo krwi, jedna osoba mniej' },
+    { id: 'przerwij', label: 'przerwij modlitwę', hint: 'wraca do swoich i przez minutę nie idzie się modlić' },
+    { id: 'kopLosowo', label: 'kop losowo', hint: 'rycerz wykopuje kilkanaście kafli skały obok siebie — na chybił trafił; trafi blisko śpiącego gniazda, to je zbudzi' },
+    { id: 'przemysl', label: 'przemyśl i kop', hint: 'robotnik klęka, prosi o znak i kopie ku śpiącym rycerzom — znak jest niedokładny: jeden trafia raz na trzy, trzech na pewno (w świecące gniazdo — zawsze)' },
+  ],
+  znak: [
+    { id: 'objawienie', label: 'objawienie', hint: 'wszyscy dookoła widzą cud; ich oddanie rośnie' },
+  ],
+};
+
+/** Ile kosztuje. Gracz nigdy nie widzi liczby — tylko to, czy ryt się rozjarza. */
+export function cost(verb: Verb, tool: string): { krew: number; wiara: number; otchlan: number } {
+  // cennik jest w nastawy/moce.ts; nieznane narzędzie kosztuje tyle, co pierwsze z listy
+  const cennik = KOSZTY[verb];
+  return { ...(cennik[tool] ?? Object.values(cennik)[0]) };
+}
+
+/** Czy stać cię na to — z odliczeniem tego, co już zarezerwowały rozkazy z pauzy. */
+export function affordable(sim: Sim, verb: Verb, tool: string): boolean {
+  const c = cost(verb, tool);
+  const r = sim.rezerwa;
+  return sim.krew - r.krew >= c.krew && sim.wiara - r.wiara >= c.wiara && sim.otchlan - r.otchlan >= c.otchlan;
+}
+
+function pay(sim: Sim, verb: Verb, tool: string): boolean {
+  const c = cost(verb, tool);
+  if (!affordable(sim, verb, tool)) return false;
+  if (c.otchlan > 0 && !sim.spendOtchlan(c.otchlan)) return false;
+  sim.krew -= c.krew; sim.wiara -= c.wiara;
+  return true;
+}
+
+/**
+ * Zasiew. Gracz sieje tylko grzyb (ryt Nakarm); ruda i kości przychodzą z kart wydarzeń,
+ * które płacą same — wtedy `zaplac` jest fałszem.
+ */
+export function seed(sim: Sim, tool: string, tx: number, ty: number, zaplac = true): boolean {
+  const w = sim.world;
+  if (!w.inb(tx, ty)) return false;
+  // Remake v2: grzyba już nie ma — Nakarm spuszcza wiadro z jedzeniem
+  if (REMAKE && tool === 'grzyb') return nakarm(sim, tx, ty, zaplac) === null;
+  if (zaplac && !pay(sim, 'zasiej', tool)) return false;
+  const r = MOCE.zasiewPromien;
+  const szansa = MOCE.zasiewSzansa;
+  for (let dy = -r; dy <= r; dy++) {
+    for (let dx = -r; dx <= r; dx++) {
+      const x = tx + dx, y = ty + dy;
+      if (!w.inb(x, y) || dx * dx + dy * dy > r * r) continue;
+      const i = w.idx(x, y);
+      const solid = PASSABLE[w.tile[i]] !== 1;
+      // skorupy rdzenia, ołtarza i kuźni nie da się przemienić — ruda na skorupie była
+      // furtką: potem wystarczyło ją wydrążyć i rytuał tracił sens
+      const twarde = w.tile[i] === T.CORE || w.tile[i] === T.STONE || w.tile[i] === T.SHRINE || w.tile[i] === T.FORGE;
+      if (tool === 'ruda' && solid && !twarde && sim.rng.chance(szansa.ruda)) w.tile[i] = T.ORE;
+      if (tool === 'grzyb' && !solid && sim.rng.chance(szansa.grzyb)) w.tile[i] = T.FUNGUS;
+      if (tool === 'kosci' && !solid && sim.rng.chance(szansa.kosci)) w.tile[i] = T.BONES;
+      w.oznaczSlad(x, y, 1, sim.tick);
+    }
+  }
+  sim.efekt(tx + 0.5, ty + 0.5, 'zasiew');
+  for (let i = 0; i < 4; i++) sim.spark(tx + 0.5, ty + 0.5, tool === 'grzyb' ? 'spore' : 'glint');
+  return true;
+}
+
+/**
+ * Remake v2: ryt Nakarm — z góry, na linie, zjeżdża dodatkowe wiadro z jedzeniem tam, gdzie wskażesz
+ * (na dno pustki pod tym miejscem). Zwraca powód odmowy albo null, gdy wiadro jedzie.
+ */
+export function nakarm(sim: Sim, tx: number, ty: number, zaplac = true): string | null {
+  if (zaplac && !affordable(sim, 'zasiej', 'grzyb')) return 'Nie starczy krwi na wiadro.';
+  const odmowa = wiadroNaZadanie(sim, tx, ty);
+  if (odmowa) return odmowa;
+  if (zaplac) { pay(sim, 'zasiej', 'grzyb'); sim.stat.nakarm++; }
+  sim.efekt(tx + 0.5, ty + 0.5, 'zasiew');
+  return null;
+}
+
+const THOUGHTS: Record<string, Thought> = {
+  modl: Thought.PRAY_CORE, prorok: Thought.PROPHESY, uciekaj: Thought.FLEE_UP,
+};
+
+/** Remake v1: czy postać się modli albo idzie się modlić (wtedy można jej to przerwać). */
+export function modliSie(c: Creature): boolean {
+  return c.job === Job.PRAY || c.job === Job.PIELGRZYM || c.thought === Thought.PRAY_CORE || !!c.wyprawa || !!c.modliPrzyObozie;
+}
+
+/** Etap 2: „Przemyśl i kop” — tylko robotnik, który jeszcze nie kopie ku znakowi, i tylko gdy w skale śpią rycerze. */
+export function moznaPrzemyslec(sim: Sim, c: Creature): boolean {
+  return rolaPostaci(c) === 'robotnik' && !c.tor && c.przemysl === undefined && gniazdaWSkale(sim).length > 0;
+}
+
+/** Szept „kop losowo” — tylko rycerz, który akurat tak nie kopie. */
+export function moznaKopacLosowo(c: Creature): boolean {
+  return rolaPostaci(c) === 'rycerz' && !c.losowo;
+}
+
+/** Kafle do „kop losowo”: błądzenie po litej skale od miejsca, w którym stoi rycerz — połączone, z dala od ognia, wody i rdzenia. */
+function kafleLosowo(sim: Sim, c: Creature): number[] {
+  const w = sim.world;
+  const cx = Math.floor(c.x), cy = Math.floor(c.y);
+  const dobry = (x: number, y: number) => w.inb(x, y) && w.solid(x, y) && w.hardness(x, y) > 0 && w.tile[w.idx(x, y)] !== T.CORE
+    && !sim.przyMagmie(x, y, 3) && !nadOgniem(sim, x, y) && w.water[w.idx(x, y - 1)] < 3 && Math.hypot(x - w.coreX, y - w.coreY) > 12 && y < w.przedsionekY - 4
+    && y >= cy - 1;   // w bok i w dół — do kafli nad głową nie ma jak podejść
+  const wybrane: number[] = [], jest = new Set<number>();
+  const brzeg: number[] = [];
+  const dodajSasiadow = (x: number, y: number) => {
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+      const nx = x + dx, ny = y + dy;
+      if (!dobry(nx, ny)) continue;
+      const i = w.idx(nx, ny);
+      if (!jest.has(i) && !brzeg.includes(i)) brzeg.push(i);
+    }
+  };
+  dodajSasiadow(cx, cy); dodajSasiadow(cx, cy - 1);
+  while (wybrane.length < LUD.losowoKafli && brzeg.length) {
+    const i = brzeg.splice(sim.rng.int(brzeg.length), 1)[0];
+    wybrane.push(i); jest.add(i);
+    dodajSasiadow(i % w.w, (i / w.w) | 0);
+  }
+  return wybrane;
+}
+
+/** Szept — najtańszy i najprecyzyjniejszy. Tak wysyła się wiernych pod rdzeń i robi proroków. */
+export function whisper(sim: Sim, tool: string, c: Creature): boolean {
+  if (c.straznik) return false;     // Strażnicy Snu nie słuchają szeptów
+  // Remake v1: okaleczyć może się tylko pobożny i tylko raz; ofiarą może być każdy z ludu
+  if (tool === 'okalecz' && (rolaPostaci(c) !== 'pobozny' || c.okaleczony)) return false;
+  if (tool === 'ofiaruj' && !rolaPostaci(c)) return false;
+  if (tool === 'przerwij' && !modliSie(c)) return false;
+  if (tool === 'przemysl' && !moznaPrzemyslec(sim, c)) return false;
+  if (tool === 'kopLosowo' && (!moznaKopacLosowo(c) || !kafleLosowo(sim, c).length)) return false;
+  if (!pay(sim, 'szept', tool)) return false;
+  if (tool === 'okalecz') {
+    c.okaleczony = true;
+    sim.krew += LUD.okaleczenieKrew;
+    c.hp = Math.min(c.hp, maxHp(sim, c));
+    for (let i = 0; i < 6; i++) sim.spark(c.x, c.y - 0.5, 'hit');
+    sim.efekt(c.x, c.y, 'mysl', `+${LUD.okaleczenieKrew} krwi`);
+    return true;
+  }
+  if (tool === 'przerwij') {
+    const klan = sim.clans[c.clan];
+    c.thought = Thought.NONE;
+    c.job = Job.WANDER; c.droga = undefined;
+    c.jx = klan?.hx ?? Math.floor(c.x); c.jy = klan?.hy ?? Math.floor(c.y);
+    c.jt = 0;
+    c.bezModlitwyDo = sim.tick + LUD.przerwaModlitwy;
+    c.wyprawa = false;
+    sim.efekt(c.x, c.y, 'mysl', 'wraca');
+    return true;
+  }
+  if (tool === 'kopLosowo') {
+    c.losowo = kafleLosowo(sim, c);
+    c.droga = undefined; c.jt = 0;
+    sim.efekt(c.x, c.y, 'mysl', 'kop losowo');
+    return true;
+  }
+  if (tool === 'przemysl') {
+    c.przemysl = sim.tick + LUD.przemyslModlitwa;
+    c.tor = undefined; c.droga = undefined; c.kopieDroge = false;
+    c.jt = 0;
+    sim.efekt(c.x, c.y, 'mysl', 'przemyśl i kop');
+    sim.spark(c.x, c.y - 0.5, 'pray');
+    return true;
+  }
+  if (tool === 'ofiaruj') {
+    sim.krew += LUD.ofiaraKrew;
+    sim.efekt(c.x, c.y, 'mysl', `+${LUD.ofiaraKrew} krwi`);
+    sim.kill(c, 'w ofierze dla ciebie', 'ofiara');
+    return true;
+  }
+  c.thought = THOUGHTS[tool] ?? Thought.NONE;
+  c.jt = 0;
+  if (tool === 'uciekaj') c.fear = 1;
+  const napis = TOOLS.szept.find((t) => t.id === tool)?.label ?? tool;
+  sim.efekt(c.x, c.y, 'mysl', napis);
+  // wysłany pod rdzeń musi mieć czym iść — plan drogi liczymy od razu, a nie za dziesięć sekund
+  if (tool === 'modl') odswiezPlan(sim);
+  sim.spark(c.x, c.y - 0.5, 'pray');
+  return true;
+}
+
+/** Znak — jawny cud. Drogi, widziany przez wszystkich w okolicy. */
+export function sign(sim: Sim, tool: string, tx: number, ty: number): boolean {
+  const w = sim.world;
+  if (!pay(sim, 'znak', tool)) return false;
+  if (w.inb(tx, ty) && PASSABLE[w.tile[w.idx(tx, ty)]] === 1) w.set(tx, ty, T.GLYPH);
+  const seen = new Set<number>();
+  for (const c of sim.creatures) {
+    if (c.dead) continue;
+    const d = Math.hypot(c.x - tx, c.y - ty);
+    if (d > MOCE.znakZasieg) continue;
+    seen.add(c.clan);
+    if (tool === 'objawienie') {
+      c.devotion = Math.min(1, c.devotion + MOCE.objawienieOddanie);
+      c.fear *= MOCE.objawienieStrach;
+    } else {
+      c.fear = 1;
+      c.thought = Thought.FLEE_UP;
+      c.jt = 0;
+    }
+  }
+  // Nacja dostaje (albo traci) oddanie raz — nie raz za każdego, kto widział. Liczone od
+  // widzów jedno objawienie przy gnieździe czternastu goblinów dawało od razu 100%,
+  // a panika zerowała wiarę całego ludu; nie dało się z tego nic zrozumieć.
+  for (const id of seen) {
+    const k = sim.clans[id];
+    k.devotion = tool === 'objawienie' ? Math.min(1, k.devotion + MOCE.objawienieNacja) : Math.max(0, k.devotion - MOCE.panikaNacja);
+  }
+  sim.efekt(tx + 0.5, ty + 0.5, 'cud');
+  for (let i = 0; i < 8; i++) sim.spark(tx + 0.5, ty + 0.5, 'pray');
+  // światło Cudu przegania to, co patrzy z ciemności
+  odpedzMrok(sim, tx + 0.5, ty + 0.5);
+  odpedzDlon(sim, tx + 0.5, ty + 0.5);
+  const names = [...seen].map((i) => sim.clans[i].name).slice(0, 3).join(', ');
+  sim.log(tool === 'objawienie'
+    ? `Znak rozbłysł w skale. Widzieli go: ${names || 'nikt'}.`
+    : `Skała krzyknęła. ${names || 'Nikt'} rzucili się do ucieczki.`, 'wiara');
+  return true;
+}
+
+/**
+ * Zmiana krwi gatunku. Wersja na telefon nie ma już rytu „Skaź”, ale stare zapisy
+ * mogą nosić skazy — wczytywanie odtwarza je tą funkcją.
+ */
+export function applyTaintEffect(race: Race, tool: string): void {
+  const d = RACES[race];
+  switch (tool) {
+    // każda skaza ma cenę płaconą przez pokolenia, nie tylko zysk
+    case 'plodnosc': { const s = SKAZY.plodnosc; d.breedRate *= s.plodnosc; d.lifespan *= s.dlugoscZycia; d.metabolism *= s.metabolizm; break; }
+    case 'zadza': { const s = SKAZY.zadza; d.strength *= s.sila; d.eatsMeat = true; d.fearGain *= s.strach; d.faithGain *= s.wiara; break; }
+    case 'slepota': { const s = SKAZY.slepota; d.speed *= s.szybkosc; d.faithGain *= s.wiara; d.digPower *= s.kopanie; break; }
+    case 'kamien': { const s = SKAZY.kamien; d.maxHp *= s.zdrowie; d.speed *= s.szybkosc; d.digPower *= s.kopanie; d.metabolism *= s.metabolizm; break; }
+  }
+}

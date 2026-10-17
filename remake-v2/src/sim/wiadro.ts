@@ -98,7 +98,7 @@ function porcjeNaLud(sim: Sim): number {
 
 /**
  * Kafle, do których dojdzie postać `skad` — tym samym szukaniem drogi, którym lud chodzi
- * (stopnie w górę, zejścia; Remake v2 bez lin i klamer). Proste zalewanie przejść uznawało za
+ * (wspinaczka po ścianach i klamrach, zejścia). Proste zalewanie przejść uznawało za
  * „osiągalne” dna szybów, z których nie ma powrotu.
  */
 function dostepneOd(sim: Sim, skad: Creature): Set<number> {
