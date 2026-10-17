@@ -177,11 +177,16 @@ export const PLAN_DROGI = {
   /** Plan jest przeliczany najwyżej co tyle tików. */
   odswiezCo: 600,
   /**
-   * Alpha: droga wiernych schodami w obie strony — nigdzie nie zeskakuje się wyżej niż o kafel. Jedzenie zjeżdża
-   * do siedziby, robotnicy noszą je w dół i wracają po następne; kto zejdzie pod rdzeń, ten wróci.
-   * (Dawniej droga szła tylko w dół — szybami i zeskokami — i robotnicy zostawali pod czołem na zawsze.)
+   * Alpha: droga wiernych schodami — nigdzie nie zeskakuje się wyżej niż o kafel (dawniej szła szybami i zeskokami).
+   * W obie strony przejdzie się tylko tam, gdzie schody nie zawracają: na zakręcie pod górę trzeba by wejść o dwa
+   * kafle, a lud wchodzi o jeden — dlatego tym, którzy zeszli w głąb, wiadro zjeżdża tam, gdzie stoją (sim/wiadro.ts).
    */
   dwukierunkowa: true,
+  /**
+   * Alpha: raz wyznaczona droga zostaje, póki da się nią przejść i ją wykuć (przeliczana na nowo zmieniała trasę po
+   * pierwszych schodach). Zapasowa droga w dół (gdy schodami się nie dało) liczy się na nowo co `zapasowyPonowCo` tików.
+   */
+  stala: true, zapasowyPonowCo: 3600,
   /** Remake v1: czoło drogi stoi tyle tików (2 min), choć kopacze są w drodze — plan omija ten kafel przez `czoloOmijaj` (6 min). */
   czoloStoi: 14400, czoloOmijaj: 43200,
   /**

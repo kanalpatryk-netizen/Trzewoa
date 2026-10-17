@@ -211,8 +211,9 @@ export interface OpcjeKopania {
   /** dodatkowo: przez które kafle (wolne i lite) w ogóle wolno iść */
   dozwolony?: (i: number, x: number, y: number) => boolean;
   /**
-   * Alpha: droga w obie strony — w dół najwyżej o jeden kafel (z powietrza tylko na podłogę). Każdy ruch da się
-   * wtedy odwrócić: zeskok o stopień to w drugą stronę wejście na stopień, więc kto zejdzie, ten wróci.
+   * Alpha: droga schodami — w dół najwyżej o jeden kafel (z powietrza tylko na podłogę). Taki zeskok da się odwrócić
+   * (w drugą stronę to wejście na stopień), ale nie zakręt: gdy schody zawracają, kolumna przy zakręcie ma cztery
+   * puste kafle i pod górę trzeba by wejść o dwa — w dwóch wymiarach zawrócić schodami w obie strony się nie da.
    */
   dwukierunkowa?: boolean;
 }

@@ -1,4 +1,5 @@
 import { rysujWiadra, rysujPrzodWiader } from '../../render/wiadro';
+import { rysujKucie } from '../../render/kucie';
 import { rysujTrupy } from '../../render/trupy';
 import { porcjiWWiadrach } from '../../sim/wiadro';
 import { Sim, resetRaces } from '../../sim/sim';
@@ -822,6 +823,8 @@ export class EkranGry implements Ekran {
     this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.5);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     rysujRdzen(ctx, sim, cam, teraz);
+    // Alpha, etap 3: skała napoczęta kilofem pęka coraz mocniej
+    rysujKucie(ctx, sim, cam, teraz);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
     // Remake v2: trupy leżą tam, gdzie padli; wiadra z jedzeniem zjeżdżają na linach

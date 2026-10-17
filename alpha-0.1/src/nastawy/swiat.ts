@@ -5,8 +5,8 @@
  * (0 = pod trawą, 1 = samo dno). Zmiana wymiarów psuje stare zapisy gry.
  */
 export const SWIAT = {
-  /** Szerokość góry w kaflach. */
-  szerokosc: 176,
+  /** Szerokość góry w kaflach (Alpha: odrobinę szersza niż w Remake v2 — tam 176). */
+  szerokosc: 192,
   /** Wysokość góry w kaflach. */
   wysokosc: 240,
   /** Na której linii (od góry) zaczyna się ziemia. Nad nią jest niebo. */
@@ -112,6 +112,44 @@ export const SWIAT = {
     od: 0.74, pas: 0.16,
     szerokoscOd: 6, szerokoscDo: 14,
     wysokoscOd: 2.5, wysokoscDo: 5,
+  },
+
+  /**
+   * Alpha, etap 3 — góra według szkicu: z powierzchni jeden szyb, którym zjeżdża jedzenie, do jasnej sali
+   * z siedzibą na środku u góry; dookoła gruba skała nie do ruszenia; niżej trzy warstwy — płytka (miękka
+   * skała, żyły żelaza), środkowa (zwykła skała, małe jaskinie ze złotem pod dnem), głęboka (twarda skała,
+   * mrok); rdzeń zawsze w tym samym miejscu: na środku u dołu, pod szeroką kryptą. Zamiast wielkich sal
+   * i galerii — małe kieszenie: drogę w dół trzeba wykuć. `wlaczone: false` przywraca dawną górę z Remake v2.
+   */
+  warstwy: {
+    wlaczone: true as boolean,
+    /** Gruba rama nie do ruszenia po bokach i na dnie (kafle). */
+    rama: 4,
+    /** Granice warstw (głębokość 0..1) i jak bardzo falują (kafle). */
+    plytkaDo: 0.34, srodkowaDo: 0.68, falowanie: 4,
+    /** Pod samą powierzchnią tyle rzędów ziemi (osypuje się), a pod nią czapa skały nie do ruszenia aż do sali. */
+    ziemia: 2,
+    /** Szyb z jedzeniem: szerokość (kafle); sala startowa pod nim: promienie i głębokość jej dna pod powierzchnią. */
+    szyb: 3,
+    sala: { rx: 17, ry: 5, dnoPod: 24 },
+    /** Żyły żelaza (kępy rudy): ile w płytkiej i środkowej warstwie, promień od–do. */
+    zelazo: { plytka: 26, srodkowa: 9, promienOd: 1.1, promienDo: 2.4 },
+    /** Małe jaskinie środkowej warstwy: ile, promienie od–do; pod dnem — złoto z taką szansą, tyle kafli szerokie. */
+    jaskinie: { ile: 15, rxOd: 4, rxDo: 9, ryOd: 1.8, ryDo: 3.4, zlotoSzansa: 0.75, zlotoOd: 3, zlotoDo: 7 },
+    /** Kieszenie w płytkiej i głębokiej warstwie (mniejsze, bez złota). */
+    kieszenie: { plytka: 9, gleboka: 7, rxOd: 2.5, rxDo: 5.5, ryOd: 1.2, ryDo: 2.4 },
+    /**
+     * Krypta nad rdzeniem — na szkicu „pole”, w którym leży rdzeń: szeroki, niski pas z płaską podłogą. Tam modlą się
+     * pobożni, rycerz trzyma wartę obok, a przed falą Strażników jest dokąd odejść — końce krypty leżą dalej od
+     * przedsionka niż zasięg Strażników z zapasem (STRAZNICY.limitOdRdzenia + ucieczkaZapas = 36 kafli).
+     * `rx` — pół szerokości; wysokość sklepienia nad rdzeniem, a na końcach najmniej `niska`.
+     */
+    krypta: { rx: 44, wysokosc: 6, niska: 3 },
+    /**
+     * Tempo kucia: lud kuje skałę tyle razy wolniej niż w dawnej górze — zejście przez trzy warstwy to droga,
+     * nie minuta (w Remake v2 robotnik wybijał kafel skały w 0,2 s). Planer drogi liczy koszty po staremu.
+     */
+    kucie: 8,
   },
 
   /** Ile tików osypywania ziemi przed pierwszą klatką. */

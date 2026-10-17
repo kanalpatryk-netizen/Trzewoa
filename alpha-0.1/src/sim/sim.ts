@@ -217,8 +217,9 @@ export class Sim {
     void hotSpot; void found;   // Remake v1: dawne zasiedlenie wielu ras zostaje w kodzie jako punkt odniesienia
     // Remake v1: jeden lud — pobożni, robotnicy i rycerze przy jednej siedzibie
     // siedziba na starcie też na porządnej półce (szeroko i wysoko), jeśli taka jest w pobliżu
-    const [sx0, sy0] = spot(Z.slepyLud1.od, Z.slepyLud1.do);
-    const [hx, hy] = miejsceNaObozu(this, sx0, sy0, 20, 12) ?? [sx0, sy0];
+    // (Alpha: siedziba w jasnej sali pod szybem z jedzeniem — według szkicu, zawsze na środku u góry)
+    const [sx0, sy0] = SWIAT.warstwy.wlaczone ? [w.salaStart.x, w.salaStart.y] : spot(Z.slepyLud1.od, Z.slepyLud1.do);
+    const [hx, hy] = SWIAT.warstwy.wlaczone ? [sx0, sy0] : miejsceNaObozu(this, sx0, sy0, 20, 12) ?? [sx0, sy0];
     const lud = this.newClan(Race.GOBLIN, hx, hy);
     lud.name = 'Pobożni';
     lud.cecha = undefined;
@@ -1102,7 +1103,8 @@ export class Sim {
   /** Najazd z powierzchni; `nadX` — schodzą nad tym miejscem (karta wydarzenia „poprowadź ich”). */
   humanRaid(nadX?: number): void {
     const w = this.world;
-    let x = nadX ?? 8 + this.rng.int(w.w - 16), y = SURFACE_Y - 2;
+    // (Alpha: z powierzchni prowadzi tylko szyb z jedzeniem — ludzie schodzą nim do sali)
+    let x = SWIAT.warstwy.wlaczone ? w.szybX : nadX ?? 8 + this.rng.int(w.w - 16), y = SURFACE_Y - 2;
     for (let k = 0; k < 40 && !w.passable(x, y); k++) {
       x = nadX !== undefined ? Math.max(8, Math.min(w.w - 9, nadX + this.rng.int(21) - 10)) : 8 + this.rng.int(w.w - 16);
     }

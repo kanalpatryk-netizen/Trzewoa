@@ -63,5 +63,5 @@ export const OPIS_PRACY = [
 
 export const NAZWY_KAFLI = [
   'pustka', 'niebo', 'ziemia', 'skała', 'ruda', 'kryształ', 'kamień', 'grzybnia', 'kości',
-  'ołtarz', 'kuźnia', 'sieć', 'lęgowisko', 'rdzeń', 'glif',
+  'ołtarz', 'kuźnia', 'sieć', 'lęgowisko', 'rdzeń', 'glif', 'miękka skała', 'twarda skała', 'złoto',
 ];

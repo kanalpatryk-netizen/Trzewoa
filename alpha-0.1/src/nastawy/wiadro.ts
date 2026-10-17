@@ -29,12 +29,26 @@ export const WIADRO = {
    * odjeżdża z resztą jedzenia — zwalnia miejsce następnemu tam, gdzie lud jest.
    */
   zapomnianePo: 14400, zapomnianeOd: 30,
+  /**
+   * Alpha, etap 3: zwykłe wiadro, które stoi dłużej niż tyle tików (20 s), a do którego nie dojdzie już nikt z ludu
+   * (zostało nad zejściem — pod górę lud wchodzi najwyżej o stopień), odjeżdża z resztą jedzenia.
+   */
+  nieDojdziePo: 2400,
+  /** Alpha, etap 3: kto doszedł do wiadra, je porcję za porcją, aż głód spadnie do tylu (droga w dół bywa w jedną stronę). */
+  najadaDo: 0.12,
   /** Alpha: grupa, z której najgłodniejszy (głód powyżej `bezJedzeniaOd`) nie dojdzie do żadnego wiadra, dostaje tyle pierwszeństwa. */
   bezJedzeniaOd: 0.35, bezJedzeniaPierwszenstwo: 3,
+  /** Alpha, etap 3: …i jej wiadro zjedzie nawet ponad `maks` — najwyżej o tyle. */
+  ponadLimitDlaOdcietych: 3,
   /** Skrajnie głodny (głód ≥ tyle) wspina się po linie do zjeżdżającego wiadra; prędkość wspinaczki (kafle na tik). */
   wspinaczkaOd: 0.85, wspinaczka: 2.4 / 120,
   /** Kto siedzi w wiadrze, je porcję co tyle tików (aż przestanie być głodny). */
   jedzenieCo: 40,
+  /**
+   * Alpha: zwykłe wiadro zjeżdża szybem z powierzchni do sali z siedzibą (szkic), nie do głodnych — dalej niosą je
+   * robotnicy. Gdy poprzednie jeszcze stoi w sali, z góry dosypują do niego — najwyżej `szybMaks` porcji.
+   */
+  szybem: true as boolean, szybMaks: 40,
   /** Ryt „Nakarm”: dodatkowe wiadro tam, gdzie wskażesz — tyle porcji. */
   nakarmPorcji: 8,
   /** Szukanie miejsca: najwięcej kafli przejrzanych w poszukiwaniu tych, do których lud dojdzie. */

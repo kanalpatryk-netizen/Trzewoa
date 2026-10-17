@@ -351,6 +351,8 @@ function pilnujSiedziby(sim: Sim): void {
     }
   }
   sim.lud.obozy = obozy;
+  // Alpha: siedziba stoi w sali pod szybem z jedzeniem i się nie przenosi
+  if (LUD.siedzibaStala) return;
   // zalana siedziba przenosi się od razu — na suche miejsce przy największej grupie
   const zalana = w.water[w.idx(klan.hx, klan.hy)] >= LUD.wodaUcieka;
   if (!zalana && (odcieci.length / lud.length <= LUD.odcieciProg || sim.tick - sim.lud.siedzibaT < LUD.siedzibaPrzerwa)) return;

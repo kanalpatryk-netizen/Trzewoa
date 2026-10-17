@@ -23,19 +23,26 @@ Alphy są osobne — nie mieszają się z Remake v2.
 - **Bez lin.** Lud wchodzi najwyżej o jeden stopień (kafel) i to tylko z miejsca, na którym stoi. Wyżej nie wejdzie —
   wykuwa sobie schody w skale. W dół zsuwa się po ścianie albo skacze, ale nie z dużej wysokości. Lina została tylko
   przy wiadrze z jedzeniem.
+- **Góra według szkicu:** z powierzchni jeden szyb, którym zjeżdża jedzenie, do jasnej sali z siedzibą na środku
+  u góry; niżej trzy warstwy — płytka (miękka skała, żelazo), środkowa (małe jaskinie, pod nimi złoto), głęboka
+  (twarda skała); dookoła rama nie do ruszenia; na dole, na środku, rdzeń pod szeroką kryptą. Drogę w dół trzeba
+  wykuć, a kucie trwa (skała pęka pod kilofem coraz mocniej). Kto zszedł w głąb, dostaje jedzenie tam, gdzie stoi.
 
 ## W budowie (plan)
 1. ~~**Sprzątanie i stały start**~~ — zrobione (wyżej).
 2. ~~**Sterowanie i odstępy**~~ — zrobione (wyżej): medaliony, zaznaczanie, rozkazy, odmowa z animacją i dymkiem,
    robotnicy kopią tylko na rozkaz, postacie rozstawiają się i dopasowują krok. Przy okazji: pobożni i rycerz nie
    kopią, skorupa pęka od środka (rysa nie jest już pułapką), wiadra zjeżdżają tam, dokąd lud dojdzie, a droga
-   wiernych liczy się schodami w obie strony (na nowej mapie zadziała wszędzie).
-3. **Mapa, pomieszczenia, rzemiosło** — ta sama wielkość mapy (trochę szersza), trzy warstwy: płytka (miękka skała,
-   żelazo), środkowa (jaskinie, złoto, ołtarz, ruiny z zabytkami), głęboka (twarda skała, mrok, Wielki Pomnik na dnie).
-   Według szkicu: jedzenie zjeżdża jednym szybem z powierzchni do jasnej sali z siedzibą na środku u góry, niżej
-   skała z żyłami rudy i małymi jaskiniami, rdzeń zawsze w tym samym miejscu — na środku u dołu.
-   Szablony pomieszczeń do wykopania (sypialnia, warsztat, kuźnia, szyb). Złoto w warsztacie — dewocjonalia i wiara;
-   żelazo w kuźni — części zbroi rycerza, widoczne na postaci. Ołtarz z rytuałami — każdy z własną animacją.
+   wiernych liczy się schodami (bez zeskoków; pod górę nie przejdzie się tylko na zakrętach).
+3. **Mapa, pomieszczenia, rzemiosło**
+   - ~~3a. Mapa według szkicu~~ — zrobione (wyżej): szyb z jedzeniem do sali, trzy warstwy, żelazo i złoto, krypta
+     nad rdzeniem, wolniejsze kucie z pękającą skałą, wiadra dla tych, którzy zeszli w głąb.
+   - 3b. Liczniki kruszców na ekranie (żelazo, złoto) — bez ekwipunku.
+   - 3c. Szablony pomieszczeń do wykopania (sypialnia, warsztat, kuźnia, szyb). Złoto w warsztacie — dewocjonalia
+     i wiara; żelazo w kuźni — części zbroi rycerza.
+   - 3d. Ołtarz w środkowej warstwie z rytuałami — każdy z własną animacją.
+   - 3e. Ruiny z zabytkami (wydarzenie: weź — premia i kara — albo zostaw).
+   - 3f. Części zbroi widoczne na rycerzu.
 4. **Dwie dłonie** — dłoń z otchłani przecina pazurem linę wiadra (jedzenie staje, póki ktoś nie wejdzie po linie
    i jej nie sklei); dłoń anielska z góry: podkop, dar ludzi (robotnik w dłoni), dar krwi.
 5. **Finał, bot, samouczek** — Wielki Pomnik pęka od modlitwy, z gruzów wychodzi boss, a dłoń z otchłani mu pomaga;

@@ -750,8 +750,8 @@ export class Engraver {
                 }
                 if (slad === 1) { r *= 1.08; g *= 1.06; b *= 1.04; } else if (slad === 2) { r *= 0.8; g *= 0.8; b *= 0.8; }
                 // ruda i kryształ: drobiny złota i szkła łapią światło
-                if ((mat === T.ORE || mat === T.CRYSTAL) && noise[(((gy * 5 + 7) & 255) << 8) | ((gx * 5 + 3) & 255)] > 0.99) {
-                  r = 255; g = mat === T.ORE ? 214 : 236; b = mat === T.ORE ? 120 : 255;
+                if ((mat === T.ORE || mat === T.CRYSTAL || mat === T.ZLOTO) && noise[(((gy * 5 + 7) & 255) << 8) | ((gx * 5 + 3) & 255)] > 0.99) {
+                  r = 255; g = mat === T.ORE || mat === T.ZLOTO ? 214 : 236; b = mat === T.ORE ? 120 : mat === T.ZLOTO ? 90 : 255;
                   if (mat === T.CRYSTAL) { edata[o] = 200; edata[o + 1] = 190; edata[o + 2] = 255; edata[o + 3] = 255; }
                 }
               } else {
@@ -797,8 +797,8 @@ export class Engraver {
                   }
                   if (!ink && pStip > 0 && noise[(ny2b << 8) | ((gx * 2 + 13) & 255)] < pStip * tone) ink = true;
                   // iskry w rudzie i krysztale: metal i szkło łapią światło
-                  if ((mat === T.ORE || mat === T.CRYSTAL) && noise[(((gy * 5 + 7) & 255) << 8) | ((gx * 5 + 3) & 255)] > 0.996) {
-                    r = 255; g = mat === T.ORE ? 230 : 244; b = mat === T.ORE ? 170 : 255;
+                  if ((mat === T.ORE || mat === T.CRYSTAL || mat === T.ZLOTO) && noise[(((gy * 5 + 7) & 255) << 8) | ((gx * 5 + 3) & 255)] > 0.996) {
+                    r = 255; g = mat === T.ORE || mat === T.ZLOTO ? 230 : 244; b = mat === T.ORE ? 170 : mat === T.ZLOTO ? 120 : 255;
                     if (mat === T.CRYSTAL) { edata[o] = 200; edata[o + 1] = 190; edata[o + 2] = 255; edata[o + 3] = 255; }
                     ink = false;
                   }

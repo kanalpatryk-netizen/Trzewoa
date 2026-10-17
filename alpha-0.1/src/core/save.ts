@@ -8,7 +8,8 @@ import { SWIAT } from '../nastawy/swiat';
  * bez niego nie da się wrócić do tej samej sytuacji i sprawdzić, co zmieniła decyzja.
  */
 const KEY = 'trzewia-alpha:zapis';
-const VERSION = 1;
+// Alpha, etap 3: góra z warstwami jest szersza (192 kafle zamiast 176) — stare zapisy się nie wczytają
+const VERSION = 2;
 
 function toB64(buf: ArrayBufferView): string {
   const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -41,6 +42,7 @@ export function serialize(sim: Sim): string {
     creatures: sim.creatures.filter((c) => !c.dead).map((c) => ({ ...c, droga: undefined, drogaI: undefined, drogaKopie: undefined })),
     tile: toB64(w.tile), water: toB64(w.water), magma: toB64(w.magma),
     mem: toB64(w.mem), ever: toB64(w.ever), lastSeen: toB64(w.lastSeen), slad: toB64(w.slad),
+    kucie: [...w.kucie],
   });
 }
 
@@ -56,6 +58,7 @@ export function restore(json: string): Sim | null {
   if (!SWIAT.plyny) { w.water.fill(0); w.magma.fill(0); }
   fromB64(data.mem, w.mem); fromB64(data.ever, w.ever); fromB64(data.lastSeen, w.lastSeen);
   if (data.slad) fromB64(data.slad, w.slad);
+  if (Array.isArray(data.kucie)) for (const [i, f] of data.kucie) if (typeof i === 'number' && typeof f === 'number') w.kucie.set(i, f);
 
   sim.tick = data.tick;
   sim.wiara = data.wiara; sim.krew = data.krew; sim.sen = data.sen;

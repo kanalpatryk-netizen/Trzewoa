@@ -40,6 +40,16 @@ export class World {
   coreY = WORLD_H - RDZEN.nadDnem;
   /** Środek przedsionka — jaskini nad skorupą, w której modli się warta. */
   get przedsionekY(): number { return this.coreY - RDZEN.przedsionekNad; }
+  /** Alpha: sala startowa pod szybem z jedzeniem — środek jej podłogi (kafel, na którym się stoi). */
+  salaStart = { x: (WORLD_W / 2) | 0, y: SURFACE_Y + 2 };
+  /** Alpha: kolumna środka szybu z jedzeniem i jego wylot (pierwszy rząd sali pod szybem). */
+  szybX = (WORLD_W / 2) | 0;
+  szybDol = SURFACE_Y;
+  /**
+   * Alpha, etap 3: kafle napoczęte kilofem — ile z nich już wykuto (0..1). Postęp zostaje w skale: odświeżony
+   * rozkaz, nowy zamiar ani drugi kopacz go nie zerują, a na ekranie skała pęka coraz mocniej. Zmiana kafla czyści wpis.
+   */
+  readonly kucie = new Map<number, number>();
   private flip = false;
 
   constructor(seed: number) {
@@ -51,7 +61,12 @@ export class World {
   idx(x: number, y: number): number { return y * this.w + x; }
   inb(x: number, y: number): boolean { return x >= 0 && y >= 0 && x < this.w && y < this.h; }
   get(x: number, y: number): number { return this.inb(x, y) ? this.tile[y * this.w + x] : T.ROCK; }
-  set(x: number, y: number, t: number): void { if (this.inb(x, y)) this.tile[y * this.w + x] = t; }
+  set(x: number, y: number, t: number): void {
+    if (!this.inb(x, y)) return;
+    const i = y * this.w + x;
+    this.tile[i] = t;
+    if (this.kucie.size) this.kucie.delete(i);
+  }
   passable(x: number, y: number): boolean { return this.inb(x, y) ? PASSABLE[this.tile[y * this.w + x]] === 1 : false; }
   solid(x: number, y: number): boolean { return !this.passable(x, y); }
   hardness(x: number, y: number): number { return HARDNESS[this.get(x, y)]; }
@@ -61,6 +76,7 @@ export class World {
   // ---------------------------------------------------------------- generacja
 
   private generate(): void {
+    if (SWIAT.warstwy.wlaczone) { this.generujWarstwy(); return; }
     const { w, h, noise, rng, tile } = this;
     const S = SWIAT;
 
@@ -135,6 +151,141 @@ export class World {
     // Zejście się osypuje, zanim gracz spojrzy — świat ma startować stabilny.
     for (let k = 0; k < S.osypywanieNaStart; k++) this.tickSoil(k);
 
+    this.unknown = this.w * this.h;
+  }
+
+  /** Alpha: granica warstw w kolumnie x — na głębokości `g` (0..1), falująca szumem. */
+  private granica(x: number, g: number, ziarno: number): number {
+    const fal = SWIAT.warstwy.falowanie;
+    return Math.round(SURFACE_Y + g * (this.h - SURFACE_Y) + (this.noise.fbm(ziarno + x * 0.05, ziarno * 0.7, 2) - 0.5) * 2 * fal);
+  }
+
+  /**
+   * Alpha, etap 3 — góra według szkicu (SWIAT.warstwy): pod powierzchnią czapa kamienia, przez nią szyb z jedzeniem
+   * do jasnej sali startowej na środku u góry; trzy warstwy skały z żyłami żelaza, małymi jaskiniami (pod dnem
+   * złoto) i kieszeniami; gruba rama dookoła; rdzeń w skorupie na środku u dołu, nad nim przedsionek.
+   */
+  private generujWarstwy(): void {
+    const { w, h, rng, noise, tile } = this;
+    const S = SWIAT.warstwy;
+    const cx = (w / 2) | 0;
+    const dnoSali = SURFACE_Y + S.sala.dnoPod;                 // pierwszy rząd podłogi sali
+    const stropSali = Math.round(dnoSali - S.sala.ry * 2);       // najwyższy rząd sali
+    const g1 = new Int16Array(w), g2 = new Int16Array(w);
+    // 1. kolumny: niebo, ziemia, warstwy skały
+    for (let x = 0; x < w; x++) {
+      this.surface[x] = SURFACE_Y;
+      g1[x] = this.granica(x, S.plytkaDo, 11); g2[x] = this.granica(x, S.srodkowaDo, 37);
+      for (let y = 0; y < h; y++) {
+        const i = y * w + x;
+        tile[i] = y < SURFACE_Y ? T.SKY : y < SURFACE_Y + S.ziemia ? T.SOIL : y < g1[x] ? T.MIEKKA : y < g2[x] ? T.ROCK : T.TWARDA;
+      }
+    }
+    const wolno = (x: number, y: number) => x >= S.rama + 2 && x < w - S.rama - 2 && y >= stropSali + 2 && y < h - S.rama - 2;
+    const podlogaKrypty = this.przedsionekY + RDZEN.przedsionekY;   // pierwszy lity rząd pod kryptą
+    const zaRdzeniem = (x: number, y: number, zapas: number) => Math.hypot(x - this.coreX, (y - this.coreY) * 0.8) < RDZEN.skorupaX + zapas
+      || Math.hypot(x - this.coreX, y - this.przedsionekY) < RDZEN.suchaStrefa + zapas * 0.5
+      || (Math.abs(x - this.coreX) < S.krypta.rx + zapas && y > podlogaKrypty - S.krypta.wysokosc - zapas);
+    const wSali = (x: number, y: number, zapas: number) => Math.abs(x - cx) < S.sala.rx + zapas && y < dnoSali + zapas;
+    // 2. żyły żelaza: kępy rudy w miękkiej i zwykłej skale
+    const kepa = (x0: number, y0: number, r: number): void => {
+      for (let y = Math.floor(y0 - r - 1); y <= y0 + r + 1; y++) for (let x = Math.floor(x0 - r - 1); x <= x0 + r + 1; x++) {
+        if (!wolno(x, y)) continue;
+        const i = y * w + x;
+        if (tile[i] !== T.MIEKKA && tile[i] !== T.ROCK) continue;
+        const brzeg = r * (0.75 + 0.5 * noise.fbm(900 + x * 0.4, 400 + y * 0.4, 2));
+        if (Math.hypot(x - x0, (y - y0) * 1.3) <= brzeg) tile[i] = T.ORE;
+      }
+    };
+    const losX = () => S.rama + 4 + rng.int(w - 2 * S.rama - 8);
+    for (let k = 0; k < S.zelazo.plytka + S.zelazo.srodkowa; k++) {
+      const x = losX();
+      const plytka = k < S.zelazo.plytka;
+      const y0 = plytka ? stropSali + 4 : g1[x] + 2, y1 = plytka ? g1[x] - 1 : g2[x] - 2;
+      if (y1 <= y0) continue;
+      const y = y0 + rng.int(y1 - y0);
+      if (wSali(x, y, 3)) continue;
+      kepa(x, y, rng.range(S.zelazo.promienOd, S.zelazo.promienDo));
+    }
+    // 3. kieszenie i jaskinie: nieregularna elipsa z płaskim dnem; zwraca rząd dna (pierwszy lity pod środkiem)
+    const jaskinia = (x0: number, y0: number, rx: number, ry: number): number => {
+      const dno = Math.round(y0 + ry * 0.6);
+      for (let y = Math.floor(y0 - ry - 1); y < dno; y++) for (let x = Math.floor(x0 - rx - 2); x <= x0 + rx + 2; x++) {
+        if (!wolno(x, y)) continue;
+        const brzeg = 1 + (noise.fbm(300 + x * 0.17, 700 + y * 0.21, 2) - 0.5) * 0.5;
+        const dx = (x - x0) / rx, dy = (y - y0) / ry;
+        if (dx * dx + dy * dy <= brzeg * brzeg) tile[y * w + x] = T.AIR;
+      }
+      return dno;
+    };
+    const losuj = (y0: number, y1: number, rx: number, ry: number, zapas: number): [number, number] | null => {
+      for (let p = 0; p < 30; p++) {
+        const x = Math.round(S.rama + 3 + rx + rng.next() * (w - 2 * (S.rama + 3 + rx)));
+        const y = Math.round(y0 + rng.next() * Math.max(1, y1 - y0));
+        if (wSali(x, y, rx + 4) || zaRdzeniem(x, y, rx + zapas)) continue;
+        return [x, y];
+      }
+      return null;
+    };
+    const K = S.kieszenie, J = S.jaskinie;
+    for (let k = 0; k < K.plytka + K.gleboka; k++) {
+      const plytka = k < K.plytka;
+      const rx = rng.range(K.rxOd, K.rxDo), ry = rng.range(K.ryOd, K.ryDo);
+      const m = plytka ? losuj(stropSali + 10, h * (S.plytkaDo + 0.04), rx, ry, 4) : losuj(h * (S.srodkowaDo + 0.06), this.przedsionekY - 6, rx, ry, 6);
+      if (m) jaskinia(m[0], m[1], rx, ry);
+    }
+    for (let k = 0; k < J.ile; k++) {
+      const rx = rng.range(J.rxOd, J.rxDo), ry = rng.range(J.ryOd, J.ryDo);
+      const m = losuj(h * (S.plytkaDo + 0.05), h * (S.srodkowaDo - 0.02), rx, ry, 4);
+      if (!m) continue;
+      const dno = jaskinia(m[0], m[1], rx, ry);
+      if (!rng.chance(J.zlotoSzansa)) continue;
+      // złoto pod dnem jaskini: pas kruszcu w pierwszym litym rzędzie, czasem i w drugim
+      const szer = J.zlotoOd + rng.int(J.zlotoDo - J.zlotoOd + 1);
+      const x0 = Math.round(m[0] - szer / 2 + rng.range(-rx * 0.4, rx * 0.4));
+      for (let x = x0; x < x0 + szer; x++) {
+        let y = dno - 2;
+        while (y < dno + 4 && wolno(x, y) && PASSABLE[tile[y * w + x]] === 1) y++;
+        if (!wolno(x, y)) continue;
+        if (tile[y * w + x] === T.ROCK || tile[y * w + x] === T.MIEKKA) tile[y * w + x] = T.ZLOTO;
+        if (rng.chance(0.45) && wolno(x, y + 1) && tile[(y + 1) * w + x] === T.ROCK) tile[(y + 1) * w + x] = T.ZLOTO;
+      }
+    }
+    // 4. czapa nad salą i rama dookoła: kamień nie do ruszenia
+    for (let y = SURFACE_Y + S.ziemia; y < stropSali; y++) for (let x = 0; x < w; x++) tile[y * w + x] = T.STONE;
+    for (let y = SURFACE_Y; y < h; y++) for (let x = 0; x < w; x++) {
+      if (x < S.rama || x >= w - S.rama || y >= h - S.rama) tile[y * w + x] = T.STONE;
+    }
+    // 5. szyb z jedzeniem i sala startowa: sklepienie łukiem, płaska podłoga z miękkiej skały
+    const pol = S.szyb >> 1;
+    for (let y = SURFACE_Y - 1; y <= stropSali; y++) for (let x = cx - pol; x <= cx + pol; x++) tile[y * w + x] = T.AIR;
+    for (let y = stropSali; y < dnoSali; y++) for (let x = cx - S.sala.rx - 1; x <= cx + S.sala.rx + 1; x++) {
+      const dx = (x - cx) / S.sala.rx;
+      const luk = stropSali + (S.sala.ry * 0.9) * dx * dx + (noise.fbm(x * 0.3, 55, 2) - 0.5) * 1.2;
+      if (Math.abs(x - cx) <= S.sala.rx && y >= luk) tile[y * w + x] = T.AIR;
+    }
+    for (let x = cx - S.sala.rx - 1; x <= cx + S.sala.rx + 1; x++) for (let y = dnoSali; y < dnoSali + 2; y++) {
+      if (PASSABLE[tile[y * w + x]] === 1 || tile[y * w + x] === T.ORE) tile[y * w + x] = T.MIEKKA;
+    }
+    this.salaStart = { x: cx, y: dnoSali - 1 };
+    this.szybX = cx; this.szybDol = stropSali;
+    // 6. rdzeń — zamknięty w skorupie, której nikt nie przekopie; nad nim krypta (szeroki pas z płaską podłogą,
+    //    sklepienie najwyżej nad rdzeniem) i w niej przedsionek
+    this.ellipse(this.coreX, this.coreY, RDZEN.skorupaX, RDZEN.skorupaY, T.STONE);
+    this.ellipse(this.coreX, this.coreY, RDZEN.komoraX, RDZEN.komoraY, T.AIR);
+    this.ellipse(this.coreX, this.coreY, RDZEN.promien, RDZEN.promien, T.CORE);
+    const KR = S.krypta;
+    for (let x = this.coreX - KR.rx; x <= this.coreX + KR.rx; x++) {
+      if (x < S.rama || x >= w - S.rama) continue;
+      const dx = (x - this.coreX) / KR.rx;
+      const wys = Math.max(KR.niska, Math.round(KR.wysokosc * (1 - 0.45 * dx * dx) + (noise.fbm(x * 0.21, 91, 2) - 0.5) * 2));
+      for (let y = podlogaKrypty - wys; y < podlogaKrypty; y++) tile[y * w + x] = T.AIR;
+      const i = podlogaKrypty * w + x;
+      if (tile[i] !== T.STONE) tile[i] = T.TWARDA;
+    }
+    this.ellipse(this.coreX, this.przedsionekY, RDZEN.przedsionekX, RDZEN.przedsionekY, T.AIR);
+    this.osuszPrzedsionek();
+    for (let k = 0; k < SWIAT.osypywanieNaStart; k++) this.tickSoil(k);
     this.unknown = this.w * this.h;
   }
 

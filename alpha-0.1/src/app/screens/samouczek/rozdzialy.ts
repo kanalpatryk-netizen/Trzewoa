@@ -126,7 +126,7 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: ['zasiej'],
     etapy: [
       {
-        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — tam, gdzie lud najbardziej głoduje. Każdy może z niego jeść. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
+        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — szybem do sali, a tym, którzy zeszli w głąb i do sali nie wrócą, tam, gdzie stoją. Każdy może z niego jeść. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
         rozumiem: true,
         wskaz: (s) => { const c = s.najblizszeWiadro(); return c ? { typ: 'swiat', cel: c } : null; },
       },

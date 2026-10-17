@@ -26,6 +26,8 @@ export const LUD = {
    * umierali ze starości w 15.–17. minucie, a nowych nikt nie przysyłał). `true` przywraca starość.
    */
   starzejeSie: false,
+  /** Alpha: siedziba stoi w sali pod szybem z jedzeniem i nie przenosi się za ludem. */
+  siedzibaStala: true,
 
   /** Mnożniki statystyk rasy dla każdej roli (1 = bez zmian). */
   role: {

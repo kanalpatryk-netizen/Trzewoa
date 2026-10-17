@@ -18,6 +18,7 @@ import { wiadroDoWspinaczki, wiadroId, krokNaLinie } from './wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
 import { odmow, type Polecenie, type Odmowa } from './polecenia';
+import { SWIAT } from '../nastawy/swiat';
 import { LUD, REMAKE } from '../nastawy/lud';
 
 export enum Job {
@@ -1123,9 +1124,10 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     const d = droga(obok, LUD.dostawaLimit);
     if (d) { naDroge(d); c.jx = fx; c.jy = fy; c.dig = 0; c.kopieDroge = true; zamiar('kopie drogę wiernych — tak kazałeś', Job.DIG, podroz(d) + Z); p.prob = 0; return true; }
     // do czoła nie dojdzie (zszedł niżej, a lud nie wspina się po ścianach) — kuje dalszy kawałek kreski,
-    // do którego dojdzie; czoło zostaje dla tych, którzy są nad nim
+    // do którego dojdzie; czoło zostaje dla tych, którzy są nad nim. Alpha: tylko na drodze w dół — droga
+    // schodami prowadzi od siedziby, a „dalszy kawałek” ściągał kopaczy zeskokami w głąb, skąd nie wracali
     if (budzetDrog() <= 0) return brakCzasu();
-    const reszta = new Set(nieWykopane(sim).slice(1));
+    const reszta = new Set(sim.planDrogi?.dwukierunkowa ? [] : nieWykopane(sim).slice(1));
     const kafelObok = (x: number, y: number): number => {
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && w.inb(x + dx, y + dy) && reszta.has(w.idx(x + dx, y + dy))) return w.idx(x + dx, y + dy);
       return -1;
@@ -1518,9 +1520,15 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
       && (sim.przyMagmie(x, y, K.kopanieOgienZasieg) || nadOgniem(sim, x, y))) {
     c.dig = 0; c.jt = 0; return;
   }
-  c.dig += RACES[c.race].digPower * mnoznik(sim, c, 'kopanie') * cechaNacji(sim.clans[c.clan]).kopanie * (1 + c.mad * K.kopanieOdSzalenstwa);
-  if (c.dig < hard * K.kopanieProg) return;
-  c.dig = 0;
+  const sila = RACES[c.race].digPower * mnoznik(sim, c, 'kopanie') * cechaNacji(sim.clans[c.clan]).kopanie * (1 + c.mad * K.kopanieOdSzalenstwa);
+  // Alpha, etap 3: w górze z warstwami lud kuje wolniej — zejście ma trwać (SWIAT.warstwy.kucie); postęp zostaje
+  // w kaflu (w.kucie), nie w kopaczu: rozkaz „kop drogę” odświeżał się co pół sekundy i zerował go, więc przy
+  // wolniejszym kuciu robotnicy godzinami kuli ten sam kafel
+  const tempo = SWIAT.warstwy.wlaczone && rolaPostaci(c) && t !== T.CORE ? SWIAT.warstwy.kucie : 1;
+  const i = w.idx(x, y);
+  const postep = (w.kucie.get(i) ?? 0) + sila / (hard * K.kopanieProg * tempo);
+  if (postep < 1) { w.kucie.set(i, postep); return; }
+  w.kucie.delete(i);
   // Remake v1: bez rudy i kryształów jako łupu — kopie się drogę, nie skarby
   if (t === T.CORE) { sim.reachCore(c); return; }
   w.set(x, y, T.AIR);
@@ -1685,7 +1693,9 @@ function doZapas(sim: Sim, c: Creature): void {
     return;
   }
   const sp = spizarniaW(sim, c.jx, c.jy);
-  if (sp && sp.wez(1) > 0) {
+  // Alpha, etap 3: je do syta (porcja za porcją) — po jednej porcji kopacz wracał na czoło drogi, schodził niżej,
+  // a do tego wiadra już nie miał jak wrócić
+  for (let n = 0; sp && n < 4 && (n === 0 || c.hunger > WIADRO.najadaDo) && sp.wez(1) > 0; n++) {
     sim.meals++;
     c.hunger = Math.max(0, c.hunger - LUD.posilek);
     c.hp = Math.min(maxHp(sim, c), c.hp + K.kesLeczy);

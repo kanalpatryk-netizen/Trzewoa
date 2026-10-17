@@ -29,6 +29,8 @@ export interface PlanDrogi {
   sciezka: number[];
   /** Kafle skały na tej drodze — to trzeba wydrążyć. */
   kopac: number[];
+  /** Alpha: droga schodami (nigdzie zeskoku wyższego niż o kafel; pod górę nie przejdzie się tylko na zakrętach). */
+  dwukierunkowa?: boolean;
 }
 
 const KOSZT_SKALY = PLAN_DROGI.kosztSkaly;
@@ -104,9 +106,11 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0, dwukierunkowa =
     if (blisko) starty.push(i);
   }
   // meta: przedsionek (środek ± 4 kafle w poziomie i ± 2 w pionie)
-  // (Alpha, droga w obie strony: stojąc w przedsionku, do jego dna — w locie przez pas ± 2 już się nie przelatuje)
+  // (Alpha, droga w obie strony: stojąc w przedsionku, na jego dnie — w locie przez pas ± 2 już się nie przelatuje;
+  // tylko w dolnej połowie: stojąc na jego stropie z boku, droga kończyła się w kieszeni nad kryptą, za jednym kaflem
+  // skały. Do krypty droga wchodzi tam, gdzie najtaniej, a dalej prowadzi jej podłogą pod rdzeń)
   const wPrzedsionku = (x: number, y: number) => Math.abs(x - w.coreX) <= 4
-    && (dwukierunkowa ? Math.abs(y - w.przedsionekY) < PIELGRZYMKA.przedsionekY && stoi(sim, x, y) : Math.abs(y - w.przedsionekY) <= 2);
+    && (dwukierunkowa ? y >= w.przedsionekY && y - w.przedsionekY < PIELGRZYMKA.przedsionekY && stoi(sim, x, y) : Math.abs(y - w.przedsionekY) <= 2);
   const r = szukajKopiac(sim, starty, (_i, x, y) => wPrzedsionku(x, y), {
     koszt: (i) => (skala(i) ? KOSZT_SKALY : -1), limit: N, plywa, zBudzetu: false, dwukierunkowa,
   });
@@ -114,7 +118,22 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0, dwukierunkowa =
   if (!r) return proba < 2 ? planujDroge(sim, klanId, proba + 1, dwukierunkowa) : dwukierunkowa ? planujDroge(sim, klanId, 0, false) : null;
   // kreska od przedsionka do siedziby (tak ją czytają kopacze i pielgrzymi — od końca)
   const sciezka = [r.start, ...r.droga].reverse();
-  return { klan: klanId, tick: sim.tick, sciezka, kopac: sciezka.filter((i) => skala(i)) };
+  return { klan: klanId, tick: sim.tick, sciezka, kopac: sciezka.filter((i) => skala(i)), dwukierunkowa };
+}
+
+/**
+ * Alpha: czy stary plan wciąż się nadaje — każdy jego kafel da się przejść albo wykuć, nic nie leży na liście
+ * omijanych (czoło, które stoi — pilnujCzola) i (gdy droga ma iść w obie strony) plan nie jest zapasową drogą w dół.
+ */
+function planWciazDobry(sim: Sim, p: PlanDrogi): boolean {
+  const w = sim.world;
+  if (PLAN_DROGI.dwukierunkowa && !p.dwukierunkowa && sim.tick - p.tick > PLAN_DROGI.zapasowyPonowCo) return false;
+  const omijaj = new Set((sim.lud?.omijaj ?? []).filter(([, do_]) => do_ > sim.tick).map(([i]) => i));
+  for (const i of p.sciezka) {
+    if (omijaj.has(i)) return false;
+    if (PASSABLE[w.tile[i]] !== 1 && !doKopania(w.tile[i])) return false;
+  }
+  return true;
 }
 
 /**
@@ -188,16 +207,22 @@ export function najwierniejsza(sim: Sim): Sim['clans'][number] | null {
  */
 export function odswiezPlan(sim: Sim): void {
   if (sim.rytual.otwarta) { sim.planDrogi = null; return; }
+  // Remake v1: drogę kopią robotnicy od początku partii — plan jest zawsze, dla jedynego ludu
+  // (przed planem dla wysłanych: lud jest tu jedyną nacją, a pielgrzymi w drodze przeliczali plan od zera —
+  // gotowa droga wiernych zamieniała się w nową, niewykopaną, a pielgrzym stawał w pół drogi)
+  if (REMAKE) {
+    const lud = sim.clans.find((k) => !k.dead && k.race === Race.GOBLIN);
+    // Alpha: raz wyznaczona droga zostaje, póki da się nią iść i kopać — przeliczana co 5 s zmieniała trasę
+    // po pierwszych wykopanych schodach, a robotników na rozkaz wysyłało do odległego jej kawałka, pod zeskoki
+    const stary = sim.planDrogi;
+    if (stary && lud && stary.klan === lud.id && PLAN_DROGI.stala && planWciazDobry(sim, stary)) return;
+    sim.planDrogi = lud ? planujDroge(sim, lud.id) : null;
+    return;
+  }
   // Nacja, której ludzi posłałeś szeptem „módl się”, dostaje plan od razu — bez czekania,
   // aż cała uwierzy. Inaczej wysłani szli na przełaj i stawali na pierwszej ścianie.
   const wyslani = klanWyslanych(sim);
   if (wyslani) { sim.planDrogi = planujDroge(sim, wyslani.id); return; }
-  // Remake v1: drogę kopią robotnicy od początku partii — plan jest zawsze, dla jedynego ludu
-  if (REMAKE) {
-    const lud = sim.clans.find((k) => !k.dead && k.race === Race.GOBLIN);
-    sim.planDrogi = lud ? planujDroge(sim, lud.id) : null;
-    return;
-  }
   const klan = najwierniejsza(sim);
   // plan rusza, gdy nacja jest gotowa na pielgrzymkę — wcześniej drążenie tylko psuło gniazda
   if (!klan || klan.devotion < PLAN_DROGI.oddanieNacji || klan.pop < PLAN_DROGI.minNacja) { sim.planDrogi = null; return; }

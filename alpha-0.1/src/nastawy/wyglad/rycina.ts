@@ -30,6 +30,10 @@ export const MATERIALY: Record<number, Kreskowanie> = {
   [T.CORE]:    { tone: 0.60, ang: 1.10, sp: 3.0, cross: 0.34, stipple: 0.50, tint: [226, 74, 74] },
   [T.GLYPH]:   { tone: 0.56, ang: 0.00, sp: 3.4, cross: 0.36, stipple: 0.55, tint: [246, 214, 130] },
   [T.SKY]:     { tone: 0.07, ang: 1.57, sp: 9.0, cross: 0.95, stipple: 0, tint: [176, 178, 172] },
+  // Alpha: warstwy — miękka skała rzadką, ciepłą kreską; twarda gęstą, z krzyżem; złoto świeci jak żyła
+  [T.MIEKKA]:  { tone: 0.14, ang: 0.5, sp: 6.4, cross: 0.22, stipple: 0.12, tint: [222, 204, 172] },
+  [T.TWARDA]:  { tone: 0.24, ang: 0.78, sp: 5.0, cross: 0.6, stipple: 0.02, tint: [190, 192, 204] },
+  [T.ZLOTO]:   { tone: 0.52, ang: 0.3, sp: 5.6, cross: 0.5, stipple: 0.3, tint: [255, 214, 110] },
 };
 
 /** Kolor masy materiału pod kreską [r, g, b] — skała ciemna, żyła świeci barwą. */
@@ -41,4 +45,7 @@ export const MASA: Record<number, [number, number, number]> = {
   [T.SHRINE]: [52, 38, 22],
   [T.FORGE]: [84, 34, 12],
   [T.CORE]: [96, 14, 20],
+  [T.MIEKKA]: [24, 19, 15],
+  [T.TWARDA]: [12, 12, 16],
+  [T.ZLOTO]: [58, 42, 10],
 };

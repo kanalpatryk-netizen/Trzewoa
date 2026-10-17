@@ -115,8 +115,9 @@ export function wydajPolecenie(sim: Sim, c: Creature, typ: 'idz' | 'droga', x: n
     if (cz < 0) return odmow(sim, c, sim.rytual.otwarta ? 'skorupa już otwarta' : sim.planDrogi ? 'droga wiernych już wykopana' : 'nie wiem, którędy kopać');
     // dojdzie na miejsce tuż przy czole albo przekopie się do niego — inaczej odmawia od razu
     // (z dna jaskini pod czołem, kilkadziesiąt kafli niżej, nie wejdzie: lud nie wspina się po ścianach)
-    // (dalszy kawałek kreski też się liczy — kto zszedł niżej, kuje to, do czego dojdzie)
-    const reszta = new Set(nieWykopane(sim));
+    // (na drodze w dół dalszy kawałek kreski też się liczy — kto zszedł niżej, kuje to, do czego dojdzie;
+    // drogę schodami kopie się tylko od czoła)
+    const reszta = new Set(sim.planDrogi?.dwukierunkowa ? [cz] : nieWykopane(sim));
     const przyKresce = (xx: number, yy: number) => {
       if (!stoi(sim, xx, yy)) return false;
       for (let dy = -1; dy <= 1; dy++) for (let dx = -1; dx <= 1; dx++) if ((dx || dy) && w.inb(xx + dx, yy + dy) && reszta.has(w.idx(xx + dx, yy + dy))) return true;

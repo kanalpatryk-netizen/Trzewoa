@@ -448,7 +448,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'wiadro', grupa: 'zasoby', nazwa: 'Wiadro z jedzeniem', lacina: 'Situla panis',
-    opis: `Jedyne jedzenie ludu — grzyba ani spiżarni nie ma. Co ${Math.round(WIADRO.co / 120)} sekund z góry, na linie, zjeżdża wiadro pełne jedzenia (${WIADRO.porcjiNaGlowe} porcji na każdego z ludu), najwyżej ${WIADRO.maks} pełnych naraz — do pierwszego odkrytego, pustego miejsca, do którego lud dojdzie, przy tych, którzy najbardziej głodują. Przed zjazdem ze stropu sypie się pył. Każdy może z niego jeść, robotnicy donoszą z niego jedzenie warcie; puste odjeżdża w górę. Kto umiera z głodu (${proc(WIADRO.wspinaczkaOd)} głodu), a wiadro jeszcze jedzie, wspina się po linie, wsiada do niego i je w drodze w dół.`,
+    opis: `Jedyne jedzenie ludu — grzyba ani spiżarni nie ma. Co ${Math.round(WIADRO.co / 120)} sekund z góry, na linie, zjeżdża wiadro pełne jedzenia (${WIADRO.porcjiNaGlowe} porcji na każdego z ludu) — szybem do sali z siedzibą, a gdy poprzednie jeszcze tam stoi, z góry do niego dosypują. Kto zszedł drogą wiernych w głąb i do sali już nie wróci (pod górę lud wchodzi najwyżej o stopień), dostaje wiadro tam, gdzie stoi — najwyżej ${WIADRO.maks} pełnych naraz, a odcięci od jedzenia i ponad to. Wiadro, do którego nikt już nie dojdzie, odjeżdża. Przed zjazdem ze stropu sypie się pył. Każdy może z niego jeść, i to do syta, robotnicy donoszą z niego jedzenie warcie; puste odjeżdża w górę. Kto umiera z głodu (${proc(WIADRO.wspinaczkaOd)} głodu), a wiadro jeszcze jedzie, wspina się po linie, wsiada do niego i je w drodze w dół.`,
     kiedy: 'Liczba „jedzenie” nad płytą to porcje we wszystkich wiadrach. Gdy nie nadążają, spuść dodatkowe rytem Nakarm.',
     rycina: postac(Race.GOBLIN, 'je'),
   },
@@ -546,7 +546,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',
     opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie, musi wykuć sobie w skale schody. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy. Lina wisi tylko przy wiadrze z jedzeniem.',
-    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych, gdzie się da, schodzi schodami — można nią wrócić.',
+    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych schodzi schodami, bez zeskoków — ale na zakręcie, gdzie zmienia kierunek, pod górę trzeba by wejść o dwa stopnie, więc kto zejdzie, zwykle już nie wraca: jedzenie zjeżdża do niego.',
     rycina: postac(Race.GOBLIN, 'wspina'),
   },
   {

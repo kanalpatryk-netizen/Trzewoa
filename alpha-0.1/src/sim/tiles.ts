@@ -15,9 +15,13 @@ export enum T {
   NEST = 12,    // lęgowisko
   CORE = 13,    // twój rdzeń
   GLYPH = 14,   // ślad po Znaku — świeci, przyciąga
+  // Alpha, etap 3: warstwy góry i kruszec (T.ORE to w Alphie żelazo)
+  MIEKKA = 15,  // miękka skała płytkiej warstwy — kuje się szybko i nie osypuje
+  TWARDA = 16,  // twarda skała głębi — kuje się długo
+  ZLOTO = 17,   // złoto w środkowej warstwie — zwykle pod dnem jaskini
 }
 
-export const TILE_COUNT = 15;
+export const TILE_COUNT = 18;
 
 /** Czy da się przez to przejść. */
 export const PASSABLE = new Uint8Array(TILE_COUNT);
@@ -27,6 +31,7 @@ PASSABLE[T.BONES] = 1; PASSABLE[T.WEB] = 1; PASSABLE[T.GLYPH] = 1; PASSABLE[T.NE
 /** Ile pracy kosztuje wygryzienie kafla. 0 = nie do ruszenia. */
 export const HARDNESS = new Float32Array(TILE_COUNT);
 HARDNESS[T.SOIL] = 1; HARDNESS[T.ROCK] = 3.2; HARDNESS[T.ORE] = 2.4;
+HARDNESS[T.MIEKKA] = 1.8; HARDNESS[T.TWARDA] = 5.4; HARDNESS[T.ZLOTO] = 3;
 HARDNESS[T.CRYSTAL] = 5;
 // zastygła magma i skorupa rdzenia są nie do rozkucia — to jedyne takie kafle
 HARDNESS[T.STONE] = 0;
@@ -53,4 +58,7 @@ export const COLOR: readonly [number, number, number][] = [
   [110, 80, 60],   // NEST
   [190, 50, 70],   // CORE
   [220, 200, 120], // GLYPH
+  [70, 60, 52],    // MIEKKA
+  [34, 32, 40],    // TWARDA
+  [200, 160, 60],  // ZLOTO
 ];

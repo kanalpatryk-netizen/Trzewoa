@@ -30,6 +30,9 @@ export const FRESK_SWIATA = {
     [T.SHRINE]: { barwa: [210, 170, 96], wlasny: 0.8 },
     [T.FORGE]: { barwa: [190, 80, 36], wlasny: 0.8 },
     [T.SKY]: { barwa: [40, 52, 70], wlasny: 1 },
+    [T.MIEKKA]: { barwa: [112, 96, 76], wlasny: 0.35 },   // miękka skała: ciepła ochra
+    [T.TWARDA]: { barwa: [52, 52, 60], wlasny: 0.6 },     // twarda skała: zimny łupek
+    [T.ZLOTO]: { barwa: [214, 168, 70], wlasny: 0.85 },   // złoto
   } as Record<number, { barwa: [number, number, number]; wlasny: number }>,
   /** Świetlik — biel z odrobiną zieleni, którą ikonopisarz zaznacza krawędź półki. */
   swietlik: [212, 210, 190] as [number, number, number],
