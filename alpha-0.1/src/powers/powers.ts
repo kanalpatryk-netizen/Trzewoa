@@ -4,7 +4,6 @@ import { Race, RACES } from '../sim/races';
 import { Creature, Thought, Job } from '../sim/creatures';
 import { KOSZTY, MOCE, SKAZY } from '../nastawy/moce';
 import { odswiezPlan } from '../sim/pielgrzymka';
-import { rolaPostaci, maxHp } from '../sim/lud';
 import { LUD } from '../nastawy/lud';
 import { odpedzMrok } from '../sim/mrok';
 import { odpedzDlon } from '../sim/dlon';
@@ -27,8 +26,6 @@ export const TOOLS: Record<Verb, Tool[]> = {
   ],
   szept: [
     { id: 'modl', label: 'módl się', hint: 'idzie pod twój rdzeń i modli się tam' },
-    { id: 'okalecz', label: 'okalecz się', hint: 'pobożny upuszcza krwi: dostajesz krew, a on słabnie na zawsze' },
-    { id: 'ofiaruj', label: 'ofiaruj', hint: 'oddaje ci życie — dużo krwi, jedna osoba mniej' },
     { id: 'przerwij', label: 'przerwij modlitwę', hint: 'wraca do swoich i przez minutę nie idzie się modlić' },
   ],
   znak: [
@@ -115,19 +112,10 @@ export function modliSie(c: Creature): boolean {
 /** Szept — najtańszy i najprecyzyjniejszy. Tak wysyła się wiernych pod rdzeń i robi proroków. */
 export function whisper(sim: Sim, tool: string, c: Creature): boolean {
   if (c.straznik) return false;     // Strażnicy Snu nie słuchają szeptów
-  // Remake v1: okaleczyć może się tylko pobożny i tylko raz; ofiarą może być każdy z ludu
-  if (tool === 'okalecz' && (rolaPostaci(c) !== 'pobozny' || c.okaleczony)) return false;
-  if (tool === 'ofiaruj' && !rolaPostaci(c)) return false;
+  // Alpha, etap 3d: „okalecz się” i „ofiaruj” są już tylko rytuałami przy ołtarzu (sim/oltarz.ts) — nie szeptami
+  if (tool === 'okalecz' || tool === 'ofiaruj') return false;
   if (tool === 'przerwij' && !modliSie(c)) return false;
   if (!pay(sim, 'szept', tool)) return false;
-  if (tool === 'okalecz') {
-    c.okaleczony = true;
-    sim.krew += LUD.okaleczenieKrew;
-    c.hp = Math.min(c.hp, maxHp(sim, c));
-    for (let i = 0; i < 6; i++) sim.spark(c.x, c.y - 0.5, 'hit');
-    sim.efekt(c.x, c.y, 'mysl', `+${LUD.okaleczenieKrew} krwi`);
-    return true;
-  }
   if (tool === 'przerwij') {
     const klan = sim.clans[c.clan];
     c.thought = Thought.NONE;
@@ -137,12 +125,6 @@ export function whisper(sim: Sim, tool: string, c: Creature): boolean {
     c.bezModlitwyDo = sim.tick + LUD.przerwaModlitwy;
     c.wyprawa = false;
     sim.efekt(c.x, c.y, 'mysl', 'wraca');
-    return true;
-  }
-  if (tool === 'ofiaruj') {
-    sim.krew += LUD.ofiaraKrew;
-    sim.efekt(c.x, c.y, 'mysl', `+${LUD.ofiaraKrew} krwi`);
-    sim.kill(c, 'w ofierze dla ciebie', 'ofiara');
     return true;
   }
   c.thought = THOUGHTS[tool] ?? Thought.NONE;

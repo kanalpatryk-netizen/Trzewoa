@@ -480,8 +480,8 @@ export class Ui {
     ctx.fillRect(x + cw / 2 - sw / 2 - 8, yM - rozm * 1.4 - rozm * 0.5, sw + 16, rozm);
     ctx.fillStyle = 'rgba(224,168,96,0.8)';
     ctx.fillText(napisSzeptu, x + cw / 2, yM - rozm * 1.15);
-    // okaleczyć może się tylko pobożny, i tylko raz — innym tej myśli nie pokazujemy
-    const tools = c.straznik ? [] : TOOLS.szept.filter((t) => (t.id !== 'okalecz' || (rolaPostaci(c) === 'pobozny' && !c.okaleczony)) && (t.id !== 'przerwij' || modliSie(c)));
+    // (Alpha, etap 3d: okaleczenie i ofiara są już rytuałami przy ołtarzu, nie szeptami)
+    const tools = c.straznik ? [] : TOOLS.szept.filter((t) => t.id !== 'przerwij' || modliSie(c));
     const size = Math.max(13, Math.min(17, cw * 0.05));
     ctx.font = `${size}px ${SERIF}`;
     for (let k = 0; k < tools.length; k++) {

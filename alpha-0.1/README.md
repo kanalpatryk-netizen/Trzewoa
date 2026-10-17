@@ -21,15 +21,19 @@ Alphy są osobne — nie mieszają się z Remake v2.
   G — kop drogę, V — odwołaj, Esc i prawy przycisk — odznacz.
 - **Bez zawału od góry:** mapa się nie skraca, góra nie zamyka się za ludem.
 - **Bez lin.** Lud wchodzi najwyżej o jeden stopień (kafel) i to tylko z miejsca, na którym stoi. Wyżej nie wejdzie —
-  wykuwa sobie schody w skale. W dół zsuwa się po ścianie albo skacze, ale nie z dużej wysokości. Lina została tylko
-  przy wiadrze z jedzeniem.
-- **Góra według szkicu:** z powierzchni jeden szyb, którym zjeżdża jedzenie, do jasnej sali z siedzibą na środku
-  u góry; niżej trzy warstwy — płytka (miękka skała, żelazo), środkowa (małe jaskinie, pod nimi złoto), głęboka
+  wykuwa sobie schody w skale albo buduje drabinę (tylko tam, gdzie inaczej się nie wejdzie). W dół zsuwa się po
+  ścianie albo skacze, ale nie z dużej wysokości. Lina została tylko przy wiadrze z jedzeniem.
+- **Góra według szkicu:** z powierzchni dwa otwory do jasnej sali na środku u góry — szerszy, przez który pada światło
+  dzienne na ołtarz, i węższy obok, którym zjeżdża jedzenie (pod nim siedziba); niżej trzy warstwy — płytka (miękka skała, żelazo), środkowa (małe jaskinie, pod nimi złoto), głęboka
   (twarda skała); dookoła rama nie do ruszenia; na dole, na środku, rdzeń pod szeroką kryptą. Drogę w dół trzeba
   wykuć, a kucie trwa (skała pęka pod kilofem coraz mocniej). Kto zszedł w głąb, dostaje jedzenie tam, gdzie stoi.
-- **Pomieszczenia:** „wyznacz pomieszczenie” (B) i szablon — sypialnia, warsztat, kuźnia, korytarz, szyb; kują je tylko
-  zaznaczeni robotnicy, którym plan wskażesz. W warsztacie złoto staje się wiarą (krzyż leci do licznika), w kuźni żelazo
-  — kolejnymi częściami zbroi rycerza, a sen w sypialni zdejmuje osłabienia. Wszystko z animacją.
+- **Pomieszczenia:** „wyznacz pomieszczenie” (B) i szablon — sypialnia, warsztat, kuźnia, korytarz, szyb, drabina; kują
+  je (i budują drabiny) tylko zaznaczeni robotnicy, którym plan wskażesz. W warsztacie złoto staje się wiarą (krzyż leci do licznika), w kuźni żelazo
+  — kolejnymi częściami zbroi rycerza, a minuta snu w sypialni zdejmuje osłabienia. Wszystko z animacją.
+- **Ołtarz:** stoi od początku na środku sali, na kamiennym kopczyku, w smudze światła; podkopać go ani zasypać drogi do
+  niego się nie da. Dotknięcie otwiera okno rytuałów płaconych krwią — modlitwa, szał krwi rycerza, wskrzeszenie
+  poległego, ofiara krwi i ofiara życia; odprawia je pobożny stojący przy ołtarzu, każdy z własną animacją.
+  „Okalecz się” i „ofiaruj” są już tylko tutaj, nie w szeptach.
 - **Kruszce:** nad płytą liczniki żelaza i złota. Bez ekwipunku: robotnik rozbija kafel rudy, a okruch sam leci
   łukiem do licznika, który podbija liczbę i błyska. Wskazana robotnikowi ruda to „kop żyłę” — wykuwa całą kępę.
 
@@ -46,7 +50,9 @@ Alphy są osobne — nie mieszają się z Remake v2.
      licznika, „kop żyłę”, tablica atlasu „Kruszce”.
    - ~~3c. Szablony pomieszczeń do wykopania (sypialnia, warsztat, kuźnia, korytarz, szyb)~~ — zrobione (wyżej):
      złoto w warsztacie — dewocjonalia i wiara; żelazo w kuźni — części zbroi rycerza; sypialnia zdejmuje osłabienia.
-   - 3d. Ołtarz w środkowej warstwie z rytuałami — każdy z własną animacją.
+   - ~~3d. Ołtarz z rytuałami — każdy z własną animacją~~ — zrobione (wyżej): ołtarz w sali pod światłem (decyzja
+     użytkownika — nie w środkowej warstwie), drugi otwór na wiadro, okno rytuałów, pięć rytuałów za krew, drabiny,
+     sen 60 s.
    - 3e. Ruiny z zabytkami (wydarzenie: weź — premia i kara — albo zostaw).
    - 3f. Części zbroi widoczne na rycerzu.
 4. **Dwie dłonie** — dłoń z otchłani przecina pazurem linę wiadra (jedzenie staje, póki ktoś nie wejdzie po linie

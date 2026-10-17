@@ -45,6 +45,18 @@ export class World {
   /** Alpha: kolumna środka szybu z jedzeniem i jego wylot (pierwszy rząd sali pod szybem). */
   szybX = (WORLD_W / 2) | 0;
   szybDol = SURFACE_Y;
+  /** Alpha, etap 3d: węższy otwór, którym zjeżdża wiadro (na prawo od szybu ze światłem) — kolumna i dolny kafel. */
+  szybWiadraX = (WORLD_W / 2) | 0;
+  szybWiadraDol = SURFACE_Y;
+  /** Alpha, etap 3d: ołtarz — kafel, na którym stoi (środek sali, pod szybem ze światłem). */
+  oltarz = { x: (WORLD_W / 2) | 0, y: SURFACE_Y + 2 };
+  /**
+   * Alpha, etap 3d: szczeble drabin (1 — w tym kaflu pustki stoi zbudowany szczebel). Po drabinie lud wchodzi i schodzi
+   * (sim/droga.ts: stoi), a ciążenie go nie ściąga. Kafel, który przestaje być pustką, traci szczebel.
+   */
+  drabina = new Uint8Array(WORLD_W * WORLD_H);
+  /** Alpha, etap 3d: wnętrze sali startowej (kafle od–do) — nic tu nie wyrośnie, co zagrodziłoby drogę do ołtarza. */
+  salaOltarza = { x0: 0, x1: -1, y0: 0, y1: -1 };
   /**
    * Alpha, etap 3: kafle napoczęte kilofem — ile z nich już wykuto (0..1). Postęp zostaje w skale: odświeżony
    * rozkaz, nowy zamiar ani drugi kopacz go nie zerują, a na ekranie skała pęka coraz mocniej. Zmiana kafla czyści wpis.
@@ -66,6 +78,7 @@ export class World {
     const i = y * this.w + x;
     this.tile[i] = t;
     if (this.kucie.size) this.kucie.delete(i);
+    if (PASSABLE[t] !== 1) this.drabina[i] = 0;
   }
   passable(x: number, y: number): boolean { return this.inb(x, y) ? PASSABLE[this.tile[y * this.w + x]] === 1 : false; }
   solid(x: number, y: number): boolean { return !this.passable(x, y); }
@@ -152,6 +165,12 @@ export class World {
     for (let k = 0; k < S.osypywanieNaStart; k++) this.tickSoil(k);
 
     this.unknown = this.w * this.h;
+  }
+
+  /** Alpha, etap 3d: czy kafel leży w sali startowej (tam stoi ołtarz — droga do niego ma zostać wolna). */
+  wSali(x: number, y: number): boolean {
+    const s = this.salaOltarza;
+    return x >= s.x0 && x <= s.x1 && y >= s.y0 && y <= s.y1;
   }
 
   /** Alpha: granica warstw w kolumnie x — na głębokości `g` (0..1), falująca szumem. */
@@ -269,6 +288,21 @@ export class World {
     }
     this.salaStart = { x: cx, y: dnoSali - 1 };
     this.szybX = cx; this.szybDol = stropSali;
+    // etap 3d: drugi, węższy otwór na prawo — tym zjeżdża wiadro; przez czapę aż do sklepienia sali
+    const SW = S.szybWiadra, wx0 = cx + SW.dx;
+    let wDol = SURFACE_Y - 1;
+    for (let y = SURFACE_Y - 1; y < dnoSali - 1; y++) {
+      if (y > stropSali && PASSABLE[tile[y * w + wx0]] === 1) break;
+      for (let x = wx0; x < wx0 + SW.szer; x++) tile[y * w + x] = T.AIR;
+      wDol = y;
+    }
+    this.szybWiadraX = wx0; this.szybWiadraDol = wDol;
+    // ołtarz pod szybem ze światłem: kamienny kopczyk pod nim i kamienna podłoga sali (wyjścia zostają na jej końcach)
+    const O = S.oltarz;
+    for (let x = cx - S.sala.rx + O.wyjscie; x <= cx + S.sala.rx - O.wyjscie; x++) for (let y = dnoSali; y < dnoSali + O.podlogaRzedow; y++) tile[y * w + x] = T.STONE;
+    for (let x = cx - (O.kopczykSzer >> 1); x <= cx + (O.kopczykSzer >> 1); x++) for (let y = dnoSali; y < dnoSali + O.kopczykGleb; y++) tile[y * w + x] = T.STONE;
+    this.oltarz = { x: cx, y: dnoSali - 1 };
+    this.salaOltarza = { x0: cx - S.sala.rx - 1, x1: cx + S.sala.rx + 1, y0: stropSali, y1: dnoSali - 1 };
     // 6. rdzeń — zamknięty w skorupie, której nikt nie przekopie; nad nim krypta (szeroki pas z płaską podłogą,
     //    sklepienie najwyżej nad rdzeniem) i w niej przedsionek
     this.ellipse(this.coreX, this.coreY, RDZEN.skorupaX, RDZEN.skorupaY, T.STONE);

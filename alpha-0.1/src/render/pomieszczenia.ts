@@ -1,7 +1,7 @@
 import type { Sim } from '../sim/sim';
 import type { Camera } from './camera';
 import type { Creature } from '../sim/creatures';
-import { czyPokoj, zostaloKafli, type Pomieszczenie, type ProbaPlanu, type ZdarzeniePom } from '../sim/pomieszczenia';
+import { czyPokoj, zostaloKafli, nastepnySzczebel, type Pomieszczenie, type ProbaPlanu, type ZdarzeniePom } from '../sim/pomieszczenia';
 import { NAZWA_POMIESZCZENIA, POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 import { wolnoRuszac } from './nastroj';
 import { SERIF } from './ink';
@@ -18,7 +18,9 @@ import { krzyz, type Urobki } from './kruszce';
  *  - kuźnia: palenisko z ogniem, kowadło z rozżarzoną częścią zbroi, iskry w takt młota, wieszak z gotowymi częściami;
  *    gotowa część błyska i unosi się nad kowadłem;
  *  - sypialnia: posłania i świeca, nad śpiącymi „z z z”; kto wstaje bez osłabienia — czerwona aureola rozpływa się;
- *  - gotowe pomieszczenie: obłok pyłu, a wyposażenie opada na swoje miejsce.
+ *  - gotowe pomieszczenie: obłok pyłu, a wyposażenie opada na swoje miejsce;
+ *  - etap 3d: drabina — plan to złote, przerywane belki z zarysem szczebli; zbudowane szczeble z drewna; budowany
+ *    szczebel wsuwa się z postępem, spod młotka lecą wióry, a dobity szczebel sypie pyłem.
  * Animacja idzie zegarem ekranu. Symulacja: src/sim/pomieszczenia.ts.
  */
 
@@ -119,6 +121,7 @@ export class Pokoje {
   /** Wyposażenie gotowych pomieszczeń — rzeczy, które ciemność zakrywa (przed mrokiem). Skala postaci: człowiek ma ok. 2 kafle. */
   rysujWnetrza(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
     const z = cam.zoom;
+    rysujDrabiny(ctx, sim, cam);
     ctx.save();
     ctx.lineJoin = 'round';
     for (const pom of sim.pomieszczenia) {
@@ -199,6 +202,7 @@ export class Pokoje {
     ctx.save();
     for (const pom of sim.pomieszczenia) {
       if (!widac(cam, pom)) continue;
+      if (!pom.gotowe && pom.rodzaj === 'drabina') { rysujPlanDrabiny(ctx, sim, cam, pom, teraz, pod?.pom === pom ? pod : null); continue; }
       if (!pom.gotowe) { rysujPlan(ctx, sim, cam, pom, teraz, pod?.pom === pom ? pod : null); continue; }
       const u = uklad(cam, pom);
       const przy = pracujacy(sim, pom);
@@ -308,6 +312,19 @@ export class Pokoje {
         ctx.textAlign = 'center'; ctx.fillStyle = ZLOTO_PLANU(0.95);
         ctx.fillText(`${nazwa} dla rycerza`, x, y - z * 0.6);
         ctx.globalAlpha = 1;
+      } else if (e.rodzaj === 'szczebel') {
+        // dobity szczebel: błysk na drewnie i pył sypiący się w dół
+        if (t > 0.9) continue;
+        const p = t / 0.9;
+        const x = cam.toScreenX(e.x + 0.5), y = cam.toScreenY(e.y + 0.55);
+        const g = ctx.createRadialGradient(x, y, 0, x, y, z * 0.9);
+        g.addColorStop(0, `rgba(255,226,160,${0.55 * (1 - p)})`); g.addColorStop(1, 'rgba(255,220,150,0)');
+        ctx.fillStyle = g; ctx.fillRect(x - z * 0.9, y - z * 0.9, z * 1.8, z * 1.8);
+        for (let i = 0; i < 8; i++) {
+          const px = x + (los(i * 5 + e.y) - 0.5) * z * 0.9, py = y + p * z * (0.6 + los(i * 3 + e.x));
+          ctx.fillStyle = `rgba(190,160,110,${0.7 * (1 - p)})`;
+          ctx.beginPath(); ctx.arc(px, py, Math.max(0.8, z * 0.05), 0, Math.PI * 2); ctx.fill();
+        }
       } else if (e.rodzaj === 'wypoczety') {
         const c = sim.creatureById(e.kto);
         if (!c || t > 1.4) continue;
@@ -339,6 +356,17 @@ export class Pokoje {
     ctx.strokeStyle = barwa(0.95); ctx.lineWidth = Math.max(1.6, z * 0.1);
     obrysKafli(ctx, cam, p.kafle, w.w);
     ctx.setLineDash([]);
+    // drabina: zarys belek i szczebli, a u góry strzałka na półkę, na którą się z niej schodzi
+    if (p.rodzaj === 'drabina' && p.kafle.length) {
+      ctx.globalAlpha = 0.85;
+      drabinaWKolumnie(ctx, cam, p.x, p.y, p.y + p.h - 1, p.y, p.y + p.h - 2, z, p.ok ? 0.55 : 0.3);
+      ctx.globalAlpha = 1;
+      if (p.ok && p.kier) {
+        const ax = cam.toScreenX(p.x + 0.5 + p.kier * 0.9), ay = cam.toScreenY(p.y + 0.5);
+        ctx.fillStyle = barwa(0.95);
+        ctx.beginPath(); ctx.moveTo(ax + p.kier * z * 0.35, ay); ctx.lineTo(ax - p.kier * z * 0.1, ay - z * 0.28); ctx.lineTo(ax - p.kier * z * 0.1, ay + z * 0.28); ctx.closePath(); ctx.fill();
+      }
+    }
     // podłoga pod planem
     if (czyPokoj(p.rodzaj)) {
       ctx.strokeStyle = barwa(0.6); ctx.lineWidth = Math.max(1, z * 0.06);
@@ -388,6 +416,126 @@ function podpis(ctx: CanvasRenderingContext2D, tekst: string, x: number, y: numb
   ctx.strokeText(tekst, x, y);
   ctx.fillStyle = barwa;
   ctx.fillText(tekst, x, y);
+}
+
+/** Drewno drabiny: belka ciemna, szczebel jaśniejszy. */
+const BELKA = 'rgba(104,70,40,0.98)', SZCZEBEL = 'rgba(150,108,62,0.98)';
+
+/**
+ * Etap 3d: zbudowane drabiny (world.drabina) — dwie belki przez każdy kafel ze szczeblem i szczebel w jego środku;
+ * pod najniższym szczeblem belki schodzą do podłogi, nad najwyższym wystają na chwyt.
+ */
+function rysujDrabiny(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera): void {
+  const w = sim.world;
+  const z = cam.zoom;
+  const left = Math.max(0, Math.floor(cam.x - cam.vw / 2 / z) - 1), right = Math.min(w.w - 1, Math.ceil(cam.x + cam.vw / 2 / z) + 1);
+  const top = Math.max(0, Math.floor(cam.y - cam.vh / 2 / z) - 1), bottom = Math.min(w.h - 2, Math.ceil(cam.y + cam.vh / 2 / z) + 1);
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let x = left; x <= right; x++) {
+    for (let y = top; y <= bottom; y++) {
+      const i = y * w.w + x;
+      if (w.drabina[i] !== 1) continue;
+      // odcinek drabiny w tej kolumnie: od tego kafla w dół, póki są szczeble
+      let y2 = y;
+      while (y2 + 1 < w.h && w.drabina[i + (y2 + 1 - y) * w.w] === 1) y2++;
+      // pod spodem pusty kafel z podłogą (tam się staje) — belki schodzą do niej
+      const doPodlogi = w.passable(x, y2 + 1) ? 1 : 0;
+      drabinaWKolumnie(ctx, cam, x, y, y2 + doPodlogi, y, y2, z, 1);
+      y = y2;
+    }
+  }
+  ctx.restore();
+}
+
+/** Belki od `yOd` do `yDo` (kafle, włącznie) i szczeble w kaflach `szOd`..`szDo`; `alfa` — przezroczystość. */
+function drabinaWKolumnie(ctx: CanvasRenderingContext2D, cam: Camera, x: number, yOd: number, yDo: number, szOd: number, szDo: number, z: number, alfa: number): void {
+  const x1 = cam.toScreenX(x + 0.22), x2 = cam.toScreenX(x + 0.78);
+  const gora = cam.toScreenY(yOd) - z * 0.35, dol = cam.toScreenY(yDo + 1);
+  ctx.globalAlpha = alfa;
+  ctx.strokeStyle = TUSZ;
+  ctx.lineWidth = Math.max(2.4, z * 0.17);
+  ctx.beginPath(); ctx.moveTo(x1, gora); ctx.lineTo(x1, dol); ctx.moveTo(x2, gora); ctx.lineTo(x2, dol); ctx.stroke();
+  ctx.strokeStyle = BELKA;
+  ctx.lineWidth = Math.max(1.4, z * 0.1);
+  ctx.beginPath(); ctx.moveTo(x1, gora); ctx.lineTo(x1, dol); ctx.moveTo(x2, gora); ctx.lineTo(x2, dol); ctx.stroke();
+  for (let y = szOd; y <= szDo; y++) {
+    const sy = cam.toScreenY(y + 0.55);
+    ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(2, z * 0.13);
+    ctx.beginPath(); ctx.moveTo(x1, sy); ctx.lineTo(x2, sy); ctx.stroke();
+    ctx.strokeStyle = SZCZEBEL; ctx.lineWidth = Math.max(1.2, z * 0.07);
+    ctx.beginPath(); ctx.moveTo(x1, sy); ctx.lineTo(x2, sy); ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/**
+ * Plan drabiny: złote, przerywane belki od podłogi do półki i zarys szczebli; budowany szczebel wsuwa się z boku
+ * z postępem, a spod młotka budowniczego lecą wióry. Nad planem — ile szczebli już stoi.
+ */
+function rysujPlanDrabiny(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, pom: Pomieszczenie, teraz: number, pod: PodKursorem | null): void {
+  const w = sim.world;
+  const z = cam.zoom;
+  const x = pom.x, yGora = pom.y, yDol = pom.y + pom.h - 1;
+  const x1 = cam.toScreenX(x + 0.22), x2 = cam.toScreenX(x + 0.78);
+  ctx.save();
+  if (pod) { ctx.shadowColor = 'rgba(246,206,120,0.9)'; ctx.shadowBlur = 10; }
+  ctx.setLineDash([Math.max(3, z * 0.35), Math.max(2, z * 0.2)]);
+  ctx.lineDashOffset = wolnoRuszac() ? -teraz * 0.01 : 0;
+  ctx.strokeStyle = ZLOTO_PLANU(pod ? 1 : 0.8); ctx.lineWidth = Math.max(1.4, z * (pod ? 0.1 : 0.07));
+  ctx.beginPath();
+  ctx.moveTo(x1, cam.toScreenY(yGora) - z * 0.35); ctx.lineTo(x1, cam.toScreenY(yDol + 1));
+  ctx.moveTo(x2, cam.toScreenY(yGora) - z * 0.35); ctx.lineTo(x2, cam.toScreenY(yDol + 1));
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.shadowBlur = 0;
+  // zarys brakujących szczebli
+  ctx.strokeStyle = ZLOTO_PLANU(0.4); ctx.lineWidth = Math.max(1, z * 0.05);
+  ctx.beginPath();
+  for (const i of pom.kafle) {
+    if (w.drabina[i]) continue;
+    const sy = cam.toScreenY(((i / w.w) | 0) + 0.55);
+    ctx.moveTo(x1, sy); ctx.lineTo(x2, sy);
+  }
+  ctx.stroke();
+  // budowany szczebel — wsuwa się z postępem; wióry spod młotka
+  const sz = nastepnySzczebel(sim, pom);
+  const budowniczy = sim.creatures.filter((c) => !c.dead && c.czynnosc === 'buduje' && c.polecenie?.typ === 'drabina' && c.polecenie.pom === pom.id);
+  if (sz && budowniczy.length) {
+    const sy = cam.toScreenY(sz[1] + 0.55);
+    const p = Math.min(1, pom.postep ?? 0);
+    ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(2, z * 0.13);
+    ctx.beginPath(); ctx.moveTo(x1, sy); ctx.lineTo(x1 + (x2 - x1) * p, sy); ctx.stroke();
+    ctx.strokeStyle = SZCZEBEL; ctx.lineWidth = Math.max(1.2, z * 0.07);
+    ctx.beginPath(); ctx.moveTo(x1, sy); ctx.lineTo(x1 + (x2 - x1) * p, sy); ctx.stroke();
+    for (const c of budowniczy) wiory(ctx, (x1 + x2) / 2, sy, z, c, teraz);
+  }
+  if (z >= 5) {
+    const zostalo = zostaloKafli(sim, pom);
+    podpis(ctx, `plan: drabina · ${pom.kafle.length - zostalo}/${pom.kafle.length} szczebli`, (x1 + x2) / 2, cam.toScreenY(yGora) - z * 0.7, z, ZLOTO_PLANU(0.92));
+  }
+  if (pod) podpis(ctx, pod.akcja, (x1 + x2) / 2, cam.toScreenY(yDol + 1) + z * 0.95, z, pod.ok ? ZLOTO_PLANU(0.98) : CZERWIEN(0.98));
+  ctx.restore();
+}
+
+/** Wióry spod młotka przy budowie drabiny — w takt zamachu (figury.ts: fazaMlota). */
+function wiory(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, c: Creature, teraz: number): void {
+  if (!wolnoRuszac()) return;
+  const f = fazaMlota(c);
+  if (f < 0.5 || f > 0.8) return;
+  const p = (f - 0.5) / 0.3;
+  const nr = Math.floor(teraz / 625) + c.id * 31;
+  ctx.save();
+  ctx.fillStyle = `rgba(200,160,104,${1 - p})`;
+  for (let k = 0; k < 6; k++) {
+    const a = -Math.PI * (0.1 + 0.8 * los(nr * 5 + k));
+    const v = z * (0.3 + 0.6 * los(nr * 9 + k * 7));
+    const px = x + Math.cos(a) * v * p, py = y + Math.sin(a) * v * p + z * 0.9 * p * p;
+    ctx.save(); ctx.translate(px, py); ctx.rotate(los(k + nr) * 6);
+    ctx.fillRect(-z * 0.07, -z * 0.025, z * 0.14, z * 0.05);
+    ctx.restore();
+  }
+  ctx.restore();
 }
 
 /** Plan na skale: podwójny kontur kreską rycinową, kafle do wykucia przekreślone, nazwa i ile zostało. */
@@ -474,6 +622,7 @@ function zzz(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, ter
 
 /** Co zrobią zaznaczeni po dotknięciu tego pomieszczenia (podpis nad nim). */
 export function akcjaNaPomieszczeniu(pom: Pomieszczenie, robotnikow: number, innych: number): { akcja: string; ok: boolean } {
+  if (!pom.gotowe && pom.rodzaj === 'drabina') return robotnikow ? { akcja: 'zbudujcie tę drabinę', ok: true } : { akcja: 'drabiny budują tylko robotnicy', ok: false };
   if (!pom.gotowe) return robotnikow ? { akcja: 'kujcie ten plan', ok: true } : { akcja: 'kują tylko robotnicy', ok: false };
   const r: RodzajPomieszczenia = pom.rodzaj;
   if (r === 'sypialnia') return { akcja: 'idźcie spać — sen zdejmie osłabienia', ok: true };

@@ -205,6 +205,51 @@ export class Resonance {
     });
   }
 
+  /**
+   * Alpha, etap 3d: rytuał przy ołtarzu — ciche akcenty (dźwięki dopisze zespół). Początek: dwa niskie tony,
+   * które długo wybrzmiewają; koniec: miękki dzwon. Rytuały krwi brzmią niżej i ciemniej (mała tercja).
+   */
+  rytual(faza: 'start' | 'koniec' | 'przerwany', krwi: boolean): void {
+    if (!this.ctx || !ustawienia.rezonans) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const baza = krwi ? 98 : 131;
+    const tony = faza === 'start' ? [baza, baza * (krwi ? 1.189 : 1.26)] : faza === 'koniec' ? [baza * 4, baza * 6, baza * (krwi ? 4.76 : 5.04)] : [baza * 0.75];
+    const trwa = faza === 'start' ? 2.6 : faza === 'koniec' ? 3.2 : 0.9;
+    tony.forEach((ton, i) => {
+      const od = t + i * (faza === 'koniec' ? 0.09 : 0.25);
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = faza === 'koniec' ? 'triangle' : 'sine';
+      o.frequency.setValueAtTime(ton, od);
+      if (faza === 'przerwany') o.frequency.exponentialRampToValueAtTime(ton * 0.6, od + trwa);
+      g.gain.setValueAtTime(0.0001, od);
+      g.gain.exponentialRampToValueAtTime(faza === 'koniec' ? 0.03 : 0.05, od + (faza === 'start' ? 0.6 : 0.01));
+      g.gain.exponentialRampToValueAtTime(0.0001, od + trwa);
+      const p = mikser.panorama(0);
+      o.connect(g); g.connect(p); p.connect(this.master);
+      o.start(od); o.stop(od + trwa + 0.1);
+    });
+  }
+
+  /** Alpha, etap 3d: kropla krwi wpada do misy albo do licznika — krótkie, ciche „kap”. */
+  kropla(): void {
+    if (!this.ctx || !ustawienia.rezonans) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(1400, t);
+    o.frequency.exponentialRampToValueAtTime(520, t + 0.09);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.03, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16);
+    const p = mikser.panorama(0.3);
+    o.connect(g); g.connect(p); p.connect(this.master);
+    o.start(t); o.stop(t + 0.2);
+  }
+
   /** Remake v2: góra zawala się nad ludem — długi, niski łoskot kamienia. */
   zawal(): void {
     if (!this.ctx || !ustawienia.rezonans) return;

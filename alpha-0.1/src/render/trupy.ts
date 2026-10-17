@@ -10,6 +10,7 @@ import type { Trup } from '../sim/trupy';
 import { Race, RACES } from '../sim/races';
 import { rysujLud } from './postacie';
 import { ustawienia } from '../core/settings-store';
+import { rytualOltarza } from '../sim/oltarz';
 
 interface Szkic { p: HTMLCanvasElement; klucz: string }
 const szkice = new Map<number, Szkic>();
@@ -25,6 +26,10 @@ export function rysujTrupy(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
   const right = left + cam.vw / z, bottom = top + cam.vh / z;
   const skala = Math.max(1, Math.min(3, Math.hypot(ctx.getTransform().a, ctx.getTransform().b)));
   const zywe = new Set<number>();
+  // Alpha, etap 3d: wskrzeszany blednie w miejscu, gdzie leży — jego iskry płyną do ołtarza (render/oltarz.ts)
+  const r = rytualOltarza(sim);
+  const wskrzeszany = r?.rodzaj === 'wskrzeszenie' ? r.cel : undefined;
+  const blednie = r && wskrzeszany !== undefined ? Math.min(1, Math.max(0, (sim.tick - r.od) / Math.max(1, r.do - r.od) / 0.6)) : 0;
   for (const t of trupy) {
     zywe.add(t.id);
     if (t.x < left - 3 || t.x > right + 3 || t.y < top - 3 || t.y > bottom + 3) continue;
@@ -54,7 +59,9 @@ export function rysujTrupy(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
       sz = { p, klucz };
       szkice.set(t.id, sz);
     }
+    if (t.id === wskrzeszany) ctx.globalAlpha = 1 - blednie;
     ctx.drawImage(sz.p, sx - w / 2, sy - oy, w, wys);
+    ctx.globalAlpha = 1;
   }
   for (const id of szkice.keys()) if (!zywe.has(id)) szkice.delete(id);
 }

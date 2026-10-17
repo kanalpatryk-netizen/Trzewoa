@@ -41,6 +41,7 @@ const JAK_PLANOWAC: Record<RodzajPomieszczenia, string> = {
   kuznia: 'dotknij skały obok przejścia — plan stanie pod kursorem; w kuźni żelazo staje się zbroją rycerza',
   korytarz: 'przeciągnij w bok od miejsca, gdzie stoi lud — korytarz na 2 kafle',
   szyb: 'przeciągnij w dół i w bok od miejsca, gdzie stoi lud — proste schody',
+  drabina: 'przeciągnij w górę od miejsca, gdzie stoi lud, do półki — tylko tam, gdzie inaczej się nie wejdzie',
 };
 
 /** Fala w miejscu wydania rozkazu (zegar ekranu): złota — przyjęli, czerwona — odmówili. */
@@ -212,7 +213,7 @@ export function rysujDruzyne(
   return pola;
 }
 
-/** Listwa szablonów u dołu płyty: sypialnia, warsztat, kuźnia, korytarz, szyb i „gotowe”; nad nią — jak planować. */
+/** Listwa szablonów u dołu płyty: sypialnia, warsztat, kuźnia, korytarz, szyb, drabina i „gotowe”; nad nią — jak planować. */
 function listwaSzablonow(ctx: CanvasRenderingContext2D, plate: Plate, szablon: RodzajPomieszczenia, kursor: { x: number; y: number }, rozm: number): PoleDruzyny[] {
   const pola: PoleDruzyny[] = [];
   const hp = Math.max(24, rozm * 1.8);

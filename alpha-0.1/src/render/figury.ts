@@ -1095,6 +1095,15 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       ctx.fill();
     }
 
+    // Alpha, etap 3d: szał krwi z ołtarza — czerwona aura wokół postaci, pulsuje
+    if ((c.szalDo ?? -1) > sim.tick) {
+      const puls = 0.75 + 0.25 * Math.sin(czas * 0.008 + c.id);
+      const R = h * 0.95;
+      const ga = ctx.createRadialGradient(sx, sy - h * 0.5, 0, sx, sy - h * 0.5, R);
+      ga.addColorStop(0, `rgba(255,44,26,${0.42 * puls})`); ga.addColorStop(0.6, `rgba(220,24,14,${0.18 * puls})`); ga.addColorStop(1, 'rgba(200,20,10,0)');
+      ctx.fillStyle = ga; ctx.fillRect(sx - R, sy - h * 0.5 - R, R * 2, R * 2);
+    }
+
     let cz: Czynnosc;
     if (tlum && wybrany !== c.id && !c.straznik && !c.odmowa) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
     else {

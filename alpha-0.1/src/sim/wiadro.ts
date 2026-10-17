@@ -196,13 +196,16 @@ export function wybierzMiejsce(sim: Sim, grupy?: Grupa[]): MiejsceWiadra | null 
  */
 export interface MiejsceWiadra { x: number; sufit: number; cel: number; szyb?: boolean; pilne?: boolean }
 
-/** Alpha: dno szybu z jedzeniem — wiadro zjeżdża tam z samej powierzchni (null, gdy góra nie ma szybu albo go zasypano). */
+/**
+ * Alpha: dno szybu z jedzeniem — wiadro zjeżdża tam z samej powierzchni (null, gdy góra nie ma szybu albo go zasypano).
+ * Etap 3d: węższym otworem na prawo od szybu ze światłem (pod tamtym stoi ołtarz).
+ */
 export function miejsceWSzybie(sim: Sim): MiejsceWiadra | null {
   if (!SWIAT.warstwy.wlaczone || !WIADRO.szybem) return null;
   const w = sim.world;
-  const x = w.szybX;
-  for (let y = SURFACE_Y - 1; y <= w.szybDol; y++) if (!w.passable(x, y)) return null;
-  let cel = w.szybDol;
+  const x = w.szybWiadraX;
+  for (let y = SURFACE_Y - 1; y <= w.szybWiadraDol; y++) if (!w.passable(x, y)) return null;
+  let cel = w.szybWiadraDol;
   while (cel + 1 < w.h && w.passable(x, cel + 1)) cel++;
   if (!stoi(sim, x, cel)) return null;
   return { x, sufit: SURFACE_Y - 1, cel, szyb: true };

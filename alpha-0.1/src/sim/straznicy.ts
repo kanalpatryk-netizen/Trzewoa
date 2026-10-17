@@ -111,11 +111,20 @@ function klanStraznikow(sim: Sim): number {
 /** Miejsce w skale wokół przedsionka, skąd Strażnik wychodzi. */
 export function miejscePojawienia(sim: Sim): [number, number] {
   const w = sim.world;
-  const r = S.pojawOd + sim.rng.int(Math.max(1, S.pojawDo - S.pojawOd + 1));
-  const a = sim.rng.range(-Math.PI, 0);   // z boków i z góry — nie spod rdzenia
-  const x = Math.max(2, Math.min(w.w - 3, Math.round(w.coreX + Math.cos(a) * r)));
-  const y = Math.max(2, Math.min(w.coreY - 2, Math.round(w.przedsionekY + Math.sin(a) * r * 0.7)));
-  return [x, y];
+  // Alpha: nie tuż przy modlących się — wyłaniając się obok pobożnych, zabijali ich, zanim rycerz zdążył podejść
+  const bezbronni = sim.creatures.filter((o) => !o.dead && rolaPostaci(o) && !walczacy(o));
+  let best: [number, number] = [w.coreX, w.przedsionekY], bd = -1;
+  for (let k = 0; k < 12; k++) {
+    const r = S.pojawOd + sim.rng.int(Math.max(1, S.pojawDo - S.pojawOd + 1));
+    const a = sim.rng.range(-Math.PI, 0);   // z boków i z góry — nie spod rdzenia
+    const x = Math.max(2, Math.min(w.w - 3, Math.round(w.coreX + Math.cos(a) * r)));
+    const y = Math.max(2, Math.min(w.coreY - 2, Math.round(w.przedsionekY + Math.sin(a) * r * 0.7)));
+    let d = Infinity;
+    for (const o of bezbronni) d = Math.min(d, Math.hypot(o.x - x, o.y - y));
+    if (d >= S.pojawOdLudu) return [x, y];
+    if (d > bd) { bd = d; best = [x, y]; }
+  }
+  return best;
 }
 
 /** Wywołuje Strażnika (albo bossa — `boss` ustawia sim/boss.ts) w (x, y). */

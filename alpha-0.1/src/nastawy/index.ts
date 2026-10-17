@@ -12,6 +12,7 @@ export { MROK } from './mrok';
 export { WIADRO } from './wiadro';
 export { KRUSZCE, OKRUCH } from './kruszce';
 export { POMIESZCZENIA } from './pomieszczenia';
+export { OLTARZ } from './oltarz';
 export { STWORZENIA } from './stworzenia';
 export { KOSZTY, MOCE, SKAZY } from './moce';
 export { KAMERA, TEMPO, STEROWANIE } from './sterowanie';

@@ -2,6 +2,10 @@ import { rysujWiadra, rysujPrzodWiader } from '../../render/wiadro';
 import { rysujKucie } from '../../render/kucie';
 import { Urobki, znaczekKruszcu, type CelLotu } from '../../render/kruszce';
 import { Pokoje, akcjaNaPomieszczeniu, type PodKursorem } from '../../render/pomieszczenia';
+import { Oltarz, oltarzPod } from '../../render/oltarz';
+import { rysujOknoOltarza, type PoleOltarza } from '../../render/okno-oltarza';
+import { odprawRytual, rytualOltarza } from '../../sim/oltarz';
+import { NAZWA_RYTUALU } from '../../nastawy/oltarz';
 import { probaPlanu, polozPlan, skreslPlan, pomieszczenieW, czyPokoj, type ProbaPlanu } from '../../sim/pomieszczenia';
 import { SZABLONY, NAZWA_POMIESZCZENIA, BIERNIK_POMIESZCZENIA, type RodzajPomieszczenia } from '../../nastawy/pomieszczenia';
 import { OKRUCH } from '../../nastawy/kruszce';
@@ -24,7 +28,7 @@ import { rysujDev } from '../../render/dev';
 import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
-import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie } from '../../sim/polecenia';
+import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza } from '../../sim/polecenia';
 import { rysujZnacznikiLudu } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
 import { LUD, REMAKE } from '../../nastawy/lud';
@@ -104,7 +108,9 @@ export type ZdarzenieGry =
   | { typ: 'kamera'; rodzaj: 'przesun' | 'zoom' | 'powrot' }
   | { typ: 'rozkaz'; czasownik: string; narzedzie: string }
   | { typ: 'zaznaczono'; ile: number }
-  | { typ: 'polecenie'; rodzaj: 'idz' | 'droga' | 'odwolaj' | 'pomieszczenie'; przyjeli: number }
+  | { typ: 'polecenie'; rodzaj: 'idz' | 'droga' | 'odwolaj' | 'pomieszczenie' | 'oltarz'; przyjeli: number }
+  /** etap 3d: otwarto okno ołtarza (`okno`) albo odprawiono rytuał (jego rodzaj) */
+  | { typ: 'oltarz'; rodzaj: string }
   | { typ: 'planowanie'; rodzaj: string }
   | { typ: 'plan'; rodzaj: string }
   | { typ: 'pauza'; stoi: boolean }
@@ -127,6 +133,10 @@ export class EkranGry implements Ekran {
   private urobki = new Urobki();
   /** Alpha, etap 3c: rysunek planów i pomieszczeń (render/pomieszczenia.ts). */
   private pokoje = new Pokoje();
+  /** Alpha, etap 3d: ołtarz w sali i jego rytuały (render/oltarz.ts); okno rytuałów otwiera dotknięcie ołtarza. */
+  private oltarz = new Oltarz();
+  private oknoOltarza = false;
+  private polaOltarza: PoleOltarza[] = [];
   /** Planujesz: szablon pod kursorem (null — nie planujesz). */
   szablon: RodzajPomieszczenia | null = null;
   private ostatniSzablon: RodzajPomieszczenia = 'warsztat';
@@ -224,7 +234,8 @@ export class EkranGry implements Ekran {
   private botStanOd = 0;
 
   constructor(private app: Kontekst) {
-    this.urobki.onDolot = (rodzaj) => this.app.dzwiek.kruszec(rodzaj !== 'zelazo');
+    this.oltarz.onZdarzenie = (z) => this.app.dzwiek.rytual(z.faza, z.rodzaj !== 'modlitwa' && z.rodzaj !== 'wskrzeszenie');
+    this.urobki.onDolot = (rodzaj) => { if (rodzaj === 'krew') this.app.dzwiek.kropla(); else this.app.dzwiek.kruszec(rodzaj !== 'zelazo'); };
   }
 
   /** Mnożnik czasu: w grze zawsze 1 (zwykły czas), w trybie deweloperskim z przycisków i okienka. */
@@ -447,6 +458,15 @@ export class EkranGry implements Ekran {
     // etap 3c: pierwszy plan — tablica pomieszczeń; gotowy warsztat, kuźnia, sypialnia — ich tablice
     if (this.szablon || sim.pomieszczenia.length) odkrycia.odkryj('pomieszczenia');
     for (const pom of sim.pomieszczenia) if (pom.gotowe && (pom.rodzaj === 'warsztat' || pom.rodzaj === 'kuznia' || pom.rodzaj === 'sypialnia')) odkrycia.odkryj(pom.rodzaj);
+    // etap 3d: ołtarz — gdy ktoś go zobaczy (albo po cichu po chwili); rytuał — jego tablica przy pierwszym odprawieniu;
+    // drabina — przy pierwszym planie drabiny
+    const o = sim.world.oltarz;
+    if (this.oknoOltarza) odkrycia.odkryj('oltarz');
+    if (sim.tick > 1200 && sim.world.ever[sim.world.idx(o.x, o.y)]) cicho('oltarz');
+    const rt = rytualOltarza(sim);
+    if (rt) odkrycia.odkryj(rt.rodzaj === 'modlitwa' ? 'rytual-modlitwa' : rt.rodzaj === 'szal' ? 'rytual-szal' : rt.rodzaj === 'wskrzeszenie' ? 'rytual-wskrzeszenie'
+      : rt.rodzaj === 'ofiaraKrwi' ? 'rytual-ofiara-krwi' : 'rytual-ofiara-zycia');
+    if (this.szablon === 'drabina' || sim.pomieszczenia.some((p) => p.rodzaj === 'drabina')) odkrycia.odkryj('drabina');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
@@ -511,7 +531,8 @@ export class EkranGry implements Ekran {
     const czesci: [string, string, string][] = [
       // etap 3c: krzyż z warsztatu leci do licznika wiary — wiara rośnie, gdy doleci
       ['wiara', `${Math.max(0, Math.floor(sim.wiara - this.urobki.wLocie('wiara')))}`, 'rgba(222,200,150,1)'],
-      ['krew', `${Math.floor(sim.krew)}`, 'rgba(206,104,86,1)'],
+      // etap 3d: kropla krwi z ofiary leci z misy ołtarza do licznika — krew rośnie, gdy doleci
+      ['krew', `${Math.max(0, Math.floor(sim.krew - this.urobki.wLocie('krew')))}`, 'rgba(206,104,86,1)'],
       // Remake v2: jedzenie to porcje w wiadrach, które już zjechały albo zjeżdżają
       ['jedzenie', `${REMAKE ? porcjiWWiadrach(sim) : klan?.stock ?? 0}`, 'rgba(150,178,114,1)'],
       // Alpha, etap 3b: kruszce — licznik rośnie, gdy okruch z rozbitego kafla doleci (render/kruszce.ts)
@@ -531,9 +552,9 @@ export class EkranGry implements Ekran {
     for (const [e, l, kol] of czesci) {
       // kruszec: znaczek (sztabka, samorodek) przed podpisem; na wąskim ekranie sam znaczek, bez podpisu
       const kruszec = e === 'żelazo' ? 'zelazo' : e === 'złoto' ? 'zloto' : null;
-      const cel: CelLotu | null = kruszec ?? (e === 'wiara' ? 'wiara' : null);
+      const cel: CelLotu | null = kruszec ?? (e === 'wiara' ? 'wiara' : e === 'krew' ? 'krew' : null);
       const kb = cel ? this.urobki.blysk(cel, teraz) : 0;
-      if (cel === 'wiara') this.urobki.cele.wiara = { x: x + kaw(e + ' ', fE) + kaw(l, fL) / 2, y: y - rozm * 0.35 };
+      if (cel === 'wiara' || cel === 'krew') this.urobki.cele[cel] = { x: x + kaw(e + ' ', fE) + kaw(l, fL) / 2, y: y - rozm * 0.35 };
       if (kruszec) {
         const s = rozm * 1.25;
         znaczekKruszcu(ctx, kruszec, x + s / 2, y - rozm * 0.32, s, kb, this.urobki.dolot(kruszec));
@@ -555,7 +576,7 @@ export class EkranGry implements Ekran {
         ctx.save();
         ctx.translate(x + sz / 2, y - rozm * 0.35);
         ctx.scale(sk, sk);
-        ctx.shadowColor = cel === 'zloto' || cel === 'wiara' ? `rgba(255,214,110,${kb})` : `rgba(255,170,90,${kb})`;
+        ctx.shadowColor = cel === 'zloto' || cel === 'wiara' ? `rgba(255,214,110,${kb})` : cel === 'krew' ? `rgba(255,70,50,${kb})` : `rgba(255,170,90,${kb})`;
         ctx.shadowBlur = 12 * kb;
         ctx.fillText(l, -sz / 2, rozm * 0.35);
         ctx.restore();
@@ -875,6 +896,8 @@ export class EkranGry implements Ekran {
     rysujKucie(ctx, sim, cam, teraz);
     // etap 3c: wyposażenie gotowych pomieszczeń (stół, kowadło, posłania) — w mroku ginie jak skała
     this.pokoje.rysujWnetrza(ctx, sim, cam, teraz);
+    // etap 3d: ołtarz na środku sali — kamień i drewno (świece i smuga dnia — nad mrokiem)
+    this.oltarz.rysuj(ctx, sim, cam);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
     // Remake v2: trupy leżą tam, gdzie padli; wiadra z jedzeniem zjeżdżają na linach
@@ -890,6 +913,9 @@ export class EkranGry implements Ekran {
     // etap 3c: plany, ogień paleniska, złoto w tyglu, iskry, „z z z” — nad mrokiem; podgląd szablonu pod kursorem
     this.pokoje.zbierz(sim, teraz, this.urobki);
     this.pokoje.rysujNad(ctx, sim, cam, teraz, this.pomieszczeniePodKursorem());
+    // etap 3d: smuga dnia, świece, rytuał w toku (promienie, krąg znaków, krew, wskrzeszany) — nad mrokiem
+    this.oltarz.zbierz(sim, teraz, this.urobki);
+    this.oltarz.rysujNad(ctx, sim, cam, teraz, this.oltarzPodKursorem());
     const proba = this.probaPodKursorem();
     if (proba) this.pokoje.podglad(ctx, sim, cam, proba, teraz, this.ciagniecie ? undefined : this.szablon && !czyPokoj(this.szablon) ? `${NAZWA_POMIESZCZENIA[this.szablon]} — przeciągnij` : undefined);
     // droga pielgrzymów: którędy wierni zejdą pod rdzeń (przekopują ją sami — gracz nie drąży)
@@ -963,6 +989,10 @@ export class EkranGry implements Ekran {
       ? rysujBanerPauzy(ctx, plate, sim, this.rozkazy.ile, teraz, nadPrzyciskami) : [];
     this.polaAlarmu = this.alarm && this.pauza && !this.zapiski && !wyd ? rysujAlarm(ctx, plate, this.alarm, teraz) : [];
     this.polaWydarzenia = wyd && !this.zapiski && !sim.ending ? rysujWydarzenie(ctx, plate, sim, wyd, teraz) : [];
+    // etap 3d: okno ołtarza (karta wydarzenia ma pierwszeństwo — okno czeka pod nią)
+    if (sim.ending) this.oknoOltarza = false;
+    this.polaOltarza = this.oknoOltarza && !wyd && !this.zapiski
+      ? rysujOknoOltarza(ctx, plate, sim, teraz, this.ui.pointer, { x: plate.x + this.cam.toScreenX(sim.world.oltarz.x + 0.5), pol: this.cam.zoom * 2.6 }) : [];
     this.znakMenu(ctx, teraz);
     if (this.liczby || ustawienia.trybDeweloperski) {
       ctx.save();
@@ -1047,9 +1077,19 @@ export class EkranGry implements Ekran {
     });
   }
 
-  /** Gdzie leży pole na pasku drużyny (np. „wyznacz pomieszczenie”) — samouczek je wskazuje. */
-  miejscePolaDruzyny(akcja: PoleDruzyny['akcja']): PoleDruzyny | null {
-    return this.polaDruzyny.find((p) => p.akcja === akcja) ?? null;
+  /** Gdzie leży pole na pasku drużyny (np. „wyznacz pomieszczenie”, medalion roli) — samouczek je wskazuje. */
+  miejscePolaDruzyny(akcja: PoleDruzyny['akcja'], rola?: Rola): PoleDruzyny | null {
+    return this.polaDruzyny.find((p) => p.akcja === akcja && (!rola || p.rola === rola)) ?? null;
+  }
+
+  /** Etap 3d: ilu zaznaczonych ma tę rolę (samouczek ołtarza). */
+  zaznaczeniRoli(rola: Rola): number {
+    return this.zaznaczeniZywi().filter((c) => rolaPostaci(c) === rola).length;
+  }
+
+  /** Etap 3d: gdzie w otwartym oknie ołtarza leży pole rytuału — samouczek je wskazuje (albo null, gdy okno zamknięte). */
+  poleOltarza(rodzaj: string): PoleOltarza | null {
+    return this.polaOltarza.find((p) => p.akcja === 'rytual' && p.rodzaj === rodzaj) ?? null;
   }
 
   /** Gdzie leży przycisk pod płytą — samouczek go wskazuje. */
@@ -1221,6 +1261,34 @@ export class EkranGry implements Ekran {
     return { pom, akcja, ok };
   }
 
+  /** Etap 3d: podpis nad ołtarzem pod kursorem — co się stanie po dotknięciu (albo null). */
+  private oltarzPodKursorem(): string | null {
+    if (this.szablon || this.ui.verb || this.sim.ending || this.oknoOltarza) return null;
+    const p = this.ui.pointer;
+    if (!this.naPlycie(p.x, p.y) || !oltarzPod(this.sim, this.cam, p.x - this.plate.x, p.y - this.plate.y)) return null;
+    return this.zaznaczeniZywi().length ? 'ołtarz — zaznaczeni pójdą do niego' : 'ołtarz — dotknij: rytuały';
+  }
+
+  /** Etap 3d: wybór w oknie ołtarza — rytuał, przywołanie pobożnego albo zamknięcie. */
+  private wybierzWOknieOltarza(b: PoleOltarza): void {
+    const { ui, sim } = this;
+    if (b.akcja === 'zamknij') { this.oknoOltarza = false; return; }
+    if (b.akcja === 'tlo') return;
+    if (b.akcja === 'przywolaj') {
+      const powod = przywolajDoOltarza(sim);
+      if (powod) { ui.say(`Nikt nie przyjdzie: ${powod}.`, sim.tick); this.app.gesty.odmowa(); }
+      else { ui.say('Pobożny idzie do ołtarza.', sim.tick); this.app.gesty.klik(); }
+      return;
+    }
+    if (!b.rodzaj) return;
+    const powod = odprawRytual(sim, b.rodzaj, b.cel);
+    if (powod) { ui.say(`${NAZWA_RYTUALU[b.rodzaj]} — teraz nie: ${powod}.`, sim.tick); this.app.gesty.odmowa(); return; }
+    ui.say(`${NAZWA_RYTUALU[b.rodzaj]} — pobożny klęka przy ołtarzu.`, sim.tick);
+    this.app.gesty.klik();
+    this.oknoOltarza = false;
+    this.nasluch?.({ typ: 'oltarz', rodzaj: b.rodzaj });
+  }
+
   /** Kładzie plan z próby (albo mówi, czemu tu nie wolno). */
   private polozPlanZProby(p: ProbaPlanu | null): void {
     const { ui, sim } = this;
@@ -1258,6 +1326,21 @@ export class EkranGry implements Ekran {
       return;
     }
     const ids = this.zaznaczeniZywi().map((c) => c.id);
+    // etap 3d: ołtarz pod palcem — otwiera okno rytuałów; zaznaczeni idą do niego i tam zostają
+    if (oltarzPod(sim, this.cam, sx - this.plate.x, sy - this.plate.y)) {
+      if (ids.length) {
+        const { przyjeli, odmowy } = wydajDoOltarza(sim, ids);
+        const o = sim.world.oltarz;
+        this.falaRozkazu = { x: o.x + 0.5, y: o.y, t: performance.now(), ok: przyjeli > 0 };
+        if (!przyjeli) { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
+        else { ui.say(przyjeli === 1 ? 'Idzie do ołtarza.' : `Idą do ołtarza: ${przyjeli}.`, sim.tick); this.app.gesty.klik(); }
+        this.nasluch?.({ typ: 'polecenie', rodzaj: 'oltarz', przyjeli });
+      }
+      this.oknoOltarza = true;
+      this.nasluch?.({ typ: 'oltarz', rodzaj: 'okno' });
+      this.dirty = true;
+      return;
+    }
     // etap 3c: plan albo pomieszczenie pod palcem — robotnicy kują plan, pracują w warsztacie i kuźni, każdy śpi w sypialni
     const pom = pomieszczenieW(sim, Math.floor(fx), Math.floor(fy));
     if (pom && !ids.length) { ui.say(pom.gotowe ? `${NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż.` : 'Plan — zaznacz robotników i wskaż go, a wykują.', sim.tick); return; }
@@ -1424,6 +1507,15 @@ export class EkranGry implements Ekran {
       const wybory = this.polaWydarzenia.filter((q) => !q.pokaz);
       const g = wybory[0], d = wybory[wybory.length - 1];
       if (e.clientX >= g.x - 20 && e.clientX <= g.x + g.w + 20 && e.clientY >= this.plate.y && e.clientY <= d.y + d.h + 30) return;
+    }
+    if (faza === 'dol' && !this.zapiski && this.polaOltarza.length) {
+      // okno ołtarza: dotknięcie rytuału go odprawia (okno się zamyka — widać animację); poza oknem — zamyka je
+      const pola = this.polaOltarza;
+      const b = [...pola].reverse().find((q) => e.clientX >= q.x && e.clientX <= q.x + q.w && e.clientY >= q.y && e.clientY <= q.y + q.h);
+      if (b) this.wybierzWOknieOltarza(b);
+      else this.oknoOltarza = false;
+      this.dirty = true;
+      return;
     }
     if (faza === 'dol' && !this.zapiski) {
       // karta sytuacji: planuj (zostaje pauza), puść czas, nie zatrzymuj przy tym
@@ -1681,6 +1773,7 @@ export class EkranGry implements Ekran {
       case 'menu':
         // „wstecz” telefonu (i Esc): najpierw zamyka to, co otwarte — dopiero potem menu
         if (this.zapiski) { this.zapiski = false; break; }
+        if (this.oknoOltarza) { this.oknoOltarza = false; break; }
         if (ui.selected) { ui.selected = null; break; }
         if (this.alarm) { this.alarm = null; break; }
         if (ui.verb) { ui.verb = null; ui.tool = null; break; }

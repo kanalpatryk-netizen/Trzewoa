@@ -22,6 +22,7 @@ import { LUD, REMAKE } from '../nastawy/lud';
 import { falaTrwa } from './straznicy';
 import type { Urobek } from './kruszce';
 import { tikPomieszczen, type Pomieszczenie, type ZdarzeniePom } from './pomieszczenia';
+import { tikOltarza, type ZdarzenieOltarza } from './oltarz';
 
 export interface Clan {
   id: number;
@@ -103,6 +104,8 @@ export class Sim {
   zbroja: string[] = [];
   /** Zdarzenia pomieszczeń dla rysunku (gotowe, krzyż, część zbroi, wypoczęty). Nie idą do zapisu. */
   zdarzeniaPom: ZdarzeniePom[] = [];
+  /** Alpha, etap 3d: zdarzenia rytuałów przy ołtarzu dla rysunku (start, koniec, przerwany). Nie idą do zapisu. */
+  zdarzeniaOltarza: ZdarzenieOltarza[] = [];
   /** Otchłań nie jest dochodem — jest miarą tego, o czym nikt nie pamięta. */
   get otchlan(): number { return this.world.unknown * OTCHLAN_PER_TILE; }
   sen = 0;                    // 0 = czuwasz, 1 = zasnąłeś na zawsze
@@ -147,7 +150,7 @@ export class Sim {
   stat = {
     urodzen: 0, kart: 0, szczyt: 0, walka: 0, dlug: 0, przysiega: 0, proroctwo: 0, lancuch: 0, podsumowana: 0,
     ludZgonow: 0, zGlodu: 0, wspinaczek: 0, helmy: 0, nakarm: 0, przegnany: 0, odepchnieta: 0, weteranowMax: 0, ludMax: 0,
-    dewocjonalia: 0,
+    dewocjonalia: 0, rytualow: 0, wskrzeszen: 0,
   };
   /** v4.1 beta — podsumowanie skończonej partii (osiągnięcia); nie trafia do zapisu. */
   podsumowanie?: Podsumowanie;
@@ -232,8 +235,9 @@ export class Sim {
     void hotSpot; void found;   // Remake v1: dawne zasiedlenie wielu ras zostaje w kodzie jako punkt odniesienia
     // Remake v1: jeden lud — pobożni, robotnicy i rycerze przy jednej siedzibie
     // siedziba na starcie też na porządnej półce (szeroko i wysoko), jeśli taka jest w pobliżu
-    // (Alpha: siedziba w jasnej sali pod szybem z jedzeniem — według szkicu, zawsze na środku u góry)
-    const [sx0, sy0] = SWIAT.warstwy.wlaczone ? [w.salaStart.x, w.salaStart.y] : spot(Z.slepyLud1.od, Z.slepyLud1.do);
+    // (Alpha: siedziba w jasnej sali pod szybem z jedzeniem — według szkicu; etap 3d: pod węższym otworem z wiadrem,
+    // bo środek sali pod światłem zajmuje ołtarz)
+    const [sx0, sy0] = SWIAT.warstwy.wlaczone ? [w.szybWiadraX, w.salaStart.y] : spot(Z.slepyLud1.od, Z.slepyLud1.do);
     const [hx, hy] = SWIAT.warstwy.wlaczone ? [sx0, sy0] : miejsceNaObozu(this, sx0, sy0, 20, 12) ?? [sx0, sy0];
     const lud = this.newClan(Race.GOBLIN, hx, hy);
     lud.name = 'Pobożni';
@@ -694,6 +698,8 @@ export class Sim {
         // Remake v1: nie przy rdzeniu i nie na drodze wiernych — ołtarz postawiony w szybie pęknięcia
         // zagrodził jedyne wejście i skorupa pękała osiem razy na próżno
         if (REMAKE && (Math.hypot(x - w.coreX, y - w.coreY) < LUD.strefaRdzenia || w.prog[w.idx(x, y)] === 1)) continue;
+        // Alpha, etap 3d: nie w sali z ołtarzem — kapliczka na kapliczce to ściana, przez którą do ołtarza nikt nie przejdzie
+        if (w.wSali(x, y)) continue;
         if (c.race === Race.DWARF) {
           let hot = false;
           for (let dy = -L.kuzniaOgien; dy <= L.kuzniaOgien && !hot; dy++)
@@ -721,8 +727,9 @@ export class Sim {
       if (REMAKE) this.lud.oltarzPo = this.tick + LUD.oltarzCo; else clan.stock -= L.kosztOltarza;
       w.set(c.jx, c.jy, T.SHRINE);
       clan.devotion = Math.min(1, clan.devotion + L.oltarzOddanie);
-      if (this.rng.chance(0.4)) this.gdzie(c.jx, c.jy).log(`${clan.name} postawili ci ołtarz.`, 'wiara',
-        'oltarz', (n) => `${clan.name} postawili ci ${n} ołtarze.`);
+      // (Alpha: to kapliczka — ołtarz jest jeden, w sali)
+      if (this.rng.chance(0.4)) this.gdzie(c.jx, c.jy).log(`${clan.name} postawili ci kapliczkę.`, 'wiara',
+        'oltarz', (n) => `${clan.name} postawili ci ${n} kapliczki.`);
     } else if (c.race === Race.DWARF && clan.stock >= L.kosztKuzni) {
       clan.stock -= L.kosztKuzni; w.set(c.jx, c.jy, T.FORGE);
       clan.forges.push(w.idx(c.jx, c.jy));
@@ -1121,7 +1128,7 @@ export class Sim {
   humanRaid(nadX?: number): void {
     const w = this.world;
     // (Alpha: z powierzchni prowadzi tylko szyb z jedzeniem — ludzie schodzą nim do sali)
-    let x = SWIAT.warstwy.wlaczone ? w.szybX : nadX ?? 8 + this.rng.int(w.w - 16), y = SURFACE_Y - 2;
+    let x = SWIAT.warstwy.wlaczone ? w.szybWiadraX : nadX ?? 8 + this.rng.int(w.w - 16), y = SURFACE_Y - 2;
     for (let k = 0; k < 40 && !w.passable(x, y); k++) {
       x = nadX !== undefined ? Math.max(8, Math.min(w.w - 9, nadX + this.rng.int(21) - 10)) : 8 + this.rng.int(w.w - 16);
     }
@@ -1335,6 +1342,7 @@ export class Sim {
     tikWydarzen(this);
     tikLudu(this);
     tikPomieszczen(this);
+    tikOltarza(this);
     if (this.wiara > G.wiaraMax) this.wiara = G.wiaraMax;
     if (this.krew > G.krewMax) this.krew = G.krewMax;
   }

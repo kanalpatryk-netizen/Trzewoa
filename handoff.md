@@ -1,12 +1,12 @@
 # Handoff — Trzewia, Alpha 0.1
 
-Stan na 17.10.2026, po etapie 3c. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
+Stan na 17.10.2026, po etapie 3d. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
-- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 oraz 3a, 3b i 3c etapu 3, a zostały 3d–3f, 4 i 5.
-- **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etap 3b jest na `main` i w wydaniu (PR #13, na prośbę użytkownika). **Etap 3c jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
-- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. **Nie zaczynaj 3d bez polecenia.**
+- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 oraz 3a, 3b, 3c i 3d etapu 3, a zostały 3e–3f, 4 i 5.
+- **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
+- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. **Nie zaczynaj 3e bez polecenia.**
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 
 ---
@@ -41,7 +41,7 @@ Z użytkownikiem rozmawia się po polsku.
 - **Gdzie co jest w kodzie.** Liczby do strojenia są w `src/nastawy/*.ts`, z polskimi komentarzami. Logika jest w `src/sim/`, rysunek w
   `src/render/`, postacie w `src/render/lud/`.
 - **Determinizm.** Rysunek nie może wołać `sim.spark` ani `sim.rng`, bo testy i próby botów liczą się z ziarna. Losowość w rysunku daje stały skrót z indeksu, jak `los()` w `src/render/kucie.ts`.
-- **Zapis.** Każdy nowy stan symulacji trafia do `src/core/save.ts`. Przy zmianie mapy albo formatu trzeba podbić `VERSION`, które teraz wynosi 2.
+- **Zapis.** Każdy nowy stan symulacji trafia do `src/core/save.ts`. Przy zmianie mapy albo formatu trzeba podbić `VERSION`, które teraz wynosi 3 (3d: nowa góra z ołtarzem i drugim otworem).
 - **Bot.** `src/app/bot.ts` musi dalej wygrywać. Gra w obserwatorium i w próbach, bo `scripts/proby-graczy.mjs` używa tego samego
   bota.
 - **Po każdym etapie** obowiązuje lista kontrolna z 6.10.
@@ -130,7 +130,31 @@ sami go wykopują. Gotowe pomieszczenie działa:
 - **Bot** jeszcze nie stawia szablonów (to etap 5), ale nie może się przez nie zepsuć.
 - **Atlas i samouczek.** Tablice „Pomieszczenia”, „Warsztat” i „Kuźnia” oraz lekcja w samouczku.
 
-### 1.5 Etap 3d — ołtarz i rytuały (każdy z własną animacją)
+### 1.5 Etap 3d — ołtarz i rytuały (każdy z własną animacją) — ZROBIONE
+**Decyzje użytkownika (17.10):**
+- ołtarz stoi tam, gdzie mówił Paweł: w sali, pod szybem ze światłem, krzyż na kopczyku; **stoi od początku**;
+- nie da się go podkopać ani „broń Boże zawalić sobie drogi do niego”;
+- dwie dziury na górze mapy: większa świeci światłem dziennym w ołtarz, mniejsza, lekko w prawo — tą zjeżdża wiadro
+  (nie tam, gdzie ołtarz);
+- „okalecz się” i „ofiaruj” — tylko przy ołtarzu (zniknęły z szeptów);
+- sen w sypialni ok. 60 s (`snuTikow` 7200), żeby ofiara krwi nie była darmową pętlą;
+- wskrzeszenie: wybór z listy poległych, ok. 100 krwi;
+- krew to paliwo rytuałów (zgrzyt 1 — potwierdzone);
+- **dłoń anielska (etap 4) ma być losowym wydarzeniem, jak dłoń z otchłani**;
+- drabiny albo liny — ale **tylko tam, gdzie nie da się dojść inaczej niż się wspiąć**.
+
+**Zrobione 17.10:** mapa — drugi otwór `SWIAT.warstwy.szybWiadra` (`world.szybWiadraX/Dol`; wiadro i najazd ludzi idą nim,
+siedziba stoi pod nim), kamienna podłoga sali i kopczyk pod ołtarzem (`SWIAT.warstwy.oltarz`, `world.oltarz`,
+`world.salaOltarza`, `world.wSali` — w sali nie ma kapliczek ani zawału z karty); `VERSION = 3`. Rytuały w
+`src/sim/oltarz.ts` (stan w `sim.lud.oltarz`, zdarzenia `sim.zdarzeniaOltarza`, planer trzyma odprawiającego przez
+`odprawia` → `klecz` w `creatures.ts`), szał w `mnoznik` (`lud.ts`), czerwona aura w `figury.ts`. Rysunek: `src/render/oltarz.ts`
+(kamień przed mrokiem, światło, płomienie i rytuały nad mrokiem, `oltarzNaRycinie` dla atlasu), okno `src/render/okno-oltarza.ts`,
+krople krwi do i z licznika (`Urobki.oddaj` / `dodaj('krew')`), dźwięki `rytual()` i `kropla()` w `audio.ts`. Rozkazy
+`wydajDoOltarza` i `przywolajDoOltarza` (`polecenia.ts`). Drabiny: szablon „drabina” w pomieszczeniach, `world.drabina`
+(szczeble, w zapisie), `stoi()` zna szczeble, budowa rozkazem „drabina” (`nastepnySzczebel`, `tikPomieszczen`). Przy nowej
+mapie Strażnicy wychodzą ≥ 8 kafli od nie-walczących (`STRAZNICY.pojawOdLudu`), a boss — po stronie rycerza. Atlas: 7 tablic;
+samouczek: rozdział „Ołtarz”; test świata sprawdza ołtarz i otwory. Poniżej pierwotny plan.
+
 **Gdzie stoi ołtarz — trzeba potwierdzić z użytkownikiem**
 - Plan AI stawia ołtarz w środkowej warstwie.
 - Na szkicu krzyż stoi w jasnej sali pod szybem. Paweł na czacie wyjaśnił, że krzyż to ołtarz („w ołtarzu będzie się
@@ -202,6 +226,8 @@ Koszt każdego rytuału płaci się krwią, a liczby trafią do nastaw, np. `src
   - wzmianka, że żółte „Ag” ze szkicu to złoto.
 
 ### 1.8 Etap 4 — dwie dłonie
+
+**Decyzja użytkownika (17.10): dłoń anielska ma być losowym wydarzeniem, tak jak dłoń z otchłani.**
 
 #### Dłoń z otchłani
 
@@ -282,6 +308,12 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 - **Rozjazd z `main`.** Relikwiarz krwi (`render/relikwiarz.ts`) i nowy znak oddania (`render/modlitwa.ts`) są w Remake v1
   i v2, a w Alphie nie, bo Alpha powstała wcześniej. Użytkownik nie odpowiedział, czy je przenieść.
 - **Podpowiedzi (kółka na mapie)** to w dużej części rady z Remake. W 3b usunięte dwie nieaktualne („prorokuj”, „Nakarm przedsionek”); reszta do przejrzenia razem z samouczkiem w etapie 5. Tekst rady widać tylko jako kółko z podpisem na mapie.
+- **Głód na ziarnach spoza prób.** Kopacz drogi wiernych schodził za zeskok i oddalał się od wiadra, które jechało do
+  niego (po zmianie mapy w 3d: ziarna 6, 9, 10). Naprawione w 3d: głodny, który nie dojdzie do stojącego wiadra, czeka
+  pod tym, które zjeżdża tam, dokąd dojdzie (`planujLud`, blok głodu). Wcześniejsza próba „czekaj na wiadro, gdy głodny”
+  w `planPolecenia` (bez sprawdzania, czy jakieś wiadro jedzie) zagłodziła ziarno 4 — wycofana. Został jeden przypadek:
+  bezczynny robotnik na końcu krypty (ziarno 10), zob. 2.3.
+- **Boss rozgniata bezczynnych robotników przy obozie** (10–13 strat na 8 prób po 3d, przed 3d 5). Wygranych to nie psuje.
 - **Tylko komputer.** Alpha nie jest zrobiona pod telefon. Paweł: „na telefonie mało co działa”.
 - **Zadania zespołu, nie dla Claude:**
   - grafika:
@@ -296,8 +328,8 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
     - krótkie akcenty: zabytek, dłoń z otchłani, dłoń anielska, pęknięcie pomnika.
 
 ### 1.11 Otwarte pytania do użytkownika
-1. Gdzie ma stać ołtarz: w sali pod szybem, jak krzyż na szkicu, czy w środkowej warstwie, jak w planie?
-2. Jak rozwiązaliście zgrzyt 1 (krew bez rekrutacji)? Do czasu odpowiedzi: krew na rytuały, wiara na dłoń anielską i szepty.
+1. ~~Gdzie ma stać ołtarz?~~ W sali pod szybem ze światłem, od początku (odpowiedź 17.10).
+2. ~~Zgrzyt 1 (krew bez rekrutacji)?~~ Krew to paliwo rytuałów — zgadza się (odpowiedź 17.10).
 3. Czy przenieść do Alphy relikwiarz krwi i nowy znak oddania z `main`?
 4. Żółte „Ag” na szkicu przyjąłem jako złoto; użytkownik o tym wie i nie oponował. Na pewno nie chodziło o srebro?
 5. ~~Do czego ma służyć Sypialnia?~~ Usuwa debuffy (odpowiedź 17.10).
@@ -309,8 +341,8 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 
 ### 2.1 Repozytorium i GitHub
 - **Repozytorium:** `kanalpatryk-netizen/Trzewoa`, lokalnie `/home/user/Trzewoa` (z wielkim T).
-- **`main`** stoi na `6688432`, czyli na scaleniu [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12). Zawiera:
-  - Alphę 0.1 (etapy 1, 2 i 3a);
+- **`main`** stoi na `146c82b` — scalenie PR #14 (etap 3c); wcześniej PR #13 (3b) i [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12). Zawiera:
+  - Alphę 0.1 (etapy 1, 2, 3a, 3b i 3c);
   - zaległe zmiany Remake v2;
   - dwie zmiany z innej sesji: relikwiarz krwi i znak oddania w Remake v1 i v2.
 - **Gałąź robocza `claude/charming-cerf-j2t9rf`** to `main` plus commit z tym plikiem. Otwartych PR nie ma.
@@ -349,7 +381,10 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 - **Odstępy:** stojący się rozstawiają, idący dopasowują krok (`ODSTEPY` w `src/nastawy/polecenia.ts`).
 
 **Ruch i mapa**
-- Bez lin, poza liną wiadra. Wspinaczka najwyżej o 1 kafel, zsuwanie po ścianach, schody kute przez robotników.
+- Bez lin, poza liną wiadra. Wspinaczka najwyżej o 1 kafel, zsuwanie po ścianach, schody kute przez robotników; od 3d
+  także drabiny (szablon w pomieszczeniach, tylko tam, gdzie inaczej się nie wejdzie).
+- Od 3d: dwa otwory do sali (światło na ołtarz, wiadro 7 kafli w prawo), ołtarz na kamiennym kopczyku, kamienna podłoga
+  sali z wyjściami na końcach.
 - Bez zawału od góry.
 - Góra według szkicu (opis w 2.4).
 - Kucie jest 8 razy wolniejsze. Postęp zostaje w kaflu (`world.kucie`), a skała pęka na ekranie (`src/render/kucie.ts`).
@@ -370,16 +405,19 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 
 **Zapis**
 - Osobne klucze: `trzewia-alpha:zapis`, `:ustawienia`, `:osiagniecia`, `:klawisze`.
-- `VERSION = 2`. Zapisy ze starą mapą, szeroką na 176 kafli, się nie wczytają.
+- `VERSION = 3`. Zapisy sprzed 3d (bez ołtarza i drugiego otworu) się nie wczytają.
 
 ### 2.3 Testy i próby
-Kod w `alpha-0.1` nie zmienił się od `7f06c42`, więc wyniki są aktualne.
-- **`npm test`:** 100/100 światów, 12/12 skorup.
+Wyniki po etapie 3d (gałąź `ccr-91477c56-dh7bgd`, limit prób 20 min — `proby.sh <katalog> 20`).
+- **`npm test`:** 100/100 światów (z ołtarzem, kopczykiem, kamienną podłogą i oboma otworami), 12/12 skorup.
 - **Próby botów:** 8 partii (ziarna 1–4, style budowniczy i speedrun). Wygranych 8/8.
-  - Czasy: budowniczy 15,7–16,35 min, speedrun 12,15–12,65 min.
-  - Droga wiernych gotowa po ok. 4,45–4,7 min.
+  - Czasy: budowniczy 15,5–16,8 min, speedrun 12,4–14,0 min.
   - Nikt nie umarł z głodu.
-  - Zginęło 5 robotników, wszyscy od Strażników w krypcie (b1: 1, b2: 2, s4: 2).
+  - Zginęło 13 postaci ludu, prawie wszystkie to robotnicy „odpoczywający przy obozie”, których rozgniata Śniący Kamień
+    (przed 3d: 5, po zmianie mapy w 3d: 10). Do sprawdzenia w etapie 5 (bot): bezczynni robotnicy nie powinni stać przy bossie.
+- **Dodatkowe ziarna 5–12** (16 partii): 16/16 wygranych. Jeden robotnik zmarł z głodu (ziarno 10, budowniczy, 6. minuta,
+  bezczynny na lewym końcu krypty, x ≈ 52 — wiadro tam nie zjechało). Przed poprawką „czeka na wiadro, które zjeżdża” było
+  5 zgonów z głodu kopaczy (ziarna 6, 9, 10).
 - **Wcześniejsze wyniki botów:**
   - po zmianie z linami: 1/8;
   - po etapie 1: 0/8;
@@ -411,8 +449,8 @@ Kod w `alpha-0.1` nie zmienił się od `7f06c42`, więc wyniki są aktualne.
 Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 
 ### 2.5 Lista zadań
-- **Zrobione:** etap 1, etap 2, 3a, 3b (w wydaniu), 3c (na gałęzi), Alpha w menu i w wydaniu.
-- **Do zrobienia:** 3d, 3e, 3f, etap 4, etap 5.
+- **Zrobione:** etap 1, etap 2, 3a, 3b i 3c (w wydaniu), 3d (na gałęzi), Alpha w menu i w wydaniu.
+- **Do zrobienia:** 3e, 3f, etap 4, etap 5.
 
 ---
 
@@ -432,7 +470,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 ### 3.2 Symulacja (`src/sim/`)
 | Plik | Co jest w środku | Etap, który go zmieni |
 |---|---|---|
-| `world.ts` | Generowanie góry: `generujWarstwy` (3a), `kucie`, `salaStart`, `szybX` i `szybDol`, `coreX` i `coreY`, `przedsionekY` | 3d (ołtarz), 3e (ruiny) |
+| `world.ts` | Generowanie góry: `generujWarstwy` (3a), `kucie`, `salaStart`, `szybX` i `szybDol`, `szybWiadraX/Dol`, `oltarz`, `salaOltarza`, `drabina`, `coreX` i `coreY`, `przedsionekY` | 3e (ruiny) |
 | `creatures.ts` | Planer postaci, fizyka ludu, `digTile` (kucie), jedzenie (`doZapas`), `szalDo` | 3b, 3c, 3d, 4 |
 | `polecenia.ts` | Rozkazy: `wydajPolecenie`, `wydajGrupie`, `drogaGrupie`, `odwolajPolecenie`, odmowy | 3c, 4 |
 | `droga.ts` | Szukanie drogi z fizyką ludu: `szukajDrogi`, `szukajKopiac`, `stoi`, `ludRuch` | wszystkie |
@@ -445,7 +483,9 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `lud.ts` | Role, siedziba, obozy, przegrana | — |
 | `sim.ts` | Stan gry (`wiara`, `krew` i reszta) | 3b |
 | `tiles.ts` | Kafle (`MIEKKA`, `TWARDA`, `ZLOTO`; `ORE` to żelazo), twardość, kolory | 3b, 3e |
-| `trupy.ts` | Ciała zmarłych | 3d (wskrzeszenie) |
+| `trupy.ts` | Ciała zmarłych (wskrzeszenie: `polegli` w `oltarz.ts`) | — |
+| `oltarz.ts` | Etap 3d: rytuały przy ołtarzu (`odprawRytual`, `czemuNie`, `tikOltarza`, wskrzeszenie), stan w `sim.lud.oltarz` | 4 (dłoń anielska?) |
+| `pomieszczenia.ts` | Etap 3c/3d: plany, pokoje, rzemiosło, sen, drabiny (`nastepnySzczebel`) | 3e |
 | `wydarzenia.ts`, `karty-ludu.ts` | Karty wydarzeń — wzór dla okna zabytku | 3e |
 | `podpowiedzi.ts` | Podpowiedzi na płycie | każdy |
 | `/alpha-0.1/src/powers/powers.ts` | Ryty Nakarm, Szepnij i Cud (`seed`, `whisper`, `sign`) | 4 (dłoń anielska) |
@@ -464,6 +504,8 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `mrok.ts` | Ten, który patrzy |
 | `stworzenia.ts` | Fizyka postaci |
 | `cele.ts` | Progi osiągnięć |
+| `oltarz.ts` | Etap 3d: ceny i czasy rytuałów, kto stoi „przy ołtarzu” |
+| `pomieszczenia.ts` | Etap 3c/3d: szablony, warsztat, kuźnia, sypialnia (`snuTikow`), drabiny (`drabinaMin/Maks`, `tikowNaSzczebel`) |
 | `wyglad/rycina.ts`, `wyglad/fresk-swiata.ts` | Barwy nowych kafli |
 
 ### 3.4 Rysunek (`src/render/`)
@@ -480,6 +522,8 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `droga.ts` | Złota kreska drogi wiernych | — |
 | `engrave.ts` | Rycina kafli | 3e |
 | `wydarzenie.ts` | Okno karty wydarzenia | 3e |
+| `oltarz.ts`, `okno-oltarza.ts` | Etap 3d: ołtarz, smuga dnia, rytuały, okno rytuałów | 4 |
+| `pomieszczenia.ts` | Etap 3c/3d: plany, wyposażenie, drabiny | 3e |
 
 ### 3.5 Aplikacja, skrypty i reszta
 | Plik | Rola |
@@ -489,7 +533,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `src/app/obserwowany.ts` | Tryb okna obserwatorium |
 | `src/app/screens/samouczek/rozdzialy.ts`, `src/app/screens/tutorial.ts` | Samouczek |
 | `src/atlas/tablice.ts` | Atlas |
-| `src/core/save.ts` | Zapis (`VERSION = 2`) |
+| `src/core/save.ts` | Zapis (`VERSION = 3`) |
 | `src/core/keybinds.ts` | Klawisze |
 | `src/core/osiagniecia.ts` | Osiągnięcia |
 | `src/main.ts` | `window.__trzewia` — tylko w trybie deweloperskim (`npm run dev`) |
@@ -521,7 +565,8 @@ Od wklejenia planu (16.10), po kolei:
 | `6688432` (`main`) | Scalenie PR #12. Automat wystawił Alphę w wydaniu „gra” |
 | `f4a103b` | `handoff.md` |
 | `8708eed` (`main`, PR #13) | **Etap 3b.** Liczniki żelaza i złota z animacją okruchów, „kop żyłę”, tablica „Kruszce”, porządki w podpowiedziach, sumowanie kroniki |
-| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3c.** Pomieszczenia: plany pod kursorem, kucie tylko przez zaznaczonych, warsztat (złoto → wiara), kuźnia (żelazo → zbroja), sypialnia (zdejmuje osłabienia), korytarz i szyb, atlas, samouczek |
+| `146c82b` (`main`, PR #14) | **Etap 3c.** Pomieszczenia: plany pod kursorem, kucie tylko przez zaznaczonych, warsztat (złoto → wiara), kuźnia (żelazo → zbroja), sypialnia (zdejmuje osłabienia), korytarz i szyb, atlas, samouczek |
+| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3d.** Dwa otwory (światło na ołtarz, wiadro obok), ołtarz od początku na kamiennym kopczyku, okno rytuałów, pięć rytuałów za krew z animacjami, okalecz/ofiaruj tylko przy ołtarzu, drabiny tylko tam, gdzie trzeba się wspiąć, sen 60 s, Strażnicy i boss z dala od pobożnych, atlas, samouczek, `VERSION = 3` |
 
 Wcześniej w tej samej sesji zrobiłem rzeczy, które są już na `main` (PR #7–#12):
 - freski w interfejsie, mroczny interfejs i muzyka niepokoju;
@@ -539,7 +584,7 @@ Wcześniej w tej samej sesji zrobiłem rzeczy, które są już na `main` (PR #7�
 
 ### 5.1 Projekt i interpretacja
 1. **Fałszywa obietnica drogi w obie strony.** W etapie 2 ogłosiłem, że droga wiernych schodami „w obie strony” pozwala wrócić. To nieprawda: na zakręcie trzeba by wejść o 2 kafle. Sprostowałem to w 3a: w CHANGELOG, na tablicy atlasu „Schody” i w komentarzach w `nastawy/rytual.ts` i `sim/droga.ts`. Wniosek: zakładać, że kto zszedł w głąb, nie wraca.
-2. **Siedziba w miejscu ołtarza.** Krzyż ze szkicu potraktowałem jako miejsce siedziby, a według czatu z Pawłem to ołtarz. Nie jest to naprawione — to pytanie 1 w 1.11.
+2. **Siedziba w miejscu ołtarza.** Krzyż ze szkicu potraktowałem jako miejsce siedziby, a według czatu z Pawłem to ołtarz. Naprawione w 3d: ołtarz stoi pod szybem ze światłem, siedziba — pod otworem z wiadrem.
 3. **Niepotwierdzone założenia.** Przyjąłem, że „Ag” to złoto (zgłosiłem to użytkownikowi) i że krew służy do rytuałów (zgrzyt 1, bez odpowiedzi).
 
 ### 5.2 Błędy w kodzie, znalezione w próbach i naprawione
@@ -582,7 +627,7 @@ Potem odtwórz w brudnopisie narzędzia z Dodatku A: próby botów, zrzuty i map
 
 ### 6.2 Zanim zaczniesz kodować
 1. Poczekaj na polecenie użytkownika. Ostatnio prosił, żeby po skończonym zadaniu czekać.
-2. Zadaj pytania z 1.11. Przed 3d najważniejsze jest pytanie o ołtarz, a przed etapem 4 — o relikwiarz.
+2. Zadaj pytania z 1.11. Przed etapem 4 najważniejsze jest pytanie o relikwiarz i o to, którą linę tnie dłoń.
 
 ### 6.3 Etap 3b — zrobione (17.10, gałąź `ccr-91477c56-dh7bgd`)
 1. Dodaj `zelazo` i `zloto` w `Sim`, z zapisem i wczytaniem w `save.ts`.
@@ -602,7 +647,7 @@ Potem odtwórz w brudnopisie narzędzia z Dodatku A: próby botów, zrzuty i map
 8. Szyb i korytarz przeciągane myszą.
 9. Atlas i samouczek, potem lista z 6.10.
 
-### 6.5 Etap 3d
+### 6.5 Etap 3d — zrobione (17.10, gałąź `ccr-91477c56-dh7bgd`)
 1. Postaw ołtarz w miejscu, które wskaże użytkownik.
 2. Zrób okno rytuałów.
 3. Rytuały: ofiara, wskrzeszenie, szał krwi (logika do istniejącego już rysunku) i modlitwa. Każdy z animacją.

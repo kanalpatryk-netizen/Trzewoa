@@ -29,6 +29,9 @@ import { rysujCzesc } from '../render/pomieszczenia';
 import { POMIESZCZENIA } from '../nastawy/pomieszczenia';
 import { KRUSZCE } from '../nastawy/kruszce';
 import { POLECENIA } from '../nastawy/polecenia';
+import { OLTARZ } from '../nastawy/oltarz';
+import { oltarzNaRycinie } from '../render/oltarz';
+import { kropla } from '../render/kruszce';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
@@ -470,6 +473,95 @@ function sypialniaRycina(p: Plotno): void {
   ctx.restore();
 }
 
+/** Ołtarz: kamienny kopczyk, mensa z misą i świecami, krzyż w smudze światła dziennego. */
+function oltarzRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 7);
+  oltarzNaRycinie(ctx, w * 0.5, h * 0.82, h * 0.13, t);
+}
+
+/** Rytuał przy ołtarzu na rycinie: ołtarz z efektem rytuału i pobożny przy nim (klęczy albo unosi księgę). */
+function rytualRycina(rodzaj: 'modlitwa' | 'szal' | 'ofiaraKrwi', cz: Czynnosc): (p: Plotno) => void {
+  return ({ ctx, w, h, t }) => {
+    sklepienie(ctx, w, h, 8);
+    const z = h * 0.12, cx = w * 0.42, y = h * 0.82;
+    oltarzNaRycinie(ctx, cx, y, z, t, rodzaj, 0.6 + 0.4 * ((t * 0.0002) % 1));
+    robotnikNaRycinie(ctx, cx + z * 2.6, y, h * 0.4, t, cz, -1, 'pobozny');
+    if (rodzaj === 'ofiaraKrwi') {
+      // krople z ręki klęczącego do misy
+      for (let i = 0; i < 3; i++) {
+        const f = (t * 0.0011 + i / 3) % 1;
+        const x0 = cx + z * 2.2, y0 = y - h * 0.2, x1 = cx + z * 0.38, y1 = y - z * 1.55;
+        ctx.save(); ctx.translate(x0 + (x1 - x0) * f, y0 + (y1 - y0) * f - Math.sin(f * Math.PI) * z * 0.8);
+        ctx.fillStyle = 'rgba(196,26,18,0.95)'; ctx.beginPath(); kropla(ctx, Math.max(2, z * 0.09)); ctx.fill(); ctx.restore();
+      }
+    }
+    if (rodzaj === 'szal') {
+      // rycerz w czerwonej aurze
+      const rx = w * 0.12, R = h * 0.36;
+      const g = ctx.createRadialGradient(rx, y - h * 0.2, 0, rx, y - h * 0.2, R);
+      g.addColorStop(0, `rgba(255,44,26,${0.4 + 0.1 * Math.sin(t * 0.008)})`); g.addColorStop(1, 'rgba(200,20,10,0)');
+      ctx.fillStyle = g; ctx.fillRect(rx - R, y - h * 0.2 - R, R * 2, R * 2);
+      robotnikNaRycinie(ctx, rx, y, h * 0.5, t, 'stoi', 1, 'rycerz');
+    }
+  };
+}
+
+/** Wskrzeszenie: krąg jasnych znaków i blada postać unosząca się nad mensą. */
+function wskrzeszenieRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 9);
+  const z = h * 0.12, cx = w * 0.5, y = h * 0.82;
+  oltarzNaRycinie(ctx, cx, y, z, t, 'wskrzeszenie', 1);
+  const f = (t * 0.00025) % 1;
+  ctx.save();
+  ctx.globalAlpha = 0.45 + 0.4 * f;
+  ctx.filter = `grayscale(${1 - f}) brightness(${1.6 - 0.6 * f})`;
+  robotnikNaRycinie(ctx, cx, y - z * 2.2 - f * z * 0.8, h * 0.4, t, 'stoi', 1, 'robotnik');
+  ctx.restore();
+  robotnikNaRycinie(ctx, cx + z * 2.8, y, h * 0.4, t, 'czyta', -1, 'pobozny');
+}
+
+/** Ofiara życia: słup czerwonego światła nad mensą i ciało pobożnego przy ołtarzu. */
+function ofiaraZyciaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 10);
+  const z = h * 0.12, cx = w * 0.42, y = h * 0.82;
+  oltarzNaRycinie(ctx, cx, y, z, t, 'ofiaraZycia', 0.85);
+  ctx.save(); ctx.globalAlpha = 0.85;
+  // (leżący rysuje się tułowiem od kotwicy — tu w prawo, z dala od kopczyka)
+  robotnikNaRycinie(ctx, cx + z * 2.3, y, h * 0.4, t, 'spi', -1, 'pobozny');
+  ctx.restore();
+}
+
+/** Drabina: półka, na którą się nie wejdzie, drabina do niej i robotnik, który się wspina. */
+function drabinaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 11);
+  const k = h * 0.14, x = w * 0.52, y = h * 0.82, yt = y - k * 4;
+  ctx.save();
+  // półka po lewej
+  const polka = new Path2D(); polka.rect(w * 0.08, yt + k, x - w * 0.08 - k * 0.1, k * 0.9);
+  ctx.fillStyle = 'rgba(46,34,27,0.98)'; ctx.fill(polka);
+  kreskuj(ctx, polka, 0.9, 4, rgba(BARWA.atrament, 0.28), 1);
+  // belki i szczeble
+  const x1 = x + k * 0.22, x2 = x + k * 0.78;
+  ctx.lineCap = 'round';
+  for (const [bar, sz] of [['rgba(20,12,8,0.95)', 5], ['rgba(104,70,40,0.98)', 3]] as const) {
+    ctx.strokeStyle = bar; ctx.lineWidth = sz;
+    ctx.beginPath(); ctx.moveTo(x1, yt - k * 0.35); ctx.lineTo(x1, y); ctx.moveTo(x2, yt - k * 0.35); ctx.lineTo(x2, y); ctx.stroke();
+  }
+  for (let i = 0; i < 4; i++) {
+    const sy = yt + k * (i + 0.55);
+    ctx.strokeStyle = 'rgba(20,12,8,0.95)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x1, sy); ctx.lineTo(x2, sy); ctx.stroke();
+    ctx.strokeStyle = 'rgba(150,108,62,0.98)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x1, sy); ctx.lineTo(x2, sy); ctx.stroke();
+  }
+  ctx.restore();
+  // wspina się: w górę i z powrotem
+  const f = 0.5 - 0.5 * Math.cos(t * 0.0012);
+  robotnikNaRycinie(ctx, x + k * 0.5, y - f * k * 3, h * 0.27, t, 'wspina');
+}
+
 function dlonOtchlani({ ctx, w, h, t }: Plotno): void {
   ctx.save();
   ctx.fillStyle = '#060303';
@@ -581,7 +673,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'rasa-0', grupa: 'rasy', nazwa: 'Pobożni', lacina: 'Gens pia',
     opis: `Twój jedyny lud — stała drużyna: ${LUD.start.robotnik} robotników, ${LUD.start.pobozny} pobożnych i ${LUD.start.rycerz} rycerz. Nikt się w nim nie rodzi i skała nie wydaje nowych — każda śmierć to strata na całą partię. Mieszkają przy siedzibie, a odcięte grupki zakładają obozy.`,
-    kiedy: 'Pilnuj, żeby zawsze był ktoś, kto się modli — bez pobożnych skorupa nie pęknie. Pobożny może się okaleczyć (krew, ale słabnie, póki nie wyśpi się w sypialni), a każdego możesz złożyć w ofierze.',
+    kiedy: 'Pilnuj, żeby zawsze był ktoś, kto się modli — bez pobożnych skorupa nie pęknie. Przy ołtarzu pobożny może oddać krew (słabnie, póki nie wyśpi się w sypialni) albo życie, a poległych da się tam wskrzesić.',
     rycina: postac(Race.GOBLIN, 'modli'),
   },
   // ryty
@@ -594,9 +686,9 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'ryt-szept', grupa: 'ryty', nazwa: 'Szepnij', lacina: 'Susurrus',
-    opis: '„Szepnij”, potem dotknij jednej postaci i wybierz słowo na jej karcie. „Módl się” posyła pobożnego pod twój rdzeń od razu, bez względu na wiarę ludu. „Okalecz się” — pobożny upuszcza krwi: dostajesz krew, a on słabnie, póki nie wyśpi się w sypialni. „Ofiaruj” — oddaje ci życie za dużo krwi. „Przerwij modlitwę” zawraca spod rdzenia.',
+    opis: '„Szepnij”, potem dotknij jednej postaci i wybierz słowo na jej karcie. „Módl się” posyła pobożnego pod twój rdzeń od razu, bez względu na wiarę ludu. „Przerwij modlitwę” zawraca spod rdzenia. Ofiary krwi i życia nie są już szeptami — odprawia się je przy ołtarzu.',
     kiedy: 'Gdy droga do rdzenia jest gotowa, szepnij „módl się” obu pobożnym — skorupa pęka szybciej, gdy modlą się razem.',
-    koszt: `módl się ${kosztSlowami('szept', 'modl')}, okalecz się ${kosztSlowami('szept', 'okalecz')}, ofiaruj ${kosztSlowami('szept', 'ofiaruj')}`,
+    koszt: `módl się ${kosztSlowami('szept', 'modl')}`,
     rycina: cala(rysujSzept),
   },
   {
@@ -609,13 +701,13 @@ export const TABLICE: Tablica[] = [
   // zasoby
   {
     id: 'krew', grupa: 'zasoby', nazwa: 'Krew', lacina: 'Sanguis',
-    opis: `Liczba nad płytą i czerwona rysa pod nią — na Koszmarze zaczynasz z ${Math.max(0, LUD.krewStart - GORA.koszmarKrew)}, mieści się jej najwyżej ${GORA.krewMax}. Płaci ci ją każda śmierć — także Strażników Snu i ludzi z powierzchni — ofiara (+${LUD.ofiaraKrew}) i samookaleczenie pobożnego (+${LUD.okaleczenieKrew}).`,
-    kiedy: 'Wydajesz ją na wiadra rytem Nakarm i na wybory na kartach wydarzeń.',
+    opis: `Liczba nad płytą i czerwona rysa pod nią — na Koszmarze zaczynasz z ${Math.max(0, LUD.krewStart - GORA.koszmarKrew)}, mieści się jej najwyżej ${GORA.krewMax}. Płaci ci ją każda śmierć — także Strażników Snu i ludzi z powierzchni — i ofiary przy ołtarzu: krwi pobożnego (+${LUD.okaleczenieKrew}) i jego życia (+${LUD.ofiaraKrew}).`,
+    kiedy: 'Wydajesz ją na rytuały przy ołtarzu, na wiadra rytem Nakarm i na wybory na kartach wydarzeń.',
     rycina: cala(rysujOrgany),
   },
   {
     id: 'wiara', grupa: 'zasoby', nazwa: 'Wiara', lacina: 'Fides',
-    opis: `Liczba nad płytą — twój zapas, najwyżej ${GORA.wiaraMax}. Rośnie za każdym razem, gdy ktoś się do ciebie modli: przy ołtarzu (pobożni stawiają je sami), przy znaku po Cudzie, a najmocniej pod rdzeniem; +${STRAZNICY.nagrodaWiary} za każdą pokonaną falę Strażników. Nie myl jej z oddaniem: wiara to twoja waluta, oddanie to to, jak mocno wierzy lud.`,
+    opis: `Liczba nad płytą — twój zapas, najwyżej ${GORA.wiaraMax}. Rośnie za każdym razem, gdy ktoś się do ciebie modli: przy kapliczce (pobożni stawiają je sami), przy znaku po Cudzie, w modlitwie przy ołtarzu, a najmocniej pod rdzeniem; +${STRAZNICY.nagrodaWiary} za każdą pokonaną falę Strażników. Nie myl jej z oddaniem: wiara to twoja waluta, oddanie to to, jak mocno wierzy lud.`,
     kiedy: 'Płacisz nią za szepty, Cud i wybory na kartach wydarzeń.',
     rycina: cala(rysujOrgany),
   },
@@ -736,19 +828,61 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'pomieszczenia', grupa: 'prawa', nazwa: 'Pomieszczenia', lacina: 'Conclavia',
-    opis: `„Wyznacz pomieszczenie” pod płytą (albo klawisz B) i szablon: sypialnia (${POMIESZCZENIA.szablony.sypialnia.w}×${POMIESZCZENIA.szablony.sypialnia.h}), warsztat i kuźnia (${POMIESZCZENIA.szablony.warsztat.w}×${POMIESZCZENIA.szablony.warsztat.h}), korytarz i szyb. Pod kursorem widać obrys: jasny — wolno, czerwony — nie, i dlaczego. Pokój stoi na płaskiej, litej podłodze i ma wejście z boku, na poziomie podłogi albo o kafel wyżej lub niżej. Korytarz i szyb zaczynają się tam, gdzie stoi lud: korytarz ciągniesz palcem w bok (wysoki na ${POMIESZCZENIA.korytarzWys} kafle), szyb w dół — to proste schody, więc da się nim wrócić. Planu nie położysz w skale nie do ruszenia ani pod złotą kreską drogi wiernych; prawy przycisk na planie go skreśla.`,
+    opis: `„Wyznacz pomieszczenie” pod płytą (albo klawisz B) i szablon: sypialnia (${POMIESZCZENIA.szablony.sypialnia.w}×${POMIESZCZENIA.szablony.sypialnia.h}), warsztat i kuźnia (${POMIESZCZENIA.szablony.warsztat.w}×${POMIESZCZENIA.szablony.warsztat.h}), korytarz, szyb i drabina. Pod kursorem widać obrys: jasny — wolno, czerwony — nie, i dlaczego. Pokój stoi na płaskiej, litej podłodze i ma wejście z boku, na poziomie podłogi albo o kafel wyżej lub niżej. Korytarz i szyb zaczynają się tam, gdzie stoi lud: korytarz ciągniesz palcem w bok (wysoki na ${POMIESZCZENIA.korytarzWys} kafle), szyb w dół — to proste schody, więc da się nim wrócić. Planu nie położysz w skale nie do ruszenia ani pod złotą kreską drogi wiernych; prawy przycisk na planie go skreśla.`,
     kiedy: 'Plan kują tylko robotnicy, których zaznaczysz i którym go wskażesz — wolni sami nic nie biorą. Kując plan, robotnik sięga też nad głowę.',
     rycina: pomieszczeniaRycina,
   },
   {
     id: 'sypialnia', grupa: 'prawa', nazwa: 'Sypialnia', lacina: 'Dormitorium',
     opis: `Każdy z ludu — robotnik, pobożny, rycerz — wskazany na gotową sypialnię kładzie się na posłaniu. Po ${Math.round(POMIESZCZENIA.sypialnia.snuTikow / 120)} sekundach snu traci osłabienia: okaleczenie i zatrucie (czerwona aureola rozpływa się), wstaje wypoczęty i wraca do swoich zajęć. Głodny najpierw idzie jeść, a potem wraca spać.`,
-    kiedy: 'Poślij tam pobożnego po samookaleczeniu albo kogoś zatrutego — wróci do pełni sił.',
+    kiedy: 'Poślij tam pobożnego po ofierze krwi przy ołtarzu albo kogoś zatrutego — po minucie snu wróci do pełni sił.',
     rycina: sypialniaRycina,
   },
   {
+    id: 'oltarz', grupa: 'prawa', nazwa: 'Ołtarz', lacina: 'Altare',
+    opis: `Kamienny ołtarz z krzyżem stoi od początku na środku sali, w smudze światła dziennego z szybu nad nim; jedzenie zjeżdża drugim, węższym otworem obok. Pod ołtarzem jest kamienny kopczyk, a podłoga sali — z kamienia, więc nikt go nie podkopie ani nie przetnie drogi do niego; w sali nic się nie zawali. Dotknij ołtarza: otworzy się okno z rytuałami i ich ceną we krwi. Rytuał odprawia pobożny, który stoi przy ołtarzu — zaznacz go i dotknij ołtarza albo w oknie „przywołaj pobożnego”. Klęczy, aż skończy; gdy odejdzie albo zginie, rytuał przepada, a krew wraca.`,
+    kiedy: 'Krew to paliwo rytuałów — zbieraj ją z bitew i ofiar, a wydawaj na modlitwę, szał rycerza i wskrzeszanie poległych.',
+    rycina: oltarzRycina,
+  },
+  {
+    id: 'rytual-modlitwa', grupa: 'prawa', nazwa: 'Modlitwa przy ołtarzu', lacina: 'Oratio ad altare',
+    opis: `Pobożny klęczy przy ołtarzu, od krzyża biją promienie, a złote iskry płyną od niego do krzyża. Przez ${Math.round(OLTARZ.rytualy.modlitwa.tikow / 120)} sekund wiara rośnie — razem o ${OLTARZ.rytualy.modlitwa.wiara}.`,
+    kiedy: `Gdy masz krew, a brak ci wiary na szepty i Cud. Kosztuje ${OLTARZ.rytualy.modlitwa.krew} krwi.`,
+    rycina: rytualRycina('modlitwa', 'modli'),
+  },
+  {
+    id: 'rytual-szal', grupa: 'prawa', nazwa: 'Szał krwi', lacina: 'Furor sanguinis',
+    opis: `Pobożny unosi księgę, krew spływa po krzyżu do misy, a wokół ołtarza zapala się krąg czerwonych znaków. Na koniec czerwona smuga leci do rycerza: przez ${Math.round(OLTARZ.rytualy.szal.trwa / 7200)} minutę żarzy się czerwoną aurą i bije ${String(OLTARZ.rytualy.szal.sila).replace('.', ',')} raza mocniej. Gdy rycerza brak, szał rozpala robotnika w hełmie.`,
+    kiedy: `Przed falą Strażników albo bossem — odpraw go, gdy fala nadciąga. Kosztuje ${OLTARZ.rytualy.szal.krew} krwi.`,
+    rycina: rytualRycina('szal', 'czyta'),
+  },
+  {
+    id: 'rytual-wskrzeszenie', grupa: 'prawa', nazwa: 'Wskrzeszenie', lacina: 'Resurrectio',
+    opis: `W oknie ołtarza wybierasz, kogo przywrócić — z poległych, których ciała jeszcze leżą. Ciało blednie i rozsypuje się w jasne iskry, które płyną do ołtarza; nad mensą unosi się ta sama postać, z szarej coraz barwniejsza, i po ${Math.round(OLTARZ.rytualy.wskrzeszenie.tikow / 120)} sekundach staje obok ołtarza — z tą samą rolą i twarzą, zdrowa. Zabranych przez ciemność i dłoń z otchłani wskrzesić się nie da: nie zostaje po nich ciało.`,
+    kiedy: `Jedyny sposób, żeby drużyna znów była cała. Kosztuje ${OLTARZ.rytualy.wskrzeszenie.krew} krwi.`,
+    rycina: wskrzeszenieRycina,
+  },
+  {
+    id: 'rytual-ofiara-krwi', grupa: 'prawa', nazwa: 'Ofiara krwi', lacina: 'Sacrificium sanguinis',
+    opis: `Pobożny przy ołtarzu upuszcza krwi: krople spadają do misy, misa się napełnia, a kropla leci do licznika — +${LUD.okaleczenieKrew} krwi. Potem jest okaleczony (−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości), póki nie prześpi ${Math.round(POMIESZCZENIA.sypialnia.snuTikow / 7200)} minuty w sypialni. Okaleczony drugi raz krwi nie odda.`,
+    kiedy: 'Gdy brak krwi na rytuał, a pobożny może potem odpocząć.',
+    rycina: rytualRycina('ofiaraKrwi', 'modli'),
+  },
+  {
+    id: 'rytual-ofiara-zycia', grupa: 'prawa', nazwa: 'Ofiara życia', lacina: 'Sacrificium vitae',
+    opis: `Pobożny oddaje życie na ołtarzu: krąg ciemnoczerwonych znaków, słup czerwonego światła — i +${LUD.ofiaraKrew} krwi. Ostatniego pobożnego ołtarz nie przyjmie: bez niego nikt nie odprawi rytuału ani nie pomodli się pod rdzeniem. Jego ciało zostaje przy ołtarzu — można go potem wskrzesić.`,
+    kiedy: 'Ostateczność. Drużyna jest stała, a wskrzeszenie kosztuje więcej krwi, niż daje ofiara.',
+    rycina: ofiaraZyciaRycina,
+  },
+  {
+    id: 'drabina', grupa: 'prawa', nazwa: 'Drabina', lacina: 'Scala',
+    opis: `„Wyznacz pomieszczenie” → „drabina”: przeciągnij w górę od miejsca, gdzie stoi lud, do półki (${POMIESZCZENIA.drabinaMin}–${POMIESZCZENIA.drabinaMaks} szczebli). Drabinę wolno postawić tylko tam, gdzie na półkę nie da się wejść inaczej — gdy da się dojść stopniami albo inną drabiną, obrys jest czerwony. Budują ją zaznaczeni robotnicy, którym ją wskażesz: od dołu, szczebel po szczeblu, stojąc na tym, co już stoi. Po gotowej drabinie każdy z ludu wchodzi i schodzi w obie strony.`,
+    kiedy: 'Gdy ktoś zszedł w głąb i nie ma jak wrócić, albo gdy półka z rudą wisi za wysoko.',
+    rycina: drabinaRycina,
+  },
+  {
     id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',
-    opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie, musi wykuć sobie w skale schody. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy. Lina wisi tylko przy wiadrze z jedzeniem.',
+    opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie: musi wykuć sobie w skale schody albo zbudować drabinę. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy. Lina wisi tylko przy wiadrze z jedzeniem.',
     kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych schodzi schodami, bez zeskoków — ale na zakręcie, gdzie zmienia kierunek, pod górę trzeba by wejść o dwa stopnie, więc kto zejdzie, zwykle już nie wraca: jedzenie zjeżdża do niego.',
     rycina: postac(Race.GOBLIN, 'wspina'),
   },

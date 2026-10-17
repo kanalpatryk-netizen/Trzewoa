@@ -15,9 +15,11 @@ import { STRAZNICY } from '../nastawy/straznicy';
 import { obozFrontowy, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
 import { obozyLudu, obozyWgOdleglosci, najblizszyOboz, walczacy, type MiejsceJedzenia } from './lud';
 import { wykutyKafel } from './kruszce';
-import { pomieszczenieId, kafleDoKucia, siegaPlanu, miejsceWPom, ktoryWPom } from './pomieszczenia';
+import { pomieszczenieId, kafleDoKucia, siegaPlanu, miejsceWPom, ktoryWPom, nastepnySzczebel } from './pomieszczenia';
 import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
-import { wiadroDoWspinaczki, wiadroId, krokNaLinie } from './wiadro';
+import { odprawia, type RytualOltarza } from './oltarz';
+import { NAZWA_RYTUALU } from '../nastawy/oltarz';
+import { wiadroDoWspinaczki, wiadroId, krokNaLinie, wiadra } from './wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
 import { odmow, nastepnyKafelZyly, type Polecenie, type Odmowa } from './polecenia';
@@ -137,7 +139,7 @@ ksiegaT?: number;
   /** Alpha: rozkaz gracza (sim/polecenia.ts) — trzyma się go, aż go odwołasz. */
   polecenie?: Polecenie;
   /** Alpha, etap 3c: co robi w pomieszczeniu — przy kowadle albo stole („buduje”), na posłaniu („spi”). Rysunek bierze z tego pozę. */
-  czynnosc?: 'buduje' | 'spi';
+  czynnosc?: 'buduje' | 'spi' | 'modli' | 'czyta';
   /** Ile tików już przespał w sypialni (sen zdejmuje osłabienia — sim/pomieszczenia.ts). */
   snu?: number;
   /** Alpha: odmowa wykonania rozkazu — dymek nad głową i kręcenie głową. */
@@ -299,7 +301,10 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // albo schodząc szybem; w otwartej pustce spada (przepaści sam omija — droga.ts).
   const trzymaSie = (c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
     && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1));
-  if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
+  // Alpha, etap 3d: na szczeblu drabiny się stoi — nie spada
+  const naDrabinie = w.drabina[i] === 1;
+  if (naDrabinie && c.vy > 0) c.vy = 0;
+  if (!trzymaSie && !naDrabinie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
     // Kto dopiero co się wspinał i ma ścianę pod ręką, zsuwa się po niej, zamiast lecieć.
     // Inaczej każda zmiana zamiaru w połowie szybu kończyła się upadkiem z całej wysokości.
     if ((c.wspina ?? -99) >= sim.tick - K.zsuwaSieTikow && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty))
@@ -815,6 +820,11 @@ function planujLud(sim: Sim, c: Creature): void {
   const droga = (cel: (x: number, y: number) => boolean, limit: number) => szukajDrogi(sim, c, (_i, x, y) => cel(x, y), limit);
   const podroz = (d: number[]) => K.noszenieTikow + d.length * K.tikowNaKafel;
 
+  // etap 3d: odprawia rytuał przy ołtarzu — klęczy przy nim, aż skończy (głód i fala poczekają; wróg — nie,
+  // walka przerywa wszystko, a odejście od ołtarza przerywa rytuał)
+  const rytual = odprawia(sim, c);
+  if (rytual) { klecz(sim, c, rytual, naDroge, zamiar, droga, podroz); return; }
+
   // etap 3: zwykła fala Strażników — kto nie jest rycerzem, odchodzi spod rdzenia (modlitwa i tak nic nie kruszy);
   // pobożny z wyprawy wraca pod rdzeń, gdy fala minie
   // (głodny, do którego żaden Strażnik nie jest blisko, najpierw idzie jeść — na skraju strefy uciekali w kółko
@@ -881,6 +891,15 @@ function planujLud(sim: Sim, c: Creature): void {
       for (const sp of spizarnieWgOdleglosci(sim, c.x, c.y, true).filter((sp) => (!odOgnia || !sim.przyMagmie(sp.x, sp.y, 4)) && !(wFali && wStrefieStraznikow(sim, sp.x, sp.y, STRAZNICY.ucieczkaZapas))).slice(0, 3)) {
         const d = droga((x, y) => Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1, LUD.doSpizarni);
         if (d) { naDroge(d, sp.x, sp.y); zamiar('idzie jeść do wiadra', Job.ZAPAS, podroz(d)); return; }
+      }
+      // Alpha, etap 3d: do żadnego stojącego wiadra nie dojdzie, ale jedno właśnie zjeżdża tam, dokąd dojdzie — czeka
+      // pod nim, zamiast kuć dalej w dół (kopacz drogi wiernych schodził za zeskok, oddalał się od wiadra, które jechało
+      // do niego, i umierał z głodu kilka kafli niżej)
+      for (const wd of wiadra(sim)) {
+        if (wd.porcje <= 0 || (wd.faza !== 'zapowiedz' && wd.faza !== 'zjezdza') || Math.hypot(wd.x - c.x, wd.cel - c.y) > 30) continue;
+        if (wFali && wStrefieStraznikow(sim, wd.x, wd.cel, STRAZNICY.ucieczkaZapas)) continue;
+        const d = droga((x, y) => Math.abs(x - wd.x) <= 1 && Math.abs(y - wd.cel) <= 1, LUD.doSpizarni);
+        if (d) { naDroge(d, wd.x, wd.cel); zamiar('głodny — czeka na wiadro, które zjeżdża', Job.STOI, podroz(d) + 120); return; }
       }
     }
   }
@@ -1179,6 +1198,28 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     return poddajSie('nie dojdę tam — nie ma drogi');
   }
 
+  // etap 3d: drabina — buduje szczebel po szczeblu od dołu, stojąc pod nim (na podłodze albo na szczeblu niżej)
+  if (p.typ === 'drabina') {
+    const pom = pomieszczenieId(sim, p.pom);
+    const sz = pom && !pom.gotowe ? nastepnySzczebel(sim, pom) : null;
+    if (!pom || !sz) { c.polecenie = undefined; return false; }
+    const [rx, ry] = sz;
+    p.x = rx; p.y = ry;
+    const tam = (x: number, y: number) => y === ry + 1 && (x === rx || (Math.abs(x - rx) === 1 && w.solid(x, y + 1))) && stoi(sim, x, y);
+    if (tam(cx, cy)) {
+      p.na = true; p.prob = 0;
+      c.jx = cx; c.jy = cy; c.droga = undefined;
+      c.czynnosc = 'buduje';
+      if (rx !== cx) c.face = rx > cx ? 1 : -1;
+      zamiar('buduje drabinę — szczebel po szczeblu', Job.STOI, Z);
+      return true;
+    }
+    if (budzetDrog() <= 0) return brakCzasu();
+    const d = droga(tam, POLECENIA.szukanieDrogi);
+    if (d) { naDroge(d); zamiar('idzie budować drabinę', Job.WANDER, podroz(d)); p.prob = 0; return true; }
+    return poddajSie('nie dojdę do drabiny');
+  }
+
   // etap 3c: plan pomieszczenia — wskazany kafel już wykuty: następny kafel planu (najbliższy odsłonięty)
   if (p.typ === 'kop' && p.pom !== undefined) {
     const pom = pomieszczenieId(sim, p.pom);
@@ -1247,6 +1288,31 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     if (dk) { zamiar('przekopuje się tam, gdzie kazałeś', Job.WANDER, przekop(dk)); p.prob = 0; return true; }
   }
   return poddajSie(rola === 'robotnik' ? 'tam się nie dokopię' : 'nie dojdę tam — nie ma drogi');
+}
+
+/** Etap 3d: odprawiający rytuał staje tuż przy ołtarzu, twarzą do krzyża, i klęczy (albo unosi księgę). */
+function klecz(sim: Sim, c: Creature, r: RytualOltarza,
+  naDroge: (d: number[], x?: number, y?: number) => void,
+  zamiar: (opis: string, job: Job, jt: number) => void,
+  droga: (cel: (x: number, y: number) => boolean, limit: number) => number[] | null,
+  podroz: (d: number[]) => number): void {
+  const o = sim.world.oltarz;
+  const cx = Math.floor(c.x), cy = Math.floor(c.y);
+  const strona = c.x < o.x + 0.5 ? -1 : 1;
+  const mx = o.x + strona * 2;
+  const opis = `odprawia rytuał przy ołtarzu: ${NAZWA_RYTUALU[r.rodzaj].toLowerCase()}`;
+  if (Math.abs(cx - mx) <= 1 && cy === o.y && stoi(sim, cx, cy)) {
+    c.jx = cx; c.jy = cy; c.droga = undefined;
+    c.face = -strona;
+    c.czynnosc = r.rodzaj === 'szal' || r.rodzaj === 'wskrzeszenie' ? 'czyta' : 'modli';
+    zamiar(opis, Job.STOI, Math.max(30, Math.min(LUD.zamiarTikow, r.do - sim.tick + 1)));
+    return;
+  }
+  const d = budzetDrog() > 0 ? droga((x, y) => Math.abs(x - mx) <= 1 && y === o.y && stoi(sim, x, y), 400) : null;
+  if (d) { naDroge(d, mx, o.y); zamiar(opis, Job.WANDER, podroz(d)); return; }
+  c.jx = cx; c.jy = cy; c.droga = undefined;
+  c.czynnosc = 'modli';
+  zamiar(opis, Job.STOI, 60);
 }
 
 /** Remake v1: stoi w swoim miejscu — pobożny modli się przy obozie, rycerz pilnuje, robotnik odpoczywa. */

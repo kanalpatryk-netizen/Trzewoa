@@ -20,6 +20,8 @@ import { STRAZNICY } from '../nastawy/straznicy';
 import { KARTY_LUDU } from '../nastawy/karty-ludu';
 import { tikWiader, zrodlaJedzenia, type StanWiader } from './wiadro';
 import { tikTrupow, type Trup } from './trupy';
+import type { StanOltarza } from './oltarz';
+import { OLTARZ } from '../nastawy/oltarz';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -51,6 +53,8 @@ export interface StanLudu {
   wiadra?: StanWiader;
   /** Remake v2: trupy ludu leżą na ziemi (sim/trupy.ts). */
   trupy?: Trup[];
+  /** Alpha, etap 3d: rytuał przy ołtarzu (sim/oltarz.ts). */
+  oltarz?: StanOltarza;
   /** Remake v2: robotnicy w hełmach (brak rycerzy) i następny ołtarz nie wcześniej niż. */
   helmy?: boolean;
   oltarzPo?: number;
@@ -154,6 +158,8 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   if (c.zatrutyDo !== undefined && sim.tick < c.zatrutyDo && (co === 'sila' || co === 'szybkosc' || co === 'kopanie')) v *= KARTY_LUDU.zatrucie;
   // Remake v2: robotnik w hełmie (rycerzy brak) — mocniejszy i walczy
   if (c.helm && r === 'robotnik' && (co === 'hp' || co === 'sila')) v *= LUD.helm[co];
+  // etap 3d: szał krwi z ołtarza
+  if (co === 'sila' && c.szalDo !== undefined && sim.tick < c.szalDo) v *= OLTARZ.rytualy.szal.sila;
   return v;
 }
 
@@ -252,6 +258,9 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   const d = sim.lud.dlon;
   if (d && (d.faza === 'wstaje' || d.faza === 'siega') && d.ofiary.includes(c.id)) {
     out.push({ nazwa: 'spod niego wznosi się dłoń z otchłani', skutek: 'zaraz go zabierze w dół — odpędzi ją tylko Cud tuż przy nim', dobry: false, do: d.od + (d.faza === 'wstaje' ? DLON.wstaje + DLON.siega : DLON.siega) });
+  }
+  if (c.szalDo !== undefined && sim.tick < c.szalDo) {
+    out.push({ nazwa: 'szał krwi', skutek: `siła ×${OLTARZ.rytualy.szal.sila} (rytuał przy ołtarzu)`, dobry: true, do: c.szalDo });
   }
   if (c.okaleczony) {
     out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false, kiedy: 'póki nie wyśpi się w sypialni' });

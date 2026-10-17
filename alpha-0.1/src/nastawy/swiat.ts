@@ -132,6 +132,17 @@ export const SWIAT = {
     /** Szyb z jedzeniem: szerokość (kafle); sala startowa pod nim: promienie i głębokość jej dna pod powierzchnią. */
     szyb: 3,
     sala: { rx: 17, ry: 5, dnoPod: 24 },
+    /**
+     * Alpha, etap 3d (szkic Pawła): przez szyb nad środkiem sali wpada światło dzienne na ołtarz; jedzenie zjeżdża
+     * drugim, węższym otworem — tyle kafli na prawo, tej szerokości.
+     */
+    szybWiadra: { dx: 7, szer: 1 },
+    /**
+     * Ołtarz na środku sali, pod szybem ze światłem. Pod nim kamienny kopczyk nie do ruszenia (szerokość, głębokość),
+     * a podłoga sali jest z kamienia na tyle rzędów — nikt nie podkopie ołtarza ani nie przetnie dołem drogi do niego.
+     * Na końcach sali `wyjscie` kafli podłogi zostaje do kucia — tamtędy schodzi się w głąb.
+     */
+    oltarz: { kopczykSzer: 5, kopczykGleb: 8, podlogaRzedow: 2, wyjscie: 3 },
     /** Żyły żelaza (kępy rudy): ile w płytkiej i środkowej warstwie, promień od–do. */
     zelazo: { plytka: 26, srodkowa: 9, promienOd: 1.1, promienDo: 2.4 },
     /** Małe jaskinie środkowej warstwy: ile, promienie od–do; pod dnem — złoto z taką szansą, tyle kafli szerokie. */

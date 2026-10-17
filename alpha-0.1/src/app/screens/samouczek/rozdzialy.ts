@@ -13,6 +13,7 @@ import { KOSZTY } from '../../../nastawy/moce';
 import { wiadroTeraz } from '../../../sim/wiadro';
 import { probaPlanu } from '../../../sim/pomieszczenia';
 import { POMIESZCZENIA } from '../../../nastawy/pomieszczenia';
+import { OLTARZ } from '../../../nastawy/oltarz';
 import type { Sim } from '../../../sim/sim';
 
 /** Samouczek pomieszczeń: pierwsze miejsce w skale obok sali, gdzie wolno położyć warsztat (dolny rząd wnętrza). */
@@ -137,7 +138,7 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Pomieszczenia',
-    wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb. Kują je robotnicy, którym plan wskażesz.',
+    wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz, szyb i drabinę. Kują je i budują robotnicy, którym plan wskażesz.',
     czasowniki: [],
     etapy: [
       {
@@ -161,7 +162,35 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true,
       },
     ],
-    koniec: 'Korytarz i szyb ciągniesz palcem od miejsca, gdzie stoi lud — szyb schodzi prostymi schodami, więc da się nim wrócić.',
+    koniec: 'Korytarz i szyb ciągniesz palcem od miejsca, gdzie stoi lud — szyb schodzi prostymi schodami, więc da się nim wrócić. Drabinę ciągniesz w górę do półki, na którą inaczej się nie wejdzie.',
+  },
+  {
+    tytul: 'Ołtarz',
+    wstep: 'Na środku sali, w smudze światła z góry, stoi ołtarz. Przy nim pobożny odprawia rytuały — płacisz za nie krwią.',
+    przygotuj: (g) => { g.sim.krew = Math.max(g.sim.krew, 60); },
+    czasowniki: [],
+    etapy: [
+      {
+        tekst: 'Zaznacz pobożnych — medalion pod płytą albo S.', klawisz: 'pobozni',
+        wskaz: (s) => { const p = s.gra.miejscePolaDruzyny('rola', 'pobozny'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: p.h / 2 + 4 } : null; },
+        gotowe: (g) => g.zaznaczeniRoli('pobozny') > 0,
+      },
+      {
+        tekst: 'Dotknij ołtarza — pobożny pójdzie do niego, a otworzy się okno rytuałów.',
+        wskaz: (s) => { const o = s.gra.sim.world.oltarz; return { typ: 'swiat', cel: { x: o.x + 0.5, y: o.y - 1.5, r: 3, tekst: 'ołtarz' } }; },
+        gotowe: (_g, z) => z?.typ === 'oltarz' && z.rodzaj === 'okno',
+      },
+      {
+        tekst: `Gdy pobożny stanie przy ołtarzu, wybierz „Modlitwa” (${OLTARZ.rytualy.modlitwa.krew} krwi) — od krzyża biją promienie, a wiara rośnie.`,
+        wskaz: (s) => { const p = s.gra.poleOltarza('modlitwa'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: Math.min(p.w, p.h) / 2 + 4 } : null; },
+        gotowe: (_g, z) => z?.typ === 'oltarz' && z.rodzaj === 'modlitwa',
+      },
+      {
+        tekst: `Szał krwi rozpala rycerza na minutę. Wskrzeszenie przywraca poległego, którego ciało jeszcze leży (${OLTARZ.rytualy.wskrzeszenie.krew} krwi). Ofiara krwi i ofiara życia dają krew — tylko tutaj, nie w szeptach.`,
+        rozumiem: true,
+      },
+    ],
+    koniec: 'Ołtarz i każdy rytuał mają swoją tablicę w atlasie. Rytuał przepada, gdy pobożny odejdzie od ołtarza — krew wtedy wraca.',
   },
   {
     tytul: 'Jedzenie z góry',
@@ -226,7 +255,7 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'szept' && z.narzedzie === 'modl',
       },
     ],
-    koniec: `Idzie pod twój rdzeń. Gdy się tam pomodli, skorupa zacznie pękać. Inne szepty: „okalecz się” i „ofiaruj” dają krew.`,
+    koniec: `Idzie pod twój rdzeń. Gdy się tam pomodli, skorupa zacznie pękać. Krew dają ofiary przy ołtarzu — nie szepty.`,
   },
   {
     tytul: 'Zatrzymaj czas',
