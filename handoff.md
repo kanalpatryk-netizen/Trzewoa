@@ -237,7 +237,7 @@ Ta dłoń już jest: kod w `src/sim/dlon.ts`, rysunek w `src/render/dlon.ts` (kl
 **Nowa umiejętność: przecięcie liny**
 - Pazurem przecina linę, po której zjeżdża jedzenie. Jedzenie przestaje zjeżdżać, dopóki ktoś nie naprawi liny.
 - Plan AI: przecięte wiadro spada i rozbija się na dnie szybu.
-- Do ustalenia, którą linę tnie: szyb do sali (`Wiadro.szyb` w `src/sim/wiadro.ts`) czy liny wiader zjeżdżających do odciętych w głębi. Plan AI daje tę aktywność środkowej warstwie.
+- Lina jest jedna: od 17.10 wiadro jest jedno i zjeżdża tylko szybem do sali (`src/sim/wiadro.ts`), więc dłoń tnie tę linę. Plan AI dawał tę aktywność środkowej warstwie.
 - Dłoń zawsze wznosi się z dołu, więc przy szybie u góry musiałaby wyjść inaczej.
 
 **„Napraw linę”**
@@ -308,12 +308,14 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 - **Rozjazd z `main`.** Relikwiarz krwi (`render/relikwiarz.ts`) i nowy znak oddania (`render/modlitwa.ts`) są w Remake v1
   i v2, a w Alphie nie, bo Alpha powstała wcześniej. Użytkownik nie odpowiedział, czy je przenieść.
 - **Podpowiedzi (kółka na mapie)** to w dużej części rady z Remake. W 3b usunięte dwie nieaktualne („prorokuj”, „Nakarm przedsionek”); reszta do przejrzenia razem z samouczkiem w etapie 5. Tekst rady widać tylko jako kółko z podpisem na mapie.
-- **Głód na ziarnach spoza prób.** Kopacz drogi wiernych schodził za zeskok i oddalał się od wiadra, które jechało do
-  niego (po zmianie mapy w 3d: ziarna 6, 9, 10). Naprawione w 3d: głodny, który nie dojdzie do stojącego wiadra, czeka
-  pod tym, które zjeżdża tam, dokąd dojdzie (`planujLud`, blok głodu). Wcześniejsza próba „czekaj na wiadro, gdy głodny”
-  w `planPolecenia` (bez sprawdzania, czy jakieś wiadro jedzie) zagłodziła ziarno 4 — wycofana. Został jeden przypadek:
-  bezczynny robotnik na końcu krypty (ziarno 10), zob. 2.3.
-- **Boss rozgniata bezczynnych robotników przy obozie** (10–13 strat na 8 prób po 3d, przed 3d 5). Wygranych to nie psuje.
+- **Głód na ziarnach spoza prób** — po zmianie na jedno wiadro nie ma go ani w 8 próbach, ani w 16 dodatkowych.
+  Trzy przyczyny naprawione przy okazji: brak powrotu z głębi (szczeble na zakrętach drogi wiernych), wykuta podłoga pod
+  drogą (`podDroga`) i kurier, który ruszał pod rdzeń głodny (`LUD.kurierNajadaOd`).
+- **Boss zgniata pobożnych pod rdzeniem** (2 przegrane na 16 dodatkowych ziarnach: speedrun 5 i 6). Dawniej bił najpierw
+  robotników stojących w krypcie przy wiadrach (10–13 strat na 8 prób po 3d); teraz robotnicy są przy wiadrze w sali, więc
+  idzie prosto na pobożnych, a rycerz bije najbliższego Strażnika, także tego w skale, i odchodzi w bok krypty. Próba
+  naprawy (rycerz bierze najpierw Strażnika przy bezbronnych i czeka pod tym w skale) pogorszyła wyniki do 6/8 i 8/16 —
+  wycofana. Do etapu 5 (bot) albo osobnej poprawki walki: rycerz musi osłaniać modlących się przed bossem.
 - **Tylko komputer.** Alpha nie jest zrobiona pod telefon. Paweł: „na telefonie mało co działa”.
 - **Zadania zespołu, nie dla Claude:**
   - grafika:
@@ -390,10 +392,16 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 - Kucie jest 8 razy wolniejsze. Postęp zostaje w kaflu (`world.kucie`), a skała pęka na ekranie (`src/render/kucie.ts`).
 - Droga wiernych (złota kreska) jest stała i kończy się na dnie przedsionka. Skorupa pęka od środka.
 
-**Wiadro** (`src/sim/wiadro.ts`)
-- Zjeżdża szybem do sali, z dosypywaniem do 40 porcji.
-- Odciętym w głębi zjeżdża tam, gdzie stoją, nawet 3 ponad limit 5 wiader.
-- Wiadro, do którego nikt nie dojdzie, odjeżdża po 20 s.
+**Wiadro** (`src/sim/wiadro.ts`) — **decyzja użytkownika (17.10): wiadro jest jedno, ma jeden punkt, w którym spada;
+nie pojawia się losowo, np. w jaskiniach; gracz może je sprowadzić niżej, kopiąc dziurę**
+- Zjeżdża tylko szybem z wiadrem (`world.szybWiadraX`), na dno tej kolumny (`miejsceWSzybie`, `dnoKolumny`), z dosypywaniem
+  do 40 porcji. Gdy pod stojącym wiadrem zniknie dno, zjeżdża niżej. Pod wiadrem podłoga sali nie jest z kamienia (`world.ts`),
+  a złota kreska omija tę kolumnę (`planujDroge`: `podWiadrem`).
+- Nakarm (`wiadroNaZadanie`) dosypuje do tego samego wiadra albo spuszcza je szybem — miejsce dotknięcia nie ma znaczenia.
+- Do odciętych i do grup w głębi nic nie zjeżdża. Wracają drogą wiernych: plan liczy szczeble na zakrętach
+  (`szczebleDrogi` — droga wykopana „w wyobraźni”, krok po kroku od przedsionka), a robotnik obok wykopanego zakrętu
+  dobija szczebel (`dobijajSzczeble`, zdarzenie `szczebel` — ta sama animacja co przy drabinach). Podłogi pod drogą nikt
+  z ludu nie kuje (`podDroga`). Warcie jedzenie donoszą robotnicy; kurier najpierw sam się najada.
 - Przy wiadrze je się do syta, do 4 porcji naraz.
 
 **Bez zmian względem Remake v2**
@@ -408,6 +416,11 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 - `VERSION = 3`. Zapisy sprzed 3d (bez ołtarza i drugiego otworu) się nie wczytają.
 
 ### 2.3 Testy i próby
+**Po zmianie na jedno wiadro (17.10):** 8/8 wygranych (budowniczy 13,7–14,8 min, speedrun 12,7–17,0 min), nikt nie umarł
+z głodu, z ludu zginął jeden pobożny (od Strażnika). Robotnicy dobili 228 szczebli w 8 partiach. Dodatkowe ziarna 5–12:
+14/16, bez głodu; przegrane speedrun 5 i 6 — boss zgniata pobożnych (zob. 1.10). Test świata sprawdza też, że pod wiadrem
+jest podłoga, którą da się wykopać.
+
 Wyniki po etapie 3d (gałąź `ccr-91477c56-dh7bgd`, limit prób 20 min — `proby.sh <katalog> 20`).
 - **`npm test`:** 100/100 światów (z ołtarzem, kopczykiem, kamienną podłogą i oboma otworami), 12/12 skorup.
 - **Próby botów:** 8 partii (ziarna 1–4, style budowniczy i speedrun). Wygranych 8/8.
@@ -475,7 +488,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `polecenia.ts` | Rozkazy: `wydajPolecenie`, `wydajGrupie`, `drogaGrupie`, `odwolajPolecenie`, odmowy | 3c, 4 |
 | `droga.ts` | Szukanie drogi z fizyką ludu: `szukajDrogi`, `szukajKopiac`, `stoi`, `ludRuch` | wszystkie |
 | `pielgrzymka.ts` | Plan drogi wiernych (złota kreska): `odswiezPlan`, `czoloDrogi`, `nieWykopane` | 5 |
-| `wiadro.ts` | Wiadra: szyb, grupy, limity, `krokNaLinie` | 4 |
+| `wiadro.ts` | Jedno wiadro w szybie, dosypywanie, pogłębianie kopaniem, `krokNaLinie` | 4 |
 | `rytual.ts` | Skorupa pękająca od modlitwy | 5 (pomnik) |
 | `straznicy.ts`, `boss.ts` | Fale i boss | 5 |
 | `dlon.ts` | Dłoń z otchłani | 4 |
@@ -494,7 +507,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | Plik | Co zawiera |
 |---|---|
 | `swiat.ts` | `SWIAT.warstwy` (rama, granice warstw, sala, szyb, żelazo, jaskinie, kieszenie, krypta, tempo kucia) i `RDZEN` |
-| `wiadro.ts` | `szybem`, `szybMaks`, `nieDojdziePo`, `najadaDo`, `ponadLimitDlaOdcietych` i reszta liczb wiadra |
+| `wiadro.ts` | `co`, `szybMaks`, `nakarmPorcji`, `najadaDo` i reszta liczb wiadra |
 | `lud.ts` | Skład startowy, role, głód |
 | `polecenia.ts` | `POLECENIA` i `ODSTEPY` |
 | `rytual.ts` | `PIELGRZYMKA` i `PLAN_DROGI` |
@@ -566,7 +579,8 @@ Od wklejenia planu (16.10), po kolei:
 | `f4a103b` | `handoff.md` |
 | `8708eed` (`main`, PR #13) | **Etap 3b.** Liczniki żelaza i złota z animacją okruchów, „kop żyłę”, tablica „Kruszce”, porządki w podpowiedziach, sumowanie kroniki |
 | `146c82b` (`main`, PR #14) | **Etap 3c.** Pomieszczenia: plany pod kursorem, kucie tylko przez zaznaczonych, warsztat (złoto → wiara), kuźnia (żelazo → zbroja), sypialnia (zdejmuje osłabienia), korytarz i szyb, atlas, samouczek |
-| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3d.** Dwa otwory (światło na ołtarz, wiadro obok), ołtarz od początku na kamiennym kopczyku, okno rytuałów, pięć rytuałów za krew z animacjami, okalecz/ofiaruj tylko przy ołtarzu, drabiny tylko tam, gdzie trzeba się wspiąć, sen 60 s, Strażnicy i boss z dala od pobożnych, atlas, samouczek, `VERSION = 3` |
+| `d097ec5` | **Etap 3d.** Dwa otwory (światło na ołtarz, wiadro obok), ołtarz od początku na kamiennym kopczyku, okno rytuałów, pięć rytuałów za krew z animacjami, okalecz/ofiaruj tylko przy ołtarzu, drabiny tylko tam, gdzie trzeba się wspiąć, sen 60 s, Strażnicy i boss z dala od pobożnych, atlas, samouczek, `VERSION = 3` |
+| (gałąź `ccr-91477c56-dh7bgd`) | **Jedno wiadro.** Tylko szybem do sali, pogłębiane kopaniem; Nakarm dosypuje do niego. Szczeble na zakrętach drogi wiernych, ochrona podłogi pod drogą, kurier najada się przed drogą |
 
 Wcześniej w tej samej sesji zrobiłem rzeczy, które są już na `main` (PR #7–#12):
 - freski w interfejsie, mroczny interfejs i muzyka niepokoju;

@@ -2061,16 +2061,7 @@ function doFight(sim: Sim, c: Creature): void {
       walczKsiega(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); });
       return;
     }
-    walczZeStraznikiem(sim, c, foe, (x, y) => {
-      // (Alpha, jedno wiadro: Strażnik przenika skałę — rycerz nie kuje za nim ani nie szuka obejścia, tylko staje na
-      // podłodze pod nim i czeka, aż zejdzie; idąc za nim, odchodził w bok krypty, a boss zgniatał modlących się)
-      if (REMAKE && rolaPostaci(c) && sim.world.solid(x, y)) {
-        const m = podStraznikiem(sim, x, y);
-        if (m) walkTo(sim, c, m[0], m[1], false);
-        return;
-      }
-      walkTo(sim, c, x, y);
-    });
+    walczZeStraznikiem(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); });
     return;
   }
   const dist = Math.hypot(foe.x - c.x, foe.y - c.y);
@@ -2090,17 +2081,6 @@ function doFight(sim: Sim, c: Creature): void {
     }
   } else if (dist > K.walkaGubi) { sim.target.delete(c.id); c.jt = 0; }
   else walkTo(sim, c, foe.x, foe.y);
-}
-
-/** Alpha: podłoga pod Strażnikiem w skale (albo tuż obok) — tam czeka na niego rycerz; null, gdy nie ma jej blisko. */
-function podStraznikiem(sim: Sim, x: number, y: number): [number, number] | null {
-  const w = sim.world;
-  for (let dy = 0; dy <= 10; dy++) {
-    for (const dx of [0, -1, 1, -2, 2]) {
-      if (w.inb(x + dx, y + dy) && w.passable(x + dx, y + dy) && stoi(sim, x + dx, y + dy)) return [x + dx, y + dy];
-    }
-  }
-  return null;
 }
 
 function doFlee(sim: Sim, c: Creature): void {

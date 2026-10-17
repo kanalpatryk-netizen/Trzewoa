@@ -702,7 +702,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'krew', grupa: 'zasoby', nazwa: 'Krew', lacina: 'Sanguis',
     opis: `Liczba nad płytą i czerwona rysa pod nią — na Koszmarze zaczynasz z ${Math.max(0, LUD.krewStart - GORA.koszmarKrew)}, mieści się jej najwyżej ${GORA.krewMax}. Płaci ci ją każda śmierć — także Strażników Snu i ludzi z powierzchni — i ofiary przy ołtarzu: krwi pobożnego (+${LUD.okaleczenieKrew}) i jego życia (+${LUD.ofiaraKrew}).`,
-    kiedy: 'Wydajesz ją na rytuały przy ołtarzu, na wiadra rytem Nakarm i na wybory na kartach wydarzeń.',
+    kiedy: 'Wydajesz ją na rytuały przy ołtarzu, na dodatkowe jedzenie rytem Nakarm i na wybory na kartach wydarzeń.',
     rycina: cala(rysujOrgany),
   },
   {
@@ -744,7 +744,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'sen', grupa: 'prawa', nazwa: 'Przegrana', lacina: 'Casus',
-    opis: 'Przegrywasz, gdy nie żyje już żaden pobożny — tylko ich modlitwa kruszy skorupę, a nowych nikt nie wyda. Przegrywasz też, gdy do rdzenia dojdzie ktoś, kto w ciebie nie wierzy. Najczęstsza droga do porażki to głód — lud rozproszony daleko od wiader, bez robotników, którzy noszą jedzenie.',
+    opis: 'Przegrywasz, gdy nie żyje już żaden pobożny — tylko ich modlitwa kruszy skorupę, a nowych nikt nie wyda. Przegrywasz też, gdy do rdzenia dojdzie ktoś, kto w ciebie nie wierzy. Najczęstsza droga do porażki to głód — lud rozproszony daleko od wiadra, bez robotników, którzy noszą jedzenie.',
     kiedy: 'Trzymaj lud razem i robotników przy życiu — jedzenie jest tylko w wiadrze w sali, a warcie pod rdzeniem donoszą je robotnicy. Nie wysyłaj pod rdzeń ostatniego pobożnego.',
     rycina: cala(rysujSpis),
   },
@@ -769,13 +769,13 @@ export const TABLICE: Tablica[] = [
   {
     id: 'oddanie', grupa: 'prawa', nazwa: 'Oddanie i modlitwa', lacina: 'Devotio',
     opis: `Oddanie to to, jak mocno lud w ciebie wierzy — od 0 do 100%, widać je w złożonych dłoniach pod płytą, które napełniają się złotem, i na karcie postaci. Kto wierzy, ten się modli: przy ołtarzu, przy znaku po Cudzie i pod rdzeniem. Każda modlitwa daje ci wiarę i trochę podnosi oddanie. Najszybciej podniesie je Cud przy siedzibie. Przy ${proc(PIELGRZYMKA.oddanieNacji)} lud sam wyśle wartę pod rdzeń.`,
-    kiedy: 'Najprościej: Cud przy siedzibie, wiadra dla warty — i szepnij „módl się” pobożnym (albo wybierz „poślij” na karcie warty).',
+    kiedy: 'Najprościej: Cud przy siedzibie, jedzenie dla warty — i szepnij „módl się” pobożnym (albo wybierz „poślij” na karcie warty).',
     rycina: pielgrzymka,
   },
   {
     id: 'pielgrzymka', grupa: 'prawa', nazwa: 'Warta pod rdzeniem', lacina: 'Peregrinatio',
     opis: `Gdy oddanie ludu przekroczy ${proc(PIELGRZYMKA.oddanieNacji)}, od ${PIELGRZYMKA.minPielgrzymow} do ${PIELGRZYMKA.maxPielgrzymow} najwierniejszych, najedzonych pobożnych samo schodzi pod rdzeń i modli się pod skorupą. Czekają przy obozie, aż robotnicy dokopią drogę (złotą kreskę), a rycerze idą z nimi na wartę. Szept „módl się” posyła pobożnego od razu, bez względu na wiarę ludu.`,
-    kiedy: 'Warta głoduje pierwsza — gdy wiadra do niej nie sięgają, spuść jej wiadro rytem Nakarm.',
+    kiedy: 'Warta głoduje pierwsza — wiadro jest tylko w sali, więc pilnuj, żeby robotnicy donosili jej jedzenie (i żeby w wiadrze było co nosić: dosyp rytem Nakarm).',
     rycina: pielgrzymka,
   },
   {
@@ -786,7 +786,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'role', grupa: 'prawa', nazwa: 'Role ludu', lacina: 'Officia',
-    opis: `Drużyna jest stała: ${LUD.start.robotnik} robotników, ${LUD.start.pobozny} pobożnych i ${LUD.start.rycerz} rycerz — nikt nie dochodzi i nikt się nie starzeje. Pobożni modlą się i kruszą skorupę; stoją przy obozie najbliżej rdzenia. Robotnicy kopią tylko na twój rozkaz, a poza tym donoszą jedzenie z wiader tym, którzy stoją na warcie. Rycerz jest jeden, ale ma miecz i ${LUD.role.rycerz.hp} razy więcej życia; poza wartą pilnuje obozu, a w czasie fali walczy ze Strażnikami. Gdy rycerza zabraknie, robotnicy zakładają hełmy i walczą zamiast niego.`,
+    opis: `Drużyna jest stała: ${LUD.start.robotnik} robotników, ${LUD.start.pobozny} pobożnych i ${LUD.start.rycerz} rycerz — nikt nie dochodzi i nikt się nie starzeje. Pobożni modlą się i kruszą skorupę; stoją przy obozie najbliżej rdzenia. Robotnicy kopią tylko na twój rozkaz, a poza tym donoszą jedzenie z wiadra tym, którzy stoją na warcie. Rycerz jest jeden, ale ma miecz i ${LUD.role.rycerz.hp} razy więcej życia; poza wartą pilnuje obozu, a w czasie fali walczy ze Strażnikami. Gdy rycerza zabraknie, robotnicy zakładają hełmy i walczą zamiast niego.`,
     kiedy: 'Na karcie postaci widać jej zamiar i ile jeszcze go trzyma. Rozkazy wydajesz z medalionów pod płytą.',
     rycina: postac(Race.GOBLIN, 'kopie', 1, 'robotnik'),
   },
