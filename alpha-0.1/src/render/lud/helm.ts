@@ -64,7 +64,7 @@ function helmGarnczkowy(r: Rysunek): void {
     wz.moveTo(w0.x, w0.y); wz.lineTo(w1.x, w1.y); wz.lineTo(w2.x, w2.y); wz.lineTo(w3.x, w3.y);
     wz.quadraticCurveTo(P(-0.04, -0.25).x, P(-0.04, -0.25).y, w0.x, w0.y);
     g.fillStyle = 'rgba(4,3,3,0.97)'; g.fill(wz);
-    if (st.bunt) {
+    if (st.szal) {
       const o = P(0.86, -0.245);
       poswiata(g, o.x, o.y, rg * 0.9, [255, 40, 20], 0.35 + 0.12 * sin(czas * 0.005 + id));
       g.fillStyle = 'rgba(255,90,50,0.95)'; g.beginPath(); g.ellipse(o.x, o.y, rg * 0.07, rg * 0.035, kat, 0, TAU); g.fill();

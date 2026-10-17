@@ -64,6 +64,6 @@ function zmarly(t: Trup): Creature {
   return {
     id: t.id, x: t.x, y: t.y, face: t.face, race: Race.GOBLIN, rola: t.rola,
     hp: 1, carry: 0, fear: 0, mad: 0, vy: 0,
-    okaleczony: t.okaleczony, helm: t.helm, buntownik: t.buntownik,
+    okaleczony: t.okaleczony, helm: t.helm,
   } as unknown as Creature;
 }

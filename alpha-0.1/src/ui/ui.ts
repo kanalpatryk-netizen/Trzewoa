@@ -5,7 +5,7 @@ import { rolaPostaci, NAZWA_ROLI, stanyPostaci } from '../sim/lud';
 import { aktywnyBoss } from '../sim/boss';
 import { rysujGrafike } from '../grafiki/grafiki';
 import { Creature, Job } from '../sim/creatures';
-import { Verb, TOOLS, affordable, cost, whisper, modliSie, moznaPrzemyslec, moznaKopacLosowo } from '../powers/powers';
+import { Verb, TOOLS, affordable, cost, whisper, modliSie } from '../powers/powers';
 import { SERIF, creatureName, creatureNameCelownik } from '../render/overlay';
 import { Plate } from '../render/plate';
 import { rysujStany } from '../render/stany';
@@ -434,7 +434,7 @@ export class Ui {
     ctx.fillStyle = 'rgba(224,168,96,0.85)';
     const cecha = cechaNacji(clan).nazwa;
     const rola = rolaPostaci(c);
-    ctx.fillText(`${rola ? NAZWA_ROLI[rola].toUpperCase() : c.straznik ? (c.boss ? 'BOSS' : 'STRAŻNIK') : c.buntownik ? 'ZBUNTOWANY RYCERZ' : RACES[c.race].name.toUpperCase()} · ${clan.name}${cecha ? ` · ${cecha}` : ''}`, tx, ny + rozmImienia * 0.9 + rozm * 1.5, tw);
+    ctx.fillText(`${rola ? NAZWA_ROLI[rola].toUpperCase() : c.straznik ? (c.boss ? 'BOSS' : 'STRAŻNIK') : RACES[c.race].name.toUpperCase()} · ${clan.name}${cecha ? ` · ${cecha}` : ''}`, tx, ny + rozmImienia * 0.9 + rozm * 1.5, tw);
     ctx.font = `italic ${rozm}px ${SERIF}`;
     ctx.fillStyle = 'rgba(208,194,170,0.86)';
     wrap(ctx, lifeLine(c, sim), tx, ny + rozmImienia * 0.9 + rozm * 3.1, tw, rozm * 1.3);
@@ -481,7 +481,7 @@ export class Ui {
     ctx.fillStyle = 'rgba(224,168,96,0.8)';
     ctx.fillText(napisSzeptu, x + cw / 2, yM - rozm * 1.15);
     // okaleczyć może się tylko pobożny, i tylko raz — innym tej myśli nie pokazujemy
-    const tools = c.straznik || c.buntownik ? [] : TOOLS.szept.filter((t) => (t.id !== 'okalecz' || (rolaPostaci(c) === 'pobozny' && !c.okaleczony)) && (t.id !== 'przerwij' || modliSie(c)) && (t.id !== 'przemysl' || moznaPrzemyslec(sim, c)) && (t.id !== 'kopLosowo' || moznaKopacLosowo(c)));
+    const tools = c.straznik ? [] : TOOLS.szept.filter((t) => (t.id !== 'okalecz' || (rolaPostaci(c) === 'pobozny' && !c.okaleczony)) && (t.id !== 'przerwij' || modliSie(c)));
     const size = Math.max(13, Math.min(17, cw * 0.05));
     ctx.font = `${size}px ${SERIF}`;
     for (let k = 0; k < tools.length; k++) {

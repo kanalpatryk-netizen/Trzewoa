@@ -1,7 +1,7 @@
 import { REMAKE } from '../nastawy/lud';
 import type { Plate } from './plate';
 import { procentSkorupy } from '../sim/rytual';
-import { bossSpi, falaTrwa, trybWiernych, rycerzeCzekaja, iluRycerzy } from '../sim/straznicy';
+import { falaTrwa, trybWiernych, rycerzeCzekaja, iluRycerzy } from '../sim/straznicy';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { aktywnyBoss } from '../sim/boss';
 import type { Sim } from '../sim/sim';
@@ -67,22 +67,15 @@ export function terazDrogi(sim: Sim): Teraz {
       return najw
         ? { tekst: `Zrób Cud przy gnieździe: ${najw.name} — wierzą na ${Math.floor(najw.devotion * 100)}%, potrzeba ponad ${Math.round(PIELGRZYMKA.oddanieNacji * 100)}%. Albo szepnij „módl się” trzem z nich.`, cel: gniazdo(najw) }
         : REMAKE
-          ? { tekst: 'Wydawaj ze skały pobożnych i zrób Cud przy siedzibie — albo szepnij „módl się” trzem pobożnym.', cel: (() => { const k = sim.clans.find((k) => !k.dead && k.race === Race.GOBLIN); return k ? gniazdo(k) : undefined; })() }
+          ? { tekst: 'Zrób Cud przy siedzibie — albo szepnij „módl się” pobożnym.', cel: (() => { const k = sim.clans.find((k) => !k.dead && k.race === Race.GOBLIN); return k ? gniazdo(k) : undefined; })() }
           : { tekst: 'Żadna nacja nie jest dość liczna, by w ciebie uwierzyć. Nakarm którąś.' };
     case 'droga':
       return sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku
-        ? { tekst: REMAKE ? 'Robotnicy kopią drogę do rdzenia (złota kreska). Gdy będzie gotowa, szepnij trzem pobożnym „módl się”.' : 'Nakarm przedsionek nad rdzeniem (grzyb) — z nim warta przeżyje na dole.', cel: przedsionek }
+        ? { tekst: REMAKE ? 'Robotnicy kopią drogę do rdzenia (złota kreska). Gdy będzie gotowa, szepnij pobożnym „módl się”.' : 'Nakarm przedsionek nad rdzeniem (grzyb) — z nim warta przeżyje na dole.', cel: przedsionek }
         : { tekst: REMAKE ? 'Pobożni ruszą pod rdzeń wykopaną drogą; robotnicy doniosą im jedzenie.' : `${najw ? najw.name : 'Wierni'} ruszą pod rdzeń i sami przekopią się w dół.`, cel: przedsionek };
     case 'skorupa':
-      if (REMAKE && bossSpi(sim)) {
-        // boss śpi, bo nie było rycerzy — wskazówka prowadzi do świecącego gniazda
-        const g = (sim.lud.gniazda ?? []).find((o) => o.znany && !o.odkryte);
-        // (gdy wszystkie gniazda są już odkopane, nie ma czego szukać — nie odsyłamy gracza na marne)
-        if (!g) return { tekst: `${aktywnyBoss().nazwa} śpi w ścianie i wróci. Wszystkie gniazda rycerzy są już odkopane — ocal tych rycerzy, którzy jeszcze żyją, i trzymaj ich przy rdzeniu.`, cel: przedsionek };
-        return { tekst: `${aktywnyBoss().nazwa} śpi w ścianie i wróci. Szepnij robotnikom „Przemyśl i kop” — świecące gniazdo da rycerzy.`, cel: { x: g.x, y: g.y, r: 4, tekst: 'gniazdo rycerzy' } };
-      }
-      if (REMAKE && rycerzeCzekaja(sim)) return { tekst: `${aktywnyBoss().nazwa} czeka pod rdzeniem. Rycerzy jest ${iluRycerzy(sim)} z ${STRAZNICY.rycerzyNaBossa} — czekają z dala, aż zbierze się ich dość. Szepnij robotnikom „Przemyśl i kop”.`, cel: przedsionek };
-      if (REMAKE && falaTrwa(sim) && trybWiernych(sim)) return { tekst: 'Fala Strażników Snu — nie ma rycerzy ani gniazd: pobożni unoszą księgi i razią Strażników z dystansu.', cel: przedsionek };
+      if (REMAKE && rycerzeCzekaja(sim)) return { tekst: `${aktywnyBoss().nazwa} czeka pod rdzeniem. Walczących jest ${iluRycerzy(sim)} z ${STRAZNICY.rycerzyNaBossa} — czekają z dala, aż zbierze się ich dość.`, cel: przedsionek };
+      if (REMAKE && falaTrwa(sim) && trybWiernych(sim)) return { tekst: 'Fala Strażników Snu — nie ma rycerza ani robotników w hełmach: pobożni unoszą księgi i razią Strażników z dystansu.', cel: przedsionek };
       if (REMAKE && falaTrwa(sim)) return { tekst: 'Fala Strażników Snu — rycerze walczą, reszta odchodzi spod rdzenia. Dopóki fala trwa, skorupa nie pęka.', cel: przedsionek };
       return { tekst: REMAKE ? `Pobożni kruszą skorupę modlitwą — ${procentSkorupy(sim)}%. Pilnuj, żeby robotnicy mieli co im donosić.` : `Wierni kują skorupę — ${procentSkorupy(sim)}%. Pilnuj, żeby przy przedsionku było co jeść.`, cel: przedsionek };
     default:

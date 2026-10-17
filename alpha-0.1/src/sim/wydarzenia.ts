@@ -324,7 +324,7 @@ function kandydaci(sim: Sim, st: StanWydarzen): { waga: number; zbuduj: Budownic
 
   // Remake v1: jeden lud — tylko karty, które mają w nim sens (bez wojen nacji, proroków,
   // obcych ras, kuźni i żył szaleństwa). Nowa talia przyjdzie w kolejnym etapie.
-  // etap 4: nowa talia ludu (spisek rycerzy, zatrute plony, woda w obozie, zawał, sen o rycerzach)
+  // etap 4: nowa talia ludu (zatrute plony, woda w obozie, zawał nad drogą wiernych)
   return [...out.filter((k) => KARTY_REMAKE.has(k.rodzaj)), ...kandydaciLudu(sim, st)];
 }
 
@@ -334,8 +334,7 @@ const KARTY_REMAKE = new Set(['najazd', 'zaraza', 'glod', 'znak', 'warta', 'dlug
 export const KARTY_W_GRZE: [string, string][] = [
   ['najazd', 'Najazd'], ['zaraza', 'Zaraza'], ['glod', 'Głód'], ['znak', 'Prośba o znak'],
   ['warta', 'Warta pod rdzeniem'], ['dlug', 'Głębia proponuje układ'], ['wymiera', 'Lud wymiera'],
-  ['spisek', 'Spisek rycerzy'], ['plony', 'Zatrute plony'], ['zawal', 'Zawał nad drogą wiernych'],
-  ['sen', 'Sen o kamiennych rycerzach'],
+  ['plony', 'Zatrute plony'], ['zawal', 'Zawał nad drogą wiernych'],
 ];
 
 /** v4 beta: spełnia skutki odroczone, którym przyszła pora. */
@@ -845,9 +844,9 @@ function jedzeniePrzyPrzedsionku(sim: Sim): void {
 function poslijWarte(sim: Sim, k: Clan | null): void {
   if (!k) return;
   let posl = ilePielgrzymow(sim, k.id);
-  // (Remake v1: tylko pobożni — karta zabierała też robotników, a ten z torem ku gniazdu stał potem
+  // (Remake v1: tylko pobożni — karta zabierała też robotników, a ten z kopania stał potem
   // przy obozie jak pielgrzym i tor nie kończył się nigdy)
-  const chetni = sim.creatures.filter((c) => !c.dead && c.clan === k.id && c.job !== Job.PIELGRZYM && !c.slave && (c.rola ?? 'pobozny') === 'pobozny' && !c.buntownik)
+  const chetni = sim.creatures.filter((c) => !c.dead && c.clan === k.id && c.job !== Job.PIELGRZYM && !c.slave && (c.rola ?? 'pobozny') === 'pobozny')
     .sort((a, b) => a.hunger - b.hunger);
   for (const c of chetni) {
     if (posl >= W.wartaIlu) break;

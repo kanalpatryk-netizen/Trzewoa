@@ -35,7 +35,7 @@ export const DEV = {
   msKroku: 0,
   /** Rysunek bez ciemności (mrok i Patrzący działają dalej — tylko ich nie widać). */
   bezMroku: false,
-  /** Na płycie: to, czego gracz nie widzi — Patrzący (w każdej fazie) i gniazda rycerzy. */
+  /** Na płycie: to, czego gracz nie widzi — Patrzący (w każdej fazie). */
   pokazUkryte: true,
   /** Na płycie: drogi wszystkich postaci, nie tylko śledzonej. */
   pokazDrogi: false,

@@ -1,5 +1,4 @@
 import { Rng } from '../core/rng';
-import { stropGory } from './zawal';
 import { zapisz, kto } from './dziennik';
 import { World, SURFACE_Y } from './world';
 import { T, PASSABLE } from './tiles';
@@ -16,7 +15,7 @@ import { GORA as G, LUDY as L, ZASIEDLENIE as Z, PRZYPLYWY as PP } from '../nast
 import { SWIAT } from '../nastawy/swiat';
 import { cechaNacji, losujCeche } from './cechy';
 import type { Podsumowanie } from '../core/osiagniecia';
-import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, zalozGniazda, type StanLudu } from './lud';
+import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, type StanLudu } from './lud';
 import { zostawTrupa } from './trupy';
 import { wiadroTeraz } from './wiadro';
 import { LUD, REMAKE } from '../nastawy/lud';
@@ -145,7 +144,7 @@ export class Sim {
   rytual: StanRytualu = { postep: 0, klan: -1, wierni: 0, pekniecia: 0, otwarta: false, skorupa: 0 };
   /** Karty wydarzeń (patrz wydarzenia.ts) — główny sposób grania na telefonie. */
   wydarzenia: StanWydarzen = nowyStanWydarzen();
-  /** Remake v1: przełącznik wychodzenia ze skały, siedziba, obozy. */
+  /** Remake v1: siedziba, obozy, wiadra, fale, mrok, dłoń (Alpha: bez wychodzenia ze skały). */
   lud: StanLudu = nowyStanLudu();
   /** Plan drogi pielgrzymów (patrz pielgrzymka.ts) — pamięć podręczna, nie stan gry. */
   planDrogi: PlanDrogi | null = null;
@@ -232,8 +231,6 @@ export class Sim {
         if (c) { nadajRole(this, c, rola); c.age = this.rng.int(Math.floor(RACES[Race.GOBLIN].lifespan * Z.dorosliDo)); }
       }
     }
-    // etap 2: kamienni rycerze śpią w skale — do odkopania
-    zalozGniazda(this);
 
     // to, co wiedzą od pokoleń: okolice własnych gniazd
     for (const clan of this.clans) {
@@ -1108,18 +1105,6 @@ export class Sim {
     let x = nadX ?? 8 + this.rng.int(w.w - 16), y = SURFACE_Y - 2;
     for (let k = 0; k < 40 && !w.passable(x, y); k++) {
       x = nadX !== undefined ? Math.max(8, Math.min(w.w - 9, nadX + this.rng.int(21) - 10)) : 8 + this.rng.int(w.w - 16);
-    }
-    // Remake v2: góra zawalona — schodzą szczeliną w gruzie, w pierwszą pustkę pod stropem
-    const strop = stropGory(this);
-    if (strop > y) {
-      let znalezione = false;
-      for (let k = 0; k < 80 && !znalezione; k++) {
-        const xx = nadX !== undefined && k < 20 ? Math.max(8, Math.min(w.w - 9, nadX + this.rng.int(21) - 10)) : 8 + this.rng.int(w.w - 16);
-        for (let yy = strop; yy < strop + 40 && yy < w.h - 1; yy++) {
-          if (w.passable(xx, yy) && w.solid(xx, yy + 1) && w.magma[w.idx(xx, yy)] === 0) { x = xx; y = yy; znalezione = true; break; }
-        }
-      }
-      if (!znalezione) return;
     }
     const clan = this.newClan(Race.HUMAN, x, y);
     const n = PP.ludzieIlu + this.rng.int(PP.ludzieRozrzut);

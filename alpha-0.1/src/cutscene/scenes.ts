@@ -53,7 +53,7 @@ export const SCENY: Record<string, Scena> = {
     rysunek: rysujOrgany,
     linie: [
       'Masz trzy ryty: Nakarm (wiadro z jedzeniem z góry), Szepnij i Cud. Płacisz Krwią (z każdej śmierci) i Wiarą (z każdej modlitwy).',
-      'Każda góra to Koszmar: krwi jest mało, skorupa jest twarda, góra zawala się za ludem, a w ciemności coś patrzy. Co chwilę coś się dzieje — czas wtedy staje, a ty wybierasz.',
+      'Każda góra to Koszmar: krwi jest mało, skorupa jest twarda, drużyna jest mała i nikt nowy nie przyjdzie, a w ciemności coś patrzy. Co chwilę coś się dzieje — czas wtedy staje, a ty wybierasz.',
       'U dołu płyty zawsze widać, co teraz zrobić, żeby zbliżyć się do wolności. Zaraz pokażę ci wszystko palcem.',
     ],
   },

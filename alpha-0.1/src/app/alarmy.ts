@@ -151,9 +151,9 @@ export class Straznik {
         rodzaj: `fala-${fal}`, kryzys: true,
         tytul: def?.boss ? `Ostatnia fala — ${aktywnyBoss().nazwa}` : `Strażnicy Snu — fala ${fal} z ${STRAZNICY.fale.length}`,
         tekst: def?.boss ? `${aktywnyBoss().opis} Dopóki stoi, skorupa nie pęknie.`
-          : `Spod skorupy wychodzą Strażnicy (${def?.straznikow ?? '?'}). Dopóki żyją, skorupa nie pęka. Pobożni i robotnicy odchodzą spod rdzenia — walczą rycerze.`,
-        rada: def?.boss ? 'Wyślij pod rdzeń wszystkich rycerzy i trzech pobożnych do modlitwy. Robotnicy muszą odkopywać zasypaną drogę.'
-          : 'Za mało rycerzy? Szepnij trzem robotnikom „przemyśl i kop” — w skale śpią kamienni rycerze.',
+          : `Spod skorupy wychodzą Strażnicy (${def?.straznikow ?? '?'}). Dopóki żyją, skorupa nie pęka. Pobożni i robotnicy odchodzą spod rdzenia — walczy rycerz.`,
+        rada: def?.boss ? 'Rycerz pod rdzeń, obaj pobożni do modlitwy — wtedy boss słabnie. Robotnicy muszą odkopywać zasypaną drogę.'
+          : 'Rycerz walczy sam; gdy zginie, robotnicy założą hełmy. Pilnuj, żeby był najedzony.',
         cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, tekst: 'przedsionek' },
       };
     }

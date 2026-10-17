@@ -101,7 +101,7 @@ export function wyslijStan(sim: Sim, ziarno: number, koniecOd: number): void {
   for (const c of sim.creatures) {
     if (c.dead || c.race !== Race.GOBLIN) continue;
     zywych++;
-    if (!c.buntownik) role[c.rola ?? 'pobozny']++;
+    role[c.rola ?? 'pobozny']++;
   }
   const k = sim.clans.find((x) => !x.dead && x.race === Race.GOBLIN);
   const ostatni = sim.chronicle.length ? sim.chronicle[sim.chronicle.length - 1].text : '';

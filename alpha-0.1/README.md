@@ -10,14 +10,17 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Zap
 Alphy są osobne — nie mieszają się z Remake v2.
 
 ## Co jest inaczej niż w Remake v2
+- **Stała drużyna:** 3 robotników, 2 pobożnych, 1 rycerz — na całą partię. Skała nie wydaje nowych postaci,
+  nie ma gniazd kamiennych rycerzy (ani szeptów „przemyśl i kop” i „kop losowo”), kart spisku rycerzy
+  i snu o kamiennych rycerzach. Rycerz jest jeden, ale dużo silniejszy (życie ×12, siła ×11) i na bossa
+  idzie sam; boss nie zasypia w ścianie. Przegrywasz, gdy zginie ostatni pobożny.
+- **Bez zawału od góry:** mapa się nie skraca, góra nie zamyka się za ludem.
 - **Bez lin.** Lud wchodzi najwyżej o jeden stopień (kafel) i to tylko z miejsca, na którym stoi. Wyżej nie wejdzie —
   wykuwa sobie schody w skale. W dół zsuwa się po ścianie albo skacze, ale nie z dużej wysokości. Lina została tylko
   przy wiadrze z jedzeniem.
 
 ## W budowie (plan)
-1. **Sprzątanie i stały start** — gra zaczyna się z 3 robotnikami, 2 pobożnymi i 1 rycerzem (dużo silniejszym niż
-   dotąd). Skała nie wydaje nowych postaci, nie ma gniazd kamiennych rycerzy, szeptów „przemyśl i kop” i „kop losowo”,
-   kart spisku rycerzy i snu o kamiennych rycerzach. Bez zawału od góry — mapa się nie skraca.
+1. ~~**Sprzątanie i stały start**~~ — zrobione (wyżej).
 2. **Sterowanie i odstępy** — trzy ikonki z miniaturami robotnika, pobożnego i rycerza (z liczbą) zamiast paska ludu.
    Kliknięcie postaci zaznacza ją, kliknięcie miniatury — wszystkich tej roli. Rozkaz „idź tam”: pobożny i rycerz
    odmawiają, gdy nie dojdą, robotnik przekopuje się sam. Robotnicy nie kopią już sami — tylko na rozkaz.

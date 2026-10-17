@@ -70,7 +70,7 @@ function wOtchlani(sim: Sim, x: number, y: number): boolean {
 }
 
 function moznaWziac(c: Creature): boolean {
-  return !c.dead && !c.straznik && !c.buntownik && !!rolaPostaci(c);
+  return !c.dead && !c.straznik && !!rolaPostaci(c);
 }
 
 function ileLudu(sim: Sim): number {

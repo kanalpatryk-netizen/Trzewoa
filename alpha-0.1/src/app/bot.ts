@@ -1,15 +1,14 @@
 /**
  * Bot — automatyczny gracz do obserwatorium (obserwatorium.html: cztery okna gry, w każdym gra bot).
  * Robi to, co próbni gracze ze skryptów (scripts/test-balansu.mjs, scripts/proby-graczy.mjs):
- * odpowiada na karty wydarzeń, wybiera, kogo wydaje skała, karmi głodnych grzybem, szepcze
- * „przemyśl i kop” ku gniazdom rycerzy, stawia Cud przy ludzie i posyła pobożnych pod rdzeń.
+ * odpowiada na karty wydarzeń, karmi głodnych (ryt Nakarm), stawia Cud przy ludzie i posyła
+ * pobożnych pod rdzeń. Alpha: drużyna jest stała — bot nie wybiera, kogo wyda skała, i nie szuka rycerzy.
  * Wołany co BOT_CO tików symulacji; karty rozstrzyga od razu, żeby gra nie stawała.
  */
 import type { Sim } from '../sim/sim';
 import { Race } from '../sim/races';
 import { Job } from '../sim/creatures';
 import { rozstrzygnij } from '../sim/wydarzenia';
-import { gniazdaWSkale } from '../sim/lud';
 import { seed, sign, whisper } from '../powers/powers';
 import { porcjiWWiadrach } from '../sim/wiadro';
 
@@ -28,11 +27,11 @@ export const BOT_CO = 60;
 const M = 7200;
 
 /** Pamięć bota w jednej partii (nie w symulacji — ta trafia do zapisu). */
-interface Pamiec { przemysl: number; losowo: number; wymarsz: number }
+interface Pamiec { wymarsz: number }
 const pamieci = new WeakMap<Sim, Pamiec>();
 function pamiec(sim: Sim): Pamiec {
   let p = pamieci.get(sim);
-  if (!p) { p = { przemysl: -1e9, losowo: -1e9, wymarsz: 0 }; pamieci.set(sim, p); }
+  if (!p) { p = { wymarsz: 0 }; pamieci.set(sim, p); }
   return p;
 }
 
@@ -41,14 +40,13 @@ type C = any;
 const zywi = (sim: Sim): C[] => sim.creatures.filter((c) => !c.dead && c.race === Race.GOBLIN);
 function role(sim: Sim): { pobozny: number; robotnik: number; rycerz: number } {
   const r = { pobozny: 0, robotnik: 0, rycerz: 0 };
-  for (const c of zywi(sim)) if (!c.buntownik) r[(c.rola ?? 'pobozny') as keyof typeof r]++;
+  for (const c of zywi(sim)) r[(c.rola ?? 'pobozny') as keyof typeof r]++;
   return r;
 }
 /** Remake v2: jedzenie to porcje w wiadrach. */
 function jedzenie(sim: Sim): number {
   return porcjiWWiadrach(sim);
 }
-const ktosNaTorze = (sim: Sim) => sim.creatures.some((c: C) => !c.dead && (c.tor || c.przemysl !== undefined));
 
 /** Karta wydarzenia: rozsądny wybór, a gdy go nie stać — domyślny. Zwraca true, gdy była karta. */
 export function kartaBota(sim: Sim, styl: StylBota): boolean {
@@ -61,45 +59,15 @@ export function kartaBota(sim: Sim, styl: StylBota): boolean {
   return true;
 }
 
-/** Wspólne dla budowniczego i speedrunu: wiadro najgłodniejszemu (ryt Nakarm), rycerze z gniazd. */
+/** Wspólne dla budowniczego i speedrunu: wiadro najgłodniejszemu (ryt Nakarm). */
 function wspolne(sim: Sim): void {
-  const p = pamiec(sim);
-  const r = role(sim);
   let najg: C = null;
   for (const c of zywi(sim)) if (c.hunger > 0.65 && (!najg || c.hunger > najg.hunger)) najg = c;
   if (najg && sim.krew > 60 && sim.tick % 600 === 0) seed(sim, 'grzyb', Math.round(najg.x), Math.round(najg.y));
-  if (!ktosNaTorze(sim) && r.robotnik >= 2 && r.rycerz < 6 && gniazdaWSkale(sim).length && sim.tick - p.przemysl > 3600) {
-    const ilu = gniazdaWSkale(sim).some((g) => g.znany) ? 1 : 3;
-    if (sim.wiara >= 6 * ilu) {
-      let n = 0;
-      for (const c of zywi(sim)) if (n < ilu && c.rola === 'robotnik' && c.hunger < 0.45 && whisper(sim, 'przemysl', c)) n++;
-      if (n) p.przemysl = sim.tick;
-    }
-  }
 }
 
 function rozsadny(sim: Sim): void {
-  const p = pamiec(sim);
   const w = sim.world;
-  const r = role(sim);
-  sim.lud.rola = r.pobozny < 3 ? 'pobozny' : r.robotnik < 6 ? 'robotnik' : r.pobozny < 8 ? 'pobozny' : r.robotnik < 10 ? 'robotnik' : 'pobozny';
-  // nikt się nie modli i nie ma krwi na pobożnego — ofiara z robotnika
-  if (r.pobozny === 0 && sim.krew < 30 && sim.wiara >= 10) {
-    const c = zywi(sim).find((q) => q.rola === 'robotnik');
-    if (c) whisper(sim, 'ofiaruj', c);
-  }
-  // mało rycerzy — trzech robotników „przemyśli i kopie” ku gniazdu
-  if (r.robotnik >= 3 && r.rycerz < 6 && sim.wiara >= 18 && sim.tick - p.przemysl > 7200 && !ktosNaTorze(sim)) {
-    let n = 0;
-    for (const c of zywi(sim)) if (n < 3 && c.rola === 'robotnik' && c.hunger < 0.4 && whisper(sim, 'przemysl', c)) n++;
-    if (n) p.przemysl = sim.tick;
-  }
-  // gniazdo pokazane — jeden robotnik wystarczy
-  if (r.robotnik >= 2 && r.rycerz < 6 && sim.wiara >= 6 && sim.tick - p.przemysl > 3600
-      && (sim.lud.gniazda ?? []).some((g: C) => g.znany && !g.odkryte) && !ktosNaTorze(sim)) {
-    const c = zywi(sim).find((q) => q.rola === 'robotnik' && q.hunger < 0.5);
-    if (c && whisper(sim, 'przemysl', c)) p.przemysl = sim.tick;
-  }
   // głodujący dostają wiadro (ryt Nakarm) tam, gdzie stoją
   let najg: C = null;
   for (const c of zywi(sim)) if (c.hunger >= 0.6 && (!najg || c.hunger > najg.hunger)) najg = c;
@@ -111,11 +79,11 @@ function rozsadny(sim: Sim): void {
     const k = sim.clans.find((x) => !x.dead && x.race === Race.GOBLIN);
     if (k && k.devotion < 0.7) sign(sim, 'objawienie', k.hx, k.hy);
   }
-  // „módl się”: gdy przy przedsionku rośnie grzyb, trzech wiernych idzie pod rdzeń
+  // „módl się”: gdy przy przedsionku jest jedzenie, pobożni idą pod rdzeń
   if (sim.tick % 600 === 0 && !sim.rytual.otwarta && sim.jedzeniePrzedsionka >= 3 && sim.wiara >= 8) {
     let idzie = zywi(sim).filter((c) => c.job === Job.PIELGRZYM).length;
     for (const c of zywi(sim)) {
-      if (idzie >= 3 || sim.wiara < 8) break;
+      if (idzie >= role(sim).pobozny || sim.wiara < 8) break;
       if (c.job === Job.PIELGRZYM || c.hunger > 0.35 || (c.rola ?? 'pobozny') !== 'pobozny') continue;
       if (whisper(sim, 'modl', c)) idzie++;
     }
@@ -124,22 +92,15 @@ function rozsadny(sim: Sim): void {
 
 function budowniczy(sim: Sim): void {
   const p = pamiec(sim);
-  const r = role(sim);
-  sim.lud.rola = r.robotnik < 6 ? 'robotnik' : r.pobozny < 6 ? 'pobozny' : r.robotnik < 7 ? 'robotnik' : 'pobozny';
   wspolne(sim);
-  // rycerz kopie na chybił trafił, gdy gniazda jeszcze śpią
-  if (gniazdaWSkale(sim).length && sim.wiara >= 20 && sim.tick - p.losowo > 10800 && !sim.lud.straznicy?.trwa) {
-    const ryc = zywi(sim).find((c) => c.rola === 'rycerz' && !c.losowo && c.hunger < 0.5);
-    if (ryc && whisper(sim, 'kopLosowo', ryc)) p.losowo = sim.tick;
-  }
   if (sim.wiara >= 70 && sim.tick % 2400 === 0) {
     const k = sim.clans.find((x) => !x.dead && x.race === Race.GOBLIN);
     if (k && k.devotion < 0.9) sign(sim, 'objawienie', k.hx, k.hy);
   }
-  // wymarsz pod rdzeń, gdy wszystkiego dużo (albo po 16 minutach)
+  // wymarsz pod rdzeń, gdy droga gotowa i jest co jeść (albo po 16 minutach)
   if (!p.wymarsz) {
     const plan = sim.planDrogi ? sim.planDrogi.kopac.length : 99;
-    const gotowy = zywi(sim).length >= 12 && jedzenie(sim) >= 30 && (r.rycerz >= 3 || !gniazdaWSkale(sim).length) && sim.krew >= 40 && plan === 0;
+    const gotowy = jedzenie(sim) >= 12 && sim.krew >= 40 && plan === 0;
     if (gotowy || sim.tick > 16 * M) p.wymarsz = sim.tick;
   }
   if (p.wymarsz && sim.tick % 600 === 0) {
@@ -148,8 +109,6 @@ function budowniczy(sim: Sim): void {
 }
 
 function speedrun(sim: Sim): void {
-  const r = role(sim);
-  sim.lud.rola = r.pobozny < 5 ? 'pobozny' : r.robotnik < 4 ? 'robotnik' : 'pobozny';
   wspolne(sim);
   if (sim.wiara >= 30 && sim.tick % 1200 === 0) {
     const k = sim.clans.find((x) => !x.dead && x.race === Race.GOBLIN);

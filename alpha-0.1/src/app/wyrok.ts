@@ -48,8 +48,8 @@ export function wyrok(sim: Sim): Wyrok {
   }
   if (rodzaj === 'upadek') {
     return {
-      przyczyna: 'Zabrakło pobożnych, a krwi nie starczyło, by skała wydała nowych.',
-      rada: 'Pilnuj, żeby zawsze był ktoś, kto się modli — i trzymaj zapas krwi na nowego pobożnego. Ofiara z robotnika potrafi uratować partię.',
+      przyczyna: 'Zabrakło pobożnych — nikt już nie skruszy skorupy.',
+      rada: 'Drużyna jest stała: pilnuj obu pobożnych jak oka w głowie — karm ich, trzymaj z dala od ciemności i nie zostawiaj samych pod rdzeniem w czasie fali.',
       etap, statystyki: statystyki(sim),
     };
   }

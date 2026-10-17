@@ -29,12 +29,12 @@ export const SNIACY_KAMIEN = {
   tylkoRycerze: true,
   /** co tyle tików zasypuje kawałek drogi wiernych: tyle kafli, najwyżej tak daleko od rdzenia */
   zasypCo: 2400, zasypKafli: 5, zasypZasieg: 40,
-  /** tylu wiernych modlących się pod rdzeniem osłabia go: rany × `modlitwaRany` */
-  modlitwaWiernych: 3, modlitwaRany: 1.6,
+  /** tylu wiernych modlących się pod rdzeniem osłabia go: rany × `modlitwaRany` (Alpha: obaj pobożni) */
+  modlitwaWiernych: 2, modlitwaRany: 1.6,
   /** bez tej modlitwy zrasta się o tyle życia na tik */
   zrastanie: 0.03,
   /**
-   * Ostatnia deska: gdy nie ma już ani rycerzy, ani nieodkopanych gniazd, rani go też pobożny —
+   * Ostatnia deska: gdy nie ma już ani rycerza, ani robotników w hełmach, rani go też pobożny —
    * unosi przed siebie księgę i razi z dystansu `ksiegaZasieg` kafli, co `ksiegaCo` tików za
    * `ksiegaRana`; gdy boss podejdzie bliżej niż `ksiegaCofa`, pobożny się cofa.
    */

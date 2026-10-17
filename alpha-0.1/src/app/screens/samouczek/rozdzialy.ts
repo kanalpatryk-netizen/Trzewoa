@@ -3,10 +3,9 @@ import type { EkranGry, ZdarzenieGry } from '../game';
 import type { Cel } from '../../../render/znaczniki';
 import { obszarOddania, obszarSpisu, type Obszar } from '../../../render/plate';
 import { wylosuj } from '../../../sim/wydarzenia';
-import { PIELGRZYMKA, RYTUAL } from '../../../nastawy/rytual';
+import { PIELGRZYMKA } from '../../../nastawy/rytual';
 import { LUD } from '../../../nastawy/lud';
 import { WIADRO } from '../../../nastawy/wiadro';
-import { ZAWAL } from '../../../nastawy/zawal';
 import { MROK } from '../../../nastawy/mrok';
 import { DLON } from '../../../nastawy/dlon';
 import { STRAZNICY } from '../../../nastawy/straznicy';
@@ -17,7 +16,7 @@ import { wiadroTeraz } from '../../../sim/wiadro';
 const PROG = `${Math.round(PIELGRZYMKA.oddanieNacji * 100)}%`;
 
 /**
- * TREŚĆ SAMOUCZKA — krótkie rozdziały (Remake v2: lud, wiadra, ryty, pauza, wydarzenia, rycerze, zawał, ciemność,
+ * TREŚĆ SAMOUCZKA — krótkie rozdziały (Alpha: lud, wiadra, ryty, pauza, wydarzenia, bez lin, ciemność,
  * Strażnicy Snu, droga do wolności): tytuł, wstęp, czynności do odhaczenia
  * (z palcem, który wskazuje, w co kliknąć) i zdanie na koniec. Logika karty,
  * palca i przechodzenia między rozdziałami jest w ../tutorial.ts.
@@ -93,7 +92,7 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g) => { g.sim.krew += 60; g.sim.wiara += 40; },
     etapy: [
       {
-        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrach, które zjeżdżają z góry. Wiarę i krew wydajesz na ryty, wybory na kartach i nowych ze skały.',
+        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrach, które zjeżdżają z góry. Wiarę i krew wydajesz na ryty i wybory na kartach.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarZasobow(s.gra.plate) }),
       },
       {
@@ -106,21 +105,15 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Lud i jego role',
-    wstep: 'Twój lud ma trzy role. Nikt się nie rodzi — nowych wydaje skała.',
+    wstep: `Twój lud to stała drużyna: ${LUD.start.robotnik} robotników, ${LUD.start.pobozny} pobożnych i ${LUD.start.rycerz} rycerz. Nikt się nie rodzi i nikt nowy nie przyjdzie.`,
     czasowniki: [],
-    przygotuj: (g) => { g.sim.lud.rola = 'robotnik'; },
     etapy: [
       {
-        tekst: 'Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę i donoszą jedzenie z wiader. Rycerze bronią i walczą ze Strażnikami Snu — a gdy zabraknie rycerzy, robotnicy zakładają hełmy i walczą sami.',
+        tekst: 'Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę i donoszą jedzenie z wiader. Rycerz broni i walczy ze Strażnikami Snu — a gdy zginie, robotnicy zakładają hełmy i walczą sami.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
       {
-        tekst: `Co ${Math.round(LUD.wyjscieCo / 120)} s skała wydaje nowego — robotnika za ${LUD.koszt.robotnik} krwi albo pobożnego za ${LUD.koszt.pobozny}. Dotknij „pobożny” pod paskiem ról.`,
-        wskaz: (s) => s.rolaZeSkaly('pobozny'),
-        gotowe: (g) => g.sim.lud.rola === 'pobozny',
-      },
-      {
-        tekst: `Świeży ze skały przez minutę jest słabszy (czerwona aureola). Kto przeżyje ${Math.round(LUD.weteranPo / 7200)} minuty, najedzony, a lud wierzy — zostaje weteranem: +${Math.round((LUD.weteranPremia - 1) * 100)}% do wszystkiego i jasna aureola.`,
+        tekst: `Kto przeżyje ${Math.round(LUD.weteranPo / 7200)} minuty, najedzony, a lud wierzy — zostaje weteranem: +${Math.round((LUD.weteranPremia - 1) * 100)}% do wszystkiego i jasna aureola.`,
         rozumiem: true,
       },
     ],
@@ -189,7 +182,7 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'szept' && z.narzedzie === 'modl',
       },
     ],
-    koniec: `Idzie pod twój rdzeń. Gdy stanie tam ${RYTUAL.potrzebaWiernych} wiernych, skorupa zacznie pękać od ich modlitwy. Inne szepty: „okalecz się” i „ofiaruj” dają krew, „przemyśl i kop” szuka rycerzy.`,
+    koniec: `Idzie pod twój rdzeń. Gdy się tam pomodli, skorupa zacznie pękać. Inne szepty: „okalecz się” i „ofiaruj” dają krew.`,
   },
   {
     tytul: 'Zatrzymaj czas',
@@ -211,53 +204,33 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Wydarzenia',
-    wstep: 'Co chwilę coś się dzieje: najazd z powierzchni, zaraza, głód, spisek rycerzy, zgniłe jedzenie, zawał nad drogą wiernych. Czas wtedy staje, a ty wybierasz.',
+    wstep: 'Co chwilę coś się dzieje: najazd z powierzchni, zaraza, głód, zgniłe jedzenie, zawał nad drogą wiernych. Czas wtedy staje, a ty wybierasz.',
     czasowniki: [],
     przygotuj: (g) => { g.sim.krew += 40; g.sim.wiara += 40; },
     etapy: [
       {
         tekst: 'Za chwilę pokaże się karta. Przeczytaj ją i dotknij jednego z wyborów.',
-        wejdz: (g) => { g.sim.wydarzenia.gracz = true; if (!wylosuj(g.sim, 'sen')) wylosuj(g.sim, 'znak'); },
+        wejdz: (g) => { g.sim.wydarzenia.gracz = true; if (!wylosuj(g.sim, 'plony')) wylosuj(g.sim, 'znak'); },
         gotowe: (_g, z) => z?.typ === 'wydarzenie',
       },
     ],
-    koniec: 'Każdy wybór ma cenę i skutek, napisane wprost. Niektóre wracają: zostawiony spisek rycerzy wybucha buntem.',
+    koniec: 'Każdy wybór ma cenę i skutek, napisane wprost.',
   },
   {
-    tytul: 'Rycerze w skale',
-    wstep: `Rycerzy nie wyda skała — śpią w niej. W każdej górze jest ${LUD.gniazda} gniazd kamiennych rycerzy.`,
-    czasowniki: [],
-    etapy: [
-      {
-        tekst: 'Gdy ktoś z ludu jest blisko gniazda, skała słabo się żarzy. Kto się do niego dokopie, budzi rycerzy — od razu weteranów.',
-        rozumiem: true,
-      },
-      {
-        tekst: 'Szepnij robotnikowi „przemyśl i kop”: uklęknie, poprosi o znak i wykopie tunel ku gniazdu. Znak jest niedokładny — jeden trafia raz na trzy, trzech na pewno. W gniazdo świecące (pokazane) trafia zawsze.',
-        rozumiem: true,
-      },
-    ],
-    koniec: 'Szukaj ich wcześnie — bez rycerzy nie pokonasz ostatniej fali, a gniazda nad zawałem przepadają.',
-  },
-  {
-    tytul: 'Góra się zamyka',
+    tytul: 'Bez lin',
     wstep: 'To Koszmar. Góra nie czeka na tych, którzy zostają z tyłu.',
     czasowniki: [],
     etapy: [
-      {
-        tekst: `Gdy przez ${Math.round(ZAWAL.czekaj / 120)} s nikogo z ludu nie ma wysoko, góra nad nim się zawala — razem z gniazdami rycerzy, które tam spały. Mapa się skraca, a w górę nie ma już powrotu: lud musi walczyć.`,
-        rozumiem: true,
-      },
       {
         tekst: 'Lud nie ma lin: w górę wchodzi najwyżej o jeden stopień, a wyżej musi wykuć sobie schody. W dół zsuwa się szybem albo zeskakuje z niewysokiej półki — zejść łatwo, wrócić długo.',
         rozumiem: true,
       },
       {
-        tekst: 'Gdy nie zostanie ani jeden rycerz, robotnicy zakładają hełmy i walczą zamiast nich. A kto umrze, nie znika — jego ciało leży tam, gdzie padł.',
+        tekst: 'Gdy zginie rycerz, robotnicy zakładają hełmy i walczą zamiast niego. A kto umrze, nie znika — jego ciało leży tam, gdzie padł.',
         rozumiem: true,
       },
     ],
-    koniec: 'Trupy mówią, gdzie lud ginie — tam spuść wiadro albo poślij rycerzy.',
+    koniec: 'Trupy mówią, gdzie lud ginie — tam spuść wiadro albo poślij rycerza.',
   },
   {
     tytul: 'Ciemność',
@@ -281,12 +254,12 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Dopóki fala trwa, skorupa nie pęka. Rycerze (albo robotnicy w hełmach) walczą sami; pobożni i reszta robotników odchodzą spod rdzenia.',
+        tekst: 'Dopóki fala trwa, skorupa nie pęka. Rycerz (albo robotnicy w hełmach) walczy sam; pobożni i reszta robotników odchodzą spod rdzenia.',
         rozumiem: true,
         wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
       },
       {
-        tekst: 'Śniącego Kamienia ranią tylko walczący. Rycerze ruszają na niego dopiero we trzech. Słabnie, gdy pod rdzeniem modli się trzech pobożnych, a zasypaną przez niego drogę odkopują robotnicy. Gdy nikt z nim nie walczy przez 2 minuty, zapada w ścianę na 4 minuty i zdradza jedno gniazdo — wtedy zbierz rycerzy.',
+        tekst: 'Śniącego Kamienia ranią tylko walczący — rycerz idzie na niego sam. Boss słabnie, gdy pod rdzeniem modlą się pobożni, a zasypaną przez niego drogę odkopują robotnicy. Gdy walczących brak, pobożni razią go księgami.',
         rozumiem: true,
       },
     ],
@@ -299,7 +272,7 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g, s) => { const d = s.gniazdoGoblinow(); if (d) g.pokazMiejsce(d.x, d.y, 12, true); },
     etapy: [
       {
-        tekst: 'Najpierw robotnicy kopią drogę do rdzenia (złota kreska). Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerze idą z nimi na wartę.',
+        tekst: 'Najpierw robotnicy kopią drogę do rdzenia (złota kreska). Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.',
         rozumiem: true,
       },
       {
@@ -321,7 +294,7 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: [],
     etapy: [
       {
-        tekst: `Gdy nie zostanie żaden pobożny, a krwi nie starczy, by skała wydała nowego (${LUD.koszt.pobozny}) — to koniec. Najczęściej zabija głód: lud rozproszony daleko od wiader.`,
+        tekst: 'Gdy nie zostanie żaden pobożny — to koniec: nikt inny nie skruszy skorupy, a nowych nikt nie wyda. Najczęściej zabija głód: lud rozproszony daleko od wiader.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
     ],

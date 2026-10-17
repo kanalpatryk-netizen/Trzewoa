@@ -16,7 +16,7 @@ import { bez, bryla, cienieRzucane, kolcze, konczynaZgieta, KREW, KREW_SUCHA, pl
  * z przodu (w kroku płótno idzie za nogami), podarty u dołu, ubłocony, przesiąknięty krwią z rany w boku;
  * z tyłu ciężki płaszcz w strzępach. Hełm garnczkowy albo otwarty z nosalem (helm.ts), tarcza w kształcie
  * żelazka i miecz (uzbrojenie.ts). Część nosi bandaż na przedramieniu, część — złamaną strzałę w barku.
- * Wygląd zależy od numeru postaci (los), więc każdy rycerz jest trochę inny. Zdrajca (bunt) — poczerniały.
+ * Wygląd zależy od numeru postaci (los), więc każdy rycerz jest trochę inny. W szale krwi (ołtarz) żarzy się czerwienią.
  */
 
 type Tulow = (u: number, f: number) => Pkt;
@@ -80,8 +80,8 @@ export function rysujRycerza(r: Rysunek): void {
   if (tryb.narzedzie === 'miecz') {
     const czubek = { x: s.dlonA.x + sin(s.narz) * 0.536 * h, y: s.dlonA.y + cos(s.narz) * 0.536 * h };
     const slad = sladBroni(pm, czubek, h, czas, p.smuga > 0.05);
-    if (slad.length > 1 && !m.prosto) m.szczegol((g) => smuga(g, slad, s.bark, h, p.smuga, st.bunt));
-    const koniec = mieczKrzyzowca(m, s.dlonA.x, s.dlonA.y, s.narz, h, st.skorzane, id, czas, st.bunt);
+    if (slad.length > 1 && !m.prosto) m.szczegol((g) => smuga(g, slad, s.bark, h, p.smuga, st.szal));
+    const koniec = mieczKrzyzowca(m, s.dlonA.x, s.dlonA.y, s.narz, h, st.skorzane, id, czas, st.szal);
     uderzenie(pm, p.cios, koniec, h, czas);
   }
   reka(r, s.bark, s.lokA, s.dlonA, s.przedA, false, tryb.narzedzie === 'miecz' || tryb.grzyb, los(id, 23) < 0.5);
@@ -358,7 +358,7 @@ function wapenrok(r: Rysunek, T: Tulow, cienie: Cienie): void {
     }
     // krzyż: farba wtarta w płótno, przetarta
     g.fillStyle = tonC(st.krzyz, 0, CIEN.tkanina, 0.95); g.fill(krzyz);
-    if (st.bunt) {
+    if (st.szal) {
       g.save(); g.globalCompositeOperation = 'lighter';
       g.fillStyle = `rgba(255,40,16,${0.12 + 0.06 * sin(czas * 0.004 + id)})`; g.fill(krzyz);
       g.restore();
@@ -514,9 +514,9 @@ function pochwa(r: Rysunek, T: Tulow): void {
 
 /**
  * Smuga cięcia: łuk zakreślony czubkiem miecza wokół barku. Próbki czubka (ostatnie ~110 ms)
- * łączymy po okręgu — wychodzi sierp, który zanika ku tyłowi. U zdrajcy czerwona.
+ * łączymy po okręgu — wychodzi sierp, który zanika ku tyłowi. W szale krwi czerwona.
  */
-function smuga(g: CanvasRenderingContext2D, slad: { x: number; y: number }[], bark: Pkt, h: number, sila0: number, bunt: boolean): void {
+function smuga(g: CanvasRenderingContext2D, slad: { x: number; y: number }[], bark: Pkt, h: number, sila0: number, szal: boolean): void {
   const pol = slad.map((q) => ({ a: Math.atan2(q.y - bark.y, q.x - bark.x), r: Math.hypot(q.x - bark.x, q.y - bark.y) }));
   const pk: { a: number; r: number }[] = [pol[0]];
   for (let i = 1; i < pol.length; i++) {
@@ -527,7 +527,7 @@ function smuga(g: CanvasRenderingContext2D, slad: { x: number; y: number }[], ba
   }
   if (pk.length < 2) return;
   const sila = clamp(sila0 + 0.3, 0, 1);
-  const [cr, cg, cb] = bunt ? [255, 70, 40] : [255, 226, 170];
+  const [cr, cg, cb] = szal ? [255, 70, 40] : [255, 226, 170];
   const P = (q: { a: number; r: number }, k: number): Pkt => ({ x: bark.x + Math.cos(q.a) * q.r * k, y: bark.y + Math.sin(q.a) * q.r * k });
   g.save(); g.globalCompositeOperation = 'lighter';
   const n = pk.length;

@@ -793,14 +793,13 @@ export function rysujPostac(
   const wlasna = pierwszaGrafika(`postac-${rasaPliku}-${czyn}`, `postac-${rasaPliku}`);
   if (wlasna && rysujGrafike(ctx, wlasna, 0, 0, h, { kotwicaY: 1, czas: czas + c.id * 97 })) return czyn;
   // Remake v1: kolor obrysu mówi, jaka to rola — złoto pobożnych, ochra robotników, stal rycerzy
-  // etap 4: zbuntowany rycerz — ten sam strój, ale czerwony obrys zdrajcy
-  const rola = rolaPostaci(c) ?? (c.buntownik ? 'rycerz' : null);
+  const rola = rolaPostaci(c);
   // nowe postacie ludu (src/render/postacie.ts) — stary rysunek zostaje dla innych ras i jako zapasowy
   if (rola && ustawienia.nowePostacie !== false) {
     rysujLud(ctx, sim, c, rola, h, czas, czyn, r.faza, r.fazaPion, r.zegar);
     return czyn;
   }
-  const obrys = c.buntownik ? 'rgba(226,64,52,0.98)' : rola ? BARWA_ROLI[rola] : barwaKlanu(sim.clans[c.clan]);
+  const obrys = rola ? BARWA_ROLI[rola] : barwaKlanu(sim.clans[c.clan]);
   const f = fakturaRasy(ctx, c.race);
   if (c.race === Race.SPINNER) {
     przadka(ctx, h, r, czyn, czas, c, f, obrys);

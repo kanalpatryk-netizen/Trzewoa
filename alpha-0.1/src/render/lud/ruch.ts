@@ -345,8 +345,7 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
     siegnij(p, 'B', 0.16 + 0.03 * ruch * sin(q + PI) + unies * 0.05, 0.19 - unies * 0.22 - 0.012 * ruch);
     if (unies > 0) p.glowa -= unies * 0.25;
   }
-  // świeżo przywołany (osłabiony) — zgarbiony; zatruty — chwieje się
-  if ((c.slabyDo ?? -1) > sim.tick) { p.tulow += 0.1; p.glowa += 0.12; }
+  // zatruty — chwieje się
   if ((c.zatrutyDo ?? -1) > sim.tick) { p.tulow += 0.05 * sin(czas * 0.003 + id); p.oczy = Math.min(p.oczy, 0.7); }
   if (p.cios > 0) p.oczy = Math.min(p.oczy, 0.5);
   return { p, tryb };

@@ -5,7 +5,6 @@
  * okienka zostają w pamięci przeglądarki.
  */
 import { wiadroTeraz, porcjiWWiadrach, doNastepnego } from '../sim/wiadro';
-import { stropGory } from '../sim/zawal';
 import type { Sim } from '../sim/sim';
 import { DZIENNIK, DEV, zapisz, kto, OPIS_PRACY, NAZWY_KAFLI, type KategoriaWpisu, type WpisDziennika } from '../sim/dziennik';
 import { Race } from '../sim/races';
@@ -188,7 +187,7 @@ export class PanelDewelopera {
     const widok = this.wiersz();
     widok.append(
       this.pole('bez ciemności', DEV.bezMroku, (v) => { DEV.bezMroku = v; }),
-      this.pole('pokaż ukryte', DEV.pokazUkryte, (v) => { DEV.pokazUkryte = v; }, 'Patrzący i gniazda rycerzy na płycie'),
+      this.pole('pokaż ukryte', DEV.pokazUkryte, (v) => { DEV.pokazUkryte = v; }, 'Patrzący na płycie'),
       this.pole('drogi wszystkich', DEV.pokazDrogi, (v) => { DEV.pokazDrogi = v; }),
     );
     const karty = this.wiersz();
@@ -334,7 +333,7 @@ export class PanelDewelopera {
     const t = DEV.mnoznik === 1 ? 'czas zwykły' : `czas ×${mnoznikNapis(DEV.mnoznik)}`;
     const linie = [
       `${czas(sim.tick)} · tik ${sim.tick} · ${DEV.pauza ? 'pauza dewelopera' : t} · ${this.tikowNaSek} tik/s · ${this.fps} kl/s · krok ${DEV.msKroku.toFixed(2)} ms`,
-      `lud ${r.pobozny + r.robotnik + r.rycerz}: pobożni ${r.pobozny} · robotnicy ${r.robotnik} · rycerze ${r.rycerz} · jedzenie ${porcjiWWiadrach(sim)} porcji · wiadro za ${Math.ceil(doNastepnego(sim) / 120)} s${stropGory(sim) ? ` · strop ${stropGory(sim)}` : ''}`,
+      `lud ${r.pobozny + r.robotnik + r.rycerz}: pobożni ${r.pobozny} · robotnicy ${r.robotnik} · rycerze ${r.rycerz} · jedzenie ${porcjiWWiadrach(sim)} porcji · wiadro za ${Math.ceil(doNastepnego(sim) / 120)} s`,
       `wiara ${Math.floor(sim.wiara)} · krew ${Math.floor(sim.krew)} · oddanie ${Math.round((wierni?.devotion ?? 0) * 100)}% · sen ${Math.round(sim.sen * 100)}% · pęknięć ${sim.rytual.pekniecia}${sim.rytual.otwarta ? ' · rdzeń otwarty' : ''}`,
       opisMroku(sim),
       opisDloni(sim),
@@ -350,7 +349,7 @@ export class PanelDewelopera {
       if (!c || c.dead) linie.push(`#${DEV.sledzony} — nie żyje`);
       else {
         const p = (v: number) => `${Math.round(v * 100)}%`;
-        linie.push(`${kto(sim, c)}${c.straznik ? ' · Strażnik Snu' : ''}${c.buntownik ? ' · zbuntowany' : ''}`);
+        linie.push(`${kto(sim, c)}${c.straznik ? ' · Strażnik Snu' : ''}`);
         linie.push(`życie ${Math.round(c.hp)} · głód ${p(c.hunger)} · wiara ${p(c.devotion)} · szał ${p(c.mad)} · strach ${p(c.fear)}`);
         if (c.zamiar) linie.push(`zamiar: ${c.zamiar}${c.zamiarDo !== undefined && c.zamiarDo > sim.tick ? ` (jeszcze ${Math.ceil((c.zamiarDo - sim.tick) / 120)} s)` : ''}`);
         linie.push(`${OPIS_PRACY[c.job] ?? 'zajęcie ' + c.job} → (${c.jx}, ${c.jy}) · jest (${Math.floor(c.x)}, ${Math.floor(c.y)})${c.droga ? ` · droga ${c.droga.length - (c.drogaI ?? 0)} kafli` : ''} · stoi ${c.stall} tików`);

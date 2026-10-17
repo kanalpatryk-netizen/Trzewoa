@@ -1,11 +1,10 @@
 /**
- * OSIĄGNIĘCIA (Remake v2) — cele dodatkowe, sprawdzane raz, na końcu partii.
+ * OSIĄGNIĘCIA (Alpha 0.1) — cele dodatkowe, sprawdzane raz, na końcu partii.
  * Zdobyte zostają w przeglądarce, między partiami. Progi są w src/nastawy/cele.ts,
  * liczniki partii w Sim.stat (src/sim/sim.ts). Każda góra to Koszmar.
  */
 import type { Sim } from '../sim/sim';
 import { CELE } from '../nastawy/cele';
-import { ZAWAL } from '../nastawy/zawal';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 
 const KLUCZ = 'trzewia-alpha:osiagniecia';
@@ -19,15 +18,6 @@ export interface Osiagniecie {
   sprawdz: (sim: Sim, wygrana: boolean) => boolean;
 }
 
-/** Ile gniazd kamiennych rycerzy lud obudził (rozkopał) — bez tych pogrzebanych pod zawałem. */
-const zbudzonychGniazd = (s: Sim): number => (s.lud.gniazda ?? []).filter((g) => g.odkryte && !g.zawalone).length;
-
-/** Góra zawaliła się najniżej, jak może (następny skok zszedłby poniżej dna z nastaw zawału). */
-const zawalDoDna = (s: Sim): boolean => {
-  const strop = s.lud.zawal?.strop ?? 0;
-  return strop > 0 && strop + ZAWAL.krok > s.world.przedsionekY - ZAWAL.doPrzedsionka;
-};
-
 export const OSIAGNIECIA: Osiagniecie[] = [
   { id: 'pierwsza', nazwa: 'Przebudzenie', opis: 'Wygraj pierwszą partię.', sprawdz: (_s, w) => w },
   { id: 'szybko', nazwa: 'Jak kamień w studnię', opis: `Wygraj w mniej niż ${CELE.szybkoMinut} minut czasu gry.`, sprawdz: (s, w) => w && s.tick < CELE.szybkoMinut * TIKOW_NA_MINUTE },
@@ -35,13 +25,12 @@ export const OSIAGNIECIA: Osiagniecie[] = [
   { id: 'ocaleni', nazwa: 'Mało grobów', opis: `Wygraj, tracąc najwyżej ${CELE.zgonowMaks} z ludu.`, sprawdz: (s, w) => w && s.stat.ludZgonow <= CELE.zgonowMaks },
   { id: 'skromny', nazwa: 'Bez jałmużny', opis: 'Wygraj, ani razu nie spuszczając wiadra rytem Nakarm.', sprawdz: (s, w) => w && s.stat.nakarm === 0 },
   { id: 'wspinaczka', nazwa: 'Ostatkiem sił', opis: 'Niech umierający z głodu wespnie się po linie do zjeżdżającego wiadra.', sprawdz: (s) => s.stat.wspinaczek > 0 },
-  { id: 'kamienna', nazwa: 'Kamienna drużyna', opis: `Obudź w jednej partii ${CELE.gniazda} gniazda kamiennych rycerzy.`, sprawdz: (s) => zbudzonychGniazd(s) >= CELE.gniazda },
+  { id: 'druzyna', nazwa: 'Cała drużyna', opis: 'Wygraj, nie tracąc nikogo z ludu.', sprawdz: (s, w) => w && s.stat.ludZgonow === 0 },
   { id: 'helmy', nazwa: 'Kilofy zamiast mieczy', opis: 'Wygraj partię, w której robotnicy musieli założyć hełmy.', sprawdz: (s, w) => w && s.stat.helmy > 0 },
   { id: 'weterani', nazwa: 'Stara gwardia', opis: `Miej naraz ${CELE.weteranow} weteranów.`, sprawdz: (s) => s.stat.weteranowMax >= CELE.weteranow },
   { id: 'ludna', nazwa: 'Ludna góra', opis: `Miej naraz ${CELE.lud} postaci ludu.`, sprawdz: (s) => s.stat.ludMax >= CELE.lud },
   { id: 'swiatlo', nazwa: 'Światło w ciemności', opis: 'Przegoń Cudem Tego, który patrzy.', sprawdz: (s) => s.stat.przegnany > 0 },
   { id: 'dlon', nazwa: 'Wyrwani z dłoni', opis: 'Odepchnij Cudem dłoń z otchłani, zanim kogoś chwyci.', sprawdz: (s) => s.stat.odepchnieta > 0 },
-  { id: 'dno', nazwa: 'Bez powrotu', opis: 'Wygraj, gdy góra zawaliła się już do samego dna.', sprawdz: (s, w) => w && zawalDoDna(s) },
   { id: 'dlug', nazwa: 'Dłużnik', opis: 'Weź krew od głębi i mimo to wygraj.', sprawdz: (s, w) => w && s.stat.dlug > 0 },
 ];
 

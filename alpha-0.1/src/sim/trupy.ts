@@ -23,7 +23,6 @@ export interface Trup {
   od: number;
   okaleczony?: boolean;
   helm?: boolean;
-  buntownik?: boolean;
 }
 
 /** Śmierci, po których nie zostaje ciało. */
@@ -43,8 +42,8 @@ export function zostawTrupa(sim: Sim, c: Creature, tag: string): boolean {
   if (w.magma[w.idx(x, y)] > 0) return false;       // w ogień — nic nie zostaje
   const trupy = (sim.lud.trupy ??= []);
   trupy.push({
-    id: c.id, x: x + 0.5 + Math.max(-0.3, Math.min(0.3, c.x - x - 0.5)), y, rola: c.buntownik ? 'rycerz' : (c.rola ?? 'pobozny'),
-    face: c.face >= 0 ? 1 : -1, od: sim.tick, okaleczony: c.okaleczony, helm: c.helm, buntownik: c.buntownik,
+    id: c.id, x: x + 0.5 + Math.max(-0.3, Math.min(0.3, c.x - x - 0.5)), y, rola: c.rola ?? 'pobozny',
+    face: c.face >= 0 ? 1 : -1, od: sim.tick, okaleczony: c.okaleczony, helm: c.helm,
   });
   // za dużo — najstarszy rozsypuje się w kości
   while (trupy.length > LUD.trupyMax) {

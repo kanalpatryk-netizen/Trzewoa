@@ -15,12 +15,12 @@ export const RYTUAL = {
   promien: 16,
   /** Minimalne własne oddanie wiernego, żeby jego modlitwa się liczyła. */
   minOddanie: 0.35,
-  /** Tylu wiernych naraz pod skorupą (z dowolnych nacji — kuje ta, której jest najwięcej), żeby kamień w ogóle drgnął. */
-  potrzebaWiernych: 3,
+  /** Tylu wiernych naraz pod skorupą (z dowolnych nacji — kuje ta, której jest najwięcej), żeby kamień w ogóle drgnął. Alpha: pobożnych jest dwóch — wystarczy jeden. */
+  potrzebaWiernych: 1,
   /** Więcej wiernych przyspiesza — ale najwyżej do tylu. */
-  maxWiernychLiczonych: 6,
-  /** Liczba wiernych, przy której tempo jest „normalne” (×1). */
-  normaWiernych: 3,
+  maxWiernychLiczonych: 3,
+  /** Liczba wiernych, przy której tempo jest „normalne” (×1) — obaj pobożni. */
+  normaWiernych: 2,
 
   // ------------------------------------------------------------------- tempo
   /**
@@ -94,10 +94,10 @@ export const RYTUAL = {
 };
 
 export const PIELGRZYMKA = {
-  /** Ilu pielgrzymów naraz wysyła jedna nacja. Reszta zostaje w domu i je. */
-  maxPielgrzymow: 5,
-  /** Co najmniej tylu (o ile nacja ma ludzi) — tylu trzeba pod skorupą. */
-  minPielgrzymow: 3,
+  /** Ilu pielgrzymów naraz wysyła jedna nacja (Alpha: obaj pobożni). */
+  maxPielgrzymow: 2,
+  /** Co najmniej tylu (o ile nacja ma ludzi). */
+  minPielgrzymow: 2,
   /** Pielgrzymów najwyżej taka część nacji. */
   czescNacji: 0.3,
   /** Nacja musi mieć tyle oddania, żeby w ogóle wysyłać pielgrzymów (wersja na telefon: niżej niż 0.6 na komputerze). */
@@ -106,8 +106,8 @@ export const PIELGRZYMKA = {
   oddanieWlasne: 0.45,
   /** …i być najedzony (głód poniżej tego). */
   najedzony: 0.35,
-  /** Nacja musi liczyć co najmniej tylu. */
-  minNacja: 8,
+  /** Nacja musi liczyć co najmniej tylu (Alpha: drużyna jest mała i stała). */
+  minNacja: 1,
   /** I nie może być przeludniona (zatłoczenie rasy poniżej tego). */
   maxZatloczenie: 0.95,
   /** Schodzą bez drogi powrotnej, jeśli w przedsionku leży co najmniej tyle jedzenia. */

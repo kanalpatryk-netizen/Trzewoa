@@ -1,6 +1,5 @@
 import { rysujWiadra, rysujPrzodWiader } from '../../render/wiadro';
 import { rysujTrupy } from '../../render/trupy';
-import { stropGory } from '../../sim/zawal';
 import { porcjiWWiadrach } from '../../sim/wiadro';
 import { Sim, resetRaces } from '../../sim/sim';
 import { KAMERA, TEMPO, STEROWANIE } from '../../nastawy/sterowanie';
@@ -29,7 +28,7 @@ import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
-import { scianaKrypty, pigment, tablica as tablicaTynku, tynkSwiata } from '../../render/fresk';
+import { scianaKrypty, pigment, tynkSwiata } from '../../render/fresk';
 import { FRESK } from '../../nastawy/barwy';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
@@ -38,7 +37,7 @@ import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
-import { computePlate, obszarSpisu, obszarOddania, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
+import { computePlate, obszarSpisu, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
 import { seed, sign, nakarm, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
@@ -140,8 +139,7 @@ export class EkranGry implements Ekran {
   private lastSave = 0;
   private lastSound = 0;
   private reszta = 0;
-  /** Remake v2: ostatni zawał i ostatnie wiadro, które już było słychać. */
-  private slyszanyZawal: number | undefined;
+  /** Remake v2: ostatnie wiadro, które już było słychać. */
   private slyszaneWiadro: number | undefined;
   private rada: Podpowiedz | null = null;
   private radaOd = -1e9;
@@ -158,10 +156,6 @@ export class EkranGry implements Ekran {
   private przytrzymanie: { id: number; v: string; sx: number; sy: number; od: number; verb: Verb | null; tool: string | null } | null = null;
   /** Podpowiedź nad płytą jako odnośnik do miejsca, o którym mówi. */
   private radaRect: { x: number; y: number; w: number; h: number } | null = null;
-  /** Remake v1: przyciski przełącznika „kogo wydaje skała” w pasku u góry. */
-  private przyciskiRoli: { x: number; y: number; w: number; h: number; rola: 'pobozny' | 'robotnik' }[] = [];
-  /** Wiersz „ze skały” tak, jak go narysowano — do testu nakładania. */
-  private wierszSkaly: { x: number; y: number; w: number; h: number } | null = null;
   /** Które zdarzenia Patrzącego już zabrzmiały (tik szeptu i zabrania). */
   private slyszanyMrok: { szept?: number; zabrany?: number } = {};
   private slyszanaDlon: { wstaje?: number; chwyt?: number } = {};
@@ -414,19 +408,17 @@ export class EkranGry implements Ekran {
     // wiara to serce drogi do wygranej — jej tablica wyskakuje sama przy pierwszej modlitwie
     if (sim.prayers > 0 && sim.tick > 600) odkrycia.odkryj('oddanie');
     if (sim.tick > 7000) cicho('pamiec');
-    // Remake v1: tablice ludu, gniazd, weteranów, Strażników i bossa
+    // Remake v1: tablice ludu, weteranów, Strażników i bossa
     if (sim.tick > 600) cicho('role');
     // Remake v2: bez lin — pierwszy, kto kuje sobie schody pod półkę, pokazuje nową zasadę
     if (sim.tick > 600 && sim.creatures.some((c) => !c.dead && c.drogaKopie)) odkrycia.odkryj('schody');
     if (sim.tick > 4000) cicho('schody');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
-    if ((sim.lud.gniazda ?? []).some((g) => g.odkryte && !g.zawalone) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
     if (sim.lud.dlon?.widziana) odkrycia.odkryj('dlon');
-    // Remake v2: wiadro, zawał, hełmy, trupy
+    // Remake v2: wiadro, hełmy, trupy
     if ((sim.lud.wiadra?.lista ?? []).some((wd) => wd.faza === 'stoi')) cicho('wiadro');
-    if ((sim.lud.zawal?.ile ?? 0) > 0) odkrycia.odkryj('zawal');
     if (sim.lud.helmy) odkrycia.odkryj('helmy');
     if (sim.lud.trupy?.length) cicho('trupy');
     if (sim.creatures.some((c) => !c.dead && c.boss)) odkrycia.odkryj('boss');
@@ -477,8 +469,7 @@ export class EkranGry implements Ekran {
 
   /**
    * Remake v1: pasek nad płytą — tylko trzy zasoby: wiara, krew i jedzenie (Remake v2: porcje w wiadrach).
-   * Role i przełącznik „ze skały” stoją w panelu LUD pod płytą (górny margines należy
-   * do narzędzi rytu — wcześniej wszystko to nachodziło na siebie).
+   * Role stoją w panelu LUD pod płytą (górny margines należy do narzędzi rytu).
    */
   private rysujZasoby(ctx: CanvasRenderingContext2D, plate: Plate, w: number): void {
     const { sim } = this;
@@ -523,15 +514,14 @@ export class EkranGry implements Ekran {
 
   /**
    * Remake v1: panel LUD pod płytą (w miejscu dawnego spisu ras). Wstęga dzieli się na
-   * trzy role w proporcji do ich liczby, pod nią przełącznik — kogo skała wyda następnym
-   * razem, za ile sekund i za ile krwi.
+   * trzy role w proporcji do ich liczby (Alpha: bez przełącznika „ze skały” — drużyna jest stała).
    */
   private rysujPanelLudu(ctx: CanvasRenderingContext2D, plate: Plate, vh: number): void {
     const { sim } = this;
     const o = obszarSpisu(plate, vh);
     const h = o.h / 2.4, y = o.y + h * 0.4;
     const x0 = o.x;
-    let x1 = o.x + o.w;
+    const x1 = o.x + o.w;
     const role = liczRole(sim);
     const razem = role.pobozny + role.robotnik + role.rycerz;
     const telefon = plate.waski || plate.niski;
@@ -586,50 +576,6 @@ export class EkranGry implements Ekran {
       ctx.fillStyle = 'rgba(226,120,100,0.9)';
       ctx.fillText('w górze nie został nikt z twoich', (x0 + x1) / 2, y + h + rozm * 1.15);
     }
-    // przełącznik: „ze skały: [robotnik] [pobożny] · za 12 s · 20 krwi”
-    const st = sim.lud;
-    const zaS = Math.max(0, Math.ceil((st.nastepne - sim.tick) / 120));
-    const koszt = LUD.koszt[st.rola];
-    const yb = y + h + rozm * 2.9;
-    const kaw = (t: string, f: string) => { ctx.font = f; return ctx.measureText(t).width; };
-    const fE = `italic ${rozm * 0.95}px ${SERIF}`, fL = `${rozm * 1.05}px ${SERIF}`;
-    const bh = rozm * 1.6;
-    // telefon w pionie: wiersz schodzi na wysokość dłoni oddania — kończy się przed nimi
-    const od = obszarOddania(plate, vh);
-    if (yb - bh * 0.72 < od.y + od.h && yb + bh * 0.28 > od.y) x1 = Math.min(x1, od.x - 10);
-    let x = x0;
-    ctx.textAlign = 'left';
-    // „ze skały:” tylko gdy starczy miejsca na przyciski i odliczanie w jednym wierszu
-    const naPrzyciski = kaw('robotnik', fL) + kaw('pobożny', fL) + 36 + 6;
-    const zEtykieta = x1 - x0 >= kaw('ze skały: ', fE) + naPrzyciski + kaw('za 20 s · 30 krwi', fE) + 12;
-    ctx.font = fE; ctx.fillStyle = 'rgba(190,178,156,0.9)';
-    if (zEtykieta) { ctx.fillText('ze skały:', x, yb); x += kaw('ze skały: ', fE) + 2; }
-    this.przyciskiRoli = [];
-    for (const rola of ['robotnik', 'pobozny'] as const) {
-      const napis = rola === 'robotnik' ? 'robotnik' : 'pobożny';
-      const sz = kaw(napis, fL) + 18;
-      const wybrany = st.rola === rola;
-      const [cr, cg, cb] = BARWA_ROLI[rola];
-      if (wybrany) tablicaTynku(ctx, x, yb - bh * 0.72, sz, bh);
-      else {
-        ctx.strokeStyle = 'rgba(200,184,150,0.4)';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x + 0.5, yb - bh * 0.72 + 0.5, sz - 1, bh - 1);
-      }
-      void cr; void cg; void cb;
-      ctx.font = fL; ctx.fillStyle = wybrany ? 'rgba(236,204,142,1)' : 'rgba(184,170,146,0.6)';
-      ctx.fillText(napis, x + 9, yb);
-      this.przyciskiRoli.push({ x, y: yb - bh * 0.72, w: sz, h: bh, rola });
-      x += sz + 6;
-    }
-    // odliczanie i cena obok przycisków (wiersz niżej wchodził na kronikę); krótsze, gdy brak miejsca
-    ctx.font = fE;
-    ctx.fillStyle = sim.krew >= koszt ? 'rgba(190,178,156,0.9)' : 'rgba(226,120,100,0.95)';
-    const miejsce = x1 - x - 4;
-    const wersje = sim.krew >= koszt ? [`za ${zaS} s · ${koszt} krwi`, `${zaS} s · ${koszt} kr.`, `${zaS} s`] : [`brak krwi (${koszt})`, `brak krwi`];
-    const opis = wersje.find((t) => kaw(t, fE) <= miejsce) ?? wersje[wersje.length - 1];
-    ctx.fillText(opis, x + 4, yb);
-    this.wierszSkaly = { x: x0, y: yb - bh * 0.72, w: x + 4 + kaw(opis, fE) - x0, h: bh };
     ctx.restore();
   }
 
@@ -758,14 +704,7 @@ export class EkranGry implements Ekran {
         }
       }
       if (dev && kroki > 0) DEV.msKroku = DEV.msKroku * 0.9 + ((performance.now() - t0) / kroki) * 0.1;
-      // Remake v2: zawał — kamera nie wjeżdża ponad strop (mapa skraca się razem z górą)
-      const strop = stropGory(this.sim);
-      if (strop !== this.cam.gora) {
-        this.cam.gora = strop;
-        this.cam.clamp(this.sim.world.w, this.sim.world.h);
-      }
-      const zawalT = this.sim.lud.zawal?.ostatniT, wiadroT = this.sim.lud.wiadra?.zjazdT;
-      if (zawalT !== undefined && zawalT !== this.slyszanyZawal) { this.slyszanyZawal = zawalT; this.app.dzwiek.zawal(); }
+      const wiadroT = this.sim.lud.wiadra?.zjazdT;
       if (wiadroT !== undefined && wiadroT !== this.slyszaneWiadro) { this.slyszaneWiadro = wiadroT; this.app.dzwiek.wiadro(); }
       // kamera za śledzoną postacią (okienko dewelopera)
       if (dev && DEV.sledz && DEV.sledzony >= 0) {
@@ -1094,19 +1033,13 @@ export class EkranGry implements Ekran {
   obszaryHud(): ObszarHud[] {
     return zbierzObszaryHud({
       plate: this.plate, vh: this.app.h, ui: this.ui, przyciski: this.przyciski,
-      droga: this.drogaRect, rada: this.radaRect, menu: this.menuRect(), skala: this.wierszSkaly,
+      droga: this.drogaRect, rada: this.radaRect, menu: this.menuRect(),
     });
   }
 
   /** Gdzie leży przycisk pod płytą — samouczek go wskazuje. */
   miejscePrzycisku(akcja: Przycisk['akcja']): Przycisk | null {
     return this.przyciski.find((b) => b.akcja === akcja) ?? null;
-  }
-
-  /** Samouczek: gdzie stoi przycisk „ze skały: pobożny / robotnik” (środek i promień w pikselach ekranu). */
-  miejsceRoli(rola: 'pobozny' | 'robotnik'): { x: number; y: number; r: number } | null {
-    const b = this.przyciskiRoli.find((q) => q.rola === rola);
-    return b ? { x: b.x + b.w / 2, y: b.y + b.h / 2, r: Math.max(b.w, b.h) * 0.6 } : null;
   }
 
   /** Trzy nacięcia w lewym górnym rogu płyty — wyjście do menu bez klawiatury. */
@@ -1233,11 +1166,6 @@ export class EkranGry implements Ekran {
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
     const { ui, sim } = this;
     ui.pointer.x = e.clientX; ui.pointer.y = e.clientY;
-    // Remake v1: przełącznik „kogo wydaje skała”
-    if (faza === 'dol') {
-      const p = this.przyciskiRoli.find((b) => e.clientX >= b.x && e.clientX <= b.x + b.w && e.clientY >= b.y && e.clientY <= b.y + b.h);
-      if (p) { sim.lud.rola = p.rola; this.app.gesty.klik(); this.dirty = true; return; }
-    }
     // tryb deweloperski: kafel pod kursorem, a Shift+klik wybiera postać do inspektora
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) {
       if (this.naPlycie(e.clientX, e.clientY)) {

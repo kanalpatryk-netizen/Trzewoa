@@ -8,7 +8,6 @@ import type { Sim } from '../sim/sim';
 import type { Camera } from './camera';
 import type { Creature } from '../sim/creatures';
 import { DEV } from '../sim/dziennik';
-import { gniazdaWSkale } from '../sim/lud';
 
 const MONO = '11px ui-monospace,Consolas,monospace';
 
@@ -51,14 +50,6 @@ export function rysujDev(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, t
     ctx.strokeRect(sx(DEV.kursor.x), sy(DEV.kursor.y), z, z);
   }
   if (DEV.pokazUkryte) {
-    // gniazda kamiennych rycerzy: zielone — śpią, szare — rozkopane
-    for (const g of gniazdaWSkale(sim)) {
-      const x = sx(g.x + 0.5), y = sy(g.y + 0.5);
-      ctx.strokeStyle = g.odkryte ? 'rgba(150,150,150,0.6)' : 'rgba(120,230,140,0.85)';
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(x - z * 1.5, y - z, z * 3, z * 2);
-      podpis(ctx, `gniazdo ${g.id}: ${g.rycerzy}${g.zawalone ? ' (pod zawałem)' : g.odkryte ? ' (rozkopane)' : ''}`, x, y - z * 1.3, g.odkryte ? '#aaa' : '#9fe0a8');
-    }
     // Patrzący w każdej fazie, także gdy gracz go nie widzi
     const m = sim.lud.mrok;
     if (m) {

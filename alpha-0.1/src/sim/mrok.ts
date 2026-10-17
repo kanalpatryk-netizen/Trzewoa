@@ -40,7 +40,7 @@ export interface StanMroku {
 
 /** Postać ludu, którą Patrzący może wziąć na cel. */
 function lowna(c: Creature): boolean {
-  if (c.dead || c.straznik || c.buntownik) return false;
+  if (c.dead || c.straznik) return false;
   const r = rolaPostaci(c);
   if (!r) return false;
   return !(MROK.rycerzeBezpieczni && walczacy(c));
@@ -63,7 +63,7 @@ export function samotny(sim: Sim, c: Creature): boolean {
   if (przyObozie(sim, c.x, c.y, MROK.samotnyOdObozu)) return false;
   const r2 = MROK.samotnyBezLudu * MROK.samotnyBezLudu;
   for (const o of sim.creatures) {
-    if (o === c || o.dead || o.straznik || o.buntownik || !rolaPostaci(o)) continue;
+    if (o === c || o.dead || o.straznik || !rolaPostaci(o)) continue;
     const dx = o.x - c.x, dy = o.y - c.y;
     if (dx * dx + dy * dy < r2) return false;
   }

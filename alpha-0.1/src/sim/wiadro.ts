@@ -138,12 +138,11 @@ function grupyWgPotrzeby(sim: Sim): Grupa[] {
   return out.sort((a, b) => b.potrzeba - a.potrzeba);
 }
 
-/** Strop jamy nad (x, y): pierwszy pusty kafel licząc w górę, nie wyżej niż zawał. */
+/** Strop jamy nad (x, y): pierwszy pusty kafel licząc w górę. */
 function sufitNad(sim: Sim, x: number, y: number): number {
   const w = sim.world;
-  const gora = Math.max(0, sim.lud.zawal?.strop ?? 0);
   let su = y;
-  while (su - 1 >= gora && w.passable(x, su - 1)) su--;
+  while (su - 1 >= 0 && w.passable(x, su - 1)) su--;
   return su;
 }
 
@@ -170,7 +169,7 @@ function miejscePrzyGrupie(sim: Sim, g: Grupa): { x: number; sufit: number; cel:
   const zb = dostepneOd(sim, skad);
   if (!zb.size) return null;
   const gx = Math.round(g.x);
-  const gora = Math.max(1, sim.lud.zawal?.strop ?? 0, Math.floor(g.gora) - WIADRO.nadSiedziba);
+  const gora = Math.max(1, Math.floor(g.gora) - WIADRO.nadSiedziba);
   const fala = falaTrwa(sim);
   let best: { x: number; sufit: number; cel: number } | null = null, bs = Infinity;
   for (let dx = 0; dx <= WIADRO.zasieg; dx++) {
@@ -286,7 +285,6 @@ export function wiadroNaZadanie(sim: Sim, tx: number, ty: number): string | null
     y = w.inb(tx, ty + d) && w.passable(tx, ty + d) ? ty + d : ty - d;
   }
   if (!w.ever[w.idx(tx, y)]) return 'Tego miejsca nikt jeszcze nie widział.';
-  if (y < (sim.lud.zawal?.strop ?? 0)) return 'Tam góra już się zawaliła.';
   let yy = y;
   while (yy + 1 < w.h && w.passable(tx, yy + 1)) yy++;
   if (!stoi(sim, tx, yy) || w.magma[w.idx(tx, yy)] > 0) return 'Tam wiadro nie ma na czym stanąć.';

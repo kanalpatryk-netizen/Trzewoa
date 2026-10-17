@@ -49,31 +49,6 @@ function ruchGracza(sim: any) {
     return;
   }
 
-  // Remake v1: kogo wydaje skała — najpierw ręce do pracy, potem pobożni
-  const role: any = { pobozny: 0, robotnik: 0, rycerz: 0 };
-  for (const c of sim.creatures) if (!c.dead && c.race === Race.GOBLIN) role[c.rola ?? 'pobozny']++;
-  sim.lud.rola = role.pobozny < 3 ? 'pobozny' : role.robotnik < 6 ? 'robotnik' : role.pobozny < 8 ? 'pobozny' : role.robotnik < 10 ? 'robotnik' : 'pobozny';
-  // ratunek: nikt się nie modli i nie ma krwi na pobożnego — ofiara z robotnika
-  if (role.pobozny === 0 && sim.krew < 30 && sim.wiara >= 10) {
-    const r = sim.creatures.find((c: any) => !c.dead && c.race === Race.GOBLIN && c.rola === 'robotnik');
-    if (r) whisper(sim, 'ofiaruj', r);
-  }
-
-  // etap 2: mało rycerzy — trzech robotników „przemyśli i kopie” ku gniazdu (trzech trafia na pewno)
-  if (role.robotnik >= 3 && role.rycerz < 6 && sim.wiara >= 18 && sim.tick - (sim._przemysl ?? -1e9) > 7200
-      && !sim.creatures.some((c: any) => !c.dead && (c.tor || c.przemysl !== undefined))) {
-    let n = 0;
-    for (const c of sim.creatures) if (n < 3 && !c.dead && c.rola === 'robotnik' && c.hunger < 0.4 && whisper(sim, 'przemysl', c)) n++;
-    if (n) { sim._przemysl = sim.tick; sim._przemyslN = (sim._przemyslN ?? 0) + 1; }
-  }
-  // gniazdo pokazane (sen, uśpiony boss): jeden robotnik wystarczy — tor trafia w nie bez zgadywania
-  if (role.robotnik >= 2 && role.rycerz < 6 && sim.wiara >= 6 && sim.tick - (sim._przemysl ?? -1e9) > 3600
-      && (sim.lud.gniazda ?? []).some((g: any) => g.znany && !g.odkryte)
-      && !sim.creatures.some((c: any) => !c.dead && (c.tor || c.przemysl !== undefined))) {
-    const r = sim.creatures.find((c: any) => !c.dead && c.rola === 'robotnik' && c.hunger < 0.5);
-    if (r && whisper(sim, 'przemysl', r)) { sim._przemysl = sim.tick; sim._przemyslN = (sim._przemyslN ?? 0) + 1; }
-  }
-
   // 1. głodujący dostają grzyb pod nogi
   let najgorszy: any = null;
   for (const c of sim.creatures) {

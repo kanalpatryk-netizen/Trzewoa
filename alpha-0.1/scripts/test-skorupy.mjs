@@ -19,6 +19,7 @@ const src = (f) => JSON.stringify(join(process.cwd(), 'src', f));
 writeFileSync(wejscie, `
 import { Sim } from ${src('sim/sim.ts')};
 import { drogaDoRdzenia, kamienNadRdzeniem } from ${src('sim/rytual.ts')};
+import { T } from ${src('sim/tiles.ts')};
 
 export function sprawdz(ile: number) {
   const wyniki: any[] = [];
@@ -32,10 +33,13 @@ export function sprawdz(ile: number) {
     // wymuszony rytuał: jedna nacja trzyma wartę pod skorupą i naprawdę w ciebie wierzy
     const klan = sim.clans.find((k: any) => !k.dead && k.pop > 3) ?? sim.clans[0];
     let warta: any[] = [];
+    // (Alpha: drużyna jest mała — wartę bierzemy najpierw spośród pobożnych i rycerza, żeby robotnicy
+    // zostali przy kopaniu drogi do przedsionka)
+    const kolejnosc = (o: any) => (o.rola === 'robotnik' ? 1 : 0);
     const uzupelnij = () => {
       warta = warta.filter((c) => !c.dead);
       while (warta.length < 4) {
-        const c = sim.creatures.find((o: any) => !o.dead && !warta.includes(o));
+        const c = [...sim.creatures].sort((a: any, b: any) => kolejnosc(a) - kolejnosc(b)).find((o: any) => !o.dead && !warta.includes(o));
         if (!c) break;
         c.clan = klan.id;
         warta.push(c);
@@ -54,6 +58,11 @@ export function sprawdz(ile: number) {
       klan.devotion = 1;
       klan.dead = false;
       if (i % 50 === 0) uzupelnij();
+      // Alpha: drogę do przedsionka kopie się na rozkaz gracza — test sam ją wykuwa (sprawdza skorupę, nie kopaczy)
+      if (i % 600 === 0 && sim.planDrogi) {
+        const w = sim.world;
+        for (const k of sim.planDrogi.kopac) if (w.tile[k] !== T.CORE && w.tile[k] !== T.STONE) w.tile[k] = T.AIR;
+      }
       for (const c of warta) {
         if (c.dead) continue;
         c.devotion = 1;

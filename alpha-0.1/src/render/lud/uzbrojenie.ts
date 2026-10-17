@@ -78,7 +78,7 @@ export function tarcza(r: Rysunek, tx: number, ty: number, obr: number, skala: n
     krzyz.moveTo(...P(-w * 1.1, ky - kw / 2)); krzyz.lineTo(...P(-w * 1.1, ky + kw / 2)); krzyz.lineTo(...P(w * 1.1, ky + kw / 2)); krzyz.lineTo(...P(w * 1.1, ky - kw / 2)); krzyz.closePath();
     g.fillStyle = tonC(znak, m.prosto ? -0.05 : 0, CIEN.tkanina); g.fill(krzyz);
     if (m.prosto) { g.restore(); return; }
-    if (st.bunt) poswiata(g, ...P(0, ky), w * 1.3, [255, 46, 20], 0.22 + 0.08 * sin(czas * 0.004 + id));
+    if (st.szal) poswiata(g, ...P(0, ky), w * 1.3, [255, 46, 20], 0.22 + 0.08 * sin(czas * 0.004 + id));
     if (m.bogato) {
       // drewno pod farbą: drobne, poszarpane odpryski przy brzegu i przy wyszczerbieniach
       for (let i = 0; i < 9; i++) {
@@ -152,7 +152,7 @@ export function tarcza(r: Rysunek, tx: number, ty: number, obr: number, skala: n
  * Miecz rycerski: prosta głownia z rowkiem (zbroczem), wyszczerbiona, we krwi od połowy ku sztychowi;
  * ciemny żelazny jelec wygięty ku głowni, rękojeść owinięta skórą, tarczowa głowica. Zwraca sztych.
  */
-export function mieczKrzyzowca(m: Malarz, x: number, y: number, kat: number, h: number, skorzane: Rgb, id: number, czas: number, bunt: boolean): Pkt {
+export function mieczKrzyzowca(m: Malarz, x: number, y: number, kat: number, h: number, skorzane: Rgb, id: number, czas: number, szal: boolean): Pkt {
   const d = kier(kat), n = kier(kat - PI / 2);
   const P = (wd: number, wn: number): [number, number] => [x + d.x * wd + n.x * wn, y + d.y * wd + n.y * wn];
   const j = 0.036 * h, dl = 0.5 * h, sz = 0.0165 * h;
@@ -223,7 +223,7 @@ export function mieczKrzyzowca(m: Malarz, x: number, y: number, kat: number, h: 
   je.quadraticCurveTo(...P(j + tj * 0.5, lj * 0.45), ...P(j + tj, 0));
   je.quadraticCurveTo(...P(j + tj * 0.5, -lj * 0.45), ...P(j + 0.016 * h, -lj * 0.98));
   je.closePath();
-  m.ksztalt(je, tonC(ZELAZO, bunt ? -0.3 : -0.05, CIEN.metal), (g) => {
+  m.ksztalt(je, tonC(ZELAZO, szal ? -0.3 : -0.05, CIEN.metal), (g) => {
     if (!m.bogato) return;
     swiatlocien(g, je, [[0.006 * h, 'rgba(6,6,10,0.55)'], [-0.003 * h, 'rgba(240,236,226,0.4)']]);
   });
@@ -243,7 +243,7 @@ export function mieczKrzyzowca(m: Malarz, x: number, y: number, kat: number, h: 
   const [gx, gy] = P(-0.07 * h, 0);
   const rg = 0.016 * h;
   const glw = new Path2D(); glw.ellipse(gx, gy, rg * 0.75, rg, Math.atan2(d.y, d.x), 0, TAU);
-  m.ksztalt(glw, tonC(ZELAZO, bunt ? -0.3 : -0.08, CIEN.metal), (g) => {
+  m.ksztalt(glw, tonC(ZELAZO, szal ? -0.3 : -0.08, CIEN.metal), (g) => {
     if (!m.bogato) return;
     swiatlocien(g, glw, [[rg * 0.45, 'rgba(6,6,10,0.6)'], [-rg * 0.2, 'rgba(240,236,226,0.45)']]);
     if (m.lod === 2) { g.strokeStyle = 'rgba(10,10,12,0.6)'; g.lineWidth = Math.max(0.4, rg * 0.12); g.beginPath(); g.ellipse(gx, gy, rg * 0.38, rg * 0.55, Math.atan2(d.y, d.x), 0, TAU); g.stroke(); }

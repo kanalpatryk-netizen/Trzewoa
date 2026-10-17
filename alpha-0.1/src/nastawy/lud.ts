@@ -1,9 +1,9 @@
 /**
- * LUD (Remake v1) — jeden lud w górze i jego trzy role.
+ * LUD (Remake v1, Alpha) — jeden lud w górze i jego trzy role.
  *
- * Pobożni modlą się i schodzą pod rdzeń, robotnicy kopią i znoszą jedzenie do siedziby,
- * rycerze walczą. Nikt się nie rodzi: co `wyjscieCo` tików skała wydaje nową postać tej
- * roli, którą wybrałeś u góry ekranu — za krew i z osłabieniem na pierwszą minutę.
+ * Pobożni modlą się i schodzą pod rdzeń, robotnicy kopią i noszą jedzenie z wiader,
+ * rycerz walczy. Alpha: stała drużyna — nikt się nie rodzi, skała nie wydaje nowych,
+ * a kamiennych rycerzy w skale nie ma.
  * Tiki przeliczaj przez TIKOW_NA_MINUTE (7200 tików = minuta gry, 120 = sekunda).
  */
 export type Rola = 'pobozny' | 'robotnik' | 'rycerz';
@@ -13,26 +13,21 @@ export interface MnoznikiRoli { hp: number; sila: number; szybkosc: number; kopa
 export const REMAKE: boolean = true;
 
 export const LUD = {
-  /** Kto stoi przy siedzibie na początku partii. */
-  start: { pobozny: 3, robotnik: 3, rycerz: 1 } as Record<Rola, number>,
+  /** Kto stoi przy siedzibie na początku partii — cała drużyna na całą partię. */
+  start: { pobozny: 2, robotnik: 3, rycerz: 1 } as Record<Rola, number>,
   /** Jedzenie w spiżarni siedziby na start. */
   jedzenieStart: 60,
-  /** Krew na start — zapas, z którego płacisz za nowych i za ryty. */
+  /** Krew na start — zapas, z którego płacisz za ryty i wybory na kartach. */
   krewStart: 120,
-  /** Co tyle tików skała wydaje nową postać (20 s). */
-  wyjscieCo: 2400,
-  /** Ile krwi kosztuje wyjście ze skały (rycerzy się nie przywołuje — odkopuje się ich w skale). */
-  koszt: { pobozny: 30, robotnik: 20 } as Record<'pobozny' | 'robotnik', number>,
-  /** Najwięcej żywych postaci ludu naraz. */
+  /** Najwięcej żywych postaci ludu naraz (więcej niż na start da tylko dar z góry). */
   limit: 14,
-  /** Świeżo wyszły ze skały: przez tyle tików siła, szybkość, kopanie i modlitwa × `oslabienie` (−60%). */
-  oslabienieTikow: 7200, oslabienie: 0.4,
 
   /** Mnożniki statystyk rasy dla każdej roli (1 = bez zmian). */
   role: {
     pobozny: { hp: 1, sila: 1, szybkosc: 1, kopanie: 0.5, modlitwa: 1, glod: 0.3 },
     robotnik: { hp: 1.3, sila: 1.2, szybkosc: 1.05, kopanie: 1.4, modlitwa: 0.15, glod: 0.35 },
-    rycerz: { hp: 4, sila: 5, szybkosc: 0.6, kopanie: 0.3, modlitwa: 0.1, glod: 0.35 },
+    // Alpha: rycerz jest jeden — dużo silniejszy (dawniej życie ×4, siła ×5, szybkość ×0,6)
+    rycerz: { hp: 12, sila: 11, szybkosc: 0.75, kopanie: 0.3, modlitwa: 0.1, glod: 0.35 },
   } as Record<Rola, MnoznikiRoli>,
 
   /** Samookaleczenie pobożnego: tyle krwi, a on na zawsze ma życie, siłę i szybkość × `okaleczenie`. */
@@ -111,34 +106,8 @@ export const LUD = {
   zamiarTikow: 1200,
 
   /**
-   * Etap 2 — gniazda kamiennych rycerzy: tyle gniazd zamurowanych w skale (na różnych głębokościach,
-   * z dala od magmy i rdzenia), po tylu rycerzy w każdym. Gniazdo budzi się, gdy ktoś wykopie kafel
-   * w odległości `gniazdoZasieg`; żarzy się słabo, gdy ktoś z ludu jest bliżej niż `gniazdoZar` kafli.
-   */
-  gniazda: 5, gniazdoRycerzy: { od: 2, do: 3 }, gniazdoZasieg: 2, gniazdoZar: 12,
-  /** Gniazda co najmniej tyle kafli od siedziby i od siebie nawzajem. */
-  gniazdoOdSiedziby: 14, gniazdoOdstep: 18,
-  /** Tyle kafli w bok od osi siedziba–rdzeń (najmniej, najchętniej) — na osi biegnie droga do rdzenia. */
-  gniazdoOdOsi: { od: 12, najlepiej: 24 },
-
-  /**
-   * Szept „Przemyśl i kop”: robotnik klęczy `przemyslModlitwa` tików, prosząc o znak, potem kopie
-   * ku najbliższemu gniazdu — ale znak jest niedokładny. Prawdziwe gniazdo leży na jednym z trzech
-   * torów oddalonych o `przemyslRozstaw` kafli (w poprzek kierunku kopania); każdy kopacz bierze
-   * tor, którego nikt jeszcze nie sprawdził. Jeden trafia raz na trzy, trzech — na pewno.
-   */
-  /** Szept „kop losowo” (tylko rycerz): wykopuje tyle połączonych kafli skały obok siebie, kopiąc `losowoTempo` razy szybciej niż zwykle (rycerz kopie słabo). */
-  losowoKafli: 10, losowoTempo: 3,
-  przemyslModlitwa: 720, przemyslRozstaw: 8, przemyslTempo: 0.7, przemyslBledow: 4,
-  /** Tunel zagrodzony najdalej tyle kafli (w kratkach) od gniazda — rycerze słyszą kopanie i przebijają się sami. */
-  gniazdoUslyszy: 6,
-  /** Do pokazanego gniazda trasa tunelu jest wyliczana (BFS) — najwyżej tyle kafli przeszukania. */
-  trasaToruLimit: 30000,
-
-  /**
    * Weteran: po `weteranPo` tikach w ludzie (4 min), dopóki najedzony (głód poniżej `weteranGlod`)
    * i wierny (oddanie co najmniej `weteranWiara`) — siła, szybkość, kopanie i modlitwa × `weteranPremia`.
-   * Rycerze z gniazd budzą się od razu weteranami.
    */
   weteranPo: 28800, weteranGlod: 0.45, weteranWiara: 0.2, weteranPremia: 1.3,
 

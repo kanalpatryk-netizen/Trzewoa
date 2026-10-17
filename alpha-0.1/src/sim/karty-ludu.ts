@@ -1,17 +1,15 @@
 /**
  * Talia kart ludu (Remake v1, etap 4). Liczby w src/nastawy/karty-ludu.ts.
  * Karty z sim/wydarzenia.ts zostają (najazd, powódź, zaraza, głód, warta…) — te dochodzą:
- *  - spisek rycerzy → (zostawiony) bunt: część rycerzy przechodzi na drugą stronę,
- *  - zatrute plony, woda w obozie, zawał nad drogą wiernych, sen o kamiennych rycerzach.
+ * zgniłe jedzenie w wiadrze, woda w obozie, zawał nad drogą wiernych.
+ * (Alpha: bez spisku rycerzy i snu o kamiennych rycerzach — rycerz jest jeden, gniazd nie ma.)
  */
 import type { Sim } from './sim';
 import type { Wydarzenie, Wybor, StanWydarzen } from './wydarzenia';
 import { T, PASSABLE } from './tiles';
 import { KARTY_LUDU as K } from '../nastawy/karty-ludu';
-import { klanLudu, liczRole, rolaPostaci, wszystkieSpizarnie, gniazdaWSkale } from './lud';
-import { zbuntuj, nawroc, odejdz, buntownicy } from './bunt';
+import { klanLudu, rolaPostaci, wszystkieSpizarnie } from './lud';
 import { falaTrwa } from './straznicy';
-import { zabierzPorcje } from './wiadro';
 import { SWIAT } from '../nastawy/swiat';
 
 const wybor = (id: string, tekst: string, skutek: string, krew = 0, wiara = 0): Wybor => ({ id, tekst, skutek, krew, wiara });
@@ -25,23 +23,7 @@ export function kandydaciLudu(sim: Sim, st: StanWydarzen): Kandydat[] {
   const w = sim.world;
   const lud = klanLudu(sim);
   if (!lud) return out;
-  const role = liczRole(sim);
   const surowe = st.ile >= 2;
-  const baza = lud ? { x: lud.hx + 0.5, y: lud.hy + 0.5, tekst: lud.name } : undefined;
-
-  // --- spisek rycerzy
-  const czeka = st.odroczone.some((o) => o.karta === 'bunt');
-  if (surowe && role.rycerz >= K.spisekMinRycerzy && !czeka && !buntownicy(sim).length && sim.tick >= (sim.lud.spisekPo ?? 0)) out.push({ rodzaj: 'spisek', waga: K.spisekWaga, zbuduj: () => {
-    sim.lud.spisekPo = sim.tick + K.spisekPrzerwa;
-    const wybory = [
-      wybor('stlum', `Zgładź spiskowców (${K.spisekSpiskowcow})`, `Zginą — spisek umrze z nimi. Ich śmierć to twoja krew.`, 0, K.spisekStlum),
-      wybor('przekup', 'Kup ich wierność', 'Dostaną krew i pierwsi sięgną do wiadra. Spisek się rozwieje.', K.spisekPrzekup),
-      wybor('zostaw', 'Zostaw', 'Na razie nic. Ale spisek, którego nikt nie gasi, kiedyś wybucha.'),
-    ];
-    // rozsądnie: kupić wierność, gdy stać; zgładzić tylko, gdy rycerzy jest dużo (inaczej zostaw i licz na wiernych)
-    const rozsadny = stac(sim, wybory[1]) ? 1 : role.rycerz >= 6 && stac(sim, wybory[0]) ? 0 : 2;
-    return { rodzaj: 'spisek', tytul: 'Rycerze knują', tekst: `Kilku rycerzy szepcze po kątach obozu. Mówią, że to oni bronią ludu — więc to oni powinni nim rządzić.`, wybory, domyslny: 2, rozsadny, cel: baza, od: sim.tick };
-  } });
 
   // --- zgniłe jedzenie w wiadrze (Remake v2: dawne „zatrute plony” — grzyba i spiżarni już nie ma)
   const sp = wszystkieSpizarnie(sim).filter((s) => s.ilosc >= 4).sort((a, b) => b.ilosc - a.ilosc)[0];
@@ -79,17 +61,6 @@ export function kandydaciLudu(sim: Sim, st: StanWydarzen): Kandydat[] {
     return { rodzaj: 'zawal', tytul: 'Strop nad drogą wiernych pęka', tekst: 'Skała nad wykopaną drogą do rdzenia trzeszczy i sypie się piaskiem.', wybory, domyslny: 1, rozsadny: stac(sim, wybory[0]) ? 0 : 1, cel: { x: x + 0.5, y: y + 0.5, tekst: 'tu się sypie' }, od: sim.tick, x: i };
   } });
 
-  // --- sen o kamiennych rycerzach
-  const ukryte = gniazdaWSkale(sim).filter((g) => !g.znany);
-  if (ukryte.length && role.rycerz < 6) out.push({ rodzaj: 'sen', waga: 1.6, zbuduj: () => {
-    const g = ukryte.sort((a, b) => Math.hypot(a.x - lud.hx, a.y - lud.hy) - Math.hypot(b.x - lud.hx, b.y - lud.hy))[0];
-    const wybory = [
-      wybor('pokaz', 'Pokaż im to miejsce', 'Gniazdo zaświeci w skale na stałe — robotnicy będą wiedzieć, gdzie kopać („Przemyśl i kop” trafi w nie bez pudła).', 0, K.senPokaz),
-      wybor('milcz', 'Niech śpią dalej', 'Nic się nie zmieni. „Przemyśl i kop” wciąż może je znaleźć.'),
-    ];
-    return { rodzaj: 'sen', tytul: 'Sen o kamiennych rycerzach', tekst: 'Pobożnym śni się skała, w której ktoś oddycha. Pytają, czy to znak.', wybory, domyslny: 1, rozsadny: stac(sim, wybory[0]) ? 0 : 1, cel: { x: g.x + 0.5, y: g.y + 0.5, tekst: 'gniazdo' }, od: sim.tick, x: g.id };
-  } });
-
   return out;
 }
 
@@ -97,15 +68,6 @@ export function kandydaciLudu(sim: Sim, st: StanWydarzen): Kandydat[] {
 export function wykonajLudu(sim: Sim, e: Wydarzenie, id: string): boolean {
   const w = sim.world;
   switch (`${e.rodzaj}:${id}`) {
-    case 'spisek:stlum': {
-      const rycerze = sim.creatures.filter((c) => !c.dead && rolaPostaci(c) === 'rycerz').slice(0, K.spisekSpiskowcow);
-      for (const c of rycerze) sim.kill(c, 'stracony za spisek', 'kara');
-      return true;
-    }
-    case 'spisek:przekup': return true;
-    case 'spisek:zostaw':
-      sim.wydarzenia.odroczone.push({ tick: sim.tick + K.buntPo, rodzaj: 'karta', karta: 'bunt' });
-      return true;
     case 'plony:spal': {
       sim.efekt((e.x ?? 0) + 0.5, (e.klan ?? 0) + 0.5, 'cud');
       return true;
@@ -159,44 +121,14 @@ export function wykonajLudu(sim: Sim, e: Wydarzenie, id: string): boolean {
       }
       return true;
     }
-    case 'sen:pokaz': {
-      const g = (sim.lud.gniazda ?? []).find((o) => o.id === e.x);
-      if (g) { g.znany = true; sim.efekt(g.x + 0.5, g.y + 0.5, 'cud'); }
-      return true;
-    }
-    case 'sen:milcz': return true;
-    case 'bunt:walcz': return true;
-    case 'bunt:przemow': nawroc(sim, Math.ceil(buntownicy(sim).length / 2)); return true;
-    case 'bunt:oddaj': {
-      zabierzPorcje(sim, K.buntOddajJedzenie);
-      odejdz(sim);
-      return true;
-    }
   }
   return false;
 }
 
-/** Karty z łańcuchów ludu (bunt po zostawionym spisku). */
-export function zbudujLancuchLudu(sim: Sim, karta: string): Wydarzenie | null {
-  if (karta !== 'bunt') return null;
-  const role = liczRole(sim);
-  if (role.rycerz < 2) return null;
-  const ilu = Math.max(1, Math.floor(role.rycerz * K.buntCzesc));
-  const n = zbuntuj(sim, ilu);
-  if (!n) return null;
-  const b = buntownicy(sim)[0];
-  const wybory = [
-    wybor('walcz', 'Niech wierni ich pokonają', 'Wierni rycerze ruszą na zdrajców. Każda śmierć to twoja krew.'),
-    wybor('przemow', 'Przemów do nich', `Połowa buntowników wróci do ludu.`, 0, K.buntPrzemow),
-    wybor('oddaj', 'Oddaj im zapasy', `Odejdą z góry, zabierając do ${K.buntOddajJedzenie} porcji z wiader.`),
-  ];
-  return {
-    rodzaj: 'bunt', tytul: 'Spisek się udał', lancuch: true, od: sim.tick,
-    tekst: `Spisek, którego nikt nie zgasił, wybuchł: ${n} ${n === 1 ? 'rycerz zmienił' : 'rycerzy zmieniło'} barwy i bije każdego z ludu.`,
-    wybory, domyslny: 0, rozsadny: stac(sim, wybory[1]) ? 1 : 0,
-    cel: b ? { x: b.x, y: b.y, tekst: 'zdrajcy' } : undefined,
-  };
+/** Karty z łańcuchów ludu — Alpha: żadnych (bunt po spisku zniknął razem ze spiskiem). */
+export function zbudujLancuchLudu(_sim: Sim, _karta: string): Wydarzenie | null {
+  return null;
 }
 
 /** Karty ludu w kolejności — dla okienka dewelopera. */
-export const KARTY_LUDU_RODZAJE = ['spisek', 'plony', ...(SWIAT.plyny ? ['zalanie'] : []), 'zawal', 'sen'];
+export const KARTY_LUDU_RODZAJE = ['plony', ...(SWIAT.plyny ? ['zalanie'] : []), 'zawal'];

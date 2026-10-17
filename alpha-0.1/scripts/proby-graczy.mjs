@@ -15,7 +15,6 @@ import { T } from ${src('sim/tiles.ts')};
 import { seed, sign, whisper } from ${src('powers/powers.ts')};
 import { rozstrzygnij } from ${src('sim/wydarzenia.ts')};
 import { Job } from ${src('sim/creatures.ts')};
-import { gniazdaWSkale } from ${src('sim/lud.ts')};
 import { czoloDrogi } from ${src('sim/pielgrzymka.ts')};
 import { DZIENNIK } from ${src('sim/dziennik.ts')};
 import { procentSkorupy } from ${src('sim/rytual.ts')};
@@ -23,7 +22,7 @@ import { procentSkorupy } from ${src('sim/rytual.ts')};
 const M = 7200;
 const t = (sim: any) => (sim.tick / M).toFixed(2) + 'm';
 const zywi = (sim: any) => sim.creatures.filter((c: any) => !c.dead && c.race === Race.GOBLIN);
-function role(sim: any) { const r: any = { pobozny: 0, robotnik: 0, rycerz: 0 }; for (const c of zywi(sim)) if (!c.buntownik) r[c.rola ?? 'pobozny']++; return r; }
+function role(sim: any) { const r: any = { pobozny: 0, robotnik: 0, rycerz: 0 }; for (const c of zywi(sim)) r[c.rola ?? 'pobozny']++; return r; }
 function jedzenie(sim: any) { const k = sim.clans.find((x: any) => !x.dead && x.race === Race.GOBLIN); return (k ? k.stock : 0) + (sim.lud.spizarnie ?? []).reduce((s: number, o: any) => s + o.ilosc, 0); }
 
 function wspolne(sim: any, out: string[]) {
@@ -32,17 +31,7 @@ function wspolne(sim: any, out: string[]) {
   let najg: any = null;
   for (const c of zywi(sim)) if (c.hunger > 0.65 && (!najg || c.hunger > najg.hunger)) najg = c;
   if (najg && sim.krew > 60 && sim.tick % 600 === 0) seed(sim, 'grzyb', Math.round(najg.x), Math.round(najg.y));
-  // rycerze z gniazd: przemyśl i kop (pokazane gniazdo — jeden; nieznane — trzech)
-  const torTrwa = sim.creatures.some((c: any) => !c.dead && (c.tor || c.przemysl !== undefined));
-  if (!torTrwa && r.robotnik >= 2 && r.rycerz < 6 && gniazdaWSkale(sim).length && sim.tick - (sim._przemysl ?? -1e9) > 3600) {
-    const znane = gniazdaWSkale(sim).some((g: any) => g.znany);
-    const ilu = znane ? 1 : 3;
-    if (sim.wiara >= 6 * ilu) {
-      let n = 0;
-      for (const c of zywi(sim)) if (n < ilu && c.rola === 'robotnik' && c.hunger < 0.45 && whisper(sim, 'przemysl', c)) n++;
-      if (n) { sim._przemysl = sim.tick; out.push(t(sim) + ' GRACZ przemyśl i kop ×' + n + (znane ? ' (gniazdo pokazane)' : '')); }
-    }
-  }
+  void r;
 }
 
 function budowniczy(sim: any, out: string[]) {
@@ -54,22 +43,16 @@ function budowniczy(sim: any, out: string[]) {
     out.push(t(sim) + ' KARTA ' + e.rodzaj + ' -> ' + (e.wybory[i]?.etykieta ?? e.wybory[i]?.id ?? i));
     return;
   }
-  sim.lud.rola = r.robotnik < 6 ? 'robotnik' : r.pobozny < 6 ? 'pobozny' : r.robotnik < 7 ? 'robotnik' : 'pobozny';
   wspolne(sim, out);
-  // kop losowo rycerzem, gdy gniazda jeszcze śpią i nic innego ich nie szuka (raz na 90 s)
-  if (gniazdaWSkale(sim).length && sim.wiara >= 20 && sim.tick - (sim._losowo ?? -1e9) > 10800 && !sim.lud.straznicy?.trwa) {
-    const ryc = zywi(sim).find((c: any) => c.rola === 'rycerz' && !c.losowo && c.hunger < 0.5);
-    if (ryc && whisper(sim, 'kopLosowo', ryc)) { sim._losowo = sim.tick; out.push(t(sim) + ' GRACZ kop losowo (rycerz #' + ryc.id + ')'); }
-  }
   // Cud dla oddania
   if (sim.wiara >= 70 && sim.tick % 2400 === 0) {
     const k = sim.clans.find((x: any) => !x.dead && x.race === Race.GOBLIN);
     if (k && k.devotion < 0.9 && sign(sim, 'objawienie', k.hx, k.hy)) out.push(t(sim) + ' GRACZ Cud (oddanie ' + k.devotion.toFixed(2) + ')');
   }
-  // wymarsz, gdy wszystkiego dużo
+  // wymarsz, gdy droga gotowa i jest co jeść
   if (!sim._wymarsz) {
     const plan = sim.planDrogi ? sim.planDrogi.kopac.length : 99;
-    const gotowy = zywi(sim).length >= 12 && jedzenie(sim) >= 150 && (r.rycerz >= 3 || !gniazdaWSkale(sim).length) && sim.krew >= 40 && plan === 0;
+    const gotowy = jedzenie(sim) >= 12 && sim.krew >= 40 && plan === 0;
     if (gotowy || sim.tick > 16 * M) {
       sim._wymarsz = sim.tick;
       out.push(t(sim) + ' GRACZ === WYMARSZ === ' + (gotowy ? 'gotowy' : 'limit czasu') + ': ludzi ' + zywi(sim).length + ', jedzenie ' + jedzenie(sim) + ', rycerzy ' + r.rycerz + ', krew ' + Math.round(sim.krew) + ', plan ' + plan);
@@ -92,7 +75,6 @@ function speedrun(sim: any, out: string[]) {
     out.push(t(sim) + ' KARTA ' + e.rodzaj + ' -> ' + (i < 0 ? 'poslJedz' : (e.wybory[i]?.id ?? i)));
     return;
   }
-  sim.lud.rola = r.pobozny < 5 ? 'pobozny' : r.robotnik < 4 ? 'robotnik' : 'pobozny';
   wspolne(sim, out);
   if (sim.wiara >= 30 && sim.tick % 1200 === 0) {
     const k = sim.clans.find((x: any) => !x.dead && x.race === Race.GOBLIN);
@@ -170,7 +152,7 @@ export function run(z: number, styl: string, minut: number) {
       const zam: any = {};
       for (const c of zywi(sim)) { const z = (c.zamiar ?? '-').replace(/[0-9#(].*$/, '').trim().slice(0, 30); zam[z] = (zam[z] ?? 0) + 1; }
       const kuje = sim.creatures.filter((c: any) => !c.dead && c.drogaKopie).length;
-      out.push(t(sim) + ' STAN pob=' + r.pobozny + ' rob=' + r.robotnik + ' ryc=' + r.rycerz + ' krew=' + Math.round(sim.krew) + ' wiara=' + Math.round(sim.wiara) + ' jedz=' + jedzenie(sim) + ' oddanie=' + (k ? k.devotion.toFixed(2) : '-') + ' plan=' + (sim.planDrogi ? sim.planDrogi.kopac.length : '-') + ' pęk=' + sim.rytual.pekniecia + ' skorupa=' + procentSkorupy(sim) + '% fala=' + (sim.lud.straznicy ? sim.lud.straznicy.fala + (sim.lud.straznicy.trwa ? '!' : '') : '-') + ' gniazd=' + (sim.lud.gniazda ?? []).filter((g: any) => g.odkryte).length + '/' + (sim.lud.gniazda ?? []).length + ' kuje=' + kuje + ' | ' + Object.entries(zam).sort((a: any, b: any) => b[1] - a[1]).map(([a, b]) => b + '× ' + a).join('; '));
+      out.push(t(sim) + ' STAN pob=' + r.pobozny + ' rob=' + r.robotnik + ' ryc=' + r.rycerz + ' krew=' + Math.round(sim.krew) + ' wiara=' + Math.round(sim.wiara) + ' jedz=' + jedzenie(sim) + ' oddanie=' + (k ? k.devotion.toFixed(2) : '-') + ' plan=' + (sim.planDrogi ? sim.planDrogi.kopac.length : '-') + ' pęk=' + sim.rytual.pekniecia + ' skorupa=' + procentSkorupy(sim) + '% fala=' + (sim.lud.straznicy ? sim.lud.straznicy.fala + (sim.lud.straznicy.trwa ? '!' : '') : '-') + ' kuje=' + kuje + ' | ' + Object.entries(zam).sort((a: any, b: any) => b[1] - a[1]).map(([a, b]) => b + '× ' + a).join('; '));
     }
   }
   out.push('KONIEC ' + (sim.ending ?? 'brak (limit czasu)') + ' @' + t(sim) + ' wyjątków ' + wyjatki + ' zgonów ' + [...sim.deaths.values()].reduce((a: number, b: number) => a + b, 0));

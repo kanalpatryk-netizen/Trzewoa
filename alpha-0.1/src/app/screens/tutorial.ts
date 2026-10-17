@@ -153,12 +153,6 @@ export class EkranSamouczka implements Ekran {
     return { x: wd.x + 0.5, y: Math.max(wd.y, wd.sufit) + 0.5, r: 3, tekst: 'wiadro z jedzeniem' };
   }
 
-  /** Przycisk „ze skały” pod paskiem ról. */
-  rolaZeSkaly(rola: 'pobozny' | 'robotnik'): Wskazanie | null {
-    const m = this.gra.miejsceRoli(rola);
-    return m ? { typ: 'punkt', x: m.x, y: m.y, r: m.r } : null;
-  }
-
   rdzen(): Cel {
     const w = this.gra.sim.world;
     return { x: w.coreX + 0.5, y: w.coreY + 0.5, r: 6, tekst: 'twój rdzeń' };
@@ -313,7 +307,7 @@ export class EkranSamouczka implements Ekran {
     ustaw('samouczekZrobiony', true);
     // co pokazał samouczek, to trafia do atlasu — bez wyskakujących tablic
     for (const id of ['rasa-0', 'ryt-zasiej', 'ryt-szept', 'ryt-znak', 'krew', 'wiara', 'wiadro', 'role',
-      'oddanie', 'pielgrzymka', 'wydarzenia', 'gniazda', 'zawal', 'helmy', 'trupy', 'patrzacy', 'dlon',
+      'oddanie', 'pielgrzymka', 'wydarzenia', 'schody', 'helmy', 'trupy', 'patrzacy', 'dlon',
       'straznicy', 'boss', 'droga', 'skorupa', 'rdzen', 'sen', 'pauza']) odkrycia.odkryj(id, false);
     this.faza = 'final';
     const g = this.gra;
@@ -768,7 +762,7 @@ export class EkranSamouczka implements Ekran {
   private rysujFinal(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     const rozm = Math.max(16, Math.min(22, w / 56));
     const szer = Math.min(560, w - 32);
-    const tekst = `Umiesz już wszystko, czego trzeba na początek. Nad płytą zawsze stoi jedno zdanie: co teraz najpilniejsze — dotknij go, a kamera pojedzie na miejsce. Rozległe jaskinie, zawały i to, co patrzy z ciemności — resztę odkryjesz sam. W atlasie (przycisk z księgą) czekają już pierwsze tablice — kolejne odkryjesz, grając.`;
+    const tekst = `Umiesz już wszystko, czego trzeba na początek. Nad płytą zawsze stoi jedno zdanie: co teraz najpilniejsze — dotknij go, a kamera pojedzie na miejsce. Rozległe jaskinie, schody kute w skale i to, co patrzy z ciemności — resztę odkryjesz sam. W atlasie (przycisk z księgą) czekają już pierwsze tablice — kolejne odkryjesz, grając.`;
     ctx.save();
     ctx.fillStyle = 'rgba(6,4,3,0.55)';
     ctx.fillRect(0, 0, w, h);

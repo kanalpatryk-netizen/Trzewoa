@@ -10,7 +10,7 @@ import { Job } from './creatures';
 import { Race, RACES } from './races';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { procentSkorupy } from './rytual';
-import { rolaPostaci, mnoznik, maxHp, gniazdaWSkale, walczacy } from './lud';
+import { rolaPostaci, mnoznik, maxHp, walczacy } from './lud';
 import { aktywnyBoss } from './boss';
 import { zapisz } from './dziennik';
 import { LUD } from '../nastawy/lud';
@@ -27,45 +27,35 @@ export interface StanStraznikow {
   cios?: number;
   /** fala z bossem, a pod rdzeniem nie ma rycerzy (liczone co pół sekundy) */
   bezRycerzy?: boolean;
-  /** od kiedy (tik) przy bossie nie ma rycerzy */
-  bezRycerzyOd?: number;
-  /** boss wrócił do ściany i śpi do tego tiku — skorupa nie pęka, fala zacznie się od nowa */
-  bossSpiDo?: number;
 }
 
 /**
- * Ostatnia deska: trwa fala z bossem, w ludzie nie ma ani jednego rycerza i nie zostało żadne
- * nieodkopane gniazdo — wtedy bossa ranią też pobożni (księgą, z dystansu), a on nie zasypia.
+ * Ostatnia deska: trwa fala z bossem, a w ludzie nie ma ani jednego walczącego —
+ * wtedy bossa ranią też pobożni (księgą, z dystansu).
  */
 export function trybWiernych(sim: Sim): boolean {
   const st = sim.lud.straznicy;
   if (!st?.trwa || !S.fale[st.fala]?.boss) return false;
-  if (gniazdaWSkale(sim).length > 0) return false;
   // (Remake v2: robotnicy w hełmach też się liczą — wtedy oni stają przeciw bossowi)
   return !sim.creatures.some((c) => !c.dead && walczacy(c));
 }
 
-/** Ilu walczących jest w ludzie: rycerze (bez buntowników) i — gdy rycerzy brak — robotnicy w hełmach. */
+/** Ilu walczących jest w ludzie: rycerze i — gdy rycerzy brak — robotnicy w hełmach. */
 export function iluRycerzy(sim: Sim): number {
   let n = 0;
-  for (const c of sim.creatures) if (!c.dead && !c.buntownik && walczacy(c)) n++;
+  for (const c of sim.creatures) if (!c.dead && walczacy(c)) n++;
   return n;
 }
 
 /**
- * Trwa fala z bossem, a rycerzy jest za mało, żeby ruszyć (`rycerzyNaBossa`) — czekają z dala od rdzenia
- * na towarzyszy. Gdy w skale nie ma już gniazd, nie ma na kogo czekać: idą, ilu jest.
+ * Trwa fala z bossem, a walczących jest mniej niż `rycerzyNaBossa` (ale ktoś jest) — czekają z dala od rdzenia.
+ * Alpha: rycerz jest jeden i silny, więc przy `rycerzyNaBossa` = 1 nikt nie czeka.
  */
 export function rycerzeCzekaja(sim: Sim): boolean {
   const st = sim.lud.straznicy;
   if (!st?.trwa || !S.fale[st.fala]?.boss) return false;
-  if (gniazdaWSkale(sim).length === 0) return false;
-  return iluRycerzy(sim) < S.rycerzyNaBossa;
-}
-
-/** Czy boss śpi w ścianie (wrócił, bo nie miał z kim walczyć) — skorupa wtedy nie pęka. */
-export function bossSpi(sim: Sim): boolean {
-  return sim.tick < (sim.lud.straznicy?.bossSpiDo ?? 0);
+  const n = iluRycerzy(sim);
+  return n > 0 && n < S.rycerzyNaBossa;
 }
 
 export function nowyStanStraznikow(): StanStraznikow {
@@ -171,26 +161,8 @@ export function tikStraznikow(sim: Sim): void {
       const w = sim.world;
       sim.gdzie(w.coreX, w.przedsionekY).log('Strażnicy Snu nie mieli z kim walczyć i wrócili do skały. Skorupa zrosła się tam, gdzie pękała.', 'otchlan', `fala-sen-${st.fala}`);
     }
-    // fala z bossem bez rycerzy: boss wraca do ściany i śpi, lud odżywa (inaczej pat — i głód do ostatniego)
-    if (st.trwa && S.fale[st.fala]?.boss) {
-      if (!falaZwykla(sim) || trybWiernych(sim)) st.bezRycerzyOd = undefined;
-      else if (st.bezRycerzyOd === undefined) st.bezRycerzyOd = sim.tick;
-      else if (sim.tick - st.bezRycerzyOd > S.bossZasypiaBezRycerzy) {
-        for (const c of zywiStraznicy(sim)) { c.dead = true; sim.clans[c.clan].pop--; sim.efekt(c.x, c.y, 'cud'); }
-        st.trwa = false;
-        st.bezRycerzyOd = undefined;
-        st.bossSpiDo = sim.tick + S.bossSpi;
-        const w = sim.world;
-        // śniąc, Kamień zdradza, gdzie śpią jego rycerze: najbliższe siedzibie ukryte gniazdo zaczyna świecić
-        const klan = sim.clans.find((k) => !k.dead && k.race === Race.GOBLIN);
-        const g = klan ? gniazdaWSkale(sim).filter((o) => !o.znany).sort((a, b) => Math.hypot(a.x - klan.hx, a.y - klan.hy) - Math.hypot(b.x - klan.hx, b.y - klan.hy))[0] : undefined;
-        if (g) { g.znany = true; sim.efekt(g.x + 0.5, g.y + 0.5, 'cud'); }
-        sim.gdzie(w.coreX, w.przedsionekY).log(`${aktywnyBoss().nazwa} nie miał z kim walczyć i zapadł z powrotem w ścianę. Wróci — zbierz rycerzy.${g ? ' We śnie zdradził jedno gniazdo: „Przemyśl i kop” trafi w nie bez pudła.' : ''}`, 'otchlan', `boss-sen-${sim.tick}`);
-        zapisz(sim, 'rytual', 'boss wraca do ściany (brak rycerzy)', w.coreX, w.przedsionekY);
-      }
-    }
     const def = S.fale[st.fala];
-    if (!st.trwa && def && !sim.rytual.otwarta && !bossSpi(sim) && procentSkorupy(sim) >= def.prog) zacznijFale(sim, st);
+    if (!st.trwa && def && !sim.rytual.otwarta && procentSkorupy(sim) >= def.prog) zacznijFale(sim, st);
   }
   if (st.trwa && sim.tick % 30 === 0) rycerzeDoWalki(sim);
   if (st.trwa && sim.tick % 30 === 15 && trybWiernych(sim)) wierniDoWalki(sim);
@@ -267,7 +239,7 @@ function rycerzeDoWalki(sim: Sim): void {
       if (blisko) {
         if (c.job !== Job.FIGHT || sim.target.get(c.id) !== blisko.id) {
           sim.target.set(c.id, blisko.id);
-          c.job = Job.FIGHT; c.jt = 240; c.droga = undefined; c.losowo = undefined;
+          c.job = Job.FIGHT; c.jt = 240; c.droga = undefined;
           c.zamiar = blisko.boss ? `broni się przed: ${aktywnyBoss().nazwa}` : 'broni się przed Strażnikiem Snu';
           c.zamiarDo = sim.tick + 240;
         }
@@ -296,7 +268,7 @@ function rycerzeDoWalki(sim: Sim): void {
       continue;
     }
     sim.target.set(c.id, best.id);
-    c.job = Job.FIGHT; c.jt = 600; c.droga = undefined; c.losowo = undefined;
+    c.job = Job.FIGHT; c.jt = 600; c.droga = undefined;
     c.zamiar = best.boss ? `walczy z: ${aktywnyBoss().nazwa}` : 'walczy ze Strażnikiem Snu';
     c.zamiarDo = sim.tick + 600;
     c.wyprawa = false;
@@ -323,8 +295,7 @@ export function walczZeStraznikiem(sim: Sim, c: Creature, s: Creature, podejdz: 
   c.face = s.x > c.x ? 1 : -1;
   if (sim.tick - (c.ciosT ?? -1e9) < S.rycerzCiosCo) return;
   c.ciosT = sim.tick;
-  // (zbuntowany rycerz nie ma już roli, ale bije jak rycerz)
-  const dmg = RACES[c.race].strength * (c.buntownik ? LUD.role.rycerz.sila : mnoznik(sim, c, 'sila')) * (0.8 + sim.rng.next() * 0.4);
+  const dmg = RACES[c.race].strength * mnoznik(sim, c, 'sila') * (0.8 + sim.rng.next() * 0.4);
   ranStraznika(sim, s, c, dmg);
 }
 

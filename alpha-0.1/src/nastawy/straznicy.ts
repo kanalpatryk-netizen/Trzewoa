@@ -51,16 +51,11 @@ export const STRAZNICY = {
    */
   zasypiaPo: 21600,
   /**
-   * Boss bez przeciwnika: gdy przez tyle tików (2 min) pod rdzeniem nie ma ani jednego rycerza, wraca do ściany
-   * i śpi `bossSpi` tików (4 min) — lud odżywa i zbiera rycerzy, skorupa w tym czasie nie pęka, potem boss wraca.
-   * (Bez tego fala z bossem bez rycerzy trwała wiecznie i lud wymierał z głodu, czekając.)
+   * Na bossa walczący ruszają, gdy jest ich co najmniej tylu — mniej czeka z dala od rdzenia.
+   * Alpha: rycerz jest jeden i dużo silniejszy, więc idzie sam (1). Boss już nie zasypia w ścianie
+   * i nie zdradza gniazd (gniazd nie ma); bez walczących pobożni razią go księgami.
    */
-  bossZasypiaBezRycerzy: 14400, bossSpi: 28800,
-  /**
-   * Na bossa rycerze ruszają dopiero razem: dopóki w ludzie jest ich mniej niż tyle (a w skale śpią jeszcze
-   * gniazda), czekają z dala od rdzenia — pojedynczo ginęli od razu. Gdy gniazd już nie ma, idą, ilu jest.
-   */
-  rycerzyNaBossa: 3,
+  rycerzyNaBossa: 1,
   /** Czekający rycerz broni się, gdy Strażnik (albo boss) podejdzie bliżej niż tyle kafli. */
   rycerzBroniSieOd: 4,
   /** Głodny rycerz (powyżej `LUD.glodSam`) idzie jeść — walczy tylko ze Strażnikiem bliżej niż tyle kafli. */

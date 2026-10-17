@@ -68,7 +68,7 @@ const sniacyKamien: Boss = {
   },
   ksiega: { zasieg: K.ksiegaZasieg, co: K.ksiegaCo, rana: K.ksiegaRana, cofa: K.ksiegaCofa, widzi: K.ksiegaWidzi },
   przyjmij(sim, _c, od, rana) {
-    // (ostatnia deska: bez rycerzy i bez gniazd ranią go też pobożni — księgą)
+    // (ostatnia deska: bez walczących ranią go też pobożni — księgą)
     if (K.tylkoRycerze && !walczacy(od) && !(rolaPostaci(od) === 'pobozny' && trybWiernych(sim))) return 0;
     return modlacych(sim) >= K.modlitwaWiernych ? rana * K.modlitwaRany : rana;
   },

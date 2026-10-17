@@ -9,7 +9,7 @@ import { wolny, stoi, uchwyt, nadOgniem, przepasc } from './droga';
 import { RYTUAL as R, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 import { RDZEN } from '../nastawy/swiat';
-import { falaTrwa, bossSpi } from './straznicy';
+import { falaTrwa } from './straznicy';
 
 export interface StanRytualu {
   /** Postęp nacji, która jest najbliżej przebicia — tylko do pokazania graczowi. */
@@ -71,7 +71,7 @@ export function tikRytualu(sim: Sim, stan: StanRytualu): void {
     const n = razem;
     if (n < R.potrzebaWiernych || id !== najlepszy) continue;
     // etap 3: dopóki trwa fala Strażników Snu, skorupa nie pęka
-    if (falaTrwa(sim) || bossSpi(sim)) continue;
+    if (falaTrwa(sim)) continue;
     const klan = sim.clans[id];
     // nacja, której ktoś właśnie klęczy pod skorupą, z definicji nie jest martwa;
     // flaga potrafi zostać po przepisaniu ludzi między klanami i mroziła rytuał na zawsze
