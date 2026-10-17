@@ -1,7 +1,7 @@
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { RACES } from './races';
-import { PASSABLE } from './tiles';
+import { HARDNESS, PASSABLE, T } from './tiles';
 import { LUD, REMAKE } from '../nastawy/lud';
 import { WORLD_W, WORLD_H } from './world';
 
@@ -11,6 +11,11 @@ import { WORLD_W, WORLD_H } from './world';
  * wchodzi z wiszenia. Magmy i (dla niepływających) głębokiej wody się nie dotyka,
  * a nad jezioro ognia nie wychodzi. Wcześniej każdy szedł „na wprost" do celu i utykał
  * pod pierwszą półką: głodni umierali pod grzybem, Żużlowcy pod rudą.
+ *
+ * Remake v2: lud nie wspina się po ścianach i nie ma lin ani klamer — z podłogi wchodzi
+ * najwyżej o jeden kafel (na stopień), a wyżej musi wykuć sobie schody (creatures.ts).
+ * W dół łatwiej: szybem zsuwa się po ścianach, z niewysokiej półki zeskakuje; w przepaść
+ * głębszą niż `LUD.spadekMaks` sam nie skacze.
  *
  * Droga to lista kafli (bez kafla startowego). Szukanie ma limit węzłów i limit na tik —
  * gdy go zabraknie, stworzenie idzie po staremu, na przełaj i z kilofem.
@@ -33,11 +38,14 @@ export function wolny(sim: Sim, i: number, plywa: boolean): boolean {
   return PASSABLE[w.tile[i]] === 1 && w.magma[i] === 0 && (plywa || w.water[i] <= 5);
 }
 
+/** Remake v2: czy to lud gracza — on chodzi po nowemu: najwyżej stopień w górę, wyżej kuje schody. */
+export function ludRuch(c: Creature): boolean {
+  return REMAKE && c.race === 0 && !c.straznik;
+}
+
 /** Czy w tym kafelku da się wisieć — ściana z boku albo krawędź pod ręką. */
 export function uchwyt(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
-  // na drodze wiernych góra wykuwa stopnie (próg z pielgrzymka.ts) — wszędzie jest się czego trzymać
-  if (w.inb(x, y) && (w.prog[w.idx(x, y)] === 1 || w.drabina[w.idx(x, y)] === 1)) return true;
   return w.solid(x - 1, y) || w.solid(x + 1, y) || w.solid(x - 1, y + 1) || w.solid(x + 1, y + 1);
 }
 
@@ -65,8 +73,6 @@ export function glebiaPod(sim: Sim, x: number, y: number, limit: number): number
  * bez dna to droga w jedną stronę (robotnicy lądowali przy rdzeniu w pół minuty).
  */
 export function przepasc(sim: Sim, x: number, y: number): boolean {
-  // lud nie spada, tylko schodzi po klamrach (creatures.ts) — przepaść przestała być pułapką
-  if (REMAKE && LUD.klamry) return false;
   return !stoi(sim, x, y) && !uchwyt(sim, x, y) && glebiaPod(sim, x, y, LUD.spadekMaks) > LUD.spadekMaks;
 }
 
@@ -94,8 +100,8 @@ export function szukajDrogi(
   const w = sim.world;
   const W = w.w;
   const plywa = RACES[c.race].swims;
-  // lud (Race.GOBLIN) omija przepaści — także pielgrzym: schodzi drogą wiernych, która ma stopnie
-  const ostrozny = REMAKE && c.race === 0;
+  // lud omija przepaści i w górę wchodzi tylko z podłogi, o jeden kafel (Remake v2)
+  const ostrozny = ludRuch(c);
   const sx = Math.floor(c.x), sy = Math.floor(c.y);
   if (!w.inb(sx, sy)) return null;
   pokolenie++;
@@ -122,17 +128,13 @@ export function szukajDrogi(
       droga.reverse();
       return droga;
     }
-    // Remake v1: droga wiernych (stopnie) jest drogą w obie strony — po niej idzie się jak korytarzem
-    if (ostrozny && w.prog[i] === 1) {
-      for (const j of [i - W, i + W, x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1]) if (j >= 0 && j < w.w * WORLD_H && w.prog[j] === 1 && wolny(sim, j, plywa)) dodaj(j, i);
-    }
     const naPodlodze = stoi(sim, x, y);
     const wisi = !naPodlodze && uchwyt(sim, x, y);
     // w dół: z wiszenia albo w locie
     if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa) && !(ostrozny && wisi && przepasc(sim, x, y + 1))) dodaj(i + W, i);
     if (!naPodlodze && !wisi) continue;            // w locie nie ma innego wyboru
-    // w górę: tylko tam, gdzie da się chwycić
-    if (y > 0 && wolny(sim, i - W, plywa) && uchwyt(sim, x, y - 1)) dodaj(i - W, i);
+    // w górę: tylko tam, gdzie da się chwycić — lud tylko z podłogi, na stopień (dalej już tylko w bok, na półkę)
+    if (y > 0 && wolny(sim, i - W, plywa) && (ostrozny ? naPodlodze : uchwyt(sim, x, y - 1))) dodaj(i - W, i);
     // w bok
     for (const dx of [-1, 1]) {
       const nx = x + dx;
@@ -168,4 +170,156 @@ export function nastepnyKafel(sim: Sim, c: Creature): number {
   if (Math.abs(nx - cx) + Math.abs(ny - cy) !== 1) return -1;
   if (!wolny(sim, next, RACES[c.race].swims)) return -1;
   return next;
+}
+
+// ------------------------------------------------------------------ droga z kopaniem (Remake v2)
+
+/** Koszt wykucia kafla (> 0), albo -1, gdy tego kafla kuć nie wolno albo nie da się. */
+export type KosztKucia = (i: number, x: number, y: number) => number;
+
+const odlK = new Int32Array(N);
+const skadK = new Int32Array(N);
+const znakK = new Int32Array(N);
+let pokolenieK = 0;
+
+/** Czy kafel `j` leży na łańcuchu poprzedników `i` (najwyżej `ile` kroków wstecz, licząc z `i`). */
+function naLancuchu(i: number, j: number, ile: number): boolean {
+  for (let k = i, n = 0; k >= 0 && n < ile; k = skadK[k], n++) if (k === j) return true;
+  return false;
+}
+
+/**
+ * Remake v2: droga, na której wolno kuć skałę — gdy zwykłej nie ma, lud wykuwa sobie przejście sam.
+ * Ruch jak w `szukajDrogi` dla ludu: w górę tylko z podłogi, o jeden kafel, a stamtąd już tylko w bok
+ * na półkę; z wiszenia w dół albo na półkę; w przepaść ani nad ogień nie wchodzi. Lity kafel kosztuje
+ * tyle, ile zwraca `koszt` (i staje się pustką, gdy go wykuje): pod górę wychodzą z tego schody po skosie —
+ * kafel nad głową i stopień przed sobą, a kafel pod stopniem zostaje. Stopnia, który sam przed chwilą wybił,
+ * nie podkopie (kilka kroków wstecz), więc schody nie zawracają — w dwóch wymiarach zawrócić się nie da.
+ * Kuć wolno tylko stojąc (albo nad sobą — kafel pod stopniem kuje się z podłogi przed wejściem).
+ *
+ * `starty` — kafle, z których się rusza; zwraca kafle od startu (bez niego) do celu i start, z którego
+ * wyszła droga — albo null, gdy celu nie ma w zasięgu `limit` przejrzanych kafli.
+ */
+export interface OpcjeKopania {
+  /** koszt wykucia litego kafla (albo -1 — nie wolno) */
+  koszt: KosztKucia;
+  /** najwyżej tyle przejrzanych kafli */
+  limit?: number;
+  plywa?: boolean;
+  /** liczy się z budżetu szukań tiku (planer drogi wiernych — nie) */
+  zBudzetu?: boolean;
+  /** dodatkowo: przez które kafle (wolne i lite) w ogóle wolno iść */
+  dozwolony?: (i: number, x: number, y: number) => boolean;
+}
+
+export function szukajKopiac(
+  sim: Sim, starty: readonly number[], cel: (i: number, x: number, y: number) => boolean, op: OpcjeKopania,
+): { droga: number[]; start: number } | null {
+  const w = sim.world, W = w.w;
+  const { koszt, limit = 6000, plywa = false, zBudzetu = true, dozwolony } = op;
+  if (!starty.length) return null;
+  // szukanie z kopaniem jest droższe od zwykłego — liczy się za dwa z budżetu tiku
+  if (zBudzetu) { if (budzet < 2) return null; budzet -= 2; }
+  pokolenieK++;
+  if (pokolenieK > 2_000_000_000) { znakK.fill(0); pokolenieK = 1; }
+  // kubełki kosztów (koszty są małymi liczbami całkowitymi)
+  const KUBLY = 32;
+  const kubly: number[][] = Array.from({ length: KUBLY }, () => []);
+  let zostalo = 0;
+  const wstaw = (j: number, d: number, od: number): void => {
+    if (znakK[j] === pokolenieK && d >= odlK[j]) return;
+    znakK[j] = pokolenieK; odlK[j] = d; skadK[j] = od;
+    kubly[d % KUBLY].push(j); zostalo++;
+  };
+  for (const s of starty) wstaw(s, 0, -1);
+  const lity = (j: number) => PASSABLE[w.tile[j]] !== 1;
+  // pustka po drodze: wolny kafel albo lity, który ta droga przed chwilą wykuła
+  const kuty = (i: number, j: number) => lity(j) && naLancuchu(i, j, 8);
+  const podloga = (i: number, j: number) => {
+    // czy pod kaflem `j` jest na czym stanąć, gdy idzie się z `i`
+    const b = j + W;
+    if (b >= N) return true;
+    if (w.water[b] >= 4) return true;
+    return lity(b) && !kuty(i, b);
+  };
+  const sciana = (x: number, y: number) => w.solid(x - 1, y) || w.solid(x + 1, y) || w.solid(x - 1, y + 1) || w.solid(x + 1, y + 1);
+  let obejrzane = 0;
+  for (let d = 0; zostalo > 0; d++) {
+    const kubel = kubly[d % KUBLY];
+    while (kubel.length) {
+      const i = kubel.pop()!;
+      zostalo--;
+      if (odlK[i] !== d || znakK[i] !== pokolenieK) continue;
+      const x = i % W, y = (i / W) | 0;
+      if (cel(i, x, y)) {
+        const droga: number[] = [];
+        let k = i;
+        for (; skadK[k] !== -1; k = skadK[k]) droga.push(k);
+        droga.reverse();
+        return { droga, start: k };
+      }
+      if (++obejrzane > limit) return null;
+      const stoiTu = podloga(i, i);
+      const wisiTu = !stoiTu && sciana(x, y);
+      // wszedł tu na stopień, prosto z podłogi pod spodem — kafel przed sobą wykuł, zanim się podciągnął
+      const zeStopnia = skadK[i] === i + W;
+      // wejście na kafel `j` (wolny albo do wykucia) za `krok` + koszt kucia
+      const wejdz = (j: number, nx: number, ny: number, mozeKuc: boolean): void => {
+        if (j < 0 || j >= N || nx < 0 || nx >= W) return;
+        if (dozwolony && !dozwolony(j, nx, ny)) return;
+        if (lity(j) && !kuty(i, j)) {
+          if (!mozeKuc) return;
+          const k = koszt(j, nx, ny);
+          if (k < 0) return;
+          wstaw(j, d + 1 + Math.min(KUBLY - 2, k), i);
+          return;
+        }
+        if (!wolny(sim, j, plywa) && !kuty(i, j)) return;
+        wstaw(j, d + 1, i);
+      };
+      if (!stoiTu) {
+        // w locie albo na ścianie: w dół (byle nie puścić się nad przepaścią) albo z wiszenia na półkę
+        if (y + 1 < WORLD_H && (wolny(sim, i + W, plywa) || kuty(i, i + W)) && !(wisiTu && przepasc(sim, x, y + 1))
+            && (!dozwolony || dozwolony(i + W, x, y + 1))) wstaw(i + W, d + 1, i);
+        if (wisiTu) {
+          for (const dx of [-1, 1]) {
+            const j = i + dx;
+            if (x + dx < 0 || x + dx >= W) continue;
+            // na półkę: kafel z podłogą (do wykucia tylko zaraz po wejściu na stopień — kuje się go, stojąc niżej)
+            if (podloga(i, j)) wejdz(j, x + dx, y, zeStopnia);
+          }
+        }
+        continue;
+      }
+      // z podłogi: w bok (skrajem półki — byle nie w przepaść ani nad ogień), na stopień w górę, kucie w dół
+      for (const dx of [-1, 1]) {
+        const nx = x + dx;
+        if (nx < 0 || nx >= W) continue;
+        const j = i + dx;
+        if (!lity(j) || kuty(i, j)) {
+          if (!podloga(i, j) && (przepasc(sim, nx, y) || nadOgniem(sim, nx, y))) continue;
+        } else if (!podloga(i, j) && glebiaPod(sim, nx, y, LUD.spadekMaks) > LUD.spadekMaks && !sciana(nx, y)) continue;
+        wejdz(j, nx, y, true);
+      }
+      if (y > 0) wejdz(i - W, x, y - 1, true);
+      const b = i + W;
+      if (b < N && lity(b) && !kuty(i, b) && (b + W >= N || !(glebiaPod(sim, x, y + 1, LUD.spadekMaks) > LUD.spadekMaks && !sciana(x, y + 1)))) wejdz(b, x, y + 1, true);
+    }
+    if (d > N * 4) break;
+  }
+  return null;
+}
+
+/** Koszt kucia dla ludu: ziemia tanio, skała drożej; nie przy ogniu, wodzie, rdzeniu ani w skorupie. */
+export function kosztKuciaLudu(sim: Sim, mozeDoRdzenia = false): KosztKucia {
+  const w = sim.world;
+  return (i, x, y) => {
+    const t = w.tile[i];
+    const tw = HARDNESS[t];
+    if (tw <= 0 || t === T.CORE) return -1;
+    if (sim.przyMagmie(x, y, 2) || nadOgniem(sim, x, y)) return -1;
+    for (let k = -1; k <= 1; k++) for (let j = -1; j <= 1; j++) if (w.inb(x + k, y + j) && w.water[w.idx(x + k, y + j)] > 2) return -1;
+    if (!mozeDoRdzenia && Math.hypot(x - w.coreX, y - w.coreY) < LUD.strefaRdzenia) return -1;
+    return 1 + Math.round(tw * 2);
+  };
 }

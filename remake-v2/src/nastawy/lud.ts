@@ -60,7 +60,10 @@ export const LUD = {
 
   /** Robotnik kopie i zbiera w tym prostokącie wokół siedziby (kafle w bok / w pionie). */
   robotnikZasieg: { x: 22, y: 9 },
-  /** Nie kopie kafla, pod którym ziała pustka głębsza niż tyle — tak wpadali do jaskiń bez dna. */
+  /**
+   * Nie kopie kafla, pod którym ziała pustka głębsza niż tyle — tak wpadali do jaskiń bez dna; i sam nie
+   * zeskakuje z wyższej półki (Remake v2: bez lin i klamer — w górę wchodzi najwyżej o stopień, wyżej kuje schody).
+   */
   spadekMaks: 4,
   /** Strefa wokół rdzenia, do której robotnicy nie wchodzą — tam modlą się pobożni. */
   strefaRdzenia: 20,
@@ -100,8 +103,6 @@ export const LUD = {
   daleko: 45,
   /** Gdy pielgrzymi czekają, a żaden robotnik nie kopie drogi, góra drąży jej czoło co tyle tików (2 s). */
   goraDrazyCo: 240,
-  /** Lud nie spada: nad pustką schodzi po klamrach z tą prędkością (kafli na tik). */
-  klamry: true, zjazd: 0.06,
   /** Tylu robotników naraz kopie drogę do rdzenia (złotą kreskę). */
   drogaKopaczy: 3,
   /** Grzyb w tej odległości od obozu (kafle) robotnicy zbierają do jego spiżarni. */

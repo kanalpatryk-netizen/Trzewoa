@@ -551,9 +551,9 @@ export const TABLICE: Tablica[] = [
     rycina: postac(Race.GOBLIN, 'spi'),
   },
   {
-    id: 'klamry', grupa: 'prawa', nazwa: 'Klamry', lacina: 'Fibulae',
-    opis: 'Lud nie spada: nad pustką schodzi powoli, wbijając w ścianę żelazne klamry, a w otwartej pustce wiesza linę. Którędy zszedł, tamtędy wróci — chyba że góra się zawali.',
-    kiedy: 'Klamry widać przy ścianach szybów i jaskiń. Nie trzeba ich budować — powstają same.',
+    id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',
+    opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie, musi wykuć sobie w skale schody. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy. Lina wisi tylko przy wiadrze z jedzeniem.',
+    kiedy: 'Schodów nie trzeba zlecać: kto utknie pod półką, sam wykuwa drogę do siedziby albo do jedzenia. Droga w górę jest długa — niech siedziba schodzi za ludem.',
     rycina: postac(Race.GOBLIN, 'wspina'),
   },
   {

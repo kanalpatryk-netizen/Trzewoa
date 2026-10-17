@@ -21,7 +21,7 @@ import { klanLudu, liczRole, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 
 /** Barwy ról w panelu LUD (te same odcienie co obrys postaci na płycie). */
 const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
-import { rysujZnacznikiLudu, rysujKlamry } from '../../render/lud';
+import { rysujZnacznikiLudu } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
 import { LUD, REMAKE } from '../../nastawy/lud';
 import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, type Przycisk } from '../../render/przyciski';
@@ -416,7 +416,9 @@ export class EkranGry implements Ekran {
     if (sim.tick > 7000) cicho('pamiec');
     // Remake v1: tablice ludu, gniazd, weteranów, Strażników i bossa
     if (sim.tick > 600) cicho('role');
-    if (sim.tick > 4000) cicho('klamry');
+    // Remake v2: bez lin — pierwszy, kto kuje sobie schody pod półkę, pokazuje nową zasadę
+    if (sim.tick > 600 && sim.creatures.some((c) => !c.dead && c.drogaKopie)) odkrycia.odkryj('schody');
+    if (sim.tick > 4000) cicho('schody');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if ((sim.lud.gniazda ?? []).some((g) => g.odkryte && !g.zawalone) || sim.creatures.some((c) => !c.dead && (c.tor || c.przemysl !== undefined))) odkrycia.odkryj('gniazda');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
@@ -940,8 +942,6 @@ export class EkranGry implements Ekran {
     rysujRdzen(ctx, sim, cam, teraz);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
-    // liny są częścią góry: poza światłem lampek toną w mroku jak skała, do której są przypięte
-    rysujKlamry(ctx, sim, cam);
     // Remake v2: trupy leżą tam, gdzie padli; wiadra z jedzeniem zjeżdżają na linach
     rysujTrupy(ctx, sim, cam, teraz);
     rysujWiadra(ctx, sim, cam, teraz);

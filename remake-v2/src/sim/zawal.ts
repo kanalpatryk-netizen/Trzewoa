@@ -69,7 +69,7 @@ export function zawal(sim: Sim, nowy: number): void {
     for (let x = 0; x < w.w; x++) {
       const i = w.idx(x, y);
       w.tile[i] = T.STONE;
-      w.water[i] = 0; w.magma[i] = 0; w.drabina[i] = 0; w.prog[i] = 0;
+      w.water[i] = 0; w.magma[i] = 0; w.prog[i] = 0;
       w.ever[i] = 1;
     }
   }
