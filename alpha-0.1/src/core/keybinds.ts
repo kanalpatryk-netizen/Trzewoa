@@ -3,7 +3,8 @@ export type Akcja =
   | 'pauza' | 'szybciej' | 'wolniej' | 'zapis' | 'wczytaj' | 'menu'
   | 'zasiej' | 'szept' | 'znak'
   | 'narzedzie1' | 'narzedzie2' | 'narzedzie3' | 'narzedzie4'
-  | 'kamera' | 'przyblizenie' | 'oddalenie' | 'odNowa' | 'legenda' | 'zapiski';
+  | 'kamera' | 'przyblizenie' | 'oddalenie' | 'odNowa' | 'legenda' | 'zapiski'
+  | 'robotnicy' | 'pobozni' | 'rycerz' | 'kopDroge' | 'odwolaj';
 
 export interface OpisAkcji { akcja: Akcja; nazwa: string; opis: string; }
 
@@ -15,6 +16,11 @@ export const AKCJE: OpisAkcji[] = [
   { akcja: 'zasiej', nazwa: 'Nakarm', opis: 'wiadro z jedzeniem tam, gdzie wskażesz' },
   { akcja: 'szept', nazwa: 'Szepnij', opis: 'módl się albo prorokuj — jednej głowie' },
   { akcja: 'znak', nazwa: 'Cud', opis: 'objawienie — oddanie nacji rośnie' },
+  { akcja: 'robotnicy', nazwa: 'Robotnicy', opis: 'zaznacza robotników (drugi raz: kamera do nich); dotknięcie mapy — idź tam, w skałę — kop' },
+  { akcja: 'pobozni', nazwa: 'Pobożni', opis: 'zaznacza pobożnych (drugi raz: kamera do nich)' },
+  { akcja: 'rycerz', nazwa: 'Rycerz', opis: 'zaznacza rycerza (drugi raz: kamera do niego)' },
+  { akcja: 'kopDroge', nazwa: 'Kop drogę wiernych', opis: 'zaznaczeni robotnicy kopią złotą kreskę pod rdzeń' },
+  { akcja: 'odwolaj', nazwa: 'Odwołaj rozkaz', opis: 'zaznaczeni wracają do swoich zajęć' },
   { akcja: 'narzedzie1', nazwa: 'Narzędzie I', opis: 'pierwsze narzędzie wybranego czasownika' },
   { akcja: 'narzedzie2', nazwa: 'Narzędzie II', opis: 'drugie narzędzie' },
   { akcja: 'narzedzie3', nazwa: 'Narzędzie III', opis: 'trzecie narzędzie' },
@@ -35,6 +41,7 @@ const DOMYSLNE: Record<Akcja, string> = {
   narzedzie1: 'q', narzedzie2: 'w', narzedzie3: 'e', narzedzie4: 'r',
   kamera: 'c', przyblizenie: ']', oddalenie: '[',
   zapis: 'z', wczytaj: 'x', odNowa: 'n', legenda: 'l', zapiski: 'k',
+  robotnicy: 'a', pobozni: 's', rycerz: 'd', kopDroge: 'g', odwolaj: 'v',
 };
 
 const KLUCZ = 'trzewia-alpha:klawisze';

@@ -10,10 +10,15 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Zap
 Alphy są osobne — nie mieszają się z Remake v2.
 
 ## Co jest inaczej niż w Remake v2
-- **Stała drużyna:** 3 robotników, 2 pobożnych, 1 rycerz — na całą partię. Skała nie wydaje nowych postaci,
-  nie ma gniazd kamiennych rycerzy (ani szeptów „przemyśl i kop” i „kop losowo”), kart spisku rycerzy
-  i snu o kamiennych rycerzach. Rycerz jest jeden, ale dużo silniejszy (życie ×12, siła ×11) i na bossa
-  idzie sam; boss nie zasypia w ścianie. Przegrywasz, gdy zginie ostatni pobożny.
+- **Stała drużyna:** 3 robotników, 2 pobożnych, 1 rycerz — na całą partię (i nikt się nie starzeje). Skała nie
+  wydaje nowych postaci, nie ma gniazd kamiennych rycerzy (ani szeptów „przemyśl i kop” i „kop losowo”), kart
+  spisku rycerzy i snu o kamiennych rycerzach. Rycerz jest jeden, ale dużo silniejszy (życie ×12, siła ×11)
+  i na bossa idzie sam; boss nie zasypia w ścianie. Przegrywasz, gdy zginie ostatni pobożny.
+- **Rozkazy:** pod płytą trzy medaliony (robotnicy, pobożni, rycerz). Dotknięcie medalionu albo postaci zaznacza,
+  dotknięcie mapy to „idź tam” — pobożny i rycerz idą tylko tam, dokąd prowadzi droga, inaczej odmawiają (kręcą
+  głową, a w dymku mówią dlaczego); robotnik przekopuje się sam, wskazana skała to „kop tam”. „Kop drogę wiernych”
+  — robotnicy kopią złotą kreskę pod rdzeń; bez rozkazu nie kopią, tylko noszą jedzenie. Klawisze: A/S/D — role,
+  G — kop drogę, V — odwołaj, Esc i prawy przycisk — odznacz.
 - **Bez zawału od góry:** mapa się nie skraca, góra nie zamyka się za ludem.
 - **Bez lin.** Lud wchodzi najwyżej o jeden stopień (kafel) i to tylko z miejsca, na którym stoi. Wyżej nie wejdzie —
   wykuwa sobie schody w skale. W dół zsuwa się po ścianie albo skacze, ale nie z dużej wysokości. Lina została tylko
@@ -21,12 +26,14 @@ Alphy są osobne — nie mieszają się z Remake v2.
 
 ## W budowie (plan)
 1. ~~**Sprzątanie i stały start**~~ — zrobione (wyżej).
-2. **Sterowanie i odstępy** — trzy ikonki z miniaturami robotnika, pobożnego i rycerza (z liczbą) zamiast paska ludu.
-   Kliknięcie postaci zaznacza ją, kliknięcie miniatury — wszystkich tej roli. Rozkaz „idź tam”: pobożny i rycerz
-   odmawiają, gdy nie dojdą, robotnik przekopuje się sam. Robotnicy nie kopią już sami — tylko na rozkaz.
-   Postacie nie stoją jedna w drugiej: rozstawiają się, mijają i dopasowują krok.
+2. ~~**Sterowanie i odstępy**~~ — zrobione (wyżej): medaliony, zaznaczanie, rozkazy, odmowa z animacją i dymkiem,
+   robotnicy kopią tylko na rozkaz, postacie rozstawiają się i dopasowują krok. Przy okazji: pobożni i rycerz nie
+   kopią, skorupa pęka od środka (rysa nie jest już pułapką), wiadra zjeżdżają tam, dokąd lud dojdzie, a droga
+   wiernych liczy się schodami w obie strony (na nowej mapie zadziała wszędzie).
 3. **Mapa, pomieszczenia, rzemiosło** — ta sama wielkość mapy (trochę szersza), trzy warstwy: płytka (miękka skała,
    żelazo), środkowa (jaskinie, złoto, ołtarz, ruiny z zabytkami), głęboka (twarda skała, mrok, Wielki Pomnik na dnie).
+   Według szkicu: jedzenie zjeżdża jednym szybem z powierzchni do jasnej sali z siedzibą na środku u góry, niżej
+   skała z żyłami rudy i małymi jaskiniami, rdzeń zawsze w tym samym miejscu — na środku u dołu.
    Szablony pomieszczeń do wykopania (sypialnia, warsztat, kuźnia, szyb). Złoto w warsztacie — dewocjonalia i wiara;
    żelazo w kuźni — części zbroi rycerza, widoczne na postaci. Ołtarz z rytuałami — każdy z własną animacją.
 4. **Dwie dłonie** — dłoń z otchłani przecina pazurem linę wiadra (jedzenie staje, póki ktoś nie wejdzie po linie

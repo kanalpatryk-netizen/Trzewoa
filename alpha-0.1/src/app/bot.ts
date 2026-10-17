@@ -2,7 +2,8 @@
  * Bot — automatyczny gracz do obserwatorium (obserwatorium.html: cztery okna gry, w każdym gra bot).
  * Robi to, co próbni gracze ze skryptów (scripts/test-balansu.mjs, scripts/proby-graczy.mjs):
  * odpowiada na karty wydarzeń, karmi głodnych (ryt Nakarm), stawia Cud przy ludzie i posyła
- * pobożnych pod rdzeń. Alpha: drużyna jest stała — bot nie wybiera, kogo wyda skała, i nie szuka rycerzy.
+ * pobożnych pod rdzeń. Alpha: drużyna jest stała, a robotnicy kopią tylko na rozkaz — bot posyła ich
+ * na czoło drogi wiernych (jeden zostaje przy noszeniu jedzenia).
  * Wołany co BOT_CO tików symulacji; karty rozstrzyga od razu, żeby gra nie stawała.
  */
 import type { Sim } from '../sim/sim';
@@ -11,6 +12,9 @@ import { Job } from '../sim/creatures';
 import { rozstrzygnij } from '../sim/wydarzenia';
 import { seed, sign, whisper } from '../powers/powers';
 import { porcjiWWiadrach } from '../sim/wiadro';
+import { wydajPolecenie, odwolajPolecenie } from '../sim/polecenia';
+import { STRAZNICY } from '../nastawy/straznicy';
+import { czoloDrogi } from '../sim/pielgrzymka';
 
 export type StylBota = 'rozsadny' | 'budowniczy' | 'speedrun' | 'bierny';
 
@@ -59,8 +63,42 @@ export function kartaBota(sim: Sim, styl: StylBota): boolean {
   return true;
 }
 
-/** Wspólne dla budowniczego i speedrunu: wiadro najgłodniejszemu (ryt Nakarm). */
+/**
+ * Alpha: robotnicy kopią tylko na rozkaz — bot posyła ich na czoło drogi wiernych, aż będzie gotowa.
+ * Najwyżej `ilu`, zawsze jeden zostaje przy noszeniu jedzenia; głodnych nie odrywa od jedzenia.
+ */
+function kopaczeDrogi(sim: Sim, ilu: number): void {
+  if (czoloDrogi(sim) < 0) return;
+  const robotnicy = zywi(sim).filter((c) => c.rola === 'robotnik');
+  let kopie = robotnicy.filter((c) => c.polecenie?.typ === 'droga').length;
+  const limit = Math.min(ilu, robotnicy.length - 1);
+  for (const c of robotnicy) {
+    if (kopie >= limit) break;
+    // (kto niedawno odmówił — nie dojdzie do czoła — dostaje rozkaz najwcześniej za pół minuty)
+    if (c.polecenie || c.hunger > 0.5 || (c.odmowa && sim.tick - c.odmowa.od < M / 2)) continue;
+    if (wydajPolecenie(sim, c, 'droga', 0, 0) === null) kopie++;
+  }
+}
+
+/**
+ * Alpha: rycerz jest jeden. Gdy trwa fala Strażników, a on stoi daleko od przedsionka (pilnuje obozu na górze),
+ * bot posyła go pod rdzeń; po fali odwołuje rozkaz — rycerz wraca do warty przy pobożnych.
+ */
+function rycerzNaFale(sim: Sim): void {
+  const w = sim.world;
+  const fala = !!sim.lud.straznicy?.trwa;
+  for (const c of zywi(sim)) {
+    if (c.rola !== 'rycerz') continue;
+    const daleko = Math.hypot(c.x - w.coreX, c.y - w.przedsionekY) > STRAZNICY.rycerzWidzi * 0.75;
+    if (fala && daleko && !c.polecenie && !(c.odmowa && sim.tick - c.odmowa.od < M / 2)) wydajPolecenie(sim, c, 'idz', w.coreX + (c.id % 2 ? -6 : 6), w.przedsionekY);
+    else if (!fala && c.polecenie?.typ === 'idz') odwolajPolecenie(sim, c);
+  }
+}
+
+/** Wspólne dla budowniczego i speedrunu: wiadro najgłodniejszemu (ryt Nakarm), kopacze drogi wiernych. */
 function wspolne(sim: Sim): void {
+  if (sim.tick % 600 === 0) kopaczeDrogi(sim, 2);
+  if (sim.tick % 600 === 300) rycerzNaFale(sim);
   let najg: C = null;
   for (const c of zywi(sim)) if (c.hunger > 0.65 && (!najg || c.hunger > najg.hunger)) najg = c;
   if (najg && sim.krew > 60 && sim.tick % 600 === 0) seed(sim, 'grzyb', Math.round(najg.x), Math.round(najg.y));
@@ -68,6 +106,8 @@ function wspolne(sim: Sim): void {
 
 function rozsadny(sim: Sim): void {
   const w = sim.world;
+  if (sim.tick % 600 === 0) kopaczeDrogi(sim, 2);
+  if (sim.tick % 600 === 300) rycerzNaFale(sim);
   // głodujący dostają wiadro (ryt Nakarm) tam, gdzie stoją
   let najg: C = null;
   for (const c of zywi(sim)) if (c.hunger >= 0.6 && (!najg || c.hunger > najg.hunger)) najg = c;

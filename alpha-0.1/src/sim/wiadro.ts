@@ -111,12 +111,22 @@ function dostepneOd(sim: Sim, skad: Creature): Set<number> {
 }
 
 /** Grupa ludu (skupisko) i to, jak bardzo potrzebuje jedzenia. */
-interface Grupa { x: number; y: number; gora: number; czlonkowie: Creature[]; potrzeba: number }
+interface Grupa { x: number; y: number; gora: number; czlonkowie: Creature[]; potrzeba: number; skad: Creature; zb: Set<number> }
+
+/** Czy wiadro stoi (albo stanie) tam, skąd postać z tym zasięgiem sięgnie po jedzenie (doZapas sięga na dwa kafle). */
+function wZasiegu(sim: Sim, zb: Set<number>, wd: Wiadro): boolean {
+  const w = sim.world;
+  for (let dy = -1; dy <= 1; dy++) for (let dx = -2; dx <= 2; dx++) if (w.inb(wd.x + dx, wd.cel + dy) && zb.has(w.idx(wd.x + dx, wd.cel + dy))) return true;
+  return false;
+}
 
 /**
  * Skupiska ludu od najbardziej potrzebującego: liczy się, ilu ich jest i jak bardzo są głodni,
  * minus jedzenie, które już mają blisko (wiadra stojące albo zjeżdżające obok). Wiadro zjeżdża
  * tam, gdzie lud jest — przy siedzibie na górze lądowało, gdy warta pod rdzeniem umierała z głodu.
+ * Alpha: liczy się to, do czego dojdzie najgłodniejszy z grupy — wiadro „obok”, ale nad progiem,
+ * którego nie przejdzie, go nie nakarmi (robotnicy w kieszeni pod przedsionkiem umierali z głodu
+ * dziesięć kafli pod pełnym wiadrem, a następne nie przychodziło, bo grupa „miała jedzenie”).
  */
 function grupyWgPotrzeby(sim: Sim): Grupa[] {
   const lud = sim.creatures.filter((c) => !c.dead && rolaPostaci(c) && c.naLinie === undefined);
@@ -130,10 +140,18 @@ function grupyWgPotrzeby(sim: Sim): Grupa[] {
     const y = czlonkowie.reduce((s, o) => s + o.y, 0) / czlonkowie.length;
     // naprawdę głodni ważą najwięcej — inaczej wiadro jechało do licznej, sytej grupy, a garstka obok padała
     let potrzeba = czlonkowie.reduce((s, o) => s + 0.15 + Math.max(0, o.hunger - 0.2) * 2.5, 0);
+    const skad = czlonkowie.reduce((a, o) => (o.hunger > a.hunger ? o : a));
+    const zb = dostepneOd(sim, skad);
+    let maJedzenie = false;
     for (const wd of wiadra(sim)) {
-      if (wd.porcje > 0 && wd.faza !== 'odjezdza' && Math.hypot(wd.x - x, wd.cel - y) < 22) potrzeba -= wd.porcje * LUD.posilek;
+      if (wd.porcje <= 0 || wd.faza === 'odjezdza' || !wZasiegu(sim, zb, wd)) continue;
+      maJedzenie = true;
+      if (Math.hypot(wd.x - x, wd.cel - y) < 22) potrzeba -= wd.porcje * LUD.posilek;
     }
-    out.push({ x, y, gora: Math.min(...czlonkowie.map((o) => o.y)), czlonkowie, potrzeba });
+    // do żadnego wiadra nie dojdzie, a już głodnieje — pierwszeństwo (robotnik, który sam dokopał drogę
+    // wiernych na dno, umierał tam z głodu, bo wiadra jechały do licznej grupy na górze, która jedzenie miała)
+    if (!maJedzenie && skad.hunger > WIADRO.bezJedzeniaOd) potrzeba += WIADRO.bezJedzeniaPierwszenstwo;
+    out.push({ x, y, gora: Math.min(...czlonkowie.map((o) => o.y)), czlonkowie, potrzeba, skad, zb });
   }
   return out.sort((a, b) => b.potrzeba - a.potrzeba);
 }
@@ -163,13 +181,13 @@ export function wybierzMiejsce(sim: Sim): { x: number; sufit: number; cel: numbe
 
 function miejscePrzyGrupie(sim: Sim, g: Grupa): { x: number; sufit: number; cel: number } | null {
   const w = sim.world;
-  // szuka od tej postaci z grupy, która stoi najbliżej jej środka
-  const skad = [...g.czlonkowie].sort((a, b) => Math.hypot(a.x - g.x, a.y - g.y) - Math.hypot(b.x - g.x, b.y - g.y))[0];
-  if (!skad || !w.inb(Math.floor(skad.x), Math.floor(skad.y))) return null;
-  const zb = dostepneOd(sim, skad);
+  // Alpha: tam, dokąd dojdzie najgłodniejszy z grupy (wcześniej — ten, kto stał najbliżej jej środka)
+  const skad = g.skad;
+  if (!w.inb(Math.floor(skad.x), Math.floor(skad.y))) return null;
+  const zb = g.zb;
   if (!zb.size) return null;
-  const gx = Math.round(g.x);
-  const gora = Math.max(1, Math.floor(g.gora) - WIADRO.nadSiedziba);
+  const gx = Math.round(skad.x);
+  const gora = Math.max(1, Math.floor(Math.min(g.gora, skad.y)) - WIADRO.nadSiedziba);
   const fala = falaTrwa(sim);
   let best: { x: number; sufit: number; cel: number } | null = null, bs = Infinity;
   for (let dx = 0; dx <= WIADRO.zasieg; dx++) {
@@ -188,7 +206,7 @@ function miejscePrzyGrupie(sim: Sim, g: Grupa): { x: number; sufit: number; cel:
           && Math.hypot(x - w.coreX, yy - w.coreY) > 14;
         if (!dobre) { y = yy; continue; }       // tu się nie dojdzie — szukamy niżej w tej kolumnie
         const su = sufitNad(sim, x, yy);
-        const ocena = Math.abs(yy - g.y) + Math.abs(x - g.x) * 0.5 + (yy - su + 1 < WIADRO.wysokoscMin ? 10 : 0);
+        const ocena = Math.abs(yy - skad.y) + Math.abs(x - skad.x) * 0.5 + (yy - su + 1 < WIADRO.wysokoscMin ? 10 : 0);
         if (ocena < bs) { bs = ocena; best = { x, sufit: su, cel: yy }; }
         break;
       }
@@ -237,6 +255,12 @@ export function tikWiader(sim: Sim): void {
     } else if (wd.faza === 'stoi') {
       // pusty — odjeżdża w górę; ktoś zasypał miejsce — jedzenie przepada pod gruzem
       if (wd.porcje <= 0 || !w.passable(wd.x, wd.cel)) { wd.faza = 'odjezdza'; wd.od = sim.tick; }
+      // Alpha: zapomniane — od dawna stoi, a w pobliżu nie ma nikogo z ludu; zajmowało miejsce następnemu
+      // (najwyżej `maks` pełnych naraz), a lud głodował daleko od niego
+      else if (t > WIADRO.zapomnianePo && t % 120 === 0 && !sim.creatures.some((c) => !c.dead && rolaPostaci(c) && Math.hypot(c.x - wd.x, c.y - wd.cel) < WIADRO.zapomnianeOd)) {
+        wd.faza = 'odjezdza'; wd.od = sim.tick;
+        zapisz(sim, 'swiat', `wiadro #${wd.id} zapomniane — odjeżdża z ${wd.porcje} porcjami`, wd.x, wd.cel);
+      }
     } else {
       wd.y = wd.cel - (wd.cel - wd.sufit + 1.6) * Math.min(1, t / WIADRO.odjazd);
     }

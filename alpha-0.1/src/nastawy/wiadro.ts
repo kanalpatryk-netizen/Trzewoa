@@ -24,6 +24,13 @@ export const WIADRO = {
   wysokoscMin: 4,
   /** Opróżnione wiadro jedzie w górę przez tyle tików i znika. */
   odjazd: 240,
+  /**
+   * Alpha: wiadro, które stoi dłużej niż tyle tików (2 min), a nikt z ludu nie jest bliżej niż `zapomnianeOd` kafli,
+   * odjeżdża z resztą jedzenia — zwalnia miejsce następnemu tam, gdzie lud jest.
+   */
+  zapomnianePo: 14400, zapomnianeOd: 30,
+  /** Alpha: grupa, z której najgłodniejszy (głód powyżej `bezJedzeniaOd`) nie dojdzie do żadnego wiadra, dostaje tyle pierwszeństwa. */
+  bezJedzeniaOd: 0.35, bezJedzeniaPierwszenstwo: 3,
   /** Skrajnie głodny (głód ≥ tyle) wspina się po linie do zjeżdżającego wiadra; prędkość wspinaczki (kafle na tik). */
   wspinaczkaOd: 0.85, wspinaczka: 2.4 / 120,
   /** Kto siedzi w wiadrze, je porcję co tyle tików (aż przestanie być głodny). */

@@ -16,10 +16,9 @@ import { PanelDewelopera } from '../devpanel';
 import { DEV } from '../../sim/dziennik';
 import { rysujDev } from '../../render/dev';
 import { mnoznikNapis } from '../../render/przyciski';
-import { klanLudu, liczRole, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
-
-/** Barwy ról w panelu LUD (te same odcienie co obrys postaci na płycie). */
-const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
+import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
+import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
+import { wydajGrupie, drogaGrupie, odwolajPolecenie } from '../../sim/polecenia';
 import { rysujZnacznikiLudu } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
 import { LUD, REMAKE } from '../../nastawy/lud';
@@ -28,7 +27,7 @@ import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
-import { scianaKrypty, pigment, tynkSwiata } from '../../render/fresk';
+import { scianaKrypty, tynkSwiata } from '../../render/fresk';
 import { FRESK } from '../../nastawy/barwy';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
@@ -37,7 +36,7 @@ import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
-import { computePlate, obszarSpisu, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
+import { computePlate, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
 import { seed, sign, nakarm, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
@@ -59,7 +58,7 @@ import { OknoAtlasu } from '../../atlas/okno';
 import { odkrycia } from '../../atlas/odkrycia';
 import { SERIF } from '../../render/ink';
 import { tablica } from '../../atlas/tablice';
-import { Job } from '../../sim/creatures';
+import { Job, type Creature } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
 import { ustawienia, jakoscAuto } from '../../core/settings-store';
 import { StrazKlatek } from '../../render/straz-klatek';
@@ -98,6 +97,8 @@ export type ZdarzenieGry =
   | { typ: 'wybranoCzasownik'; czasownik: string | null }
   | { typ: 'kamera'; rodzaj: 'przesun' | 'zoom' | 'powrot' }
   | { typ: 'rozkaz'; czasownik: string; narzedzie: string }
+  | { typ: 'zaznaczono'; ile: number }
+  | { typ: 'polecenie'; rodzaj: 'idz' | 'droga' | 'odwolaj'; przyjeli: number }
   | { typ: 'pauza'; stoi: boolean }
   | { typ: 'tempo' }
   | { typ: 'wydarzenie'; rodzaj: string; wybor: string }
@@ -128,6 +129,12 @@ export class EkranGry implements Ekran {
   cel: Cel | null = null;
   /** Czy rysować podpisy nacji. */
   etykiety = true;
+  /** Alpha, etap 2: zaznaczone postacie ludu (id) — dotknięcie mapy wydaje im rozkaz „idź tam”. */
+  zaznaczeni = new Set<number>();
+  /** Pola paska drużyny pod płytą (medaliony ról i rozkazy) z ostatniej klatki. */
+  private polaDruzyny: PoleDruzyny[] = [];
+  /** Fala w miejscu ostatniego rozkazu (render/druzyna.ts). */
+  private falaRozkazu: FalaRozkazu | null = null;
   /** Samouczek gra na własnej górze i nie ma prawa nadpisać zapisu gracza. */
   zapisujAuto = true;
 
@@ -410,6 +417,9 @@ export class EkranGry implements Ekran {
     if (sim.tick > 7000) cicho('pamiec');
     // Remake v1: tablice ludu, weteranów, Strażników i bossa
     if (sim.tick > 600) cicho('role');
+    // Alpha: tablica rozkazów — przy pierwszym zaznaczeniu (albo po minucie po cichu)
+    if (this.zaznaczeni.size) odkrycia.odkryj('rozkazy');
+    if (sim.tick > 7200) cicho('rozkazy');
     // Remake v2: bez lin — pierwszy, kto kuje sobie schody pod półkę, pokazuje nową zasadę
     if (sim.tick > 600 && sim.creatures.some((c) => !c.dead && c.drogaKopie)) odkrycia.odkryj('schody');
     if (sim.tick > 4000) cicho('schody');
@@ -508,73 +518,6 @@ export class EkranGry implements Ekran {
         ctx.restore();
       } else ctx.fillText(l, x, y);
       x += kaw(l, fL) + odst;
-    }
-    ctx.restore();
-  }
-
-  /**
-   * Remake v1: panel LUD pod płytą (w miejscu dawnego spisu ras). Wstęga dzieli się na
-   * trzy role w proporcji do ich liczby (Alpha: bez przełącznika „ze skały” — drużyna jest stała).
-   */
-  private rysujPanelLudu(ctx: CanvasRenderingContext2D, plate: Plate, vh: number): void {
-    const { sim } = this;
-    const o = obszarSpisu(plate, vh);
-    const h = o.h / 2.4, y = o.y + h * 0.4;
-    const x0 = o.x;
-    const x1 = o.x + o.w;
-    const role = liczRole(sim);
-    const razem = role.pobozny + role.robotnik + role.rycerz;
-    const telefon = plate.waski || plate.niski;
-    const rozm = telefon ? 13 : Math.max(13, Math.min(17, plate.w * 0.016));
-    ctx.save();
-    ctx.textBaseline = 'alphabetic';
-    // wstęga ról: trzy pasy pigmentu na tynku — biel wapienna, ugier, błękit lapis
-    const tlo = new Path2D(); tlo.rect(x0, y, x1 - x0, h);
-    pigment(ctx, tlo, FRESK.tablicaCiemna);
-    const kolejnosc: Rola[] = ['pobozny', 'robotnik', 'rycerz'];
-    const PIG: Record<Rola, string> = { pobozny: '#958a72', robotnik: '#7a552f', rycerz: '#3a4f5c' };
-    let cx = x0;
-    for (const r of kolejnosc) {
-      const n = role[r];
-      if (!n) continue;
-      const bw = (x1 - x0) * (n / Math.max(1, razem));
-      const pas = new Path2D(); pas.rect(cx, y, bw, h);
-      pigment(ctx, pas, PIG[r]);
-      if (cx > x0) { ctx.strokeStyle = FRESK.sinopia; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(cx, y); ctx.lineTo(cx, y + h); ctx.stroke(); }
-      cx += bw;
-    }
-    // światło lampki z góry, cień u dołu wstęgi
-    const cien = ctx.createLinearGradient(0, y, 0, y + h);
-    cien.addColorStop(0, 'rgba(255,230,190,0.06)'); cien.addColorStop(1, 'rgba(12,6,4,0.5)');
-    ctx.fillStyle = cien; ctx.fill(tlo);
-    if (wolnoRuszac()) {
-      // blask lampki powoli przesuwa się po wstędze
-      const t = (performance.now() % 11000) / 11000;
-      const bx = x0 - 120 + (x1 - x0 + 240) * t;
-      const blask = ctx.createLinearGradient(bx - 90, 0, bx + 90, 0);
-      blask.addColorStop(0, 'rgba(255,214,160,0)');
-      blask.addColorStop(0.5, 'rgba(255,214,160,0.09)');
-      blask.addColorStop(1, 'rgba(255,214,160,0)');
-      ctx.fillStyle = blask; ctx.fill(tlo);
-    }
-    ctx.strokeStyle = FRESK.sinopia; ctx.lineWidth = 2;
-    ctx.strokeRect(x0, y, x1 - x0, h);
-    ctx.strokeStyle = 'rgba(227,214,182,0.3)'; ctx.lineWidth = 1;
-    ctx.strokeRect(x0 - 2.5, y - 2.5, x1 - x0 + 5, h + 5);
-    // podpisy w trzech stałych kolumnach — pod wąskim kawałkiem wstęgi nazwa się nie mieściła
-    if (razem) {
-      ctx.font = `${rozm}px ${SERIF}`;
-      ctx.textAlign = 'center';
-      kolejnosc.forEach((r, i) => {
-        const [cr, cg, cb] = BARWA_ROLI[r];
-        ctx.fillStyle = `rgba(${cr},${cg},${cb},${role[r] ? 0.95 : 0.45})`;
-        ctx.fillText(`${NAZWA_ROLI_MNOGA[r]} ${role[r]}`, x0 + (x1 - x0) * (i + 0.5) / 3, y + h + rozm * 1.15, (x1 - x0) / 3 - 4);
-      });
-    } else {
-      ctx.textAlign = 'center';
-      ctx.font = `italic ${rozm}px ${SERIF}`;
-      ctx.fillStyle = 'rgba(226,120,100,0.9)';
-      ctx.fillText('w górze nie został nikt z twoich', (x0 + x1) / 2, y + h + rozm * 1.15);
     }
     ctx.restore();
   }
@@ -893,8 +836,11 @@ export class EkranGry implements Ekran {
       rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, false);
     }
     rysujZarys(ctx, sim, cam, teraz);
+    this.oczyscZaznaczenie();
+    rysujZaznaczenie(ctx, sim, cam, teraz, this.zaznaczeni);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
     rysujPrzodWiader(ctx, sim, cam, teraz);
+    rysujPoleceniaNaMapie(ctx, sim, cam, teraz, this.zaznaczeni, this.falaRozkazu);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
     if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
@@ -936,7 +882,7 @@ export class EkranGry implements Ekran {
     const banerNaDole = (plate.waski || plate.niski) && (this.pauza || this.ui.verb !== null || !!this.ui.selected);
     this.drogaRect = !this.nasluch && !sim.ending && !banerNaDole ? rysujDrogeDoWolnosci(ctx, plate, sim, teraz) : null;
     if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) rysujMinimape(ctx, sim, cam, plate, teraz);
-    this.rysujPanelLudu(ctx, plate, h);
+    this.polaDruzyny = rysujDruzyne(ctx, sim, plate, h, this.zaznaczeni, this.ui.pointer, teraz);
     drawOddanie(ctx, plate, sim, h);
     drawCrack(ctx, plate, sim, w, h, teraz);
     if (ustawienia.kronika) drawChronicle(ctx, plate, sim, w, h);
@@ -1071,6 +1017,119 @@ export class EkranGry implements Ekran {
   }
 
   // -------------------------------------------------------------------- wejście
+
+  /** Zaznaczenie bez zmarłych (i bez tych, którzy przestali być ludem). */
+  private oczyscZaznaczenie(): void {
+    for (const id of this.zaznaczeni) {
+      const c = this.sim.creatureById(id);
+      if (!c || c.dead || !rolaPostaci(c)) this.zaznaczeni.delete(id);
+    }
+  }
+
+  private zaznaczeniZywi(): Creature[] {
+    this.oczyscZaznaczenie();
+    return [...this.zaznaczeni].map((id) => this.sim.creatureById(id)).filter((c): c is Creature => !!c);
+  }
+
+  /** Zaznacza postacie (z Shiftem dokłada albo zdejmuje jedną); ryt w ręku i karta mieszkańca się odkładają. */
+  private zaznacz(ids: number[], dokladaj = false): void {
+    const ui = this.ui;
+    if (!dokladaj) this.zaznaczeni.clear();
+    for (const id of ids) {
+      if (dokladaj && ids.length === 1 && this.zaznaczeni.has(id)) this.zaznaczeni.delete(id);
+      else this.zaznaczeni.add(id);
+    }
+    ui.verb = null; ui.tool = null; ui.selected = null;
+    this.app.gesty.klik();
+    this.nasluch?.({ typ: 'zaznaczono', ile: this.zaznaczeni.size });
+    this.dirty = true;
+  }
+
+  private odznacz(): void { this.zaznaczeni.clear(); this.dirty = true; }
+
+  private poleDruzynyPod(x: number, y: number): PoleDruzyny | null {
+    return this.polaDruzyny.find((p) => x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h) ?? null;
+  }
+
+  /** Dotknięcie medalionu albo rozkazu na pasku drużyny. */
+  private akcjaDruzyny(p: PoleDruzyny, dokladaj: boolean): void {
+    if (p.akcja === 'rola' && p.rola) this.zaznaczRole(p.rola, dokladaj);
+    else if (p.akcja === 'droga') this.kopDroge();
+    else if (p.akcja === 'odwolaj') this.odwolajRozkazy();
+    else this.odznacz();
+    this.dirty = true;
+  }
+
+  /**
+   * Medalion roli zaznacza wszystkich z tej roli; drugie dotknięcie, gdy już są zaznaczeni, wiezie
+   * do nich kamerę (drużyna bywa rozrzucona po całej górze).
+   */
+  private zaznaczRole(rola: Rola, dokladaj = false): void {
+    const { sim, ui } = this;
+    const lud = ludRoli(sim, rola);
+    if (!lud.length) { ui.say(`Nie żyje już nikt — ${NAZWA_ROLI_MNOGA[rola]}.`, sim.tick); this.app.gesty.odmowa(); return; }
+    if (!dokladaj && this.zaznaczeni.size === lud.length && lud.every((c) => this.zaznaczeni.has(c.id))) {
+      const x = lud.reduce((s, c) => s + c.x, 0) / lud.length, y = lud.reduce((s, c) => s + c.y, 0) / lud.length;
+      this.pokazMiejsce(x, y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+      return;
+    }
+    this.zaznacz(lud.map((c) => c.id), dokladaj);
+    ui.say(lud.length === 1 ? `${NAZWA_ROLI[rola]} — dotknij mapy, dokąd ma iść.` : `${NAZWA_ROLI_MNOGA[rola]} (${lud.length}) — dotknij mapy, dokąd mają iść.`, sim.tick);
+  }
+
+  /** „Kop drogę wiernych” dla zaznaczonych robotników. */
+  private kopDroge(): void {
+    const { sim, ui } = this;
+    const robotnicy = this.zaznaczeniZywi().filter((c) => rolaPostaci(c) === 'robotnik');
+    if (!robotnicy.length) { ui.say('Kopią tylko robotnicy — zaznacz robotnika.', sim.tick); this.app.gesty.odmowa(); return; }
+    const { przyjeli, odmowy } = drogaGrupie(sim, robotnicy.map((c) => c.id));
+    if (przyjeli) { ui.say(przyjeli === 1 ? 'Idzie kopać drogę wiernych.' : `Idą kopać drogę wiernych (${przyjeli}).`, sim.tick); this.app.gesty.klik(); }
+    else { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
+    this.nasluch?.({ typ: 'polecenie', rodzaj: 'droga', przyjeli });
+  }
+
+  private odwolajRozkazy(): void {
+    const { sim, ui } = this;
+    let ile = 0;
+    for (const c of this.zaznaczeniZywi()) if (c.polecenie) { odwolajPolecenie(sim, c); ile++; }
+    ui.say(ile ? 'Rozkaz odwołany — wracają do swoich zajęć.' : 'Nie mieli rozkazu.', sim.tick);
+    this.nasluch?.({ typ: 'polecenie', rodzaj: 'odwolaj', przyjeli: ile });
+  }
+
+  /**
+   * Dotknięcie mapy bez rytu w ręku: postać z ludu pod palcem — zaznacza ją; inne miejsce, gdy ktoś jest
+   * zaznaczony — rozkaz „idź tam” (robotnikowi wskazana skała to „kop tam”).
+   */
+  private klikNaMapie(sx: number, sy: number, dokladaj: boolean): void {
+    const { sim, ui } = this;
+    const fx = this.cam.toWorldX(sx - this.plate.x), fy = this.cam.toWorldY(sy - this.plate.y);
+    // postać pod palcem: sylwetka stoi na c.y + 1 i sięga ok. półtora kafla w górę
+    const tol = Math.max(0.9, 16 / this.cam.zoom);
+    let kto: Creature | null = null, bd = Infinity;
+    for (const c of sim.creatures) {
+      if (c.dead || !rolaPostaci(c)) continue;
+      const dx = Math.abs(c.x - fx), dy = fy - (c.y + 0.25);
+      if (dx > tol || dy < -1.2 - tol * 0.3 || dy > 0.75 + tol * 0.3) continue;
+      const d = Math.hypot(dx, dy);
+      if (d < bd) { bd = d; kto = c; }
+    }
+    if (kto) {
+      this.zaznacz([kto.id], dokladaj);
+      ui.say(`${NAZWA_ROLI[rolaPostaci(kto)!]}: ${kto.zamiar ?? 'czeka'}. Dotknij mapy, dokąd ma iść.`, sim.tick);
+      return;
+    }
+    const ids = this.zaznaczeniZywi().map((c) => c.id);
+    if (!ids.length) return;
+    const { przyjeli, odmowy } = wydajGrupie(sim, ids, Math.floor(fx), Math.floor(fy));
+    this.falaRozkazu = { x: fx, y: fy, t: performance.now(), ok: przyjeli > 0 };
+    if (!przyjeli) { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
+    else {
+      ui.say((przyjeli === 1 ? 'Idzie.' : `Idą: ${przyjeli}.`) + (odmowy.length ? ` Odmawia: ${odmowy.length}.` : ''), sim.tick);
+      this.app.gesty.klik();
+    }
+    this.nasluch?.({ typ: 'polecenie', rodzaj: 'idz', przyjeli });
+    this.dirty = true;
+  }
 
   private naPlycie(x: number, y: number): boolean {
     return x >= this.plate.x && y >= this.plate.y && x <= this.plate.x + this.plate.w && y <= this.plate.y + this.plate.h;
@@ -1297,6 +1356,9 @@ export class EkranGry implements Ekran {
     if (faza === 'dol') {
       const b = przyciskPod(this.przyciski, e.clientX, e.clientY);
       if (b) { this.przyciskWcisniety(b); return; }
+      // pasek drużyny pod płytą: medaliony ról i rozkazy dla zaznaczonych
+      const pd = e.button !== 2 && !sim.ending ? this.poleDruzynyPod(e.clientX, e.clientY) : null;
+      if (pd) { this.akcjaDruzyny(pd, e.shiftKey); return; }
     }
 
     if (faza === 'dol') {
@@ -1325,6 +1387,8 @@ export class EkranGry implements Ekran {
       if (ui.tap(sim, e.clientX, e.clientY)) {
         if (wpis) wpis.interfejs = true;               // karta i ryty nie są światem
         if (ui.verb !== przedWyborem) this.nasluch?.({ typ: 'wybranoCzasownik', czasownik: ui.verb });
+        // ryt w ręku zamiast rozkazów — zaznaczenie się odkłada
+        if (ui.verb && ui.verb !== przedWyborem) this.zaznaczeni.clear();
         // tylko naprawdę szepnięta myśl — zamknięcie karty kliknięciem w ryt to nie szept
         if (wybranaMysl && ui.ostatniaMysl) this.nasluch?.({ typ: 'szept', narzedzie: ui.ostatniaMysl });
         ui.ostatniaMysl = null;
@@ -1388,6 +1452,11 @@ export class EkranGry implements Ekran {
       if (o) { this.rozkazy.skresl(sim, o); ui.say('Skreślone. Koszt wrócił.', sim.tick); this.dirty = true; return; }
     }
     if (!p.moved && p.przycisk !== 2 && !sim.ending && ui.verb && ui.verb !== 'zasiej' && this.naPlycie(p.sx, p.sy)) this.uzyj(p.sx, p.sy);
+    // Alpha: bez rytu w ręku dotknięcie mapy zaznacza postać albo wydaje zaznaczonym rozkaz; prawy przycisk odznacza
+    else if (!p.moved && !sim.ending && !ui.verb && this.naPlycie(p.sx, p.sy)) {
+      if (p.przycisk !== 2) this.klikNaMapie(p.sx, p.sy, e.shiftKey);
+      else if (this.zaznaczeni.size) { this.odznacz(); ui.say('Odznaczone.', sim.tick); }
+    }
   }
 
   /** Który ryt leży pod palcem (albo null). */
@@ -1451,8 +1520,14 @@ export class EkranGry implements Ekran {
         if (ui.selected) { ui.selected = null; break; }
         if (this.alarm) { this.alarm = null; break; }
         if (ui.verb) { ui.verb = null; ui.tool = null; break; }
+        if (this.zaznaczeni.size) { this.odznacz(); break; }
         this.app.idz('menu');
         break;
+      case 'robotnicy': this.zaznaczRole('robotnik'); break;
+      case 'pobozni': this.zaznaczRole('pobozny'); break;
+      case 'rycerz': this.zaznaczRole('rycerz'); break;
+      case 'kopDroge': this.kopDroge(); break;
+      case 'odwolaj': this.odwolajRozkazy(); break;
       case 'pauza': this.ustawPauze(!this.pauza); break;
       // tempo czasu tylko w trybie deweloperskim — w grze czas jest jeden
       case 'szybciej': if (ustawienia.trybDeweloperski) this.zmienTempo(1); break;
@@ -1487,6 +1562,7 @@ export class EkranGry implements Ekran {
     ui.verb = ui.verb === v ? null : (v as typeof ui.verb);
     ui.tool = ui.verb ? TOOLS[ui.verb][0].id : null;
     ui.selected = null;
+    if (ui.verb) this.zaznaczeni.clear();
     this.nasluch?.({ typ: 'wybranoCzasownik', czasownik: ui.verb });
   }
 

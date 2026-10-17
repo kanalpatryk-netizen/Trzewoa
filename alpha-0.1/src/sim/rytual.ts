@@ -299,13 +299,23 @@ export type Strona = 'gora' | 'dol' | 'lewo' | 'prawo';
 function otworzSkorupe(sim: Sim, stan: StanRytualu, strona: Strona = 'gora'): void {
   const w = sim.world;
   const przed = kamienNadRdzeniem(sim);
+  const kafel = (d: number, r: number): [number, number] => [
+    strona === 'lewo' ? w.coreX - r : strona === 'prawo' ? w.coreX + r : w.coreX + d,
+    strona === 'gora' ? w.coreY - r : strona === 'dol' ? w.coreY + r : w.coreY + d,
+  ];
+  const kamien = (x: number, y: number) => w.inb(x, y) && w.tile[w.idx(x, y)] === T.STONE;
   for (const d of R.kolumnyPekniec) {
     for (let r = R.glebokoscPekniecia; r >= 0; r--) {
-      const x = strona === 'lewo' ? w.coreX - r : strona === 'prawo' ? w.coreX + r : w.coreX + d;
-      const y = strona === 'gora' ? w.coreY - r : strona === 'dol' ? w.coreY + r : w.coreY + d;
-      if (!w.inb(x, y)) continue;
+      let [x, y] = kafel(d, r);
+      if (!kamien(x, y)) continue;
+      // Alpha: pęka od środka — pierwszy kamień od zewnątrz (podłoga przedsionka) puszcza dopiero na końcu,
+      // razem z ostatnim pęknięciem. Wcześniej rysa była otwartym dołem pod modlącymi się: lud bez lin
+      // wpadał do niej (rycerz, goniąc Strażnika, robotnicy z jedzeniem) i umierał w niej z głodu.
+      for (let rr = r - 1; rr >= 0; rr--) {
+        const [xx, yy] = kafel(d, rr);
+        if (kamien(xx, yy)) { x = xx; y = yy; break; }
+      }
       const i = w.idx(x, y);
-      if (w.tile[i] !== T.STONE) continue;
       w.tile[i] = T.AIR;
       w.oznaczSlad(x, y, 2, sim.tick);
       sim.efekt(x + 0.5, y + 0.5, 'zawal');

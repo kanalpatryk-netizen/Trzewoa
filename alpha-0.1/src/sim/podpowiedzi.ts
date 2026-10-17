@@ -68,7 +68,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   let glodni = 0, zywi = 0;
   for (const c of sim.creatures) { if (c.dead) continue; zywi++; if (c.hunger > 0.7) glodni++; }
   if (zywi > 0 && glodni / zywi > 0.45) {
-    kandydaci.push({ tekst: 'Większość twoich mieszkańców głoduje. Nakarm ich — przeciągnij palcem tam, gdzie mieszkają.', waga: 70 });
+    kandydaci.push({ tekst: 'Większość twoich mieszkańców głoduje. Nakarm ich — dotknij miejsca, gdzie stoją, a zjedzie tam wiadro.', waga: 70 });
   }
 
   // 5. Wiara wysycha — brak ołtarzy
@@ -101,7 +101,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
       if (plan && plan.kopac.length) {
         const i = plan.kopac[plan.kopac.length - 1];
         kandydaci.push({
-          tekst: `${sim.clans[plan.klan].name} schodzą pod rdzeń. Jeśli chcesz, żeby wracali do gniazda, wydrąż korytarz wzdłuż złotej kreski.`,
+          tekst: `${sim.clans[plan.klan].name} schodzą pod rdzeń. Jeśli chcesz, żeby wracali, zaznacz robotników i każ im kopać drogę wiernych wzdłuż złotej kreski.`,
           cel: { x: (i % w.w) + 0.5, y: ((i / w.w) | 0) + 0.5, r: 3, tekst: 'drąż tutaj' },
           waga: 35,
         });
@@ -120,7 +120,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     .sort((a, b) => b.devotion - a.devotion)[0];
   if (sim.tick > 3000 && sim.rytual.pekniecia === 0 && duzeWierne && duzeWierne.devotion <= PIELGRZYMKA.oddanieNacji) {
     kandydaci.push({
-      tekst: `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij trzem z nich „módl się”.`,
+      tekst: `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij pobożnym „módl się”.`,
       cel: { x: duzeWierne.hx, y: duzeWierne.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, duzeWierne) : duzeWierne.name },
       waga: 25,
     });
@@ -132,7 +132,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   }
 
   if (!kandydaci.length) {
-    return { tekst: 'Nic pilnego. Patrz, kto rośnie — wstęga pod płytą powie ci to pierwsza.', waga: 0 };
+    return { tekst: 'Nic pilnego. Pod płytą jest twoja drużyna — dotknij medalionu albo postaci i wskaż na mapie, dokąd ma iść.', waga: 0 };
   }
   kandydaci.sort((a, b) => b.waga - a.waga);
   return kandydaci[0];

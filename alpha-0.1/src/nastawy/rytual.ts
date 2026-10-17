@@ -122,6 +122,8 @@ export const PIELGRZYMKA = {
   wyprawaTikow: 7000,
   /** Pielgrzym, który zszedł z planu drogi, wraca na niego, jeśli kreska jest najwyżej tyle kafli dalej. */
   planZasieg: 8,
+  /** Alpha: pielgrzym, który spadł z kreski do dołka bez wyjścia, wykuwa stopnie z powrotem — najwyżej tyle przejrzanych kafli. */
+  ratunekKopania: 6000,
   /** Cel w przedsionku rozrzucony o ± tyle kafli w poziomie. */
   rozrzutCelu: 3,
   /** „W przedsionku” = w takim prostokącie od jego środka (pół szerokości, pół wysokości). */
@@ -174,6 +176,12 @@ export const PLAN_DROGI = {
   minNacja: 8,
   /** Plan jest przeliczany najwyżej co tyle tików. */
   odswiezCo: 600,
+  /**
+   * Alpha: droga wiernych schodami w obie strony — nigdzie nie zeskakuje się wyżej niż o kafel. Jedzenie zjeżdża
+   * do siedziby, robotnicy noszą je w dół i wracają po następne; kto zejdzie pod rdzeń, ten wróci.
+   * (Dawniej droga szła tylko w dół — szybami i zeskokami — i robotnicy zostawali pod czołem na zawsze.)
+   */
+  dwukierunkowa: true,
   /** Remake v1: czoło drogi stoi tyle tików (2 min), choć kopacze są w drodze — plan omija ten kafel przez `czoloOmijaj` (6 min). */
   czoloStoi: 14400, czoloOmijaj: 43200,
   /**

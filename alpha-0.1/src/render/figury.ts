@@ -9,6 +9,7 @@ import { Race, RACES } from '../sim/races';
 import type { Camera } from './camera';
 import { ustawienia } from '../core/settings-store';
 import { BUDOWA, MAKS_KROKOW_NA_SEKUNDE, type Budowa } from '../nastawy/wyglad/postacie';
+import { postepOdmowy } from './lud/odmowa';
 
 /**
  * Mieszkańcy jak postacie z ryciny: sylwetka obwiedziona barwą nacji, w środku
@@ -79,14 +80,16 @@ function krokPostaci(c: Creature): number {
 
 export type Czynnosc =
   | 'stoi' | 'idzie' | 'biegnie' | 'wspina' | 'spada'
-  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta';
+  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia';
 
 /** Co widać: czynność wynika z zajęcia, ale i z tego, czy stworzenie w ogóle się rusza. */
-function czynnosc(c: Creature, r: Ruch, sim: Sim): Czynnosc {
+function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   // Remake v2: w zjeżdżającym wiadrze je, na linie pod nim się wspina
   if (c.naWiadrze) return 'je';
   if (c.naLinie !== undefined) return 'wspina';
   if (c.vy > 0.3) return 'spada';
+  // Alpha: odmówił rozkazu — stojąc, kręci głową i rozkłada ręce (render/lud/odmowa.ts)
+  if (r.v < 0.6 && postepOdmowy(sim, c, czas) !== null) return 'odmawia';
   const wspina = (sim.tick - (c.wspina ?? -99)) < 4 && !sim.world.solid(Math.floor(c.x), Math.floor(c.y) + 1);
   if (wspina) return 'wspina';
   const przy = (x: number, y: number, d: number) => Math.abs(x + 0.5 - c.x) <= d && Math.abs(y + 0.5 - c.y) <= d + 0.6;
@@ -787,7 +790,7 @@ export function rysujPostac(
   // etap 3: Strażnik Snu (i boss) ma własny rysunek
   if (c.straznik) { rysujStraznika(ctx, sim, c, h, czas); return 'stoi'; }
   const r = ruch(c, czas);
-  const czyn = cz ?? czynnosc(c, r, sim);
+  const czyn = cz ?? czynnosc(c, r, sim, czas);
   // własna grafika (src/grafiki/pliki): postac-<rasa>-<czynność> albo postac-<rasa>
   const rasaPliku = RASY_W_PLIKACH[c.race];
   const wlasna = pierwszaGrafika(`postac-${rasaPliku}-${czyn}`, `postac-${rasaPliku}`);
@@ -1008,7 +1011,7 @@ function postacZeSzkicu(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h:
     szkiceOd = czas;
   }
   const r = ruch(c, czas);
-  const cz = czynnosc(c, r, sim);
+  const cz = czynnosc(c, r, sim, czas);
   const hp = Math.max(8, Math.round(h));
   const klucz = `${c.race}|${c.clan}|${c.rola ?? ''}${c.helm ? 'H' : ''}|${cz}|${hp}|${(r.faza * 6) | 0}|${(r.zegar * 6) | 0}|${kier}|${cien ? 1 : 0}`;
   const w = hp * 2.4, wys = hp * 2.1, stopy = hp * 1.6;
@@ -1032,6 +1035,11 @@ function postacZeSzkicu(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h:
   }
   ctx.drawImage(p, sx - w / 2, sy - stopy, w, wys);
   return cz;
+}
+
+/** Wysokość sylwetki na ekranie (px) — ta sama, którą rysuje rysujStworzenia (pierścienie i dymki do niej się mierzą). */
+export function wysokoscPostaci(c: Creature, zoom: number): number {
+  return Math.max(16, RACES[c.race].size * zoom * 1.9 * ustawienia.wielkoscSylwetek) * (c.rola === 'rycerz' ? 1.3 : 1);
 }
 
 export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, czas: number, wybrany?: number): void {
@@ -1059,9 +1067,8 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
   const tlum = doRysowania.length > TLUM.od;
 
   for (const { c, n } of doRysowania) {
-    const d = RACES[c.race];
     // minimalny rozmiar w pikselach: sylwetka musi być widoczna przy każdym zoomie
-    const h = Math.max(16, d.size * z * 1.9 * ustawienia.wielkoscSylwetek) * (c.rola === 'rycerz' ? 1.3 : 1);
+    const h = wysokoscPostaci(c, z);
     const sx = (c.x - left) * z;
     const sy = (c.y + 1 - top) * z;
     const kier = c.face >= 0 ? 1 : -1;
@@ -1076,7 +1083,7 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     }
 
     let cz: Czynnosc;
-    if (tlum && wybrany !== c.id && !c.straznik) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
+    if (tlum && wybrany !== c.id && !c.straznik && !c.odmowa) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
     else {
       ctx.save();
       ctx.translate(sx, sy);

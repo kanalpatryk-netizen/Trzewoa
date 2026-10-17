@@ -210,13 +210,18 @@ export interface OpcjeKopania {
   zBudzetu?: boolean;
   /** dodatkowo: przez które kafle (wolne i lite) w ogóle wolno iść */
   dozwolony?: (i: number, x: number, y: number) => boolean;
+  /**
+   * Alpha: droga w obie strony — w dół najwyżej o jeden kafel (z powietrza tylko na podłogę). Każdy ruch da się
+   * wtedy odwrócić: zeskok o stopień to w drugą stronę wejście na stopień, więc kto zejdzie, ten wróci.
+   */
+  dwukierunkowa?: boolean;
 }
 
 export function szukajKopiac(
   sim: Sim, starty: readonly number[], cel: (i: number, x: number, y: number) => boolean, op: OpcjeKopania,
 ): { droga: number[]; start: number } | null {
   const w = sim.world, W = w.w;
-  const { koszt, limit = 6000, plywa = false, zBudzetu = true, dozwolony } = op;
+  const { koszt, limit = 6000, plywa = false, zBudzetu = true, dozwolony, dwukierunkowa = false } = op;
   if (!starty.length) return null;
   // szukanie z kopaniem jest droższe od zwykłego — liczy się za dwa z budżetu tiku
   if (zBudzetu) { if (budzet < 2) return null; budzet -= 2; }
@@ -263,6 +268,9 @@ export function szukajKopiac(
       const wisiTu = !stoiTu && sciana(x, y);
       // wszedł tu na stopień, prosto z podłogi pod spodem — kafel przed sobą wykuł, zanim się podciągnął
       const zeStopnia = skadK[i] === i + W;
+      // Alpha (droga w obie strony): zszedł tu o kafel — dalej w dół już nie (dwa kroki w dół pod rząd to szyb,
+      // którego podłogi następny krok wykuwa: po wykopaniu zostaje zeskok, którym się nie wróci) — w dół schodami
+      const wDolWolno = (j: number) => !dwukierunkowa || (skadK[i] !== i - W && podloga(i, j));
       // wejście na kafel `j` (wolny albo do wykucia) za `krok` + koszt kucia
       const wejdz = (j: number, nx: number, ny: number, mozeKuc: boolean): void => {
         if (j < 0 || j >= N || nx < 0 || nx >= W) return;
@@ -280,7 +288,7 @@ export function szukajKopiac(
       if (!stoiTu) {
         // w locie albo na ścianie: w dół (byle nie puścić się nad przepaścią) albo z wiszenia na półkę
         if (y + 1 < WORLD_H && (wolny(sim, i + W, plywa) || kuty(i, i + W)) && !(wisiTu && przepasc(sim, x, y + 1))
-            && (!dozwolony || dozwolony(i + W, x, y + 1))) wstaw(i + W, d + 1, i);
+            && wDolWolno(i + W) && (!dozwolony || dozwolony(i + W, x, y + 1))) wstaw(i + W, d + 1, i);
         if (wisiTu) {
           for (const dx of [-1, 1]) {
             const j = i + dx;
@@ -303,7 +311,8 @@ export function szukajKopiac(
       }
       if (y > 0) wejdz(i - W, x, y - 1, true);
       const b = i + W;
-      if (b < N && lity(b) && !kuty(i, b) && (b + W >= N || !(glebiaPod(sim, x, y + 1, LUD.spadekMaks) > LUD.spadekMaks && !sciana(x, y + 1)))) wejdz(b, x, y + 1, true);
+      if (b < N && lity(b) && !kuty(i, b) && (b + W >= N || !(glebiaPod(sim, x, y + 1, LUD.spadekMaks) > LUD.spadekMaks && !sciana(x, y + 1)))
+          && wDolWolno(b)) wejdz(b, x, y + 1, true);
     }
     if (d > N * 4) break;
   }

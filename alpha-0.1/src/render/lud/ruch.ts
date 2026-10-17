@@ -5,6 +5,7 @@ import type { Czynnosc } from '../figury';
 import { clamp, cos, frac, gladko, lerp, PI, sin, szum, TAU, wej, wejWyj, wyj } from './matma';
 import { klucze, mieszajPozy, nowaPoza, nowyTryb, siegnij, type Poza, type Tryb } from './poza';
 import type { Pamiec } from './pamiec';
+import { postepOdmowy } from './odmowa';
 
 /**
  * Animacje ludu. Każda czynność daje pozę z klatek kluczowych albo z cyklu (chód, bieg, wspinaczka).
@@ -286,6 +287,33 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
       p.uA = 0.55 + 0.35 * szum(t * 0.9, id + 5); p.kA = 1.0 + 0.4 * szum(t, id + 6); p.sA = 0.4;
       p.uB = -0.1 + 0.3 * szum(t * 0.8, id + 7); p.kB = 0.8 + 0.3 * szum(t, id + 8); p.sB = 0.3;
       p.tulow = -0.15; p.glowa = -0.35; p.oczy = 1; p.usta = 0.9;
+      break;
+    }
+    case 'odmawia': {
+      // Alpha: odmowa rozkazu (render/lud/odmowa.ts) — kręci głową i macha bliższą dłonią „nie, nie”,
+      // a potem rozkłada ręce: tam nie dojdzie. Narzędzie odkłada, żeby gest było widać.
+      const k = postepOdmowy(sim, c, czas) ?? 0;
+      const wg = szum(czas * 0.00042, id);
+      p.uA = 0.04 + 0.03 * wg; p.kA = 0.06; p.uB = -0.06 + 0.03 * wg; p.kB = 0.05;
+      p.tulow = 0.03 + p.oddech * 0.01;
+      const wejscie = gladko(clamp(k / 0.1, 0, 1)), powrot = 1 - gladko(clamp((k - 0.86) / 0.14, 0, 1));
+      const nie = gladko(clamp((0.62 - k) / 0.1, 0, 1)) * wejscie;
+      const ramiona = gladko(clamp((k - 0.5) / 0.12, 0, 1)) * powrot;
+      const spocz = { ...p };
+      const zakaz = { ...p };
+      // dłoń wysunięta przed twarz, macha w przód i w tył — „nie, nie”
+      siegnij(zakaz, 'A', 0.2 + 0.06 * sin(czas * 0.021 + id), -0.09 + 0.02 * sin(czas * 0.042 + id));
+      zakaz.rB = 0.12; zakaz.eB = 0.35; zakaz.tulow = -0.03;
+      // rozłożone ręce: łokcie przy bokach, przedramiona przed siebie i lekko w górę, dłonie otwarte
+      const wzrusz = { ...p };
+      siegnij(wzrusz, 'A', 0.2, 0.02); siegnij(wzrusz, 'B', 0.18, 0.035);
+      wzrusz.tulow = -0.06;
+      p = mieszajPozy(mieszajPozy(spocz, zakaz, nie), wzrusz, ramiona);
+      // głowa: drobne, szybkie potrząsanie, potem przechylona — „no nie da się”
+      p.glowa = 0.04 + sin(czas * 0.028 + id) * 0.17 * nie + 0.18 * ramiona;
+      p.usta = nie * 0.3 * Math.max(0, sin(czas * 0.018 + id));
+      p.wysilek = 0.35 * Math.max(nie, ramiona);
+      tryb.narzedzie = null;
       break;
     }
     case 'spi': {

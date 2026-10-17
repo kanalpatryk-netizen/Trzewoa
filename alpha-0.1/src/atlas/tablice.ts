@@ -467,7 +467,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'droga', grupa: 'prawa', nazwa: 'Droga do wolności', lacina: 'Via liberationis',
-    opis: `Wygrywasz, gdy pobożni przebiją skorupę rdzenia i uklękną przy nim. Po kolei: pobożni się modlą (wiara); lud uwierzy na ${proc(PIELGRZYMKA.oddanieNacji)} albo sam poślesz pobożnych szeptem „módl się” (oddanie); robotnicy wykopią drogę do rdzenia — złotą kreskę (droga); pobożni modlą się pod rdzeniem, rycerze trzymają wartę, a fale Strażników Snu trzeba pokonać (skorupa); potem wierni sami wchodzą do środka.`,
+    opis: `Wygrywasz, gdy pobożni przebiją skorupę rdzenia i uklękną przy nim. Po kolei: pobożni się modlą (wiara); lud uwierzy na ${proc(PIELGRZYMKA.oddanieNacji)} albo sam poślesz pobożnych szeptem „módl się” (oddanie); robotnicy na twój rozkaz wykopią drogę wiernych — złotą kreskę pod rdzeń (droga); pobożni modlą się pod rdzeniem, rycerz trzyma wartę, a fale Strażników Snu trzeba pokonać (skorupa); potem wierni sami wchodzą do środka.`,
     kiedy: 'Kroki widać na wstędze drogi. Chroń rycerza — bez niego ostatnią falę biją robotnicy w hełmach albo pobożni księgami.',
     rycina: drogaWolnosci,
   },
@@ -503,8 +503,8 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'role', grupa: 'prawa', nazwa: 'Role ludu', lacina: 'Officia',
-    opis: `Pobożni modlą się i kruszą skorupę; stoją przy obozie najbliżej rdzenia. Robotnicy kopią drogę do rdzenia i donoszą jedzenie z wiader tym, którzy stoją na warcie. Rycerz jest jeden, ale ma miecz i ${LUD.role.rycerz.hp} razy więcej życia; poza wartą pilnuje obozu, a w czasie fali walczy ze Strażnikami. Gdy rycerza zabraknie, robotnicy zakładają hełmy i walczą zamiast niego.`,
-    kiedy: 'Na karcie postaci widać jej zamiar i ile jeszcze go trzyma.',
+    opis: `Drużyna jest stała: ${LUD.start.robotnik} robotników, ${LUD.start.pobozny} pobożnych i ${LUD.start.rycerz} rycerz — nikt nie dochodzi i nikt się nie starzeje. Pobożni modlą się i kruszą skorupę; stoją przy obozie najbliżej rdzenia. Robotnicy kopią tylko na twój rozkaz, a poza tym donoszą jedzenie z wiader tym, którzy stoją na warcie. Rycerz jest jeden, ale ma miecz i ${LUD.role.rycerz.hp} razy więcej życia; poza wartą pilnuje obozu, a w czasie fali walczy ze Strażnikami. Gdy rycerza zabraknie, robotnicy zakładają hełmy i walczą zamiast niego.`,
+    kiedy: 'Na karcie postaci widać jej zamiar i ile jeszcze go trzyma. Rozkazy wydajesz z medalionów pod płytą.',
     rycina: postac(Race.GOBLIN, 'kopie', 1, 'robotnik'),
   },
   {
@@ -538,9 +538,15 @@ export const TABLICE: Tablica[] = [
     rycina: postac(Race.GOBLIN, 'spi'),
   },
   {
+    id: 'rozkazy', grupa: 'prawa', nazwa: 'Drużyna i rozkazy', lacina: 'Imperium',
+    opis: 'Pod płytą trzy medaliony: robotnicy, pobożni i rycerz, z liczbą żywych. Dotknięcie medalionu zaznacza wszystkich z tej roli, drugie wiezie do nich kamerę; dotknięcie postaci na mapie zaznacza ją (z Shiftem dokładasz). Gdy ktoś jest zaznaczony, dotknięcie mapy to rozkaz „idź tam”: idzie i trzyma tam posterunek — pobożny się modli, rycerz pilnuje — aż rozkaz odwołasz. Pobożny i rycerz idą tylko tam, dokąd prowadzi droga; inaczej odmawiają — kręcą głową, a w dymku mówią dlaczego. Robotnik przekopuje się sam, a wskazana mu skała to „kop tam”. „Kop drogę wiernych” każe robotnikom kopać złotą kreskę. Stojący rozstawiają się, nie jeden w drugim, a idący razem dopasowują krok.',
+    kiedy: 'Klawisze: A — robotnicy, S — pobożni, D — rycerz, G — kop drogę wiernych, V — odwołaj rozkaz; Esc albo prawy przycisk — odznacz. Bez rozkazu robotnicy nie kopią.',
+    rycina: postac(Race.GOBLIN, 'idzie', 1, 'rycerz'),
+  },
+  {
     id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',
     opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie, musi wykuć sobie w skale schody. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy. Lina wisi tylko przy wiadrze z jedzeniem.',
-    kiedy: 'Schodów nie trzeba zlecać: kto utknie pod półką, sam wykuwa drogę do siedziby albo do jedzenia. Droga w górę jest długa — niech siedziba schodzi za ludem.',
+    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych, gdzie się da, schodzi schodami — można nią wrócić.',
     rycina: postac(Race.GOBLIN, 'wspina'),
   },
   {

@@ -17,74 +17,25 @@ import { rozstrzygnij } from ${src('sim/wydarzenia.ts')};
 import { Job } from ${src('sim/creatures.ts')};
 import { czoloDrogi } from ${src('sim/pielgrzymka.ts')};
 import { DZIENNIK } from ${src('sim/dziennik.ts')};
+import { ruchBota, kartaBota } from ${src('app/bot.ts')};
+import { porcjiWWiadrach } from ${src('sim/wiadro.ts')};
 import { procentSkorupy } from ${src('sim/rytual.ts')};
 
 const M = 7200;
 const t = (sim: any) => (sim.tick / M).toFixed(2) + 'm';
 const zywi = (sim: any) => sim.creatures.filter((c: any) => !c.dead && c.race === Race.GOBLIN);
 function role(sim: any) { const r: any = { pobozny: 0, robotnik: 0, rycerz: 0 }; for (const c of zywi(sim)) r[c.rola ?? 'pobozny']++; return r; }
-function jedzenie(sim: any) { const k = sim.clans.find((x: any) => !x.dead && x.race === Race.GOBLIN); return (k ? k.stock : 0) + (sim.lud.spizarnie ?? []).reduce((s: number, o: any) => s + o.ilosc, 0); }
+function jedzenie(sim: any) { return porcjiWWiadrach(sim); }
 
-function wspolne(sim: any, out: string[]) {
-  const r = role(sim);
-  // ratunek głodnych: grzyb pod nogi
-  let najg: any = null;
-  for (const c of zywi(sim)) if (c.hunger > 0.65 && (!najg || c.hunger > najg.hunger)) najg = c;
-  if (najg && sim.krew > 60 && sim.tick % 600 === 0) seed(sim, 'grzyb', Math.round(najg.x), Math.round(najg.y));
-  void r;
-}
-
-function budowniczy(sim: any, out: string[]) {
-  const r = role(sim);
-  const e = sim.wydarzenia.biezace;
-  if (e) {
-    const i = e.rodzaj === 'warta' && !sim._wymarsz ? 2 : e.rozsadny;
-    if (rozstrzygnij(sim, i) !== null) rozstrzygnij(sim, e.domyslny);
-    out.push(t(sim) + ' KARTA ' + e.rodzaj + ' -> ' + (e.wybory[i]?.etykieta ?? e.wybory[i]?.id ?? i));
-    return;
-  }
-  wspolne(sim, out);
-  // Cud dla oddania
-  if (sim.wiara >= 70 && sim.tick % 2400 === 0) {
-    const k = sim.clans.find((x: any) => !x.dead && x.race === Race.GOBLIN);
-    if (k && k.devotion < 0.9 && sign(sim, 'objawienie', k.hx, k.hy)) out.push(t(sim) + ' GRACZ Cud (oddanie ' + k.devotion.toFixed(2) + ')');
-  }
-  // wymarsz, gdy droga gotowa i jest co jeść
-  if (!sim._wymarsz) {
-    const plan = sim.planDrogi ? sim.planDrogi.kopac.length : 99;
-    const gotowy = jedzenie(sim) >= 12 && sim.krew >= 40 && plan === 0;
-    if (gotowy || sim.tick > 16 * M) {
-      sim._wymarsz = sim.tick;
-      out.push(t(sim) + ' GRACZ === WYMARSZ === ' + (gotowy ? 'gotowy' : 'limit czasu') + ': ludzi ' + zywi(sim).length + ', jedzenie ' + jedzenie(sim) + ', rycerzy ' + r.rycerz + ', krew ' + Math.round(sim.krew) + ', plan ' + plan);
-    }
-  }
-  if (sim._wymarsz && sim.tick % 600 === 0) {
-    let n = 0;
-    for (const c of zywi(sim)) if (c.rola === 'pobozny' && c.job !== Job.PIELGRZYM && !c.wyprawa && c.hunger < 0.5 && sim.wiara >= 8 && whisper(sim, 'modl', c)) n++;
-    if (n) out.push(t(sim) + ' GRACZ módl się ×' + n);
-  }
-}
-
-function speedrun(sim: any, out: string[]) {
-  const r = role(sim);
-  const e = sim.wydarzenia.biezace;
-  if (e) {
-    let i = e.rozsadny;
-    if (e.rodzaj === 'warta') i = rozstrzygnij(sim, 1) === null ? -1 : 0;
-    if (i >= 0 && rozstrzygnij(sim, i) !== null) rozstrzygnij(sim, e.domyslny);
-    out.push(t(sim) + ' KARTA ' + e.rodzaj + ' -> ' + (i < 0 ? 'poslJedz' : (e.wybory[i]?.id ?? i)));
-    return;
-  }
-  wspolne(sim, out);
-  if (sim.wiara >= 30 && sim.tick % 1200 === 0) {
-    const k = sim.clans.find((x: any) => !x.dead && x.race === Race.GOBLIN);
-    if (k && k.devotion < 0.95 && sign(sim, 'objawienie', k.hx, k.hy)) out.push(t(sim) + ' GRACZ Cud (oddanie ' + k.devotion.toFixed(2) + ')');
-  }
-  if (sim.tick % 600 === 0) {
-    let n = 0;
-    for (const c of zywi(sim)) if (c.rola === 'pobozny' && c.job !== Job.PIELGRZYM && !c.wyprawa && sim.wiara >= 8 && whisper(sim, 'modl', c)) n++;
-    if (n) out.push(t(sim) + ' GRACZ módl się ×' + n);
-  }
+// Alpha: próbni gracze to bot z gry (src/app/bot.ts) — te same decyzje, co w obserwatorium
+function gracz(styl: string) {
+  return (sim: any, out: string[]) => {
+    const e = sim.wydarzenia.biezace;
+    if (e) { kartaBota(sim, styl as any); out.push(t(sim) + ' KARTA ' + e.rodzaj); return; }
+    const przed = new Map(zywi(sim).map((c: any) => [c.id, c.polecenie?.typ]));
+    ruchBota(sim, styl as any);
+    for (const c of zywi(sim)) if (c.polecenie && przed.get(c.id) !== c.polecenie.typ) out.push(t(sim) + ' GRACZ rozkaz ' + c.polecenie.typ + ' → ' + c.rola + ' #' + c.id);
+  };
 }
 
 // ---------------------------------------------------------------- monitoring
@@ -110,9 +61,9 @@ export function run(z: number, styl: string, minut: number) {
   const ef0 = sim.efekt.bind(sim);
   sim.efekt = (x: number, y: number, rodz: string, napis?: string) => { if (rodz === 'mysl' && napis && /zgubił|zagrodził|pusto|milczy/.test(napis)) out.push(t(sim) + ' TUNEL: ' + napis + ' @' + Math.round(x) + ',' + Math.round(y)); return ef0(x, y, rodz, napis); };
   let czolo = -1, czoloOd = 0, wyjatki = 0, kronikaOd = 0;
-  const gracz = styl === 'speedrun' ? speedrun : budowniczy;
+  const ruch = gracz(styl);
   for (let i = 0; i < minut * M && !sim.ending; i++) {
-    try { sim.step(); if (i % 60 === 0) gracz(sim, out); }
+    try { sim.step(); if (sim.tick % 60 === 0) ruch(sim, out); }
     catch (err: any) { wyjatki++; if (wyjatki < 5) anom.push(t(sim) + ' WYJĄTEK: ' + (err?.stack ?? err).toString().split('\\n').slice(0, 4).join(' | ')); }
     if (i % 120 !== 0) continue;
     // kronika i dziennik
@@ -133,7 +84,7 @@ export function run(z: number, styl: string, minut: number) {
       const opis = (c.rola ?? '?') + ' #' + c.id + ' @' + c.x.toFixed(0) + ',' + c.y.toFixed(0) + ' job=' + Job[c.job] + ' "' + (c.zamiar ?? '') + '" głód ' + c.hunger.toFixed(2) + ' droga=' + (c.droga ? c.droga.length : '-');
       if (RUCHOME.has(c.job) && maxD < 1.5 && h.every((q) => q.job === c.job)) zglos('stoi' + c.id, 'STOI 60 s przy zadaniu ruchomym: ' + opis);
       if (droga > 50 && netto < 5 && maxD < 12 && h.every((q) => q.job === c.job)) zglos('kraz' + c.id, 'KRĄŻY (60 s: ' + droga.toFixed(0) + ' kafli, netto ' + netto.toFixed(1) + '): ' + opis);
-      if (c.job === Job.DIG && h.every((q) => q.jx === c.jx && q.jy === c.jy) && w.solid(c.jx, c.jy) && !c.tor) zglos('kop' + c.id, 'KOPIE TEN SAM KAFEL 60 s (' + c.jx + ',' + c.jy + ', twardość ' + w.hardness(c.jx, c.jy).toFixed(1) + ', odległość ' + Math.hypot(c.jx + 0.5 - c.x, c.jy + 0.5 - c.y).toFixed(1) + '): ' + opis);
+      if (c.job === Job.DIG && h.every((q) => q.jx === c.jx && q.jy === c.jy) && w.solid(c.jx, c.jy) && !c.polecenie) zglos('kop' + c.id, 'KOPIE TEN SAM KAFEL 60 s (' + c.jx + ',' + c.jy + ', twardość ' + w.hardness(c.jx, c.jy).toFixed(1) + ', odległość ' + Math.hypot(c.jx + 0.5 - c.x, c.jy + 0.5 - c.y).toFixed(1) + '): ' + opis);
       if (c.job === Job.PIELGRZYM && sim.planDrogi && sim.planDrogi.kopac.length === 0 && Math.hypot(c.x - w.coreX, c.y - w.przedsionekY) > 12 && maxD < 2) zglos('pielg' + c.id, 'PIELGRZYM STOI w drodze pod rdzeń (droga gotowa): ' + opis);
       if (c.rola === 'rycerz' && sim.lud.straznicy?.trwa && /odchodzi spod rdzenia/.test(c.zamiar ?? '')) zglos('ryc' + c.id, 'RYCERZ UCIEKA w czasie fali: ' + opis);
       if (tenSamZamiar && /wraca do siedziby|wraca do swojego tunelu/.test(b.zam) && maxD < 2) zglos('wraca' + c.id, 'NIE MOŻE WRÓCIĆ: ' + opis);

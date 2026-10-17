@@ -104,6 +104,8 @@ export const STWORZENIA = {
    * więc nie leci szybciej niż to (na tik; dużo poniżej `bolesnyUpadek` — szybem schodzi cały).
    */
   zsuwanieLudu: 0.3,
+  /** Alpha: kto zgubi drogę, wisząc w szybie, trzyma się ściany najwyżej tyle tików, szukając nowej — potem się zsuwa. */
+  chwytZgubionaDroga: 60,
   /** Pod nogami woda głębsza niż to (0..8) trzyma jak podłoga. */
   wodaNiesie: 4,
   /** Przyspieszenie spadania na tik i maksymalna prędkość. */

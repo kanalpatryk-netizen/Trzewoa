@@ -5,8 +5,8 @@ import { PASSABLE, T } from './tiles';
 import { WORLD_W, WORLD_H } from './world';
 import { wolny, stoi, uchwyt, nadOgniem, przepasc, szukajKopiac } from './droga';
 import { Job } from './creatures';
-import { PLAN_DROGI } from '../nastawy/rytual';
-import { REMAKE, LUD } from '../nastawy/lud';
+import { PLAN_DROGI, PIELGRZYMKA } from '../nastawy/rytual';
+import { REMAKE } from '../nastawy/lud';
 
 /**
  * Droga pielgrzymów: którędy najwierniejsza nacja zejdzie pod rdzeń i — co ważniejsze —
@@ -57,7 +57,9 @@ function osiagalneZBazy(sim: Sim, hx: number, hy: number): void {
     const x = i % W, y = (i / W) | 0;
     const naPodlodze = stoi(sim, x, y);
     const wisi = !naPodlodze && uchwyt(sim, x, y);
-    if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, false) && !(wisi && przepasc(sim, x, y + 1))) dodaj(i + W);
+    // (Alpha: droga w obie strony — z powietrza w dół tylko o kafel, na podłogę)
+    if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, false) && !(wisi && przepasc(sim, x, y + 1))
+        && (!PLAN_DROGI.dwukierunkowa || stoi(sim, x, y + 1))) dodaj(i + W);
     if (!naPodlodze && !wisi) continue;
     // w górę tylko z podłogi, na stopień (Remake v2)
     if (naPodlodze && y > 0 && wolny(sim, i - W, false)) dodaj(i - W);
@@ -74,7 +76,7 @@ function osiagalneZBazy(sim: Sim, hx: number, hy: number): void {
   }
 }
 
-export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | null {
+export function planujDroge(sim: Sim, klanId: number, proba = 0, dwukierunkowa = PLAN_DROGI.dwukierunkowa): PlanDrogi | null {
   const w = sim.world, W = w.w;
   const klan = sim.clans[klanId];
   if (!klan) return null;
@@ -102,11 +104,14 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0): PlanDrogi | nu
     if (blisko) starty.push(i);
   }
   // meta: przedsionek (środek ± 4 kafle w poziomie i ± 2 w pionie)
-  const wPrzedsionku = (x: number, y: number) => Math.abs(x - w.coreX) <= 4 && Math.abs(y - w.przedsionekY) <= 2;
+  // (Alpha, droga w obie strony: stojąc w przedsionku, do jego dna — w locie przez pas ± 2 już się nie przelatuje)
+  const wPrzedsionku = (x: number, y: number) => Math.abs(x - w.coreX) <= 4
+    && (dwukierunkowa ? Math.abs(y - w.przedsionekY) < PIELGRZYMKA.przedsionekY && stoi(sim, x, y) : Math.abs(y - w.przedsionekY) <= 2);
   const r = szukajKopiac(sim, starty, (_i, x, y) => wPrzedsionku(x, y), {
-    koszt: (i) => (skala(i) ? KOSZT_SKALY : -1), limit: N, plywa, zBudzetu: false,
+    koszt: (i) => (skala(i) ? KOSZT_SKALY : -1), limit: N, plywa, zBudzetu: false, dwukierunkowa,
   });
-  if (!r) return proba < 2 ? planujDroge(sim, klanId, proba + 1) : null;
+  // (gdy schodami w obie strony się nie da — na przykład pod rdzeń prowadzi tylko zeskok — zostaje droga w dół)
+  if (!r) return proba < 2 ? planujDroge(sim, klanId, proba + 1, dwukierunkowa) : dwukierunkowa ? planujDroge(sim, klanId, 0, false) : null;
   // kreska od przedsionka do siedziby (tak ją czytają kopacze i pielgrzymi — od końca)
   const sciezka = [r.start, ...r.droga].reverse();
   return { klan: klanId, tick: sim.tick, sciezka, kopac: sciezka.filter((i) => skala(i)) };
@@ -145,6 +150,16 @@ export function pilnujCzola(sim: Sim): void {
     return;
   }
   zapisz(sim, 'praca', `czoło drogi (${cz % w.w}, ${(cz / w.w) | 0}) stoi — plan je omija`, cz % w.w, (cz / w.w) | 0);
+}
+
+/** Alpha: kafle skały na kresce, których jeszcze nikt nie wykuł — od strony obozu (jak czoło) do przedsionka. */
+export function nieWykopane(sim: Sim): number[] {
+  const p = sim.planDrogi;
+  if (!p || sim.rytual.otwarta) return [];
+  const w = sim.world;
+  const out: number[] = [];
+  for (let k = p.sciezka.length - 1; k >= 0; k--) if (doKopania(w.tile[p.sciezka[k]])) out.push(p.sciezka[k]);
+  return out;
 }
 
 /** Remake v1: czoło drogi — pierwszy kafel skały na kresce od strony obozu (tam kopie robotnik), albo -1. */
@@ -216,7 +231,8 @@ export function aktualnyPlan(sim: Sim): PlanDrogi | null {
  * Góra drąży drogę swoim wiernym (wersja na telefon nie ma rytu drążenia): póki ktoś z nacji
  * z planu idzie pod rdzeń, co `PLAN_DROGI.drazenieCo` tików znika jeden kafel skały ze złotej
  * kreski — od strony gniazda, więc korytarz rośnie przed pielgrzymami — a cała droga
- * zostaje sucha.
+ * zostaje sucha. Alpha: góra już sama nie drąży — drogę kopią robotnicy na rozkaz
+ * (a skrócić ją może dłoń anielska); zostaje tylko osuszanie kreski.
  */
 export function drazDrogeWiernym(sim: Sim): void {
   const p = sim.planDrogi;
@@ -240,23 +256,6 @@ export function drazDrogeWiernym(sim: Sim): void {
         }
       }
     }
-    if (sim.tick % LUD.goraDrazyCo !== 0) return;
-    const cz = czoloDrogi(sim);
-    if (cz < 0) return;
-    // pielgrzymi czekają na drogę, a przy samym czole nie ma kopacza (nie doszedł albo uciekł od ognia)
-    const fx = cz % w.w, fy = (cz / w.w) | 0;
-    let czekaja = false, kopie = false;
-    for (const c of sim.creatures) {
-      if (c.dead || c.clan !== p.klan) continue;
-      const blisko = Math.abs(c.x - fx) <= 4 && Math.abs(c.y - fy) <= 4;
-      if (c.job === Job.PIELGRZYM || c.wyprawa) czekaja = true;
-      if (c.kopieDroge && blisko) kopie = true;
-    }
-    if (!czekaja || kopie) return;
-    const bylo = w.tile[cz];
-    w.tile[cz] = T.AIR;
-    zapisz(sim, 'blok', `blok (${cz % w.w}, ${(cz / w.w) | 0}) zniszczony: ${NAZWY_KAFLI[bylo] ?? bylo} → pustka — góra drąży, bo nikt nie kopie`, cz % w.w, (cz / w.w) | 0);
-    w.oznaczSlad(cz % w.w, (cz / w.w) | 0, 1, sim.tick);
     return;
   }
   let idzie = false;

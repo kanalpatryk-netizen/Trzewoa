@@ -21,6 +21,11 @@ export const LUD = {
   krewStart: 120,
   /** Najwięcej żywych postaci ludu naraz (więcej niż na start da tylko dar z góry). */
   limit: 14,
+  /**
+   * Alpha: drużyna stała, więc się nie starzeje — ginie tylko z głodu, od ran i w ofierze (dawniej wszyscy
+   * umierali ze starości w 15.–17. minucie, a nowych nikt nie przysyłał). `true` przywraca starość.
+   */
+  starzejeSie: false,
 
   /** Mnożniki statystyk rasy dla każdej roli (1 = bez zmian). */
   role: {
@@ -53,8 +58,6 @@ export const LUD = {
   /** Ile jedzenia ze starej spiżarni robotnik bierze na raz. */
   przenoszenie: 3,
 
-  /** Robotnik kopie i zbiera w tym prostokącie wokół siedziby (kafle w bok / w pionie). */
-  robotnikZasieg: { x: 22, y: 9 },
   /**
    * Nie kopie kafla, pod którym ziała pustka głębsza niż tyle — tak wpadali do jaskiń bez dna; i sam nie
    * zeskakuje z wyższej półki (Remake v2: bez lin i klamer — w górę wchodzi najwyżej o stopień, wyżej kuje schody).
@@ -96,10 +99,6 @@ export const LUD = {
   wodaUcieka: 4,
   /** Dalej niż tyle kafli od spiżarni z jedzeniem robotnik rusza jeść wcześniej, a kopacz drogi dostaje dostawę. */
   daleko: 45,
-  /** Gdy pielgrzymi czekają, a żaden robotnik nie kopie drogi, góra drąży jej czoło co tyle tików (2 s). */
-  goraDrazyCo: 240,
-  /** Tylu robotników naraz kopie drogę do rdzenia (złotą kreskę). */
-  drogaKopaczy: 3,
   /** Grzyb w tej odległości od obozu (kafle) robotnicy zbierają do jego spiżarni. */
   grzybPrzyObozie: 10,
   /** Zamiar postaci trwa tyle tików (10 s), chyba że cel osiągnie wcześniej albo przerwie go coś pilnego. */
