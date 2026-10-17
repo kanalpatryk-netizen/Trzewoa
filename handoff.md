@@ -123,8 +123,8 @@ sami go wykopują. Gotowe pomieszczenie działa:
 - Rysowanie części na rycerzu to etap 3f.
 
 **Pozostałe**
-- **Sypialnia.** Plan nie mówi, do czego służy („w przyszłości dodamy mechaniki”), więc trzeba zapytać użytkownika. Propozycja: sen leczy i zdejmuje osłabienie. Animacja: postać się kładzie, a nad nią pojawia się „z z z”.
-- **Robotnik bez rozkazu** nosi jedzenie albo pracuje w warsztacie lub kuźni.
+- **Sypialnia — decyzja użytkownika (17.10): „sypialnia ma usuwać debuffy”.** W Alphie to okaleczenie (`c.okaleczony`, dziś na zawsze) i zatrucie (`c.zatrutyDo`); w 3e dojdą kary zabytków (czerwone aureole). Animacja: postać się kładzie, nad nią „z z z”, czerwona aureola gaśnie.
+- **Kto kuje plan i pracuje — decyzja użytkownika (17.10):** „jeśli zaznaczymy robotnika i najedziemy kursorem na miejsce, które można wykopać lub budować (np. położony plan), to mają to wykonać, ale wolni robotnicy mają być wolni i nic nie robić”. Plan kują i w warsztacie lub kuźni pracują **tylko zaznaczeni robotnicy, którym wskażesz plan albo pomieszczenie**. Wolni robotnicy sami nic nie biorą (nie kują planów, nie idą do warsztatu).
 - **Bot** jeszcze nie stawia szablonów (to etap 5), ale nie może się przez nie zepsuć.
 - **Atlas i samouczek.** Tablice „Pomieszczenia”, „Warsztat” i „Kuźnia” oraz lekcja w samouczku.
 
@@ -298,7 +298,7 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 2. Jak rozwiązaliście zgrzyt 1 (krew bez rekrutacji)? Do czasu odpowiedzi: krew na rytuały, wiara na dłoń anielską i szepty.
 3. Czy przenieść do Alphy relikwiarz krwi i nowy znak oddania z `main`?
 4. Żółte „Ag” na szkicu przyjąłem jako złoto; użytkownik o tym wie i nie oponował. Na pewno nie chodziło o srebro?
-5. Do czego ma służyć Sypialnia?
+5. ~~Do czego ma służyć Sypialnia?~~ Usuwa debuffy (odpowiedź 17.10).
 6. Jaki ma być warunek wygranej po Pomniku — pokonanie bossa?
 
 ---
