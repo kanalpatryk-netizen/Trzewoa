@@ -1,12 +1,12 @@
 # Handoff — Trzewia, Alpha 0.1
 
-Stan na 17.10.2026, ok. 08:40 UTC. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
+Stan na 17.10.2026, ok. 13:15 UTC (po etapie 3b). Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
-- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 i część 3a etapu 3, a zostały 3b–3f, 4 i 5.
-- **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”.
-- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. **Nie zaczynaj 3b bez polecenia.**
+- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 oraz 3a i 3b etapu 3, a zostały 3c–3f, 4 i 5.
+- **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. **Etap 3b jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
+- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. **Nie zaczynaj 3c bez polecenia.**
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 
 ---
@@ -46,7 +46,9 @@ Z użytkownikiem rozmawia się po polsku.
   bota.
 - **Po każdym etapie** obowiązuje lista kontrolna z 6.10.
 
-### 1.3 Etap 3b — liczniki kruszców (żelazo, złoto)
+### 1.3 Etap 3b — liczniki kruszców (żelazo, złoto) — ZROBIONE
+**Zrobione 17.10:** `sim.zelazo`, `sim.zloto` i lista `sim.urobek` (`src/sim/kruszce.ts`, wołane z `digTile`, tylko dla ludu), zapis bez podbijania `VERSION`, liczniki ze znaczkami nad płytą obok wiary, krwi i jedzenia (`rysujZasoby` w `game.ts`), lot okrucha, iskry i złoty błysk, błysk i podbicie licznika, cichy brzęk (`src/render/kruszce.ts`, `audio.ts: kruszec`), liczby w `src/nastawy/kruszce.ts` (`KRUSZCE`, `OKRUCH`). Rozkaz „kop żyłę” zrobiony jako rozszerzenie „kop tam” (`nastepnyKafelZyly` w `polecenia.ts`, pola `zyla`, `zx`, `zy`, `zylaIle` w `Polecenie`). Tablica atlasu „Kruszce”, podpowiedź 6c, porządki w podpowiedziach (bez „prorokuj” i „Nakarm przedsionek” w Alphie). Kronika sumuje wpisy z tym samym kluczem (poprawka w `Sim.log`). Bot jeszcze nie kopie rud (próby: 0–5 żelaza na partię). Poniżej pierwotny plan.
+
 **Cel:** wykopana ruda od razu zwiększa licznik na ekranie, bez ekwipunku. Pomysł Pawła: „wykopią i ci się podnosi numerek
 na ekranie”.
 
@@ -277,6 +279,7 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
   Krypta sięga 44 kafle w każdą stronę, więc jest dokąd uciec.
 - **Rozjazd z `main`.** Relikwiarz krwi (`render/relikwiarz.ts`) i nowy znak oddania (`render/modlitwa.ts`) są w Remake v1
   i v2, a w Alphie nie, bo Alpha powstała wcześniej. Użytkownik nie odpowiedział, czy je przenieść.
+- **Podpowiedzi (kółka na mapie)** to w dużej części rady z Remake. W 3b usunięte dwie nieaktualne („prorokuj”, „Nakarm przedsionek”); reszta do przejrzenia razem z samouczkiem w etapie 5. Tekst rady widać tylko jako kółko z podpisem na mapie.
 - **Tylko komputer.** Alpha nie jest zrobiona pod telefon. Paweł: „na telefonie mało co działa”.
 - **Zadania zespołu, nie dla Claude:**
   - grafika:
@@ -406,8 +409,8 @@ Kod w `alpha-0.1` nie zmienił się od `7f06c42`, więc wyniki są aktualne.
 Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 
 ### 2.5 Lista zadań
-- **Zrobione:** etap 1, etap 2, 3a, Alpha w menu i w wydaniu, push po przywróceniu dostępu.
-- **Do zrobienia:** 3b, 3c, 3d, 3e, 3f, etap 4, etap 5.
+- **Zrobione:** etap 1, etap 2, 3a, 3b, Alpha w menu i w wydaniu, push po przywróceniu dostępu.
+- **Do zrobienia:** 3c, 3d, 3e, 3f, etap 4, etap 5.
 
 ---
 
@@ -514,7 +517,8 @@ Od wklejenia planu (16.10), po kolei:
 | `3f231cb` | Wciągnięty `main` (relikwiarz i znak oddania w Remake v1 i v2). W konfliktach w CHANGELOG i atlasie Remake v2 zostały zmiany z obu stron. Przebudowany `remake-v2/trzewia.html` |
 | `26f26a5` | Opis obserwatorium Remake v2 w README i w notatkach wydania już nie wspomina wyboru trudności |
 | `6688432` (`main`) | Scalenie PR #12. Automat wystawił Alphę w wydaniu „gra” |
-| ten commit | `handoff.md` |
+| `f4a103b` | `handoff.md` |
+| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3b.** Liczniki żelaza i złota z animacją okruchów, „kop żyłę”, tablica „Kruszce”, porządki w podpowiedziach, sumowanie kroniki |
 
 Wcześniej w tej samej sesji zrobiłem rzeczy, które są już na `main` (PR #7–#12):
 - freski w interfejsie, mroczny interfejs i muzyka niepokoju;
@@ -577,7 +581,7 @@ Potem odtwórz w brudnopisie narzędzia z Dodatku A: próby botów, zrzuty i map
 1. Poczekaj na polecenie użytkownika. Ostatnio prosił, żeby po skończonym zadaniu czekać.
 2. Zadaj pytania z 1.11. Przed 3d najważniejsze jest pytanie o ołtarz, a przed etapem 4 — o relikwiarz.
 
-### 6.3 Etap 3b — pierwszy do zrobienia
+### 6.3 Etap 3b — zrobione (17.10, gałąź `ccr-91477c56-dh7bgd`)
 1. Dodaj `zelazo` i `zloto` w `Sim`, z zapisem i wczytaniem w `save.ts`.
 2. W `digTile` doliczaj kruszec dla `T.ORE` i `T.ZLOTO`, z wpisem do kroniki i zdarzeniem `urobek` dla rysunku.
 3. Dodaj liczniki na płycie i animację: okruch leci do licznika, licznik błyska.
@@ -757,7 +761,7 @@ export function main(args: string[]) {
   | twarda skała | 5,4 |
 
 ## Dodatek B — zasady repozytorium i rozmowy
-- **Gałąź:** `claude/charming-cerf-j2t9rf`.
+- **Gałąź:** `claude/charming-cerf-j2t9rf` (etapy 1–3a); etap 3b poszedł na `ccr-91477c56-dh7bgd` — gałąź przypisaną sesji, która go robiła. Kolejna sesja pracuje na gałęzi, którą przydzieli jej system.
 - **Push:** `git push -u origin claude/charming-cerf-j2t9rf`. Ponawiaj (po 2, 4, 8 i 16 s) tylko przy błędzie sieci.
 - **Commity:** opis po polsku. Na końcu dwie linie atrybucji (`Co-Authored-By: …` i `Claude-Session: …`), dokładnie tak, jak podaje przypomnienie systemowe danej sesji.
 - **Identyfikatory modeli:** żadnych w commitach, PR-ach, kodzie ani plikach w repozytorium.

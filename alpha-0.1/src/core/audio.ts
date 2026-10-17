@@ -185,6 +185,26 @@ export class Resonance {
     this.knock(t + 0.55, 210, 0.08, 0.2, 0.5);
   }
 
+  /** Alpha, etap 3b: okruch rudy wpada do licznika — cichy brzęk (złoto jaśniej i dwa razy). */
+  kruszec(zloto: boolean): void {
+    if (!this.ctx || !ustawienia.rezonans) return;
+    const ctx = this.ctx;
+    const t = ctx.currentTime;
+    (zloto ? [1568, 2093] : [880]).forEach((ton, i) => {
+      const od = t + i * 0.07;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'triangle';
+      o.frequency.setValueAtTime(ton, od);
+      g.gain.setValueAtTime(0.0001, od);
+      g.gain.exponentialRampToValueAtTime(0.035, od + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.0001, od + (zloto ? 0.35 : 0.18));
+      const p = mikser.panorama(-0.4);
+      o.connect(g); g.connect(p); p.connect(this.master);
+      o.start(od); o.stop(od + 0.4);
+    });
+  }
+
   /** Remake v2: góra zawala się nad ludem — długi, niski łoskot kamienia. */
   zawal(): void {
     if (!this.ctx || !ustawienia.rezonans) return;

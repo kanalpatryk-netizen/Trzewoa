@@ -10,6 +10,7 @@ export { GORA, LUDY, ZASIEDLENIE, PRZYPLYWY } from './gora';
 export { RYTUAL, PIELGRZYMKA, PLAN_DROGI } from './rytual';
 export { MROK } from './mrok';
 export { WIADRO } from './wiadro';
+export { KRUSZCE, OKRUCH } from './kruszce';
 export { STWORZENIA } from './stworzenia';
 export { KOSZTY, MOCE, SKAZY } from './moce';
 export { KAMERA, TEMPO, STEROWANIE } from './sterowanie';

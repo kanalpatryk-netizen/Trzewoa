@@ -49,7 +49,8 @@ export function podpowiedz(sim: Sim): Podpowiedz {
 
   // 2. jedna rasa rośnie ponad miarę
   const rytualnyKlan = sim.rytual.klan >= 0 && sim.rytual.postep > 0.05 ? sim.clans[sim.rytual.klan] : null;
-  if (sim.dominance > 0.72 && sim.domRace >= 0 && rytualnyKlan?.race !== sim.domRace) {
+  // (Alpha: jeden lud zawsze „bierze górę”, a szeptu „prorokuj” nie ma — ta rada zasłaniała wszystkie inne)
+  if (!REMAKE && sim.dominance > 0.72 && sim.domRace >= 0 && rytualnyKlan?.race !== sim.domRace) {
     const nazwa = RACES[sim.domRace].name;
     const klan = sim.clans.filter((k) => !k.dead && k.race === sim.domRace && k.pop > 0).sort((a, b) => b.pop - a.pop)[0];
     kandydaci.push({
@@ -90,7 +91,8 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     // Warta pod rdzeniem żyje z tego, co rośnie przy przedsionku. Z grzybem schodzi
     // i bez drogi powrotnej; drogę do domu można jej wydrążyć, ale nie trzeba.
     const w = sim.world;
-    if (sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku) {
+    // (Alpha: kto zszedł w głąb, dostaje wiadro tam, gdzie stoi — warty nie trzeba karmić rytem)
+    if (!REMAKE && sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku) {
       kandydaci.push({
         tekst: `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. ${REMAKE ? 'Spuść wiadro nad przedsionek rytem „Nakarm”' : 'Nakarm przedsionek nad rdzeniem'} — z tym jedzeniem ich warta przeżyje pod skorupą.`,
         cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'nakarm tutaj' },
@@ -116,14 +118,40 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   }
 
   // 6b. droga do wolności, krok „oddanie": nikt jeszcze nie wierzy dość mocno
-  const duzeWierne = sim.clans.filter((k) => !k.dead && k.pop >= 8 && RACES[k.race].faithGain > 0)
+  // (Alpha: lud ma stałe sześć głów — próg „dużej nacji” go nie dotyczy; liczy się tylko twój lud)
+  const duzeWierne = sim.clans.filter((k) => !k.dead && (REMAKE ? k.race === Race.GOBLIN && k.pop > 0 : k.pop >= 8) && RACES[k.race].faithGain > 0)
     .sort((a, b) => b.devotion - a.devotion)[0];
   if (sim.tick > 3000 && sim.rytual.pekniecia === 0 && duzeWierne && duzeWierne.devotion <= PIELGRZYMKA.oddanieNacji) {
     kandydaci.push({
-      tekst: `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij pobożnym „módl się”.`,
+      tekst: REMAKE
+        ? 'Żeby cię uwolnić, lud musi uwierzyć mocniej. Zrób Cud przy siedzibie albo szepnij pobożnym „módl się”.'
+        : `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij pobożnym „módl się”.`,
       cel: { x: duzeWierne.hx, y: duzeWierne.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, duzeWierne) : duzeWierne.name },
       waga: 25,
     });
+  }
+
+  // 6c. Alpha, etap 3b: żelaza jeszcze nikt nie wykuł, a robotnik stoi bez rozkazu — najbliższa kępa rudy pod siedzibą
+  // (ponad „zrób Cud” z 6b i „przedsionek” z 6: kółko podpowiada, co dać bezczynnemu; głód i rytuał ją przykryją)
+  const lud = sim.clans.find((k) => !k.dead && k.race === Race.GOBLIN);
+  const bezczynny = sim.creatures.some((c) => !c.dead && c.race === Race.GOBLIN && c.rola === 'robotnik' && !c.polecenie);
+  if (lud && bezczynny && sim.tick > 3600 && sim.zelazo === 0) {
+    const w = sim.world;
+    let best: [number, number] | null = null, bestD = Infinity;
+    for (let y = lud.hy; y < Math.min(w.h, lud.hy + 50); y++) {
+      for (let x = Math.max(0, lud.hx - 50); x < Math.min(w.w, lud.hx + 50); x++) {
+        if (w.tile[w.idx(x, y)] !== T.ORE) continue;
+        const d = Math.abs(x - lud.hx) + Math.abs(y - lud.hy);
+        if (d < bestD) { bestD = d; best = [x, y]; }
+      }
+    }
+    if (best) {
+      kandydaci.push({
+        tekst: 'Pod salą leży rdzawa ruda. Zaznacz robotnika i wskaż ją — wykuje całą kępę, a żelazo samo spłynie do licznika.',
+        cel: { x: best[0], y: best[1], r: 3, tekst: 'żelazo' },
+        waga: 40,
+      });
+    }
   }
 
   // 7. sporo krwi na koncie

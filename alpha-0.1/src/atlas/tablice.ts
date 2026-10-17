@@ -24,6 +24,9 @@ import { MROK } from '../nastawy/mrok';
 import { DLON } from '../nastawy/dlon';
 import { WIADRO } from '../nastawy/wiadro';
 import { lunaOtchlani, rysujKlatkeDloni } from '../render/dlon';
+import { znaczekKruszcu } from '../render/kruszce';
+import { KRUSZCE } from '../nastawy/kruszce';
+import { POLECENIA } from '../nastawy/polecenia';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
@@ -297,6 +300,60 @@ function skorupa({ ctx, w, h, t }: Plotno): void {
 }
 
 /** Dłoń z otchłani: z czerwonej łuny w dole wznosi się szponiasta dłoń — sięga po kogoś na półce skalnej. */
+/** Kruszce: robotnik kuje ścianę z żyłą — okruch leci łukiem do sztabki i samorodka nad nią. */
+function kruszce(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 2);
+  // ściana po prawej: lita skała z kępą żelaza (rdza) i grudkami złota
+  const sciana = new Path2D();
+  sciana.moveTo(w * 0.62, h * 0.82); sciana.lineTo(w * 0.6, h * 0.55); sciana.lineTo(w * 0.66, h * 0.3);
+  sciana.lineTo(w, h * 0.22); sciana.lineTo(w, h * 0.82); sciana.closePath();
+  ctx.save();
+  ctx.fillStyle = 'rgba(46,34,27,0.98)';
+  ctx.fill(sciana);
+  kreskuj(ctx, sciana, 0.9, 4, rgba(BARWA.atrament, 0.28), 1);
+  ctx.strokeStyle = rgba(BARWA.atramentMocny, 0.7);
+  ctx.lineWidth = 1.4;
+  ctx.stroke(sciana);
+  ctx.clip(sciana);
+  const grudki: [number, number, number, 'zelazo' | 'zloto'][] = [
+    [0.7, 0.62, 0.05, 'zelazo'], [0.76, 0.56, 0.045, 'zelazo'], [0.72, 0.7, 0.04, 'zelazo'], [0.8, 0.66, 0.035, 'zelazo'],
+    [0.86, 0.4, 0.03, 'zloto'], [0.9, 0.47, 0.025, 'zloto'],
+  ];
+  for (const [x, y, r, rodzaj] of grudki) {
+    const g = new Path2D();
+    g.ellipse(w * x, h * y, h * r * 1.25, h * r, 0.4, 0, Math.PI * 2);
+    ctx.fillStyle = rodzaj === 'zelazo' ? 'rgba(128,58,40,0.95)' : 'rgba(214,168,70,0.95)';
+    ctx.fill(g);
+    kropkuj(ctx, g, 40, rodzaj === 'zelazo' ? 'rgba(196,204,214,0.6)' : 'rgba(255,240,190,0.8)', x * 10);
+  }
+  ctx.restore();
+  // robotnik z kilofem przy ścianie
+  const { sim, c } = atrapa(Race.GOBLIN, 'robotnik');
+  ctx.save();
+  ctx.translate(w * 0.5, h * 0.82);
+  rysujPostac(ctx, sim, c, h * 0.42, t, 'kopie');
+  ctx.restore();
+  // okruch w locie: łuk przerywaną kreską od ściany do liczników
+  const x0 = w * 0.62, y0 = h * 0.58, x1 = w * 0.16, y1 = h * 0.16;
+  ctx.save();
+  ctx.setLineDash([3, 5]);
+  ctx.lineDashOffset = -t * 0.02;
+  ctx.strokeStyle = 'rgba(246,216,142,0.6)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(w * 0.4, h * 0.02, x1 + h * 0.08, y1); ctx.stroke();
+  ctx.restore();
+  const s = (t * 0.0004) % 1;
+  const ox = (1 - s) * (1 - s) * x0 + 2 * (1 - s) * s * w * 0.4 + s * s * (x1 + h * 0.08);
+  const oy = (1 - s) * (1 - s) * y0 + 2 * (1 - s) * s * h * 0.02 + s * s * y1;
+  ctx.fillStyle = 'rgba(176,184,196,1)';
+  ctx.strokeStyle = 'rgba(22,18,20,0.95)';
+  ctx.beginPath(); ctx.arc(ox, oy, h * 0.022, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // liczniki: sztabka i samorodek
+  znaczekKruszcu(ctx, 'zelazo', x1, y1, h * 0.12, 0.4 + 0.3 * Math.sin(t * 0.004), 7);
+  znaczekKruszcu(ctx, 'zloto', x1 + h * 0.15, y1, h * 0.12, 0.3 + 0.3 * Math.sin(t * 0.004 + 2), 11);
+}
+
 function dlonOtchlani({ ctx, w, h, t }: Plotno): void {
   ctx.save();
   ctx.fillStyle = '#060303';
@@ -452,6 +509,12 @@ export const TABLICE: Tablica[] = [
     kiedy: 'Liczba „jedzenie” nad płytą to porcje we wszystkich wiadrach. Gdy nie nadążają, spuść dodatkowe rytem Nakarm.',
     rycina: postac(Race.GOBLIN, 'je'),
   },
+  {
+    id: 'kruszce', grupa: 'zasoby', nazwa: 'Kruszce', lacina: 'Ferrum et aurum',
+    opis: `Żelazo i złoto — dwie liczby nad płytą, obok wiary, krwi i jedzenia. Nikt ich nie nosi: gdy robotnik rozbije kafel rudy, okruch sam leci do licznika i dodaje ${KRUSZCE.zelazoZaKafel} żelaza albo ${KRUSZCE.zlotoZaKafel} złota. Żelazo leży w kępach rdzawej rudy w płytkiej warstwie, tuż pod salą; złoto — w żółtych grudkach pod dnami jaskiń w warstwie środkowej, głębiej i twardsze. Wskaż zaznaczonemu robotnikowi rudę, a wykuje całą kępę — kafel po kaflu, najdalej ${POLECENIA.zylaZasieg} kafli od wskazanego. W dół schodzi stopniami, a podłogi pod złotą kreską drogi wiernych nie rusza.`,
+    kiedy: 'Kop, póki jest czas: z żelaza kuźnia wykuje zbroję dla rycerza, a ze złota warsztat zrobi krzyże i różańce, które zamienią się w wiarę (wkrótce). Po złoto trzeba zejść głęboko — a kto zejdzie, zwykle nie wraca.',
+    rycina: kruszce,
+  },
   // prawa góry
   {
     id: 'pamiec', grupa: 'prawa', nazwa: 'Pamięć', lacina: 'Memoria',
@@ -539,7 +602,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'rozkazy', grupa: 'prawa', nazwa: 'Drużyna i rozkazy', lacina: 'Imperium',
-    opis: 'Pod płytą trzy medaliony: robotnicy, pobożni i rycerz, z liczbą żywych. Dotknięcie medalionu zaznacza wszystkich z tej roli, drugie wiezie do nich kamerę; dotknięcie postaci na mapie zaznacza ją (z Shiftem dokładasz). Gdy ktoś jest zaznaczony, dotknięcie mapy to rozkaz „idź tam”: idzie i trzyma tam posterunek — pobożny się modli, rycerz pilnuje — aż rozkaz odwołasz. Pobożny i rycerz idą tylko tam, dokąd prowadzi droga; inaczej odmawiają — kręcą głową, a w dymku mówią dlaczego. Robotnik przekopuje się sam, a wskazana mu skała to „kop tam”. „Kop drogę wiernych” każe robotnikom kopać złotą kreskę. Stojący rozstawiają się, nie jeden w drugim, a idący razem dopasowują krok.',
+    opis: 'Pod płytą trzy medaliony: robotnicy, pobożni i rycerz, z liczbą żywych. Dotknięcie medalionu zaznacza wszystkich z tej roli, drugie wiezie do nich kamerę; dotknięcie postaci na mapie zaznacza ją (z Shiftem dokładasz). Gdy ktoś jest zaznaczony, dotknięcie mapy to rozkaz „idź tam”: idzie i trzyma tam posterunek — pobożny się modli, rycerz pilnuje — aż rozkaz odwołasz. Pobożny i rycerz idą tylko tam, dokąd prowadzi droga; inaczej odmawiają — kręcą głową, a w dymku mówią dlaczego. Robotnik przekopuje się sam, a wskazana mu skała to „kop tam” (ruda — „kop żyłę”: wykuje całą kępę). „Kop drogę wiernych” każe robotnikom kopać złotą kreskę. Stojący rozstawiają się, nie jeden w drugim, a idący razem dopasowują krok.',
     kiedy: 'Klawisze: A — robotnicy, S — pobożni, D — rycerz, G — kop drogę wiernych, V — odwołaj rozkaz; Esc albo prawy przycisk — odznacz. Bez rozkazu robotnicy nie kopią.',
     rycina: postac(Race.GOBLIN, 'idzie', 1, 'rycerz'),
   },

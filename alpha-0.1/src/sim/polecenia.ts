@@ -6,6 +6,8 @@
  *    aż rozkaz odwołasz. Pobożny i rycerz idą tylko tam, dokąd prowadzi droga — inaczej odmawiają (dymek
  *    nad głową, kręcą głową). Robotnik, gdy drogi nie ma, wykuwa sobie przejście sam (sim/droga.ts: szukajKopiac).
  *  - wskazanie litej skały robotnikowi — „kop tam”: przekopuje się do tego kafla i go wykuwa.
+ *    Gdy wskażesz rudę (żelazo, złoto), to „kop żyłę”: po tym kaflu bierze kolejne odsłonięte kafle
+ *    tej samej rudy (etap 3b; nastepnyKafelZyly), aż kępa się skończy.
  *  - „kop drogę wiernych” (robotnik) — kopie czoło złotej kreski (plan drogi pod rdzeń), aż będzie gotowa.
  * Robotnicy nie kopią już sami: bez rozkazu tylko noszą jedzenie i odpoczywają przy obozie.
  * Rozkaz wykonuje planer ludu (creatures.ts: planPolecenia); przerywa go tylko to, co pilne —
@@ -19,6 +21,7 @@ import { rolaPostaci } from './lud';
 import { szukajDrogi, szukajKopiac, kosztKuciaLudu, budzetDrog, nowyTik, stoi } from './droga';
 import { czoloDrogi, nieWykopane } from './pielgrzymka';
 import { zapisz, kto } from './dziennik';
+import { kruszecKafla, type RodzajKruszcu } from './kruszce';
 
 export type TypPolecenia = 'idz' | 'kop' | 'droga';
 
@@ -32,6 +35,8 @@ export interface Polecenie {
   na?: boolean;
   /** ile razy w drodze szukał nowego przejścia */
   prob?: number;
+  /** Alpha, etap 3b: „kop żyłę” — jaką rudę kuje, skąd zaczął (zasięg) i ile kafli już wykuł */
+  zyla?: RodzajKruszcu; zx?: number; zy?: number; zylaIle?: number;
 }
 
 /** Odmowa wykonania rozkazu — dymek nad głową i kręcenie głową (render/lud/ruch.ts). */
@@ -139,9 +144,11 @@ export function wydajPolecenie(sim: Sim, c: Creature, typ: 'idz' | 'droga', x: n
       const obok = (xx: number, yy: number) => Math.abs(xx - x) <= 1 && Math.abs(yy - y) <= 1 && stoi(sim, xx, yy);
       if (!drogaTeraz(sim, c, obok, P.szukanieDrogi) && !dokopieSie(sim, c, (i) => i === cel)) return odmow(sim, c, 'tam się nie dokopię');
       przerwij(sim, c);
-      c.polecenie = { typ: 'kop', x, y, od: sim.tick };
+      // ruda: kuje całą żyłę, nie jeden kafel
+      const zyla = kruszecKafla(w.get(x, y)) ?? undefined;
+      c.polecenie = zyla ? { typ: 'kop', x, y, od: sim.tick, zyla, zx: x, zy: y, zylaIle: 0 } : { typ: 'kop', x, y, od: sim.tick };
       c.odmowa = undefined;
-      zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — kop do (${x}, ${y})`, x, y);
+      zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — ${zyla ? `kop żyłę ${zyla === 'zelazo' ? 'żelaza' : 'złota'} od` : 'kop do'} (${x}, ${y})`, x, y);
       return null;
     }
     const p = najblizszaPodloga(sim, x, y, P.celPromien);
@@ -163,6 +170,34 @@ export function wydajPolecenie(sim: Sim, c: Creature, typ: 'idz' | 'droga', x: n
   c.odmowa = undefined;
   zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — idź do (${x}, ${y})`, x, y);
   return null;
+}
+
+/**
+ * „Kop żyłę”: wskazany kafel rudy już wykuty — następny odsłonięty kafel tej samej rudy, najbliżej robotnika
+ * (albo null, gdy kępa się skończyła). W dół schodzi stopniami — najwyżej kafel niżej niż stopy robotnika albo
+ * dopiero co wykuty kafel (w ten wejdzie) — tyle, ile lud wejdzie z powrotem; głębszą jamę robotnik i tak umie
+ * opuścić: wykuje sobie schody. Nie rusza podłogi pod złotą kreską drogi wiernych — dół w niej odciąłby
+ * pobożnych, którzy nie kują (podłoga sali rudy nie ma — generator ją stamtąd usuwa).
+ */
+export function nastepnyKafelZyly(sim: Sim, c: Creature, p: Polecenie): [number, number] | null {
+  const w = sim.world;
+  if (!p.zyla || (p.zylaIle ?? 0) >= P.zylaKafli) return null;
+  const R = P.zylaZasieg;
+  const zx = p.zx ?? p.x, zy = p.zy ?? p.y;
+  const cx = Math.floor(c.x), cy = Math.floor(c.y);
+  const sciezka = sim.planDrogi ? new Set(sim.planDrogi.sciezka) : null;
+  let best: [number, number] | null = null, bestD = Infinity;
+  for (let y = Math.max(0, zy - R); y <= Math.min(w.h - 1, zy + R, Math.max(cy, p.y) + 1); y++) {
+    for (let x = Math.max(0, zx - R); x <= Math.min(w.w - 1, zx + R); x++) {
+      if (!w.solid(x, y) || kruszecKafla(w.get(x, y)) !== p.zyla || w.hardness(x, y) <= 0) continue;
+      // odsłonięty: obok jest pustka — żyła rośnie od tego, co już wykute
+      if (!(w.passable(x - 1, y) || w.passable(x + 1, y) || w.passable(x, y - 1) || w.passable(x, y + 1))) continue;
+      if (sciezka?.has(w.idx(x, y - 1))) continue;
+      const d = Math.abs(x - cx) + Math.abs(y - cy);
+      if (d < bestD) { bestD = d; best = [x, y]; }
+    }
+  }
+  return best;
 }
 
 /**

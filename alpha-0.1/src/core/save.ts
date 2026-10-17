@@ -31,7 +31,7 @@ export function serialize(sim: Sim): string {
     v: VERSION,
     seed: sim.seed,
     tick: sim.tick,
-    wiara: sim.wiara, krew: sim.krew, sen: sim.sen, rytual: sim.rytual, koszmar: sim.koszmar, stat: sim.stat, dug: sim.dug,
+    wiara: sim.wiara, krew: sim.krew, zelazo: sim.zelazo, zloto: sim.zloto, sen: sim.sen, rytual: sim.rytual, koszmar: sim.koszmar, stat: sim.stat, dug: sim.dug,
     // v4.1 beta: skutki odroczone i karty z łańcuchów przeżywają zapis (inaczej dług znikał po wczytaniu)
     odroczone: sim.wydarzenia.odroczone, czekajace: sim.wydarzenia.czekajace, lud: sim.lud, kupione: sim.wydarzenia.kupione,
     fungusBudget: sim.fungusBudget, nextTide: sim.nextTide, ending: sim.ending, przybyszow: sim.przybyszow,
@@ -62,6 +62,9 @@ export function restore(json: string): Sim | null {
 
   sim.tick = data.tick;
   sim.wiara = data.wiara; sim.krew = data.krew; sim.sen = data.sen;
+  // Alpha, etap 3b: zapis sprzed kruszców nie zna liczników — zaczynają od zera
+  sim.zelazo = typeof data.zelazo === 'number' ? data.zelazo : 0;
+  sim.zloto = typeof data.zloto === 'number' ? data.zloto : 0;
   sim.koszmar = true;     // Remake v2: tylko Koszmar — także stare zapisy z łaskawej i surowej góry
   if (data.stat) sim.stat = { ...sim.stat, ...data.stat };
   if (data.dug) sim.dug = data.dug;
