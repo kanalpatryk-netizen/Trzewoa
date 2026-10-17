@@ -319,6 +319,14 @@ function krokStworzenia(sim: Sim, c: Creature): void {
       c.wspina = sim.tick - (K.trzymaSieTikow + 1);
       return;
     }
+    // Alpha: lud bez lin zsuwa się po każdej ścianie szybu (hamuje dłońmi i stopami) — boleśnie spada
+    // tylko w otwartej pustce, z dala od ścian; dawniej każdy szyb głębszy niż dwa kafle łamał nogi
+    if (ludRuch(c) && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty)) && w.magma[w.idx(tx, Math.min(w.h - 1, ty + 1))] === 0) {
+      c.vy = Math.min(K.zsuwanieLudu, c.vy + K.grawitacja);
+      c.y += c.vy;
+      c.wspina = sim.tick - (K.trzymaSieTikow + 1);
+      return;
+    }
     c.vy = Math.min(K.maxSpadanie, c.vy + K.grawitacja);
     c.y += c.vy;
     return;

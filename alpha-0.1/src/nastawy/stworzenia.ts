@@ -99,6 +99,11 @@ export const STWORZENIA = {
   zsuwaSieTikow: 40,
   /** …z taką prędkością na tik. */
   zsuwanie: 0.2,
+  /**
+   * Alpha: lud (bez lin i klamer) zsuwa się po każdej ścianie, przy której spada — hamuje dłońmi i stopami,
+   * więc nie leci szybciej niż to (na tik; dużo poniżej `bolesnyUpadek` — szybem schodzi cały).
+   */
+  zsuwanieLudu: 0.3,
   /** Pod nogami woda głębsza niż to (0..8) trzyma jak podłoga. */
   wodaNiesie: 4,
   /** Przyspieszenie spadania na tik i maksymalna prędkość. */
