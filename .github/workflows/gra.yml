@@ -131,7 +131,7 @@ jobs:
           - \`trzewia.html\` — na komputer ($(kb pc/trzewia.html) kB)
           - \`trzewia-android.html\` — na telefon z Androidem ($(kb android/trzewia-android.html) kB)
           - \`trzewia-v3-remake.html\` — gra z telefonu (v3) na komputer, myszą
-          - \`trzewia-alpha-0.1.html\` — Alpha 0.1 na komputer: najnowsza gra, w budowie (stała drużyna i rozkazy, bez lin, góra według szkicu, liczniki żelaza i złota)
+          - \`trzewia-alpha-0.1.html\` — Alpha 0.1 na komputer: najnowsza gra, w budowie (stała drużyna i rozkazy, bez lin, góra według szkicu, liczniki żelaza i złota, pomieszczenia: warsztat, kuźnia, sypialnia)
           - \`trzewia-alpha-0.1-obserwatorium.html\` — Alpha 0.1: obserwatorium — cztery okna gry naraz, w każdym gra bot
           - \`trzewia-remake-v2.html\` — Remake v2 na komputer (z dłonią z otchłani w Koszmarze)
           - \`trzewia-remake-v2-obserwatorium.html\` — Remake v2: obserwatorium — cztery okna gry naraz, w każdym gra bot; tempo, styl bota i ziarno osobno dla każdego okna, kliknięcie powiększa okno

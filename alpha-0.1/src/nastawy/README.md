@@ -13,6 +13,7 @@ Wszystkie liczby gry. Każda ma komentarz: co robi i w którą stronę działa.
 | który fresk stoi gdzie | `wyglad/freski.ts` |
 | świat i rdzeń | `swiat.ts` |
 | żelazo i złoto: ile daje kafel, lot okrucha do licznika | `kruszce.ts` |
+| pomieszczenia: szablony, warsztat, kuźnia (części zbroi), sypialnia | `pomieszczenia.ts` |
 | kamera, tempo, ekran | `sterowanie.ts, ekran.ts` |
 | dźwięk, kolory | `dzwiek.ts, barwy.ts` |
 | wygląd ekranów | `wyglad/` |

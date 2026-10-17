@@ -24,7 +24,9 @@ import { MROK } from '../nastawy/mrok';
 import { DLON } from '../nastawy/dlon';
 import { WIADRO } from '../nastawy/wiadro';
 import { lunaOtchlani, rysujKlatkeDloni } from '../render/dlon';
-import { znaczekKruszcu } from '../render/kruszce';
+import { znaczekKruszcu, krzyz } from '../render/kruszce';
+import { rysujCzesc } from '../render/pomieszczenia';
+import { POMIESZCZENIA } from '../nastawy/pomieszczenia';
 import { KRUSZCE } from '../nastawy/kruszce';
 import { POLECENIA } from '../nastawy/polecenia';
 
@@ -354,6 +356,120 @@ function kruszce(p: Plotno): void {
   znaczekKruszcu(ctx, 'zloto', x1 + h * 0.15, y1, h * 0.12, 0.3 + 0.3 * Math.sin(t * 0.004 + 2), 11);
 }
 
+/** Robotnik z ludu na rycinie: stopy w (x, y), wysokość hh, czynność, zwrócony w prawo albo w lewo. */
+function robotnikNaRycinie(ctx: CanvasRenderingContext2D, x: number, y: number, hh: number, t: number, cz: Czynnosc, kier = 1, rola: Rola = 'robotnik'): void {
+  const { sim, c } = atrapa(Race.GOBLIN, rola);
+  ctx.save(); ctx.translate(x, y); ctx.scale(kier, 1);
+  rysujPostac(ctx, sim, c, hh, t, cz);
+  ctx.restore();
+}
+
+/** Pomieszczenia: plan na skale — przekreślone kafle w przerywanym konturze — i robotnik, który go kuje. */
+function pomieszczeniaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 3);
+  const k = h * 0.13, x0 = w * 0.5, y0 = h * 0.82 - k * 3;
+  const skala = new Path2D(); skala.rect(x0, y0 - k * 0.6, k * 4.6, k * 3.6);
+  ctx.save();
+  ctx.fillStyle = 'rgba(46,34,27,0.98)'; ctx.fill(skala);
+  kreskuj(ctx, skala, 0.9, 4, rgba(BARWA.atrament, 0.28), 1);
+  // pierwsza kolumna już wykuta
+  ctx.fillStyle = 'rgba(70,52,38,0.95)'; ctx.fillRect(x0, y0, k, k * 3);
+  ctx.strokeStyle = 'rgba(232,196,130,0.6)'; ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (let i = 1; i < 4; i++) for (let j = 0; j < 3; j++) {
+    const sx = x0 + i * k, sy = y0 + j * k, m = k * 0.22;
+    ctx.moveTo(sx + m, sy + m); ctx.lineTo(sx + k - m, sy + k - m); ctx.moveTo(sx + k - m, sy + m); ctx.lineTo(sx + m, sy + k - m);
+  }
+  ctx.stroke();
+  ctx.setLineDash([6, 4]); ctx.lineDashOffset = -t * 0.01;
+  ctx.strokeStyle = 'rgba(232,196,130,0.95)'; ctx.lineWidth = 2;
+  ctx.strokeRect(x0, y0, k * 4, k * 3);
+  ctx.restore();
+  robotnikNaRycinie(ctx, x0 + k * 0.5, h * 0.82, h * 0.42, t, 'kopie');
+}
+
+/** Warsztat: stół z tyglem i złocącym się krzyżem, robotnik z młotkiem. */
+function warsztatRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 4);
+  const y = h * 0.82, x1 = w * 0.48, x2 = w * 0.8, yb = y - h * 0.2;
+  ctx.save();
+  ctx.fillStyle = 'rgba(112,74,42,0.98)'; ctx.strokeStyle = 'rgba(20,12,8,0.95)'; ctx.lineWidth = 1.4;
+  ctx.fillRect(x1 + 6, yb, 6, y - yb); ctx.fillRect(x2 - 12, yb, 6, y - yb);
+  ctx.beginPath(); ctx.rect(x1, yb, x2 - x1, h * 0.03); ctx.fill(); ctx.stroke();
+  const tx = x2 - h * 0.08, ty = yb - h * 0.09;
+  const g = ctx.createRadialGradient(tx, ty, 0, tx, ty, h * 0.25);
+  g.addColorStop(0, 'rgba(255,214,110,0.55)'); g.addColorStop(1, 'rgba(255,190,80,0)');
+  ctx.fillStyle = g; ctx.fillRect(tx - h * 0.25, ty - h * 0.25, h * 0.5, h * 0.5);
+  ctx.beginPath(); ctx.moveTo(tx - h * 0.055, ty); ctx.lineTo(tx + h * 0.055, ty); ctx.lineTo(tx + h * 0.04, yb); ctx.lineTo(tx - h * 0.04, yb); ctx.closePath();
+  ctx.fillStyle = 'rgba(58,48,44,0.98)'; ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,226,130,0.95)'; ctx.beginPath(); ctx.ellipse(tx, ty, h * 0.05, h * 0.014, 0, 0, Math.PI * 2); ctx.fill();
+  const kx = x1 + (x2 - x1) * 0.35, ky = yb - h * 0.1, a = h * 0.09;
+  ctx.translate(kx, ky); ctx.beginPath(); krzyz(ctx, a);
+  ctx.fillStyle = 'rgba(60,44,20,0.9)'; ctx.fill();
+  ctx.save(); ctx.clip();
+  const pp = (t * 0.0003) % 1;
+  ctx.fillStyle = 'rgba(244,204,104,0.98)'; ctx.fillRect(-a, a - pp * a * 2, a * 2, pp * a * 2);
+  ctx.restore();
+  ctx.strokeStyle = 'rgba(255,236,170,0.9)'; ctx.stroke();
+  ctx.restore();
+  robotnikNaRycinie(ctx, w * 0.32, y, h * 0.42, t, 'buduje');
+}
+
+/** Kuźnia: palenisko z ogniem, kowadło z rozżarzonym hełmem, robotnik z młotem. */
+function kuzniaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 5);
+  const y = h * 0.82;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(20,12,8,0.95)'; ctx.lineWidth = 1.4;
+  const hx = w * 0.18, hw = h * 0.11, hh = h * 0.42;
+  const g = ctx.createRadialGradient(hx, y - h * 0.08, 0, hx, y - h * 0.08, h * 0.5);
+  g.addColorStop(0, `rgba(255,170,70,${0.5 + 0.1 * Math.sin(t * 0.013)})`); g.addColorStop(1, 'rgba(255,120,40,0)');
+  ctx.fillStyle = g; ctx.fillRect(hx - h * 0.5, y - h * 0.6, h, h * 0.6);
+  ctx.fillStyle = 'rgba(70,60,54,0.98)';
+  ctx.beginPath(); ctx.moveTo(hx - hw, y); ctx.lineTo(hx - hw, y - hh * 0.6); ctx.quadraticCurveTo(hx, y - hh * 1.3, hx + hw, y - hh * 0.6); ctx.lineTo(hx + hw, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(255,150,60,0.9)';
+  ctx.beginPath(); ctx.moveTo(hx - hw * 0.6, y); ctx.lineTo(hx - hw * 0.6, y - hh * 0.4); ctx.quadraticCurveTo(hx, y - hh * 0.8, hx + hw * 0.6, y - hh * 0.4); ctx.lineTo(hx + hw * 0.6, y); ctx.closePath(); ctx.fill();
+  const ax = w * 0.66, ay = y - h * 0.18;
+  ctx.fillStyle = 'rgba(112,74,42,0.98)'; ctx.beginPath(); ctx.rect(ax - h * 0.06, y - h * 0.1, h * 0.12, h * 0.1); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(46,46,52,0.99)';
+  ctx.beginPath(); ctx.moveTo(ax - h * 0.12, ay); ctx.lineTo(ax + h * 0.18, ay); ctx.quadraticCurveTo(ax + h * 0.14, ay + h * 0.04, ax + h * 0.06, ay + h * 0.05); ctx.lineTo(ax + h * 0.05, y - h * 0.1); ctx.lineTo(ax - h * 0.05, y - h * 0.1); ctx.lineTo(ax - h * 0.06, ay + h * 0.05); ctx.lineTo(ax - h * 0.12, ay + h * 0.05); ctx.closePath(); ctx.fill(); ctx.stroke();
+  rysujCzesc(ctx, 'helm', ax, ay - h * 0.04, h * 0.1, 'rgba(255,150,70,0.95)', 'rgba(60,20,8,0.9)');
+  ctx.restore();
+  robotnikNaRycinie(ctx, w * 0.47, y, h * 0.42, t, 'buduje');
+}
+
+/** Sypialnia: posłanie, śpiący pobożny, świeca i „z z z”. */
+function sypialniaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 6);
+  const y = h * 0.82;
+  ctx.save();
+  ctx.strokeStyle = 'rgba(20,12,8,0.95)'; ctx.lineWidth = 1.4;
+  const b1 = w * 0.18, b2 = w * 0.78;
+  ctx.fillStyle = 'rgba(150,120,70,0.98)'; ctx.beginPath(); ctx.rect(b1, y - h * 0.05, b2 - b1, h * 0.05); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(206,190,156,0.98)'; ctx.beginPath(); ctx.ellipse(b1 + h * 0.07, y - h * 0.06, h * 0.06, h * 0.025, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  const sx = w * 0.88;
+  const g = ctx.createRadialGradient(sx, y - h * 0.2, 0, sx, y - h * 0.2, h * 0.4);
+  g.addColorStop(0, 'rgba(255,214,140,0.45)'); g.addColorStop(1, 'rgba(255,200,120,0)');
+  ctx.fillStyle = g; ctx.fillRect(sx - h * 0.4, y - h * 0.6, h * 0.8, h * 0.6);
+  ctx.fillStyle = 'rgba(230,220,196,0.98)'; ctx.fillRect(sx - 3, y - h * 0.12, 6, h * 0.12);
+  ctx.fillStyle = 'rgba(255,230,150,0.95)'; ctx.beginPath(); ctx.ellipse(sx, y - h * 0.14, 3, 6, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  // leżący rysuje się tułowiem w stronę, w którą patrzy (render/postacie.ts) — stopy na prawym końcu posłania
+  robotnikNaRycinie(ctx, b1 + (b2 - b1) * 0.86, y - h * 0.04, h * 0.42, t, 'spi', 1, 'pobozny');
+  ctx.save();
+  ctx.font = `italic ${Math.round(h * 0.08)}px Georgia, serif`;
+  for (let i = 0; i < 3; i++) {
+    const f = (t * 0.0005 + i / 3) % 1;
+    ctx.fillStyle = `rgba(226,214,186,${0.9 * Math.sin(f * Math.PI)})`;
+    ctx.fillText('z', b1 + h * 0.1 + f * h * 0.15, y - h * (0.18 + f * 0.25));
+  }
+  ctx.restore();
+}
+
 function dlonOtchlani({ ctx, w, h, t }: Plotno): void {
   ctx.save();
   ctx.fillStyle = '#060303';
@@ -465,7 +581,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'rasa-0', grupa: 'rasy', nazwa: 'Pobożni', lacina: 'Gens pia',
     opis: `Twój jedyny lud — stała drużyna: ${LUD.start.robotnik} robotników, ${LUD.start.pobozny} pobożnych i ${LUD.start.rycerz} rycerz. Nikt się w nim nie rodzi i skała nie wydaje nowych — każda śmierć to strata na całą partię. Mieszkają przy siedzibie, a odcięte grupki zakładają obozy.`,
-    kiedy: 'Pilnuj, żeby zawsze był ktoś, kto się modli — bez pobożnych skorupa nie pęknie. Pobożny może się okaleczyć (krew, ale słabnie na zawsze), a każdego możesz złożyć w ofierze.',
+    kiedy: 'Pilnuj, żeby zawsze był ktoś, kto się modli — bez pobożnych skorupa nie pęknie. Pobożny może się okaleczyć (krew, ale słabnie, póki nie wyśpi się w sypialni), a każdego możesz złożyć w ofierze.',
     rycina: postac(Race.GOBLIN, 'modli'),
   },
   // ryty
@@ -478,7 +594,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'ryt-szept', grupa: 'ryty', nazwa: 'Szepnij', lacina: 'Susurrus',
-    opis: '„Szepnij”, potem dotknij jednej postaci i wybierz słowo na jej karcie. „Módl się” posyła pobożnego pod twój rdzeń od razu, bez względu na wiarę ludu. „Okalecz się” — pobożny upuszcza krwi: dostajesz krew, a on słabnie na zawsze. „Ofiaruj” — oddaje ci życie za dużo krwi. „Przerwij modlitwę” zawraca spod rdzenia.',
+    opis: '„Szepnij”, potem dotknij jednej postaci i wybierz słowo na jej karcie. „Módl się” posyła pobożnego pod twój rdzeń od razu, bez względu na wiarę ludu. „Okalecz się” — pobożny upuszcza krwi: dostajesz krew, a on słabnie, póki nie wyśpi się w sypialni. „Ofiaruj” — oddaje ci życie za dużo krwi. „Przerwij modlitwę” zawraca spod rdzenia.',
     kiedy: 'Gdy droga do rdzenia jest gotowa, szepnij „módl się” obu pobożnym — skorupa pęka szybciej, gdy modlą się razem.',
     koszt: `módl się ${kosztSlowami('szept', 'modl')}, okalecz się ${kosztSlowami('szept', 'okalecz')}, ofiaruj ${kosztSlowami('szept', 'ofiaruj')}`,
     rycina: cala(rysujSzept),
@@ -512,8 +628,20 @@ export const TABLICE: Tablica[] = [
   {
     id: 'kruszce', grupa: 'zasoby', nazwa: 'Kruszce', lacina: 'Ferrum et aurum',
     opis: `Żelazo i złoto — dwie liczby nad płytą, obok wiary, krwi i jedzenia. Nikt ich nie nosi: gdy robotnik rozbije kafel rudy, okruch sam leci do licznika i dodaje ${KRUSZCE.zelazoZaKafel} żelaza albo ${KRUSZCE.zlotoZaKafel} złota. Żelazo leży w kępach rdzawej rudy w płytkiej warstwie, tuż pod salą; złoto — w żółtych grudkach pod dnami jaskiń w warstwie środkowej, głębiej i twardsze. Wskaż zaznaczonemu robotnikowi rudę, a wykuje całą kępę — kafel po kaflu, najdalej ${POLECENIA.zylaZasieg} kafli od wskazanego. W dół schodzi stopniami, a podłogi pod złotą kreską drogi wiernych nie rusza.`,
-    kiedy: 'Kop, póki jest czas: z żelaza kuźnia wykuje zbroję dla rycerza, a ze złota warsztat zrobi krzyże i różańce, które zamienią się w wiarę (wkrótce). Po złoto trzeba zejść głęboko — a kto zejdzie, zwykle nie wraca.',
+    kiedy: 'Kop, póki jest czas: z żelaza kuźnia wykuje zbroję dla rycerza, a ze złota warsztat zrobi krzyże i różańce, które zamienią się w wiarę. Po złoto trzeba zejść głęboko — a kto zejdzie, zwykle nie wraca.',
     rycina: kruszce,
+  },
+  {
+    id: 'warsztat', grupa: 'zasoby', nazwa: 'Warsztat', lacina: 'Officina',
+    opis: `Robotnik, któremu wskażesz gotowy warsztat, staje przy stole: topi złoto w tyglu i kuje z niego krzyż, różaniec albo krucyfiks. Na sztukę idzie ${POMIESZCZENIA.warsztat.zlotoNaSztuke} złota i ${Math.round(POMIESZCZENIA.warsztat.tikowNaSztuke / 120)} sekund pracy. Gotowa rozbłyskuje i od razu zamienia się w ${POMIESZCZENIA.warsztat.wiaraZaSztuke} wiary — krzyż leci do licznika. Dwóch przy stole pracuje szybciej. Bez złota robotnik czeka przy stole, a nad warsztatem stoi „brak złota”.`,
+    kiedy: 'Złoto leży głęboko, pod dnami jaskiń — warsztat zamienia je w wiarę na Cud i szepty.',
+    rycina: warsztatRycina,
+  },
+  {
+    id: 'kuznia', grupa: 'zasoby', nazwa: 'Kuźnia', lacina: 'Fabrica armorum',
+    opis: `Robotnik przy kowadle wykuwa z żelaza kolejne części zbroi rycerza: ${POMIESZCZENIA.kuznia.czesci.map((c) => `${c.nazwa} (${c.zelazo} żelaza)`).join(', ')}. Palenisko bucha, młot dzwoni, iskry lecą w takt uderzeń, a gotowa część błyska nad kowadłem i trafia na wieszak. Bez żelaza robotnik czeka, a nad kuźnią widać, czego brakuje.`,
+    kiedy: 'Kuj zbroję przed falami Strażników Snu. Rycerz zacznie nosić te części w jednej z następnych wersji — na razie czekają na wieszaku.',
+    rycina: kuzniaRycina,
   },
   // prawa góry
   {
@@ -602,9 +730,21 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'rozkazy', grupa: 'prawa', nazwa: 'Drużyna i rozkazy', lacina: 'Imperium',
-    opis: 'Pod płytą trzy medaliony: robotnicy, pobożni i rycerz, z liczbą żywych. Dotknięcie medalionu zaznacza wszystkich z tej roli, drugie wiezie do nich kamerę; dotknięcie postaci na mapie zaznacza ją (z Shiftem dokładasz). Gdy ktoś jest zaznaczony, dotknięcie mapy to rozkaz „idź tam”: idzie i trzyma tam posterunek — pobożny się modli, rycerz pilnuje — aż rozkaz odwołasz. Pobożny i rycerz idą tylko tam, dokąd prowadzi droga; inaczej odmawiają — kręcą głową, a w dymku mówią dlaczego. Robotnik przekopuje się sam, a wskazana mu skała to „kop tam” (ruda — „kop żyłę”: wykuje całą kępę). „Kop drogę wiernych” każe robotnikom kopać złotą kreskę. Stojący rozstawiają się, nie jeden w drugim, a idący razem dopasowują krok.',
-    kiedy: 'Klawisze: A — robotnicy, S — pobożni, D — rycerz, G — kop drogę wiernych, V — odwołaj rozkaz; Esc albo prawy przycisk — odznacz. Bez rozkazu robotnicy nie kopią.',
+    opis: 'Pod płytą trzy medaliony: robotnicy, pobożni i rycerz, z liczbą żywych. Dotknięcie medalionu zaznacza wszystkich z tej roli, drugie wiezie do nich kamerę; dotknięcie postaci na mapie zaznacza ją (z Shiftem dokładasz). Gdy ktoś jest zaznaczony, dotknięcie mapy to rozkaz „idź tam”: idzie i trzyma tam posterunek — pobożny się modli, rycerz pilnuje — aż rozkaz odwołasz. Pobożny i rycerz idą tylko tam, dokąd prowadzi droga; inaczej odmawiają — kręcą głową, a w dymku mówią dlaczego. Robotnik przekopuje się sam, a wskazana mu skała to „kop tam” (ruda — „kop żyłę”: wykuje całą kępę). Wskazany plan pomieszczenia robotnicy kują, w gotowym warsztacie i kuźni pracują, a w sypialni każdy śpi. „Kop drogę wiernych” każe robotnikom kopać złotą kreskę. Stojący rozstawiają się, nie jeden w drugim, a idący razem dopasowują krok.',
+    kiedy: 'Klawisze: A — robotnicy, S — pobożni, D — rycerz, G — kop drogę wiernych, V — odwołaj rozkaz, B — wyznacz pomieszczenie; Esc albo prawy przycisk — odznacz. Bez rozkazu robotnicy nie kopią.',
     rycina: postac(Race.GOBLIN, 'idzie', 1, 'rycerz'),
+  },
+  {
+    id: 'pomieszczenia', grupa: 'prawa', nazwa: 'Pomieszczenia', lacina: 'Conclavia',
+    opis: `„Wyznacz pomieszczenie” pod płytą (albo klawisz B) i szablon: sypialnia (${POMIESZCZENIA.szablony.sypialnia.w}×${POMIESZCZENIA.szablony.sypialnia.h}), warsztat i kuźnia (${POMIESZCZENIA.szablony.warsztat.w}×${POMIESZCZENIA.szablony.warsztat.h}), korytarz i szyb. Pod kursorem widać obrys: jasny — wolno, czerwony — nie, i dlaczego. Pokój stoi na płaskiej, litej podłodze i ma wejście z boku, na poziomie podłogi albo o kafel wyżej lub niżej. Korytarz i szyb zaczynają się tam, gdzie stoi lud: korytarz ciągniesz palcem w bok (wysoki na ${POMIESZCZENIA.korytarzWys} kafle), szyb w dół — to proste schody, więc da się nim wrócić. Planu nie położysz w skale nie do ruszenia ani pod złotą kreską drogi wiernych; prawy przycisk na planie go skreśla.`,
+    kiedy: 'Plan kują tylko robotnicy, których zaznaczysz i którym go wskażesz — wolni sami nic nie biorą. Kując plan, robotnik sięga też nad głowę.',
+    rycina: pomieszczeniaRycina,
+  },
+  {
+    id: 'sypialnia', grupa: 'prawa', nazwa: 'Sypialnia', lacina: 'Dormitorium',
+    opis: `Każdy z ludu — robotnik, pobożny, rycerz — wskazany na gotową sypialnię kładzie się na posłaniu. Po ${Math.round(POMIESZCZENIA.sypialnia.snuTikow / 120)} sekundach snu traci osłabienia: okaleczenie i zatrucie (czerwona aureola rozpływa się), wstaje wypoczęty i wraca do swoich zajęć. Głodny najpierw idzie jeść, a potem wraca spać.`,
+    kiedy: 'Poślij tam pobożnego po samookaleczeniu albo kogoś zatrutego — wróci do pełni sił.',
+    rycina: sypialniaRycina,
   },
   {
     id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',

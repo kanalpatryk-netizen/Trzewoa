@@ -6,6 +6,8 @@
  *    kilof „kop tam”, strzałki nad czołem drogi wiernych), fala w miejscu wydania rozkazu
  *    i dymek z powodem odmowy (sama odmowa — kręcenie głową — to poza w render/lud/ruch.ts).
  * Rozkazy wykonuje symulacja: src/sim/polecenia.ts; ekran gry: src/app/screens/game.ts.
+ * Etap 3c: przycisk „wyznacz pomieszczenie” (klawisz B) i, gdy planujesz, listwa szablonów u dołu płyty
+ * (sypialnia, warsztat, kuźnia, korytarz, szyb) — plany: src/sim/pomieszczenia.ts.
  */
 import type { Sim } from '../sim/sim';
 import { Job, type Creature } from '../sim/creatures';
@@ -21,6 +23,7 @@ import { FRESK } from '../nastawy/barwy';
 import { POLECENIA } from '../nastawy/polecenia';
 import { postepOdmowy } from './lud/odmowa';
 import { wolnoRuszac } from './nastroj';
+import { SZABLONY, NAZWA_POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 
 /** Kolejność medalionów pod płytą. */
 export const ROLE_DRUZYNY: Rola[] = ['robotnik', 'pobozny', 'rycerz'];
@@ -28,8 +31,17 @@ export const ROLE_DRUZYNY: Rola[] = ['robotnik', 'pobozny', 'rycerz'];
 /** Barwy ról (te same co dawna wstęga ludu): biel wapienna pobożnych, ugier robotników, błękit rycerzy. */
 export const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
 
-export type AkcjaDruzyny = 'rola' | 'droga' | 'odwolaj' | 'odznacz';
-export interface PoleDruzyny { akcja: AkcjaDruzyny; rola?: Rola; x: number; y: number; w: number; h: number }
+export type AkcjaDruzyny = 'rola' | 'droga' | 'odwolaj' | 'odznacz' | 'pomieszczenia' | 'szablon' | 'koniecSzablonu';
+export interface PoleDruzyny { akcja: AkcjaDruzyny; rola?: Rola; szablon?: RodzajPomieszczenia; x: number; y: number; w: number; h: number }
+
+/** Co mówi listwa szablonów pod każdym z nich. */
+const JAK_PLANOWAC: Record<RodzajPomieszczenia, string> = {
+  sypialnia: 'dotknij skały obok przejścia — plan stanie pod kursorem; sen w niej zdejmuje osłabienia',
+  warsztat: 'dotknij skały obok przejścia — plan stanie pod kursorem; w warsztacie złoto staje się wiarą',
+  kuznia: 'dotknij skały obok przejścia — plan stanie pod kursorem; w kuźni żelazo staje się zbroją rycerza',
+  korytarz: 'przeciągnij w bok od miejsca, gdzie stoi lud — korytarz na 2 kafle',
+  szyb: 'przeciągnij w dół i w bok od miejsca, gdzie stoi lud — proste schody',
+};
 
 /** Fala w miejscu wydania rozkazu (zegar ekranu): złota — przyjęli, czerwona — odmówili. */
 export interface FalaRozkazu { x: number; y: number; t: number; ok: boolean }
@@ -104,6 +116,7 @@ function pigulka(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
 export function rysujDruzyne(
   ctx: CanvasRenderingContext2D, sim: Sim, plate: Plate, vh: number,
   zaznaczeni: ReadonlySet<number>, kursor: { x: number; y: number }, czas: number,
+  szablon: RodzajPomieszczenia | null = null,
 ): PoleDruzyny[] {
   const { o, r, cy, podpisy } = uklad(plate, vh);
   const pola: PoleDruzyny[] = [];
@@ -160,40 +173,73 @@ export function rysujDruzyne(
   const zaznaczone = sim.creatures.filter((c) => !c.dead && zaznaczeni.has(c.id) && rolaPostaci(c));
   const rozm = Math.max(12, Math.min(14, r * 0.58));
   if (x1 - x0 > 60) {
-    if (zaznaczone.length) {
-      const robotnicy = zaznaczone.filter((c) => rolaPostaci(c) === 'robotnik').length;
-      const opcje: { akcja: AkcjaDruzyny; tekst: string }[] = [];
-      if (robotnicy && czoloDrogi(sim) >= 0) opcje.push({ akcja: 'droga', tekst: 'kop drogę wiernych' });
-      if (zaznaczone.some((c) => c.polecenie)) opcje.push({ akcja: 'odwolaj', tekst: 'odwołaj rozkaz' });
-      opcje.push({ akcja: 'odznacz', tekst: 'odznacz' });
-      // podpowiedź nad przyciskami: co zrobi dotknięcie mapy
-      const hp = Math.max(22, r * 0.95);
-      const yP = podpisy ? cy - hp * 0.05 : cy - hp / 2;
-      if (podpisy) {
-        ctx.font = `italic ${rozm}px ${SERIF}`;
-        ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+    const robotnicy = zaznaczone.filter((c) => rolaPostaci(c) === 'robotnik').length;
+    const opcje: { akcja: AkcjaDruzyny; tekst: string; wlaczony?: boolean }[] = [];
+    if (robotnicy && czoloDrogi(sim) >= 0) opcje.push({ akcja: 'droga', tekst: 'kop drogę wiernych' });
+    if (zaznaczone.some((c) => c.polecenie)) opcje.push({ akcja: 'odwolaj', tekst: 'odwołaj rozkaz' });
+    if (zaznaczone.length) opcje.push({ akcja: 'odznacz', tekst: 'odznacz' });
+    // etap 3c: plany pomieszczeń — zawsze pod ręką (klawisz B)
+    opcje.push({ akcja: 'pomieszczenia', tekst: szablon ? 'planujesz… (B)' : 'wyznacz pomieszczenie', wlaczony: !!szablon });
+    // podpowiedź nad przyciskami: co zrobi dotknięcie mapy
+    const hp = Math.max(22, r * 0.95);
+    const yP = podpisy ? cy - hp * 0.05 : cy - hp / 2;
+    if (podpisy) {
+      ctx.font = `italic ${rozm}px ${SERIF}`;
+      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+      if (zaznaczone.length) {
         ctx.fillStyle = 'rgba(246,216,142,0.92)';
         const ile = zaznaczone.length === 1 ? 'zaznaczony 1' : `zaznaczonych ${zaznaczone.length}`;
-        ctx.fillText(`${ile} — dotknij mapy: idź tam${robotnicy ? ' (w skałę: kop)' : ''}`, x0, yP - 6, x1 - x0);
+        ctx.fillText(`${ile} — dotknij mapy: idź tam${robotnicy ? ' (w skałę: kop; w plan: kuj)' : ''}`, x0, yP - 6, x1 - x0);
+      } else {
+        ctx.fillStyle = 'rgba(214,198,166,0.62)';
+        ctx.fillText('dotknij postaci albo medalionu — wydasz rozkaz', x0, yP - 6, x1 - x0);
       }
-      let x = x0;
-      for (const op of opcje) {
-        ctx.font = `${rozm}px ${SERIF}`;
-        const w = Math.min(x1 - x, ctx.measureText(op.tekst).width + 22);
-        if (w < 40) break;
-        const pod = kursor.x >= x && kursor.x <= x + w && kursor.y >= yP && kursor.y <= yP + hp;
-        pigulka(ctx, x, yP, w, hp, op.tekst, pod, rozm);
-        pola.push({ akcja: op.akcja, x, y: yP - 4, w, h: hp + 8 });
-        x += w + 8;
-      }
-    } else if (podpisy) {
-      ctx.font = `italic ${rozm}px ${SERIF}`;
-      ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = `${'rgba(214,198,166,'}0.62)`;
-      ctx.fillText('dotknij postaci albo medalionu — wydasz rozkaz', x0, cy, x1 - x0);
+    }
+    let x = x0;
+    for (const op of opcje) {
+      ctx.font = `${rozm}px ${SERIF}`;
+      const w = Math.min(x1 - x, ctx.measureText(op.tekst).width + 22);
+      if (w < 40) break;
+      const pod = op.wlaczony || (kursor.x >= x && kursor.x <= x + w && kursor.y >= yP && kursor.y <= yP + hp);
+      pigulka(ctx, x, yP, w, hp, op.tekst, pod, rozm);
+      pola.push({ akcja: op.akcja, x, y: yP - 4, w, h: hp + 8 });
+      x += w + 8;
     }
   }
+  // etap 3c: listwa szablonów u dołu płyty, gdy planujesz
+  if (szablon) pola.push(...listwaSzablonow(ctx, plate, szablon, kursor, rozm));
   ctx.restore();
+  return pola;
+}
+
+/** Listwa szablonów u dołu płyty: sypialnia, warsztat, kuźnia, korytarz, szyb i „gotowe”; nad nią — jak planować. */
+function listwaSzablonow(ctx: CanvasRenderingContext2D, plate: Plate, szablon: RodzajPomieszczenia, kursor: { x: number; y: number }, rozm: number): PoleDruzyny[] {
+  const pola: PoleDruzyny[] = [];
+  const hp = Math.max(24, rozm * 1.8);
+  const y = plate.y + plate.h - hp - 10;
+  const opcje: { akcja: AkcjaDruzyny; tekst: string; szablon?: RodzajPomieszczenia }[] = [
+    ...SZABLONY.map((s) => ({ akcja: 'szablon' as AkcjaDruzyny, tekst: NAZWA_POMIESZCZENIA[s], szablon: s })),
+    { akcja: 'koniecSzablonu', tekst: 'gotowe (Esc)' },
+  ];
+  ctx.font = `${rozm}px ${SERIF}`;
+  const szer = opcje.map((o) => ctx.measureText(o.tekst).width + 22);
+  const calosc = szer.reduce((s, w) => s + w + 8, 0) + 12;
+  // ciemna listwa pod przyciskami, żeby było je widać na skale
+  ctx.fillStyle = 'rgba(12,8,6,0.82)';
+  ctx.fillRect(plate.x + 6, y - rozm * 1.9, Math.min(plate.w - 12, Math.max(calosc, rozm * 32)), hp + rozm * 1.9 + 6);
+  ctx.font = `italic ${rozm}px ${SERIF}`;
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillStyle = 'rgba(246,216,142,0.92)';
+  ctx.fillText(`${NAZWA_POMIESZCZENIA[szablon]}: ${JAK_PLANOWAC[szablon]} · prawy przycisk na planie — skreśl`, plate.x + 14, y - 8, plate.w - 28);
+  let x = plate.x + 12;
+  opcje.forEach((op, i) => {
+    const w = szer[i];
+    if (x + w > plate.x + plate.w - 8) return;
+    const pod = op.szablon === szablon || (kursor.x >= x && kursor.x <= x + w && kursor.y >= y && kursor.y <= y + hp);
+    pigulka(ctx, x, y, w, hp, op.tekst, pod, rozm);
+    pola.push({ akcja: op.akcja, szablon: op.szablon, x, y: y - 4, w, h: hp + 8 });
+    x += w + 8;
+  });
   return pola;
 }
 

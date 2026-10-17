@@ -21,6 +21,7 @@ import { wiadroTeraz } from './wiadro';
 import { LUD, REMAKE } from '../nastawy/lud';
 import { falaTrwa } from './straznicy';
 import type { Urobek } from './kruszce';
+import { tikPomieszczen, type Pomieszczenie, type ZdarzeniePom } from './pomieszczenia';
 
 export interface Clan {
   id: number;
@@ -95,6 +96,13 @@ export class Sim {
   zloto = 0;
   /** Świeży urobek: skąd leci okruch do licznika (render/kruszce.ts). Nie idzie do zapisu. */
   urobek: Urobek[] = [];
+  /** Alpha, etap 3c: plany i gotowe pomieszczenia (sim/pomieszczenia.ts). */
+  pomieszczenia: Pomieszczenie[] = [];
+  nrPomieszczenia = 1;
+  /** Części zbroi rycerza wykute w kuźni (kolejność z POMIESZCZENIA.kuznia.czesci). */
+  zbroja: string[] = [];
+  /** Zdarzenia pomieszczeń dla rysunku (gotowe, krzyż, część zbroi, wypoczęty). Nie idą do zapisu. */
+  zdarzeniaPom: ZdarzeniePom[] = [];
   /** Otchłań nie jest dochodem — jest miarą tego, o czym nikt nie pamięta. */
   get otchlan(): number { return this.world.unknown * OTCHLAN_PER_TILE; }
   sen = 0;                    // 0 = czuwasz, 1 = zasnąłeś na zawsze
@@ -139,6 +147,7 @@ export class Sim {
   stat = {
     urodzen: 0, kart: 0, szczyt: 0, walka: 0, dlug: 0, przysiega: 0, proroctwo: 0, lancuch: 0, podsumowana: 0,
     ludZgonow: 0, zGlodu: 0, wspinaczek: 0, helmy: 0, nakarm: 0, przegnany: 0, odepchnieta: 0, weteranowMax: 0, ludMax: 0,
+    dewocjonalia: 0,
   };
   /** v4.1 beta — podsumowanie skończonej partii (osiągnięcia); nie trafia do zapisu. */
   podsumowanie?: Podsumowanie;
@@ -1325,6 +1334,7 @@ export class Sim {
     this.tides();
     tikWydarzen(this);
     tikLudu(this);
+    tikPomieszczen(this);
     if (this.wiara > G.wiaraMax) this.wiara = G.wiaraMax;
     if (this.krew > G.krewMax) this.krew = G.krewMax;
   }

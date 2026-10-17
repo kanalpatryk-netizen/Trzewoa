@@ -9,6 +9,9 @@
  *    Gdy wskażesz rudę (żelazo, złoto), to „kop żyłę”: po tym kaflu bierze kolejne odsłonięte kafle
  *    tej samej rudy (etap 3b; nastepnyKafelZyly), aż kępa się skończy.
  *  - „kop drogę wiernych” (robotnik) — kopie czoło złotej kreski (plan drogi pod rdzeń), aż będzie gotowa.
+ *  - etap 3c: wskazanie planu pomieszczenia — robotnicy go kują (kafel po kaflu, „kop” z polem `pom`); wskazanie
+ *    gotowego warsztatu albo kuźni — robotnik w nim pracuje („praca”); sypialni — każdy idzie spać („sen”).
+ *    Wolni robotnicy sami nic z tego nie biorą (sim/pomieszczenia.ts).
  * Robotnicy nie kopią już sami: bez rozkazu tylko noszą jedzenie i odpoczywają przy obozie.
  * Rozkaz wykonuje planer ludu (creatures.ts: planPolecenia); przerywa go tylko to, co pilne —
  * głód, fala Strażników, walka — a potem postać wraca do rozkazu.
@@ -22,8 +25,10 @@ import { szukajDrogi, szukajKopiac, kosztKuciaLudu, budzetDrog, nowyTik, stoi } 
 import { czoloDrogi, nieWykopane } from './pielgrzymka';
 import { zapisz, kto } from './dziennik';
 import { kruszecKafla, type RodzajKruszcu } from './kruszce';
+import { kafleDoKucia, siegaPlanu, miejsceWPom, type Pomieszczenie } from './pomieszczenia';
+import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
 
-export type TypPolecenia = 'idz' | 'kop' | 'droga';
+export type TypPolecenia = 'idz' | 'kop' | 'droga' | 'praca' | 'sen';
 
 export interface Polecenie {
   typ: TypPolecenia;
@@ -37,6 +42,8 @@ export interface Polecenie {
   prob?: number;
   /** Alpha, etap 3b: „kop żyłę” — jaką rudę kuje, skąd zaczął (zasięg) i ile kafli już wykuł */
   zyla?: RodzajKruszcu; zx?: number; zy?: number; zylaIle?: number;
+  /** Alpha, etap 3c: pomieszczenie (sim/pomieszczenia.ts) — plan do wykucia („kop”), warsztat albo kuźnia („praca”), sypialnia („sen”) */
+  pom?: number;
 }
 
 /** Odmowa wykonania rozkazu — dymek nad głową i kręcenie głową (render/lud/ruch.ts). */
@@ -222,6 +229,63 @@ export function wydajGrupie(sim: Sim, ids: readonly number[], x: number, y: numb
     const powod = wydajPolecenie(sim, c, 'idz', mx, my);
     if (powod) odmowy.push(powod); else przyjeli++;
   });
+  return { przyjeli, odmowy };
+}
+
+/** Robotnik idzie kuć plan: pierwszy kafel, do którego dojdzie (inaczej przekopie się do najbliższego). */
+function kujPlan(sim: Sim, c: Creature, pom: Pomieszczenie): string | null {
+  const w = sim.world;
+  const cx = Math.floor(c.x), cy = Math.floor(c.y);
+  const kafle = kafleDoKucia(sim, c, pom, 4);
+  if (!kafle.length) return odmow(sim, c, 'nie ma tu czego kuć');
+  let cel: [number, number] | null = null;
+  for (const [x, y] of kafle) {
+    const obok = (xx: number, yy: number) => siegaPlanu(xx, yy, x, y) && stoi(sim, xx, yy);
+    if (obok(cx, cy) || drogaTeraz(sim, c, obok, P.szukanieDrogi)) { cel = [x, y]; break; }
+  }
+  if (!cel && dokopieSie(sim, c, (i) => i === w.idx(kafle[0][0], kafle[0][1]))) cel = kafle[0];
+  if (!cel) return odmow(sim, c, 'nie dojdę do planu');
+  przerwij(sim, c);
+  c.polecenie = { typ: 'kop', x: cel[0], y: cel[1], od: sim.tick, pom: pom.id };
+  c.odmowa = undefined;
+  zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — kuj plan (${NAZWA_POMIESZCZENIA[pom.rodzaj]})`, cel[0], cel[1]);
+  return null;
+}
+
+/** Do gotowego pomieszczenia: pracować przy stole albo kowadle („praca”) albo spać na posłaniu („sen”). */
+function doPomieszczenia(sim: Sim, c: Creature, pom: Pomieszczenie, typ: 'praca' | 'sen', n: number): string | null {
+  const [mx, my] = miejsceWPom(pom, n);
+  const tam = (x: number, y: number) => Math.abs(x - mx) <= 1 && y === my && stoi(sim, x, y);
+  if (!tam(Math.floor(c.x), Math.floor(c.y)) && !drogaTeraz(sim, c, tam, P.szukanieDrogi)) return odmow(sim, c, 'nie dojdę tam — nie ma drogi');
+  przerwij(sim, c);
+  c.polecenie = { typ, x: mx, y: my, od: sim.tick, pom: pom.id };
+  c.odmowa = undefined;
+  c.snu = 0;
+  zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — ${typ === 'sen' ? 'śpij w sypialni' : `pracuj: ${NAZWA_POMIESZCZENIA[pom.rodzaj]}`}`, mx, my);
+  return null;
+}
+
+/**
+ * Alpha, etap 3c: zaznaczonym wskazano plan albo gotowe pomieszczenie. Plan — robotnicy go kują (reszta odmawia:
+ * kują tylko robotnicy). Warsztat i kuźnia — robotnicy pracują, reszta wchodzi do środka. Sypialnia — każdy idzie
+ * spać. Zwraca, ilu przyjęło rozkaz, i odmowy.
+ */
+export function wydajNaPomieszczenie(sim: Sim, ids: readonly number[], pom: Pomieszczenie): { przyjeli: number; odmowy: string[] } {
+  const lud = ids.map((id) => sim.creatureById(id)).filter((c): c is Creature => !!c && !c.dead && !!rolaPostaci(c));
+  // miejsca przy stole, kowadle i na posłaniach liczą się od tych, którzy już tam są
+  let zajete = sim.creatures.filter((o) => !o.dead && !ids.includes(o.id) && o.polecenie?.pom === pom.id && (o.polecenie.typ === 'praca' || o.polecenie.typ === 'sen')).length;
+  let przyjeli = 0;
+  const odmowy: string[] = [];
+  for (const c of lud) {
+    const rola = rolaPostaci(c);
+    let powod: string | null;
+    if (!pom.gotowe) powod = rola === 'robotnik' ? kujPlan(sim, c, pom) : odmow(sim, c, 'kują tylko robotnicy');
+    else if (pom.rodzaj === 'sypialnia') powod = doPomieszczenia(sim, c, pom, 'sen', zajete);
+    else if (rola === 'robotnik') powod = doPomieszczenia(sim, c, pom, 'praca', zajete);
+    else { const [mx, my] = miejsceWPom(pom, 2); powod = wydajPolecenie(sim, c, 'idz', mx, my); }
+    if (powod) odmowy.push(powod);
+    else { przyjeli++; if (c.polecenie?.typ === 'praca' || c.polecenie?.typ === 'sen') zajete++; }
+  }
   return { przyjeli, odmowy };
 }
 

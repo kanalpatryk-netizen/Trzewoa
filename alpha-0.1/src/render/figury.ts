@@ -64,6 +64,17 @@ function ruch(c: Creature, czas: number): Ruch {
   return r;
 }
 
+/**
+ * Alpha, etap 3c: faza zamachu młotkiem tej postaci (0..1; uderzenie ok. 0,52 — jak w render/lud/ruch.ts: budowa),
+ * żeby iskry z kowadła i błysk na stole szły w takt jej rąk (render/pomieszczenia.ts).
+ */
+export function fazaMlota(c: Creature): number {
+  const r = pamiec.get(c);
+  if (!r) return 0;
+  const z = r.zegar * 1.6 + c.id * 0.13;
+  return z - Math.floor(z);
+}
+
 /** Długość pełnego kroku w kaflach — duzi stawiają kroki rzadziej. */
 function krokRasy(r: Race): number {
   return r === Race.TROLL ? 1.6 : r === Race.DWARF ? 0.8 : r === Race.SPINNER ? 0.7 : 1.0;
@@ -94,6 +105,8 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   if (wspina) return 'wspina';
   const przy = (x: number, y: number, d: number) => Math.abs(x + 0.5 - c.x) <= d && Math.abs(y + 0.5 - c.y) <= d + 0.6;
   const stoi = r.v < 0.6;
+  // Alpha, etap 3c: przy stole albo kowadle — z młotkiem; w sypialni — leży na posłaniu
+  if (c.czynnosc && stoi) return c.czynnosc;
   switch (c.job) {
     case Job.SLEEP: return 'spi';
     case Job.DIG: case Job.DESCEND:
@@ -1098,7 +1111,9 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       const dobre = stany.some((s) => s.dobry), zle = stany.some((s) => !s.dobry);
       if (dobre || zle) {
         const puls = 0.75 + 0.25 * Math.sin(czas * 0.005 + c.id);
-        const ax = sx + kier * h * 0.05, ay = sy - h * 1.08;
+        // Alpha, etap 3c: śpiący w sypialni leży — aureola nad głową, nie tam, gdzie stałby (render/postacie.ts: lezy)
+        const lezy = c.czynnosc === 'spi';
+        const ax = lezy ? sx - kier * h * 1.3 : sx + kier * h * 0.05, ay = lezy ? sy - h * 0.45 : sy - h * 1.08;
         const rx = Math.max(7, h * 0.26), ry = Math.max(2.4, h * 0.08);
         ctx.save();
         ctx.lineWidth = Math.max(2, h * 0.065);
