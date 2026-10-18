@@ -24,6 +24,7 @@ import { LUD, REMAKE } from '../nastawy/lud';
 import { falaTrwa } from './straznicy';
 import type { Urobek } from './kruszce';
 import { tikPomieszczen, type Pomieszczenie, type ZdarzeniePom } from './pomieszczenia';
+import { tikZbroi } from './zbroja';
 import { tikOltarza, type ZdarzenieOltarza } from './oltarz';
 
 export interface Clan {
@@ -1345,6 +1346,7 @@ export class Sim {
     tikWydarzen(this);
     tikLudu(this);
     tikPomieszczen(this);
+    tikZbroi(this);
     tikOltarza(this);
     if (this.wiara > G.wiaraMax) this.wiara = G.wiaraMax;
     if (this.krew > G.krewMax) this.krew = G.krewMax;

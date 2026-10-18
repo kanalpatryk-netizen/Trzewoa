@@ -39,7 +39,7 @@ export const POMIESZCZENIA = {
   },
 
   kuznia: {
-    /** Kolejne części zbroi rycerza: ile żelaza i ile tików. Rysowanie części na rycerzu — etap 3f. */
+    /** Kolejne części zbroi rycerza: ile żelaza i ile tików. Co dają i jak rycerz je zakłada — nastawy/zbroja.ts. */
     czesci: [
       { id: 'helm', nazwa: 'hełm', zelazo: 3, tikow: 1500 },
       { id: 'naramienniki', nazwa: 'naramienniki', zelazo: 3, tikow: 1500 },

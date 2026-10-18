@@ -28,6 +28,7 @@ import { DEV } from '../../sim/dziennik';
 import { rysujDev } from '../../render/dev';
 import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
+import { naWieszaku } from '../../sim/zbroja';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
 import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza } from '../../sim/polecenia';
 import { rysujZnacznikiLudu } from '../../render/lud';
@@ -458,6 +459,10 @@ export class EkranGry implements Ekran {
     if (sim.tick > 4000) cicho('schody');
     // Alpha, etap 3b: pierwsza wykuta ruda odkrywa tablicę kruszców
     if (sim.urobek.length || sim.zelazo || sim.zloto) odkrycia.odkryj('kruszce');
+    // etap 3f: warstwy góry — gdy ktoś z ludu zejdzie pod salę (albo po cichu po minucie); zbroja — pierwsza wykuta część
+    if (sim.creatures.some((c) => !c.dead && c.rola && c.y > sim.world.salaStart.y + 6)) odkrycia.odkryj('warstwy');
+    if (sim.tick > 7200) cicho('warstwy');
+    if (sim.zbroja.length) odkrycia.odkryj('zbroja');
     // etap 3c: pierwszy plan — tablica pomieszczeń; gotowy warsztat, kuźnia, sypialnia — ich tablice
     if (this.szablon || sim.pomieszczenia.length) odkrycia.odkryj('pomieszczenia');
     for (const pom of sim.pomieszczenia) if (pom.gotowe && (pom.rodzaj === 'warsztat' || pom.rodzaj === 'kuznia' || pom.rodzaj === 'sypialnia')) odkrycia.odkryj(pom.rodzaj);
@@ -938,6 +943,8 @@ export class EkranGry implements Ekran {
     this.oczyscZaznaczenie();
     rysujZaznaczenie(ctx, sim, cam, teraz, this.zaznaczeni);
     rysujStworzenia(ctx, sim, cam, teraz, this.ui.selected?.id);
+    // etap 3f: część zbroi w rękach rycerza i błysk, gdy ją założy — przed postaciami
+    this.pokoje.rysujPrzod(ctx, sim, cam, teraz);
     rysujPrzodWiader(ctx, sim, cam, teraz);
     rysujPoleceniaNaMapie(ctx, sim, cam, teraz, this.zaznaczeni, this.falaRozkazu);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
@@ -1268,7 +1275,8 @@ export class EkranGry implements Ekran {
     const lud = this.zaznaczeniZywi();
     if (!lud.length) return { pom, akcja: pom.gotowe ? `${NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż` : 'plan — zaznacz robotników i wskaż go', ok: true };
     const rob = lud.filter((c) => rolaPostaci(c) === 'robotnik').length;
-    const { akcja, ok } = akcjaNaPomieszczeniu(pom, rob, lud.length - rob);
+    const ryc = lud.filter((c) => rolaPostaci(c) === 'rycerz').length;
+    const { akcja, ok } = akcjaNaPomieszczeniu(pom, rob, lud.length - rob, ryc, naWieszaku(this.sim).length);
     return { pom, akcja, ok };
   }
 

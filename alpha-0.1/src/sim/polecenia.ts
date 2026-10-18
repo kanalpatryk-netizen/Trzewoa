@@ -12,6 +12,8 @@
  *  - etap 3c: wskazanie planu pomieszczenia — robotnicy go kują (kafel po kaflu, „kop” z polem `pom`); wskazanie
  *    gotowego warsztatu albo kuźni — robotnik w nim pracuje („praca”); sypialni — każdy idzie spać („sen”).
  *    Wolni robotnicy sami nic z tego nie biorą (sim/pomieszczenia.ts).
+ *  - etap 3f: wskazanie kuźni rycerzowi — „zbroja”: idzie pod wieszak i zakłada wykute części (sim/zbroja.ts);
+ *    gdy nic tam nie wisi, odmawia.
  * Robotnicy nie kopią już sami: bez rozkazu tylko noszą jedzenie i odpoczywają przy obozie.
  * Rozkaz wykonuje planer ludu (creatures.ts: planPolecenia); przerywa go tylko to, co pilne —
  * głód, fala Strażników, walka — a potem postać wraca do rozkazu.
@@ -27,8 +29,9 @@ import { zapisz, kto } from './dziennik';
 import { kruszecKafla, type RodzajKruszcu } from './kruszce';
 import { kafleDoKucia, siegaPlanu, miejsceWPom, type Pomieszczenie } from './pomieszczenia';
 import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
+import { naWieszaku, miejscePodWieszakiem } from './zbroja';
 
-export type TypPolecenia = 'idz' | 'kop' | 'droga' | 'praca' | 'sen';
+export type TypPolecenia = 'idz' | 'kop' | 'droga' | 'praca' | 'sen' | 'zbroja';
 
 export interface Polecenie {
   typ: TypPolecenia;
@@ -44,7 +47,7 @@ export interface Polecenie {
   zyla?: RodzajKruszcu; zx?: number; zy?: number; zylaIle?: number;
   /**
    * Alpha, etap 3c: pomieszczenie (sim/pomieszczenia.ts) — plan do wykucia („kop”), warsztat albo kuźnia („praca”),
-   * sypialnia („sen”)
+   * sypialnia („sen”); etap 3f: kuźnia, do której poszedł rycerz po zbroję z wieszaka („zbroja”)
    */
   pom?: number;
 }
@@ -270,6 +273,19 @@ function doPomieszczenia(sim: Sim, c: Creature, pom: Pomieszczenie, typ: 'praca'
   return null;
 }
 
+/** Etap 3f: rycerz idzie do kuźni zakładać części, które wiszą na wieszaku. */
+function poZbroje(sim: Sim, c: Creature, pom: Pomieszczenie): string | null {
+  if (!naWieszaku(sim).length) return odmow(sim, c, 'nie ma części na wieszaku');
+  const [mx, my] = miejscePodWieszakiem(pom);
+  const tam = (x: number, y: number) => Math.abs(x - mx) <= 1 && y === my && stoi(sim, x, y);
+  if (!tam(Math.floor(c.x), Math.floor(c.y)) && !drogaTeraz(sim, c, tam, P.szukanieDrogi)) return odmow(sim, c, 'nie dojdę do kuźni — nie ma drogi');
+  przerwij(sim, c);
+  c.polecenie = { typ: 'zbroja', x: mx, y: my, od: sim.tick, pom: pom.id };
+  c.odmowa = undefined;
+  zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — załóż zbroję z wieszaka`, mx, my);
+  return null;
+}
+
 /**
  * Alpha, etap 3c: zaznaczonym wskazano plan albo gotowe pomieszczenie. Plan — robotnicy go kują (reszta odmawia:
  * kują tylko robotnicy). Warsztat i kuźnia — robotnicy pracują, reszta wchodzi do środka. Sypialnia — każdy idzie
@@ -287,6 +303,7 @@ export function wydajNaPomieszczenie(sim: Sim, ids: readonly number[], pom: Pomi
     if (!pom.gotowe) powod = rola === 'robotnik' ? kujPlan(sim, c, pom) : odmow(sim, c, 'kują tylko robotnicy');
     else if (pom.rodzaj === 'sypialnia') powod = doPomieszczenia(sim, c, pom, 'sen', zajete);
     else if (rola === 'robotnik') powod = doPomieszczenia(sim, c, pom, 'praca', zajete);
+    else if (rola === 'rycerz' && pom.rodzaj === 'kuznia') powod = poZbroje(sim, c, pom);
     else { const [mx, my] = miejsceWPom(pom, 2); powod = wydajPolecenie(sim, c, 'idz', mx, my); }
     if (powod) odmowy.push(powod);
     else { przyjeli++; if (c.polecenie?.typ === 'praca' || c.polecenie?.typ === 'sen') zajete++; }

@@ -158,7 +158,7 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'polecenie' && z.rodzaj === 'pomieszczenie' && z.przyjeli > 0,
       },
       {
-        tekst: `Gotowy warsztat zamienia złoto w wiarę (${POMIESZCZENIA.warsztat.zlotoNaSztuke} złota — ${POMIESZCZENIA.warsztat.wiaraZaSztuke} wiary), kuźnia — żelazo w zbroję rycerza, a sen w sypialni zdejmuje osłabienia. Wolni robotnicy sami nic nie biorą: pracują ci, którym wskażesz.`,
+        tekst: `Gotowy warsztat zamienia złoto w wiarę (${POMIESZCZENIA.warsztat.zlotoNaSztuke} złota — ${POMIESZCZENIA.warsztat.wiaraZaSztuke} wiary), kuźnia — żelazo w zbroję rycerza (rycerz sam ją zakłada, gdy nie ma fali), a sen w sypialni zdejmuje osłabienia. Wolni robotnicy sami nic nie biorą: pracują ci, którym wskażesz.`,
         rozumiem: true,
       },
     ],

@@ -26,6 +26,8 @@ import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
 import { odmow, nastepnyKafelZyly, type Polecenie, type Odmowa } from './polecenia';
 import { SWIAT } from '../nastawy/swiat';
+import { idziePoZbroje, planZbroi, ranyZbroi } from './zbroja';
+import { ZBROJA, type CzescZbroi } from '../nastawy/zbroja';
 import { LUD, REMAKE } from '../nastawy/lud';
 
 export enum Job {
@@ -141,7 +143,7 @@ ksiegaT?: number;
   /** Alpha: rozkaz gracza (sim/polecenia.ts) — trzyma się go, aż go odwołasz. */
   polecenie?: Polecenie;
   /** Alpha, etap 3c: co robi w pomieszczeniu — przy kowadle albo stole („buduje”), na posłaniu („spi”). Rysunek bierze z tego pozę. */
-  czynnosc?: 'buduje' | 'spi' | 'modli' | 'czyta';
+  czynnosc?: 'buduje' | 'spi' | 'modli' | 'czyta' | 'zaklada';
   /** Ile tików już przespał w sypialni (sen zdejmuje osłabienia — sim/pomieszczenia.ts). */
   snu?: number;
   /** Alpha: odmowa wykonania rozkazu — dymek nad głową i kręcenie głową. */
@@ -152,6 +154,12 @@ ksiegaT?: number;
   poprzX?: number;
   /** Remake v2: robotnik w hełmie — rycerzy brak, więc walczy jak rycerz. */
   helm?: boolean;
+  /** Alpha, etap 3f: części zbroi z kuźni, które rycerz nosi (sim/zbroja.ts); do której kuźni idzie po resztę,
+   * ile tików zakłada bieżącą część i do kiedy sam po nią nie idzie (nie doszedł). */
+  zbroja?: CzescZbroi[];
+  doKuzni?: number;
+  zakladanie?: number;
+  zbrojaBezDo?: number;
   /** Remake v2: skrajnie głodny biegnie pod linę tego wiadra (id), wspina się po niej (naLinie) i wsiada do niego (naWiadrze). */
   linaDo?: number;
   naLinie?: number;
@@ -979,6 +987,12 @@ function planujLud(sim: Sim, c: Creature): void {
     }
   }
   if (rola === 'rycerz' || (rola === 'robotnik' && c.helm)) {
+    // etap 3f: na wieszaku w kuźni czeka część zbroi, a fali nie ma — idzie ją założyć i wraca
+    if (!falaTrwa(sim) && idziePoZbroje(sim, c)) {
+      const r = planZbroi(sim, c, undefined, naDroge, zamiar, droga, podroz);
+      if (r === 'zaklada' || r === 'idzie') return;
+      if (r === 'nie dojdzie') c.zbrojaBezDo = sim.tick + ZBROJA.ponowPo;
+    }
     // za mało rycerzy na bossa — czekają na skraju strefy z bronią w ręku (nie uciekają do dalekiej spiżarni)
     if (rycerzeCzekaja(sim)) {
       c.jx = Math.floor(c.x); c.jy = Math.floor(c.y); c.droga = undefined;
@@ -1176,6 +1190,14 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     const dk = wkopDroga(sim, c, (x, y) => x === fx && y === fy, POLECENIA.szukanieKopania);
     if (dk) { zamiar('przekopuje się do czoła drogi wiernych', Job.WANDER, przekop(dk)); p.prob = 0; return true; }
     return poddajSie('nie dojdę do czoła drogi');
+  }
+
+  // etap 3f: rycerz posłany do kuźni — zakłada części z wieszaka, potem rozkaz się kończy
+  if (p.typ === 'zbroja') {
+    const r = planZbroi(sim, c, p.pom, naDroge, zamiar, droga, podroz);
+    if (r === 'zaklada' || r === 'idzie') { p.prob = 0; return true; }
+    if (r === 'nic') { c.polecenie = undefined; return false; }
+    return poddajSie('nie dojdę do kuźni — nie ma drogi');
   }
 
   // etap 3c: warsztat, kuźnia, sypialnia — idzie na swoje miejsce przy stole, kowadle albo na posłaniu i tam zostaje
@@ -2054,7 +2076,7 @@ function doFight(sim: Sim, c: Creature): void {
   const dist = Math.hypot(foe.x - c.x, foe.y - c.y);
   if (dist < K.walkaZasieg) {
     const dmg = RACES[c.race].strength * mnoznik(sim, c, 'sila') * cechaNacji(sim.clans[c.clan]).sila * (K.walkaMin + sim.rng.next() * K.walkaRozrzut) * (1 + c.mad);
-    foe.hp -= dmg;
+    foe.hp -= dmg * ranyZbroi(foe);
     foe.fear = Math.min(1, foe.fear + K.walkaStrach);
     sim.spark(foe.x, foe.y, 'hit');
     if (foe.hp <= 0) {

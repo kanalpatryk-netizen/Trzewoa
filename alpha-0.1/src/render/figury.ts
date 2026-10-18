@@ -91,7 +91,7 @@ function krokPostaci(c: Creature): number {
 
 export type Czynnosc =
   | 'stoi' | 'idzie' | 'biegnie' | 'wspina' | 'spada'
-  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia';
+  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia' | 'zaklada';
 
 /** Co widać: czynność wynika z zajęcia, ale i z tego, czy stworzenie w ogóle się rusza. */
 function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
@@ -1119,7 +1119,7 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
 
     // Remake v1: aureola nad głową — jasna przy wzmocnieniu, czerwona przy osłabieniu
     if (rolaPostaci(c)) {
-      const stany = stanyPostaci(sim, c).filter((s) => !s.uspiony);
+      const stany = stanyPostaci(sim, c).filter((s) => !s.uspiony && !s.bezAureoli);
       const dobre = stany.some((s) => s.dobry), zle = stany.some((s) => !s.dobry);
       if (dobre || zle) {
         const puls = 0.75 + 0.25 * Math.sin(czas * 0.005 + c.id);

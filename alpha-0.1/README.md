@@ -13,7 +13,8 @@ Alphy są osobne — nie mieszają się z Remake v2.
 - **Stała drużyna:** 3 robotników, 2 pobożnych, 1 rycerz — na całą partię (i nikt się nie starzeje). Skała nie
   wydaje nowych postaci, nie ma gniazd kamiennych rycerzy (ani szeptów „przemyśl i kop” i „kop losowo”), kart
   spisku rycerzy i snu o kamiennych rycerzach. Rycerz jest jeden, ale dużo silniejszy (życie ×12, siła ×11)
-  i na bossa idzie sam; boss nie zasypia w ścianie. Przegrywasz, gdy zginie ostatni pobożny.
+  i na bossa idzie sam; boss nie zasypia w ścianie. Przegrywasz, gdy zginie ostatni pobożny. Rycerz zaczyna w kolczudze,
+  z mieczem i w płaszczu; resztę zbroi wykuwa kuźnia (3f).
 - **Rozkazy:** pod płytą trzy medaliony (robotnicy, pobożni, rycerz). Dotknięcie medalionu albo postaci zaznacza,
   dotknięcie mapy to „idź tam” — pobożny i rycerz idą tylko tam, dokąd prowadzi droga, inaczej odmawiają (kręcą
   głową, a w dymku mówią dlaczego); robotnik przekopuje się sam, wskazana skała to „kop tam”. „Kop drogę wiernych”
@@ -31,6 +32,11 @@ Alphy są osobne — nie mieszają się z Remake v2.
 - **Jedno wiadro:** jedzenie zjeżdża tylko węższym otworem, do sali — nigdzie indziej. Kopiąc pod wiadrem, sprowadzasz
   je niżej; Nakarm dosypuje do tego samego wiadra. Z głębi wraca się po jedzenie drogą wiernych: na jej zakrętach
   lina spada sama, a podłogi pod nią nikt nie kuje; warcie jedzenie donoszą robotnicy.
+- **Zbroja rycerza (3f):** kuźnia wykuwa z żelaza hełm, naramienniki, napierśnik, nakolanniki i tarczę i odkłada je
+  na wieszak. Gdy coś tam wisi, nie ma fali ani rozkazu, a rycerz jest syty, sam idzie do kuźni (albo go tam poślesz:
+  zaznacz rycerza i wskaż kuźnię): zdejmuje część z wieszaka, przykłada na miejsce i dopina — błysk i podpis, co daje.
+  Każda noszona część daje swoje: hełm — życie +15%, naramienniki — siła +15%, napierśnik — życie +25%, nakolanniki —
+  szybkość +10%, tarcza — rany −20%. Część widać na rycerzu; bez hełmu chodzi w kolczym kapturze z odsłoniętą twarzą.
 - **Ruiny z zabytkami (3e):** w środkowej warstwie 1–2 zawalone budowle (kaplica, kopalnia, kawałek miasta); kto z ludu
   dojdzie do zabytku, odkrywa go — karta „Weź” (premia i kara dla całego ludu, na zawsze) albo „Zostaw”. Relikwiarz,
   miecz krzyżowca, kielich i księga — każdy z animacją odkrycia, wzięcia (fala światła, aureole) i zgaśnięcia.
@@ -62,7 +68,10 @@ Alphy są osobne — nie mieszają się z Remake v2.
      sen 60 s.
    - ~~3e. Ruiny z zabytkami~~ — zrobione (wyżej): kaplica, kopalnia, kawałek miasta; cztery zabytki, karta „weź/zostaw”,
      premia i kara dla całego ludu (sen kary nie zdejmuje), animacje odkrycia, wzięcia i zgaśnięcia.
-   - 3f. Części zbroi widoczne na rycerzu.
+   - ~~3f. Części zbroi widoczne na rycerzu~~ — zrobione (wyżej): rycerz zaczyna w kolczudze, z mieczem i w płaszczu;
+     części z kuźni zakłada sam, gdy nie ma fali (albo na rozkaz), z animacją i błyskiem; każda coś daje. Atlas:
+     tablice „Zbroja rycerza” i „Warstwy góry” (przekrój: szyb, sala, trzy warstwy, rama, krypta, rdzeń). Złoto
+     to także żółte znaczki „Ag” ze szkicu Pawła. **Etap 3 jest skończony.**
 4. **Dwie dłonie** — dłoń z otchłani przecina pazurem linę wiadra (jedzenie staje, póki ktoś nie wejdzie po linie
    i jej nie sklei); dłoń anielska z góry: podkop, dar ludzi (robotnik w dłoni), dar krwi.
 5. **Finał, bot, samouczek** — Wielki Pomnik pęka od modlitwy, z gruzów wychodzi boss, a dłoń z otchłani mu pomaga;

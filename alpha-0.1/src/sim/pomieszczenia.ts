@@ -10,7 +10,7 @@
  *    jest skała, której lina się uczepi (kotwicaLiny) — a lina spada z niego do podłogi. Wisi od razu (powiesLine,
  *    world.lina): pierwsze kilka za darmo, potem za krew. To nie plan — nie trafia na listę.
  *  - Gotowy warsztat: robotnik wskazany na warsztat przerabia złoto na dewocjonalia, które od razu stają się wiarą.
- *    Gotowa kuźnia: z żelaza wykuwa kolejne części zbroi rycerza (sim.zbroja; rysunek na rycerzu — etap 3f).
+ *    Gotowa kuźnia: z żelaza wykuwa kolejne części zbroi rycerza (sim.zbroja); rycerz je zakłada — sim/zbroja.ts.
  *    Sypialnia: kto się w niej wyśpi, traci osłabienia (okaleczenie, zatrucie).
  * Rysunek tylko czyta stan i krótką listę zdarzeń `sim.zdarzeniaPom` (render/pomieszczenia.ts).
  * Liczby: src/nastawy/pomieszczenia.ts.
@@ -49,6 +49,8 @@ export type ZdarzeniePom =
   | { rodzaj: 'krzyz'; x: number; y: number; ile: number; tik: number }
   | { rodzaj: 'czesc'; x: number; y: number; czesc: string; tik: number }
   | { rodzaj: 'wypoczety'; kto: number; tik: number }
+  /** etap 3f: rycerz założył część zbroi z wieszaka (x, y — wieszak) */
+  | { rodzaj: 'zbroja'; kto: number; czesc: string; x: number; y: number; tik: number }
   /** lina spadła w kolumnie x, od kafla y0 do y1 (gracz — powiesił ją gracz; inaczej sama, na zakręcie drogi wiernych) */
   | { rodzaj: 'lina'; x: number; y0: number; y1: number; tik: number; gracz: boolean };
 

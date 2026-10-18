@@ -4,12 +4,15 @@ import { poswiata, type Rysunek } from './wspolne';
 import { poGlowie } from './robotnik';
 import { linia, twarzMroczna } from './twarz';
 import { bryla, klaks, kolcze, KREW, KREW_SUCHA, rgba, rozbryzg, SW, tonBryly, zaciek } from './tusz';
+import { nosi } from '../../sim/zbroja';
 
 /**
  * Głowa krzyżowca (Remake v2): kolczy kaptur, a na nim hełm garnczkowy („głowa cukru”) z wizjerem,
  * listwami w kształcie krzyża, otworami oddechowymi, wgnieceniami i krwią — albo otwarty hełm z nosalem,
  * spod którego widać wymizerowaną twarz: oczy w cieniu ronda, blizna przez brew i policzek, strużka
  * krwi z czoła, zarost. Zdrajcy w wizjerze żarzy się czerwone oko.
+ * Alpha, etap 3f: hełm jest dopiero z kuźni (sim/zbroja.ts) — bez niego rycerz chodzi w samym kolczym kapturze,
+ * z odsłoniętą twarzą.
  */
 
 const BLASK = 'rgba(255,248,232,';
@@ -19,7 +22,8 @@ const ODBLASK = { x: 0.94, y: 0.34 };
 export function glowaKrzyzowca(r: Rysunek): void {
   const { m, s, st, h, c } = r;
   const kat = s.katG;
-  const zamkniety = los(c.id, 21) < 0.55;
+  const helm = nosi(c, 'helm');
+  const zamkniety = helm && los(c.id, 21) < 0.55;
   // szyja w kolczudze
   const szyja = konczyna(s.bark, 0.03 * h, s.glowa, 0.028 * h);
   m.ksztalt(szyja, tonBryly(m, st.kolczuga, -0.55, s.bark, s.glowa, 0.06 * h), (g) => kolcze(m, g, szyja, h, 0.06 * h, true));
@@ -31,7 +35,7 @@ export function glowaKrzyzowca(r: Rysunek): void {
   const kaptur = poGlowie(s, kat, pk);
   m.ksztalt(kaptur, tonBryly(m, st.kolczuga, -0.3, naGlowie(s, kat, 0, -1), naGlowie(s, kat, -0.3, 2), s.rg * 2.2), (g) => kolcze(m, g, kaptur, h, s.rg * 1.6, false));
   if (zamkniety) helmGarnczkowy(r);
-  else helmZNosalem(r);
+  else if (helm) helmZNosalem(r);
 }
 
 /**

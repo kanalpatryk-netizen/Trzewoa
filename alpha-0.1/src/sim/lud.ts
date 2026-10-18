@@ -24,6 +24,7 @@ import type { StanOltarza } from './oltarz';
 import { OLTARZ } from '../nastawy/oltarz';
 import { ZABYTKI } from '../nastawy/zabytki';
 import { tikZabytkow, stanyZabytkow, type StanZabytkow } from './zabytki';
+import { mnoznikZbroi, opisZbroi } from './zbroja';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -154,7 +155,7 @@ export function rolaPostaci(c: Creature): Rola | null {
   return c.race === Race.GOBLIN ? (c.rola ?? 'pobozny') : null;
 }
 
-/** Mnożnik statystyki: rola × okaleczenie × weteran × zatrucie × hełm. */
+/** Mnożnik statystyki: rola × okaleczenie × weteran × zatrucie × hełm × szał × zabytki × zbroja z kuźni. */
 export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   const r = rolaPostaci(c);
   if (!r) return 1;
@@ -174,6 +175,8 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
     if (wz.includes('miecz') && co === 'sila' && r === 'rycerz') v *= Z.miecz.silaRycerza;
     if (wz.includes('kielich') && co === 'glod') v *= Z.kielich.glod;
   }
+  // etap 3f: zbroja z kuźni — każda noszona część dokłada swoje (tylko rycerz ją nosi)
+  if (r === 'rycerz' && c.zbroja?.length) v *= mnoznikZbroi(c, co);
   return v;
 }
 
@@ -246,6 +249,8 @@ export interface StanPostaci {
   kiedy?: string;
   /** stan nieczynny — tylko wiersz na karcie, bez aureoli */
   uspiony?: boolean;
+  /** działa, ale bez aureoli — widać go na postaci (zbroja) */
+  bezAureoli?: boolean;
 }
 
 /** Wzmocnienia i osłabienia postaci: weteran, hełm, zatrucie, spojrzenie z ciemności, dłoń, okaleczenie. */
@@ -279,6 +284,9 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   if (c.okaleczony) {
     out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false, kiedy: 'póki nie wyśpi się w sypialni' });
   }
+  // etap 3f: zbroja z kuźni — tylko wiersz na karcie (zbroję widać na rycerzu)
+  const zb = rolaPostaci(c) === 'rycerz' ? opisZbroi(c) : null;
+  if (zb) out.push({ nazwa: 'zbroja z kuźni', skutek: zb, dobry: true, kiedy: 'póki ją nosi', bezAureoli: true });
   // etap 3e: zabytki — każdy z ludu nosi jasną aureolę premii i czerwoną kary
   if (rolaPostaci(c)) out.push(...stanyZabytkow(sim, c));
   return out;

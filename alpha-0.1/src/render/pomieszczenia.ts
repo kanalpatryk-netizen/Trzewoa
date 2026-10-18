@@ -7,6 +7,8 @@ import { wolnoRuszac } from './nastroj';
 import { SERIF } from './ink';
 import { fazaMlota, wysokoscPostaci } from './figury';
 import { krzyz, type Urobki } from './kruszce';
+import { naWieszaku } from '../sim/zbroja';
+import { ZBROJA, CZESC, type CzescZbroi } from '../nastawy/zbroja';
 
 /**
  * POMIESZCZENIA (Alpha, etap 3c) — rysunek planów i gotowych pomieszczeń:
@@ -16,7 +18,8 @@ import { krzyz, type Urobki } from './kruszce';
  *  - warsztat: stół, tygiel z roztopionym złotem i krzyż, który złoci się z postępem; gotowy rozbłyskuje i leci
  *    do licznika wiary (render/kruszce.ts);
  *  - kuźnia: palenisko z ogniem, kowadło z rozżarzoną częścią zbroi, iskry w takt młota, wieszak z gotowymi częściami;
- *    gotowa część błyska i unosi się nad kowadłem;
+ *    gotowa część błyska i unosi się nad kowadłem; etap 3f: rycerz zdejmuje część z wieszaka, ta wędruje w jego rękach
+ *    na miejsce (głowa, barki, pierś, kolana, ramię), a gdy siądzie — rozbłyska i unosi się podpis, co daje;
  *  - sypialnia: posłania i świeca, nad śpiącymi „z z z”; kto wstaje bez osłabienia — czerwona aureola rozpływa się;
  *  - gotowe pomieszczenie: obłok pyłu, a wyposażenie opada na swoje miejsce;
  *  - lina (Alpha; w 3d była tu drabina): wisi z żelaznego haka wbitego w skałę, skręcona z konopi, z węzłami na chwyt,
@@ -173,7 +176,13 @@ export class Pokoje {
         ctx.lineTo(ax - z * 0.55, ay); ctx.lineTo(ax - z * 0.55, ay + z * 0.22); ctx.lineTo(ax - z * 0.3, ay + z * 0.22); ctx.closePath();
         ctx.fill(); ctx.stroke();
         polka(ctx, u.polka, z);
-        sim.zbroja.forEach((id, i) => rysujCzesc(ctx, id, u.polka.x1 + z * (0.3 + (i % 3) * 0.48), u.polka.y + z * (0.45 + Math.floor(i / 3) * 0.6), z * 0.42, 'rgba(176,182,194,0.98)', TUSZ));
+        // na wieszaku to, czego nikt nie nosi; część, którą rycerz właśnie zdjął, jest już w jego rękach (rysujNad)
+        const zdjeta = zakladajacy(sim, pom).some((c) => postepZakladania(c) >= ZDEJMUJE);
+        naWieszaku(sim).forEach((id, i) => {
+          if (i === 0 && zdjeta) return;
+          const [hx, hy] = hakWieszaka(u, z, i);
+          rysujCzesc(ctx, id, hx, hy, z * 0.42, 'rgba(176,182,194,0.98)', TUSZ);
+        });
       } else {
         // dwa posłania na długość człowieka i świeca w niszy między nimi
         for (const [b1, b2, glowa] of u.poslania) {
@@ -283,6 +292,49 @@ export class Pokoje {
       if (pod?.pom === pom) obrysPod(ctx, cam, pom, pod, teraz);
     }
     this.rysujZdarzenia(ctx, sim, cam, teraz);
+    ctx.restore();
+  }
+
+  /**
+   * Etap 3f: przed postaciami (rysuje się po nich) — część zbroi w rękach rycerza i błysk, gdy siądzie na nim.
+   */
+  rysujPrzod(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
+    const z = cam.zoom;
+    ctx.save();
+    for (const pom of sim.pomieszczenia) {
+      if (!pom.gotowe || pom.rodzaj !== 'kuznia' || !widac(cam, pom)) continue;
+      const u = uklad(cam, pom);
+      for (const c of zakladajacy(sim, pom)) czescWRekach(ctx, sim, cam, c, u, teraz);
+    }
+    for (const { z: e, od } of this.animacje) {
+      if (e.rodzaj !== 'zbroja') continue;
+      const t = (teraz - od) / 1000;
+      // część siadła na rycerzu: błysk z promieniami w tym miejscu, krąg światła i podpis, co daje
+      const c = sim.creatureById(e.kto);
+      if (!c || t > 1.8) continue;
+      const cz = e.czesc as CzescZbroi;
+      const [x, y] = naCiele(cam, c, cz);
+      const p = t / 1.8, b = Math.max(0, 1 - t / 0.5);
+      const R = z * (0.5 + 1.8 * Math.min(1, t * 4));
+      const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+      g.addColorStop(0, `rgba(255,246,214,${0.85 * (1 - p)})`); g.addColorStop(0.35, `rgba(255,226,160,${0.35 * (1 - p)})`); g.addColorStop(1, 'rgba(255,220,150,0)');
+      ctx.fillStyle = g; ctx.fillRect(x - R, y - R, R * 2, R * 2);
+      if (b > 0) {
+        ctx.strokeStyle = `rgba(255,250,230,${0.95 * b})`; ctx.lineWidth = Math.max(1, z * 0.07); ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2 + 0.3, r0 = z * (0.25 + t * 0.8), r1 = r0 + z * (i % 2 ? 0.35 : 0.65) * b;
+          ctx.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); ctx.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1);
+        }
+        ctx.stroke();
+      }
+      const a = p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
+      ctx.font = `italic ${Math.max(12, Math.min(16, z * 0.7))}px ${SERIF}`;
+      ctx.textAlign = 'center';
+      const tekst = `${CZESC[cz].nazwa}: ${CZESC[cz].skutek}`, ty = cam.toScreenY(c.y + 1) - wysokoscPostaci(c, z) * 1.15 - p * z * 1.2;
+      ctx.lineWidth = 3; ctx.strokeStyle = `rgba(8,6,5,${0.8 * a})`; ctx.strokeText(tekst, x, ty);
+      ctx.fillStyle = ZLOTO_PLANU(0.98 * a); ctx.fillText(tekst, x, ty);
+    }
     ctx.restore();
   }
 
@@ -398,6 +450,58 @@ function widac(cam: Camera, p: Pomieszczenie): boolean {
   const z = cam.zoom;
   const x1 = cam.toScreenX(p.x), y1 = cam.toScreenY(p.y);
   return x1 + p.w * z > -z * 4 && y1 + p.h * z > -z * 4 && x1 < cam.vw + z * 4 && y1 < cam.vh + z * 4;
+}
+
+/** Etap 3f: od tej chwili zakładania (0..1) część jest już w rękach rycerza, nie na wieszaku. */
+const ZDEJMUJE = 0.22;
+
+/** Ile rycerz już założył bieżącej części (0..1). */
+function postepZakladania(c: Creature): number {
+  return Math.max(0, Math.min(1, (c.zakladanie ?? 0) / ZBROJA.zakladanieTikow));
+}
+
+/** Rycerze, którzy stoją pod wieszakiem tej kuźni i zakładają zbroję. */
+function zakladajacy(sim: Sim, pom: Pomieszczenie): Creature[] {
+  return sim.creatures.filter((c) => !c.dead && c.czynnosc === 'zaklada' && c.doKuzni === pom.id);
+}
+
+/** Hak wieszaka, na którym wisi i-ta część (piksele ekranu). */
+function hakWieszaka(u: ReturnType<typeof uklad>, z: number, i: number): [number, number] {
+  return [u.polka.x1 + z * (0.3 + (i % 3) * 0.48), u.polka.y + z * (0.45 + Math.floor(i / 3) * 0.6)];
+}
+
+/** Gdzie na rycerzu siada część (piksele ekranu): głowa, barki, pierś, kolana, przedramię z tarczą. */
+function naCiele(cam: Camera, c: Creature, cz: CzescZbroi): [number, number] {
+  const h = wysokoscPostaci(c, cam.zoom), kier = c.face >= 0 ? 1 : -1;
+  const wys: Record<CzescZbroi, number> = { helm: 0.92, naramienniki: 0.78, napiersnik: 0.64, nakolanniki: 0.2, tarcza: 0.5 };
+  return [cam.toScreenX(c.x) + kier * h * (cz === 'tarcza' ? 0.12 : cz === 'nakolanniki' ? 0.1 : 0.05), cam.toScreenY(c.y + 1) - h * wys[cz]];
+}
+
+const gladko = (t: number): number => { const x = Math.max(0, Math.min(1, t)); return x * x * (3 - 2 * x); };
+
+/**
+ * Część zbroi w rękach rycerza: zdjęta z haka unosi się (ręce w górze — render/lud/ruch.ts: „zaklada”), schodzi
+ * na swoje miejsce na ciele, chwilę ją dopasowuje i część wtapia się w rysunek rycerza (wtedy błysk — zdarzenie).
+ */
+function czescWRekach(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, c: Creature, u: ReturnType<typeof uklad>, teraz: number): void {
+  const k = postepZakladania(c);
+  const id = naWieszaku(sim)[0];
+  if (k < ZDEJMUJE || !id) return;
+  const z = cam.zoom;
+  const [hx, hy] = hakWieszaka(u, z, 0);
+  const [tx, ty] = naCiele(cam, c, id);
+  const lot = gladko((k - 0.4) / 0.2);
+  const unos = gladko((k - ZDEJMUJE) / 0.18) * z * 0.25;
+  const szarp = k > 0.6 && k < 0.9 && wolnoRuszac() ? Math.sin(teraz * 0.03 + c.id) * z * 0.04 : 0;
+  const x = hx + (tx - hx) * lot + szarp, y = hy - unos * (1 - lot) + (ty - hy) * lot;
+  const a = k > 0.88 ? Math.max(0, 1 - (k - 0.88) / 0.12) : 1;
+  const R = z * 0.9;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+  g.addColorStop(0, `rgba(255,236,190,${0.3 * a})`); g.addColorStop(1, 'rgba(255,230,170,0)');
+  ctx.fillStyle = g; ctx.fillRect(x - R, y - R, R * 2, R * 2);
+  ctx.globalAlpha = a;
+  rysujCzesc(ctx, id, x, y, z * (0.42 + 0.08 * lot), 'rgba(196,202,214,0.98)', TUSZ);
+  ctx.globalAlpha = 1;
 }
 
 /** Ci, którzy stoją przy stole albo kowadle tego pomieszczenia. */
@@ -672,10 +776,12 @@ function zzz(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, ter
 }
 
 /** Co zrobią zaznaczeni po dotknięciu tego pomieszczenia (podpis nad nim). */
-export function akcjaNaPomieszczeniu(pom: Pomieszczenie, robotnikow: number, innych: number): { akcja: string; ok: boolean } {
+export function akcjaNaPomieszczeniu(pom: Pomieszczenie, robotnikow: number, innych: number, rycerzy = 0, naWieszaku = 0): { akcja: string; ok: boolean } {
   if (!pom.gotowe) return robotnikow ? { akcja: 'kujcie ten plan', ok: true } : { akcja: 'kują tylko robotnicy', ok: false };
   const r: RodzajPomieszczenia = pom.rodzaj;
   if (r === 'sypialnia') return { akcja: 'idźcie spać — sen zdejmie osłabienia', ok: true };
-  if (robotnikow) return { akcja: r === 'warsztat' ? 'pracuj: krzyże ze złota' : 'pracuj: zbroja z żelaza', ok: true };
+  // etap 3f: rycerz w kuźni zakłada części z wieszaka
+  if (r === 'kuznia' && rycerzy && !robotnikow) return naWieszaku ? { akcja: `załóż zbroję z wieszaka (${naWieszaku} ${naWieszaku === 1 ? 'część' : 'części'})`, ok: true } : { akcja: 'nie ma części na wieszaku', ok: false };
+  if (robotnikow) return { akcja: r === 'warsztat' ? 'pracuj: krzyże ze złota' : rycerzy ? 'pracuj: zbroja z żelaza (rycerz ją założy)' : 'pracuj: zbroja z żelaza', ok: true };
   return { akcja: innych ? `wejdź do środka (pracują tu robotnicy)` : '', ok: true };
 }

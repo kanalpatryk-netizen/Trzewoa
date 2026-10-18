@@ -1,12 +1,12 @@
 # Handoff — Trzewia, Alpha 0.1
 
-Stan na 18.10.2026, po etapie 3e (ruiny z zabytkami), jednym wiadrze i linie zamiast drabiny. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
+Stan na 18.10.2026, po etapie 3f (zbroja na rycerzu — etap 3 skończony), 3e (ruiny z zabytkami), jednym wiadrze i linie zamiast drabiny. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
-- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 oraz 3a–3e etapu 3, a zostały 3f, 4 i 5.
+- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etapy 1, 2 i 3 (3a–3f), a zostały 4 i 5.
 - **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
-- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e zrobione na polecenie użytkownika. **Nie zaczynaj 3f bez polecenia.**)
+- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e i 3f zrobione na polecenie użytkownika. **Nie zaczynaj etapu 4 bez polecenia.**)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 
 ---
@@ -217,7 +217,18 @@ aureole i wiersze na karcie postaci — `stanyZabytkow` (zapalają się po fali,
 „Ruiny” i „Zabytki”. `VERSION = 4`. Bot zostawia każdy zabytek (`BRAC` w zabytki.ts) — z mieczem Patrzący zabierał mu
 robotników; nauczyć go ważenia zabytków to etap 5.
 
-### 1.7 Etap 3f — zbroja na rycerzu i dokumentacja etapu 3
+### 1.7 Etap 3f — zbroja na rycerzu i dokumentacja etapu 3 — ZROBIONE
+**Decyzje użytkownika (18.10):** zestaw startowy — kolczuga, miecz, płaszcz (życie i siła jak dotąd, każda część coś
+dokłada); rycerz idzie po części sam, gdy nie ma fali (albo na rozkaz: zaznacz rycerza, wskaż kuźnię).
+**Zrobione 18.10:** `src/sim/zbroja.ts` — `c.zbroja` (co nosi), `naWieszaku` (wykute `sim.zbroja` minus noszone),
+`mnoznikZbroi` w `mnoznik` (tylko rycerz), `ranyZbroi` (tarcza — `ciosStraznika` i `doFight`), `planZbroi` (planer rycerza
+przed wartą: `idziePoZbroje` — część wisi, `!falaTrwa`, bez rozkazu, głód < `ZBROJA.glodDo`; rozkaz typu „zbroja” —
+`wydajNaPomieszczenie` → `poZbroje`), `tikZbroi` (czynność „zaklada”, `c.zakladanie` do `ZBROJA.zakladanieTikow`, potem
+`zaloz`: życie rośnie o przyrost największego, zdarzenie `'zbroja'`, kronika). Nastawy: `src/nastawy/zbroja.ts` (`ZBROJA`,
+`CZESC`). Rysunek: `rycerz.ts` (`naramiennik`, `napiersnik`, `nakolannikNa`; tarcza tylko noszona), `helm.ts` (bez hełmu —
+otwarty kaptur i twarz), poza „zaklada” w `ruch.ts`, wieszak i część w rękach w `render/pomieszczenia.ts`
+(`Pokoje.rysujPrzod` — po postaciach, `czescWRekach`, błysk zdarzenia). Atlas: „Zbroja rycerza”, „Warstwy góry”. Bot kuźni
+nie stawia (etap 5). Poniżej pierwotny plan.
 - **Rycerz na start bez zbroi z kuźni.** Dziś zawsze ma pełny rynsztunek: hełm (`helm.ts`), kolczugę, nakolanniki, tarczę (`uzbrojenie.ts`)
   i płaszcz. Trzeba ustalić, co ma od początku (np. kolczugę i miecz), a co dochodzi z kuźni. Pomysł Milana: „jak nie
   będzie tego żelaza, to rycerze będą chodzić bez konkretnych części zbroi”.
@@ -421,9 +432,13 @@ nie pojawia się losowo, np. w jaskiniach; gracz może je sprowadzić niżej, ko
 
 **Zapis**
 - Osobne klucze: `trzewia-alpha:zapis`, `:ustawienia`, `:osiagniecia`, `:klawisze`.
-- `VERSION = 3`. Zapisy sprzed 3d (bez ołtarza i drugiego otworu) się nie wczytają.
+- `VERSION = 4`. Zapisy sprzed 3e (bez ruin) się nie wczytają. Zbroja rycerza (`c.zbroja`) idzie z postacią — 3f nie zmienił wersji.
 
 ### 2.3 Testy i próby
+**Po etapie 3f (18.10):** 8/8 wygranych (13,9–15,2 min), nikt nie umarł z głodu; z ludu ginie w dwóch partiach jeden pobożny
+od Strażnika. Bot kuźni nie stawia, więc zbroja w próbach nie gra — sprawdza ją skrypt w brudnopisie (`zbroja-test.ts`:
+rycerz sam idzie, zakłada część po części, zapis w trakcie, rozkaz, odmowa).
+
 **Po etapie 3e (18.10):** 8/8 wygranych, nikt nie umarł z głodu (bot zostawia zabytki). Dodatkowe ziarna 5–12: 14/16, bez
 głodu; przegrane: speedrun 6 — boss zgniata pobożnych (zob. 1.10), budowniczy 7 — na nowej mapie partia trwała 16,6 min, karty
 „najazd” przychodziły częściej i gdy zabrakło krwi na zawalenie wejścia, ludzie zeszli szybem do sali. Gdy bot brał relikwiarz
@@ -475,8 +490,8 @@ Wyniki po etapie 3d (gałąź `ccr-91477c56-dh7bgd`, limit prób 20 min — `pro
 Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 
 ### 2.5 Lista zadań
-- **Zrobione:** etap 1, etap 2, 3a, 3b i 3c (w wydaniu), 3d (na gałęzi), Alpha w menu i w wydaniu.
-- **Do zrobienia:** 3e, 3f, etap 4, etap 5.
+- **Zrobione:** etap 1, etap 2, 3a, 3b i 3c (w wydaniu), 3d, 3e i 3f (na gałęzi), Alpha w menu i w wydaniu.
+- **Do zrobienia:** etap 4, etap 5.
 
 ---
 
@@ -540,7 +555,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `kucie.ts` | Pękająca skała (nowy w 3a) | — |
 | `druzyna.ts` | Medaliony, zaznaczenie, dymki, znaczniki rozkazów | 3c, 4 |
 | `lud/odmowa.ts`, `lud/ruch.ts` | Animacja odmowy i odstępy | — |
-| `lud/rycerz.ts`, `lud/helm.ts`, `lud/uzbrojenie.ts`, `lud/stroj.ts` | Rycerz | 3f, 3d (szał) |
+| `lud/rycerz.ts`, `lud/helm.ts`, `lud/uzbrojenie.ts`, `lud/stroj.ts` | Rycerz; od 3f części z kuźni tylko, gdy je nosi (`nosi` z `sim/zbroja.ts`) | 3f, 3d (szał) |
 | `plate.ts` | Płyta: krew, wiara, kronika | 3b, 4 (dar krwi) |
 | `wiadro.ts` | Wiadro i lina | 4 |
 | `dlon.ts` | Dłoń z otchłani | 4 |
@@ -595,7 +610,8 @@ Od wklejenia planu (16.10), po kolei:
 | `d097ec5` | **Etap 3d.** Dwa otwory (światło na ołtarz, wiadro obok), ołtarz od początku na kamiennym kopczyku, okno rytuałów, pięć rytuałów za krew z animacjami, okalecz/ofiaruj tylko przy ołtarzu, drabiny tylko tam, gdzie trzeba się wspiąć, sen 60 s, Strażnicy i boss z dala od pobożnych, atlas, samouczek, `VERSION = 3` |
 | `fd02485` | **Jedno wiadro.** Tylko szybem do sali, pogłębiane kopaniem; Nakarm dosypuje do niego. Szczeble na zakrętach drogi wiernych, ochrona podłogi pod drogą, kurier najada się przed drogą |
 | `3c8bf81`, `ff4a86e` | **Lina zamiast drabiny.** Wiesza ją gracz (5 za darmo, potem 10 krwi), jednostki jej nie budują; na zakrętach drogi wiernych spada sama; animacja haka, zwoju i kołysania |
-| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3e.** Ruiny (kaplica, kopalnia, kawałek miasta) z zabytkami, karta „weź/zostaw”, premia i kara dla całego ludu, animacje odkrycia, wzięcia i zgaśnięcia, atlas, `VERSION = 4` |
+| `19b8a8a`, `7a3f162` | **Etap 3e.** Ruiny (kaplica, kopalnia, kawałek miasta) z zabytkami, karta „weź/zostaw”, premia i kara dla całego ludu, animacje odkrycia, wzięcia i zgaśnięcia, atlas, `VERSION = 4` |
+| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3f.** Rycerz zaczyna w kolczudze; części z kuźni zakłada sam (albo na rozkaz), z animacją i błyskiem; premie za części; atlas „Zbroja rycerza” i „Warstwy góry” |
 
 Wcześniej w tej samej sesji zrobiłem rzeczy, które są już na `main` (PR #7–#12):
 - freski w interfejsie, mroczny interfejs i muzyka niepokoju;
@@ -685,7 +701,8 @@ Potem odtwórz w brudnopisie narzędzia z Dodatku A: próby botów, zrzuty i map
 ### 6.6 Etap 3e — zrobione (18.10, gałąź `ccr-91477c56-dh7bgd`)
 Ruiny, zabytki z kartą „weź/zostaw”, animacje, atlas — opis w 1.6.
 
-### 6.7 Etap 3f
+### 6.7 Etap 3f — zrobione (18.10, gałąź `ccr-91477c56-dh7bgd`)
+Zbroja na rycerzu, premie, zakładanie z animacją, atlas „Zbroja rycerza” i „Warstwy góry” — opis w 1.7.
 1. Rycerz zaczyna bez części z kuźni.
 2. Rysowanie zależne od stanu rycerza i premie za części.
 3. Animacja zakładania.
@@ -834,6 +851,57 @@ export function main(args: string[]) {
   | złoto | 3 |
   | skała | 3,2 |
   | twarda skała | 5,4 |
+
+**`zbroja-test.ts`** (etap 3f) — kuźnia od razu gotowa przy sali, rycerz sam zakłada części z wieszaka (zapis i wczytanie w trakcie), potem rozkaz z kolejnymi częściami; wypisuje życie, siłę, szybkość, kartę postaci i kronikę. Uruchom: `node run.mjs /home/user/Trzewoa/alpha-0.1 zbroja-test.ts 3`.
+```ts
+import { Sim } from '@src/sim/sim.ts';
+import { T } from '@src/sim/tiles.ts';
+import { rolaPostaci, maxHp, mnoznik, stanyPostaci } from '@src/sim/lud.ts';
+import { probaPlanu, polozPlan } from '@src/sim/pomieszczenia.ts';
+import { wydajNaPomieszczenie } from '@src/sim/polecenia.ts';
+import { naWieszaku } from '@src/sim/zbroja.ts';
+import { serialize, restore } from '@src/core/save.ts';
+// Próba etapu 3f: rycerz sam idzie po zbroję, zakłada część po części; rozkaz; odmowa; zapis w trakcie
+export function main(args: string[]) {
+  let sim: any = new Sim(Number(args[0] ?? 3));
+  const w = sim.world;
+  const sala = w.salaStart;
+  let ok: any = null;
+  for (let dx = 19; dx < 50 && !ok; dx++) for (const k of [1, -1]) { const p = probaPlanu(sim, 'kuznia', sala.x + k * dx, sala.y); if (p.ok) { ok = p; break; } }
+  const pom = polozPlan(sim, ok);
+  for (const i of ok.kafle) w.tile[i] = T.AIR;
+  pom.gotowe = true; pom.gotoweOd = sim.tick;
+  console.log('kuźnia', pom.x, pom.y, 'sala', sala.x, sala.y);
+  const ryc = () => sim.creatures.find((c: any) => !c.dead && rolaPostaci(c) === 'rycerz');
+  const r0 = ryc();
+  console.log('start: hp', r0.hp.toFixed(1), 'max', maxHp(sim, r0).toFixed(1), 'siła', mnoznik(sim, r0, 'sila').toFixed(2), 'szybkość', mnoznik(sim, r0, 'szybkosc').toFixed(2));
+  // odmowa: nic nie wisi
+  console.log('rozkaz bez części:', JSON.stringify(wydajNaPomieszczenie(sim, [r0.id], pom)));
+  sim.zbroja = ['helm', 'naramienniki'];
+  const run = (n: number) => { for (let i = 0; i < n; i++) sim.step(); };
+  let zapisany = false;
+  for (let s = 0; s < 120; s++) {
+    run(120);
+    const r = ryc();
+    if (s % 5 === 0 || r.czynnosc === 'zaklada') console.log(`[${(sim.tick / 120).toFixed(0)}s] ${r.zamiar} | czyn=${r.czynnosc} zak=${r.zakladanie} zbroja=${(r.zbroja ?? []).join(',')} wieszak=${naWieszaku(sim).join(',')} x=${r.x.toFixed(1)} y=${r.y.toFixed(1)} hp=${r.hp.toFixed(1)}/${maxHp(sim, r).toFixed(1)}`);
+    if (!zapisany && r.czynnosc === 'zaklada' && r.zakladanie > 50) { sim = restore(serialize(sim)); zapisany = true; console.log('  — zapis i wczytanie w trakcie zakładania —'); }
+    if (!naWieszaku(sim).length && !r.czynnosc && (r.zbroja ?? []).length === 2) { console.log('założył wszystko po', (sim.tick / 120).toFixed(0), 's'); break; }
+  }
+  run(1200);
+  const r = ryc();
+  console.log('po powrocie:', r.zamiar, 'x', r.x.toFixed(1), 'y', r.y.toFixed(1));
+  // rozkaz: kolejne części wiszą — rycerz posłany
+  sim.zbroja.push('napiersnik', 'nakolanniki', 'tarcza');
+  r.zbrojaBezDo = sim.tick + 1e9; // sam nie pójdzie — tylko rozkaz
+  console.log('rozkaz z częściami:', JSON.stringify(wydajNaPomieszczenie(sim, [r.id], pom)), r.polecenie?.typ);
+  for (let s = 0; s < 200; s++) { run(120); if (!naWieszaku(sim).length && !r.polecenie) break; }
+  console.log(`po rozkazie [${(sim.tick / 120).toFixed(0)}s]: zbroja=${r.zbroja.join(',')} polecenie=${r.polecenie?.typ} hp=${r.hp.toFixed(1)}/${maxHp(sim, r).toFixed(1)} siła ${mnoznik(sim, r, 'sila').toFixed(2)} szybkość ${mnoznik(sim, r, 'szybkosc').toFixed(2)}`);
+  console.log('karta:', JSON.stringify(stanyPostaci(sim, r)));
+  console.log('kronika:', sim.chronicle.slice(-8).map((e: any) => e.text).join(' | '));
+  const rob = sim.creatures.find((c: any) => !c.dead && rolaPostaci(c) === 'robotnik');
+  console.log('robotnik do kuźni (praca):', JSON.stringify(wydajNaPomieszczenie(sim, [rob.id], pom)), rob.polecenie?.typ);
+}
+```
 
 ## Dodatek B — zasady repozytorium i rozmowy
 - **Gałąź:** `claude/charming-cerf-j2t9rf` (etapy 1–3a); etap 3b poszedł na `ccr-91477c56-dh7bgd` — gałąź przypisaną sesji, która go robiła. Kolejna sesja pracuje na gałęzi, którą przydzieli jej system.
