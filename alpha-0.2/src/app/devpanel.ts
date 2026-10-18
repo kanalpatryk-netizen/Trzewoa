@@ -17,6 +17,7 @@ import { devMrok, opisMroku, naKogoPatrzy } from '../sim/mrok';
 import { devDlon, devLina, opisDloni } from '../sim/dlon';
 import { devAniol } from '../sim/aniol';
 import { devRozbijPomnik } from '../sim/pomnik';
+import { devDlonDemona } from '../sim/dlon-demona';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 import { TEMPO } from '../nastawy/sterowanie';
 import { mnoznikNapis } from '../render/przyciski';
@@ -192,6 +193,15 @@ export class PanelDewelopera {
     dlon.append(dlonNapis, this.przycisk('wywołaj', () => this.pokazWynik(devDlon(this.gra.sim())), 'od razu, także poza Koszmarem — przy kimś na brzegu nieznanego'),
       this.przycisk('po linę', () => this.pokazWynik(devLina(this.gra.sim())), 'etap 4: dłoń wznosi się spod podłogi sali i przecina linę wiadra'),
       this.przycisk('anielska', () => this.pokazWynik(devAniol(this.gra.sim())), 'etap 4: dłoń anielska schodzi od razu z losowym darem'));
+    // etap 5b: dłoń pomaga demonowi (najpierw „rozbij pomnik” — dopiero w walce z demonem)
+    const dlonD = this.wiersz();
+    const dlonDNapis = document.createElement('span');
+    dlonDNapis.textContent = 'Dłoń przy demonie:';
+    dlonDNapis.style.color = '#9a8f7a';
+    dlonD.append(dlonDNapis,
+      this.przycisk('rzut', () => this.pokazWynik(devDlonDemona(this.gra.sim(), 'rzut')), 'etap 5b: obejmuje rycerza i ciska nim w górę'),
+      this.przycisk('tarcza', () => this.pokazWynik(devDlonDemona(this.gra.sim(), 'tarcza')), 'etap 5b: otwarta dłoń przed demonem — ciosy się odbijają'),
+      this.przycisk('zawał', () => this.pokazWynik(devDlonDemona(this.gra.sim(), 'zawal')), 'etap 5b: szpony drą strop — ściana gruzu odcina demona'));
     const widok = this.wiersz();
     widok.append(
       this.pole('bez ciemności', DEV.bezMroku, (v) => { DEV.bezMroku = v; }),

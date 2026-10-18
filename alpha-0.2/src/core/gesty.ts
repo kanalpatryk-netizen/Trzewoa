@@ -308,6 +308,50 @@ export class Gesty {
     this.dzwon(t + 1.6, 293.66, 0.2, 5, 0, 0.8);
   }
 
+  /** Etap 5b: dłoń z otchłani wyrasta z podłogi (albo ze stropu) — chrzęst pękającej skały i głuchy pomruk z dołu. */
+  dlonWyrasta(zeStropu = false): void {
+    if (!this.gotowe) return;
+    const t = this.ctx!.currentTime;
+    this.kamien(t, zeStropu ? 95 : 60, 0.4, 0.8, 0, 0.6);
+    this.rylec(t + 0.05, 0.6, zeStropu ? 3000 : 1800, 300, 0.45, 0, 0.4);
+    this.stuk(t + 0.1, 41, 0.35, 1.2, 0, 0.7);
+  }
+
+  /** Etap 5b: rzut — świst powietrza w górę. */
+  rzutDloni(): void {
+    if (!this.gotowe) return;
+    const t = this.ctx!.currentTime;
+    this.rylec(t, 0.45, 600, 4200, 0.7, 0.3, 0.3);
+    this.rylec(t + 0.08, 0.35, 900, 3000, 0.4, -0.3, 0.3);
+  }
+
+  /** Etap 5b: ciśnięty spada na ziemię — ciężkie uderzenie i chrzęst zbroi. */
+  upadek(): void {
+    if (!this.gotowe || !this.wolno('upadek', 300)) return;
+    const t = this.ctx!.currentTime;
+    this.kamien(t, 70, 0.45, 0.5, 0, 0.4);
+    this.stuk(t + 0.02, 1300, 0.12, 0.12, 0, 0.2);
+    this.stuk(t + 0.07, 900, 0.08, 0.1, 0, 0.2);
+  }
+
+  /** Etap 5b: cios odbija się od tarczy z dłoni — tępe plaśnięcie i dzwonienie ostrza. */
+  odbicieOdDloni(): void {
+    if (!this.gotowe || !this.wolno('odbicie', 200)) return;
+    const t = this.ctx!.currentTime;
+    this.stuk(t, 180, 0.4, 0.2, 0, 0.3);
+    this.dzwon(t + 0.01, 1480, 0.05, 0.8, 0.1, 0.3);
+  }
+
+  /** Etap 5b: zawał stropu — lawina kamieni. */
+  zawalStropu(): void {
+    if (!this.gotowe) return;
+    const t = this.ctx!.currentTime;
+    mikser.przycisz(2, 0.6);
+    this.kamien(t, 48, 0.55, 1.5, 0, 0.8);
+    for (let i = 0; i < 12; i++) this.kamien(t + 0.05 + i * 0.07 + Math.random() * 0.05, 60 + Math.random() * 90, 0.2, 0.3, (Math.random() - 0.5) * 0.6, 0.5);
+    this.rylec(t + 0.1, 1.2, 1400, 180, 0.5, 0, 0.6);
+  }
+
   /** Karta atlasu: szelest papieru — trzy krótkie tarcia. */
   kartka(): void {
     if (!this.gotowe || !this.wolno('kartka', ODS.kartka)) return;

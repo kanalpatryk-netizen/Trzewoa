@@ -156,6 +156,8 @@ export class Sim {
     dewocjonalia: 0, rytualow: 0, wskrzeszen: 0,
     /** Alpha, etap 4: sklejone liny wiadra i dary dłoni anielskiej. */
     naprawLin: 0, darow: 0,
+    /** Alpha, etap 5b: ile razy dłoń cisnęła rycerzem i zawaliła strop w walce z demonem. */
+    rzutow: 0, zawalow: 0,
   };
   /** v4.1 beta — podsumowanie skończonej partii (osiągnięcia); nie trafia do zapisu. */
   podsumowanie?: Podsumowanie;

@@ -17,6 +17,7 @@ import { ranyZbroi } from './zbroja';
 import { LUD } from '../nastawy/lud';
 import { POMNIK } from '../nastawy/pomnik';
 import { demonKona, ostatnieUderzenie, miejscePomnika } from './pomnik';
+import { tarczaChroni, odbijOdTarczy } from './dlon-demona';
 
 export interface StanStraznikow {
   /** numer następnej (albo trwającej) fali w STRAZNICY.fale */
@@ -302,6 +303,8 @@ export function ranStraznika(sim: Sim, s: Creature, od: Creature, dmg: number): 
   if (s.dead) return;
   // (Alpha, etap 5: demon po ostatnim uderzeniu kona — więcej ran nie przyjmuje)
   if (s.boss && demonKona(sim)) return;
+  // (etap 5b: przed demonem stoi tarcza z dłoni — cios odbija się od niej i odrzuca atakującego)
+  if (s.boss && tarczaChroni(sim)) { odbijOdTarczy(sim, od); return; }
   const d = s.boss ? aktywnyBoss().przyjmij(sim, s, od, dmg) : dmg;
   if (d <= 0) return;
   s.hp -= d;

@@ -39,6 +39,7 @@ import { ZBROJA, CZESC, type CzescZbroi } from '../nastawy/zbroja';
 import { SWIAT } from '../nastawy/swiat';
 import { POMNIK, DEMON } from '../nastawy/pomnik';
 import { rysujPosag, rysujWstajacego, rysujKonajacego, cokol, gruz } from '../render/pomnik';
+import { rycinaDloniDemona } from '../render/dlon-demona';
 import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from '../render/relikwiarz';
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
@@ -1297,6 +1298,25 @@ export const TABLICE: Tablica[] = [
     opis: `Czasem — najwcześniej po ${Math.round(ANIOL.pierwszaPo / 7200)} minutach, najwyżej ${ANIOL.maxNaPartie} razy w partii — z góry, przez skałę, sączy się słup złotego światła i schodzi w nim jasna dłoń, palcami w dół. Daje dar, który sama wybiera, za darmo: ${DAR.podkop.nazwa.toLowerCase()} — ${DAR.podkop.opis} (droga idzie schodami, więc nikt nie utknie w przepaści, a ruda trafia do liczników); ${DAR.ludzie.nazwa.toLowerCase()} — ${DAR.ludzie.opis}, póki ludu jest mniej niż ${ANIOL.dary.ludzie.maksLudu}; ${DAR.krew.nazwa.toLowerCase()} — ${DAR.krew.opis}: struga spływa z jej dłoni prosto do ampułki. Potem wraca w światło.`,
     kiedy: `Nie wywołasz jej — przychodzi sama. Dar ludzi to jedyna, poza wskrzeszeniem, droga do nowych rąk w drużynie — ale gdy ludu jest ${MROK.minLudu} albo więcej, z ciemności zaczyna patrzeć Ten, który patrzy.`,
     rycina: dlonAnielska,
+  },
+  // ---------------------------------------------------------------- etap 5b: dłoń z otchłani pomaga demonowi
+  {
+    id: 'dlon-rzut', grupa: 'prawa', nazwa: 'Rzut rycerzem', lacina: 'Manus iaciens',
+    opis: `W walce z demonem dłoń z otchłani mu pomaga. Gdy rycerz stoi przy demonie, podłoga obok niego pęka i wyrasta z niej dłoń — obejmuje go palcami jak naczynie (nie pięścią), podnosi, bierze zamach w tył i ciska nim w górę i w bok, z dala od demona; palce rozwierają się gwałtownie, odgięte do tyłu. Rycerz koziołkuje pod sam strop, uderza o niego i spada — traci ${Math.round(DLON.demon.rzut.rana * 100)}% życia i leży ogłuszony ${Math.round(DLON.demon.rzut.ogluszenie / 120)} s (nad głową krążą gwiazdki).`,
+    kiedy: 'Nie da się go uniknąć — ale ogłuszony rycerz wstaje sam. Pilnuj, żeby był najedzony i miał życie na taki upadek.',
+    rycina: (p: Plotno) => rycinaDloniDemona(p.ctx, p.w, p.h, p.t, 'rzut'),
+  },
+  {
+    id: 'dlon-tarcza', grupa: 'prawa', nazwa: 'Tarcza z dłoni', lacina: 'Manus scutum',
+    opis: `Między rycerzem a demonem wyrasta z podłogi otwarta dłoń, wnętrzem do rycerza, palce rozczapierzone jak mur, i drży z wysiłku. Przez ${Math.round(DLON.demon.tarcza.stoi / 120)} s demona nic nie rani: każdy cios odbija się od dłoni (iskry, fala na wnętrzu dłoni) i odrzuca atakującego. Demon w tym czasie czeka za nią.`,
+    kiedy: 'Przeczekaj — dłoń sama zapadnie się w podłogę. Bez modlitwy w krypcie demon za tarczą się zrasta.',
+    rycina: (p: Plotno) => rycinaDloniDemona(p.ctx, p.w, p.h, p.t, 'tarcza'),
+  },
+  {
+    id: 'dlon-zawal', grupa: 'prawa', nazwa: 'Zawał stropu', lacina: 'Ruina fornicis',
+    opis: `Gdy rycerz idzie na demona z daleka, strop krypty między nimi pęka i przebijają się przez niego szpony zagięte w hak. Drą skałę szarpnięciami, płaskie uderzenie — i kolumna stropu spada lawiną głazów. Zostaje ściana gruzu, która odcina demona: nie przechodzi na drugą stronę i zrasta się ${DLON.demon.zawal.zrastanie} razy szybciej. Rycerz staje, gdy przed nim sypie się strop. Po ${Math.round(DLON.demon.zawal.trwa / 120)} s gruz kruszy się i osypuje sam.`,
+    kiedy: 'Zaznacz robotników i wskaż im gruz — rozkują go wcześniej, a rycerz szybciej dojdzie do demona.',
+    rycina: (p: Plotno) => rycinaDloniDemona(p.ctx, p.w, p.h, p.t, 'zawal'),
   },
 ];
 

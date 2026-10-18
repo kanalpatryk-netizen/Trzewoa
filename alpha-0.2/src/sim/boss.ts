@@ -13,6 +13,8 @@ import { T } from './tiles';
 import { AKTYWNY_BOSS, SNIACY_KAMIEN as K, type IdBossa } from '../nastawy/boss';
 import { DEMON } from '../nastawy/pomnik';
 import { demonKona, miejscePomnika } from './pomnik';
+import { scianaGruzu, demonCzeka } from './dlon-demona';
+import { DLON } from '../nastawy/dlon';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { nowyStraznik, ruchStraznika, celStraznika, ciosStraznika, trybWiernych } from './straznicy';
 import { rolaPostaci, walczacy } from './lud';
@@ -103,7 +105,19 @@ const demon: Boss = {
     c.face = 1;
     return c;
   },
-  tik(sim, c) { if (!demonKona(sim)) tikKamienny(sim, c, DEMON); },
+  tik(sim, c) {
+    if (demonKona(sim)) return;
+    // etap 5b: za tarczą z dłoni i pod zawalanym stropem — czeka (tylko się zrasta, jak zwykle bez modlitwy)
+    if (demonCzeka(sim)) { if (sim.rytual.wierni < K.modlitwaWiernych) c.hp = Math.min(c.hpMax ?? DEMON.hp, c.hp + K.zrastanie); }
+    else tikKamienny(sim, c, DEMON);
+    // etap 5b: za ścianą gruzu po zawale — nie przechodzi na drugą stronę i zrasta się szybciej
+    const sc = scianaGruzu(sim);
+    if (sc) {
+      const lewa = sc.x - 0.7, prawa = sc.x + DLON.demon.zawal.szer + 0.7;
+      if (c.x < (lewa + prawa) / 2) c.x = Math.min(c.x, lewa); else c.x = Math.max(c.x, prawa);
+      c.hp = Math.min(c.hpMax ?? DEMON.hp, c.hp + K.zrastanie * (DLON.demon.zawal.zrastanie - 1));
+    }
+  },
   ksiega: { zasieg: K.ksiegaZasieg, co: K.ksiegaCo, rana: K.ksiegaRana, cofa: K.ksiegaCofa, widzi: K.ksiegaWidzi },
   przyjmij: przyjmijKamienny,
 };

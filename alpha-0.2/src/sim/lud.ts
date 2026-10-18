@@ -26,6 +26,7 @@ import { ZABYTKI } from '../nastawy/zabytki';
 import { tikZabytkow, stanyZabytkow, type StanZabytkow } from './zabytki';
 import { tikAniola, type StanAniola } from './aniol';
 import { tikPomnika, type StanPomnika } from './pomnik';
+import { tikDloniDemona, type StanDloniDemona } from './dlon-demona';
 import { mnoznikZbroi, opisZbroi } from './zbroja';
 
 export type { Rola } from '../nastawy/lud';
@@ -68,6 +69,8 @@ export interface StanLudu {
   aniol?: StanAniola;
   /** Alpha, etap 5: Wielki Pomnik demona — pękanie, rozpad, demon (sim/pomnik.ts). */
   pomnik?: StanPomnika;
+  /** Alpha, etap 5b: dłoń z otchłani pomaga demonowi — rzut, tarcza, zawał (sim/dlon-demona.ts). */
+  dlonDemona?: StanDloniDemona;
   /** Remake v2: robotnicy w hełmach (brak rycerzy) i następny ołtarz nie wcześniej niż. */
   helmy?: boolean;
   oltarzPo?: number;
@@ -502,6 +505,7 @@ export function tikLudu(sim: Sim): void {
   tikTrupow(sim);
   tikStraznikow(sim);
   tikPomnika(sim);
+  tikDloniDemona(sim);
   tikMroku(sim);
   tikDloni(sim);
   tikAniola(sim);

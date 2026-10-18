@@ -28,6 +28,7 @@ import { odmow, nastepnyKafelZyly, type Polecenie, type Odmowa } from './polecen
 import { SWIAT } from '../nastawy/swiat';
 import { idziePoZbroje, planZbroi, ranyZbroi } from './zbroja';
 import { linaPrzecieta, krokNaprawy, zacznijNaprawe, sklejajacy } from './lina-wiadra';
+import { krokLotu } from './dlon-demona';
 import { ZBROJA, type CzescZbroi } from '../nastawy/zbroja';
 import { LUD, REMAKE } from '../nastawy/lud';
 
@@ -163,6 +164,12 @@ ksiegaT?: number;
   zbrojaBezDo?: number;
   /** Alpha, etap 4: skleja przeciętą linę wiadra (sim/lina-wiadra.ts) — wspina się, wisi i wiąże, zsuwa się; kolumna i dno. */
   naprawia?: { faza: 'wspina' | 'skleja' | 'schodzi'; od: number; x: number; dno: number };
+  /** Alpha, etap 5b: w dłoni z otchłani (trzymany), ciśnięty przez nią (lot: prędkość, od kiedy, kiedy uderzył o strop) i ogłuszony do tiku. */
+  wDloni?: boolean;
+  lot?: { vx: number; vy: number; od: number; stropT?: number };
+  ogluszonyDo?: number;
+  /** Alpha, etap 5b: staje jak wryty, bo przed nim pęka strop (zawał) — do tiku. */
+  przystanDo?: number;
   /** Remake v2: skrajnie głodny biegnie pod linę tego wiadra (id), wspina się po niej (naLinie) i wsiada do niego (naWiadrze). */
   linaDo?: number;
   naLinie?: number;
@@ -290,6 +297,16 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   if (c.naLinie !== undefined && krokNaLinie(sim, c)) return;
   // Alpha, etap 4: skleja przeciętą linę wiadra — wspina się, wisi i wiąże, zsuwa się (sim/lina-wiadra.ts)
   if (c.naprawia && krokNaprawy(sim, c)) return;
+  // Alpha, etap 5b: w dłoni z otchłani albo ciśnięty przez nią (sim/dlon-demona.ts) — a po upadku leży ogłuszony
+  if ((c.wDloni || c.lot) && krokLotu(sim, c)) return;
+  if (c.ogluszonyDo !== undefined) {
+    if (sim.tick < c.ogluszonyDo) { c.vy = 0; c.droga = undefined; return; }
+    c.ogluszonyDo = undefined;
+  }
+  if (c.przystanDo !== undefined) {
+    if (sim.tick < c.przystanDo) { c.vy = 0; c.droga = undefined; return; }
+    c.przystanDo = undefined;
+  }
 
   // --- przysypanie: kiedy strop się osunie, stworzenie zostaje w litej skale.
   // Bez tego stało nieruchomo do śmierci i wyglądało to jak zawieszona gra.

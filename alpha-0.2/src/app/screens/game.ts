@@ -36,6 +36,7 @@ import { GLOS_RYCERZA } from '../../nastawy/dzwiek';
 import { zacznijGlosOdmowy } from '../../render/lud/odmowa';
 import { POMNIK } from '../../nastawy/pomnik';
 import { rysujNadPomnikiem, rysujPomnik } from '../../render/pomnik';
+import { rysujDlonDemona } from '../../render/dlon-demona';
 import { linaPrzecieta } from '../../sim/lina-wiadra';
 import { rysujZnacznikiLudu } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
@@ -189,6 +190,8 @@ export class EkranGry implements Ekran {
   private slyszaneOdmowy = new WeakSet<Odmowa>();
   /** Etap 5: co z pomnika już słychać i widać (stan pękania, faza) — dźwięk i kamera przy zmianie. */
   private slyszanyPomnik: { stan: number; faza: string } | null = null;
+  /** Etap 5b: co z dłoni w walce z demonem już słychać (akcja i faza, ostatnie odbicie, ściana gruzu, kto leciał). */
+  private slyszanaDlonDemona: { akcja: string | null; faza: string; odbicie: number; sciana: number; lecacy: Set<number> } | null = null;
   private rada: Podpowiedz | null = null;
   private radaOd = -1e9;
   /** Pauza żyje tylko w tej sesji — zapisana potrafiła uruchomić grę w bezruchu. */
@@ -207,7 +210,6 @@ export class EkranGry implements Ekran {
   /** Które zdarzenia Patrzącego już zabrzmiały (tik szeptu i zabrania). */
   private slyszanyMrok: { szept?: number; zabrany?: number } = {};
   private slyszanaDlon: { wstaje?: number; chwyt?: number } = {};
-  /** Linia „droga do wolności" na brzegu płyty — kliknięcie otwiera jej tablicę. */
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
   private straznik = new Straznik();
   alarm: Alarm | null = null;
@@ -498,6 +500,9 @@ export class EkranGry implements Ekran {
     // etap 4: przecięta lina wiadra i dłoń anielska — przy pierwszym razie
     if (sim.lud.wiadra?.przecieta || (sim.lud.wiadra?.ciec ?? 0) > 0) odkrycia.odkryj('lina-wiadra');
     if (sim.lud.aniol?.widziana) odkrycia.odkryj('dlon-anielska');
+    // etap 5b: dłoń z otchłani pomaga demonowi — tablica każdej akcji, gdy ją pierwszy raz zrobi
+    const dd = sim.lud.dlonDemona;
+    if (dd) for (const a of ['rzut', 'tarcza', 'zawal'] as const) if (dd.ile[a] > 0) odkrycia.odkryj(`dlon-${a}`);
     // Remake v2: wiadro, hełmy, trupy
     if ((sim.lud.wiadra?.lista ?? []).some((wd) => wd.faza === 'stoi')) cicho('wiadro');
     if (sim.lud.helmy) odkrycia.odkryj('helmy');
@@ -712,6 +717,22 @@ export class EkranGry implements Ekran {
     }
   }
 
+  /** Etap 5b: dźwięki dłoni w walce z demonem — wyrasta (trzask podłogi albo stropu), rzut, lądowanie, odbicie od tarczy, zawał. */
+  private sluchajDloniDemona(): void {
+    const s = this.sim.lud.dlonDemona;
+    if (!s) return;
+    const lecacy = new Set(this.sim.creatures.filter((c) => !c.dead && c.lot).map((c) => c.id));
+    const by = this.slyszanaDlonDemona;
+    this.slyszanaDlonDemona = { akcja: s.akcja, faza: s.faza, odbicie: s.odbicieT ?? -1, sciana: s.sciana?.od ?? -1, lecacy };
+    if (!by) return;
+    const g = this.app.gesty;
+    if (s.akcja && (s.akcja !== by.akcja || (s.faza !== by.faza && s.faza === 'wstaje'))) g.dlonWyrasta(s.akcja === 'zawal');
+    if (s.akcja === 'rzut' && s.faza === 'cofa' && by.faza === 'rzuca') g.rzutDloni();
+    if ((s.odbicieT ?? -1) !== by.odbicie && s.odbicieT !== undefined) g.odbicieOdDloni();
+    if ((s.sciana?.od ?? -1) !== by.sciana && s.sciana) g.zawalStropu();
+    for (const id of by.lecacy) if (!lecacy.has(id)) g.upadek();
+  }
+
   private sluchaj(): void {
     const ui = this.ui, g = this.app.gesty;
     const zawies = this.pauza ? 1 : this.zamrozone() ? 0.45 : 0;
@@ -773,6 +794,7 @@ export class EkranGry implements Ekran {
     this.sluchaj();
     this.glosOdmowy(teraz);
     this.patrzNaPomnik();
+    this.sluchajDloniDemona();
     if (!this.zamrozone()) {
       // zwykły czas: tyle tików na sekundę, niezależnie od tego, ile klatek pokazuje ekran
       let kroki: number;
@@ -1025,6 +1047,8 @@ export class EkranGry implements Ekran {
     rysujNadPomnikiem(ctx, sim, cam, teraz);
     rysujPatrzacego(ctx, sim, cam, teraz);
     rysujDlon(ctx, sim, cam, teraz);
+    // etap 5b: dłoń z otchłani pomaga demonowi — rzut, tarcza, zawał (i ściana gruzu, gwiazdki ogłuszonych)
+    rysujDlonDemona(ctx, sim, cam, teraz);
     // etap 4: dłoń anielska — słup światła, dłoń i jej dar
     rysujAniola(ctx, sim, cam, teraz);
     if (this.pauza) {

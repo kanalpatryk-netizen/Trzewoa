@@ -21,6 +21,9 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
   z wnętrza); przy każdym wychodzi fala Strażników Snu. Przy 100% pomnik rozpada się w gruz, a z gruzu wstaje demon —
   boss. Wygrywasz, gdy rycerz go pokona: przy ostatnim uderzeniu czas zwalnia, kamera jedzie do demona, złote światło
   rozsadza go od środka i rozsypuje się w popiół. Wstęgi „Droga do wolności” już nie ma (decyzja użytkownika).
+- **Dłoń z otchłani pomaga demonowi (5b):** w walce co kilka sekund — rzut rycerzem (obejmuje go palcami, ciska w górę,
+  rycerz koziołkuje, uderza o strop, spada ranny i ogłuszony), tarcza (otwarta dłoń przed demonem, ciosy się od niej
+  odbijają) albo zawał (szpony drą strop, ściana gruzu odcina demona na 15 s; robotnicy mogą ją rozkuć).
 - **Rozkazy:** pod płytą trzy medaliony (robotnicy, pobożni, rycerz). Dotknięcie medalionu albo postaci zaznacza,
   dotknięcie mapy to „idź tam” — pobożny i rycerz idą tylko tam, dokąd prowadzi droga, inaczej odmawiają (kręcą
   głową, a w dymku mówią dlaczego); robotnik przekopuje się sam, wskazana skała to „kop tam”. „Kop drogę wiernych”
@@ -88,7 +91,9 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
 5. **Finał, bot, samouczek**
    - ~~5a. Wielki Pomnik demona i wygrana po pokonaniu demona~~ — zrobione (wyżej): trzy stany pękania, rozpad, demon
      z gruzów, ostatnie uderzenie z animacją; bez wstęgi „Droga do wolności”.
-   - 5b. Dłoń z otchłani pomaga demonowi: chwyta rycerza i podrzuca go wysoko, zasłania demona, zawala szyb.
+   - ~~5b. Dłoń z otchłani pomaga demonowi~~ — zrobione: rzut rycerzem (obejmuje i ciska w górę — lot, uderzenie
+     o strop, ogłuszenie), tarcza (otwarta dłoń przed demonem — ciosy się odbijają), zawał (szpony drą strop — ściana
+     gruzu odcina demona); każda akcja z własnymi klatkami z modelu 3D, żadna nie jest zaciskaniem pięści.
    - 5c. Bot pod nowe zasady. 5d. Nowy samouczek, w którym kroki przewija się samemu. 5e. Testy, atlas, osiągnięcia.
 
 Grafika (menu, boss i Strażnicy, ikonki) i muzyka adaptacyjna — zadania zespołu (Paweł, Milan).

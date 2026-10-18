@@ -767,9 +767,13 @@ Dwie dłonie i relikwiarz — opis w 1.8.
    `patrzNaPomnik`; dźwięki `Gesty.pekniecie`, `rozpadPomnika`, `ostatnieUderzenie`. Kafli `T.CORE` już nie ma (świat
    i stare zapisy — `stanPomnika`). Wstęga „Droga do wolności” usunięta na prośbę użytkownika (`render/droga.ts` skasowany).
    Test: `scripts/test-pomnika.mjs`.
-2. 5b. Dłoń z otchłani pomagająca demonowi (decyzja użytkownika 18.10): chwyta rycerza i podrzuca go kilkanaście metrów
-   w górę, zasłania demona (blokuje do niego dostęp), może zawalić szyb, żeby na chwilę odciąć demona od ludu. Teraz demon
-   pada po 12–14 s walki — dłoń ma to wydłużyć.
+2. ~~5b. Dłoń z otchłani pomagająca demonowi~~ — zrobione (18.10): `src/sim/dlon-demona.ts` (akcje rzut / tarcza / zawał,
+   fazy w `DLUGOSC`; rycerz: `wDloni`, `lot`, `ogluszonyDo`, `przystanDo` — obsługa w creatures.ts zaraz po `krokNaprawy`;
+   tarcza — `tarczaChroni` w `ranStraznika`; zawał — `sciana` z kaflami ROCK, demon za nią w `boss.ts`), rysunek
+   `src/render/dlon-demona.ts` (`dlonZBrzegu` — dłoń wychodzi z podłogi/stropu, w skale znika tylko przedramię).
+   Prośba użytkownika: „każda akcja tej ręki ma mieć inną animację, nie opierać się na zaciskaniu pięści” — stąd trzy
+   nowe arkusze z modelu 3D (`renderuj.mjs rzut | tarcza | zawal`; pozy w `KLATKI_5B`, obrót `uRot`). Użytkownik zauważył
+   uciętą dłoń — naprawione: nadgarstek tuż pod brzegiem skały, cała dłoń nad nim.
 3. 5c. Nowy bot. 5d. Nowy samouczek (kroki przewijane ręcznie). 5e. Testy i osiągnięcia, potem lista z 6.10.
 
 ### 6.10 Lista kontrolna po każdym etapie

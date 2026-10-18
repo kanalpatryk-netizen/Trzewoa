@@ -98,6 +98,9 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   // Remake v2: w zjeżdżającym wiadrze je, na linie pod nim się wspina
   if (c.naWiadrze) return 'je';
   if (c.naLinie !== undefined) return 'wspina';
+  // Alpha, etap 5b: w dłoni z otchłani i w locie po rzucie — wymachuje rękami; po upadku leży ogłuszony
+  if (c.wDloni || c.lot) return 'spada';
+  if ((c.ogluszonyDo ?? -1) > sim.tick) return 'spi';
   if (c.vy > 0.3) return 'spada';
   // Alpha: odmówił rozkazu — stojąc, kręci głową i rozkłada ręce (render/lud/odmowa.ts)
   if (r.v < 0.6 && postepOdmowy(sim, c, czas) !== null) return 'odmawia';
@@ -1112,6 +1115,8 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     else {
       ctx.save();
       ctx.translate(sx, sy);
+      // etap 5b: ciśnięty przez dłoń z otchłani koziołkuje w locie (wokół środka ciała)
+      if (c.lot) { ctx.translate(0, -h * 0.5); ctx.rotate((sim.tick - c.lot.od) * 0.16 * (Math.sign(c.lot.vx) || 1)); ctx.translate(0, h * 0.5); }
       ctx.scale(kier, 1);
       cz = rysujPostac(ctx, sim, c, h, czas);
       ctx.restore();

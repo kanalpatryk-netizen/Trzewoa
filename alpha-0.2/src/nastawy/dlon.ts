@@ -57,4 +57,37 @@ export const DLON = {
    * (6 min), najwyżej `maxNaPartie` razy. `bok` — o ile kafli w bok od liny przebija się przez podłogę.
    */
   lina: { pierwszaPo: 36000, losujCo: 3600, szansa: 0.08, przerwa: 43200, maxNaPartie: 3, bok: 1.6 },
+
+  // ---------------------------------------------------------------- Alpha, etap 5b: dłoń pomaga demonowi
+  /**
+   * W walce z demonem z Wielkiego Pomnika (sim/dlon-demona.ts) dłoń z otchłani mu pomaga — każdą akcją inaczej
+   * (decyzja użytkownika 18.10: „chwyta rycerza i daje go kilkanaście metrów do góry, zasłania bossa, może zawalić szyb”;
+   * „każda akcja tej ręki ma mieć inną animację”). Pierwsza akcja po `pierwszaPo` tikach walki, potem co `przerwa`.
+   * `wielkosc` — osobno dla każdej akcji (krypta jest niska). `wagi` — jak często która akcja, gdy ma sens.
+   */
+  demon: {
+    wlaczona: true as boolean,
+    pierwszaPo: 300, przerwa: 720,
+    wielkosc: { rzut: 1.3, tarcza: 1.2, zawal: 1.35 } as Record<'rzut' | 'tarcza' | 'zawal', number>,
+    wagi: { rzut: 2, tarcza: 1, zawal: 1.5 } as Record<'rzut' | 'tarcza' | 'zawal', number>,
+    /**
+     * Rzut: spod podłogi pod rycerzem wyrasta dłoń, obejmuje go palcami (nie pięścią), unosi i ciska w górę i w bok, z dala
+     * od demona — na wysokość do `wysokosc` kafli (strop krypty go zatrzyma) i `wBok` kafla na tik w bok. Spadając rani
+     * (`rana` × życie) i ogłusza na `ogluszenie` tików. Tylko gdy rycerz stoi najwyżej `zasieg` kafli od demona.
+     */
+    rzut: { wstaje: 70, chwyta: 55, unosi: 50, rzuca: 24, cofa: 90, wysokosc: 13, wBok: 0.12, grawitacja: 0.012, rana: 0.1, ogluszenie: 300, zasieg: 4.5 },
+    /**
+     * Tarcza: między rycerzem a demonem wyrasta z podłogi otwarta dłoń, wnętrzem do rycerza, palce rozczapierzone jak mur.
+     * Póki stoi (`stoi` tików), demona nic nie rani — ciosy odbijają się od dłoni i odrzucają rycerza. Stoi `przedDemonem`
+     * kafla przed demonem; tylko gdy rycerz jest najwyżej `zasieg` kafli od niego.
+     */
+    tarcza: { wstaje: 80, stoi: 600, cofa: 80, przedDemonem: 2.2, zasieg: 10, odrzut: 0.35 },
+    /**
+     * Zawał: między rycerzem a demonem (co najmniej `minOdstep` kafli od siebie) dłoń przebija się przez strop, szpony drą
+     * skałę, płaskie uderzenie — i strop się zawala: ściana gruzu na `szer` kafli, od podłogi do stropu (najwyżej `maxWys`).
+     * Gruz trzyma `trwa` tików (robotnicy mogą go rozkuć wcześniej), potem się kruszy (`kruszy` tików). Póki stoi, demon
+     * jest odcięty: nie przechodzi na drugą stronę i zrasta się szybciej (× `zrastanie`).
+     */
+    zawal: { wstaje: 70, drze: 80, wali: 30, cofa: 70, trwa: 1800, kruszy: 150, szer: 2, minOdstep: 5, maxOdstep: 16, maxWys: 10, zrastanie: 3 },
+  },
 };

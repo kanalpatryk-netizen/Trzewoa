@@ -241,6 +241,8 @@ export function tikDloni(sim: Sim): void {
   }
   if (s.faza === 'brak') {
     if (!sim.koszmar || sim.spokojnySwiat || sim.tick < s.losT) return;
+    // (etap 5b: w walce z demonem dłoń pomaga jemu — sim/dlon-demona.ts — i nie chodzi po ludzi)
+    if (sim.lud.pomnik && sim.lud.pomnik.faza !== 'stoi') return;
     s.losT = sim.tick + DLON.losujCo;
     if (sim.tick < s.ciszaDo || s.ile >= DLON.maxNaPartie || ileLudu(sim) < DLON.minLudu) return;
     if (sim.rng.next() >= DLON.szansa) return;
