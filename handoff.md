@@ -1,12 +1,13 @@
 # Handoff — Trzewia, Alpha 0.1
 
-Stan na 18.10.2026, po etapie 4 (dwie dłonie i relikwiarz krwi), 3f (zbroja na rycerzu — etap 3 skończony), 3e (ruiny z zabytkami), jednym wiadrze i linie zamiast drabiny. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
+Stan na 18.10.2026, po etapie 5a (Wielki Pomnik demona, wygrana po pokonaniu demona, bez wstęgi „Droga do wolności”), etapie 4 (dwie dłonie i relikwiarz krwi), 3f (zbroja na rycerzu — etap 3 skończony), 3e (ruiny z zabytkami), jednym wiadrze i linie zamiast drabiny. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
-- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etapy 1–4, a został etap 5.
+- **Alpha 0.2 (od 18.10).** Na polecenie użytkownika („zapisz na githubie jako alpha 0.2”) stan po etapie 5a zapisany jako nowa wersja w folderze `alpha-0.2/` (osobne zapisy: klucze `trzewia-alpha-0.2:`, plik `trzewia-alpha-0.2.html`). **Dalej pracuje się w `alpha-0.2/`**; `alpha-0.1/` zostaje bez zmian (etapy 1–4 i głos rycerza) — punkt odniesienia. Ścieżki `src/…` niżej przy etapie 5 dotyczą `alpha-0.2/`.
+- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etapy 1–4 i 5a; z etapu 5 zostały 5b–5e.
 - **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
-- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e, 3f i etap 4 zrobione na polecenie użytkownika. **Nie zaczynaj etapu 5 bez polecenia.** Stanem wizualnym rycerza „zajmiemy się kiedy indziej” — użytkownik 18.10.)
+- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e, 3f i etap 4 zrobione na polecenie użytkownika. Etap 5 ruszył na polecenie użytkownika; 5a zrobione — **przed 5b powiedz użytkownikowi, co w nim będzie, i czekaj na polecenie.** Stanem wizualnym rycerza „zajmiemy się kiedy indziej” — użytkownik 18.10.)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 
 ---
@@ -305,6 +306,13 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 
 ### 1.9 Etap 5 — Wielki Pomnik, boss, bot, samouczek
 
+**Decyzje użytkownika (18.10):**
+1. Pomnik przedstawia **demona** — olbrzymi posąg zakuty w kamień, w którym śpi boss.
+2. **3 stany pękania.**
+3. **Koniec gry = pokonanie bossa**, ze stosowną animacją przy ostatnim uderzeniu (w przyszłości będzie tam przerywnik filmowy).
+4. **Dłoń z otchłani w walce z bossem:** chwyta rycerza i podrzuca go kilkanaście metrów w górę, zasłania bossa
+   (blokuje do niego dostęp) i może zawalić szyb, żeby na chwilę odciąć bossa od ludu.
+
 **Wielki Pomnik zamiast rdzenia**
 - Stoi na dnie, pod kryptą, tam gdzie dziś rdzeń: (96, 226).
 - Modlitwa pobożnych go kruszy, w 3–4 widocznych stanach pękania.
@@ -333,7 +341,7 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 - Powód to skarga Pawła: „napisy się zbyt szybko zmieniają”.
 
 **Testy**
-- `scripts/test-skorupy.mjs` trzeba zamienić na test pomnika i bossa.
+- ~~Test skorupy zamienić na test pomnika i bossa~~ — zrobione w 5a: `alpha-0.2/scripts/test-pomnika.mjs` (w `alpha-0.1/` został `scripts/test-skorupy.mjs`).
 - `scripts/test-swiata.mjs` ma sprawdzać nowe struktury (ołtarz, ruiny).
 - Próby botów.
 
@@ -612,7 +620,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `src/core/glos-rycerza.ts` | Nagrania głosu rycerza: wczytanie, wyrównanie głośności, losowanie według rzadkości |
 | `src/main.ts` | `window.__trzewia` — tylko w trybie deweloperskim (`npm run dev`) |
 | `scripts/test-swiata.mjs` | Test świata na 100 ziarnach |
-| `scripts/test-skorupy.mjs` | Test skorupy na 12 ziarnach |
+| `scripts/test-pomnika.mjs` | Alpha 0.2: test Wielkiego Pomnika na 12 ziarnach (stany, rozpad, demon, ostatnie uderzenie); w Alphie 0.1 — `test-skorupy.mjs` |
 | `scripts/proby-graczy.mjs` | Próba z botem. Zapisuje `.log`, `.anom` i `.dz` |
 | `scripts/obserwatorium.mjs`, `scripts/obserwatorium/szablon.html` | Obserwatorium |
 | `scripts/inline.mjs` | Pakowanie gry w jeden plik |
@@ -750,14 +758,22 @@ Dwie dłonie i relikwiarz — opis w 1.8.
 4. Animacje wszystkiego powyżej, potem lista z 6.10.
 
 ### 6.9 Etap 5
-1. Pomnik i boss.
-2. Dłoń z otchłani pomagająca bossowi.
-3. Warunek wygranej.
-4. Nowy bot i nowy samouczek.
-5. Testy i osiągnięcia, potem lista z 6.10.
+1. ~~5a. Pomnik i boss, warunek wygranej~~ — zrobione (18.10): `src/sim/pomnik.ts` (fazy stoi → rozpada → wychodzi →
+   walka → kona; `ostatnieUderzenie` z `ranStraznika`; koniec gry `uwolnienie:` po `POMNIK.konanie`), boss `demon`
+   w `src/sim/boss.ts` (wstaje na dnie komory — `miejscePomnika`; tylko on schodzi w ruchu poniżej rdzenia), fala z bossem
+   (`prog: 100`) zaczyna się z `zacznijFaleBossa`, nie z procentu. Rysunek: `src/render/demon.ts` (jedna rycina na posąg
+   i żywego demona — szkielet stojący i przykucnięty), `src/render/pomnik.ts` (posąg nad mrokiem, rozpad, wstawanie,
+   konanie, błyski i fala światła — `rysujNadPomnikiem`). Zwolnienie czasu i kamera: `EkranGry.zwolnienieKonania`,
+   `patrzNaPomnik`; dźwięki `Gesty.pekniecie`, `rozpadPomnika`, `ostatnieUderzenie`. Kafli `T.CORE` już nie ma (świat
+   i stare zapisy — `stanPomnika`). Wstęga „Droga do wolności” usunięta na prośbę użytkownika (`render/droga.ts` skasowany).
+   Test: `scripts/test-pomnika.mjs`.
+2. 5b. Dłoń z otchłani pomagająca demonowi (decyzja użytkownika 18.10): chwyta rycerza i podrzuca go kilkanaście metrów
+   w górę, zasłania demona (blokuje do niego dostęp), może zawalić szyb, żeby na chwilę odciąć demona od ludu. Teraz demon
+   pada po 12–14 s walki — dłoń ma to wydłużyć.
+3. 5c. Nowy bot. 5d. Nowy samouczek (kroki przewijane ręcznie). 5e. Testy i osiągnięcia, potem lista z 6.10.
 
 ### 6.10 Lista kontrolna po każdym etapie
-1. Uruchom `npx tsc --noEmit -p .` i `npm test` w `alpha-0.1/`.
+1. Uruchom `npx tsc --noEmit -p .` i `npm test` w `alpha-0.2/` (od etapu 5).
 2. Uruchom próby botów: `bash <brudnopis>/proby.sh <katalog> 20`. Wyniki trafiają do pliku `WYNIKI`. Ma być 8/8 wygranych i nikt nie może umrzeć z głodu.
 3. Zbuduj grę i obserwatorium: `npm run obserwatorium` tworzy `trzewia.html` i `obserwatorium.html`.
 4. Otwórz oba pliki przez `node obs-test.mjs <plik> <zrzut.png>`. Nie może być błędów.
@@ -765,10 +781,10 @@ Dwie dłonie i relikwiarz — opis w 1.8.
 6. Zaktualizuj dokumentację:
    - atlas, samouczek, podpowiedzi;
    - CHANGELOG (sekcja Alphy);
-   - `alpha-0.1/README.md` (skreśl etap w „W budowie”);
+   - `alpha-0.2/README.md` (skreśl etap w „W budowie”);
    - opis Alphy w wierszu menu w `/README.md`, jeśli się zmienił.
-7. Przebuduj i zatwierdź śledzony `alpha-0.1/trzewia.html`.
-8. Zrób osobny commit na etap, z polskim opisem i końcówką z Dodatku B. Wypchnij na `claude/charming-cerf-j2t9rf`.
+7. Przebuduj i zatwierdź śledzony `alpha-0.2/trzewia.html`.
+8. Zrób osobny commit na etap, z polskim opisem i końcówką z Dodatku B. Wypchnij na gałąź sesji (teraz `ccr-91477c56-dh7bgd`).
 9. PR do `main` otwieraj tylko na prośbę użytkownika, a scalaj tylko wtedy, gdy wprost każe. Po scaleniu sprawdź przebieg „Gra do pobrania” i wydanie „gra”.
 
 ---
