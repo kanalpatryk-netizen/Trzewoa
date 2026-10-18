@@ -2,13 +2,16 @@ import { Sim } from '../sim/sim';
 import { RACES, RACE_COUNT, Race, odmien } from '../sim/races';
 import { SERIF } from './overlay';
 import { ustawienia } from '../core/settings-store';
-import { lewaKrawedzPrzyciskow } from './przyciski';
+import { dolPrzyciskow, lewaKrawedzPrzyciskow } from './przyciski';
 import { EKRAN, TELEFON } from '../nastawy/ekran';
 import { PIELGRZYMKA } from '../nastawy/rytual';
 import { najwierniejsza } from '../sim/pielgrzymka';
 import { cost } from '../powers/powers';
 import { liczRole } from '../sim/lud';
 import { REMAKE } from '../nastawy/lud';
+import { GORA } from '../nastawy/gora';
+import { OLTARZ } from '../nastawy/oltarz';
+import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from './relikwiarz';
 import { ramaFresku, pigment } from './fresk';
 import { FRESK } from '../nastawy/barwy';
 import { NASTROJ } from '../nastawy/wyglad/nastroj';
@@ -58,25 +61,32 @@ const TEL = {
   poziom: { spisY: 17, spisH: 9, oddanieBok: 24, spisCzesc: 0.46 },
 };
 
-/** Rysa Krwi pod płytą. */
+/**
+ * Relikwiarz krwi z podpisem (Alpha, etap 4 — z Remake v2). Na komputerze stoi od dołu marginesu aż pod przyciski
+ * i dłonie oddania — ma być wysoki, żeby z bliska było widać złotnictwo; na telefonie ma wysokość dłoni.
+ */
 export function obszarKrwi(p: Plate, vh: number): Obszar {
-  const mt = vh - p.bottom;
+  const o = obszarOddania(p, vh);
   if (p.waski) {
     // obok dłoni oddania, w dolnym rzędzie marginesu
-    const o = obszarOddania(p, vh);
-    const y = mt + TEL.pion.rzadY + 10;
-    return { x: p.x + 28, y, w: o.x - p.x - 28 - 16, h: vh - 8 - y };
+    return { x: p.x + 28, y: o.y, w: o.x - p.x - 28 - 16, h: o.h };
   }
   if (p.niski) {
-    const o = obszarOddania(p, vh);
     const x = o.x + o.w + 14;
-    // napis „KREW” nad rysą nie może wejść na ramę płyty
-    return { x, y: mt + 22, w: p.x + p.w - x, h: p.bottom - 28 };
+    return { x, y: o.y, w: p.x + p.w - x, h: o.h };
   }
   const cx0 = p.x + p.w * 0.6;
   const base = vh - p.bottom * 0.1;
-  const maxH = p.bottom * 0.34;
-  return { x: cx0, y: base - maxH, w: p.x + p.w - cx0, h: maxH };
+  const nadOddaniem = o.x + o.w > cx0 ? o.y + o.h : vh - p.bottom;
+  const gora = Math.max(dolPrzyciskow(p, vh), nadOddaniem) + 8;
+  const h = Math.max(p.bottom * 0.34, base - gora);
+  return { x: cx0, y: base - h, w: p.x + p.w - cx0, h };
+}
+
+/** Środek ampułki relikwiarza na ekranie — tam spływa krew (dar dłoni anielskiej, render/aniol.ts). */
+export function srodekAmpulki(p: Plate, vh: number): { x: number; y: number } {
+  const o = obszarKrwi(p, vh);
+  return { x: o.x + o.h * RELIKWIARZ_PROPORCJA * 0.5, y: o.y + o.h * 0.42 };
 }
 
 /** Złożone dłonie oddania razem z podpisem (na komputerze w tym miejscu stoi Otchłań). */
@@ -304,66 +314,49 @@ function censusLine(sim: Sim): string {
   return 'Żadna krew nie góruje. Karmisz się z wielu naraz.';
 }
 
-/** Krew: ciecz w szczelinie skalnej u dołu płyty — nie pasek, tylko rysa, która się napełnia. */
-export function drawCrack(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vw: number, vh: number, time: number): void {
-  // skala liniowa: przy logarytmicznej „krwi masz dość" wyglądało na pół misy
-  const PELNA = 300;
-  const level = Math.min(1, sim.krew / PELNA);
-  // rysa, nie wykres słupkowy — geometria wspólna z samouczkiem
+/**
+ * Krew: relikwiarz z ampułką (render/relikwiarz.ts) — krew stoi w szkle, a obok napis, ile jej jest i co z tego
+ * wynika. Pełna ampułka to ostrzeżenie: więcej się nie zmieści, nadmiar przepada.
+ */
+export function drawKrew(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number, time: number): void {
   const o = obszarKrwi(p, vh);
-  const cx0 = o.x, cx1 = o.x + o.w, base = o.y + o.h, maxH = o.h;
-
-  // obrys rysy: postrzępiona góra, końce zbiegające się w szpic
-  const segs = 22;
-  const top: [number, number][] = [];
-  for (let i = 0; i <= segs; i++) {
-    const t = i / segs;
-    const x = cx0 + (cx1 - cx0) * t;
-    const taper = Math.min(1, Math.sin(t * Math.PI) * 1.9);
-    const jag = 0.82 + 0.18 * Math.sin(t * 17.3 + 1.1) * Math.sin(t * 5.7);
-    top.push([x, base - maxH * taper * jag]);
-  }
-
+  const max = GORA.krewMax;
+  const krew = Math.max(0, sim.krew);
+  rysujRelikwiarz(ctx, o.x, o.y, o.h, krew, max, time, { spokoj: ustawienia.ograniczRuch });
+  const pelna = krew >= max - 0.5;
+  // Alpha: krew to paliwo rytuałów przy ołtarzu — najtańszy z nich mówi, kiedy jej „za mało”
+  const koszt = Math.min(...Object.values(OLTARZ.rytualy).map((r) => r.krew).filter((k) => k > 0));
+  const tx = o.x + o.h * RELIKWIARZ_PROPORCJA + 8;
+  const miejsce = o.x + o.w - tx;
+  const rozm = p.niski ? 12 : Math.max(13, obszarOddania(p, vh).h * 0.3);
   ctx.save();
-  // podpis organu nad jego lewym końcem
-  ctx.font = `9px ${SERIF}`;
+  ctx.font = `italic ${rozm}px ${SERIF}`;
   ctx.textAlign = 'left';
-  ctx.fillStyle = 'rgba(224,168,96,0.6)';
-  ctx.fillText('K R E W', cx0, base - maxH - 4);
-  ctx.beginPath();
-  ctx.moveTo(cx0, base);
-  for (const [x, y] of top) ctx.lineTo(x, y);
-  ctx.lineTo(cx1, base);
-  ctx.closePath();
-  ctx.strokeStyle = `${INK}0.4)`;
-  ctx.lineWidth = 1;
-  ctx.stroke();
-
-  ctx.clip();
-  const surface = base - Math.max(2, level * maxH);
-  const g = ctx.createLinearGradient(0, surface, 0, base);
-  g.addColorStop(0, 'rgba(104,22,20,0.88)');
-  g.addColorStop(1, 'rgba(26,4,5,0.96)');
-  ctx.fillStyle = g;
-  ctx.beginPath();
-  ctx.moveTo(cx0 - 4, base + 4);
-  for (let x = cx0 - 4; x <= cx1 + 4; x += 6) {
-    ctx.lineTo(x, surface + Math.sin(x * 0.06 + time * 0.0012) * 1.6 + Math.sin(x * 0.017 - time * 0.0008) * 1.2);
+  const pasuje = (t: string) => ctx.measureText(t).width <= miejsce;
+  const ile = Math.floor(krew);
+  const napis = [`krew ${ile} z ${max}`, `krew ${ile}`].find(pasuje) ?? `${ile}`;
+  // dwie linijki: przy niskiej relikwii jak przy dłoniach oddania, przy wysokiej — w połowie wysokości
+  const y1 = p.niski ? o.y + o.h * 0.66 : o.h <= 50 ? o.y + o.h * 0.55 : o.y + o.h * 0.58 - rozm * 0.2;
+  const y2 = o.h <= 50 ? o.y + o.h * 0.95 : y1 + rozm * 1.3;
+  ctx.fillStyle = `${INK}0.9)`;
+  ctx.fillText(napis, tx, y1);
+  if (!p.niski) {
+    const tetno = ustawienia.ograniczRuch ? 1 : 0.5 + 0.5 * Math.sin(time * 0.0032);
+    let wersje: string[];
+    if (pelna) {
+      ctx.fillStyle = `rgba(236,128,100,${(0.7 + 0.3 * tetno).toFixed(3)})`;
+      wersje = ['pełna — nadmiar przepada', 'pełna — przepada', 'pełna'];
+    } else if (krew < koszt) {
+      ctx.fillStyle = 'rgba(226,120,100,0.95)';
+      wersje = [`za mało na rytuał (${koszt})`, `za mało (${koszt})`, 'za mało'];
+    } else {
+      ctx.fillStyle = `${INK}0.7)`;
+      wersje = ['płynie z każdej śmierci', 'z każdej śmierci', ''];
+    }
+    const t2 = wersje.find(pasuje) ?? '';
+    if (t2) ctx.fillText(t2, tx, y2);
   }
-  ctx.lineTo(cx1 + 4, base + 4);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = 'rgba(206,96,74,0.65)';
-  ctx.lineWidth = 1.2;
-  ctx.stroke();
-  // krew też jest ryciną: poziome kreski zamiast gładkiej plamy
-  ctx.strokeStyle = 'rgba(18,4,4,0.5)';
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  for (let y = surface + 3; y < base; y += 3.5) { ctx.moveTo(cx0 - 4, y); ctx.lineTo(cx1 + 4, y); }
-  ctx.stroke();
   ctx.restore();
-  void vw;
 }
 
 /** Nacięcie progu na organie: „stać cię na…". Liczby zostają ukryte. */

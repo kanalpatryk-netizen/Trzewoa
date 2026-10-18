@@ -24,6 +24,8 @@ import { MROK } from '../nastawy/mrok';
 import { DLON } from '../nastawy/dlon';
 import { WIADRO } from '../nastawy/wiadro';
 import { lunaOtchlani, rysujKlatkeDloni } from '../render/dlon';
+import { rysujKlatkeAnielska } from '../render/aniol';
+import { ANIOL, DAR } from '../nastawy/aniol';
 import { znaczekKruszcu, krzyz } from '../render/kruszce';
 import { rysujCzesc } from '../render/pomieszczenia';
 import { POMIESZCZENIA } from '../nastawy/pomieszczenia';
@@ -36,8 +38,28 @@ import { ZABYTKI, ZABYTEK, type TypZabytku } from '../nastawy/zabytki';
 import { kropla } from '../render/kruszce';
 import { ZBROJA, CZESC, type CzescZbroi } from '../nastawy/zbroja';
 import { SWIAT } from '../nastawy/swiat';
+import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from '../render/relikwiarz';
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
+
+/** Krew: ten sam relikwiarz co pod płytą, na kamiennej płycie ołtarza, krwi w nim dwie trzecie. */
+function rysujKrew({ ctx, w, h, t }: Plotno): void {
+  const wys = Math.min(h * 0.82, (w * 0.7) / RELIKWIARZ_PROPORCJA);
+  const cx = w / 2 + Math.min(w * 0.08, h * 0.2);
+  const dol = h * 0.9;
+  ctx.save();
+  const g = ctx.createRadialGradient(cx, dol - wys * 0.5, 4, cx, dol - wys * 0.5, wys * 0.75);
+  g.addColorStop(0, 'rgba(150,40,26,0.28)');
+  g.addColorStop(1, 'rgba(150,40,26,0)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+  ctx.fillStyle = 'rgba(24,17,13,0.95)';
+  ctx.fillRect(cx - wys * 0.62, dol - wys * 0.015, wys * 1.24, wys * 0.06);
+  ctx.strokeStyle = 'rgba(206,192,166,0.45)'; ctx.lineWidth = 1;
+  ctx.strokeRect(cx - wys * 0.62, dol - wys * 0.015, wys * 1.24, wys * 0.06);
+  rysujRelikwiarz(ctx, cx - (wys * RELIKWIARZ_PROPORCJA) / 2, dol - wys, wys, GORA.krewMax * 0.66, GORA.krewMax, t, { pamietaj: false });
+  ctx.restore();
+}
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
@@ -785,6 +807,101 @@ function dlonOtchlani({ ctx, w, h, t }: Plotno): void {
   ctx.restore();
 }
 
+/**
+ * Przecięta lina (etap 4), w kółko: spod podłogi wznosi się dłoń z otchłani obok liny wiadra, zamach — trzy smugi
+ * pazurów, wiadro spada i się roztrzaskuje; potem robotnik wspina się po zwisającym końcu i go skleja.
+ */
+function przecietaLina({ ctx, w, h, t }: Plotno): void {
+  sklepienie(ctx, w, h, 11);
+  const y = h * 0.82, lx = w * 0.56;
+  const f = (t % 9000) / 9000;
+  const zlb = (a: number, b: number) => Math.max(0, Math.min(1, (f - a) / (b - a)));
+  const lina = (x1: number, y1: number, x2: number, y2: number) => {
+    ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.strokeStyle = 'rgba(176,140,92,0.98)'; ctx.lineWidth = 2.4; ctx.stroke();
+  };
+  ctx.save();
+  ctx.lineCap = 'round';
+  const ciete = f > 0.38;
+  const koniec = y - h * 0.3;
+  // wiadro: wisi, spada, leży w kawałkach; po sklejeniu — znowu wisi
+  const naprawione = f > 0.92;
+  const wy = !ciete || naprawione ? y - h * 0.16 : y - h * 0.16 + h * 0.16 * Math.min(1, zlb(0.38, 0.46) ** 2);
+  if (!ciete || naprawione) lina(lx, 0, lx, wy);
+  else lina(lx, 0, lx, koniec);
+  if (!ciete || f < 0.46 || naprawione) {
+    ctx.fillStyle = 'rgba(120,82,46,1)'; ctx.strokeStyle = 'rgba(16,10,6,0.95)'; ctx.lineWidth = 1.5;
+    ctx.save(); ctx.translate(lx, wy); ctx.rotate(ciete && !naprawione ? zlb(0.38, 0.46) * 0.6 : 0);
+    ctx.beginPath(); ctx.moveTo(-h * 0.06, 0); ctx.lineTo(h * 0.06, 0); ctx.lineTo(h * 0.045, h * 0.13); ctx.lineTo(-h * 0.045, h * 0.13); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  } else {
+    for (let i = 0; i < 6; i++) {
+      ctx.fillStyle = i % 2 ? 'rgba(130,88,48,1)' : 'rgba(96,62,34,1)';
+      ctx.save(); ctx.translate(lx + (i - 2.5) * h * 0.035, y - h * 0.012); ctx.rotate(1.3 + i * 0.2); ctx.fillRect(-h * 0.008, -h * 0.05, h * 0.016, h * 0.05); ctx.restore();
+    }
+    ctx.fillStyle = 'rgba(176,118,58,1)';
+    for (let i = 0; i < 3; i++) { ctx.beginPath(); ctx.ellipse(lx + (i - 1) * h * 0.09, y - h * 0.012, h * 0.022, h * 0.014, 0, 0, Math.PI * 2); ctx.fill(); }
+  }
+  // dłoń z otchłani: wznosi się obok liny, zamach w poprzek, cofa się
+  if (f < 0.6) {
+    const wzn = f < 0.3 ? zlb(0, 0.3) : f < 0.38 ? 1 : 1 - zlb(0.42, 0.6);
+    const zamach = zlb(0.3, 0.38);
+    lunaOtchlani(ctx, lx + h * 0.2, h * 1.02, h * 0.7, 0, 1.2 * Math.min(1, wzn + 0.2), t);
+    ctx.save(); ctx.globalAlpha = Math.min(1, wzn * 1.5);
+    rysujKlatkeDloni(ctx, lx + h * 0.32 - zamach * h * 0.42, h * (1.25 - 0.55 * wzn), -Math.PI / 2 - 0.25 + zamach * 0.4, (h * 0.5) / 25.5, 0.12 + 0.15 * zamach, 1, 1, 1);
+    ctx.restore();
+  }
+  // trzy smugi pazurów
+  if (f > 0.37 && f < 0.5) {
+    const a = 1 - zlb(0.37, 0.5);
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    for (let i = -1; i <= 1; i++) {
+      for (const [kolor, gr] of [[`rgba(255,60,30,${0.6 * a})`, 5], [`rgba(255,236,214,${a})`, 1.6]] as const) {
+        ctx.strokeStyle = kolor; ctx.lineWidth = gr;
+        ctx.beginPath(); ctx.moveTo(lx + h * 0.12, koniec + i * 7 - 6); ctx.quadraticCurveTo(lx, koniec + i * 7 + 4, lx - h * 0.12, koniec + i * 7 - 2); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+  // robotnik: biegnie pod linę, wspina się po kikucie i skleja (supeł rośnie)
+  if (f > 0.62 && f <= 0.95) {
+    const wsp = zlb(0.66, 0.72);
+    const cz: Czynnosc = f < 0.66 ? 'idzie' : f < 0.72 ? 'wspina' : f < 0.92 ? 'skleja' : 'wspina';
+    robotnikNaRycinie(ctx, lx, y - wsp * h * 0.1, h * 0.27, t, cz);
+    if (f > 0.72 && f < 0.92) {
+      const n = Math.ceil(zlb(0.72, 0.9) * 4);
+      ctx.save(); ctx.fillStyle = 'rgba(150,114,70,0.98)'; ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = 1;
+      for (let i = 0; i < n; i++) { ctx.beginPath(); ctx.ellipse(lx, koniec + 4 - i * 3, 5, 2.4, 0.15, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); }
+      ctx.restore();
+    }
+  }
+}
+
+/** Dłoń anielska: z góry, przez skałę, słup złotego światła; w nim jasna dłoń schodzi palcami w dół nad robotnikiem. */
+function dlonAnielska({ ctx, w, h, t }: Plotno): void {
+  sklepienie(ctx, w, h, 13);
+  const y = h * 0.82, x = w * 0.5;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createLinearGradient(x - h * 0.2, 0, x + h * 0.2, 0);
+  g.addColorStop(0, 'rgba(255,220,140,0)'); g.addColorStop(0.5, 'rgba(255,232,170,0.4)'); g.addColorStop(1, 'rgba(255,220,140,0)');
+  ctx.fillStyle = g; ctx.fillRect(x - h * 0.2, 0, h * 0.4, y);
+  const g2 = ctx.createRadialGradient(x, y, 0, x, y, h * 0.4);
+  g2.addColorStop(0, 'rgba(255,236,180,0.5)'); g2.addColorStop(1, 'rgba(255,220,150,0)');
+  ctx.fillStyle = g2; ctx.fillRect(x - h * 0.4, y - h * 0.4, h * 0.8, h * 0.8);
+  for (let i = 0; i < 14; i++) {
+    const f = ((t * 0.00005 * (0.6 + (i % 5) * 0.1)) + i * 0.137) % 1;
+    ctx.fillStyle = `rgba(255,244,210,${0.8 * Math.sin(f * Math.PI)})`;
+    ctx.beginPath(); ctx.arc(x + Math.sin(i * 2.3) * h * 0.12, f * y, 1.3, 0, Math.PI * 2); ctx.fill();
+  }
+  ctx.restore();
+  // dłoń schodzi i wraca, lekko się kołysząc; pod nią stoi postawiony robotnik
+  const zejscie = 0.5 - 0.5 * Math.cos(t * 0.0008);
+  rysujKlatkeAnielska(ctx, x - h * 0.03, -h * 0.25 + zejscie * h * 0.22, Math.PI / 2 + 0.06 * Math.sin(t * 0.0011), (h * 0.62) / 25.5, 0.05, 1, 1);
+  robotnikNaRycinie(ctx, x + h * 0.02, y, h * 0.3, t, 'stoi');
+}
+
 /** Ten, który patrzy: lita, kreskowana skała, a w niej para oczu i blade światło lampki z boku. */
 function patrzacy({ ctx, w, h, t }: Plotno): void {
   ctx.save();
@@ -888,9 +1005,9 @@ export const TABLICE: Tablica[] = [
   // zasoby
   {
     id: 'krew', grupa: 'zasoby', nazwa: 'Krew', lacina: 'Sanguis',
-    opis: `Liczba nad płytą i czerwona rysa pod nią — na Koszmarze zaczynasz z ${Math.max(0, LUD.krewStart - GORA.koszmarKrew)}, mieści się jej najwyżej ${GORA.krewMax}. Płaci ci ją każda śmierć — także Strażników Snu i ludzi z powierzchni — i ofiary przy ołtarzu: krwi pobożnego (+${LUD.okaleczenieKrew}) i jego życia (+${LUD.ofiaraKrew}).`,
-    kiedy: 'Wydajesz ją na rytuały przy ołtarzu, na dodatkowe jedzenie rytem Nakarm i na wybory na kartach wydarzeń.',
-    rycina: cala(rysujOrgany),
+    opis: `Liczba nad płytą i relikwiarz pod nią: krew stoi w szklanej ampułce, a granaty w złotej oprawie żarzą się, gdy jej przybywa; pełna ampułka pulsuje, a nadmiar przepada. Na Koszmarze zaczynasz z ${Math.max(0, LUD.krewStart - GORA.koszmarKrew)}, mieści się jej najwyżej ${GORA.krewMax}. Płaci ci ją każda śmierć — także Strażników Snu i ludzi z powierzchni — i ofiary przy ołtarzu: krwi pobożnego (+${LUD.okaleczenieKrew}) i jego życia (+${LUD.ofiaraKrew}).`,
+    kiedy: 'Wydajesz ją na rytuały przy ołtarzu, na liny, na dodatkowe jedzenie rytem Nakarm i na wybory na kartach wydarzeń.',
+    rycina: rysujKrew,
   },
   {
     id: 'wiara', grupa: 'zasoby', nazwa: 'Wiara', lacina: 'Fides',
@@ -1120,6 +1237,18 @@ export const TABLICE: Tablica[] = [
     opis: `Rzadko, najwcześniej po ${Math.round(DLON.pierwszaPo / 7200)} minutach i najwyżej ${DLON.maxNaPartie} razy w partii. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu, a pod nim zaczyna się otchłań, spod ziemi sączy się czerwona łuna, a on (czasem dwoje naraz) staje jak wryty. Z głębi, zawsze od dołu, wznosi się ogromna dłoń — po ${Math.round((DLON.wstaje + DLON.siega) / 120)} sekundach sięga, chwyta ich i zapada się z nimi w ciemność. Nie zostają nawet trupy — krew i tak spływa do ciebie.`,
     kiedy: 'Nie stawiaj ludu nad nieznanym daleko od obozu. Gdy otchłań pod kimś zaczerwieni się — rzuć Cud przy nim, zanim dłoń chwyci.',
     rycina: dlonOtchlani,
+  },
+  {
+    id: 'lina-wiadra', grupa: 'prawa', nazwa: 'Przecięta lina', lacina: 'Funis praecisus',
+    opis: `W Koszmarze (w Alphie zawsze) dłoń z otchłani poluje też na linę, na której zjeżdża jedzenie — najwcześniej po ${Math.round(DLON.lina.pierwszaPo / 7200)} minutach, najwyżej ${DLON.lina.maxNaPartie} razy w partii. Spod podłogi sali, tuż przy wiadrze, wznosi się obok liny, czeka z rozwartymi szponami i jednym zamachem przecina ją pazurem. Zjeżdżające wiadro spada i roztrzaskuje się — ${Math.round(WIADRO.ciecie.strata * 100)}% jedzenia przepada, reszta leży rozsypana i da się ją zjeść; stojące zostaje bez liny. Póki nikt liny nie sklei, z góry nic nie zjedzie (także Nakarm). „Napraw linę wiadra” — przycisk pod płytą albo na karcie postaci: ktoś z ludu idzie pod szyb, wspina się po zwisającym końcu, owija i wiąże oba kawałki, lina się napina, a z góry od razu zjeżdża nowe wiadro z resztkami rozsypanego jedzenia.`,
+    kiedy: 'Rzuć Cud przy wiadrze, zanim pazur przetnie linę — odpędzi dłoń. Jeśli nie zdążysz, wyślij kogoś do liny od razu: każda chwila bez wiadra to głód. Skleja jeden naraz.',
+    rycina: przecietaLina,
+  },
+  {
+    id: 'dlon-anielska', grupa: 'prawa', nazwa: 'Dłoń anielska', lacina: 'Manus angelica',
+    opis: `Czasem — najwcześniej po ${Math.round(ANIOL.pierwszaPo / 7200)} minutach, najwyżej ${ANIOL.maxNaPartie} razy w partii — z góry, przez skałę, sączy się słup złotego światła i schodzi w nim jasna dłoń, palcami w dół. Daje dar, który sama wybiera, za darmo: ${DAR.podkop.nazwa.toLowerCase()} — ${DAR.podkop.opis} (droga idzie schodami, więc nikt nie utknie w przepaści, a ruda trafia do liczników); ${DAR.ludzie.nazwa.toLowerCase()} — ${DAR.ludzie.opis}, póki ludu jest mniej niż ${ANIOL.dary.ludzie.maksLudu}; ${DAR.krew.nazwa.toLowerCase()} — ${DAR.krew.opis}: struga spływa z jej dłoni prosto do ampułki. Potem wraca w światło.`,
+    kiedy: `Nie wywołasz jej — przychodzi sama. Dar ludzi to jedyna, poza wskrzeszeniem, droga do nowych rąk w drużynie — ale gdy ludu jest ${MROK.minLudu} albo więcej, z ciemności zaczyna patrzeć Ten, który patrzy.`,
+    rycina: dlonAnielska,
   },
 ];
 

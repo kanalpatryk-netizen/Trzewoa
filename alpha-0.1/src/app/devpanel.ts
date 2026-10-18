@@ -14,7 +14,8 @@ import { wylosuj, wymusLancuch, KARTY_LANCUCHA, KARTY_W_GRZE } from '../sim/wyda
 import { klanLudu, liczRole, nadajRole, podloga, stanyPostaci, NAZWA_ROLI, type Rola } from '../sim/lud';
 import { najwierniejsza } from '../sim/pielgrzymka';
 import { devMrok, opisMroku, naKogoPatrzy } from '../sim/mrok';
-import { devDlon, opisDloni } from '../sim/dlon';
+import { devDlon, devLina, opisDloni } from '../sim/dlon';
+import { devAniol } from '../sim/aniol';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 import { TEMPO } from '../nastawy/sterowanie';
 import { mnoznikNapis } from '../render/przyciski';
@@ -183,7 +184,9 @@ export class PanelDewelopera {
     const dlonNapis = document.createElement('span');
     dlonNapis.textContent = 'Dłoń z otchłani:';
     dlonNapis.style.color = '#9a8f7a';
-    dlon.append(dlonNapis, this.przycisk('wywołaj', () => this.pokazWynik(devDlon(this.gra.sim())), 'od razu, także poza Koszmarem — przy kimś na brzegu nieznanego'));
+    dlon.append(dlonNapis, this.przycisk('wywołaj', () => this.pokazWynik(devDlon(this.gra.sim())), 'od razu, także poza Koszmarem — przy kimś na brzegu nieznanego'),
+      this.przycisk('po linę', () => this.pokazWynik(devLina(this.gra.sim())), 'etap 4: dłoń wznosi się spod podłogi sali i przecina linę wiadra'),
+      this.przycisk('anielska', () => this.pokazWynik(devAniol(this.gra.sim())), 'etap 4: dłoń anielska schodzi od razu z losowym darem'));
     const widok = this.wiersz();
     widok.append(
       this.pole('bez ciemności', DEV.bezMroku, (v) => { DEV.bezMroku = v; }),

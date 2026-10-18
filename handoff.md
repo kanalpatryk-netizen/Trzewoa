@@ -1,12 +1,12 @@
 # Handoff — Trzewia, Alpha 0.1
 
-Stan na 18.10.2026, po etapie 3f (zbroja na rycerzu — etap 3 skończony), 3e (ruiny z zabytkami), jednym wiadrze i linie zamiast drabiny. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
+Stan na 18.10.2026, po etapie 4 (dwie dłonie i relikwiarz krwi), 3f (zbroja na rycerzu — etap 3 skończony), 3e (ruiny z zabytkami), jednym wiadrze i linie zamiast drabiny. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
-- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etapy 1, 2 i 3 (3a–3f), a zostały 4 i 5.
+- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etapy 1–4, a został etap 5.
 - **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
-- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e i 3f zrobione na polecenie użytkownika. **Nie zaczynaj etapu 4 bez polecenia.**)
+- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e, 3f i etap 4 zrobione na polecenie użytkownika. **Nie zaczynaj etapu 5 bez polecenia.** Stanem wizualnym rycerza „zajmiemy się kiedy indziej” — użytkownik 18.10.)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 
 ---
@@ -244,7 +244,29 @@ nie stawia (etap 5). Poniżej pierwotny plan.
   - `alpha-0.1/README.md` (lista „W budowie”), CHANGELOG i wiersz Alphy w README głównym;
   - wzmianka, że żółte „Ag” ze szkicu to złoto.
 
-### 1.8 Etap 4 — dwie dłonie
+### 1.8 Etap 4 — dwie dłonie — ZROBIONE
+**Decyzje użytkownika (18.10):** przecięcie liny tylko w Koszmarze (w Alphie `sim.koszmar` jest zawsze — więc w każdej grze;
+chwytanie samotnych nadal wymaga `DLON.minLudu` = 8, więc przy drużynie 6 osób się nie zdarza); dłoń anielska — losowy dar
+za darmo, który wybiera sama; podkop wykuwa kawałek drogi wiernych; relikwiarz z Remake v2 przeniesiony. Uwaga użytkownika:
+„ręka nie ma ściskać tej liny, a przeciąć ją pazurem” — dłoń tnie zamachem w poprzek (trzy smugi pazurów), bez pięści.
+**Zrobione 18.10:**
+- `src/sim/lina-wiadra.ts` — `miejsceCiecia` (nad wiadrem w sali; `czeka`, gdy wiadro jeszcze w wąskim szybie — dłoń czeka
+  w fazie „siega”), `przetnijLine`, `zacznijNaprawe`, `krokNaprawy` (wspina → skleja → schodzi; wołane z `stepCreature`
+  zamiast ruchu), `naprawiona` → `poNaprawie` w `wiadro.ts` (nowe wiadro od razu, z resztkami). Stan: `sim.lud.wiadra.przecieta`,
+  `naprawionaT`, `ciec`; fazy wiadra `spada` i `rozbite`. Rozkaz `naprawa` (`wydajNaprawe` w `polecenia.ts`), pole
+  `Creature.naprawia`, poza „skleja” (`ruch.ts`). Przycisk przy medalionach (`druzyna.ts`, akcja `naprawa`) i na karcie
+  postaci (`ui.ts`, trafienie `naprawa` → `ui.naprawa`). Podpowiedź 6d. Bot: `naprawLine` w `bot.ts`.
+- `src/sim/dlon.ts` — cel `lina` (`ustawLine`, `zacznijLine`, `devLina`), osobny los (`DLON.lina`). Rysunek cięcia:
+  `render/dlon.ts` (gałęzie `lina` w fazach „chwyta” i „cofa”, `smugiPazurow`); lina, kikut, zwój, roztrzaskane wiadro,
+  napinanie — `render/wiadro.ts`.
+- `src/sim/aniol.ts` + `src/nastawy/aniol.ts` + `src/render/aniol.ts` — dłoń anielska (fazy swiatlo → schodzi → dar → wraca;
+  dary podkop / ludzie / krew; `devAniol`); struga krwi do ampułki — `rysujStrugeKrwi` (warstwa ekranu, `srodekAmpulki`
+  z `plate.ts`). Grafika: `scripts/dlon/model.html` ma `uAniol`; `node scripts/dlon/renderuj.mjs aniol` (ok. 6 min
+  w SwiftShaderze) → `src/grafiki/dlon/dlon-anielska.webp`. Rysowanie klatki wspólne: `rysujKlatke` w `render/dlon.ts`.
+- `src/render/relikwiarz.ts` (kopia z Remake v2), `drawKrew` i `obszarKrwi` w `plate.ts`, `dolPrzyciskow` w `przyciski.ts`;
+  drugi wiersz: „za mało na rytuał (15)” zamiast kosztu robotnika.
+- Atlas: „Przecięta lina”, „Dłoń anielska”, rycina relikwiarza w „Krwi”. Statystyki `naprawLin`, `darow`.
+Poniżej pierwotny plan.
 
 **Decyzja użytkownika (17.10): dłoń anielska ma być losowym wydarzeniem, tak jak dłoń z otchłani.**
 
@@ -351,7 +373,7 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 ### 1.11 Otwarte pytania do użytkownika
 1. ~~Gdzie ma stać ołtarz?~~ W sali pod szybem ze światłem, od początku (odpowiedź 17.10).
 2. ~~Zgrzyt 1 (krew bez rekrutacji)?~~ Krew to paliwo rytuałów — zgadza się (odpowiedź 17.10).
-3. Czy przenieść do Alphy relikwiarz krwi i nowy znak oddania z `main`?
+3. ~~Czy przenieść do Alphy relikwiarz krwi?~~ Tak — przeniesiony w etapie 4 (odpowiedź 18.10). Nowego znaku oddania nie przenosiłem (nie było o nim pytania).
 4. Żółte „Ag” na szkicu przyjąłem jako złoto; użytkownik o tym wie i nie oponował. Na pewno nie chodziło o srebro?
 5. ~~Do czego ma służyć Sypialnia?~~ Usuwa debuffy (odpowiedź 17.10).
 6. Jaki ma być warunek wygranej po Pomniku — pokonanie bossa?
@@ -435,6 +457,11 @@ nie pojawia się losowo, np. w jaskiniach; gracz może je sprowadzić niżej, ko
 - `VERSION = 4`. Zapisy sprzed 3e (bez ruin) się nie wczytają. Zbroja rycerza (`c.zbroja`) idzie z postacią — 3f nie zmienił wersji.
 
 ### 2.3 Testy i próby
+**Po etapie 4 (18.10):** 8/8 wygranych (13,5–15,1 min), nikt nie umarł z głodu. Linę przecięto w 5 partiach — bot za każdym
+razem ją skleił (14–50 s po cięciu). Dłoń anielska przyszła 0–2 razy na partię (razem 9 razy). W jednej partii (budowniczy 1) po darze
+ludzi było 7 osób, więc zaczął polować Ten, który patrzy, i zabrał robotnika — to cena daru, nie błąd. Skrypty w brudnopisie:
+`lina-test.ts` (cięcie przy zjeździe i przy stojącym, naprawa, zapis w trakcie), `aniol-test.ts` (każdy dar, zapis w trakcie).
+
 **Po etapie 3f (18.10):** 8/8 wygranych (13,9–15,2 min), nikt nie umarł z głodu; z ludu ginie w dwóch partiach jeden pobożny
 od Strażnika. Bot kuźni nie stawia, więc zbroja w próbach nie gra — sprawdza ją skrypt w brudnopisie (`zbroja-test.ts`:
 rycerz sam idzie, zakłada część po części, zapis w trakcie, rozkaz, odmowa).
@@ -490,8 +517,8 @@ Wyniki po etapie 3d (gałąź `ccr-91477c56-dh7bgd`, limit prób 20 min — `pro
 Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 
 ### 2.5 Lista zadań
-- **Zrobione:** etap 1, etap 2, 3a, 3b i 3c (w wydaniu), 3d, 3e i 3f (na gałęzi), Alpha w menu i w wydaniu.
-- **Do zrobienia:** etap 4, etap 5.
+- **Zrobione:** etap 1, etap 2, 3a, 3b i 3c (w wydaniu), 3d, 3e, 3f i etap 4 (na gałęzi), Alpha w menu i w wydaniu.
+- **Do zrobienia:** etap 5.
 
 ---
 
@@ -611,7 +638,8 @@ Od wklejenia planu (16.10), po kolei:
 | `fd02485` | **Jedno wiadro.** Tylko szybem do sali, pogłębiane kopaniem; Nakarm dosypuje do niego. Szczeble na zakrętach drogi wiernych, ochrona podłogi pod drogą, kurier najada się przed drogą |
 | `3c8bf81`, `ff4a86e` | **Lina zamiast drabiny.** Wiesza ją gracz (5 za darmo, potem 10 krwi), jednostki jej nie budują; na zakrętach drogi wiernych spada sama; animacja haka, zwoju i kołysania |
 | `19b8a8a`, `7a3f162` | **Etap 3e.** Ruiny (kaplica, kopalnia, kawałek miasta) z zabytkami, karta „weź/zostaw”, premia i kara dla całego ludu, animacje odkrycia, wzięcia i zgaśnięcia, atlas, `VERSION = 4` |
-| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3f.** Rycerz zaczyna w kolczudze; części z kuźni zakłada sam (albo na rozkaz), z animacją i błyskiem; premie za części; atlas „Zbroja rycerza” i „Warstwy góry” |
+| `c37a1e1` | **Etap 3f.** Rycerz zaczyna w kolczudze; części z kuźni zakłada sam (albo na rozkaz), z animacją i błyskiem; premie za części; atlas „Zbroja rycerza” i „Warstwy góry” |
+| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 4.** Dłoń z otchłani przecina pazurem linę wiadra, „napraw linę wiadra” (wspina się, skleja); dłoń anielska — podkop, dar ludzi, dar krwi; relikwiarz krwi z Remake v2; atlas |
 
 Wcześniej w tej samej sesji zrobiłem rzeczy, które są już na `main` (PR #7–#12):
 - freski w interfejsie, mroczny interfejs i muzyka niepokoju;
@@ -708,7 +736,8 @@ Zbroja na rycerzu, premie, zakładanie z animacją, atlas „Zbroja rycerza” i
 3. Animacja zakładania.
 4. Dokumentacja etapu 3 z tablicą „Warstwy”, potem lista z 6.10.
 
-### 6.8 Etap 4
+### 6.8 Etap 4 — zrobione (18.10, gałąź `ccr-91477c56-dh7bgd`)
+Dwie dłonie i relikwiarz — opis w 1.8.
 1. Jeśli użytkownik się zgodzi, najpierw przenieś relikwiarz do Alphy.
 2. Przecięcie liny i „Napraw linę” (z użyciem `krokNaLinie`).
 3. Dłoń anielska: Podkop, Dar ludzi, Dar krwi.

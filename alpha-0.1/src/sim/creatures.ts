@@ -27,6 +27,7 @@ import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
 import { odmow, nastepnyKafelZyly, type Polecenie, type Odmowa } from './polecenia';
 import { SWIAT } from '../nastawy/swiat';
 import { idziePoZbroje, planZbroi, ranyZbroi } from './zbroja';
+import { linaPrzecieta, krokNaprawy, zacznijNaprawe, sklejajacy } from './lina-wiadra';
 import { ZBROJA, type CzescZbroi } from '../nastawy/zbroja';
 import { LUD, REMAKE } from '../nastawy/lud';
 
@@ -143,7 +144,7 @@ ksiegaT?: number;
   /** Alpha: rozkaz gracza (sim/polecenia.ts) — trzyma się go, aż go odwołasz. */
   polecenie?: Polecenie;
   /** Alpha, etap 3c: co robi w pomieszczeniu — przy kowadle albo stole („buduje”), na posłaniu („spi”). Rysunek bierze z tego pozę. */
-  czynnosc?: 'buduje' | 'spi' | 'modli' | 'czyta' | 'zaklada';
+  czynnosc?: 'buduje' | 'spi' | 'modli' | 'czyta' | 'zaklada' | 'skleja';
   /** Ile tików już przespał w sypialni (sen zdejmuje osłabienia — sim/pomieszczenia.ts). */
   snu?: number;
   /** Alpha: odmowa wykonania rozkazu — dymek nad głową i kręcenie głową. */
@@ -160,6 +161,8 @@ ksiegaT?: number;
   doKuzni?: number;
   zakladanie?: number;
   zbrojaBezDo?: number;
+  /** Alpha, etap 4: skleja przeciętą linę wiadra (sim/lina-wiadra.ts) — wspina się, wisi i wiąże, zsuwa się; kolumna i dno. */
+  naprawia?: { faza: 'wspina' | 'skleja' | 'schodzi'; od: number; x: number; dno: number };
   /** Remake v2: skrajnie głodny biegnie pod linę tego wiadra (id), wspina się po niej (naLinie) i wsiada do niego (naWiadrze). */
   linaDo?: number;
   naLinie?: number;
@@ -285,6 +288,8 @@ function krokStworzenia(sim: Sim, c: Creature): void {
 
   // Remake v2: na linie wiadra — wspina się do niego albo jedzie w nim w dół i je (sim/wiadro.ts)
   if (c.naLinie !== undefined && krokNaLinie(sim, c)) return;
+  // Alpha, etap 4: skleja przeciętą linę wiadra — wspina się, wisi i wiąże, zsuwa się (sim/lina-wiadra.ts)
+  if (c.naprawia && krokNaprawy(sim, c)) return;
 
   // --- przysypanie: kiedy strop się osunie, stworzenie zostaje w litej skale.
   // Bez tego stało nieruchomo do śmierci i wyglądało to jak zawieszona gra.
@@ -1190,6 +1195,21 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     const dk = wkopDroga(sim, c, (x, y) => x === fx && y === fy, POLECENIA.szukanieKopania);
     if (dk) { zamiar('przekopuje się do czoła drogi wiernych', Job.WANDER, przekop(dk)); p.prob = 0; return true; }
     return poddajSie('nie dojdę do czoła drogi');
+  }
+
+  // etap 4: „napraw linę” — idzie pod zwisający koniec przeciętej liny wiadra, chwyta go i dalej krokNaprawy
+  if (p.typ === 'naprawa') {
+    const lp = linaPrzecieta(sim);
+    const inny = sklejajacy(sim);
+    if (!lp || (inny && inny !== c)) { c.polecenie = undefined; if (lp) sim.efekt(c.x, c.y, 'mysl', 'ktoś już ją skleja'); return false; }
+    p.x = lp.x; p.y = lp.dno;
+    const tam = (x: number, y: number) => x === lp.x && y === lp.dno && stoi(sim, x, y);
+    if (Math.abs(c.x - (lp.x + 0.5)) < 0.6 && cy === lp.dno && zacznijNaprawe(sim, c)) { p.na = true; return true; }
+    if (tam(cx, cy)) { naDroge([], lp.x, lp.dno); zamiar('staje pod zwisającą liną', Job.WANDER, 60); return true; }
+    if (budzetDrog() <= 0) return brakCzasu();
+    const d = droga(tam, POLECENIA.szukanieDrogi);
+    if (d) { naDroge(d, lp.x, lp.dno); zamiar('idzie skleić przeciętą linę wiadra', Job.WANDER, podroz(d) + 60); p.prob = 0; return true; }
+    return poddajSie('nie dojdę do liny — nie ma drogi');
   }
 
   // etap 3f: rycerz posłany do kuźni — zakłada części z wieszaka, potem rozkaz się kończy

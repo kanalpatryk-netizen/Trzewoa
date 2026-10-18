@@ -47,4 +47,14 @@ export const DLON = {
   wielkosc: 1.8,
   /** Czerwona łuna otchłani pod ofiarą: promień (kafle). */
   lunaPromien: 6,
+
+  // ---------------------------------------------------------------- Alpha, etap 4: lina wiadra
+  /**
+   * Dłoń wznosi się spod podłogi sali przy wiadrze i przecina pazurem linę, na której zjeżdża jedzenie
+   * (sim/lina-wiadra.ts). Tylko w Koszmarze (decyzja użytkownika 18.10; w Alphie Koszmar jest zawsze). Nie patrzy na to,
+   * ilu jest ludu (`minLudu` dotyczy tylko chwytania). Najwcześniej po `pierwszaPo` tikach (5 min), potem co `losujCo`
+   * los z szansą `szansa` (średnio raz na ok. 6 min, gdy wiadro jest w szybie), po każdym razie cisza `przerwa`
+   * (6 min), najwyżej `maxNaPartie` razy. `bok` — o ile kafli w bok od liny przebija się przez podłogę.
+   */
+  lina: { pierwszaPo: 36000, losujCo: 3600, szansa: 0.08, przerwa: 43200, maxNaPartie: 3, bok: 1.6 },
 };

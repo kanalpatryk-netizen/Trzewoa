@@ -144,7 +144,7 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
   const niesie = c.carry > 0 && rola === 'robotnik';
 
   // narzędzie w dłoni: robotnik — kilof tylko przy pracy; pobożny — laska; rycerz — miecz, chowa go przy wspinaczce i jedzeniu
-  if (rola === 'rycerz') tryb.narzedzie = cz === 'wspina' || cz === 'spada' || cz === 'je' || cz === 'spi' || cz === 'buduje' || cz === 'zaklada' ? null : 'miecz';
+  if (rola === 'rycerz') tryb.narzedzie = cz === 'wspina' || cz === 'spada' || cz === 'je' || cz === 'spi' || cz === 'buduje' || cz === 'zaklada' || cz === 'skleja' ? null : 'miecz';
   else if (rola === 'pobozny') tryb.narzedzie = cz === 'stoi' || cz === 'idzie' || cz === 'biegnie' || cz === 'walczy' ? 'laska' : cz === 'buduje' ? 'mlot' : null;
   else tryb.narzedzie = cz === 'kopie' || cz === 'walczy' ? 'kilof' : cz === 'buduje' ? 'mlot' : null;
 
@@ -281,6 +281,20 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
       if (cz === 'tarcza') cel.tarcza = 1;
       cel.wysilek = 0.3;
       p = mieszajPozy(mieszajPozy(p, gora, gladko(clamp(k / 0.22, 0, 1))), cel, gladko(clamp((k - 0.4) / 0.2, 0, 1)));
+      break;
+    }
+    case 'skleja': {
+      // etap 4: wisi na przeciętej linie wiadra (sim/lina-wiadra.ts) — dalszą ręką trzyma się nad głową, nogą oplata
+      // linę, a bliższą owija i wiąże oba kawałki: dłoń krąży wokół węzła, co chwilę mocno szarpie supeł
+      const q = czas * 0.011 + id;
+      const szarp = Math.max(0, Math.sin(czas * 0.0023 + id)) ** 8;
+      p.wis = 1; p.wisY = 0.47;
+      p.rB = 2.95; p.eB = 0.18;
+      siegnij(p, 'A', 0.07 + 0.05 * cos(q) - szarp * 0.03, -0.2 + 0.045 * sin(q) + szarp * 0.06);
+      p.uA = 0.62; p.kA = 1.25; p.sA = 0.3;
+      p.uB = 0.12 + 0.03 * sin(q * 0.5); p.kB = 0.35; p.sB = 0.2;
+      p.tulow = 0.06 + 0.02 * sin(q); p.glowa = -0.32 + szarp * 0.1;
+      p.wysilek = 0.45 + szarp * 0.4;
       break;
     }
     case 'je': {

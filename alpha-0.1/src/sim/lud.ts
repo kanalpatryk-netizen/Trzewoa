@@ -24,6 +24,7 @@ import type { StanOltarza } from './oltarz';
 import { OLTARZ } from '../nastawy/oltarz';
 import { ZABYTKI } from '../nastawy/zabytki';
 import { tikZabytkow, stanyZabytkow, type StanZabytkow } from './zabytki';
+import { tikAniola, type StanAniola } from './aniol';
 import { mnoznikZbroi, opisZbroi } from './zbroja';
 
 export type { Rola } from '../nastawy/lud';
@@ -62,6 +63,8 @@ export interface StanLudu {
   liny?: number;
   /** Alpha, etap 3e: zabytki z ruin — odkryte, wzięte, zostawione (sim/zabytki.ts). */
   zabytki?: StanZabytkow;
+  /** Alpha, etap 4: dłoń anielska — losowy dar (sim/aniol.ts). */
+  aniol?: StanAniola;
   /** Remake v2: robotnicy w hełmach (brak rycerzy) i następny ołtarz nie wcześniej niż. */
   helmy?: boolean;
   oltarzPo?: number;
@@ -497,6 +500,7 @@ export function tikLudu(sim: Sim): void {
   tikStraznikow(sim);
   tikMroku(sim);
   tikDloni(sim);
+  tikAniola(sim);
   tikZabytkow(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {
     pilnujSiedziby(sim);

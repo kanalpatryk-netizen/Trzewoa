@@ -17,8 +17,9 @@ import { FRESK } from '../nastawy/barwy';
 import { klawisze, nazwaKlawisza } from '../core/keybinds';
 import type { Rozkazy } from '../powers/rozkazy';
 import { STEROWANIE } from '../nastawy/sterowanie';
+import { linaPrzecieta } from '../sim/lina-wiadra';
 
-interface Hit { x: number; y: number; hw: number; hh: number; kind: 'verb' | 'tool' | 'thought'; verb?: Verb; tool?: string; }
+interface Hit { x: number; y: number; hw: number; hh: number; kind: 'verb' | 'tool' | 'thought' | 'naprawa'; verb?: Verb; tool?: string; }
 
 /** Co ryt robi — jedno zdanie w podpisie pod kursorem. */
 const SKUTKI: Record<Verb, string> = {
@@ -53,6 +54,8 @@ export class Ui {
   ostatniaMysl: string | null = null;
   /** W pauzie myśli nie dzieją się od razu — idą do planu i czekają na czas. */
   plan: Rozkazy | null = null;
+  /** Etap 4: „napraw linę” z karty postaci — gra posyła tę postać do przeciętej liny (ekran gry ustawia). */
+  naprawa: ((id: number) => void) | null = null;
 
   private dwieKolumny = false;
   /** Kiedy ostatnio wybrano ryt — na telefonie jego opis wisi przez chwilę (STEROWANIE.opisRytuMs). */
@@ -390,7 +393,9 @@ export class Ui {
   private drawCard(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, time: number): void {
     const p = this.plate;
     // Remake v1: każdy stan (wzmocnienie, osłabienie) dokłada karcie wiersz — opis nie wchodzi na szept
-    const dodatek = stanyPostaci(sim, c).length * Math.max(12, Math.min(15, Math.min(360, p.w * (p.waski ? 0.94 : 0.46)) * 0.043)) * 2.3;
+    // etap 4: lina wiadra przecięta — na karcie każdego z ludu jest „napraw linę” (wiersz nad szeptem)
+    const naprawa = !!linaPrzecieta(sim) && !!rolaPostaci(c) && !c.naprawia;
+    const dodatek = (stanyPostaci(sim, c).length * 2.3 + (naprawa ? 2.4 : 0)) * Math.max(12, Math.min(15, Math.min(360, p.w * (p.waski ? 0.94 : 0.46)) * 0.043));
     const cw = Math.min(360, p.w * (p.waski ? 0.94 : 0.46)), ch = Math.min(290 + dodatek, p.h * 0.9);
     const x = p.waski ? p.x + (p.w - cw) / 2 : p.x + p.w - cw - 12;
     // wąsko karta schodzi pod wstęgę drogi do wolności, szeroko wstęga jest w lewym rogu
@@ -449,7 +454,22 @@ export class Ui {
     // gdy są, część z szeptem schodzi niżej, żeby opis stanu na nią nie wchodził
     const stany = stanyPostaci(sim, c);
     const koniecStanow = ny + nh + rozm * 1.35 + stany.length * rozm * 2.3;
-    const yM = Math.max(y + Math.min(ch, 290) * 0.76, koniecStanow + rozm * 1.6);
+    let yM = Math.max(y + Math.min(ch, 290) * 0.76, koniecStanow + rozm * 1.6);
+    if (naprawa) {
+      // „napraw linę wiadra” — czerwona klamra, pulsuje; kto dojdzie, idzie, wspina się i skleja
+      const by = yM - rozm * 0.9, puls = 0.6 + 0.4 * Math.sin(time * 0.006);
+      ctx.font = `${rozm * 1.05}px ${SERIF}`;
+      ctx.textAlign = 'center';
+      const tekst = 'napraw linę wiadra', hw = ctx.measureText(tekst).width / 2 + rozm * 0.8;
+      ctx.fillStyle = `rgba(120,24,16,${0.35 + 0.2 * puls})`;
+      ctx.fillRect(x + cw / 2 - hw, by - rozm * 0.95, hw * 2, rozm * 1.35);
+      ctx.strokeStyle = `rgba(236,96,72,${0.6 + 0.35 * puls})`; ctx.lineWidth = 1.2;
+      ctx.strokeRect(x + cw / 2 - hw, by - rozm * 0.95, hw * 2, rozm * 1.35);
+      ctx.fillStyle = 'rgba(250,226,206,0.97)';
+      ctx.fillText(tekst, x + cw / 2, by);
+      this.hits.push({ x: x + cw / 2, y: by - rozm * 0.3, hw, hh: rozm * 0.8, kind: 'naprawa' });
+      yM += rozm * 2.4;
+    }
     if (stany.length) {
       let ys = ny + nh + rozm * 1.35;
       ctx.textAlign = 'left';
@@ -518,6 +538,9 @@ export class Ui {
         this.selected = null;
       } else if (h.kind === 'tool') {
         this.tool = h.tool!;
+      } else if (h.kind === 'naprawa' && this.selected) {
+        this.naprawa?.(this.selected.id);
+        this.selected = null;
       } else if (h.kind === 'thought' && this.selected && this.plan) {
         const kto = this.selected;
         const powod = this.plan.zaplanuj(sim, { czasownik: 'szept', narzedzie: h.tool!, x: kto.x, y: kto.y, kto: kto.id });

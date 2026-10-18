@@ -14,6 +14,8 @@
  *    Wolni robotnicy sami nic z tego nie biorą (sim/pomieszczenia.ts).
  *  - etap 3f: wskazanie kuźni rycerzowi — „zbroja”: idzie pod wieszak i zakłada wykute części (sim/zbroja.ts);
  *    gdy nic tam nie wisi, odmawia.
+ *  - etap 4: „napraw linę” (przycisk przy medalionach i na karcie postaci) — „naprawa”: idzie pod przeciętą linę
+ *    wiadra, wspina się i ją skleja (sim/lina-wiadra.ts). Skleja jeden naraz.
  * Robotnicy nie kopią już sami: bez rozkazu tylko noszą jedzenie i odpoczywają przy obozie.
  * Rozkaz wykonuje planer ludu (creatures.ts: planPolecenia); przerywa go tylko to, co pilne —
  * głód, fala Strażników, walka — a potem postać wraca do rozkazu.
@@ -30,8 +32,9 @@ import { kruszecKafla, type RodzajKruszcu } from './kruszce';
 import { kafleDoKucia, siegaPlanu, miejsceWPom, type Pomieszczenie } from './pomieszczenia';
 import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
 import { naWieszaku, miejscePodWieszakiem } from './zbroja';
+import { linaPrzecieta, sklejajacy, przerwijNaprawe } from './lina-wiadra';
 
-export type TypPolecenia = 'idz' | 'kop' | 'droga' | 'praca' | 'sen' | 'zbroja';
+export type TypPolecenia = 'idz' | 'kop' | 'droga' | 'praca' | 'sen' | 'zbroja' | 'naprawa';
 
 export interface Polecenie {
   typ: TypPolecenia;
@@ -324,8 +327,43 @@ export function drogaGrupie(sim: Sim, ids: readonly number[]): { przyjeli: numbe
   return { przyjeli, odmowy };
 }
 
+/**
+ * Etap 4: „napraw linę”. Zaznaczeni (pierwszy, który dojdzie), a gdy nikogo nie zaznaczono — najbliższy z ludu, który
+ * dojdzie, idzie skleić przeciętą linę wiadra. Kto już na niej wisi i wiąże, tego się nie zmienia; kto dopiero szedł —
+ * oddaje rozkaz nowemu. Zwraca, kto poszedł, albo odmowy.
+ */
+export function wydajNaprawe(sim: Sim, ids: readonly number[]): { kto: Creature | null; odmowy: string[] } {
+  const lp = linaPrzecieta(sim);
+  if (!lp) return { kto: null, odmowy: ['lina jest cała'] };
+  const wisi = sklejajacy(sim);
+  if (wisi) return { kto: null, odmowy: ['już ktoś na niej wisi i ją skleja'] };
+  let lud = ids.map((id) => sim.creatureById(id)).filter((c): c is Creature => !!c && !c.dead && !!rolaPostaci(c));
+  if (!lud.length) {
+    lud = sim.creatures.filter((c) => !c.dead && !!rolaPostaci(c) && !c.straznik)
+      .sort((a, b) => Math.hypot(a.x - lp.x, a.y - lp.dno) - Math.hypot(b.x - lp.x, b.y - lp.dno));
+  }
+  const odmowy: string[] = [];
+  const tam = (x: number, y: number) => x === lp.x && y === lp.dno && stoi(sim, x, y);
+  for (const c of lud) {
+    if (!(Math.floor(c.x) === lp.x && Math.floor(c.y) === lp.dno) && !drogaTeraz(sim, c, tam, P.szukanieDrogi)) {
+      if (ids.length) odmowy.push(odmow(sim, c, 'nie dojdę do liny — nie ma drogi'));
+      continue;
+    }
+    // jeden naraz: kto dotąd szedł skleić linę, wraca do swoich zajęć
+    for (const o of sim.creatures) if (o !== c && !o.dead && o.polecenie?.typ === 'naprawa') odwolajPolecenie(sim, o);
+    przerwij(sim, c);
+    c.polecenie = { typ: 'naprawa', x: lp.x, y: lp.dno, od: sim.tick };
+    c.odmowa = undefined;
+    zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — napraw linę wiadra`, lp.x, lp.dno);
+    return { kto: c, odmowy };
+  }
+  if (!odmowy.length) odmowy.push('nikt z ludu nie dojdzie do liny');
+  return { kto: null, odmowy };
+}
+
 /** Odwołuje rozkaz — postać wraca do swoich zajęć (robotnik do noszenia jedzenia, reszta do obozu). */
 export function odwolajPolecenie(sim: Sim, c: Creature): void {
+  if (c.naprawia) przerwijNaprawe(sim, c);
   if (!c.polecenie) return;
   c.polecenie = undefined;
   c.kopieDroge = false;

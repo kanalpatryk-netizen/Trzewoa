@@ -30,7 +30,8 @@ import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { naWieszaku } from '../../sim/zbroja';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
-import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza } from '../../sim/polecenia';
+import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe } from '../../sim/polecenia';
+import { linaPrzecieta } from '../../sim/lina-wiadra';
 import { rysujZnacznikiLudu } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
 import { LUD, REMAKE } from '../../nastawy/lud';
@@ -48,7 +49,7 @@ import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
-import { computePlate, drawFrame, drawCrack, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
+import { computePlate, drawFrame, drawKrew, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
 import { seed, sign, nakarm, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
@@ -60,6 +61,7 @@ import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { rysujWydarzenie, type PoleWyboru } from '../../render/wydarzenie';
 import { rysujMrok, rysujPatrzacego } from '../../render/mrok';
 import { rysujDlon } from '../../render/dlon';
+import { rysujAniola, rysujStrugeKrwi } from '../../render/aniol';
 import { BOT, BOT_GRA, wyslijStan, ziarnoPartii } from '../obserwowany';
 import { BOT_CO, kartaBota, ruchBota } from '../bot';
 import { wolnoRuszac } from '../../render/nastroj';
@@ -110,7 +112,7 @@ export type ZdarzenieGry =
   | { typ: 'kamera'; rodzaj: 'przesun' | 'zoom' | 'powrot' }
   | { typ: 'rozkaz'; czasownik: string; narzedzie: string }
   | { typ: 'zaznaczono'; ile: number }
-  | { typ: 'polecenie'; rodzaj: 'idz' | 'droga' | 'odwolaj' | 'pomieszczenie' | 'oltarz'; przyjeli: number }
+  | { typ: 'polecenie'; rodzaj: 'idz' | 'droga' | 'odwolaj' | 'pomieszczenie' | 'oltarz' | 'naprawa'; przyjeli: number }
   /** etap 3d: otwarto okno ołtarza (`okno`) albo odprawiono rytuał (jego rodzaj) */
   | { typ: 'oltarz'; rodzaj: string }
   | { typ: 'planowanie'; rodzaj: string }
@@ -240,6 +242,8 @@ export class EkranGry implements Ekran {
   constructor(private app: Kontekst) {
     this.oltarz.onZdarzenie = (z) => this.app.dzwiek.rytual(z.faza, z.rodzaj !== 'modlitwa' && z.rodzaj !== 'wskrzeszenie');
     this.urobki.onDolot = (rodzaj) => { if (rodzaj === 'krew') this.app.dzwiek.kropla(); else this.app.dzwiek.kruszec(rodzaj !== 'zelazo'); };
+    // etap 4: „napraw linę” z karty postaci
+    this.ui.naprawa = (id) => this.naprawLine([id]);
   }
 
   /** Mnożnik czasu: w grze zawsze 1 (zwykły czas), w trybie deweloperskim z przycisków i okienka. */
@@ -482,6 +486,9 @@ export class EkranGry implements Ekran {
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
     if (sim.lud.dlon?.widziana) odkrycia.odkryj('dlon');
+    // etap 4: przecięta lina wiadra i dłoń anielska — przy pierwszym razie
+    if (sim.lud.wiadra?.przecieta || (sim.lud.wiadra?.ciec ?? 0) > 0) odkrycia.odkryj('lina-wiadra');
+    if (sim.lud.aniol?.widziana) odkrycia.odkryj('dlon-anielska');
     // Remake v2: wiadro, hełmy, trupy
     if ((sim.lud.wiadra?.lista ?? []).some((wd) => wd.faza === 'stoi')) cicho('wiadro');
     if (sim.lud.helmy) odkrycia.odkryj('helmy');
@@ -954,6 +961,8 @@ export class EkranGry implements Ekran {
     rysujStraznikowWSkale(ctx, sim, cam, teraz);
     rysujPatrzacego(ctx, sim, cam, teraz);
     rysujDlon(ctx, sim, cam, teraz);
+    // etap 4: dłoń anielska — słup światła, dłoń i jej dar
+    rysujAniola(ctx, sim, cam, teraz);
     if (this.pauza) {
       // czas stoi: świat przygasa, a na nim widać już tylko plan
       ctx.fillStyle = 'rgba(8,6,10,0.26)';
@@ -990,7 +999,9 @@ export class EkranGry implements Ekran {
     if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) rysujMinimape(ctx, sim, cam, plate, teraz);
     this.polaDruzyny = rysujDruzyne(ctx, sim, plate, h, this.zaznaczeni, this.ui.pointer, teraz, this.szablon);
     drawOddanie(ctx, plate, sim, h);
-    drawCrack(ctx, plate, sim, w, h, teraz);
+    drawKrew(ctx, plate, sim, h, teraz);
+    // etap 4: dar krwi — struga z dłoni anielskiej do ampułki relikwiarza
+    rysujStrugeKrwi(ctx, sim, plate, h, teraz);
     if (ustawienia.kronika) drawChronicle(ctx, plate, sim, w, h);
     this.ui.draw(ctx, sim, teraz);
     this.przyciski = rozmiescPrzyciski(plate, h, {
@@ -1184,6 +1195,7 @@ export class EkranGry implements Ekran {
     else if (p.akcja === 'droga') this.kopDroge();
     else if (p.akcja === 'odwolaj') this.odwolajRozkazy();
     else if (p.akcja === 'pomieszczenia') this.przelaczSzablon(!!this.szablon);
+    else if (p.akcja === 'naprawa') this.naprawLine();
     else if (p.akcja === 'szablon' && p.szablon) this.ustawSzablon(p.szablon);
     else if (p.akcja === 'koniecSzablonu') this.ustawSzablon(null);
     else this.odznacz();
@@ -1216,6 +1228,23 @@ export class EkranGry implements Ekran {
     if (przyjeli) { ui.say(przyjeli === 1 ? 'Idzie kopać drogę wiernych.' : `Idą kopać drogę wiernych (${przyjeli}).`, sim.tick); this.app.gesty.klik(); }
     else { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
     this.nasluch?.({ typ: 'polecenie', rodzaj: 'droga', przyjeli });
+  }
+
+  /**
+   * Etap 4: „napraw linę” — zaznaczony (pierwszy, który dojdzie), a gdy nikogo nie zaznaczono, najbliższy z ludu idzie
+   * skleić przeciętą linę wiadra; kamera pokazuje szyb.
+   */
+  naprawLine(ids?: number[]): void {
+    const { sim, ui } = this;
+    const lp = linaPrzecieta(sim);
+    if (!lp) return;
+    const { kto, odmowy } = wydajNaprawe(sim, ids ?? this.zaznaczeniZywi().map((c) => c.id));
+    if (kto) {
+      ui.say(`${NAZWA_ROLI[rolaPostaci(kto) ?? 'robotnik']} idzie skleić linę wiadra — wespnie się po niej i ją zwiąże.`, sim.tick);
+      this.app.gesty.klik();
+      this.pokazMiejsce(lp.x + 0.5, lp.dno - 1, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+    } else { ui.say(odmowy[0] ?? 'Nikt nie dojdzie do liny.', sim.tick); this.app.gesty.odmowa(); }
+    this.nasluch?.({ typ: 'polecenie', rodzaj: 'naprawa', przyjeli: kto ? 1 : 0 });
   }
 
   private odwolajRozkazy(): void {

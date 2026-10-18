@@ -16,6 +16,7 @@ import type { Plate, Obszar } from './plate';
 import { obszarSpisu } from './plate';
 import { rolaPostaci, NAZWA_ROLI_MNOGA, type Rola } from '../sim/lud';
 import { czoloDrogi } from '../sim/pielgrzymka';
+import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
 import { rysujPostac, wysokoscPostaci } from './figury';
 import { krazek, pigment } from './fresk';
 import { SERIF } from './ink';
@@ -31,7 +32,7 @@ export const ROLE_DRUZYNY: Rola[] = ['robotnik', 'pobozny', 'rycerz'];
 /** Barwy ról (te same co dawna wstęga ludu): biel wapienna pobożnych, ugier robotników, błękit rycerzy. */
 export const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
 
-export type AkcjaDruzyny = 'rola' | 'droga' | 'odwolaj' | 'odznacz' | 'pomieszczenia' | 'szablon' | 'koniecSzablonu';
+export type AkcjaDruzyny = 'rola' | 'droga' | 'odwolaj' | 'odznacz' | 'pomieszczenia' | 'szablon' | 'koniecSzablonu' | 'naprawa';
 export interface PoleDruzyny { akcja: AkcjaDruzyny; rola?: Rola; szablon?: RodzajPomieszczenia; x: number; y: number; w: number; h: number }
 
 /** Co mówi listwa szablonów pod każdym z nich. */
@@ -175,7 +176,15 @@ export function rysujDruzyne(
   const rozm = Math.max(12, Math.min(14, r * 0.58));
   if (x1 - x0 > 60) {
     const robotnicy = zaznaczone.filter((c) => rolaPostaci(c) === 'robotnik').length;
-    const opcje: { akcja: AkcjaDruzyny; tekst: string; wlaczony?: boolean }[] = [];
+    const opcje: { akcja: AkcjaDruzyny; tekst: string; wlaczony?: boolean; pilne?: boolean }[] = [];
+    // etap 4: lina wiadra przecięta — pierwszy przycisk, pulsuje, póki nikt jej nie skleja
+    const lp = linaPrzecieta(sim);
+    if (lp) {
+      const wisi = sklejajacy(sim);
+      const idzie = sim.creatures.some((c) => !c.dead && c.polecenie?.typ === 'naprawa');
+      opcje.push(wisi ? { akcja: 'naprawa', tekst: 'skleja linę…', wlaczony: true }
+        : { akcja: 'naprawa', tekst: idzie ? 'napraw linę (idzie)' : 'napraw linę wiadra', pilne: !idzie });
+    }
     if (robotnicy && czoloDrogi(sim) >= 0) opcje.push({ akcja: 'droga', tekst: 'kop drogę wiernych' });
     if (zaznaczone.some((c) => c.polecenie)) opcje.push({ akcja: 'odwolaj', tekst: 'odwołaj rozkaz' });
     if (zaznaczone.length) opcje.push({ akcja: 'odznacz', tekst: 'odznacz' });
@@ -202,6 +211,15 @@ export function rysujDruzyne(
       const w = Math.min(x1 - x, ctx.measureText(op.tekst).width + 22);
       if (w < 40) break;
       const pod = op.wlaczony || (kursor.x >= x && kursor.x <= x + w && kursor.y >= yP && kursor.y <= yP + hp);
+      if (op.pilne) {
+        // pilne: czerwona poświata pulsuje wokół przycisku
+        const puls = wolnoRuszac() ? 0.5 + 0.5 * Math.sin(czas * 0.006) : 0.7;
+        ctx.save();
+        ctx.shadowColor = `rgba(230,60,40,${0.5 + 0.4 * puls})`; ctx.shadowBlur = 8 + 10 * puls;
+        ctx.strokeStyle = `rgba(236,96,72,${0.6 + 0.35 * puls})`; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(x - 2, yP - 2, w + 4, hp + 4, hp / 2 + 2); ctx.stroke();
+        ctx.restore();
+      }
       pigulka(ctx, x, yP, w, hp, op.tekst, pod, rozm);
       pola.push({ akcja: op.akcja, x, y: yP - 4, w, h: hp + 8 });
       x += w + 8;

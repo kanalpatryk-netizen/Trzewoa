@@ -12,6 +12,10 @@ import arkuszUrl from '../grafiki/dlon/dlon-z-otchlani.webp';
  * światło lampek od strony palców) — od otwartej, szponiastej dłoni po zaciśniętą pięść.
  * Co jest jeszcze pod brzegiem otchłani, tonie w ciemności, a od brzegu bije na dłoń czerwień.
  * Rysowane po mroku i po postaciach — dłoń zamyka się na nich. Logika: src/sim/dlon.ts.
+ *
+ * Alpha, etap 4 — lina wiadra: dłoń nie chwyta liny, tylko ją tnie. Wznosi się obok niej z rozczapierzonymi szponami,
+ * a potem jednym zamachem przejeżdża w poprzek — szpony lekko zakrzywione, nie w pięść — i w miejscu cięcia zostają
+ * trzy jasne smugi pazurów; dłoń cofa się otwarta (decyzja użytkownika: „ma przeciąć ją pazurem”).
  */
 
 const gladko = (t: number) => { const u = Math.max(0, Math.min(1, t)); return u * u * (3 - 2 * u); };
@@ -23,14 +27,14 @@ const gladko = (t: number) => { const u = Math.max(0, Math.min(1, t)); return u 
  * Kadr obejmuje płaszczyznę obrazu x ∈ [−17, 27], y ∈ [−11, 9] w jednostkach modelu
  * (18 px na jednostkę); nadgarstek to (0, 0), palce celują w +x, kciuk jest u dołu.
  */
-const ARKUSZ = { kolumny: 2, klatek: 10, szer: 792, wys: 360, x0: -17, y1: 9, pxNaJedn: 18 };
+export const ARKUSZ = { kolumny: 2, klatek: 10, szer: 792, wys: 360, x0: -17, y1: 9, pxNaJedn: 18 };
 /** Miejsce chwytu (między palcami a kciukiem) w otwartej dłoni i środek zaciśniętej pięści — jednostki modelu. */
 const CHWYT_OTWARTA = { x: 18, y: -6.0 };
 const CHWYT_PIESC = { x: 10, y: -3.3 };
 /** Koniec najdłuższego szponu (od nadgarstka) — do wychylania się z ciemności. */
 const ZASIEG_SZPONOW = 25.5;
 /** Kafle świata na jednostkę modelu przy DLON.wielkosc = 1 (dłoń z szponami ok. 5,4 kafla). */
-const KAFLE_NA_JEDN = 0.21;
+export const KAFLE_NA_JEDN = 0.21;
 
 let arkusz: HTMLImageElement | null = null;
 function obrazArkusza(): HTMLImageElement | null {
@@ -42,7 +46,7 @@ function obrazArkusza(): HTMLImageElement | null {
 obrazArkusza();
 
 /** Miejsce chwytu dla danego zacisku (0 — otwarta, 1 — pięść), w jednostkach modelu. */
-function chwyt(zacisk: number): { x: number; y: number } {
+export function chwyt(zacisk: number): { x: number; y: number } {
   const k = gladko(zacisk);
   return { x: CHWYT_OTWARTA.x + (CHWYT_PIESC.x - CHWYT_OTWARTA.x) * k, y: CHWYT_OTWARTA.y + (CHWYT_PIESC.y - CHWYT_OTWARTA.y) * k };
 }
@@ -55,6 +59,14 @@ function chwyt(zacisk: number): { x: number; y: number } {
 export function rysujKlatkeDloni(ctx: CanvasRenderingContext2D, sx: number, sy: number, kat: number, skala: number, zacisk: number, lustro: number, alfa: number, luna = 1): boolean {
   const o = obrazArkusza();
   if (!o) return false;
+  return rysujKlatke(ctx, o, sx, sy, kat, skala, zacisk, lustro, alfa, luna > 0 ? `rgba(200,24,12,${0.75 * luna})` : null);
+}
+
+/**
+ * Klatka z arkusza (ten sam układ dla dłoni z otchłani i anielskiej — etap 4): nadgarstek w (sx, sy), palce w kierunku
+ * `kat`, `skala` — piksele na jednostkę modelu; `poswiata` — barwa blasku wokół obrysu (albo null).
+ */
+export function rysujKlatke(ctx: CanvasRenderingContext2D, o: HTMLImageElement, sx: number, sy: number, kat: number, skala: number, zacisk: number, lustro: number, alfa: number, poswiata: string | null): boolean {
   const k = Math.max(0, Math.min(ARKUSZ.klatek - 1, Math.round(zacisk * (ARKUSZ.klatek - 1))));
   const kx = (k % ARKUSZ.kolumny) * ARKUSZ.szer, ky = Math.floor(k / ARKUSZ.kolumny) * ARKUSZ.wys;
   const s = skala / ARKUSZ.pxNaJedn;
@@ -64,8 +76,8 @@ export function rysujKlatkeDloni(ctx: CanvasRenderingContext2D, sx: number, sy: 
   ctx.translate(sx, sy);
   ctx.rotate(kat);
   ctx.scale(s, s * lustro);
-  if (luna > 0) {
-    ctx.shadowColor = `rgba(200,24,12,${0.75 * luna})`;
+  if (poswiata) {
+    ctx.shadowColor = poswiata;
     ctx.shadowBlur = Math.max(6, skala * 0.9);
   }
   ctx.imageSmoothingEnabled = true;
@@ -173,11 +185,15 @@ export function rysujDlon(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   });
   const naOsi = (s: number): Pkt => ({ x: d.ox + dx * s, y: d.oy + dy * s });
   const sOsi = (p: Pkt) => (p.x - d.ox) * dx + (p.y - d.oy) * dy;
-  // gdzie musi być nadgarstek, żeby miejsce chwytu (przy danym zacisku) wypadło na ofiarach
-  const nadgarstekNaCelu = (zacisk: number): Pkt => {
+  // etap 4: po linę — szpony stają obok niej (od strony, z której dłoń wyszła) i przejeżdżają w poprzek
+  const lina = d.cel === 'lina';
+  const bok = Math.sign(d.bx - d.cx) || 1;
+  const CIECIE = { obok: 1.6, dalej: 1.3, nizej: 0.35 };
+  // gdzie musi być nadgarstek, żeby miejsce chwytu (przy danym zacisku) wypadło na ofiarach (albo w punkcie `tx, ty`)
+  const nadgarstekNaCelu = (zacisk: number, tx = lina ? d.cx + bok * CIECIE.obok : d.cx, ty = lina ? d.cy + CIECIE.nizej : d.cy): Pkt => {
     const g = chwyt(zacisk);
     const p = doSwiata(0, 0, g.x, g.y);
-    return { x: d.cx - p.x, y: d.cy - p.y };
+    return { x: tx - p.x, y: ty - p.y };
   };
 
   // brzeg otchłani na osi; dłoń „wysunięta o przes” = nadgarstek tyle kafli poniżej chwytu
@@ -218,9 +234,23 @@ export function rysujDlon(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
     const u = t / DLON.siega;
     w = polozenie(1 + u);
     zacisk = drganie * (1 - gladko(u));
+  } else if (d.faza === 'chwyta' && lina) {
+    // zamach: szpony nabierają rozpędu i dokładnie z końcem fazy przecinają linę (wtedy symulacja ją tnie)
+    const u = Math.min(1, t / DLON.chwyta);
+    const k = u * u;
+    zacisk = 0.12 + 0.18 * Math.sin(u * Math.PI * 0.5);
+    w = nadgarstekNaCelu(zacisk, d.cx + bok * CIECIE.obok * (1 - k), d.cy + CIECIE.nizej - 0.25 * Math.sin(u * Math.PI));
   } else if (d.faza === 'chwyta') {
     zacisk = gladko(t / (DLON.chwyta * 0.85));
     w = nadgarstekNaCelu(zacisk);                      // pięść zamyka się na nich, nie obok
+  } else if (d.faza === 'cofa' && lina && !d.odpedzona) {
+    // szpony przejeżdżają dalej, za linę, i dłoń — wciąż otwarta — zapada się w podłogę
+    const u = gladko(t / DLON.cofa);
+    const dalej = gladko(t / 45);
+    const start = nadgarstekNaCelu(0.3, d.cx - bok * CIECIE.dalej * dalej, d.cy + CIECIE.nizej + 0.3 * dalej);
+    zacisk = 0.3 - 0.2 * u;
+    w = mix(start, glebia, gladko((t - 40) / (DLON.cofa - 40)));
+    alfa = 1 - gladko((u - 0.6) / 0.4);
   } else if (d.faza === 'cofa') {
     const u = gladko(t / DLON.cofa);
     const start = d.odpedzona ? polozenie(d.odpedzonaU ?? 1) : nadgarstekNaCelu(1);
@@ -286,5 +316,26 @@ export function rysujDlon(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   ctx.save();
   ctx.globalAlpha *= alfa;
   ctx.drawImage(warstwa!, 0, 0, pw, ph, x0, y0, pw / sc, ph / sc);
+  ctx.restore();
+  // etap 4: trzy smugi pazurów w poprzek liny — w chwili cięcia błyskają i gasną
+  if (lina && d.faza === 'cofa' && !d.odpedzona && t < 70) smugiPazurow(ctx, cam.toScreenX(d.cx), cam.toScreenY(d.cy + CIECIE.nizej * 0.5), z, bok, t / 70);
+}
+
+/** Trzy równoległe smugi pazurów (w poprzek liny, od strony `bok`), `u` 0..1 — od błysku do zgaśnięcia. */
+function smugiPazurow(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, bok: number, u: number): void {
+  const a = 1 - gladko(u);
+  const dl = z * 1.6, wys = z * 0.32;
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.globalCompositeOperation = 'lighter';
+  for (let i = -1; i <= 1; i++) {
+    const oy = i * z * 0.28;
+    const x1 = x + bok * dl * 0.55, x2 = x - bok * dl * 0.55;
+    // smuga: łuk lekko w dół, gruba w środku — najpierw czerwona poświata, potem biały ślad szponu
+    for (const [kolor, gr] of [[`rgba(255,60,30,${0.55 * a})`, Math.max(2, z * 0.16)], [`rgba(255,236,214,${0.95 * a})`, Math.max(1, z * 0.05)]] as const) {
+      ctx.strokeStyle = kolor; ctx.lineWidth = gr;
+      ctx.beginPath(); ctx.moveTo(x1, y + oy - wys * 0.6); ctx.quadraticCurveTo(x, y + oy + wys * 0.4, x2, y + oy - wys * 0.1); ctx.stroke();
+    }
+  }
   ctx.restore();
 }

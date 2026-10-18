@@ -32,4 +32,14 @@ export const WIADRO = {
   szybMaks: 40,
   /** Ryt „Nakarm”: dodatkowe jedzenie tym samym szybem, do tego samego wiadra — tyle porcji. */
   nakarmPorcji: 8,
+  /**
+   * Alpha, etap 4: lina przecięta przez dłoń z otchłani (sim/lina-wiadra.ts). Zjeżdżające wiadro spada (przyspiesza
+   * o `grawitacja` kafla na tik, najwyżej `spadaMaks`) i roztrzaskuje się — przepada taka część jedzenia.
+   */
+  ciecie: { strata: 0.5, grawitacja: 0.012, spadaMaks: 0.55 },
+  /**
+   * Naprawa: górny kawałek zwisa po cięciu tyle kafli nad dnem (sięga go stojący); naprawiający wspina się po nim
+   * o `wspinaczka` kafla, skleja przez `sklejanie` tików (owija, wiąże), a lina napina się przez `napinanie` tików.
+   */
+  naprawa: { koniecNadDnem: 2.2, wspinaczka: 1.2, wspinaczkaV: 1.6 / 120, sklejanie: 420, napinanie: 150, zjazdV: 3 / 120 },
 };

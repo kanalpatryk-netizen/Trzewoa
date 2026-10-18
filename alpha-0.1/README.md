@@ -37,6 +37,11 @@ Alphy są osobne — nie mieszają się z Remake v2.
   zaznacz rycerza i wskaż kuźnię): zdejmuje część z wieszaka, przykłada na miejsce i dopina — błysk i podpis, co daje.
   Każda noszona część daje swoje: hełm — życie +15%, naramienniki — siła +15%, napierśnik — życie +25%, nakolanniki —
   szybkość +10%, tarcza — rany −20%. Część widać na rycerzu; bez hełmu chodzi w kolczym kapturze z odsłoniętą twarzą.
+- **Dwie dłonie (4):** w Koszmarze (w Alphie zawsze) dłoń z otchłani wznosi się spod podłogi sali i jednym zamachem
+  przecina pazurem linę wiadra — wiadro w drodze się roztrzaskuje, nic nie zjeżdża, póki ktoś liny nie sklei („napraw
+  linę wiadra” pod płytą albo na karcie postaci: idzie, wspina się, wiąże, lina się napina). Dłoń anielska przychodzi
+  sama w słupie złotego światła i daje dar za darmo: podkop (kruszy kawałek drogi wiernych), nowego robotnika albo strugę
+  krwi do relikwiarza. Krew pokazuje relikwiarz z ampułką (z Remake v2).
 - **Ruiny z zabytkami (3e):** w środkowej warstwie 1–2 zawalone budowle (kaplica, kopalnia, kawałek miasta); kto z ludu
   dojdzie do zabytku, odkrywa go — karta „Weź” (premia i kara dla całego ludu, na zawsze) albo „Zostaw”. Relikwiarz,
   miecz krzyżowca, kielich i księga — każdy z animacją odkrycia, wzięcia (fala światła, aureole) i zgaśnięcia.
@@ -72,8 +77,8 @@ Alphy są osobne — nie mieszają się z Remake v2.
      części z kuźni zakłada sam, gdy nie ma fali (albo na rozkaz), z animacją i błyskiem; każda coś daje. Atlas:
      tablice „Zbroja rycerza” i „Warstwy góry” (przekrój: szyb, sala, trzy warstwy, rama, krypta, rdzeń). Złoto
      to także żółte znaczki „Ag” ze szkicu Pawła. **Etap 3 jest skończony.**
-4. **Dwie dłonie** — dłoń z otchłani przecina pazurem linę wiadra (jedzenie staje, póki ktoś nie wejdzie po linie
-   i jej nie sklei); dłoń anielska z góry: podkop, dar ludzi (robotnik w dłoni), dar krwi.
+4. ~~**Dwie dłonie**~~ — zrobione (wyżej): dłoń z otchłani przecina pazurem linę wiadra, „napraw linę wiadra”
+   (wspina się i skleja); dłoń anielska z góry — podkop, dar ludzi, dar krwi; relikwiarz krwi z Remake v2.
 5. **Finał, bot, samouczek** — Wielki Pomnik pęka od modlitwy, z gruzów wychodzi boss, a dłoń z otchłani mu pomaga;
    bot pod nowe zasady; nowy samouczek, w którym kroki przewija się samemu.
 
