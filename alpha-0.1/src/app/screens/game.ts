@@ -30,7 +30,10 @@ import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { naWieszaku } from '../../sim/zbroja';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
-import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe } from '../../sim/polecenia';
+import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa } from '../../sim/polecenia';
+import { POLECENIA } from '../../nastawy/polecenia';
+import { GLOS_RYCERZA } from '../../nastawy/dzwiek';
+import { zacznijGlosOdmowy } from '../../render/lud/odmowa';
 import { linaPrzecieta } from '../../sim/lina-wiadra';
 import { rysujZnacznikiLudu } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
@@ -181,6 +184,8 @@ export class EkranGry implements Ekran {
   private reszta = 0;
   /** Remake v2: ostatnie wiadro, które już było słychać. */
   private slyszaneWiadro: number | undefined;
+  /** Odmowy, które już usłyszano (rycerz mówi każdą najwyżej raz). */
+  private slyszaneOdmowy = new WeakSet<Odmowa>();
   private rada: Podpowiedz | null = null;
   private radaOd = -1e9;
   /** Pauza żyje tylko w tej sesji — zapisana potrafiła uruchomić grę w bezruchu. */
@@ -654,6 +659,25 @@ export class EkranGry implements Ekran {
    * atlas. Każda droga do tej samej zmiany — mysz, palec, klawisz, samouczek — brzmi
    * więc tak samo i żadnej nie da się pominąć.
    */
+  /**
+   * Rycerz, który właśnie odmówił pójścia tam, gdzie się nie da dojść — od razu przy rozkazie albo w drodze —
+   * mówi to na głos (nastawy/dzwiek.ts: GLOS_RYCERZA). Naraz mówi jeden; odmowa wydana w pauzie też.
+   */
+  private glosOdmowy(teraz: number): void {
+    const sim = this.sim;
+    let mowil = false;
+    for (const c of sim.creatures) {
+      const o = c.odmowa;
+      if (!o || c.dead || this.slyszaneOdmowy.has(o)) continue;
+      this.slyszaneOdmowy.add(o);
+      if (mowil || sim.tick - o.od > POLECENIA.odmowaTikow || rolaPostaci(c) !== 'rycerz') continue;
+      if (!GLOS_RYCERZA.odmowy.some((p) => o.tekst.startsWith(p))) continue;
+      const pan = Math.max(-1, Math.min(1, (this.cam.toScreenX(c.x) / Math.max(1, this.cam.vw)) * 2 - 1)) * 0.6;
+      const w = this.app.gesty.glosRycerza(pan);
+      if (w) { zacznijGlosOdmowy(o, w, teraz); mowil = true; }
+    }
+  }
+
   private sluchaj(): void {
     const ui = this.ui, g = this.app.gesty;
     const zawies = this.pauza ? 1 : this.zamrozone() ? 0.45 : 0;
@@ -713,6 +737,7 @@ export class EkranGry implements Ekran {
     // plan wykonuje się także wtedy, gdy pauzę zdjęło coś innego niż przycisk
     if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
     this.sluchaj();
+    this.glosOdmowy(teraz);
     if (!this.zamrozone()) {
       // zwykły czas: tyle tików na sekundę, niezależnie od tego, ile klatek pokazuje ekran
       let kroki: number;

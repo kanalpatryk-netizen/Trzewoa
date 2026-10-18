@@ -365,6 +365,11 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
     - ikonki: 3 portrety, „Idź/Kop”, „Wyznacz pokój”, „Napraw linę”;
     - dłoń anielska i przecięta lina, kafle żył, ołtarz, tła ruin;
     - ramki wydarzeń, atlas i osiągnięcia;
+  - nagrania głosów: folder `alpha-0.1/gra222/dzwieki/` (użytkownik wrzuca pliki sam na GitHubie). Pierwsze są głosy
+    odmowy rycerza (`odmowy/rycerz/`, 11 plików; użytkownik pisał o 9). Podpięte w `src/core/glos-rycerza.ts`
+    (`import.meta.glob` — nowy plik w folderze trafia do gry sam) i `Gesty.glosRycerza`; szanse i grupy rzadkości
+    w `GLOS_RYCERZA` (`src/nastawy/dzwiek.ts`). Kiedy mówi — `EkranGry.glosOdmowy` w `src/app/screens/game.ts`
+    (rycerz i powód zaczynający się od „nie dojdę” albo „tam ”). Fale przy dymku: `faleGlosu` w `src/render/druzyna.ts`;
   - muzyka (Milan i Paweł):
     - adaptacyjna: przy napięciu głośniejszy bas i perkusja, gitara przechodzi z akustycznej w elektryczną;
     - motywy: włączenie gry, menu, start partii, wygrana i przegrana;
@@ -604,6 +609,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `src/core/save.ts` | Zapis (`VERSION = 3`) |
 | `src/core/keybinds.ts` | Klawisze |
 | `src/core/osiagniecia.ts` | Osiągnięcia |
+| `src/core/glos-rycerza.ts` | Nagrania głosu rycerza: wczytanie, wyrównanie głośności, losowanie według rzadkości |
 | `src/main.ts` | `window.__trzewia` — tylko w trybie deweloperskim (`npm run dev`) |
 | `scripts/test-swiata.mjs` | Test świata na 100 ziarnach |
 | `scripts/test-skorupy.mjs` | Test skorupy na 12 ziarnach |

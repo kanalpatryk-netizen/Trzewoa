@@ -22,7 +22,7 @@ import { krazek, pigment } from './fresk';
 import { SERIF } from './ink';
 import { FRESK } from '../nastawy/barwy';
 import { POLECENIA } from '../nastawy/polecenia';
-import { postepOdmowy } from './lud/odmowa';
+import { postepOdmowy, glosOdmowy } from './lud/odmowa';
 import { wolnoRuszac } from './nastroj';
 import { SZABLONY, NAZWA_POMIESZCZENIA, POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 
@@ -381,6 +381,30 @@ function dymek(ctx: CanvasRenderingContext2D, cam: Camera, sx: number, sy: numbe
 }
 
 /**
+ * Fale głosu przed twarzą (rycerz mówi odmowę na głos): trzy łuki rozchodzą się od ust, jaśniejsze, gdy mówi
+ * głośniej (`g` — obwiednia nagrania, 0…1). Bez ruchu (nastrój: wolno ruszać) — stoją, tylko jaśnieją.
+ */
+function faleGlosu(ctx: CanvasRenderingContext2D, sx: number, sy: number, h: number, kier: number, g: number, czas: number): void {
+  const x0 = sx + kier * h * 0.17;
+  const krok = Math.max(3, h * 0.13);
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(1.2, h * 0.035);
+  for (let i = 0; i < 3; i++) {
+    const faza = wolnoRuszac() ? ((czas * 0.004 + i / 3) % 1) : (i + 1) / 4;
+    const r = krok * (0.7 + faza * 2.6);
+    const a = Math.min(1, 0.25 + g * 1.1) * Math.sin(faza * Math.PI);
+    if (a <= 0.02) continue;
+    ctx.strokeStyle = `rgba(246,216,142,${(a * 0.9).toFixed(3)})`;
+    ctx.beginPath();
+    const s0 = kier > 0 ? -0.75 : Math.PI - 0.75;
+    ctx.arc(x0, sy, r, s0, s0 + 1.5);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
  * Rozkazy na mapie (po postaciach): linie od zaznaczonych do ich celów, znaczniki celów (świeże rozkazy
  * innych gasną po `POLECENIA.znacznikTikow`), fala w miejscu ostatniego rozkazu i dymki odmów.
  */
@@ -421,6 +445,9 @@ export function rysujPoleceniaNaMapie(
     if (k !== null && c.odmowa) {
       const h = wysokoscPostaci(c, z);
       dymek(ctx, cam, cam.toScreenX(c.x), cam.toScreenY(c.y + 1) - h * 1.1, c.odmowa.tekst, k, dymki);
+      // rycerz mówi odmowę na głos — przed twarzą biją fale w rytm słów
+      const g = glosOdmowy(c, czas);
+      if (g !== null) faleGlosu(ctx, cam.toScreenX(c.x), cam.toScreenY(c.y + 1) - h * 0.8, h, c.face < 0 ? -1 : 1, g, czas);
     }
   }
   // czoło drogi wiernych, gdy ktoś kopie ją na rozkaz

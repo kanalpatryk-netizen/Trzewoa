@@ -122,3 +122,35 @@ export const GESTY = {
   /** Kaskada wykonanego planu (Hz) — po jednym tonie na rozkaz. */
   kaskada: [293.66, 349.23, 392, 440, 523.25, 587.33, 698.46, 783.99],
 };
+
+/**
+ * GŁOS RYCERZA (Alpha) — nagrania z gra222/dzwieki/odmowy/rycerz/: rycerz mówi je na głos, gdy odmawia pójścia
+ * tam, gdzie mu kazano, a nie da się dojść („nie dojdę tam — nie ma drogi”, „tam nie ma na czym stanąć”…).
+ * Za każdym razem losuje jedno nagranie według szansy jego grupy. Szansa to procent na jedno nagranie;
+ * razem ma wyjść 100 (tu: 4 × 17 + 3 × 8 + 3 × 2,5 + 1 × 0,5). Żeby zamienić rzadkość, przenieś numer
+ * pliku do innej grupy (i popraw szanse, jeśli liczba plików w grupie się zmieni).
+ * Nagranie spoza listy (nowy plik w folderze) gra jak pospolite.
+ */
+export const GLOS_RYCERZA = {
+  /** Które odmowy rycerz mówi na głos: te, których powód zaczyna się tak (wszystkie „nie dojdę…” i „tam …”). */
+  odmowy: ['nie dojdę', 'tam '],
+  /** Głośność głosu (mnożnik; razem z suwakiem głośności i przełącznikiem efektów). */
+  glosnosc: 0.9,
+  /** Ile głosu idzie w pogłos jaskini. */
+  poglos: 0.16,
+  /** Głos wchodzi tyle sekund po głuchym stuku odmowy (żeby się nie zlały). */
+  opoznienie: 0.12,
+  /** Najmniej tyle ms między dwiema odmowami na głos; póki rycerz mówi, następny nie zaczyna. */
+  odstepMs: 500,
+  /** Nagrania wyrównuje się do jednej głośności: średnia z głośnych fragmentów (dBFS), szczyt najwyżej −1 dBFS. */
+  wyrownajDo: -20,
+  /** Cisza na początku i końcu nagrania (poniżej tylu dBFS) jest odcinana — rycerz odpowiada od razu. */
+  ciszaPonizej: -45,
+  /** Grupy rzadkości: szansa jednego nagrania (%) i numery plików (dziweki_part-NN.mp3). */
+  rzadkosc: {
+    pospolite: { szansa: 17, pliki: ['02', '04', '06', '08'] },
+    rzadsze: { szansa: 8, pliki: ['10', '12', '14'] },
+    bardzoRzadkie: { szansa: 2.5, pliki: ['15', '17', '19'] },
+    ekstremalnieRzadkie: { szansa: 0.5, pliki: ['20'] },
+  } as Record<string, { szansa: number; pliki: string[] }>,
+};
