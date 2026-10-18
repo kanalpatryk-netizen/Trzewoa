@@ -135,7 +135,7 @@ export const GLOS_RYCERZA = {
   /** Które odmowy rycerz mówi na głos: te, których powód zaczyna się tak (wszystkie „nie dojdę…” i „tam …”). */
   odmowy: ['nie dojdę', 'tam '],
   /** Głośność głosu (mnożnik; razem z suwakiem głośności i przełącznikiem efektów). */
-  glosnosc: 0.9,
+  glosnosc: 0.7,
   /** Ile głosu idzie w pogłos jaskini. */
   poglos: 0.16,
   /** Głos wchodzi tyle sekund po głuchym stuku odmowy (żeby się nie zlały). */
