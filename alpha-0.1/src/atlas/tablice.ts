@@ -884,8 +884,8 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'lina', grupa: 'prawa', nazwa: 'Lina', lacina: 'Funis',
-    opis: `„Wyznacz pomieszczenie” → „lina”: przeciągnij w górę od miejsca, gdzie stoi lud, do półki (${POMIESZCZENIA.linaMin}–${POMIESZCZENIA.linaMaks} kafli). Linę wolno powiesić tylko tam, gdzie na półkę nie da się wejść inaczej — gdy da się dojść stopniami albo inną liną, obrys jest czerwony. Wieszasz ją ty, od razu — nikt z ludu jej nie buduje: z żelaznego haka spada zwój, rozwija się do podłogi, a lina chwilę się kołysze. ${POMIESZCZENIA.linyDarmowe} pierwszych lin jest za darmo, każda następna kosztuje ${POMIESZCZENIA.linaKrew} krwi. Po linie każdy z ludu wchodzi i schodzi w obie strony. Na zakrętach drogi wiernych lina spada sama, gdy zakręt jest wykopany — za darmo.`,
-    kiedy: 'Gdy ktoś zszedł w głąb i nie ma jak wrócić, albo gdy półka z rudą wisi za wysoko. Darmowe liny szybko się kończą.',
+    opis: `„Wyznacz pomieszczenie” → „lina”: dotknij miejsca, gdzie ma wisieć hak (albo przeciągnij w górę). Jedyny warunek: lina nie trzyma się powietrza — jej górny koniec musi być uczepiony skały: stropu tuż nad nią, krawędzi półki obok albo ściany przy górze; bez tego obrys jest czerwony. Wskazana skała to strop — lina zawiśnie tuż pod nią. Wieszasz ją ty, od razu — nikt z ludu jej nie buduje: z żelaznego haka wbitego w skałę spada zwój, rozwija się aż do podłogi, a lina chwilę się kołysze. ${POMIESZCZENIA.linyDarmowe} pierwszych lin jest za darmo, każda następna kosztuje ${POMIESZCZENIA.linaKrew} krwi. Po linie każdy z ludu wchodzi i schodzi w obie strony. Na zakrętach drogi wiernych lina spada sama, gdy zakręt jest wykopany — za darmo.`,
+    kiedy: 'Gdy ktoś zszedł w głąb i nie ma jak wrócić, albo gdy półka z rudą wisi za wysoko. Wieszaj przy krawędzi półki — po linie wchodzi się na nią. Darmowe liny szybko się kończą.',
     rycina: linaRycina,
   },
   {

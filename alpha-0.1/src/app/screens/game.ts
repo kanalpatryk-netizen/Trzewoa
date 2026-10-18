@@ -1225,7 +1225,7 @@ export class EkranGry implements Ekran {
     if (s) {
       this.ostatniSzablon = s;
       ui.verb = null; ui.tool = null; ui.selected = null;     // ryt w ręku i karta odkładają się na czas planowania
-      ui.say(`Plan: ${NAZWA_POMIESZCZENIA[s]} — ${czyPokoj(s) ? 'dotknij skały, gdzie ma stanąć' : 'przeciągnij od miejsca, gdzie stoi lud'}. B — następny, Esc — koniec.`, sim.tick);
+      ui.say(`Plan: ${NAZWA_POMIESZCZENIA[s]} — ${czyPokoj(s) ? 'dotknij skały, gdzie ma stanąć' : s === 'lina' ? 'dotknij, gdzie ma wisieć hak — przy skale, której lina się uczepi' : 'przeciągnij od miejsca, gdzie stoi lud'}. B — następny, Esc — koniec.`, sim.tick);
       this.nasluch?.({ typ: 'planowanie', rodzaj: s });
     }
     this.dirty = true;
@@ -1294,7 +1294,7 @@ export class EkranGry implements Ekran {
   private cenaLinyPodpis(przedCiagnieciem: boolean): string {
     const cena = cenaLiny(this.sim);
     const ile = cena ? `${cena} krwi` : `za darmo (zostało ${darmoweLiny(this.sim)})`;
-    return `lina — ${ile}${przedCiagnieciem ? ' — przeciągnij w górę do półki' : ''}`;
+    return `lina — ${ile}${przedCiagnieciem ? ' — dotknij, gdzie ma wisieć hak' : ''}`;
   }
 
   /** Kładzie plan z próby (albo mówi, czemu tu nie wolno). */

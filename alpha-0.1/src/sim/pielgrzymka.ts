@@ -4,7 +4,7 @@ import { RACES, Race } from './races';
 import { PASSABLE, T } from './tiles';
 import { WORLD_W, WORLD_H } from './world';
 import { wolny, stoi, uchwyt, nadOgniem, przepasc, szukajKopiac, szukajDrogi, budzetDrog, nowyTik } from './droga';
-import { zdarzenie } from './pomieszczenia';
+import { zdarzenie, kotwicaLiny } from './pomieszczenia';
 import { Job } from './creatures';
 import { PLAN_DROGI, PIELGRZYMKA } from '../nastawy/rytual';
 import { REMAKE } from '../nastawy/lud';
@@ -157,6 +157,23 @@ function linyDrogi(sim: Sim, sciezka: number[]): number[] {
       for (const i of nowe) w.lina[i] = 0;
     }
   }
+  // (decyzja użytkownika 18.10: lina nie trzyma się powietrza) odcinek, którego górny koniec nie ma się czego
+  // uczepić, rośnie w górę po wolnych kaflach, aż sięgnie skały — stropu albo ściany; gdy nie sięgnie, nie wisi wcale
+  for (const i of [...liny]) {
+    const x = i % W;
+    let g = (i / W) | 0;
+    while (g > 0 && w.lina[(g - 1) * W + x]) g--;
+    if (kotwicaLiny(w, x, g)) continue;
+    const dodane: number[] = [];
+    while (dodane.length < 4 && g > 0 && PASSABLE[w.tile[(g - 1) * W + x]] === 1 && !kotwicaLiny(w, x, g)) {
+      g--; w.lina[g * W + x] = 1; dodane.push(g * W + x);
+    }
+    if (kotwicaLiny(w, x, g)) { liny.push(...dodane); continue; }
+    for (const j of dodane) w.lina[j] = 0;
+    // bez zaczepienia — cały odcinek odpada
+    let d = g;
+    while (d < w.h && w.lina[d * W + x]) { const j = d * W + x; w.lina[j] = 0; const n = liny.indexOf(j); if (n >= 0) liny.splice(n, 1); d++; }
+  }
   sciezka.forEach((i, k) => { w.tile[i] = bylo[k]; });
   for (const i of liny) w.lina[i] = 0;
   nowyTik(zostalo);
@@ -172,6 +189,10 @@ function spuscLiny(sim: Sim, p: PlanDrogi): void {
   for (const i of p.liny ?? []) {
     if (w.lina[i] || PASSABLE[w.tile[i]] !== 1 || w.magma[i] > 0) continue;
     const x = i % W, y = (i / W) | 0;
+    // (i ta lina nie trzyma się powietrza: górny koniec odcinka, do którego dołączy, musi mieć się czego uczepić)
+    let gora = y;
+    while (gora > 0 && w.lina[i - (y - gora + 1) * W]) gora--;
+    if (!kotwicaLiny(w, x, gora)) continue;
     w.lina[i] = 1;
     zdarzenie(sim, { rodzaj: 'lina', x, y0: y, y1: y, tik: sim.tick, gracz: false });
     zapisz(sim, 'praca', `na zakręcie drogi wiernych (${x}, ${y}) spadła lina — tędy wróci się pod górę`, x, y);

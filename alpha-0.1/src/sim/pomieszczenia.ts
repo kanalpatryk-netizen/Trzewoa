@@ -6,9 +6,9 @@
  *    i szyb (proste schody w dół — da się nimi wrócić). Oba ostatnie zaczynają się tam, gdzie lud stoi.
  *  - Kują go tylko zaznaczeni robotnicy, którym plan wskażesz (rozkaz „kop” z polem `pom`, sim/polecenia.ts);
  *    wolni robotnicy sami nic nie biorą. Kując plan, robotnik sięga kafel wyżej niż zwykle — nad głowę.
- *  - Lina (Alpha; w 3d — drabina, budowana przez robotników) — przeciągana w górę od miejsca, gdzie lud stoi, do
- *    półki; tylko tam, gdzie na półkę nie da się wejść inaczej (probaPlanu sprawdza drogę bez liny). Wiesza ją gracz,
- *    od razu (powiesLine, world.lina): pierwsze kilka za darmo, potem za krew. To nie plan — nie trafia na listę.
+ *  - Lina (Alpha; w 3d — drabina, budowana przez robotników): gracz wskazuje, gdzie ma wisieć hak — jedynym warunkiem
+ *    jest skała, której lina się uczepi (kotwicaLiny) — a lina spada z niego do podłogi. Wisi od razu (powiesLine,
+ *    world.lina): pierwsze kilka za darmo, potem za krew. To nie plan — nie trafia na listę.
  *  - Gotowy warsztat: robotnik wskazany na warsztat przerabia złoto na dewocjonalia, które od razu stają się wiarą.
  *    Gotowa kuźnia: z żelaza wykuwa kolejne części zbroi rycerza (sim.zbroja; rysunek na rycerzu — etap 3f).
  *    Sypialnia: kto się w niej wyśpi, traci osłabienia (okaleczenie, zatrucie).
@@ -16,9 +16,9 @@
  * Liczby: src/nastawy/pomieszczenia.ts.
  */
 import type { Sim } from './sim';
+import type { World } from './world';
 import type { Creature } from './creatures';
-import { stoi, szukajDrogi, budzetDrog, nowyTik } from './droga';
-import { PASSABLE } from './tiles';
+import { stoi } from './droga';
 import { kto, zapisz } from './dziennik';
 import { POMIESZCZENIA as P, BIERNIK_POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 
@@ -99,22 +99,22 @@ export function probaPlanu(sim: Sim, rodzaj: RodzajPomieszczenia, x: number, y: 
     for (let xx = x0; xx < x0 + s.w && !wejscie; xx++) if (w.passable(xx, yb) && stoi(sim, xx, yb)) wejscie = true;
     if (!wejscie) return zle(p, 'brak wejścia — z boku, na poziomie podłogi');
   } else if (rodzaj === 'lina') {
-    // od kafla, na którym stoi lud, w górę do półki (x2 — w którą stronę z niej zejść)
-    if (!w.passable(x, y) || !stoi(sim, x, y)) return zle({ ok: false, rodzaj, x, y, w: 1, h: 1, kafle: [] }, 'lina zaczyna się tam, gdzie lud stoi');
-    const n = Math.max(P.linaMin, Math.min(P.linaMaks, y - y2));
+    // Decyzja użytkownika (18.10): jedyny warunek liny — jej górny koniec musi być uczepiony skały (strop nad nią,
+    // krawędź półki obok albo ściana przy górnym kafelku); nie trzyma się powietrza. Wskazujesz, gdzie ma wisieć hak
+    // (dotknięciem albo przeciągnięciem w górę — liczy się wyższy punkt w kolumnie, od której zacząłeś); wskazana
+    // skała to strop: lina zawiśnie tuż pod nią. Z haka lina spada do podłogi.
+    let yt = Math.min(y, y2);
+    for (let k = 0; k < 3 && w.inb(x, yt) && !w.passable(x, yt); k++) yt++;
+    if (!w.inb(x, yt) || !w.passable(x, yt)) return zle({ ok: false, rodzaj, x, y: yt, w: 1, h: 1, kafle: [] }, 'lina nie przejdzie przez skałę');
+    let ys = yt;
+    while (w.inb(x, ys + 1) && w.passable(x, ys + 1)) ys++;
     const kafle: number[] = [];
-    for (let k = 1; k <= n; k++) if (w.inb(x, y - k)) kafle.push(w.idx(x, y - k));
-    const yt = y - n;
-    const naPolke = (k: number) => w.passable(x + k, yt) && w.solid(x + k, yt + 1);
-    const pierwsza = x2 >= x ? 1 : -1;
-    const strona = naPolke(pierwsza) ? pierwsza : naPolke(-pierwsza) ? -pierwsza : 0;
-    p = { ok: true, rodzaj, x, y: yt, w: 1, h: n + 1, kafle, kier: strona || pierwsza };
-    if (kafle.length < n) return zle(p, 'za blisko brzegu góry');
-    if (kafle.some((i) => PASSABLE[w.tile[i]] !== 1)) return zle(p, 'lina wisi w pustce — skały nie przebije');
-    if (kafle.some((i) => w.lina[i] === 1)) return zle(p, 'tu już wisi lina');
-    if (!strona) return zle(p, 'u góry nie ma półki, na którą by się zeszło');
-    // decyzja użytkownika: lina tylko tam, gdzie na półkę nie da się wejść inaczej
-    if (daSieWejsc(sim, x, y, x + strona, yt)) return zle(p, 'tu da się wejść bez liny');
+    for (let yy = yt; yy < ys; yy++) kafle.push(w.idx(x, yy));
+    const kot = kotwicaLiny(w, x, yt);
+    p = { ok: true, rodzaj, x, y: yt, w: 1, h: ys - yt + 1, kafle, kier: kot?.strona || undefined };
+    if (!kot) return zle(p, 'lina nie ma się czego uczepić — u góry musi być skała');
+    if (!kafle.length) return zle(p, 'tu stoi się na podłodze — lina nie ma gdzie zwisać');
+    if (kafle.every((i) => w.lina[i] === 1)) return zle(p, 'tu już wisi lina');
     // lina to nie plan: nie zajmuje miejsca na liście planów, a kosztuje krew (po kilku darmowych)
     const k = cenaLiny(sim);
     if (k > 0 && sim.krew - sim.rezerwa.krew < k) return zle(p, `nie starczy krwi — lina kosztuje ${k}`);
@@ -153,17 +153,18 @@ export function probaPlanu(sim: Sim, rodzaj: RodzajPomieszczenia, x: number, y: 
   return p;
 }
 
+
 /**
- * Czy z kafla (x, y) da się dojść na (ex, ey) bez nowej liny — szukaniem drogi ludu (wchodzi o stopień, zeskakuje
- * nisko; liny, które już wiszą, się liczą). Poza budżetem tiku: sprawdza się rzadko, na prośbę gracza.
+ * Gdzie lina jest uczepiona skały: jej górny kafel to (x, yGora). Najpierw krawędź półki obok (lina zwisa wzdłuż jej
+ * ściany, hak wbity w półkę tuż przy brzegu), potem strop tuż nad liną, na końcu ściana obok górnego kafla.
+ * `x`, `y` — punkt zaczepienia (kafle, ułamkowo: róg półki, spód stropu); `strona` — gdzie skała (−1, 0 — nad, 1).
+ * Null — lina wisiałaby w powietrzu.
  */
-function daSieWejsc(sim: Sim, x: number, y: number, ex: number, ey: number): boolean {
-  const ktos = { x: x + 0.5, y, race: 0 } as Creature;
-  const zostalo = budzetDrog();
-  nowyTik(1);
-  const d = szukajDrogi(sim, ktos, (_i, xx, yy) => xx === ex && yy === ey, P.linaSzukanie);
-  nowyTik(zostalo);
-  return !!d;
+export function kotwicaLiny(w: World, x: number, yGora: number): { x: number; y: number; rodzaj: 'krawedz' | 'strop' | 'sciana'; strona: number } | null {
+  for (const s of [1, -1]) if (w.solid(x + s, yGora + 1) && w.passable(x + s, yGora)) return { x: x + (s > 0 ? 1 : 0), y: yGora + 1, rodzaj: 'krawedz', strona: s };
+  if (w.solid(x, yGora - 1)) return { x: x + 0.5, y: yGora, rodzaj: 'strop', strona: 0 };
+  for (const s of [1, -1]) if (w.solid(x + s, yGora)) return { x: x + (s > 0 ? 1 : 0), y: yGora + 0.2, rodzaj: 'sciana', strona: s };
+  return null;
 }
 
 /** Ile krwi kosztuje teraz lina: pierwsze `linyDarmowe` za darmo, każda następna `linaKrew`. */

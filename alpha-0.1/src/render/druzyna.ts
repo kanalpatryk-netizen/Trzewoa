@@ -41,7 +41,7 @@ const JAK_PLANOWAC: Record<RodzajPomieszczenia, string> = {
   kuznia: 'dotknij skały obok przejścia — plan stanie pod kursorem; w kuźni żelazo staje się zbroją rycerza',
   korytarz: 'przeciągnij w bok od miejsca, gdzie stoi lud — korytarz na 2 kafle',
   szyb: 'przeciągnij w dół i w bok od miejsca, gdzie stoi lud — proste schody',
-  lina: `przeciągnij w górę od miejsca, gdzie stoi lud, do półki — tylko tam, gdzie inaczej się nie wejdzie; ${POMIESZCZENIA.linyDarmowe} pierwszych za darmo, potem ${POMIESZCZENIA.linaKrew} krwi`,
+  lina: `dotknij, gdzie ma wisieć hak — przy skale, której się uczepi (krawędź półki, strop, ściana); lina spadnie do podłogi; ${POMIESZCZENIA.linyDarmowe} pierwszych za darmo, potem ${POMIESZCZENIA.linaKrew} krwi`,
 };
 
 /** Fala w miejscu wydania rozkazu (zegar ekranu): złota — przyjęli, czerwona — odmówili. */

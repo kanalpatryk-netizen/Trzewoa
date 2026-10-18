@@ -162,7 +162,7 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true,
       },
     ],
-    koniec: 'Korytarz i szyb ciągniesz palcem od miejsca, gdzie stoi lud — szyb schodzi prostymi schodami, więc da się nim wrócić. Linę ciągniesz w górę do półki, na którą inaczej się nie wejdzie — pięć pierwszych jest za darmo, potem kosztują krew.',
+    koniec: 'Korytarz i szyb ciągniesz palcem od miejsca, gdzie stoi lud — szyb schodzi prostymi schodami, więc da się nim wrócić. Linę wieszasz, wskazując skałę, której się uczepi (krawędź półki, strop) — spada z haka do podłogi; pięć pierwszych jest za darmo, potem kosztują krew.',
   },
   {
     tytul: 'Ołtarz',

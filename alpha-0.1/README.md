@@ -21,8 +21,8 @@ Alphy są osobne — nie mieszają się z Remake v2.
   G — kop drogę, V — odwołaj, Esc i prawy przycisk — odznacz.
 - **Bez zawału od góry:** mapa się nie skraca, góra nie zamyka się za ludem.
 - **Bez wspinania po ścianach.** Lud wchodzi najwyżej o jeden stopień (kafel) i to tylko z miejsca, na którym stoi. Wyżej nie wejdzie —
-  wykuwa sobie schody w skale albo wchodzi po linie, którą powiesisz (tylko tam, gdzie inaczej się nie wejdzie;
-  5 lin za darmo, potem po 10 krwi). W dół zsuwa się po
+  wykuwa sobie schody w skale albo wchodzi po linie, którą powiesisz (jedyny warunek: górny koniec uczepiony skały — strop, krawędź
+  półki albo ściana; lina spada z haka do podłogi; 5 lin za darmo, potem po 10 krwi). W dół zsuwa się po
   ścianie albo skacze, ale nie z dużej wysokości.
 - **Góra według szkicu:** z powierzchni dwa otwory do jasnej sali na środku u góry — szerszy, przez który pada światło
   dzienne na ołtarz, i węższy obok, którym zjeżdża jedzenie (pod nim siedziba); niżej trzy warstwy — płytka (miękka skała, żelazo), środkowa (małe jaskinie, pod nimi złoto), głęboka

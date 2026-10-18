@@ -147,6 +147,10 @@ sami go wykopują. Gotowe pomieszczenie działa:
 - drabiny albo liny — ale **tylko tam, gdzie nie da się dojść inaczej niż się wspiąć**;
 - **18.10: drabinę zastępuje lina. Jednostki jej nie stawiają — wiesza ją gracz, od razu: 5 pierwszych za darmo, potem
   10 krwi każda. Na zakrętach drogi wiernych lina spada sama, za darmo.**
+- **18.10: jedyny warunek liny — górny koniec uczepiony skały** (strop nad, krawędź półki obok, ściana przy górze;
+  `kotwicaLiny` w `sim/pomieszczenia.ts`). „Tylko tam, gdzie inaczej się nie wejdzie”, start przy ludzie, półka i limit
+  długości — usunięte na prośbę użytkownika. Lina spada z haka do podłogi. Liny drogi wiernych bez zaczepienia rosną w górę
+  do skały (`linyDrogi`).
 
 **Zrobione 17.10:** mapa — drugi otwór `SWIAT.warstwy.szybWiadra` (`world.szybWiadraX/Dol`; wiadro i najazd ludzi idą nim,
 siedziba stoi pod nim), kamienna podłoga sali i kopczyk pod ołtarzem (`SWIAT.warstwy.oltarz`, `world.oltarz`,
@@ -389,7 +393,7 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 
 **Ruch i mapa**
 - Bez lin, poza liną wiadra. Wspinaczka najwyżej o 1 kafel, zsuwanie po ścianach, schody kute przez robotników; od 3d
-  także liny (szablon w pomieszczeniach, tylko tam, gdzie inaczej się nie wejdzie; wiesza gracz: 5 za darmo, potem 10 krwi).
+  także liny (szablon w pomieszczeniach; wiesza gracz, byle uczepione skały: 5 za darmo, potem 10 krwi).
 - Od 3d: dwa otwory do sali (światło na ołtarz, wiadro 7 kafli w prawo), ołtarz na kamiennym kopczyku, kamienna podłoga
   sali z wyjściami na końcach.
 - Bez zawału od góry.
@@ -523,7 +527,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `stworzenia.ts` | Fizyka postaci |
 | `cele.ts` | Progi osiągnięć |
 | `oltarz.ts` | Etap 3d: ceny i czasy rytuałów, kto stoi „przy ołtarzu” |
-| `pomieszczenia.ts` | Etap 3c/3d: szablony, warsztat, kuźnia, sypialnia (`snuTikow`), liny (`linaMin/Maks`, `linyDarmowe`, `linaKrew`) |
+| `pomieszczenia.ts` | Etap 3c/3d: szablony, warsztat, kuźnia, sypialnia (`snuTikow`), liny (`linyDarmowe`, `linaKrew`) |
 | `wyglad/rycina.ts`, `wyglad/fresk-swiata.ts` | Barwy nowych kafli |
 
 ### 3.4 Rysunek (`src/render/`)

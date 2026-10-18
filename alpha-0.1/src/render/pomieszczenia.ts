@@ -1,7 +1,7 @@
 import type { Sim } from '../sim/sim';
 import type { Camera } from './camera';
 import type { Creature } from '../sim/creatures';
-import { czyPokoj, zostaloKafli, type Pomieszczenie, type ProbaPlanu, type ZdarzeniePom } from '../sim/pomieszczenia';
+import { czyPokoj, zostaloKafli, kotwicaLiny, type Pomieszczenie, type ProbaPlanu, type ZdarzeniePom } from '../sim/pomieszczenia';
 import { NAZWA_POMIESZCZENIA, POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 import { wolnoRuszac } from './nastroj';
 import { SERIF } from './ink';
@@ -365,14 +365,16 @@ export class Pokoje {
     ctx.strokeStyle = barwa(0.95); ctx.lineWidth = Math.max(1.6, z * 0.1);
     obrysKafli(ctx, cam, p.kafle, w.w);
     ctx.setLineDash([]);
-    // lina: przerywany zarys liny z haka do podłogi, a u góry strzałka na półkę, na którą się z niej schodzi
-    if (p.rodzaj === 'lina' && p.kafle.length) {
+    // lina: przerywany zarys liny z haka (tam, gdzie uczepi się skały) do podłogi, a przy krawędzi półki — strzałka na nią
+    if (p.rodzaj === 'lina') {
+      const k = kotwicaLiny(w, p.x, p.y);
+      const { lx, ly } = zaczepienie(p.x, p.y, k);
       ctx.setLineDash([Math.max(3, z * 0.3), Math.max(2, z * 0.18)]);
       ctx.strokeStyle = barwa(0.9); ctx.lineWidth = Math.max(1.6, z * 0.12);
-      ctx.beginPath(); ctx.moveTo(cam.toScreenX(p.x + 0.5), cam.toScreenY(p.y)); ctx.lineTo(cam.toScreenX(p.x + 0.5), cam.toScreenY(p.y + p.h)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cam.toScreenX(lx), cam.toScreenY(ly)); ctx.lineTo(cam.toScreenX(lx), cam.toScreenY(p.y + p.h)); ctx.stroke();
       ctx.setLineDash([]);
-      hak(ctx, cam.toScreenX(p.x + 0.5), cam.toScreenY(p.y), z, p.ok ? 0.7 : 0.35);
-      if (p.ok && p.kier) {
+      if (k) hakWSkale(ctx, cam, p.x, p.y, z, k, p.ok ? 0.75 : 0.35);
+      if (p.ok && p.kier && k?.rodzaj === 'krawedz') {
         const ax = cam.toScreenX(p.x + 0.5 + p.kier * 0.9), ay = cam.toScreenY(p.y + 0.5);
         ctx.fillStyle = barwa(0.95);
         ctx.beginPath(); ctx.moveTo(ax + p.kier * z * 0.35, ay); ctx.lineTo(ax - p.kier * z * 0.1, ay - z * 0.28); ctx.lineTo(ax - p.kier * z * 0.1, ay + z * 0.28); ctx.closePath(); ctx.fill();
@@ -459,61 +461,108 @@ function rysujLiny(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: 
       const doPodlogi = w.passable(x, y2 + 1) ? 1 : 0;
       const a = anim.find((q) => q.x === x && q.y0 <= y2 && q.y1 >= ya);
       const t = a && ruch ? teraz - a.od : Infinity;
-      linaWKolumnie(ctx, cam, x, ya, y2 + doPodlogi, z, t, teraz, ruch, doPodlogi === 1);
+      linaWKolumnie(ctx, cam, x, ya, y2 + doPodlogi, z, t, teraz, ruch, doPodlogi === 1, kotwicaLiny(w, x, ya));
       y = y2;
     }
   }
   ctx.restore();
 }
 
+/** Gdzie lina zwisa (kafle): kolumna liny przy skale, punkt, od którego wisi, i hak. */
+type Kotwica = ReturnType<typeof kotwicaLiny>;
+function zaczepienie(x: number, yOd: number, k: Kotwica): { lx: number; ly: number } {
+  if (!k) return { lx: x + 0.5, ly: yOd };
+  if (k.rodzaj === 'strop') return { lx: x + 0.5, ly: yOd };
+  // krawędź półki i ściana: lina zwisa tuż przy skale, od brzegu półki (albo od haka w ścianie) w dół
+  return { lx: x + 0.5 + k.strona * 0.28, ly: k.y };
+}
+
 /**
- * Jedna lina w kolumnie `x`: hak na górnej krawędzi kafla `yOd`, lina do dna kafla `yDo`. `t` — ile ms temu spadła
- * (Infinity — wisi od dawna): najpierw zwój zjeżdża w dół, potem lina się kołysze coraz słabiej.
+ * Jedna lina w kolumnie `x` (odcinek kafli od `yOd` do `yDo`), uczepiona skały w `k`: z haka w krawędzi półki przez
+ * jej brzeg i wzdłuż ściany w dół, z haka w stropie albo w ścianie. `t` — ile ms temu spadła (Infinity — wisi od
+ * dawna): najpierw zwój zjeżdża w dół, potem lina się kołysze coraz słabiej.
  */
-function linaWKolumnie(ctx: CanvasRenderingContext2D, cam: Camera, x: number, yOd: number, yDo: number, z: number, t: number, teraz: number, ruch: boolean, naPodlodze: boolean): void {
-  const cx = cam.toScreenX(x + 0.5), gora = cam.toScreenY(yOd), dol = cam.toScreenY(yDo + 1);
-  const dl = dol - gora;
+function linaWKolumnie(ctx: CanvasRenderingContext2D, cam: Camera, x: number, yOd: number, yDo: number, z: number, t: number, teraz: number, ruch: boolean, naPodlodze: boolean, k: Kotwica): void {
+  const { lx, ly } = zaczepienie(x, yOd, k);
+  const cx = cam.toScreenX(lx), gora = cam.toScreenY(ly), dol = cam.toScreenY(yDo + 1);
+  const dl = Math.max(1, dol - gora);
   const rozwin = t < LINA_SPADA ? (t / LINA_SPADA) ** 1.6 : 1;
   const koniec = gora + dl * rozwin;
-  // kołysanie: po spadnięciu mocne i gasnące, potem ledwie oddech (koniec liny leży na ziemi — tam nie kołysze)
+  // kołysanie: po spadnięciu mocne i gasnące, potem ledwie oddech (koniec liny leży na ziemi — tam nie kołysze;
+  // przy samej skale lina kołysze się słabiej)
   const po = t - LINA_SPADA;
   const mocno = t < LINA_SPADA ? 0.5 : po < LINA_USPOKAJA ? 0.5 * (1 - po / LINA_USPOKAJA) : 0;
   const faza = ruch ? teraz * 0.004 + x * 1.7 : 0;
-  const amp = z * (0.06 + mocno) * (ruch ? 1 : 0);
+  const amp = z * (0.06 + mocno) * (ruch ? 1 : 0) * (k && k.rodzaj !== 'strop' ? 0.6 : 1);
   const odch = (s: number) => Math.sin(faza + (t < Infinity ? t * 0.012 : 0)) * amp * Math.sin(Math.PI * 0.5 * Math.min(1, s)) * (naPodlodze ? 1 - Math.max(0, s - 0.85) / 0.15 : 1);
   const kroki = Math.max(6, Math.ceil(dl / Math.max(3, z * 0.25)));
   const punkty: [number, number][] = [];
-  for (let k = 0; k <= kroki; k++) {
-    const s = k / kroki;
+  for (let n = 0; n <= kroki; n++) {
+    const s = n / kroki;
     const py = gora + (koniec - gora) * s;
-    punkty.push([cx + odch((py - gora) / Math.max(1, dl)), py]);
+    punkty.push([cx + odch((py - gora) / dl), py]);
   }
-  const sciezka = () => { ctx.beginPath(); punkty.forEach(([px, py], k) => (k ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); };
+  const sciezka = () => { ctx.beginPath(); punkty.forEach(([px, py], n) => (n ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); };
   ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(2.4, z * 0.17); sciezka(); ctx.stroke();
   ctx.strokeStyle = KONOPIE; ctx.lineWidth = Math.max(1.4, z * 0.1); sciezka(); ctx.stroke();
   // skręt konopi: ukośne kreski co kawałek
   ctx.strokeStyle = SKRET; ctx.lineWidth = Math.max(0.8, z * 0.035);
   ctx.beginPath();
-  for (let k = 1; k < punkty.length; k++) {
-    const [px, py] = punkty[k];
+  for (let n = 1; n < punkty.length; n++) {
+    const [px, py] = punkty[n];
     ctx.moveTo(px - z * 0.05, py - z * 0.06); ctx.lineTo(px + z * 0.05, py + z * 0.02);
   }
   ctx.stroke();
-  // węzły na chwyt — co kafel, w połowie wysokości
+  // węzły na chwyt — co kafel, w połowie wysokości (tylko tam, gdzie lina już wisi)
   for (let y = yOd; y <= yDo; y++) {
     const wy = cam.toScreenY(y + 0.5);
+    if (wy < gora + z * 0.2) continue;
     if (wy > koniec) break;
-    const wx = cx + odch((wy - gora) / Math.max(1, dl));
+    const wx = cx + odch((wy - gora) / dl);
     ctx.fillStyle = TUSZ; ctx.beginPath(); ctx.ellipse(wx, wy, z * 0.11, z * 0.08, 0, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = KONOPIE; ctx.beginPath(); ctx.ellipse(wx, wy, z * 0.07, z * 0.05, 0, 0, Math.PI * 2); ctx.fill();
   }
   // zwój: zjeżdża z liną, a gdy lina sięga podłogi — leży tam
   if (t < LINA_SPADA) zwoj(ctx, punkty[punkty.length - 1][0], koniec, z, 1 - rozwin * 0.6);
   else if (naPodlodze) zwoj(ctx, cx + z * 0.12, dol - z * 0.08, z, 0.45);
-  hak(ctx, cx, gora, z, 1);
+  hakWSkale(ctx, cam, x, yOd, z, k, 1);
 }
 
-/** Żelazny hak wbity w skałę nad liną, z oczkiem, przez które przewiązano linę. */
+/**
+ * Hak wbity w skałę tam, gdzie lina się jej uczepiła: w krawędź półki (kołek w półce tuż przy brzegu, lina przez brzeg
+ * w dół), w strop (płytka ze stropu i oczko) albo w ścianę (kołek w ścianie, oczko przy niej).
+ */
+function hakWSkale(ctx: CanvasRenderingContext2D, cam: Camera, x: number, yOd: number, z: number, k: Kotwica, alfa: number): void {
+  const { lx, ly } = zaczepienie(x, yOd, k);
+  if (!k || k.rodzaj === 'strop') { hak(ctx, cam.toScreenX(lx), cam.toScreenY(ly), z, alfa); return; }
+  const s = k.strona;
+  ctx.save();
+  ctx.globalAlpha = alfa;
+  ctx.lineCap = 'round';
+  if (k.rodzaj === 'krawedz') {
+    // kołek wbity w półkę, kawałek od brzegu; lina z oczka przez brzeg i w dół
+    const kx = cam.toScreenX(k.x + s * 0.4), ky = cam.toScreenY(k.y);
+    const rx = cam.toScreenX(k.x), sx = cam.toScreenX(lx);
+    for (const [barwa, gr] of [[TUSZ, Math.max(2.4, z * 0.17)], [KONOPIE, Math.max(1.4, z * 0.1)]] as const) {
+      ctx.strokeStyle = barwa; ctx.lineWidth = gr;
+      ctx.beginPath(); ctx.moveTo(kx, ky - z * 0.12); ctx.quadraticCurveTo(rx, ky - z * 0.14, sx, ky + z * 0.08); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(70,70,76,0.98)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(1, z * 0.05);
+    ctx.beginPath(); ctx.rect(kx - z * 0.06, ky - z * 0.3, z * 0.12, z * 0.42); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,120,128,0.98)'; ctx.lineWidth = Math.max(1.2, z * 0.06);
+    ctx.beginPath(); ctx.arc(kx, ky - z * 0.3, z * 0.09, 0, Math.PI * 2); ctx.stroke();
+  } else {
+    // kołek wbity w ścianę z boku; oczko przy ścianie
+    const wx = cam.toScreenX(k.x), wy = cam.toScreenY(k.y);
+    ctx.fillStyle = 'rgba(70,70,76,0.98)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(1, z * 0.05);
+    ctx.beginPath(); ctx.rect(s > 0 ? wx - z * 0.08 : wx - z * 0.22, wy - z * 0.06, z * 0.3, z * 0.12); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,120,128,0.98)'; ctx.lineWidth = Math.max(1.2, z * 0.06);
+    ctx.beginPath(); ctx.arc(wx - s * z * 0.12, wy + z * 0.06, z * 0.09, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Żelazny hak wbity w strop nad liną, z oczkiem, przez które przewiązano linę. */
 function hak(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, alfa: number): void {
   ctx.save();
   ctx.globalAlpha = alfa;

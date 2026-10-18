@@ -19,13 +19,11 @@ export const POMIESZCZENIA = {
   /** Szyb: proste schody w dół (stopień o kafel — da się nimi wrócić), najwyżej tyle stopni. */
   szybMaks: 24,
   /**
-   * Alpha: lina (zamiast drabiny z 3d — decyzja użytkownika 18.10) — przeciągana w górę od miejsca, gdzie lud stoi, do
-   * półki, na którą inaczej się nie wejdzie (tylko tam, gdzie trzeba się wspinać). Wiesza ją gracz, od razu — nikt jej
-   * nie buduje. Najkrótsza i najdłuższa (kafle); pierwsze `linyDarmowe` są za darmo, każda następna kosztuje `linaKrew`.
+   * Alpha: lina (zamiast drabiny z 3d — decyzje użytkownika 18.10). Wiesza ją gracz, od razu — nikt jej nie buduje.
+   * Jedyny warunek: górny koniec uczepiony skały (strop, krawędź półki albo ściana); z haka lina spada do podłogi.
+   * Pierwsze `linyDarmowe` są za darmo, każda następna kosztuje `linaKrew`.
    */
-  linaMin: 2, linaMaks: 16, linyDarmowe: 5, linaKrew: 10,
-  /** Szukając, czy na półkę da się wejść bez liny, przegląda najwyżej tyle kafli. */
-  linaSzukanie: 5000,
+  linyDarmowe: 5, linaKrew: 10,
   /** Najwięcej planów i pomieszczeń naraz. */
   maks: 12,
   /** Kując plan, robotnik sięga kilofem kafel wyżej niż zwykle — nad głowę (wnętrze ma 3 kafle wysokości). */
