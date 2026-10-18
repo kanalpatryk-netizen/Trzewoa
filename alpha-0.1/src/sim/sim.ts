@@ -1,4 +1,6 @@
 import { Rng } from '../core/rng';
+import { maZabytek } from './zabytki';
+import { ZABYTKI } from '../nastawy/zabytki';
 import { zapisz, kto } from './dziennik';
 import { World, SURFACE_Y } from './world';
 import { T, PASSABLE } from './tiles';
@@ -641,7 +643,8 @@ export class Sim {
     const mult = tile === T.CORE ? G.modlitwaPrzyRdzeniu : tile === T.GLYPH ? G.modlitwaPrzyZnaku : 1;
     this.prayers++;
     const pob = cechaNacji(clan).wiara;
-    this.wiara += RACES[c.race].faithGain * pob * clan.devotion * G.modlitwaWiara * mult * this.incomeMult();
+    this.wiara += RACES[c.race].faithGain * pob * clan.devotion * G.modlitwaWiara * mult * this.incomeMult()
+      * (maZabytek(this, 'ksiega') ? ZABYTKI.skutki.ksiega.wiara : 1);   // etap 3e: wzięta księga
     // Modlitwa podsyca oddanie, ale coraz słabiej, im go więcej. Wcześniej każdy tik
     // modlitwy dokładał tyle, że klan dochodził do pełnego oddania w kilka sekund —
     // i wtedy zaczynał masowo składać ofiary z dzieci, a Znak gracza nie miał nic do dodania.

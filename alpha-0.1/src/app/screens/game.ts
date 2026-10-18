@@ -3,6 +3,7 @@ import { rysujKucie } from '../../render/kucie';
 import { Urobki, znaczekKruszcu, type CelLotu } from '../../render/kruszce';
 import { Pokoje, akcjaNaPomieszczeniu, type PodKursorem } from '../../render/pomieszczenia';
 import { Oltarz, oltarzPod } from '../../render/oltarz';
+import { Ruiny } from '../../render/ruiny';
 import { rysujOknoOltarza, type PoleOltarza } from '../../render/okno-oltarza';
 import { odprawRytual, rytualOltarza } from '../../sim/oltarz';
 import { NAZWA_RYTUALU } from '../../nastawy/oltarz';
@@ -135,6 +136,8 @@ export class EkranGry implements Ekran {
   private pokoje = new Pokoje();
   /** Alpha, etap 3d: ołtarz w sali i jego rytuały (render/oltarz.ts); okno rytuałów otwiera dotknięcie ołtarza. */
   private oltarz = new Oltarz();
+  /** Alpha, etap 3e: ruiny z zabytkami (render/ruiny.ts). */
+  private ruiny = new Ruiny();
   private oknoOltarza = false;
   private polaOltarza: PoleOltarza[] = [];
   /** Planujesz: szablon pod kursorem (null — nie planujesz). */
@@ -467,6 +470,9 @@ export class EkranGry implements Ekran {
     if (rt) odkrycia.odkryj(rt.rodzaj === 'modlitwa' ? 'rytual-modlitwa' : rt.rodzaj === 'szal' ? 'rytual-szal' : rt.rodzaj === 'wskrzeszenie' ? 'rytual-wskrzeszenie'
       : rt.rodzaj === 'ofiaraKrwi' ? 'rytual-ofiara-krwi' : 'rytual-ofiara-zycia');
     if (this.szablon === 'lina' || (sim.lud.liny ?? 0) > 0) odkrycia.odkryj('lina');
+    // etap 3e: ruiny — gdy ktoś je zobaczy; zabytki — przy pierwszym odkryciu
+    if (sim.world.ruiny.some((r) => sim.world.ever[sim.world.idx(r.zabytek.x, r.zabytek.y)])) odkrycia.odkryj('ruiny');
+    if (Object.keys(sim.lud.zabytki?.stan ?? {}).length) odkrycia.odkryj('zabytki');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
@@ -898,6 +904,8 @@ export class EkranGry implements Ekran {
     this.pokoje.rysujWnetrza(ctx, sim, cam, teraz);
     // etap 3d: ołtarz na środku sali — kamień i drewno (świece i smuga dnia — nad mrokiem)
     this.oltarz.rysuj(ctx, sim, cam);
+    // etap 3e: ruiny — mury, łuki, belki, zabytek na posadzce (światło zabytku — nad mrokiem)
+    this.ruiny.rysuj(ctx, sim, cam);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
     // Remake v2: trupy leżą tam, gdzie padli; wiadra z jedzeniem zjeżdżają na linach
@@ -916,6 +924,8 @@ export class EkranGry implements Ekran {
     // etap 3d: smuga dnia, świece, rytuał w toku (promienie, krąg znaków, krew, wskrzeszany) — nad mrokiem
     this.oltarz.zbierz(sim, teraz, this.urobki);
     this.oltarz.rysujNad(ctx, sim, cam, teraz, this.oltarzPodKursorem());
+    // etap 3e: odkrycie zabytku (kurz, światło, wzlot), wzięcie (do rąk, fala do ludu), zostawienie (gaśnie)
+    this.ruiny.rysujNad(ctx, sim, cam, teraz);
     const proba = this.probaPodKursorem();
     if (proba) this.pokoje.podglad(ctx, sim, cam, proba, teraz, this.szablon === 'lina' ? this.cenaLinyPodpis(!this.ciagniecie)
       : this.ciagniecie ? undefined : this.szablon && !czyPokoj(this.szablon) ? `${NAZWA_POMIESZCZENIA[this.szablon]} — przeciągnij` : undefined);

@@ -31,6 +31,9 @@ Alphy są osobne — nie mieszają się z Remake v2.
 - **Jedno wiadro:** jedzenie zjeżdża tylko węższym otworem, do sali — nigdzie indziej. Kopiąc pod wiadrem, sprowadzasz
   je niżej; Nakarm dosypuje do tego samego wiadra. Z głębi wraca się po jedzenie drogą wiernych: na jej zakrętach
   lina spada sama, a podłogi pod nią nikt nie kuje; warcie jedzenie donoszą robotnicy.
+- **Ruiny z zabytkami (3e):** w środkowej warstwie 1–2 zawalone budowle (kaplica, kopalnia, kawałek miasta); kto z ludu
+  dojdzie do zabytku, odkrywa go — karta „Weź” (premia i kara dla całego ludu, na zawsze) albo „Zostaw”. Relikwiarz,
+  miecz krzyżowca, kielich i księga — każdy z animacją odkrycia, wzięcia (fala światła, aureole) i zgaśnięcia.
 - **Pomieszczenia:** „wyznacz pomieszczenie” (B) i szablon — sypialnia, warsztat, kuźnia, korytarz, szyb, lina; kują
   je tylko zaznaczeni robotnicy (linę wieszasz sam, od razu), którym plan wskażesz. W warsztacie złoto staje się wiarą (krzyż leci do licznika), w kuźni żelazo
   — kolejnymi częściami zbroi rycerza, a minuta snu w sypialni zdejmuje osłabienia. Wszystko z animacją.
@@ -57,7 +60,8 @@ Alphy są osobne — nie mieszają się z Remake v2.
    - ~~3d. Ołtarz z rytuałami — każdy z własną animacją~~ — zrobione (wyżej): ołtarz w sali pod światłem (decyzja
      użytkownika — nie w środkowej warstwie), drugi otwór na wiadro, okno rytuałów, pięć rytuałów za krew, drabiny (od 18.10 — liny),
      sen 60 s.
-   - 3e. Ruiny z zabytkami (wydarzenie: weź — premia i kara — albo zostaw).
+   - ~~3e. Ruiny z zabytkami~~ — zrobione (wyżej): kaplica, kopalnia, kawałek miasta; cztery zabytki, karta „weź/zostaw”,
+     premia i kara dla całego ludu (sen kary nie zdejmuje), animacje odkrycia, wzięcia i zgaśnięcia.
    - 3f. Części zbroi widoczne na rycerzu.
 4. **Dwie dłonie** — dłoń z otchłani przecina pazurem linę wiadra (jedzenie staje, póki ktoś nie wejdzie po linie
    i jej nie sklei); dłoń anielska z góry: podkop, dar ludzi (robotnik w dłoni), dar krwi.

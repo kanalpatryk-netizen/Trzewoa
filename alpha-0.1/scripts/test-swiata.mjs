@@ -4,6 +4,7 @@
  * Alpha, etap 3d: ołtarz stoi w sali na kamiennym kopczyku, podłoga sali jest z kamienia, a z powierzchni
  * prowadzą do sali dwa otwory — szerszy nad ołtarzem (światło) i węższy, którym zjeżdża wiadro.
  * Alpha (jedno wiadro): pod wiadrem podłoga nie jest z kamienia — gracz pogłębia szyb, kopiąc pod nim.
+ * Alpha, etap 3e: w środkowej warstwie 1–2 ruiny, w każdej zabytek na posadzce (pusty kafel, pod nim lita skała).
  *
  *   node scripts/test-swiata.mjs [ile światów]
  */
@@ -47,6 +48,16 @@ function bledyOltarza(w) {
   for (let y = SURFACE_Y - 1; y <= w.szybWiadraDol; y++) if (!wolny(w.szybWiadraX, y)) { bledy.push('otwór z wiadrem zasypany'); break; }
   if (Math.abs(w.szybWiadraX - w.szybX) < 3) bledy.push('wiadro zjeżdża na ołtarz');
   if (!wolny(w.szybWiadraX, w.szybWiadraDol + 1)) bledy.push('otwór z wiadrem nie wychodzi do sali');
+  // etap 3e: ruiny z zabytkami
+  const R = SWIAT.warstwy;
+  if (w.ruiny.length < 1 || w.ruiny.length > 2) bledy.push('ruin: ' + w.ruiny.length);
+  for (const r of w.ruiny) {
+    const z = r.zabytek;
+    if (!wolny(z.x, z.y) || wolny(z.x, z.y + 1)) bledy.push('zabytek nie leży na posadzce (' + z.x + ', ' + z.y + ')');
+    if (z.y < w.h * R.plytkaDo - 4 || z.y > w.h * R.srodkowaDo + 4) bledy.push('ruina poza środkową warstwą (y ' + z.y + ')');
+    if (w.wSali(z.x, z.y)) bledy.push('ruina w sali');
+  }
+  if (w.ruiny.length === 2 && w.ruiny[0].zabytek.typ === w.ruiny[1].zabytek.typ) bledy.push('dwa takie same zabytki');
   return bledy;
 }
 
@@ -82,4 +93,4 @@ if (wynik.zlych > 0) {
   console.error(`\nZŁY ŚWIAT (zalany przedsionek albo ołtarz i otwory) w ${wynik.zlych} z ${ILE} światów.`);
   process.exit(1);
 }
-console.log(`\nOK: przedsionek suchy, ołtarz na kamiennym kopczyku i oba otwory w ${ILE} z ${ILE} światów.`);
+console.log(`\nOK: przedsionek suchy, ołtarz na kamiennym kopczyku, oba otwory i ruiny z zabytkami w ${ILE} z ${ILE} światów.`);

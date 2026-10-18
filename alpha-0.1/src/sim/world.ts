@@ -2,6 +2,7 @@ import { Rng, Noise } from '../core/rng';
 import { T, PASSABLE, HARDNESS } from './tiles';
 import { SWIAT, RDZEN } from '../nastawy/swiat';
 import { GORA } from '../nastawy/gora';
+import { zbudujRuiny, type Ruina } from './ruiny';
 
 export const WORLD_W = SWIAT.szerokosc;
 export const WORLD_H = SWIAT.wysokosc;
@@ -62,9 +63,13 @@ export class World {
    * rozkaz, nowy zamiar ani drugi kopacz go nie zerują, a na ekranie skała pęka coraz mocniej. Zmiana kafla czyści wpis.
    */
   readonly kucie = new Map<number, number>();
+  /** Alpha, etap 3e: ruiny z zabytkami w środkowej warstwie (sim/ruiny.ts) — z ziarna, nie trafiają do zapisu. */
+  ruiny: Ruina[] = [];
+  private ziarno = 0;
   private flip = false;
 
   constructor(seed: number) {
+    this.ziarno = seed;
     this.rng = new Rng(seed);
     this.noise = new Noise(this.rng);
     this.generate();
@@ -270,6 +275,9 @@ export class World {
         if (rng.chance(0.45) && wolno(x, y + 1) && tile[(y + 1) * w + x] === T.ROCK) tile[(y + 1) * w + x] = T.ZLOTO;
       }
     }
+    // 3e. ruiny z zabytkami w środkowej warstwie — własne losowanie, żeby reszta góry z ziarna została ta sama
+    this.ruiny = zbudujRuiny(this, new Rng(this.ziarno * 9781 + 77), g1, g2,
+      (x, y) => wolno(x, y) && !wSali(x, y, 8) && !zaRdzeniem(x, y, 8));
     // 4. czapa nad salą i rama dookoła: kamień nie do ruszenia
     for (let y = SURFACE_Y + S.ziemia; y < stropSali; y++) for (let x = 0; x < w; x++) tile[y * w + x] = T.STONE;
     for (let y = SURFACE_Y; y < h; y++) for (let x = 0; x < w; x++) {

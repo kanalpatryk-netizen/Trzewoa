@@ -8,6 +8,7 @@ import { odswiezPlan, najwierniejsza } from './pielgrzymka';
 import { WYDARZENIA as W } from '../nastawy/wydarzenia';
 import { PRZYPLYWY as PP } from '../nastawy/gora';
 import { kandydaciLudu, wykonajLudu, zbudujLancuchLudu } from './karty-ludu';
+import { rozstrzygnijZabytek } from './zabytki';
 
 /**
  * KARTY WYDARZEŃ — główny sposób grania w wersji na telefon.
@@ -465,7 +466,7 @@ export function rozstrzygnij(sim: Sim, i: number): string | null {
   st.koniec = sim.tick;
   // karta wojny przychodzi poza kolejką — nie przesuwa zwykłych kart (inaczej wojny je wypierały)
   if (e.lancuch) { sim.stat.lancuch++; st.nastepne = Math.max(st.nastepne, sim.tick + W.lancuchOdstep); }
-  else if (e.rodzaj !== 'wojna') st.nastepne = sim.tick + W.odstep + sim.rng.int(W.rozrzut);
+  else if (e.rodzaj !== 'wojna' && e.rodzaj !== 'zabytek') st.nastepne = sim.tick + W.odstep + sim.rng.int(W.rozrzut);
   return null;
 }
 
@@ -535,6 +536,8 @@ function wykonaj(sim: Sim, e: Wydarzenie, id: string): void {
   const klan = e.klan !== undefined ? sim.clans[e.klan] : null;
   const klan2 = e.klan2 !== undefined ? sim.clans[e.klan2] : null;
   if (wykonajLudu(sim, e, id)) return;
+  // Alpha, etap 3e: zabytek z ruin (sim/zabytki.ts) — numer ruiny w `x`
+  if (e.rodzaj === 'zabytek') { rozstrzygnijZabytek(sim, e.x ?? -1, id === 'wez'); return; }
   switch (`${e.rodzaj}:${id}`) {
     case 'najazd:wpusc': sim.humanRaid(e.x); break;
     case 'najazd:prowadz': { const d = dominujaca(sim, 0); sim.humanRaid(d ? d.hx : e.x); break; }

@@ -1,15 +1,12 @@
 # Handoff — Trzewia, Alpha 0.1
 
-Stan na 18.10.2026, po etapie 3d, jednym wiadrze i linie zamiast drabiny. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
+Stan na 18.10.2026, po etapie 3e (ruiny z zabytkami), jednym wiadrze i linie zamiast drabiny. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
-- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 oraz 3a, 3b, 3c i 3d etapu 3, a zostały 3e–3f, 4 i 5.
+- **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 oraz 3a–3e etapu 3, a zostały 3f, 4 i 5.
 - **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
-- **W toku (odłożone):** etap 3e — ruiny z zabytkami; zaczęty generator ruin leży w `git stash` („3e ruiny (w toku)”: `sim/ruiny.ts`,
-  `nastawy/zabytki.ts`, wpięcie w `world.ts`). Decyzje użytkownika 18.10: zabytek działa na **cały lud**, kara **nie** schodzi snem
-  w sypialni, zabytki — **te cztery z planu** (relikwiarz, miecz, kielich, księga).
-- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10 użytkownik kazał iść dalej — 3e zaczęte, potem przerwane prośbą o linę.)
+- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e zrobione na polecenie użytkownika. **Nie zaczynaj 3f bez polecenia.**)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 
 ---
@@ -205,18 +202,20 @@ Koszt każdego rytuału płaci się krwią, a liczby trafią do nastaw, np. `src
 - Tablica „Ołtarz” i osobna tablica dla każdego rytuału.
 - Lekcja w samouczku.
 
-### 1.6 Etap 3e — ruiny z zabytkami
-- **Ruiny.** 1–2 zawalone struktury w warstwie środkowej, np. kopalnia, kawałek miasta albo kaplica, z kamiennymi murami, belkami i łukami.
-  Generuje je `generujWarstwy` (`src/sim/world.ts`), a liczby są w `SWIAT.warstwy`.
-- **Zabytek i wybór.** W środku leży zabytek. Gdy ktoś z ludu do niego dotrze, otwiera się okno wydarzenia, takie jak karty z `src/sim/wydarzenia.ts` (rysunek w `src/render/wydarzenie.ts`). Gracz wybiera „Weź”, czyli premię i karę dla ludu naraz, albo „Zostaw”. Pomysł Pawła: „ty wybierasz, czy bierzesz ten zabytek, czy go porzucasz”.
-- **Premie i kary.** Pokazują je aureole, które już są: jasna to wzmocnienie, czerwona to osłabienie. Na karcie postaci jest opis.
-- **Przykładowe zabytki** (do ustalenia):
-  - relikwiarz świętego: modlitwa ↑, kucie ↓;
-  - miecz krzyżowca: siła rycerza ↑, Ten, który patrzy, przychodzi częściej;
-  - kielich: leczenie ↑, głód ↑;
-  - księga: wiara ↑, szaleństwo ↑.
-- **Animacje.** Przy odkryciu kurz, światło z wnętrza i zabytek się unosi. Przy wzięciu postać go podnosi i zmienia się jej aureola. Przy zostawieniu zabytek gaśnie.
-- **Atlas.** Tablice „Ruiny” i „Zabytki”.
+### 1.6 Etap 3e — ruiny z zabytkami — ZROBIONE
+**Decyzje użytkownika (18.10):** zabytek po „Weź” działa na **cały lud**; kary **nie** zdejmuje sen w sypialni; zabytki —
+**te cztery z planu** (relikwiarz, miecz, kielich, księga).
+
+**Zrobione 18.10:** generator `zbudujRuiny` (`src/sim/ruiny.ts`, wołany z `generujWarstwy` z własnym losowaniem, więc reszta góry
+z ziarna się nie zmienia): 1–2 ruiny w środkowej warstwie, w litej skale — kaplica, kopalnia albo kawałek miasta; opis (mury,
+gruz, belki, łuki, wózek, zabytek) w `world.ruiny`, kafle muru to zwykła skała. Zabytki: `src/sim/zabytki.ts` — stan w
+`sim.lud.zabytki` (w zapisie), odkrycie w `tikZabytkow` (ktoś z ludu ≤ 2,6 kafla), karta `zabytek` (numer ruiny w `x`;
+`rozstrzygnijZabytek` z `wykonaj` w `wydarzenia.ts`), skutki: `mnoznik` (modlitwa, kopanie, siła rycerza, głód), leczenie
+(`leczenieZabytkow`), wiara (`pray`, modlitwa pielgrzyma), szaleństwo (creatures.ts), Patrzący (`mrok.ts`: przerwy i `minLudu`);
+aureole i wiersze na karcie postaci — `stanyZabytkow` (zapalają się po fali, `aureolePo`). Rysunek: `src/render/ruiny.ts`
+(klasa `Ruiny`: `rysuj` przed mrokiem, `rysujNad` nad mrokiem; ryciny atlasu `ruinaNaRycinie`, `zabytekNaRycinie`). Tablice
+„Ruiny” i „Zabytki”. `VERSION = 4`. Bot zostawia każdy zabytek (`BRAC` w zabytki.ts) — z mieczem Patrzący zabierał mu
+robotników; nauczyć go ważenia zabytków to etap 5.
 
 ### 1.7 Etap 3f — zbroja na rycerzu i dokumentacja etapu 3
 - **Rycerz na start bez zbroi z kuźni.** Dziś zawsze ma pełny rynsztunek: hełm (`helm.ts`), kolczugę, nakolanniki, tarczę (`uzbrojenie.ts`)
@@ -425,6 +424,11 @@ nie pojawia się losowo, np. w jaskiniach; gracz może je sprowadzić niżej, ko
 - `VERSION = 3`. Zapisy sprzed 3d (bez ołtarza i drugiego otworu) się nie wczytają.
 
 ### 2.3 Testy i próby
+**Po etapie 3e (18.10):** 8/8 wygranych, nikt nie umarł z głodu (bot zostawia zabytki). Dodatkowe ziarna 5–12: 14/16, bez
+głodu; przegrane: speedrun 6 — boss zgniata pobożnych (zob. 1.10), budowniczy 7 — na nowej mapie partia trwała 16,6 min, karty
+„najazd” przychodziły częściej i gdy zabrakło krwi na zawalenie wejścia, ludzie zeszli szybem do sali. Gdy bot brał relikwiarz
+i miecz, było 7/8 i 13/16 (z mieczem Patrzący zabrał trzech robotników).
+
 **Po zmianie na jedno wiadro (17.10):** 8/8 wygranych (budowniczy 13,7–14,8 min, speedrun 12,7–17,0 min), nikt nie umarł
 z głodu, z ludu zginął jeden pobożny (od Strażnika). Robotnicy dobili 228 szczebli w 8 partiach (od 18.10 to liny, które spadają same — wyniki prób te same). Dodatkowe ziarna 5–12:
 14/16, bez głodu; przegrane speedrun 5 i 6 — boss zgniata pobożnych (zob. 1.10). Test świata sprawdza też, że pod wiadrem
@@ -590,7 +594,8 @@ Od wklejenia planu (16.10), po kolei:
 | `146c82b` (`main`, PR #14) | **Etap 3c.** Pomieszczenia: plany pod kursorem, kucie tylko przez zaznaczonych, warsztat (złoto → wiara), kuźnia (żelazo → zbroja), sypialnia (zdejmuje osłabienia), korytarz i szyb, atlas, samouczek |
 | `d097ec5` | **Etap 3d.** Dwa otwory (światło na ołtarz, wiadro obok), ołtarz od początku na kamiennym kopczyku, okno rytuałów, pięć rytuałów za krew z animacjami, okalecz/ofiaruj tylko przy ołtarzu, drabiny tylko tam, gdzie trzeba się wspiąć, sen 60 s, Strażnicy i boss z dala od pobożnych, atlas, samouczek, `VERSION = 3` |
 | `fd02485` | **Jedno wiadro.** Tylko szybem do sali, pogłębiane kopaniem; Nakarm dosypuje do niego. Szczeble na zakrętach drogi wiernych, ochrona podłogi pod drogą, kurier najada się przed drogą |
-| (gałąź `ccr-91477c56-dh7bgd`) | **Lina zamiast drabiny.** Wiesza ją gracz (5 za darmo, potem 10 krwi), jednostki jej nie budują; na zakrętach drogi wiernych spada sama; animacja haka, zwoju i kołysania |
+| `3c8bf81`, `ff4a86e` | **Lina zamiast drabiny.** Wiesza ją gracz (5 za darmo, potem 10 krwi), jednostki jej nie budują; na zakrętach drogi wiernych spada sama; animacja haka, zwoju i kołysania |
+| (gałąź `ccr-91477c56-dh7bgd`) | **Etap 3e.** Ruiny (kaplica, kopalnia, kawałek miasta) z zabytkami, karta „weź/zostaw”, premia i kara dla całego ludu, animacje odkrycia, wzięcia i zgaśnięcia, atlas, `VERSION = 4` |
 
 Wcześniej w tej samej sesji zrobiłem rzeczy, które są już na `main` (PR #7–#12):
 - freski w interfejsie, mroczny interfejs i muzyka niepokoju;
@@ -677,10 +682,8 @@ Potem odtwórz w brudnopisie narzędzia z Dodatku A: próby botów, zrzuty i map
 3. Rytuały: ofiara, wskrzeszenie, szał krwi (logika do istniejącego już rysunku) i modlitwa. Każdy z animacją.
 4. Atlas i samouczek, potem lista z 6.10.
 
-### 6.6 Etap 3e
-1. Dodaj ruiny w generatorze mapy.
-2. Dodaj zabytki z premią i karą oraz okno wyboru.
-3. Dodaj animacje i tablice atlasu, potem lista z 6.10.
+### 6.6 Etap 3e — zrobione (18.10, gałąź `ccr-91477c56-dh7bgd`)
+Ruiny, zabytki z kartą „weź/zostaw”, animacje, atlas — opis w 1.6.
 
 ### 6.7 Etap 3f
 1. Rycerz zaczyna bez części z kuźni.

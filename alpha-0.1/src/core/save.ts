@@ -9,8 +9,8 @@ import { SWIAT } from '../nastawy/swiat';
  */
 const KEY = 'trzewia-alpha:zapis';
 // Alpha, etap 3: góra z warstwami jest szersza (192 kafle zamiast 176) — stare zapisy się nie wczytają
-// (etap 3d: drugi otwór z wiadrem, ołtarz i kamienna podłoga sali — znów nowa góra)
-const VERSION = 3;
+// (etap 3d: drugi otwór z wiadrem, ołtarz i kamienna podłoga sali — znów nowa góra; etap 3e: ruiny z zabytkami)
+const VERSION = 4;
 
 function toB64(buf: ArrayBufferView): string {
   const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);

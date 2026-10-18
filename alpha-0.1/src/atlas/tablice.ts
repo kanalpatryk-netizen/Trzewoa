@@ -31,6 +31,8 @@ import { KRUSZCE } from '../nastawy/kruszce';
 import { POLECENIA } from '../nastawy/polecenia';
 import { OLTARZ } from '../nastawy/oltarz';
 import { oltarzNaRycinie } from '../render/oltarz';
+import { ruinaNaRycinie, zabytekNaRycinie } from '../render/ruiny';
+import { ZABYTKI, ZABYTEK, type TypZabytku } from '../nastawy/zabytki';
 import { kropla } from '../render/kruszce';
 
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
@@ -534,6 +536,27 @@ function ofiaraZyciaRycina(p: Plotno): void {
   ctx.restore();
 }
 
+/** Ruiny: zawalona kaplica w skale, w środku unosi się zabytek. */
+function ruinyRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 23);
+  ruinaNaRycinie(ctx, w * 0.5, h * 0.84, h * 0.1, t, 'relikwiarz');
+}
+
+/** Zabytki: relikwiarz, miecz, kielich i księga obok siebie, każdy w swoim świetle, z nazwą pod spodem. */
+function zabytkiRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 29);
+  const typy: TypZabytku[] = ['relikwiarz', 'miecz', 'kielich', 'ksiega'];
+  typy.forEach((typ, k) => {
+    const x = w * (0.16 + 0.225 * k), y = h * 0.62;
+    zabytekNaRycinie(ctx, x, y, h * 0.2, t, typ, k);
+    ctx.font = `italic ${Math.round(h * 0.065)}px Georgia, serif`;
+    ctx.textAlign = 'center'; ctx.fillStyle = rgba(BARWA.atrament, 0.85);
+    ctx.fillText(ZABYTEK[typ].nazwa.split(' ')[0], x, h * 0.82);
+  });
+}
+
 /** Lina: półka, na którą się nie wejdzie, hak w skale, lina do podłogi (z węzłami) i robotnik, który się po niej wspina. */
 function linaRycina(p: Plotno): void {
   const { ctx, w, h, t } = p;
@@ -887,6 +910,18 @@ export const TABLICE: Tablica[] = [
     opis: `„Wyznacz pomieszczenie” → „lina”: dotknij miejsca, gdzie ma wisieć hak (albo przeciągnij w górę). Jedyny warunek: lina nie trzyma się powietrza — jej górny koniec musi być uczepiony skały: stropu tuż nad nią, krawędzi półki obok albo ściany przy górze; bez tego obrys jest czerwony. Wskazana skała to strop — lina zawiśnie tuż pod nią. Wieszasz ją ty, od razu — nikt z ludu jej nie buduje: z żelaznego haka wbitego w skałę spada zwój, rozwija się aż do podłogi, a lina chwilę się kołysze. ${POMIESZCZENIA.linyDarmowe} pierwszych lin jest za darmo, każda następna kosztuje ${POMIESZCZENIA.linaKrew} krwi. Po linie każdy z ludu wchodzi i schodzi w obie strony. Na zakrętach drogi wiernych lina spada sama, gdy zakręt jest wykopany — za darmo.`,
     kiedy: 'Gdy ktoś zszedł w głąb i nie ma jak wrócić, albo gdy półka z rudą wisi za wysoko. Wieszaj przy krawędzi półki — po linie wchodzi się na nią. Darmowe liny szybko się kończą.',
     rycina: linaRycina,
+  },
+  {
+    id: 'ruiny', grupa: 'prawa', nazwa: 'Ruiny', lacina: 'Ruinae',
+    opis: `W środkowej warstwie góry leżą zawalone budowle — ${ZABYTKI.ruiny.odIlu}–${ZABYTKI.ruiny.doIlu} na górę: kaplica z łukami i filarami, stara kopalnia z odrzwiami z belek i porzuconym wózkiem albo kawałek miasta, dwa domy i ulica pod łukiem bramy. Zamurowane w skale, częściowo zawalone (gruz, zwalone belki) — trzeba się do nich przekopać. Mur z ciosów kuje się jak skała. W każdej leży zabytek; w ciemności czasem błyśnie.`,
+    kiedy: 'Wyślij robotnika rozkazem „kop tam” do ruin — gdy ktoś z ludu stanie przy zabytku, odkryje go. Pamiętaj o drodze powrotnej: jedzenie jest tylko w sali.',
+    rycina: ruinyRycina,
+  },
+  {
+    id: 'zabytki', grupa: 'prawa', nazwa: 'Zabytki', lacina: 'Reliquiae',
+    opis: `Kto z ludu stanie przy zabytku, odkrywa go: z ruin sypie się kurz, zabytek rozbłyskuje i unosi się w świetle, a świat staje i pyta: „Weź” czy „Zostaw”. Weź — premia i kara dla całego ludu, na zawsze (sen w sypialni kary nie zdejmie): zabytek leci do rąk odkrywcy, ten unosi go nad głowę, a fala światła zapala każdemu jasną i czerwoną aureolę. Zostaw — zabytek opada i gaśnie. Relikwiarz świętego: ${ZABYTEK.relikwiarz.premia}, ale ${ZABYTEK.relikwiarz.kara}. Miecz krzyżowca: ${ZABYTEK.miecz.premia}, ale ${ZABYTEK.miecz.kara}. Kielich: ${ZABYTEK.kielich.premia}, ale ${ZABYTEK.kielich.kara}. Księga: ${ZABYTEK.ksiega.premia}, ale ${ZABYTEK.ksiega.kara}.`,
+    kiedy: 'Bierz to, czego kara najmniej ci szkodzi: relikwiarz, gdy droga już wykopana; miecz przed bossem, jeśli drużyna trzyma się razem; kielich tylko przy pełnym wiadrze.',
+    rycina: zabytkiRycina,
   },
   {
     id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',

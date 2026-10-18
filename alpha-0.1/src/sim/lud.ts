@@ -22,6 +22,8 @@ import { tikWiader, zrodlaJedzenia, type StanWiader } from './wiadro';
 import { tikTrupow, type Trup } from './trupy';
 import type { StanOltarza } from './oltarz';
 import { OLTARZ } from '../nastawy/oltarz';
+import { ZABYTKI } from '../nastawy/zabytki';
+import { tikZabytkow, stanyZabytkow, type StanZabytkow } from './zabytki';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -57,6 +59,8 @@ export interface StanLudu {
   oltarz?: StanOltarza;
   /** Alpha: ile lin powiesił już gracz (pierwsze kilka za darmo — sim/pomieszczenia.ts: cenaLiny). */
   liny?: number;
+  /** Alpha, etap 3e: zabytki z ruin — odkryte, wzięte, zostawione (sim/zabytki.ts). */
+  zabytki?: StanZabytkow;
   /** Remake v2: robotnicy w hełmach (brak rycerzy) i następny ołtarz nie wcześniej niż. */
   helmy?: boolean;
   oltarzPo?: number;
@@ -162,6 +166,14 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   if (c.helm && r === 'robotnik' && (co === 'hp' || co === 'sila')) v *= LUD.helm[co];
   // etap 3d: szał krwi z ołtarza
   if (co === 'sila' && c.szalDo !== undefined && sim.tick < c.szalDo) v *= OLTARZ.rytualy.szal.sila;
+  // etap 3e: wzięte zabytki — premia i kara dla całego ludu, na zawsze
+  const wz = sim.lud.zabytki?.wziete;
+  if (wz?.length) {
+    const Z = ZABYTKI.skutki;
+    if (wz.includes('relikwiarz')) { if (co === 'modlitwa') v *= Z.relikwiarz.modlitwa; if (co === 'kopanie') v *= Z.relikwiarz.kopanie; }
+    if (wz.includes('miecz') && co === 'sila' && r === 'rycerz') v *= Z.miecz.silaRycerza;
+    if (wz.includes('kielich') && co === 'glod') v *= Z.kielich.glod;
+  }
   return v;
 }
 
@@ -267,6 +279,8 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   if (c.okaleczony) {
     out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false, kiedy: 'póki nie wyśpi się w sypialni' });
   }
+  // etap 3e: zabytki — każdy z ludu nosi jasną aureolę premii i czerwoną kary
+  if (rolaPostaci(c)) out.push(...stanyZabytkow(sim, c));
   return out;
 }
 
@@ -475,6 +489,7 @@ export function tikLudu(sim: Sim): void {
   tikStraznikow(sim);
   tikMroku(sim);
   tikDloni(sim);
+  tikZabytkow(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {
     pilnujSiedziby(sim);
     const klan = klanLudu(sim);

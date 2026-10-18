@@ -4,6 +4,8 @@ import { T, PASSABLE } from './tiles';
 import { Race, RACES } from './races';
 import { pielgrzymowKlanu, wKomorze } from './rytual';
 import { STWORZENIA as K } from '../nastawy/stworzenia';
+import { ZABYTKI } from '../nastawy/zabytki';
+import { maZabytek } from './zabytki';
 import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { LUDY, PRZYPLYWY as PP } from '../nastawy/gora';
 import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchwyt, ludRuch, szukajKopiac, kosztKuciaLudu, glebiaPod, podDroga } from './droga';
@@ -238,7 +240,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     if (c.carry === 0) { c.dostawaDla = undefined; c.doObozu = undefined; }
   }
   if (c.hunger > K.glodZabija) { c.hp -= K.glodObrazenia; c.rana = 'glod'; }
-  else if (c.hunger < K.najedzonyLeczy && c.hp < maxHp(sim, c)) c.hp = Math.min(maxHp(sim, c), c.hp + K.leczenieNaTik);
+  else if (c.hunger < K.najedzonyLeczy && c.hp < maxHp(sim, c)) c.hp = Math.min(maxHp(sim, c), c.hp + K.leczenieNaTik * leczenieZabytkow(sim));
   if (c.age > d.lifespan * m.zycie && !sim.spokojnySwiat && (LUD.starzejeSie || !rolaPostaci(c))) { c.hp -= K.starosc; c.rana = 'starosc'; }
   c.fear *= K.wygasanieStrachu;
 
@@ -257,13 +259,15 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // tylko po ciepło, wrócił z nożem na swoich)
   // Żużlowcy żyją przy ogniu głębi i głębia mniej im miesza w głowach
   const odpornosc = c.race === Race.DWARF ? K.odpornoscZuzlowcow : 1;
-  if (!podRdzeniem && depth > K.szalenstwoOdGlebokosci && c.race !== Race.TROLL && sim.rng.chance(K.szalenstwoSzansa * (depth - K.szalenstwoPunkt) * 10 * odpornosc)) {
+  // (etap 3e: wzięta księga — głębia szybciej miesza w głowach i wolniej puszcza)
+  const ksiega = REMAKE && rolaPostaci(c) && maZabytek(sim, 'ksiega');
+  if (!podRdzeniem && depth > K.szalenstwoOdGlebokosci && c.race !== Race.TROLL && sim.rng.chance(K.szalenstwoSzansa * (depth - K.szalenstwoPunkt) * 10 * odpornosc * (ksiega ? ZABYTKI.skutki.ksiega.szalenstwo : 1))) {
     c.mad = Math.min(1, c.mad + K.szalenstwoSkok);
     // Remake v1: bez trolów i sekt — szaleństwo nie przemienia nikogo
   }
-  if (podRdzeniem && c.mad > 0) c.mad = Math.max(0, c.mad - P.ochronaLeczy);
+  if (podRdzeniem && c.mad > 0) c.mad = Math.max(0, c.mad - P.ochronaLeczy * (ksiega ? ZABYTKI.skutki.ksiega.zdrowienie : 1));
   // kto wrócił wyżej, powoli dochodzi do siebie — szaleństwo nie jest już wieczne
-  else if (depth < K.zdrowiejePowyzej && c.mad > 0 && c.race !== Race.TROLL) c.mad = Math.max(0, c.mad - K.zdrowienie);
+  else if (depth < K.zdrowiejePowyzej && c.mad > 0 && c.race !== Race.TROLL) c.mad = Math.max(0, c.mad - K.zdrowienie * (ksiega ? ZABYTKI.skutki.ksiega.zdrowienie : 1));
 
   if (c.hp <= 0) {
     const r = PRZYCZYNA[c.rana ?? ''] ?? ['z wycieńczenia', c.age > d.lifespan * m.zycie ? 'starość' : 'wycieńczenie'];
@@ -1724,7 +1728,7 @@ function doDostawa(sim: Sim, c: Creature): void {
       c.carry--; sim.meals++;
       komu.hunger = Math.max(0, komu.hunger - LUD.posilek);
     }
-    komu.hp = Math.min(maxHp(sim, komu), komu.hp + K.kesLeczy);
+    komu.hp = Math.min(maxHp(sim, komu), komu.hp + K.kesLeczy * leczenieZabytkow(sim));
     sim.spark(komu.x, komu.y - 0.5, 'spore');
     c.dostawaDla = undefined;
     c.jt = 0;
@@ -1804,6 +1808,11 @@ function doZbiera(sim: Sim, c: Creature): void {
   c.jt = 0;
 }
 
+/** Etap 3e: wzięty kielich — rany goją się szybciej (posiłek, dostawa, odpoczynek najedzonego). */
+function leczenieZabytkow(sim: Sim): number {
+  return maZabytek(sim, 'kielich') ? ZABYTKI.skutki.kielich.leczenie : 1;
+}
+
 /** Posiłek z wiadra (Remake v2; dawniej ze spiżarni). */
 function doZapas(sim: Sim, c: Creature): void {
   // sięga do wiadra z dwóch kafli — stojące na półce tuż nad głową było „osiągalne”
@@ -1819,7 +1828,7 @@ function doZapas(sim: Sim, c: Creature): void {
   for (let n = 0; sp && n < 4 && (n === 0 || c.hunger > WIADRO.najadaDo) && sp.wez(1) > 0; n++) {
     sim.meals++;
     c.hunger = Math.max(0, c.hunger - LUD.posilek);
-    c.hp = Math.min(maxHp(sim, c), c.hp + K.kesLeczy);
+    c.hp = Math.min(maxHp(sim, c), c.hp + K.kesLeczy * leczenieZabytkow(sim));
   }
   c.jt = 0;
 }
@@ -1834,7 +1843,7 @@ function doEat(sim: Sim, c: Creature): void {
     w.set(c.jx, c.jy, T.AIR);
     sim.meals++;
     c.hunger = Math.max(0, c.hunger - (t === T.BONES ? K.kesKosci : K.kesGrzyba));
-    c.hp = Math.min(maxHp(sim, c), c.hp + K.kesLeczy);
+    c.hp = Math.min(maxHp(sim, c), c.hp + K.kesLeczy * leczenieZabytkow(sim));
     c.jt = 0;
   } else idz(sim, c, c.jx, c.jy);
 }
@@ -1964,7 +1973,7 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   }
   c.devotion = Math.min(1, c.devotion + P.modlitwaOddanie);
   if (!REMAKE) c.hunger = Math.max(0, c.hunger - P.modlitwaKarmi);      // wiara trawi wolniej, ale trawi (Remake v1: karmią dostawy)
-  sim.wiara += P.modlitwaWiara * sim.incomeMult();
+  sim.wiara += P.modlitwaWiara * sim.incomeMult() * (maZabytek(sim, 'ksiega') ? ZABYTKI.skutki.ksiega.wiara : 1);
   if (sim.tick % P.mysliCo === 0 && sim.rng.chance(P.mysliSzansa)) sim.efekt(c.x, c.y - 0.4, 'mysl');
 }
 

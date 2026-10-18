@@ -6,6 +6,8 @@
  * podchodzi i patrzy; jeśli nikt nie przyjdzie, a w pobliżu nie rozbłyśnie Cud, zabiera go.
  * Gracz widzi tylko oczy w skale i przygasającą lampkę.
  */
+import { maZabytek } from './zabytki';
+import { ZABYTKI } from '../nastawy/zabytki';
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { MROK } from '../nastawy/mrok';
@@ -118,7 +120,8 @@ function wypatrz(sim: Sim): Creature | null {
 function zgas(sim: Sim, m: StanMroku, przerwa: number): void {
   m.faza = 'czeka';
   m.cel = null;
-  m.przerwaDo = sim.tick + przerwa;
+  // (etap 3e: wzięty miecz krzyżowca — Patrzący wraca szybciej)
+  m.przerwaDo = sim.tick + Math.round(przerwa * (maZabytek(sim, 'miecz') ? ZABYTKI.skutki.miecz.przerwyPatrzacego : 1));
   nowyPunktKrazenia(sim, m);
 }
 
@@ -140,7 +143,8 @@ export function tikMroku(sim: Sim): void {
 
   if (m.faza === 'krazy') {
     if (idz(m, m.kx, m.ky, MROK.tempoKrazy, CO) < 0.5) nowyPunktKrazenia(sim, m);
-    if (sim.tick % MROK.szukajCo === 0 && ileLudu(sim) >= MROK.minLudu) {
+    // (etap 3e: wzięty miecz krzyżowca — poluje też na małą drużynę)
+    if (sim.tick % MROK.szukajCo === 0 && ileLudu(sim) >= (maZabytek(sim, 'miecz') ? ZABYTKI.skutki.miecz.patrzyNaMalych : MROK.minLudu)) {
       const c = wypatrz(sim);
       if (c) { m.faza = 'podchodzi'; m.cel = c.id; m.od = sim.tick; }
     }
