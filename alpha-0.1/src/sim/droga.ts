@@ -14,8 +14,8 @@ import { WORLD_W, WORLD_H } from './world';
  *
  * Remake v2: lud nie wspina się po ścianach i nie ma lin ani klamer — z podłogi wchodzi
  * najwyżej o jeden kafel (na stopień), a wyżej musi wykuć sobie schody (creatures.ts).
- * Alpha, etap 3d: albo zbudować drabinę — na szczeblu się stoi (`stoi`), więc wchodzi się po niej kafel po kaflu
- * i tak samo schodzi.
+ * Alpha: albo wejść po linie, którą powiesił gracz (albo która sama spadła na zakręcie drogi wiernych) — na linie
+ * się wisi (`stoi`), więc wchodzi się po niej kafel po kaflu i tak samo schodzi.
  * W dół łatwiej: szybem zsuwa się po ścianach, z niewysokiej półki zeskakuje; w przepaść
  * głębszą niż `LUD.spadekMaks` sam nie skacze.
  *
@@ -51,11 +51,11 @@ export function uchwyt(sim: Sim, x: number, y: number): boolean {
   return w.solid(x - 1, y) || w.solid(x + 1, y) || w.solid(x - 1, y + 1) || w.solid(x + 1, y + 1);
 }
 
-/** Czy tu się stoi: pod spodem lita skała albo woda, na której się unosi — albo na szczeblu drabiny (etap 3d). */
+/** Czy tu się stoi: pod spodem lita skała albo woda, na której się unosi — albo na linie (Alpha; w 3d były tu drabiny). */
 export function stoi(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
   if (!w.inb(x, y + 1)) return true;
-  if (w.drabina[y * w.w + x] === 1) return true;
+  if (w.lina[y * w.w + x] === 1) return true;
   return w.solid(x, y + 1) || w.water[w.idx(x, y + 1)] >= 4;
 }
 
@@ -133,8 +133,8 @@ export function szukajDrogi(
     }
     const naPodlodze = stoi(sim, x, y);
     const wisi = !naPodlodze && uchwyt(sim, x, y);
-    // etap 3d: ze szczebla drabiny — w dół, na niższy szczebel albo na podłogę pod drabiną
-    if (w.drabina[i] === 1 && y + 1 < WORLD_H && wolny(sim, i + W, plywa)) dodaj(i + W, i);
+    // z liny — w dół, niżej po linie albo na podłogę pod nią
+    if (w.lina[i] === 1 && y + 1 < WORLD_H && wolny(sim, i + W, plywa)) dodaj(i + W, i);
     // w dół: z wiszenia albo w locie
     if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa) && !(ostrozny && wisi && przepasc(sim, x, y + 1))) dodaj(i + W, i);
     if (!naPodlodze && !wisi) continue;            // w locie nie ma innego wyboru

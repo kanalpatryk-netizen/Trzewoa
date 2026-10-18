@@ -1,12 +1,15 @@
 # Handoff — Trzewia, Alpha 0.1
 
-Stan na 17.10.2026, po etapie 3d. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
+Stan na 18.10.2026, po etapie 3d, jednym wiadrze i linie zamiast drabiny. Plik jest dla następnej sesji Claude (albo osoby), która przejmuje pracę nad Alphą 0.1.
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
 - **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etap 1, etap 2 oraz 3a, 3b, 3c i 3d etapu 3, a zostały 3e–3f, 4 i 5.
 - **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
-- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. **Nie zaczynaj 3e bez polecenia.**
+- **W toku (odłożone):** etap 3e — ruiny z zabytkami; zaczęty generator ruin leży w `git stash` („3e ruiny (w toku)”: `sim/ruiny.ts`,
+  `nastawy/zabytki.ts`, wpięcie w `world.ts`). Decyzje użytkownika 18.10: zabytek działa na **cały lud**, kara **nie** schodzi snem
+  w sypialni, zabytki — **te cztery z planu** (relikwiarz, miecz, kielich, księga).
+- **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10 użytkownik kazał iść dalej — 3e zaczęte, potem przerwane prośbą o linę.)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 
 ---
@@ -141,7 +144,9 @@ sami go wykopują. Gotowe pomieszczenie działa:
 - wskrzeszenie: wybór z listy poległych, ok. 100 krwi;
 - krew to paliwo rytuałów (zgrzyt 1 — potwierdzone);
 - **dłoń anielska (etap 4) ma być losowym wydarzeniem, jak dłoń z otchłani**;
-- drabiny albo liny — ale **tylko tam, gdzie nie da się dojść inaczej niż się wspiąć**.
+- drabiny albo liny — ale **tylko tam, gdzie nie da się dojść inaczej niż się wspiąć**;
+- **18.10: drabinę zastępuje lina. Jednostki jej nie stawiają — wiesza ją gracz, od razu: 5 pierwszych za darmo, potem
+  10 krwi każda. Na zakrętach drogi wiernych lina spada sama, za darmo.**
 
 **Zrobione 17.10:** mapa — drugi otwór `SWIAT.warstwy.szybWiadra` (`world.szybWiadraX/Dol`; wiadro i najazd ludzi idą nim,
 siedziba stoi pod nim), kamienna podłoga sali i kopczyk pod ołtarzem (`SWIAT.warstwy.oltarz`, `world.oltarz`,
@@ -150,8 +155,8 @@ siedziba stoi pod nim), kamienna podłoga sali i kopczyk pod ołtarzem (`SWIAT.w
 `odprawia` → `klecz` w `creatures.ts`), szał w `mnoznik` (`lud.ts`), czerwona aura w `figury.ts`. Rysunek: `src/render/oltarz.ts`
 (kamień przed mrokiem, światło, płomienie i rytuały nad mrokiem, `oltarzNaRycinie` dla atlasu), okno `src/render/okno-oltarza.ts`,
 krople krwi do i z licznika (`Urobki.oddaj` / `dodaj('krew')`), dźwięki `rytual()` i `kropla()` w `audio.ts`. Rozkazy
-`wydajDoOltarza` i `przywolajDoOltarza` (`polecenia.ts`). Drabiny: szablon „drabina” w pomieszczeniach, `world.drabina`
-(szczeble, w zapisie), `stoi()` zna szczeble, budowa rozkazem „drabina” (`nastepnySzczebel`, `tikPomieszczen`). Przy nowej
+`wydajDoOltarza` i `przywolajDoOltarza` (`polecenia.ts`). Drabiny (od 18.10 liny): szablon „lina” w pomieszczeniach,
+`world.lina` (w zapisie), `stoi()` zna linę, wiesza gracz (`powiesLine`, `cenaLiny`, licznik `sim.lud.liny`). Przy nowej
 mapie Strażnicy wychodzą ≥ 8 kafli od nie-walczących (`STRAZNICY.pojawOdLudu`), a boss — po stronie rycerza. Atlas: 7 tablic;
 samouczek: rozdział „Ołtarz”; test świata sprawdza ołtarz i otwory. Poniżej pierwotny plan.
 
@@ -309,7 +314,7 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
   i v2, a w Alphie nie, bo Alpha powstała wcześniej. Użytkownik nie odpowiedział, czy je przenieść.
 - **Podpowiedzi (kółka na mapie)** to w dużej części rady z Remake. W 3b usunięte dwie nieaktualne („prorokuj”, „Nakarm przedsionek”); reszta do przejrzenia razem z samouczkiem w etapie 5. Tekst rady widać tylko jako kółko z podpisem na mapie.
 - **Głód na ziarnach spoza prób** — po zmianie na jedno wiadro nie ma go ani w 8 próbach, ani w 16 dodatkowych.
-  Trzy przyczyny naprawione przy okazji: brak powrotu z głębi (szczeble na zakrętach drogi wiernych), wykuta podłoga pod
+  Trzy przyczyny naprawione przy okazji: brak powrotu z głębi (liny na zakrętach drogi wiernych), wykuta podłoga pod
   drogą (`podDroga`) i kurier, który ruszał pod rdzeń głodny (`LUD.kurierNajadaOd`).
 - **Boss zgniata pobożnych pod rdzeniem** (2 przegrane na 16 dodatkowych ziarnach: speedrun 5 i 6). Dawniej bił najpierw
   robotników stojących w krypcie przy wiadrach (10–13 strat na 8 prób po 3d); teraz robotnicy są przy wiadrze w sali, więc
@@ -384,7 +389,7 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
 
 **Ruch i mapa**
 - Bez lin, poza liną wiadra. Wspinaczka najwyżej o 1 kafel, zsuwanie po ścianach, schody kute przez robotników; od 3d
-  także drabiny (szablon w pomieszczeniach, tylko tam, gdzie inaczej się nie wejdzie).
+  także liny (szablon w pomieszczeniach, tylko tam, gdzie inaczej się nie wejdzie; wiesza gracz: 5 za darmo, potem 10 krwi).
 - Od 3d: dwa otwory do sali (światło na ołtarz, wiadro 7 kafli w prawo), ołtarz na kamiennym kopczyku, kamienna podłoga
   sali z wyjściami na końcach.
 - Bez zawału od góry.
@@ -398,9 +403,9 @@ nie pojawia się losowo, np. w jaskiniach; gracz może je sprowadzić niżej, ko
   do 40 porcji. Gdy pod stojącym wiadrem zniknie dno, zjeżdża niżej. Pod wiadrem podłoga sali nie jest z kamienia (`world.ts`),
   a złota kreska omija tę kolumnę (`planujDroge`: `podWiadrem`).
 - Nakarm (`wiadroNaZadanie`) dosypuje do tego samego wiadra albo spuszcza je szybem — miejsce dotknięcia nie ma znaczenia.
-- Do odciętych i do grup w głębi nic nie zjeżdża. Wracają drogą wiernych: plan liczy szczeble na zakrętach
-  (`szczebleDrogi` — droga wykopana „w wyobraźni”, krok po kroku od przedsionka), a robotnik obok wykopanego zakrętu
-  dobija szczebel (`dobijajSzczeble`, zdarzenie `szczebel` — ta sama animacja co przy drabinach). Podłogi pod drogą nikt
+- Do odciętych i do grup w głębi nic nie zjeżdża. Wracają drogą wiernych: plan liczy liny na zakrętach
+  (`linyDrogi` — droga wykopana „w wyobraźni”, krok po kroku od przedsionka), a gdy zakręt jest wykopany, lina spada
+  tam sama (`spuscLiny`, zdarzenie `lina` z `gracz: false` — ta sama animacja co przy linie gracza). Podłogi pod drogą nikt
   z ludu nie kuje (`podDroga`). Warcie jedzenie donoszą robotnicy; kurier najpierw sam się najada.
 - Przy wiadrze je się do syta, do 4 porcji naraz.
 
@@ -417,7 +422,7 @@ nie pojawia się losowo, np. w jaskiniach; gracz może je sprowadzić niżej, ko
 
 ### 2.3 Testy i próby
 **Po zmianie na jedno wiadro (17.10):** 8/8 wygranych (budowniczy 13,7–14,8 min, speedrun 12,7–17,0 min), nikt nie umarł
-z głodu, z ludu zginął jeden pobożny (od Strażnika). Robotnicy dobili 228 szczebli w 8 partiach. Dodatkowe ziarna 5–12:
+z głodu, z ludu zginął jeden pobożny (od Strażnika). Robotnicy dobili 228 szczebli w 8 partiach (od 18.10 to liny, które spadają same — wyniki prób te same). Dodatkowe ziarna 5–12:
 14/16, bez głodu; przegrane speedrun 5 i 6 — boss zgniata pobożnych (zob. 1.10). Test świata sprawdza też, że pod wiadrem
 jest podłoga, którą da się wykopać.
 
@@ -483,7 +488,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 ### 3.2 Symulacja (`src/sim/`)
 | Plik | Co jest w środku | Etap, który go zmieni |
 |---|---|---|
-| `world.ts` | Generowanie góry: `generujWarstwy` (3a), `kucie`, `salaStart`, `szybX` i `szybDol`, `szybWiadraX/Dol`, `oltarz`, `salaOltarza`, `drabina`, `coreX` i `coreY`, `przedsionekY` | 3e (ruiny) |
+| `world.ts` | Generowanie góry: `generujWarstwy` (3a), `kucie`, `salaStart`, `szybX` i `szybDol`, `szybWiadraX/Dol`, `oltarz`, `salaOltarza`, `lina`, `coreX` i `coreY`, `przedsionekY` | 3e (ruiny) |
 | `creatures.ts` | Planer postaci, fizyka ludu, `digTile` (kucie), jedzenie (`doZapas`), `szalDo` | 3b, 3c, 3d, 4 |
 | `polecenia.ts` | Rozkazy: `wydajPolecenie`, `wydajGrupie`, `drogaGrupie`, `odwolajPolecenie`, odmowy | 3c, 4 |
 | `droga.ts` | Szukanie drogi z fizyką ludu: `szukajDrogi`, `szukajKopiac`, `stoi`, `ludRuch` | wszystkie |
@@ -498,7 +503,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `tiles.ts` | Kafle (`MIEKKA`, `TWARDA`, `ZLOTO`; `ORE` to żelazo), twardość, kolory | 3b, 3e |
 | `trupy.ts` | Ciała zmarłych (wskrzeszenie: `polegli` w `oltarz.ts`) | — |
 | `oltarz.ts` | Etap 3d: rytuały przy ołtarzu (`odprawRytual`, `czemuNie`, `tikOltarza`, wskrzeszenie), stan w `sim.lud.oltarz` | 4 (dłoń anielska?) |
-| `pomieszczenia.ts` | Etap 3c/3d: plany, pokoje, rzemiosło, sen, drabiny (`nastepnySzczebel`) | 3e |
+| `pomieszczenia.ts` | Etap 3c/3d: plany, pokoje, rzemiosło, sen, liny gracza (`powiesLine`, `cenaLiny`) | 3e |
 | `wydarzenia.ts`, `karty-ludu.ts` | Karty wydarzeń — wzór dla okna zabytku | 3e |
 | `podpowiedzi.ts` | Podpowiedzi na płycie | każdy |
 | `/alpha-0.1/src/powers/powers.ts` | Ryty Nakarm, Szepnij i Cud (`seed`, `whisper`, `sign`) | 4 (dłoń anielska) |
@@ -518,7 +523,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `stworzenia.ts` | Fizyka postaci |
 | `cele.ts` | Progi osiągnięć |
 | `oltarz.ts` | Etap 3d: ceny i czasy rytuałów, kto stoi „przy ołtarzu” |
-| `pomieszczenia.ts` | Etap 3c/3d: szablony, warsztat, kuźnia, sypialnia (`snuTikow`), drabiny (`drabinaMin/Maks`, `tikowNaSzczebel`) |
+| `pomieszczenia.ts` | Etap 3c/3d: szablony, warsztat, kuźnia, sypialnia (`snuTikow`), liny (`linaMin/Maks`, `linyDarmowe`, `linaKrew`) |
 | `wyglad/rycina.ts`, `wyglad/fresk-swiata.ts` | Barwy nowych kafli |
 
 ### 3.4 Rysunek (`src/render/`)
@@ -536,7 +541,7 @@ Szybki podgląd całej mapy w ASCII daje `swiat-mapa.ts` z Dodatku A.
 | `engrave.ts` | Rycina kafli | 3e |
 | `wydarzenie.ts` | Okno karty wydarzenia | 3e |
 | `oltarz.ts`, `okno-oltarza.ts` | Etap 3d: ołtarz, smuga dnia, rytuały, okno rytuałów | 4 |
-| `pomieszczenia.ts` | Etap 3c/3d: plany, wyposażenie, drabiny | 3e |
+| `pomieszczenia.ts` | Etap 3c/3d: plany, wyposażenie, liny (hak, zwój, spadanie) | 3e |
 
 ### 3.5 Aplikacja, skrypty i reszta
 | Plik | Rola |
@@ -580,7 +585,8 @@ Od wklejenia planu (16.10), po kolei:
 | `8708eed` (`main`, PR #13) | **Etap 3b.** Liczniki żelaza i złota z animacją okruchów, „kop żyłę”, tablica „Kruszce”, porządki w podpowiedziach, sumowanie kroniki |
 | `146c82b` (`main`, PR #14) | **Etap 3c.** Pomieszczenia: plany pod kursorem, kucie tylko przez zaznaczonych, warsztat (złoto → wiara), kuźnia (żelazo → zbroja), sypialnia (zdejmuje osłabienia), korytarz i szyb, atlas, samouczek |
 | `d097ec5` | **Etap 3d.** Dwa otwory (światło na ołtarz, wiadro obok), ołtarz od początku na kamiennym kopczyku, okno rytuałów, pięć rytuałów za krew z animacjami, okalecz/ofiaruj tylko przy ołtarzu, drabiny tylko tam, gdzie trzeba się wspiąć, sen 60 s, Strażnicy i boss z dala od pobożnych, atlas, samouczek, `VERSION = 3` |
-| (gałąź `ccr-91477c56-dh7bgd`) | **Jedno wiadro.** Tylko szybem do sali, pogłębiane kopaniem; Nakarm dosypuje do niego. Szczeble na zakrętach drogi wiernych, ochrona podłogi pod drogą, kurier najada się przed drogą |
+| `fd02485` | **Jedno wiadro.** Tylko szybem do sali, pogłębiane kopaniem; Nakarm dosypuje do niego. Szczeble na zakrętach drogi wiernych, ochrona podłogi pod drogą, kurier najada się przed drogą |
+| (gałąź `ccr-91477c56-dh7bgd`) | **Lina zamiast drabiny.** Wiesza ją gracz (5 za darmo, potem 10 krwi), jednostki jej nie budują; na zakrętach drogi wiernych spada sama; animacja haka, zwoju i kołysania |
 
 Wcześniej w tej samej sesji zrobiłem rzeczy, które są już na `main` (PR #7–#12):
 - freski w interfejsie, mroczny interfejs i muzyka niepokoju;

@@ -15,7 +15,7 @@ import { STRAZNICY } from '../nastawy/straznicy';
 import { obozFrontowy, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
 import { obozyLudu, obozyWgOdleglosci, najblizszyOboz, walczacy, type MiejsceJedzenia } from './lud';
 import { wykutyKafel } from './kruszce';
-import { pomieszczenieId, kafleDoKucia, siegaPlanu, miejsceWPom, ktoryWPom, nastepnySzczebel } from './pomieszczenia';
+import { pomieszczenieId, kafleDoKucia, siegaPlanu, miejsceWPom, ktoryWPom } from './pomieszczenia';
 import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
 import { odprawia, type RytualOltarza } from './oltarz';
 import { NAZWA_RYTUALU } from '../nastawy/oltarz';
@@ -301,10 +301,10 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // albo schodząc szybem; w otwartej pustce spada (przepaści sam omija — droga.ts).
   const trzymaSie = (c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
     && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1));
-  // Alpha, etap 3d: na szczeblu drabiny się stoi — nie spada
-  const naDrabinie = w.drabina[i] === 1;
-  if (naDrabinie && c.vy > 0) c.vy = 0;
-  if (!trzymaSie && !naDrabinie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
+  // Alpha: na linie się wisi — nie spada (wchodzi i schodzi po niej)
+  const wisiNaLinie = w.lina[i] === 1;
+  if (wisiNaLinie && c.vy > 0) c.vy = 0;
+  if (!trzymaSie && !wisiNaLinie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
     // Kto dopiero co się wspinał i ma ścianę pod ręką, zsuwa się po niej, zamiast lecieć.
     // Inaczej każda zmiana zamiaru w połowie szybu kończyła się upadkiem z całej wysokości.
     if ((c.wspina ?? -99) >= sim.tick - K.zsuwaSieTikow && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty))
@@ -1196,28 +1196,6 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     const d = droga(tam, POLECENIA.szukanieDrogi);
     if (d) { naDroge(d, mx, my); zamiar(p.typ === 'sen' ? 'idzie spać do sypialni' : `idzie pracować: ${nazwa}`, Job.WANDER, podroz(d) + 60); p.prob = 0; return true; }
     return poddajSie('nie dojdę tam — nie ma drogi');
-  }
-
-  // etap 3d: drabina — buduje szczebel po szczeblu od dołu, stojąc pod nim (na podłodze albo na szczeblu niżej)
-  if (p.typ === 'drabina') {
-    const pom = pomieszczenieId(sim, p.pom);
-    const sz = pom && !pom.gotowe ? nastepnySzczebel(sim, pom) : null;
-    if (!pom || !sz) { c.polecenie = undefined; return false; }
-    const [rx, ry] = sz;
-    p.x = rx; p.y = ry;
-    const tam = (x: number, y: number) => y === ry + 1 && (x === rx || (Math.abs(x - rx) === 1 && w.solid(x, y + 1))) && stoi(sim, x, y);
-    if (tam(cx, cy)) {
-      p.na = true; p.prob = 0;
-      c.jx = cx; c.jy = cy; c.droga = undefined;
-      c.czynnosc = 'buduje';
-      if (rx !== cx) c.face = rx > cx ? 1 : -1;
-      zamiar('buduje drabinę — szczebel po szczeblu', Job.STOI, Z);
-      return true;
-    }
-    if (budzetDrog() <= 0) return brakCzasu();
-    const d = droga(tam, POLECENIA.szukanieDrogi);
-    if (d) { naDroge(d); zamiar('idzie budować drabinę', Job.WANDER, podroz(d)); p.prob = 0; return true; }
-    return poddajSie('nie dojdę do drabiny');
   }
 
   // etap 3c: plan pomieszczenia — wskazany kafel już wykuty: następny kafel planu (najbliższy odsłonięty)

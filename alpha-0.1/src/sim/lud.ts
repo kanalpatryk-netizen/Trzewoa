@@ -55,6 +55,8 @@ export interface StanLudu {
   trupy?: Trup[];
   /** Alpha, etap 3d: rytuał przy ołtarzu (sim/oltarz.ts). */
   oltarz?: StanOltarza;
+  /** Alpha: ile lin powiesił już gracz (pierwsze kilka za darmo — sim/pomieszczenia.ts: cenaLiny). */
+  liny?: number;
   /** Remake v2: robotnicy w hełmach (brak rycerzy) i następny ołtarz nie wcześniej niż. */
   helmy?: boolean;
   oltarzPo?: number;

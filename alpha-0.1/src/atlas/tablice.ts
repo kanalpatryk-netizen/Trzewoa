@@ -534,8 +534,8 @@ function ofiaraZyciaRycina(p: Plotno): void {
   ctx.restore();
 }
 
-/** Drabina: półka, na którą się nie wejdzie, drabina do niej i robotnik, który się wspina. */
-function drabinaRycina(p: Plotno): void {
+/** Lina: półka, na którą się nie wejdzie, hak w skale, lina do podłogi (z węzłami) i robotnik, który się po niej wspina. */
+function linaRycina(p: Plotno): void {
   const { ctx, w, h, t } = p;
   sklepienie(ctx, w, h, 11);
   const k = h * 0.14, x = w * 0.52, y = h * 0.82, yt = y - k * 4;
@@ -544,18 +544,26 @@ function drabinaRycina(p: Plotno): void {
   const polka = new Path2D(); polka.rect(w * 0.08, yt + k, x - w * 0.08 - k * 0.1, k * 0.9);
   ctx.fillStyle = 'rgba(46,34,27,0.98)'; ctx.fill(polka);
   kreskuj(ctx, polka, 0.9, 4, rgba(BARWA.atrament, 0.28), 1);
-  // belki i szczeble
-  const x1 = x + k * 0.22, x2 = x + k * 0.78;
+  // hak w stropie i lina z konopi, lekko się kołysze; węzły na chwyt co kafel, zwój na podłodze
+  const lx = x + k * 0.5, hy = yt - k * 0.4;
+  const odch = (s: number) => Math.sin(t * 0.002) * k * 0.08 * s;
+  ctx.fillStyle = 'rgba(70,70,76,0.98)'; ctx.strokeStyle = 'rgba(20,12,8,0.95)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.rect(lx - k * 0.22, hy - k * 0.1, k * 0.44, k * 0.12); ctx.fill(); ctx.stroke();
   ctx.lineCap = 'round';
-  for (const [bar, sz] of [['rgba(20,12,8,0.95)', 5], ['rgba(104,70,40,0.98)', 3]] as const) {
+  for (const [bar, sz] of [['rgba(20,12,8,0.95)', 5], ['rgba(176,138,86,0.98)', 3]] as const) {
     ctx.strokeStyle = bar; ctx.lineWidth = sz;
-    ctx.beginPath(); ctx.moveTo(x1, yt - k * 0.35); ctx.lineTo(x1, y); ctx.moveTo(x2, yt - k * 0.35); ctx.lineTo(x2, y); ctx.stroke();
+    ctx.beginPath();
+    for (let s = 0; s <= 20; s++) { const py = hy + (y - hy) * s / 20; const px = lx + odch(s / 20); if (s) ctx.lineTo(px, py); else ctx.moveTo(px, py); }
+    ctx.stroke();
   }
   for (let i = 0; i < 4; i++) {
-    const sy = yt + k * (i + 0.55);
-    ctx.strokeStyle = 'rgba(20,12,8,0.95)'; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x1, sy); ctx.lineTo(x2, sy); ctx.stroke();
-    ctx.strokeStyle = 'rgba(150,108,62,0.98)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(x1, sy); ctx.lineTo(x2, sy); ctx.stroke();
+    const sy = yt + k * (i + 0.5);
+    const sx = lx + odch((sy - hy) / (y - hy));
+    ctx.fillStyle = 'rgba(20,12,8,0.95)'; ctx.beginPath(); ctx.ellipse(sx, sy, k * 0.12, k * 0.09, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(176,138,86,0.98)'; ctx.beginPath(); ctx.ellipse(sx, sy, k * 0.08, k * 0.055, 0, 0, Math.PI * 2); ctx.fill();
   }
+  ctx.strokeStyle = 'rgba(176,138,86,0.98)'; ctx.lineWidth = 2.5;
+  for (let r = 0; r < 3; r++) { ctx.beginPath(); ctx.ellipse(lx + k * 0.15, y - k * 0.06 - r * 2, k * (0.32 - r * 0.05), k * 0.12, 0, 0, Math.PI * 2); ctx.stroke(); }
   ctx.restore();
   // wspina się: w górę i z powrotem
   const f = 0.5 - 0.5 * Math.cos(t * 0.0012);
@@ -713,14 +721,14 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'wiadro', grupa: 'zasoby', nazwa: 'Wiadro z jedzeniem', lacina: 'Situla panis',
-    opis: `Jedyne jedzenie ludu — grzyba ani spiżarni nie ma. Co ${Math.round(WIADRO.co / 120)} sekund z góry, na linie, zjeżdża wiadro pełne jedzenia (${WIADRO.porcjiNaGlowe} porcji na każdego z ludu) — zawsze tym samym, węższym otworem obok szybu ze światłem, do sali z siedzibą; gdy poprzednie jeszcze tam stoi, z góry do niego dosypują. Wiadro jest jedno i ma jeden punkt, w który spada: na dno kolumny pod otworem. Pod wiadrem w podłodze sali da się kuć — kto wykopie tam dziurę, sprowadzi wiadro niżej (lina sięga do dna kolumny), ale wtedy ci z sali do niego nie sięgną. Do tych, którzy zeszli w głąb, wiadro samo nie zjedzie — nigdzie poza tym szybem się nie pojawia; wracają po jedzenie drogą wiernych (na jej zakrętach są szczeble). Przed zjazdem ze stropu sypie się pył. Każdy może z niego jeść, i to do syta, robotnicy donoszą z niego jedzenie warcie; puste odjeżdża w górę. Kto umiera z głodu (${proc(WIADRO.wspinaczkaOd)} głodu), a wiadro jeszcze jedzie, wspina się po linie, wsiada do niego i je w drodze w dół.`,
+    opis: `Jedyne jedzenie ludu — grzyba ani spiżarni nie ma. Co ${Math.round(WIADRO.co / 120)} sekund z góry, na linie, zjeżdża wiadro pełne jedzenia (${WIADRO.porcjiNaGlowe} porcji na każdego z ludu) — zawsze tym samym, węższym otworem obok szybu ze światłem, do sali z siedzibą; gdy poprzednie jeszcze tam stoi, z góry do niego dosypują. Wiadro jest jedno i ma jeden punkt, w który spada: na dno kolumny pod otworem. Pod wiadrem w podłodze sali da się kuć — kto wykopie tam dziurę, sprowadzi wiadro niżej (lina sięga do dna kolumny), ale wtedy ci z sali do niego nie sięgną. Do tych, którzy zeszli w głąb, wiadro samo nie zjedzie — nigdzie poza tym szybem się nie pojawia; wracają po jedzenie drogą wiernych (na jej zakrętach wiszą liny). Przed zjazdem ze stropu sypie się pył. Każdy może z niego jeść, i to do syta, robotnicy donoszą z niego jedzenie warcie; puste odjeżdża w górę. Kto umiera z głodu (${proc(WIADRO.wspinaczkaOd)} głodu), a wiadro jeszcze jedzie, wspina się po linie, wsiada do niego i je w drodze w dół.`,
     kiedy: 'Liczba „jedzenie” nad płytą to porcje w wiadrze. Gdy nie starcza, dosyp rytem Nakarm; gdy lud pracuje głęboko, pogłęb szyb pod wiadrem.',
     rycina: postac(Race.GOBLIN, 'je'),
   },
   {
     id: 'kruszce', grupa: 'zasoby', nazwa: 'Kruszce', lacina: 'Ferrum et aurum',
     opis: `Żelazo i złoto — dwie liczby nad płytą, obok wiary, krwi i jedzenia. Nikt ich nie nosi: gdy robotnik rozbije kafel rudy, okruch sam leci do licznika i dodaje ${KRUSZCE.zelazoZaKafel} żelaza albo ${KRUSZCE.zlotoZaKafel} złota. Żelazo leży w kępach rdzawej rudy w płytkiej warstwie, tuż pod salą; złoto — w żółtych grudkach pod dnami jaskiń w warstwie środkowej, głębiej i twardsze. Wskaż zaznaczonemu robotnikowi rudę, a wykuje całą kępę — kafel po kaflu, najdalej ${POLECENIA.zylaZasieg} kafli od wskazanego. W dół schodzi stopniami, a podłogi pod złotą kreską drogi wiernych nie rusza.`,
-    kiedy: 'Kop, póki jest czas: z żelaza kuźnia wykuje zbroję dla rycerza, a ze złota warsztat zrobi krzyże i różańce, które zamienią się w wiarę. Po złoto trzeba zejść głęboko — a jedzenie jest tylko w sali, więc pilnuj, żeby robotnik miał którędy wrócić (schodami, drabiną albo drogą wiernych).',
+    kiedy: 'Kop, póki jest czas: z żelaza kuźnia wykuje zbroję dla rycerza, a ze złota warsztat zrobi krzyże i różańce, które zamienią się w wiarę. Po złoto trzeba zejść głęboko — a jedzenie jest tylko w sali, więc pilnuj, żeby robotnik miał którędy wrócić (schodami, po linie albo drogą wiernych).',
     rycina: kruszce,
   },
   {
@@ -828,7 +836,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'pomieszczenia', grupa: 'prawa', nazwa: 'Pomieszczenia', lacina: 'Conclavia',
-    opis: `„Wyznacz pomieszczenie” pod płytą (albo klawisz B) i szablon: sypialnia (${POMIESZCZENIA.szablony.sypialnia.w}×${POMIESZCZENIA.szablony.sypialnia.h}), warsztat i kuźnia (${POMIESZCZENIA.szablony.warsztat.w}×${POMIESZCZENIA.szablony.warsztat.h}), korytarz, szyb i drabina. Pod kursorem widać obrys: jasny — wolno, czerwony — nie, i dlaczego. Pokój stoi na płaskiej, litej podłodze i ma wejście z boku, na poziomie podłogi albo o kafel wyżej lub niżej. Korytarz i szyb zaczynają się tam, gdzie stoi lud: korytarz ciągniesz palcem w bok (wysoki na ${POMIESZCZENIA.korytarzWys} kafle), szyb w dół — to proste schody, więc da się nim wrócić. Planu nie położysz w skale nie do ruszenia ani pod złotą kreską drogi wiernych; prawy przycisk na planie go skreśla.`,
+    opis: `„Wyznacz pomieszczenie” pod płytą (albo klawisz B) i szablon: sypialnia (${POMIESZCZENIA.szablony.sypialnia.w}×${POMIESZCZENIA.szablony.sypialnia.h}), warsztat i kuźnia (${POMIESZCZENIA.szablony.warsztat.w}×${POMIESZCZENIA.szablony.warsztat.h}), korytarz, szyb i lina (lina wisi od razu — nikt jej nie buduje). Pod kursorem widać obrys: jasny — wolno, czerwony — nie, i dlaczego. Pokój stoi na płaskiej, litej podłodze i ma wejście z boku, na poziomie podłogi albo o kafel wyżej lub niżej. Korytarz i szyb zaczynają się tam, gdzie stoi lud: korytarz ciągniesz palcem w bok (wysoki na ${POMIESZCZENIA.korytarzWys} kafle), szyb w dół — to proste schody, więc da się nim wrócić. Planu nie położysz w skale nie do ruszenia ani pod złotą kreską drogi wiernych; prawy przycisk na planie go skreśla.`,
     kiedy: 'Plan kują tylko robotnicy, których zaznaczysz i którym go wskażesz — wolni sami nic nie biorą. Kując plan, robotnik sięga też nad głowę.',
     rycina: pomieszczeniaRycina,
   },
@@ -875,15 +883,15 @@ export const TABLICE: Tablica[] = [
     rycina: ofiaraZyciaRycina,
   },
   {
-    id: 'drabina', grupa: 'prawa', nazwa: 'Drabina', lacina: 'Scala',
-    opis: `„Wyznacz pomieszczenie” → „drabina”: przeciągnij w górę od miejsca, gdzie stoi lud, do półki (${POMIESZCZENIA.drabinaMin}–${POMIESZCZENIA.drabinaMaks} szczebli). Drabinę wolno postawić tylko tam, gdzie na półkę nie da się wejść inaczej — gdy da się dojść stopniami albo inną drabiną, obrys jest czerwony. Budują ją zaznaczeni robotnicy, którym ją wskażesz: od dołu, szczebel po szczeblu, stojąc na tym, co już stoi. Po gotowej drabinie każdy z ludu wchodzi i schodzi w obie strony. Na zakrętach drogi wiernych szczeble dobijają sami robotnicy, którzy ją kopią — bez rozkazu.`,
-    kiedy: 'Gdy ktoś zszedł w głąb i nie ma jak wrócić, albo gdy półka z rudą wisi za wysoko.',
-    rycina: drabinaRycina,
+    id: 'lina', grupa: 'prawa', nazwa: 'Lina', lacina: 'Funis',
+    opis: `„Wyznacz pomieszczenie” → „lina”: przeciągnij w górę od miejsca, gdzie stoi lud, do półki (${POMIESZCZENIA.linaMin}–${POMIESZCZENIA.linaMaks} kafli). Linę wolno powiesić tylko tam, gdzie na półkę nie da się wejść inaczej — gdy da się dojść stopniami albo inną liną, obrys jest czerwony. Wieszasz ją ty, od razu — nikt z ludu jej nie buduje: z żelaznego haka spada zwój, rozwija się do podłogi, a lina chwilę się kołysze. ${POMIESZCZENIA.linyDarmowe} pierwszych lin jest za darmo, każda następna kosztuje ${POMIESZCZENIA.linaKrew} krwi. Po linie każdy z ludu wchodzi i schodzi w obie strony. Na zakrętach drogi wiernych lina spada sama, gdy zakręt jest wykopany — za darmo.`,
+    kiedy: 'Gdy ktoś zszedł w głąb i nie ma jak wrócić, albo gdy półka z rudą wisi za wysoko. Darmowe liny szybko się kończą.',
+    rycina: linaRycina,
   },
   {
     id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',
-    opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie: musi wykuć sobie w skale schody albo zbudować drabinę. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy. Lina wisi tylko przy wiadrze z jedzeniem.',
-    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych schodzi schodami, bez zeskoków — a na zakrętach, gdzie pod górę trzeba by wejść o dwa stopnie, robotnicy, kopiąc ją, dobijają szczeble. Kto nią zejdzie, wróci nią do sali, do wiadra. Podłogi pod drogą nikt z ludu nie kuje.',
+    opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie: musi wykuć sobie w skale schody albo wejść po linie, którą powiesisz. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy.',
+    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych schodzi schodami, bez zeskoków — a na zakrętach, gdzie pod górę trzeba by wejść o dwa stopnie, sama spada lina, gdy zakręt jest wykopany. Kto nią zejdzie, wróci nią do sali, do wiadra. Podłogi pod drogą nikt z ludu nie kuje.',
     rycina: postac(Race.GOBLIN, 'wspina'),
   },
   {

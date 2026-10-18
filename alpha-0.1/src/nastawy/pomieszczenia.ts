@@ -19,13 +19,13 @@ export const POMIESZCZENIA = {
   /** Szyb: proste schody w dół (stopień o kafel — da się nimi wrócić), najwyżej tyle stopni. */
   szybMaks: 24,
   /**
-   * Alpha, etap 3d: drabina — przeciągana w górę od miejsca, gdzie lud stoi, do półki, na którą inaczej się nie wejdzie
-   * (decyzja użytkownika: tylko tam, gdzie trzeba się wspinać). Najmniej i najwięcej szczebli; zaznaczeni robotnicy
-   * budują ją od dołu, szczebel po szczeblu, każdy przez tyle tików.
+   * Alpha: lina (zamiast drabiny z 3d — decyzja użytkownika 18.10) — przeciągana w górę od miejsca, gdzie lud stoi, do
+   * półki, na którą inaczej się nie wejdzie (tylko tam, gdzie trzeba się wspinać). Wiesza ją gracz, od razu — nikt jej
+   * nie buduje. Najkrótsza i najdłuższa (kafle); pierwsze `linyDarmowe` są za darmo, każda następna kosztuje `linaKrew`.
    */
-  drabinaMin: 2, drabinaMaks: 16, tikowNaSzczebel: 150,
-  /** Szukając, czy na półkę da się wejść bez drabiny, przegląda najwyżej tyle kafli. */
-  drabinaSzukanie: 5000,
+  linaMin: 2, linaMaks: 16, linyDarmowe: 5, linaKrew: 10,
+  /** Szukając, czy na półkę da się wejść bez liny, przegląda najwyżej tyle kafli. */
+  linaSzukanie: 5000,
   /** Najwięcej planów i pomieszczeń naraz. */
   maks: 12,
   /** Kując plan, robotnik sięga kilofem kafel wyżej niż zwykle — nad głowę (wnętrze ma 3 kafle wysokości). */
@@ -60,17 +60,17 @@ export const POMIESZCZENIA = {
   },
 };
 
-export type RodzajPomieszczenia = 'sypialnia' | 'warsztat' | 'kuznia' | 'korytarz' | 'szyb' | 'drabina';
+export type RodzajPomieszczenia = 'sypialnia' | 'warsztat' | 'kuznia' | 'korytarz' | 'szyb' | 'lina';
 
 /** Nazwy w mianowniku — przyciski, podpisy, kronika. */
 export const NAZWA_POMIESZCZENIA: Record<RodzajPomieszczenia, string> = {
-  sypialnia: 'sypialnia', warsztat: 'warsztat', kuznia: 'kuźnia', korytarz: 'korytarz', szyb: 'szyb', drabina: 'drabina',
+  sypialnia: 'sypialnia', warsztat: 'warsztat', kuznia: 'kuźnia', korytarz: 'korytarz', szyb: 'szyb', lina: 'lina',
 };
 
 /** W bierniku — kronika („wykuli kuźnię”). */
 export const BIERNIK_POMIESZCZENIA: Record<RodzajPomieszczenia, string> = {
-  sypialnia: 'sypialnię', warsztat: 'warsztat', kuznia: 'kuźnię', korytarz: 'korytarz', szyb: 'szyb', drabina: 'drabinę',
+  sypialnia: 'sypialnię', warsztat: 'warsztat', kuznia: 'kuźnię', korytarz: 'korytarz', szyb: 'szyb', lina: 'linę',
 };
 
 /** Kolejność szablonów na przyciskach i pod klawiszem B. */
-export const SZABLONY: RodzajPomieszczenia[] = ['sypialnia', 'warsztat', 'kuznia', 'korytarz', 'szyb', 'drabina'];
+export const SZABLONY: RodzajPomieszczenia[] = ['sypialnia', 'warsztat', 'kuznia', 'korytarz', 'szyb', 'lina'];

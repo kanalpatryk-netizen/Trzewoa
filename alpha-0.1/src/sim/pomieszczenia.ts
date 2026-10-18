@@ -6,9 +6,9 @@
  *    i szyb (proste schody w dół — da się nimi wrócić). Oba ostatnie zaczynają się tam, gdzie lud stoi.
  *  - Kują go tylko zaznaczeni robotnicy, którym plan wskażesz (rozkaz „kop” z polem `pom`, sim/polecenia.ts);
  *    wolni robotnicy sami nic nie biorą. Kując plan, robotnik sięga kafel wyżej niż zwykle — nad głowę.
- *  - Etap 3d: drabina — przeciągana w górę od miejsca, gdzie lud stoi, do półki; tylko tam, gdzie na półkę nie da się
- *    wejść inaczej (probaPlanu sprawdza drogę bez drabiny). Zaznaczeni robotnicy budują ją od dołu, szczebel po
- *    szczeblu (rozkaz „drabina”, world.drabina); gotowa znika z listy planów, a szczeble zostają w świecie.
+ *  - Lina (Alpha; w 3d — drabina, budowana przez robotników) — przeciągana w górę od miejsca, gdzie lud stoi, do
+ *    półki; tylko tam, gdzie na półkę nie da się wejść inaczej (probaPlanu sprawdza drogę bez liny). Wiesza ją gracz,
+ *    od razu (powiesLine, world.lina): pierwsze kilka za darmo, potem za krew. To nie plan — nie trafia na listę.
  *  - Gotowy warsztat: robotnik wskazany na warsztat przerabia złoto na dewocjonalia, które od razu stają się wiarą.
  *    Gotowa kuźnia: z żelaza wykuwa kolejne części zbroi rycerza (sim.zbroja; rysunek na rycerzu — etap 3f).
  *    Sypialnia: kto się w niej wyśpi, traci osłabienia (okaleczenie, zatrucie).
@@ -19,7 +19,7 @@ import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { stoi, szukajDrogi, budzetDrog, nowyTik } from './droga';
 import { PASSABLE } from './tiles';
-import { kto } from './dziennik';
+import { kto, zapisz } from './dziennik';
 import { POMIESZCZENIA as P, BIERNIK_POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 
 export interface Pomieszczenie {
@@ -49,8 +49,8 @@ export type ZdarzeniePom =
   | { rodzaj: 'krzyz'; x: number; y: number; ile: number; tik: number }
   | { rodzaj: 'czesc'; x: number; y: number; czesc: string; tik: number }
   | { rodzaj: 'wypoczety'; kto: number; tik: number }
-  /** etap 3d: robotnik dobił szczebel drabiny w kaflu (x, y) */
-  | { rodzaj: 'szczebel'; x: number; y: number; tik: number };
+  /** lina spadła w kolumnie x, od kafla y0 do y1 (gracz — powiesił ją gracz; inaczej sama, na zakręcie drogi wiernych) */
+  | { rodzaj: 'lina'; x: number; y0: number; y1: number; tik: number; gracz: boolean };
 
 /** Wynik sprawdzenia planu: kafle do wykucia albo powód, dla którego tu nie wolno. */
 export interface ProbaPlanu {
@@ -98,10 +98,10 @@ export function probaPlanu(sim: Sim, rodzaj: RodzajPomieszczenia, x: number, y: 
     for (const ex of [x0 - 1, x0 + s.w]) for (let ey = yb - 1; ey <= yb + 1; ey++) if (w.passable(ex, ey) && stoi(sim, ex, ey)) wejscie = true;
     for (let xx = x0; xx < x0 + s.w && !wejscie; xx++) if (w.passable(xx, yb) && stoi(sim, xx, yb)) wejscie = true;
     if (!wejscie) return zle(p, 'brak wejścia — z boku, na poziomie podłogi');
-  } else if (rodzaj === 'drabina') {
+  } else if (rodzaj === 'lina') {
     // od kafla, na którym stoi lud, w górę do półki (x2 — w którą stronę z niej zejść)
-    if (!w.passable(x, y) || !stoi(sim, x, y)) return zle({ ok: false, rodzaj, x, y, w: 1, h: 1, kafle: [] }, 'drabina zaczyna się tam, gdzie lud stoi');
-    const n = Math.max(P.drabinaMin, Math.min(P.drabinaMaks, y - y2));
+    if (!w.passable(x, y) || !stoi(sim, x, y)) return zle({ ok: false, rodzaj, x, y, w: 1, h: 1, kafle: [] }, 'lina zaczyna się tam, gdzie lud stoi');
+    const n = Math.max(P.linaMin, Math.min(P.linaMaks, y - y2));
     const kafle: number[] = [];
     for (let k = 1; k <= n; k++) if (w.inb(x, y - k)) kafle.push(w.idx(x, y - k));
     const yt = y - n;
@@ -110,11 +110,15 @@ export function probaPlanu(sim: Sim, rodzaj: RodzajPomieszczenia, x: number, y: 
     const strona = naPolke(pierwsza) ? pierwsza : naPolke(-pierwsza) ? -pierwsza : 0;
     p = { ok: true, rodzaj, x, y: yt, w: 1, h: n + 1, kafle, kier: strona || pierwsza };
     if (kafle.length < n) return zle(p, 'za blisko brzegu góry');
-    if (kafle.some((i) => PASSABLE[w.tile[i]] !== 1)) return zle(p, 'drabina stoi w pustce — skały nie przebije');
-    if (kafle.some((i) => w.drabina[i] === 1)) return zle(p, 'tu już jest drabina');
+    if (kafle.some((i) => PASSABLE[w.tile[i]] !== 1)) return zle(p, 'lina wisi w pustce — skały nie przebije');
+    if (kafle.some((i) => w.lina[i] === 1)) return zle(p, 'tu już wisi lina');
     if (!strona) return zle(p, 'u góry nie ma półki, na którą by się zeszło');
-    // decyzja użytkownika: drabina tylko tam, gdzie na półkę nie da się wejść inaczej
-    if (daSieWejsc(sim, x, y, x + strona, yt)) return zle(p, 'tu da się wejść bez drabiny');
+    // decyzja użytkownika: lina tylko tam, gdzie na półkę nie da się wejść inaczej
+    if (daSieWejsc(sim, x, y, x + strona, yt)) return zle(p, 'tu da się wejść bez liny');
+    // lina to nie plan: nie zajmuje miejsca na liście planów, a kosztuje krew (po kilku darmowych)
+    const k = cenaLiny(sim);
+    if (k > 0 && sim.krew - sim.rezerwa.krew < k) return zle(p, `nie starczy krwi — lina kosztuje ${k}`);
+    return p;
   } else {
     if (!w.passable(x, y) || !stoi(sim, x, y)) {
       return zle({ ok: false, rodzaj, x, y, w: 1, h: 1, kafle: [] }, rodzaj === 'korytarz' ? 'korytarz zaczyna się tam, gdzie lud stoi' : 'szyb zaczyna się tam, gdzie lud stoi');
@@ -139,8 +143,8 @@ export function probaPlanu(sim: Sim, rodzaj: RodzajPomieszczenia, x: number, y: 
     const xx = i % w.w, yy = (i / w.w) | 0;
     if (w.solid(xx, yy) && w.hardness(xx, yy) <= 0) return zle(p, 'tej skały nie da się ruszyć');
   }
-  // nic pod złotą kreską drogi wiernych — dół w niej odciąłby pobożnych (drabina niczego nie kuje)
-  const sciezka = sim.planDrogi && rodzaj !== 'drabina' ? new Set(sim.planDrogi.sciezka) : null;
+  // nic pod złotą kreską drogi wiernych — dół w niej odciąłby pobożnych
+  const sciezka = sim.planDrogi ? new Set(sim.planDrogi.sciezka) : null;
   if (sciezka && p.kafle.some((i) => sciezka.has(i - w.w))) return zle(p, 'pod złotą kreską drogi wiernych');
   const zajete = new Set<number>();
   for (const q of sim.pomieszczenia) for (const i of q.kafle) zajete.add(i);
@@ -150,24 +154,46 @@ export function probaPlanu(sim: Sim, rodzaj: RodzajPomieszczenia, x: number, y: 
 }
 
 /**
- * Etap 3d: czy z kafla (x, y) da się dojść na (ex, ey) bez nowej drabiny — szukaniem drogi ludu (wchodzi o stopień,
- * zeskakuje nisko; istniejące drabiny się liczą). Poza budżetem tiku: plan sprawdza się rzadko, na prośbę gracza.
+ * Czy z kafla (x, y) da się dojść na (ex, ey) bez nowej liny — szukaniem drogi ludu (wchodzi o stopień, zeskakuje
+ * nisko; liny, które już wiszą, się liczą). Poza budżetem tiku: sprawdza się rzadko, na prośbę gracza.
  */
 function daSieWejsc(sim: Sim, x: number, y: number, ex: number, ey: number): boolean {
   const ktos = { x: x + 0.5, y, race: 0 } as Creature;
   const zostalo = budzetDrog();
   nowyTik(1);
-  const d = szukajDrogi(sim, ktos, (_i, xx, yy) => xx === ex && yy === ey, P.drabinaSzukanie);
+  const d = szukajDrogi(sim, ktos, (_i, xx, yy) => xx === ex && yy === ey, P.linaSzukanie);
   nowyTik(zostalo);
   return !!d;
 }
 
-/** Etap 3d: następny szczebel do zbudowania — najniższy, którego jeszcze nie ma (albo null). */
-export function nastepnySzczebel(sim: Sim, pom: Pomieszczenie): [number, number] | null {
+/** Ile krwi kosztuje teraz lina: pierwsze `linyDarmowe` za darmo, każda następna `linaKrew`. */
+export function cenaLiny(sim: Sim): number {
+  return (sim.lud.liny ?? 0) < P.linyDarmowe ? 0 : P.linaKrew;
+}
+
+/** Ile darmowych lin jeszcze zostało. */
+export function darmoweLiny(sim: Sim): number {
+  return Math.max(0, P.linyDarmowe - (sim.lud.liny ?? 0));
+}
+
+/**
+ * Wiesza linę z próby (gracz puścił przeciąganie): płaci krew (jeśli darmowe się skończyły), lina od razu wisi
+ * w kaflach próby, a rysunek pokazuje, jak spada z haka i się napina. Zwraca powód odmowy albo null.
+ */
+export function powiesLine(sim: Sim, p: ProbaPlanu): string | null {
+  if (p.rodzaj !== 'lina') return 'to nie lina';
+  if (!p.ok) return p.powod ?? 'tu nie wolno';
+  const k = cenaLiny(sim);
+  if (k > 0 && sim.krew - sim.rezerwa.krew < k) return `nie starczy krwi — lina kosztuje ${k}`;
+  sim.krew -= k;
   const w = sim.world;
-  let best = -1;
-  for (const i of pom.kafle) if (w.drabina[i] === 0 && (best < 0 || i > best)) best = i;
-  return best < 0 ? null : [best % w.w, (best / w.w) | 0];
+  for (const i of p.kafle) w.lina[i] = 1;
+  sim.lud.liny = (sim.lud.liny ?? 0) + 1;
+  const y0 = p.y, y1 = p.y + p.h - 2;
+  zdarzenie(sim, { rodzaj: 'lina', x: p.x, y0, y1, tik: sim.tick, gracz: true });
+  sim.gdzie(p.x + 0.5, y0 + 0.5).log(k > 0 ? `Powiesiłeś linę za ${k} krwi — można nią wejść i zejść.` : `Powiesiłeś linę (darmowych zostało: ${darmoweLiny(sim)}).`, 'swiat', 'lina');
+  zapisz(sim, 'praca', `gracz powiesił linę (${p.x}, ${y0}–${y1})${k > 0 ? ` za ${k} krwi` : ' za darmo'}`, p.x, y0);
+  return null;
 }
 
 /** Kładzie plan z udanej próby. */
@@ -186,10 +212,9 @@ export function skreslPlan(sim: Sim, pom: Pomieszczenie): void {
   for (const c of sim.creatures) if (c.polecenie?.pom === pom.id) c.polecenie = undefined;
 }
 
-/** Ile kafli planu jeszcze stoi (drabina: ilu szczebli jeszcze nie ma). */
+/** Ile kafli planu jeszcze stoi. */
 export function zostaloKafli(sim: Sim, pom: Pomieszczenie): number {
   let n = 0;
-  if (pom.rodzaj === 'drabina') { for (const i of pom.kafle) if (sim.world.drabina[i] === 0) n++; return n; }
   for (const i of pom.kafle) if (sim.world.solid(i % sim.world.w, (i / sim.world.w) | 0)) n++;
   return n;
 }
@@ -264,32 +289,14 @@ export function tikPomieszczen(sim: Sim): void {
       pom.gotowe = true; pom.gotoweOd = sim.tick;
       zdarzenie(sim, { rodzaj: 'gotowe', pom: pom.id, tik: sim.tick });
       // (plan w pustce nikt nie kuł — pomieszczenie urządza się od razu)
-      sim.gdzie(pom.x + pom.w / 2, pom.y + pom.h / 2).log(pom.rodzaj === 'drabina' ? 'Robotnicy zbudowali drabinę — można nią wejść i zejść.'
-        : pom.doKucia === 0 ? `Urządziłeś ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.` : `Robotnicy wykuli ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.`, 'swiat');
+      sim.gdzie(pom.x + pom.w / 2, pom.y + pom.h / 2).log(pom.doKucia === 0 ? `Urządziłeś ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.` : `Robotnicy wykuli ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.`, 'swiat');
       for (const c of sim.creatures) {
-        if (c.polecenie?.pom !== pom.id || (c.polecenie.typ !== 'kop' && c.polecenie.typ !== 'drabina')) continue;
+        if (c.polecenie?.pom !== pom.id || c.polecenie.typ !== 'kop') continue;
         c.polecenie = undefined; c.czynnosc = undefined; c.jt = 0;
-        sim.efekt(c.x, c.y, 'mysl', pom.rodzaj === 'drabina' ? 'drabina gotowa' : 'wykute');
+        sim.efekt(c.x, c.y, 'mysl', 'wykute');
       }
       if (!czyPokoj(pom.rodzaj)) sim.pomieszczenia = sim.pomieszczenia.filter((p) => p !== pom);
     }
-  }
-  // etap 3d: drabina rośnie szczebel po szczeblu — buduje ten, kto stoi pod najniższym brakującym
-  for (const pom of sim.pomieszczenia) {
-    if (pom.gotowe || pom.rodzaj !== 'drabina') continue;
-    const sz = nastepnySzczebel(sim, pom);
-    if (!sz) continue;
-    const budowniczy = sim.creatures.filter((c) => !c.dead && c.czynnosc === 'buduje' && c.polecenie?.typ === 'drabina' && c.polecenie.pom === pom.id
-      && c.polecenie.x === sz[0] && c.polecenie.y === sz[1] && Math.floor(c.y) === sz[1] + 1 && Math.abs(Math.floor(c.x) - sz[0]) <= 1);
-    if (!budowniczy.length) continue;
-    pom.postep = (pom.postep ?? 0) + (1 + 0.5 * (budowniczy.length - 1)) / P.tikowNaSzczebel;
-    if (pom.postep < 1) continue;
-    pom.postep = 0;
-    const i = sim.world.idx(sz[0], sz[1]);
-    if (PASSABLE[sim.world.tile[i]] === 1) sim.world.drabina[i] = 1;
-    zdarzenie(sim, { rodzaj: 'szczebel', x: sz[0], y: sz[1], tik: sim.tick });
-    // budowniczy od razu wchodzi szczebel wyżej (inaczej czekałby do końca zamiaru)
-    for (const c of budowniczy) c.jt = 0;
   }
   for (const pom of sim.pomieszczenia) {
     if (!pom.gotowe || (pom.rodzaj !== 'warsztat' && pom.rodzaj !== 'kuznia')) continue;

@@ -44,8 +44,8 @@ export function serialize(sim: Sim): string {
     creatures: sim.creatures.filter((c) => !c.dead).map((c) => ({ ...c, droga: undefined, drogaI: undefined, drogaKopie: undefined })),
     tile: toB64(w.tile), water: toB64(w.water), magma: toB64(w.magma),
     mem: toB64(w.mem), ever: toB64(w.ever), lastSeen: toB64(w.lastSeen), slad: toB64(w.slad),
-    // etap 3d: szczeble drabin
-    drabina: toB64(w.drabina),
+    // liny (w zapisach z 3d pole nazywało się „drabina” — szczeble wczytują się jako liny)
+    lina: toB64(w.lina),
     kucie: [...w.kucie],
   });
 }
@@ -62,7 +62,8 @@ export function restore(json: string): Sim | null {
   if (!SWIAT.plyny) { w.water.fill(0); w.magma.fill(0); }
   fromB64(data.mem, w.mem); fromB64(data.ever, w.ever); fromB64(data.lastSeen, w.lastSeen);
   if (data.slad) fromB64(data.slad, w.slad);
-  if (data.drabina) fromB64(data.drabina, w.drabina);
+  if (data.lina) fromB64(data.lina, w.lina);
+  else if (data.drabina) fromB64(data.drabina, w.lina);
   if (Array.isArray(data.kucie)) for (const [i, f] of data.kucie) if (typeof i === 'number' && typeof f === 'number') w.kucie.set(i, f);
 
   sim.tick = data.tick;

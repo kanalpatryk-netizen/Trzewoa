@@ -103,6 +103,9 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   if (r.v < 0.6 && postepOdmowy(sim, c, czas) !== null) return 'odmawia';
   const wspina = (sim.tick - (c.wspina ?? -99)) < 4 && !sim.world.solid(Math.floor(c.x), Math.floor(c.y) + 1);
   if (wspina) return 'wspina';
+  // Alpha: na linie (nie na podłodze pod nią) — wisi na rękach i wspina się, ręka za ręką
+  const lx = Math.floor(c.x), ly = Math.floor(c.y);
+  if (sim.world.inb(lx, ly) && sim.world.lina[sim.world.idx(lx, ly)] === 1 && !sim.world.solid(lx, ly + 1)) return 'wspina';
   const przy = (x: number, y: number, d: number) => Math.abs(x + 0.5 - c.x) <= d && Math.abs(y + 0.5 - c.y) <= d + 0.6;
   const stoi = r.v < 0.6;
   // Alpha, etap 3c: przy stole albo kowadle — z młotkiem; w sypialni — leży na posłaniu

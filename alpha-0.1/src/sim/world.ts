@@ -51,10 +51,10 @@ export class World {
   /** Alpha, etap 3d: ołtarz — kafel, na którym stoi (środek sali, pod szybem ze światłem). */
   oltarz = { x: (WORLD_W / 2) | 0, y: SURFACE_Y + 2 };
   /**
-   * Alpha, etap 3d: szczeble drabin (1 — w tym kaflu pustki stoi zbudowany szczebel). Po drabinie lud wchodzi i schodzi
-   * (sim/droga.ts: stoi), a ciążenie go nie ściąga. Kafel, który przestaje być pustką, traci szczebel.
+   * Alpha: liny (1 — przez ten kafel pustki wisi lina; dawniej, w 3d, drabiny ze szczeblami). Po linie lud wchodzi
+   * i schodzi (sim/droga.ts: stoi), a ciążenie go nie ściąga. Kafel, który przestaje być pustką, traci linę.
    */
-  drabina = new Uint8Array(WORLD_W * WORLD_H);
+  lina = new Uint8Array(WORLD_W * WORLD_H);
   /** Alpha, etap 3d: wnętrze sali startowej (kafle od–do) — nic tu nie wyrośnie, co zagrodziłoby drogę do ołtarza. */
   salaOltarza = { x0: 0, x1: -1, y0: 0, y1: -1 };
   /**
@@ -78,7 +78,7 @@ export class World {
     const i = y * this.w + x;
     this.tile[i] = t;
     if (this.kucie.size) this.kucie.delete(i);
-    if (PASSABLE[t] !== 1) this.drabina[i] = 0;
+    if (PASSABLE[t] !== 1) this.lina[i] = 0;
   }
   passable(x: number, y: number): boolean { return this.inb(x, y) ? PASSABLE[this.tile[y * this.w + x]] === 1 : false; }
   solid(x: number, y: number): boolean { return !this.passable(x, y); }

@@ -138,7 +138,7 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Pomieszczenia',
-    wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz, szyb i drabinę. Kują je i budują robotnicy, którym plan wskażesz.',
+    wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb — kują je robotnicy, którym plan wskażesz. Linę wieszasz sam, od razu.',
     czasowniki: [],
     etapy: [
       {
@@ -162,7 +162,7 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true,
       },
     ],
-    koniec: 'Korytarz i szyb ciągniesz palcem od miejsca, gdzie stoi lud — szyb schodzi prostymi schodami, więc da się nim wrócić. Drabinę ciągniesz w górę do półki, na którą inaczej się nie wejdzie.',
+    koniec: 'Korytarz i szyb ciągniesz palcem od miejsca, gdzie stoi lud — szyb schodzi prostymi schodami, więc da się nim wrócić. Linę ciągniesz w górę do półki, na którą inaczej się nie wejdzie — pięć pierwszych jest za darmo, potem kosztują krew.',
   },
   {
     tytul: 'Ołtarz',
@@ -199,7 +199,7 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: ['zasiej'],
     etapy: [
       {
-        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — węższym otworem do sali, na dno kolumny pod nim. Kto wykopie pod wiadrem dziurę, sprowadzi je niżej. Do tych w głębi samo nie zjedzie — zaniosą im robotnicy, a kto zszedł drogą wiernych, wróci nią po szczeblach na zakrętach. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
+        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — węższym otworem do sali, na dno kolumny pod nim. Kto wykopie pod wiadrem dziurę, sprowadzi je niżej. Do tych w głębi samo nie zjedzie — zaniosą im robotnicy, a kto zszedł drogą wiernych, wróci nią po linach na zakrętach. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
         rozumiem: true,
         wskaz: (s) => { const c = s.najblizszeWiadro(); return c ? { typ: 'swiat', cel: c } : null; },
       },

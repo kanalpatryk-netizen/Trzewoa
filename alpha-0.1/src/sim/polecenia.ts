@@ -25,10 +25,10 @@ import { szukajDrogi, szukajKopiac, kosztKuciaLudu, budzetDrog, nowyTik, stoi, p
 import { czoloDrogi, nieWykopane } from './pielgrzymka';
 import { zapisz, kto } from './dziennik';
 import { kruszecKafla, type RodzajKruszcu } from './kruszce';
-import { kafleDoKucia, siegaPlanu, miejsceWPom, nastepnySzczebel, type Pomieszczenie } from './pomieszczenia';
+import { kafleDoKucia, siegaPlanu, miejsceWPom, type Pomieszczenie } from './pomieszczenia';
 import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
 
-export type TypPolecenia = 'idz' | 'kop' | 'droga' | 'praca' | 'sen' | 'drabina';
+export type TypPolecenia = 'idz' | 'kop' | 'droga' | 'praca' | 'sen';
 
 export interface Polecenie {
   typ: TypPolecenia;
@@ -44,7 +44,7 @@ export interface Polecenie {
   zyla?: RodzajKruszcu; zx?: number; zy?: number; zylaIle?: number;
   /**
    * Alpha, etap 3c: pomieszczenie (sim/pomieszczenia.ts) — plan do wykucia („kop”), warsztat albo kuźnia („praca”),
-   * sypialnia („sen”); etap 3d: drabina do zbudowania („drabina”, x, y — szczebel, który teraz buduje)
+   * sypialnia („sen”)
    */
   pom?: number;
 }
@@ -257,21 +257,6 @@ function kujPlan(sim: Sim, c: Creature, pom: Pomieszczenie): string | null {
   return null;
 }
 
-/** Etap 3d: robotnik idzie budować drabinę — staje pod najniższym brakującym szczeblem (na podłodze albo szczeblu niżej). */
-function budujDrabine(sim: Sim, c: Creature, pom: Pomieszczenie): string | null {
-  const w = sim.world;
-  const sz = nastepnySzczebel(sim, pom);
-  if (!sz) return odmow(sim, c, 'drabina już stoi');
-  const [rx, ry] = sz;
-  const tam = (x: number, y: number) => y === ry + 1 && (x === rx || (Math.abs(x - rx) === 1 && w.solid(x, y + 1))) && stoi(sim, x, y);
-  if (!tam(Math.floor(c.x), Math.floor(c.y)) && !drogaTeraz(sim, c, tam, P.szukanieDrogi)) return odmow(sim, c, 'nie dojdę do drabiny');
-  przerwij(sim, c);
-  c.polecenie = { typ: 'drabina', x: rx, y: ry, od: sim.tick, pom: pom.id };
-  c.odmowa = undefined;
-  zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — buduj drabinę`, rx, ry);
-  return null;
-}
-
 /** Do gotowego pomieszczenia: pracować przy stole albo kowadle („praca”) albo spać na posłaniu („sen”). */
 function doPomieszczenia(sim: Sim, c: Creature, pom: Pomieszczenie, typ: 'praca' | 'sen', n: number): string | null {
   const [mx, my] = miejsceWPom(pom, n);
@@ -299,8 +284,7 @@ export function wydajNaPomieszczenie(sim: Sim, ids: readonly number[], pom: Pomi
   for (const c of lud) {
     const rola = rolaPostaci(c);
     let powod: string | null;
-    if (!pom.gotowe && pom.rodzaj === 'drabina') powod = rola === 'robotnik' ? budujDrabine(sim, c, pom) : odmow(sim, c, 'drabiny budują tylko robotnicy');
-    else if (!pom.gotowe) powod = rola === 'robotnik' ? kujPlan(sim, c, pom) : odmow(sim, c, 'kują tylko robotnicy');
+    if (!pom.gotowe) powod = rola === 'robotnik' ? kujPlan(sim, c, pom) : odmow(sim, c, 'kują tylko robotnicy');
     else if (pom.rodzaj === 'sypialnia') powod = doPomieszczenia(sim, c, pom, 'sen', zajete);
     else if (rola === 'robotnik') powod = doPomieszczenia(sim, c, pom, 'praca', zajete);
     else { const [mx, my] = miejsceWPom(pom, 2); powod = wydajPolecenie(sim, c, 'idz', mx, my); }

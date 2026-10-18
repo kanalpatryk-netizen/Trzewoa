@@ -4,7 +4,6 @@ import { RACES, Race } from './races';
 import { PASSABLE, T } from './tiles';
 import { WORLD_W, WORLD_H } from './world';
 import { wolny, stoi, uchwyt, nadOgniem, przepasc, szukajKopiac, szukajDrogi, budzetDrog, nowyTik } from './droga';
-import { rolaPostaci } from './lud';
 import { zdarzenie } from './pomieszczenia';
 import { Job } from './creatures';
 import { PLAN_DROGI, PIELGRZYMKA } from '../nastawy/rytual';
@@ -22,7 +21,8 @@ import { REMAKE } from '../nastawy/lud';
  *
  * Remake v2: lud nie ma już lin ani klamer i wchodzi najwyżej o stopień, więc plan liczy się tak,
  * jak pójdą — od siedziby w dół pod rdzeń (szybem się zsuwają, skałę kują po drodze); trasa nie musi
- * się dać przejść pod górę. Kafle planu wciąż trzymają się sucho (próg), ale nie są już drabiną.
+ * się dać przejść pod górę. Kafle planu wciąż trzymają się sucho (próg). Alpha (jedno wiadro): na zakrętach, którymi
+ * pod górę się nie wejdzie, sama spada lina — tak lud wraca z głębi do wiadra.
  */
 export interface PlanDrogi {
   klan: number;
@@ -33,8 +33,8 @@ export interface PlanDrogi {
   kopac: number[];
   /** Alpha: droga schodami (nigdzie zeskoku wyższego niż o kafel; pod górę nie przejdzie się tylko na zakrętach). */
   dwukierunkowa?: boolean;
-  /** Alpha (jedno wiadro): kafle drogi, w których robotnicy dobijają szczebel — na zakrętach, żeby dało się wrócić. */
-  szczeble?: number[];
+  /** Alpha (jedno wiadro): kafle drogi, przez które sama spada lina — na zakrętach, żeby dało się wrócić. */
+  liny?: number[];
   /** (kafle `sciezka` jako zbiór — liczony raz, przy pierwszym pytaniu; sim/droga.ts: podDroga) */
   zbior?: Set<number>;
 }
@@ -127,16 +127,16 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0, dwukierunkowa =
   if (!r) return proba < 2 ? planujDroge(sim, klanId, proba + 1, dwukierunkowa) : dwukierunkowa ? planujDroge(sim, klanId, 0, false) : null;
   // kreska od przedsionka do siedziby (tak ją czytają kopacze i pielgrzymi — od końca)
   const sciezka = [r.start, ...r.droga].reverse();
-  return { klan: klanId, tick: sim.tick, sciezka, kopac: sciezka.filter((i) => skala(i)), dwukierunkowa, szczeble: szczebleDrogi(sim, sciezka) };
+  return { klan: klanId, tick: sim.tick, sciezka, kopac: sciezka.filter((i) => skala(i)), dwukierunkowa, liny: linyDrogi(sim, sciezka) };
 }
 
 /**
- * Alpha (jedno wiadro): szczeble na zakrętach drogi wiernych. Schodami da się zejść, ale tam, gdzie droga skręca,
+ * Alpha (jedno wiadro): liny na zakrętach drogi wiernych. Schodami da się zejść, ale tam, gdzie droga skręca,
  * nie wejdzie się z powrotem — a jedzenie zjeżdża już tylko szybem do sali, więc kopacze w głębi i warta pod
  * rdzeniem nie miały jak wrócić się najeść. Liczone na drodze wykopanej „w wyobraźni”: krok po kroku od przedsionka
- * w górę; gdzie z kafla nie dojdzie się do następnego, szczebel w następnym, w tym, w obu albo w dwóch kolejnych.
+ * w górę; gdzie z kafla nie dojdzie się do następnego, lina w następnym, w tym, w obu albo w dwóch kolejnych.
  */
-function szczebleDrogi(sim: Sim, sciezka: number[]): number[] {
+function linyDrogi(sim: Sim, sciezka: number[]): number[] {
   const w = sim.world, W = w.w;
   const zostalo = budzetDrog();
   const bylo = sciezka.map((i) => w.tile[i]);
@@ -146,38 +146,35 @@ function szczebleDrogi(sim: Sim, sciezka: number[]): number[] {
     const c = { x: (a % W) + 0.5, y: (a / W) | 0, race: Race.GOBLIN } as Parameters<typeof szukajDrogi>[1];
     return !!szukajDrogi(sim, c, (i) => i === b, 80);
   };
-  const szczeble: number[] = [];
+  const liny: number[] = [];
   for (let k = 0; k + 1 < sciezka.length; k++) {
     const a = sciezka[k], b = sciezka[k + 1];
     if (dojdzie(a, b)) continue;
     for (const proba of [[b], [a], [a, b], [b, sciezka[k + 2] ?? b]]) {
-      const nowe = proba.filter((i) => !w.drabina[i]);
-      for (const i of nowe) w.drabina[i] = 1;
-      if (dojdzie(a, b)) { szczeble.push(...nowe); break; }
-      for (const i of nowe) w.drabina[i] = 0;
+      const nowe = proba.filter((i) => !w.lina[i]);
+      for (const i of nowe) w.lina[i] = 1;
+      if (dojdzie(a, b)) { liny.push(...nowe); break; }
+      for (const i of nowe) w.lina[i] = 0;
     }
   }
   sciezka.forEach((i, k) => { w.tile[i] = bylo[k]; });
-  for (const i of szczeble) w.drabina[i] = 0;
+  for (const i of liny) w.lina[i] = 0;
   nowyTik(zostalo);
-  return szczeble;
+  return liny;
 }
 
 /**
- * Alpha (jedno wiadro): robotnik, który stoi przy wykopanym zakręcie drogi wiernych, dobija w nim szczebel
- * (ta sama drabina i to samo dobicie — błysk i pył — co przy drabinach z planu, render/pomieszczenia.ts).
+ * Alpha (jedno wiadro; decyzja użytkownika 18.10): gdy zakręt drogi wiernych jest już wykopany, lina spada tam sama —
+ * bez robotników i bez krwi (nie liczy się do lin gracza). Rysunek (zwój rozwija się z haka) — render/pomieszczenia.ts.
  */
-function dobijajSzczeble(sim: Sim, p: PlanDrogi): void {
+function spuscLiny(sim: Sim, p: PlanDrogi): void {
   const w = sim.world, W = w.w;
-  for (const i of p.szczeble ?? []) {
-    if (w.drabina[i] || PASSABLE[w.tile[i]] !== 1 || w.magma[i] > 0) continue;
+  for (const i of p.liny ?? []) {
+    if (w.lina[i] || PASSABLE[w.tile[i]] !== 1 || w.magma[i] > 0) continue;
     const x = i % W, y = (i / W) | 0;
-    const kto = sim.creatures.find((c) => !c.dead && rolaPostaci(c) === 'robotnik' && Math.abs(c.x - (x + 0.5)) <= 2.5 && Math.abs(c.y - y) <= 2.5);
-    if (!kto) continue;
-    w.drabina[i] = 1;
-    zdarzenie(sim, { rodzaj: 'szczebel', x, y, tik: sim.tick });
-    zapisz(sim, 'praca', `robotnik #${kto.id} dobił szczebel na zakręcie drogi wiernych (${x}, ${y}) — tędy wróci się pod górę`, x, y);
-    return;
+    w.lina[i] = 1;
+    zdarzenie(sim, { rodzaj: 'lina', x, y0: y, y1: y, tik: sim.tick, gracz: false });
+    zapisz(sim, 'praca', `na zakręcie drogi wiernych (${x}, ${y}) spadła lina — tędy wróci się pod górę`, x, y);
   }
 }
 
@@ -326,7 +323,7 @@ export function drazDrogeWiernym(sim: Sim): void {
   // (powoli) tylko wtedy, gdy pielgrzymi czekają, a żaden robotnik akurat nie kopie
   if (REMAKE) {
     const w = sim.world;
-    dobijajSzczeble(sim, p);
+    spuscLiny(sim, p);
     for (const i of p.sciezka) {
       w.prog[i] = 1;
       if (w.water[i] > 0 || w.magma[i] > 0) { w.water[i] = 0; w.magma[i] = 0; }

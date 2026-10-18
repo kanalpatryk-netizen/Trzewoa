@@ -6,7 +6,7 @@ import { Oltarz, oltarzPod } from '../../render/oltarz';
 import { rysujOknoOltarza, type PoleOltarza } from '../../render/okno-oltarza';
 import { odprawRytual, rytualOltarza } from '../../sim/oltarz';
 import { NAZWA_RYTUALU } from '../../nastawy/oltarz';
-import { probaPlanu, polozPlan, skreslPlan, pomieszczenieW, czyPokoj, type ProbaPlanu } from '../../sim/pomieszczenia';
+import { probaPlanu, polozPlan, skreslPlan, pomieszczenieW, czyPokoj, powiesLine, cenaLiny, darmoweLiny, type ProbaPlanu } from '../../sim/pomieszczenia';
 import { SZABLONY, NAZWA_POMIESZCZENIA, BIERNIK_POMIESZCZENIA, type RodzajPomieszczenia } from '../../nastawy/pomieszczenia';
 import { OKRUCH } from '../../nastawy/kruszce';
 import { rysujTrupy } from '../../render/trupy';
@@ -459,14 +459,14 @@ export class EkranGry implements Ekran {
     if (this.szablon || sim.pomieszczenia.length) odkrycia.odkryj('pomieszczenia');
     for (const pom of sim.pomieszczenia) if (pom.gotowe && (pom.rodzaj === 'warsztat' || pom.rodzaj === 'kuznia' || pom.rodzaj === 'sypialnia')) odkrycia.odkryj(pom.rodzaj);
     // etap 3d: ołtarz — gdy ktoś go zobaczy (albo po cichu po chwili); rytuał — jego tablica przy pierwszym odprawieniu;
-    // drabina — przy pierwszym planie drabiny
+    // lina — gdy pierwszy raz bierzesz szablon liny albo coś już wisi
     const o = sim.world.oltarz;
     if (this.oknoOltarza) odkrycia.odkryj('oltarz');
     if (sim.tick > 1200 && sim.world.ever[sim.world.idx(o.x, o.y)]) cicho('oltarz');
     const rt = rytualOltarza(sim);
     if (rt) odkrycia.odkryj(rt.rodzaj === 'modlitwa' ? 'rytual-modlitwa' : rt.rodzaj === 'szal' ? 'rytual-szal' : rt.rodzaj === 'wskrzeszenie' ? 'rytual-wskrzeszenie'
       : rt.rodzaj === 'ofiaraKrwi' ? 'rytual-ofiara-krwi' : 'rytual-ofiara-zycia');
-    if (this.szablon === 'drabina' || sim.pomieszczenia.some((p) => p.rodzaj === 'drabina')) odkrycia.odkryj('drabina');
+    if (this.szablon === 'lina' || (sim.lud.liny ?? 0) > 0) odkrycia.odkryj('lina');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
     if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
@@ -917,7 +917,8 @@ export class EkranGry implements Ekran {
     this.oltarz.zbierz(sim, teraz, this.urobki);
     this.oltarz.rysujNad(ctx, sim, cam, teraz, this.oltarzPodKursorem());
     const proba = this.probaPodKursorem();
-    if (proba) this.pokoje.podglad(ctx, sim, cam, proba, teraz, this.ciagniecie ? undefined : this.szablon && !czyPokoj(this.szablon) ? `${NAZWA_POMIESZCZENIA[this.szablon]} — przeciągnij` : undefined);
+    if (proba) this.pokoje.podglad(ctx, sim, cam, proba, teraz, this.szablon === 'lina' ? this.cenaLinyPodpis(!this.ciagniecie)
+      : this.ciagniecie ? undefined : this.szablon && !czyPokoj(this.szablon) ? `${NAZWA_POMIESZCZENIA[this.szablon]} — przeciągnij` : undefined);
     // droga pielgrzymów: którędy wierni zejdą pod rdzeń (przekopują ją sami — gracz nie drąży)
     const plan = aktualnyPlan(sim);
     if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
@@ -1289,12 +1290,31 @@ export class EkranGry implements Ekran {
     this.nasluch?.({ typ: 'oltarz', rodzaj: b.rodzaj });
   }
 
+  /** Podpis pod liną pod kursorem: ile kosztuje (albo ile darmowych zostało) i — przed przeciągnięciem — co zrobić. */
+  private cenaLinyPodpis(przedCiagnieciem: boolean): string {
+    const cena = cenaLiny(this.sim);
+    const ile = cena ? `${cena} krwi` : `za darmo (zostało ${darmoweLiny(this.sim)})`;
+    return `lina — ${ile}${przedCiagnieciem ? ' — przeciągnij w górę do półki' : ''}`;
+  }
+
   /** Kładzie plan z próby (albo mówi, czemu tu nie wolno). */
   private polozPlanZProby(p: ProbaPlanu | null): void {
     const { ui, sim } = this;
     this.ciagniecie = null;
     if (!p) return;
     if (!p.ok) { ui.say(`Tu nie: ${p.powod}.`, sim.tick); this.app.gesty.odmowa(); return; }
+    // lina: wisi od razu — nikt jej nie buduje (pierwsze kilka za darmo, potem za krew)
+    if (p.rodzaj === 'lina') {
+      const cena = cenaLiny(sim);
+      const powod = powiesLine(sim, p);
+      if (powod) { ui.say(`Tu nie: ${powod}.`, sim.tick); this.app.gesty.odmowa(); return; }
+      this.falaRozkazu = { x: p.x + 0.5, y: p.y + p.h, t: performance.now(), ok: true };
+      ui.say(cena ? `Lina wisi — kosztowała ${cena} krwi.` : `Lina wisi — za darmo (zostało ${darmoweLiny(sim)}).`, sim.tick);
+      this.app.gesty.klik();
+      this.nasluch?.({ typ: 'plan', rodzaj: p.rodzaj });
+      this.dirty = true;
+      return;
+    }
     polozPlan(sim, p);
     this.falaRozkazu = { x: p.x + p.w / 2, y: p.y + p.h, t: performance.now(), ok: true };
     ui.say(`Wyznaczyłeś ${BIERNIK_POMIESZCZENIA[p.rodzaj]}. Zaznacz robotników i dotknij planu — wykują go.`, sim.tick);
