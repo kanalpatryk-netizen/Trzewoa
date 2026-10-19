@@ -67,6 +67,8 @@ export function przygotujObserwowana(): void {
   ustawienia.trybDeweloperski = false;
   ustawienia.samouczekZrobiony = true;
   ustawienia.autozapis = false;
+  // kliknięcie w okno je powiększa — nie może wyrzucać ramki na pełny ekran
+  ustawienia.pelnyEkran = false;
   window.addEventListener('message', (e: MessageEvent) => {
     const d = e.data as { trzewia?: string; zmiany?: Partial<UstawieniaBota>; ziarno?: number | null } | null;
     if (!d || typeof d !== 'object' || !d.trzewia) return;

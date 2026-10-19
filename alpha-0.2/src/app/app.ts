@@ -7,7 +7,7 @@ import { mikser } from '../core/mikser';
 import { akcjaDlaKlawisza } from '../core/keybinds';
 import { ustawienia, ekran } from '../core/settings-store';
 import { EKRAN } from '../nastawy/ekran';
-import { Wstecz, NieGasnij } from '../core/android';
+import { Wstecz, NieGasnij, pelnyEkran } from '../core/android';
 
 /**
  * Pętla i przełącznik ekranów. Trzyma jedno miejsce, w którym dzieje się czas,
@@ -111,10 +111,14 @@ export class App implements Kontekst {
     } as unknown as T;
   }
 
-  /** Przeglądarka pozwala odpalić dźwięk dopiero po dotknięciu — łapiemy pierwsze. */
+  /**
+   * Przeglądarka pozwala odpalić dźwięk (i pełny ekran) dopiero po dotknięciu albo klawiszu —
+   * łapiemy pierwsze, gdziekolwiek padnie (choćby spacja pomijająca intro).
+   */
   private obudzDzwiek(): void {
     if (this.dzwiekRuszyl) { mikser.wznow(); return; }
     this.dzwiekRuszyl = true;
+    pelnyEkran();
     this.gesty.start();
     if (ustawienia.rezonans) this.dzwiek.start();
     if (ustawienia.muzyka) this.muzyka.start();
