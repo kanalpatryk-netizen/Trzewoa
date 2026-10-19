@@ -12,7 +12,10 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
 
 ## Co jest inaczej niż w Remake v2
 - **Intro:** film `filmy/intro.mp4` rusza od razu po otwarciu gry (bez klikania; góra ładuje się pod nim), po nim menu. Na dole
-  przez cały film stoi mały znaczek „spacja – pomiń” — spacja (albo Esc) pomija intro. Ekran: `src/app/screens/intro.ts`, liczby: `INTRO` w `src/nastawy/ekran.ts`.
+  przez cały film stoi mały znaczek „spacja – pomiń” — spacja (albo Esc) pomija intro.
+- **Kursor:** stalowa rękawica z `obrazy/kursor1.png` — jedyny kursor gry, na każdym ekranie. Gra sama zmniejsza obrazek do
+  32 px (i ostrzejszej wersji na ekrany o gęstych pikselach); klika czubek palca. Kod: `src/core/kursor.ts`, liczby: `KURSOR`
+  w `src/nastawy/ekran.ts` — inny kursor to podmieniony plik (najwyżej trzeba poprawić `czubek`). Ekran: `src/app/screens/intro.ts`, liczby: `INTRO` w `src/nastawy/ekran.ts`.
 - **Stała drużyna:** 3 robotników, 2 pobożnych, 1 rycerz — na całą partię (i nikt się nie starzeje). Skała nie
   wydaje nowych postaci, nie ma gniazd kamiennych rycerzy (ani szeptów „przemyśl i kop” i „kop losowo”), kart
   spisku rycerzy i snu o kamiennych rycerzach. Rycerz jest jeden, ale dużo silniejszy (życie ×12, siła ×11)

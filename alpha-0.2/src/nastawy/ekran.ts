@@ -91,3 +91,18 @@ export const INTRO = {
   /** Film, który przez tyle ms nie ruszył (zła taśma, przeglądarka bez kodeka), jest pomijany sam. */
   bezpiecznikMs: 4000,
 };
+
+/**
+ * KURSOR — `obrazy/kursor1.png` (stalowa rękawica) jako jedyny kursor gry, na każdym ekranie.
+ * Gra sama zmniejsza obrazek do rozmiaru kursora (i ostrzejszej wersji na ekrany o gęstych pikselach),
+ * więc nowy kursor to po prostu podmieniony plik — najwyżej trzeba poprawić `czubek`.
+ */
+export const KURSOR = {
+  /**
+   * Dłuższy bok kursora w pikselach ekranu. Więcej niż 32 nie warto: Chrome większy kursor
+   * chowa przy krawędzi okna (pokazuje wtedy zwykłą strzałkę).
+   */
+  rozmiar: 32,
+  /** Punkt, który klika (czubek palca) — w pikselach oryginalnego obrazka. */
+  czubek: { x: 14, y: 17 },
+};
