@@ -72,7 +72,7 @@ interface Pamiec {
   szalNaDemona?: boolean;
   /** odesłani od demona (po walce bot odwołuje im rozkaz) */
   odeslani: Set<number>;
-  /** rycerz posłany między demona a pobożnych — dokąd */
+  /** walka z demonem już się zaczęła (rycerz dostał wolną rękę) — gdzie stał wtedy demon */
   oslona?: [number, number];
   /** od kiedy krwi jest mniej niż 10 i kiedy bot ostatnio sam wydał krew na rytuał */
   krewNiskoOd?: number; wydalKrewT?: number;
@@ -255,24 +255,31 @@ function brakZelaza(sim: Sim): number {
   return Math.max(0, trzeba - sim.zelazo);
 }
 
-/** Robotnik idzie na najbliższą odsłoniętą (albo bliską) żyłę danej rudy — „kop żyłę”. */
+/**
+ * Robotnik idzie na najbliższą odsłoniętą żyłę danej rudy, do której dojdzie — „kop żyłę”. Bez przekopywania się
+ * przez skałę do ukrytej żyły: kopacz zostawał w zamkniętym chodniku i nie zdążył wrócić do wiadra. Dwie żyły naraz
+ * nie leżą blisko siebie ani jedna pod drugą (kopacz spod spodu urywał drugiemu podłogę).
+ */
 function naZyle(sim: Sim, c: C, ruda: RodzajKruszcu, zajete: [number, number][]): boolean {
   const w = sim.world;
   const cx = Math.floor(c.x), cy = Math.floor(c.y);
   const sciezka = sim.planDrogi ? new Set(sim.planDrogi.sciezka) : null;
   const kand: [number, number, number][] = [];
-  const R = 34;
-  for (let y = Math.max(1, cy - R); y <= Math.min(w.h - 2, cy + R); y++) {
-    for (let x = Math.max(1, cx - R); x <= Math.min(w.w - 2, cx + R); x++) {
+  // tylko blisko sali z wiadrem: żyły w głębi odcinały kopaczy od jedzenia
+  const o = w.oltarz;
+  for (let y = Math.max(1, o.y - 12); y <= Math.min(w.h - 2, o.y + 14); y++) {
+    for (let x = Math.max(1, o.x - 26); x <= Math.min(w.w - 2, o.x + 26); x++) {
       if (!w.solid(x, y) || kruszecKafla(w.get(x, y)) !== ruda || w.hardness(x, y) <= 0) continue;
       if (sciezka?.has(w.idx(x, y - 1)) || wStrefieStraznikow(sim, x, y, 4)) continue;
-      if (zajete.some(([zx, zy]) => Math.abs(zx - x) + Math.abs(zy - y) < 6)) continue;
+      if (zajete.some(([zx, zy]) => Math.abs(zx - x) < 10 && Math.abs(zy - y) < 10)) continue;
       const odslonieta = w.passable(x - 1, y) || w.passable(x + 1, y) || w.passable(x, y - 1) || w.passable(x, y + 1);
-      kand.push([Math.abs(x - cx) + Math.abs(y - cy) * 1.3 + (odslonieta ? 0 : 8), x, y]);
+      if (!odslonieta) continue;
+      kand.push([Math.abs(x - cx) + Math.abs(y - cy) * 1.3, x, y]);
     }
   }
   kand.sort((a, b) => a[0] - b[0]);
-  for (const [, x, y] of kand.slice(0, 5)) {
+  for (const [, x, y] of kand.slice(0, 6)) {
+    if (!droga(sim, c, (sx, sy) => Math.abs(sx - x) <= 1 && Math.abs(sy - y) <= 1 && stoi(sim, sx, sy), 9000)) continue;
     if (wydajPolecenie(sim, c, 'idz', x, y) === null) {
       mysl(sim, `${imie(c)}: kop żyłę ${ruda === 'zelazo' ? 'żelaza — na zbroję rycerza' : 'złota — na krzyże w warsztacie'}`);
       return true;
@@ -322,7 +329,10 @@ function robotnicy(sim: Sim, styl: StylBota): void {
     const zylaWykuta = p.typ === 'kop' && !p.zyla && p.pom === undefined && !w.solid(p.x, p.y);
     const pom = p.typ === 'praca' ? sim.pomieszczenia.find((q) => q.id === p.pom) : null;
     const bezSurowca = !!pom && !!pom.brak && !pom.zaplacone && (pom.rodzaj === 'kuznia' ? sim.zelazo < (nastepnaCzesc(sim)?.zelazo ?? 99) : sim.zloto < 1);
-    if (zylaWykuta || bezSurowca || (p.typ === 'idz' && !walkaZDemonem(sim))) {
+    // (górnik daleko od wiadra: głodny wraca, zanim będzie za późno; żyła — najwyżej kilka kafli naraz)
+    const gornik = p.typ === 'kop' && (!!p.zyla || p.pom !== undefined);
+    const wraca = gornik && (c.hunger > 0.45 || (p.zylaIle ?? 0) >= 8);
+    if (zylaWykuta || bezSurowca || wraca || (p.typ === 'idz' && !walkaZDemonem(sim))) {
       odwolajPolecenie(sim, c);
       if (zylaWykuta) linaZJamy(sim, c);
     }
@@ -339,15 +349,17 @@ function robotnicy(sim: Sim, styl: StylBota): void {
   if (war?.gotowe && sim.zloto >= 1) potrzeby.push('warsztat');
   if (poDrodze && kuz && brakZelaza(sim) > 0) potrzeby.push('zelazo', 'zelazo');
   if (poDrodze && war && styl !== 'speedrun' && sim.zloto < 3) potrzeby.push('zloto');
-  // ilu naraz: wszyscy poza jednym (ten nosi jedzenie); w walce z demonem — tylko gruz
-  const limit = Math.max(0, rob.length - 1);
+  // ilu naraz: wszyscy poza jednym (ten nosi jedzenie); gdy pobożni modlą się pod pomnikiem — poza dwoma (jedzenie trzeba
+  // nosić do krypty: bez tego rycerz i pobożni umierali z głodu); w walce z demonem — tylko gruz
+  const podPomnikiem = zRola(sim, 'pobozny').some((c) => c.job === Job.PIELGRZYM || wStrefieStraznikow(sim, c.x, c.y));
+  const limit = Math.max(0, rob.length - (podPomnikiem && czoloDrogi(sim) < 0 ? 2 : 1));
   const ile = new Map<Zadanie, number>();
   let zajetych = 0;
   for (const c of rob) { const z = zajecie(sim, c); if (z) { ile.set(z, (ile.get(z) ?? 0) + 1); zajetych++; } }
   const chce = new Map<Zadanie, number>();
   for (const z of potrzeby) chce.set(z, (chce.get(z) ?? 0) + 1);
   const zyly: [number, number][] = rob.filter((c) => c.polecenie?.zyla).map((c) => [c.polecenie!.x, c.polecenie!.y]);
-  const wolni = rob.filter((c) => !c.polecenie && c.hunger < 0.5 && !(c.odmowa && sim.tick - c.odmowa.od < M / 2) && !c.wDloni && !c.lot)
+  const wolni = rob.filter((c) => !c.polecenie && c.hunger < 0.4 && !(c.odmowa && sim.tick - c.odmowa.od < M / 2) && !c.wDloni && !c.lot)
     .sort((a, b) => a.hunger - b.hunger);
   for (const c of wolni) {
     if (zajetych >= limit) break;
@@ -450,19 +462,12 @@ function walka(sim: Sim): void {
       mysl(sim, `${imie(c)} odchodzi od demona — nie ma czym walczyć`);
     }
   }
-  // rycerz: między demonem a najbliższym bezbronnym (bliżej demona) — walka sama przerwie mu posterunek
-  if (!d || stanPomnika(sim).faza !== 'walka') return;
-  const bezbronni = zywi(sim).filter((c) => c.rola !== 'rycerz' && Math.hypot(c.x - dx, c.y - dy) < 30);
-  bezbronni.sort((a, b) => Math.hypot(a.x - dx, a.y - dy) - Math.hypot(b.x - dx, b.y - dy));
-  const b = bezbronni[0];
+  // rycerz: bez rozkazów — sam idzie na demona i bije go najszybciej (posterunek z rozkazu wydłużał walkę);
+  // osłoną dla pobożnych jest to, że odeszli od demona, a rycerz zostaje między nim a drogą w górę
   for (const c of zRola(sim, 'rycerz')) {
-    if (c.wDloni || c.lot || (c.ogluszonyDo !== undefined && sim.tick < c.ogluszonyDo)) continue;
-    if (c.polecenie && c.polecenie.typ !== 'idz') continue;
-    const tx = Math.round(b ? dx + (b.x - dx) * 0.35 : dx), ty = Math.round(b ? Math.max(b.y, dy) : dy);
-    if (p.oslona && Math.abs(p.oslona[0] - tx) < 3 && c.polecenie) continue;
-    if (wydajPolecenie(sim, c, 'idz', tx, ty) === null) {
-      p.oslona = [tx, ty];
-      mysl(sim, b ? `rycerz osłania ${imie(b)} — staje między nim a demonem` : 'rycerz idzie na demona');
+    if (c.polecenie?.typ === 'idz' || c.polecenie?.typ === 'zbroja') {
+      odwolajPolecenie(sim, c);
+      if (!p.oslona) { p.oslona = [Math.round(dx), Math.round(dy)]; mysl(sim, 'rycerz rusza na demona — bezbronni odchodzą w górę drogi'); }
     }
   }
 }
@@ -484,7 +489,7 @@ function potrzebnyRytual(sim: Sim, styl: StylBota): { rodzaj: RodzajRytualu; zDa
   const proc = procentSkorupy(sim);
   const faza = stanPomnika(sim).faza;
   const ryc = zRola(sim, 'rycerz')[0];
-  // szał krwi na demona: pobożny czeka przy ołtarzu od ~85%, rytuał rusza, gdy pomnik pęknie
+  // szał krwi na demona: pobożny czeka przy ołtarzu od ~92%, rytuał rusza, gdy pomnik pęknie
   if (styl !== 'speedrun' && ryc && !pamiec(sim).szalNaDemona && (faza === 'rozpada' || faza === 'wychodzi' || faza === 'walka') && wolna >= 30) {
     return { rodzaj: 'szal', zDaleka: true, czemu: 'szał krwi — rycerz uderzy mocniej w demona' };
   }
@@ -497,7 +502,7 @@ function potrzebnyRytual(sim: Sim, styl: StylBota): { rodzaj: RodzajRytualu; zDa
   // ofiara krwi, gdy krwi mało, a jest gdzie potem się wyspać
   if (sim.krew < 30 && gotowy(sim, 'sypialnia')) return { rodzaj: 'ofiaraKrwi', zDaleka: false, czemu: 'krwi mało — ofiara krwi, potem sen w sypialni' };
   // modlitwa, gdy wiary brakuje, a krwi jest zapas — tylko pobożny, który i tak jest na górze
-  if (sim.wiara < 40 && wolna >= 70 && styl !== 'speedrun') return { rodzaj: 'modlitwa', zDaleka: false, czemu: 'brakuje wiary — modlitwa przy ołtarzu' };
+  if (sim.wiara < 40 && wolna >= 70 && styl !== 'speedrun' && drogaGotowa(sim)) return { rodzaj: 'modlitwa', zDaleka: false, czemu: 'brakuje wiary — modlitwa przy ołtarzu' };
   return null;
 }
 
@@ -522,9 +527,9 @@ function oltarz(sim: Sim, styl: StylBota): void {
   }
   if (sim.krew < 10) p.krewNiskoOd ??= sim.tick; else p.krewNiskoOd = undefined;
   if (r) return;
-  // szał na demona: pobożny czeka przy ołtarzu już od ~85% (z krypty do sali jest daleko)
+  // szał na demona: pobożny czeka przy ołtarzu już od ~92% (z krypty do sali jest daleko)
   const potrzeba = potrzebnyRytual(sim, styl);
-  const czekaNaSzal = styl !== 'speedrun' && !p.szalNaDemona && procentSkorupy(sim) >= 85 && stanPomnika(sim).faza === 'stoi' && sim.krew - sim.rezerwa.krew >= 30;
+  const czekaNaSzal = styl !== 'speedrun' && !p.szalNaDemona && procentSkorupy(sim) >= 92 && stanPomnika(sim).faza === 'stoi' && sim.krew - sim.rezerwa.krew >= 30;
   const rodzaj: RodzajRytualu | null = potrzeba?.rodzaj ?? (czekaNaSzal ? 'szal' : null);
   // wezwany: czy jeszcze potrzebny
   if (p.wezwany !== undefined) {
