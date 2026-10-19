@@ -24,6 +24,7 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
 - **Dłoń z otchłani pomaga demonowi (5b):** w walce co kilka sekund — rzut rycerzem (obejmuje go palcami, ciska w górę,
   rycerz koziołkuje, uderza o strop, spada ranny i ogłuszony), tarcza (otwarta dłoń przed demonem, ciosy się od niej
   odbijają) albo zawał (szpony drą strop, ściana gruzu odcina demona na 15 s; robotnicy mogą ją rozkuć).
+  Dłoń ma teraz prawdziwe wnętrze (linie, poduszki, zgięcia palców, jaśniejsza skóra) i grzbiet (sine żyły, kostki).
 - **Rozkazy:** pod płytą trzy medaliony (robotnicy, pobożni, rycerz). Dotknięcie medalionu albo postaci zaznacza,
   dotknięcie mapy to „idź tam” — pobożny i rycerz idą tylko tam, dokąd prowadzi droga, inaczej odmawiają (kręcą
   głową, a w dymku mówią dlaczego); robotnik przekopuje się sam, wskazana skała to „kop tam”. „Kop drogę wiernych”

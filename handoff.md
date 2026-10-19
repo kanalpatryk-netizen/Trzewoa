@@ -774,6 +774,12 @@ Dwie dłonie i relikwiarz — opis w 1.8.
    Prośba użytkownika: „każda akcja tej ręki ma mieć inną animację, nie opierać się na zaciskaniu pięści” — stąd trzy
    nowe arkusze z modelu 3D (`renderuj.mjs rzut | tarcza | zawal`; pozy w `KLATKI_5B`, obrót `uRot`). Użytkownik zauważył
    uciętą dłoń — naprawione: nadgarstek tuż pod brzegiem skały, cała dłoń nad nim.
+   Potem (19.10) użytkownik: „ulepsz przód i rewers ręki, wyglądają słabo i nierealistycznie” — model dostał wnętrze
+   dłoni (linie `LINIE`/`linieDloni`, bransolety nadgarstka, poduszki pod palcami, łagodne wciśnięcie środka — nie
+   odejmowanie elipsoidy, bo zostawiało czarny dołek; bruzdy zgięć palców `bruzda`, mięsiste człony od wnętrza, jaśniejsza
+   skóra wnętrza i odbite światło — `volar` w `main()`) i grzbiet (ciągłe sine żyły `zylyDloni`, sinoczerwone kostki,
+   zmarszczki nad kostkami, grubsze ścięgna, wał między kostkami). Wszystkie 5 arkuszy wyrenderowane od nowa.
+   Uwaga: `pow` z ujemną podstawą jest w GLSL nieokreślony — kwadraty pisz jako `x * x`.
 3. 5c. Nowy bot. 5d. Nowy samouczek (kroki przewijane ręcznie). 5e. Testy i osiągnięcia, potem lista z 6.10.
 
 ### 6.10 Lista kontrolna po każdym etapie
