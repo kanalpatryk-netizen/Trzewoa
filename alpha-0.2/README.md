@@ -11,6 +11,8 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Zap
 Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
 
 ## Co jest inaczej niż w Remake v2
+- **Intro:** po ekranie ładowania leci film `filmy/intro.mp4`, dopiero potem menu. Na dole przez cały film stoi mały
+  znaczek „spacja – pomiń” — spacja (albo Esc) pomija intro. Ekran: `src/app/screens/intro.ts`, liczby: `INTRO` w `src/nastawy/ekran.ts`.
 - **Stała drużyna:** 3 robotników, 2 pobożnych, 1 rycerz — na całą partię (i nikt się nie starzeje). Skała nie
   wydaje nowych postaci, nie ma gniazd kamiennych rycerzy (ani szeptów „przemyśl i kop” i „kop losowo”), kart
   spisku rycerzy i snu o kamiennych rycerzach. Rycerz jest jeden, ale dużo silniejszy (życie ×12, siła ×11)
