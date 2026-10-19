@@ -16,7 +16,7 @@ export { OLTARZ } from './oltarz';
 export { STWORZENIA } from './stworzenia';
 export { KOSZTY, MOCE, SKAZY } from './moce';
 export { KAMERA, TEMPO, STEROWANIE } from './sterowanie';
-export { EKRAN, JAKOSC, LADOWANIE, TELEFON } from './ekran';
+export { EKRAN, INTRO, JAKOSC, LADOWANIE, TELEFON } from './ekran';
 export { MUZYKA, REZONANS, MIKSER, GESTY } from './dzwiek';
 export { BARWA, ATRAMENT_GLEBI } from './barwy';
 export { RAMA, KARTUSZ, PRZERYWNIK, NAGLOWEK_DZIALU } from './wyglad/ozdoby';

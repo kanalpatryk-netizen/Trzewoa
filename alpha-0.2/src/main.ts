@@ -7,6 +7,7 @@ import { EkranKroniki } from './app/screens/kronika';
 import { EkranBestiariusza } from './app/screens/bestiariusz';
 import { EkranOsiagniec } from './app/screens/osiagniecia';
 import { EkranLadowania, type Etap } from './app/screens/ladowanie';
+import { EkranIntro, wczytajIntro } from './app/screens/intro';
 import { ustawienia } from './core/settings-store';
 import { mikser } from './core/mikser';
 import { hasSave } from './core/save';
@@ -72,9 +73,12 @@ const etapy: Etap[] = [
     },
   },
   { nazwa: 'Sprawdzam zapis i ustawienia', zrob: () => { hasSave(); ustawieniaEkran.rysuj(naBrudno(), app.w, app.h, performance.now()); } },
+  // okno obserwatorium filmu nie puszcza — bot gra od razu
+  { nazwa: 'Nawijam taśmę wstępu', zrob: () => { if (!BOT.wlaczony) { app.zarejestruj(new EkranIntro(app)); return wczytajIntro(); } } },
 ];
 
-app.zarejestruj(new EkranLadowania(app, etapy, () => { podepnijDev(); app.idz(BOT.wlaczony ? 'gra' : 'menu', BOT.wlaczony ? { tryb: 'bot' } : undefined); }));
+// po ładowaniu: intro (filmy/intro.mp4), a po nim menu
+app.zarejestruj(new EkranLadowania(app, etapy, () => { podepnijDev(); app.idz(BOT.wlaczony ? 'gra' : 'intro', BOT.wlaczony ? { tryb: 'bot' } : undefined); }));
 app.start('ladowanie');
 
 /** Dev: wgląd w stan i wymuszona klatka. W wersji do wysyłki nie ma tego wcale. */

@@ -80,3 +80,23 @@ export const LADOWANIE = {
   /** Przejście do menu (ms). */
   wygaszenieMs: 450,
 };
+
+/**
+ * INTRO — film `filmy/intro.mp4`, który leci po ekranie ładowania, zanim pokaże się menu.
+ * Spacja (albo Esc) go pomija; okno obserwatorium go nie puszcza.
+ */
+export const INTRO = {
+  /** Podpis na dole, póki film leci. */
+  pomin: 'pomiń',
+  klawisz: 'spacja',
+  /** Znaczek pojawia się po tylu ms od startu filmu… */
+  znaczekOdMs: 400,
+  /** …i rozjaśnia przez tyle ms. */
+  znaczekRozjasnienieMs: 500,
+  /** Wygaszenie do czerni na końcu filmu i po pominięciu (ms). */
+  wygaszenieMs: 350,
+  /** Film, który przez tyle ms nie ruszył (zła taśma, przeglądarka bez kodeka), jest pomijany sam. */
+  bezpiecznikMs: 4000,
+  /** Ile ms ekran ładowania czeka, aż film się wczyta — potem gra idzie dalej i film doczytuje się sam. */
+  czekajNaFilmMs: 3000,
+};
