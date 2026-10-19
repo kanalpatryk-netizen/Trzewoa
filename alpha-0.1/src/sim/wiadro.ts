@@ -1,16 +1,20 @@
 /**
- * WIADRO Z JEDZENIEM (Remake v2). Liczby są w src/nastawy/wiadro.ts.
+ * WIADRO Z JEDZENIEM (Remake v2; Alpha: jedno wiadro w szybie). Liczby są w src/nastawy/wiadro.ts.
  *
- * Grzyba i spiżarni już nie ma. Co 40 sekund z góry, na linie, zjeżdża wiadro pełne jedzenia —
- * do pierwszego odkrytego, pustego miejsca, do którego lud może dojść (szuka od niewiele nad
- * siedzibą w dół, w pasie kolumn wokół niej). Najpierw ze stropu jamy sypie się pył, potem wiadro
- * wyłania się ze skały i powoli zjeżdża na podłogę. Lud je z niego (robotnicy noszą porcje tym,
- * którzy stoją daleko — na warcie pod rdzeniem), a puste wiadro odjeżdża w górę.
+ * Grzyba i spiżarni już nie ma. Co 40 sekund z góry, na linie, zjeżdża wiadro pełne jedzenia — zawsze tym samym,
+ * węższym otworem obok szybu ze światłem, na dno tej kolumny (decyzja użytkownika: wiadro jest jedno, ma jeden punkt,
+ * w który spada). Kto wykopie dziurę pod wiadrem, sprowadzi je niżej — lina sięga do dna kolumny. Gdy poprzednie
+ * wiadro jeszcze stoi, z góry do niego dosypują. Najpierw ze stropu sypie się pył, potem wiadro wyłania się ze skały
+ * i powoli zjeżdża na dno. Lud je z niego (robotnicy noszą porcje tym, którzy stoją daleko), a puste odjeżdża w górę.
  *
  * Kto skrajnie głoduje, nie czeka, aż wiadro zjedzie: biegnie pod linę, wspina się po niej,
  * wsiada do wiadra w locie i zaczyna jeść od razu (krokNaLinie, wołane z creatures.ts).
  *
- * Ryt „Nakarm” spuszcza dodatkowe wiadro tam, gdzie wskażesz (wiadroNaZadanie).
+ * Ryt „Nakarm” dosypuje do tego samego wiadra albo spuszcza je od razu (wiadroNaZadanie).
+ *
+ * Alpha, etap 4: dłoń z otchłani potrafi przeciąć linę (sim/lina-wiadra.ts). Zjeżdżające wiadro spada i roztrzaskuje
+ * się na dnie — połowa jedzenia przepada, reszta leży rozsypana i da się ją zjeść; stojące zostaje bez liny. Póki
+ * nikt liny nie sklei, nic nie zjeżdża (także Nakarm).
  */
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
@@ -18,15 +22,13 @@ import { WIADRO } from '../nastawy/wiadro';
 import { LUD } from '../nastawy/lud';
 import { STWORZENIA as K } from '../nastawy/stworzenia';
 import { klanLudu, rolaPostaci, maxHp, type MiejsceJedzenia } from './lud';
-import { szukajDrogi, budzetDrog, nowyTik, stoi } from './droga';
-import { falaTrwa, wStrefieStraznikow } from './straznicy';
-import { STRAZNICY } from '../nastawy/straznicy';
+import { stoi } from './droga';
 import { zapisz } from './dziennik';
-import { T } from './tiles';
 import { SWIAT } from '../nastawy/swiat';
 import { SURFACE_Y } from './world';
 
-export type FazaWiadra = 'zapowiedz' | 'zjezdza' | 'stoi' | 'odjezdza';
+/** Etap 4: „spada” — lina przecięta w czasie jazdy; „rozbite” — roztrzaskało się na dnie, jedzenie leży rozsypane. */
+export type FazaWiadra = 'zapowiedz' | 'zjezdza' | 'stoi' | 'odjezdza' | 'spada' | 'rozbite';
 
 export interface Wiadro {
   id: number;
@@ -58,10 +60,34 @@ export interface StanWiader {
   nr: number;
   /** Tik ostatniego wyłonienia się wiadra — ekran gra wtedy dźwięk. */
   zjazdT?: number;
+  /** Alpha, etap 4: lina przecięta przez dłoń z otchłani (sim/lina-wiadra.ts) — póki jej nikt nie sklei, nic nie zjeżdża. */
+  przecieta?: LinaPrzecieta;
+  /** Tik ostatniej naprawy liny (rysunek: lina się napina) i ile razy ją przecięto. */
+  naprawionaT?: number;
+  ciec?: number;
+}
+
+/** Przecięta lina wiadra: kolumna, koniec górnego kikuta (kafle, ułamek), podłoga pod nim i kto ją skleja. */
+export interface LinaPrzecieta {
+  od: number;
+  x: number;
+  /** Do tej wysokości zwisa z góry górny kawałek (strzępy na końcu). */
+  koniec: number;
+  /** Kafel, na którym leży dolny kawałek (zwój) i stoi wiadro. */
+  dno: number;
+  /** Id tego, kto ją właśnie skleja. */
+  naprawia?: number;
+  /** Gdzie pazur ją przeciął — stąd koniec górnego kawałka opada do `koniec` (rysunek). */
+  ciecie: number;
 }
 
 function stan(sim: Sim): StanWiader {
   return (sim.lud.wiadra ??= { lista: [], nastepne: WIADRO.pierwsze, nr: 0 });
+}
+
+/** Stan wiader (etap 4: przecięta lina — sim/lina-wiadra.ts). */
+export function stanWiader(sim: Sim): StanWiader {
+  return stan(sim);
 }
 
 /** Wszystkie wiadra (do rysunku i do karty postaci). */
@@ -86,7 +112,8 @@ export function porcjiWWiadrach(sim: Sim): number {
 
 /** Wiadra, które stoją na ziemi i mają jedzenie — z nich lud je i robotnicy biorą porcje. */
 export function zrodlaJedzenia(sim: Sim): MiejsceJedzenia[] {
-  return wiadra(sim).filter((wd) => wd.faza === 'stoi' && wd.porcje > 0).map((wd) => ({
+  // (etap 4: z roztrzaskanego wiadra je się to, co się rozsypało)
+  return wiadra(sim).filter((wd) => (wd.faza === 'stoi' || wd.faza === 'rozbite') && wd.porcje > 0).map((wd) => ({
     x: wd.x, y: wd.cel, ilosc: wd.porcje, baza: false,
     wez: (n: number) => { const k = Math.min(n, wd.porcje); wd.porcje -= k; return k; },
     odloz: (n: number) => { wd.porcje += n; },
@@ -100,190 +127,66 @@ function porcjeNaLud(sim: Sim): number {
   return Math.max(WIADRO.porcjiMin, Math.min(WIADRO.porcjiMax, Math.round(zywych * WIADRO.porcjiNaGlowe)));
 }
 
-/**
- * Kafle, do których dojdzie postać `skad` — tym samym szukaniem drogi, którym lud chodzi
- * (stopnie w górę, zejścia; Remake v2 bez lin i klamer). Proste zalewanie przejść uznawało za
- * „osiągalne” dna szybów, z których nie ma powrotu.
- */
-function dostepneOd(sim: Sim, skad: Creature): Set<number> {
-  const zostalo = budzetDrog();
-  nowyTik(2);
-  const zbior = new Set<number>();
-  szukajDrogi(sim, skad, (i) => { zbior.add(i); return false; }, WIADRO.dostepLimit);
-  nowyTik(zostalo);
-  return zbior;
-}
-
-/** Grupa ludu (skupisko) i to, jak bardzo potrzebuje jedzenia. */
-interface Grupa { x: number; y: number; gora: number; czlonkowie: Creature[]; potrzeba: number; skad: Creature; zb: Set<number>; bezJedzenia: boolean }
-
-/** Czy wiadro stoi (albo stanie) tam, skąd postać z tym zasięgiem sięgnie po jedzenie (doZapas sięga na dwa kafle). */
-function wZasiegu(sim: Sim, zb: Set<number>, wd: { x: number; cel: number }): boolean {
-  const w = sim.world;
-  for (let dy = -1; dy <= 1; dy++) for (let dx = -2; dx <= 2; dx++) if (w.inb(wd.x + dx, wd.cel + dy) && zb.has(w.idx(wd.x + dx, wd.cel + dy))) return true;
-  return false;
-}
+/** Gdzie zjedzie wiadro: kolumna liny, strop, z którego się wyłoni, kafel, na którym stanie. */
+export interface MiejsceWiadra { x: number; sufit: number; cel: number }
 
 /**
- * Skupiska ludu od najbardziej potrzebującego: liczy się, ilu ich jest i jak bardzo są głodni,
- * minus jedzenie, które już mają blisko (wiadra stojące albo zjeżdżające obok). Wiadro zjeżdża
- * tam, gdzie lud jest — przy siedzibie na górze lądowało, gdy warta pod rdzeniem umierała z głodu.
- * Alpha: liczy się to, do czego dojdzie najgłodniejszy z grupy — wiadro „obok”, ale nad progiem,
- * którego nie przejdzie, go nie nakarmi (robotnicy w kieszeni pod przedsionkiem umierali z głodu
- * dziesięć kafli pod pełnym wiadrem, a następne nie przychodziło, bo grupa „miała jedzenie”).
+ * Alpha: jedyne miejsce, w które zjeżdża wiadro — dno szybu z jedzeniem (null, gdy góra nie ma szybu albo go zasypano).
+ * Etap 3d: węższym otworem na prawo od szybu ze światłem (pod tamtym stoi ołtarz). Wiadro staje na najniższym pustym
+ * kaflu tej kolumny — kto wykopie pod nim dziurę, ten sprowadzi je niżej (decyzja użytkownika: wiadro jest jedno).
  */
-function grupyWgPotrzeby(sim: Sim): Grupa[] {
-  const lud = sim.creatures.filter((c) => !c.dead && rolaPostaci(c) && c.naLinie === undefined);
-  const wzieci = new Set<number>();
-  const out: Grupa[] = [];
-  for (const c of lud) {
-    if (wzieci.has(c.id)) continue;
-    const czlonkowie = lud.filter((o) => !wzieci.has(o.id) && Math.hypot(o.x - c.x, (o.y - c.y) * 1.4) < 16);
-    for (const o of czlonkowie) wzieci.add(o.id);
-    const x = czlonkowie.reduce((s, o) => s + o.x, 0) / czlonkowie.length;
-    const y = czlonkowie.reduce((s, o) => s + o.y, 0) / czlonkowie.length;
-    // naprawdę głodni ważą najwięcej — inaczej wiadro jechało do licznej, sytej grupy, a garstka obok padała
-    let potrzeba = czlonkowie.reduce((s, o) => s + 0.15 + Math.max(0, o.hunger - 0.2) * 2.5, 0);
-    const skad = czlonkowie.reduce((a, o) => (o.hunger > a.hunger ? o : a));
-    const zb = dostepneOd(sim, skad);
-    let maJedzenie = false;
-    for (const wd of wiadra(sim)) {
-      if (wd.porcje <= 0 || wd.faza === 'odjezdza' || !wZasiegu(sim, zb, wd)) continue;
-      maJedzenie = true;
-      if (Math.hypot(wd.x - x, wd.cel - y) < 22) potrzeba -= wd.porcje * LUD.posilek;
-    }
-    // do żadnego wiadra nie dojdzie, a już głodnieje — pierwszeństwo (robotnik, który sam dokopał drogę
-    // wiernych na dno, umierał tam z głodu, bo wiadra jechały do licznej grupy na górze, która jedzenie miała)
-    const bezJedzenia = !maJedzenie && skad.hunger > WIADRO.bezJedzeniaOd;
-    if (bezJedzenia) potrzeba += WIADRO.bezJedzeniaPierwszenstwo;
-    out.push({ x, y, gora: Math.min(...czlonkowie.map((o) => o.y)), czlonkowie, potrzeba, skad, zb, bezJedzenia });
-  }
-  return out.sort((a, b) => b.potrzeba - a.potrzeba);
-}
-
-/** Strop jamy nad (x, y): pierwszy pusty kafel licząc w górę. */
-function sufitNad(sim: Sim, x: number, y: number): number {
-  const w = sim.world;
-  let su = y;
-  while (su - 1 >= 0 && w.passable(x, su - 1)) su--;
-  return su;
-}
-
-/**
- * Miejsce dla wiadra przy najbardziej potrzebującej grupie ludu: w każdej kolumnie wokół niej, od
- * niewiele nad nią w dół, pierwsze odkryte puste miejsce, do którego ta grupa dojdzie (z podłogą
- * pod spodem). Z tych — najbliżej grupy, a jama za niska na zjazd gorzej. Gdy przy pierwszej grupie
- * nie ma gdzie — następna.
- */
-export function wybierzMiejsce(sim: Sim, grupy?: Grupa[]): MiejsceWiadra | null {
-  if (!klanLudu(sim)) return null;
-  // Alpha, etap 3: zwykłe wiadro zjeżdża szybem z powierzchni do sali z siedzibą (szkic: „jedzenie” z góry) — dla
-  // grupy, która dojdzie do dna szybu. Grupa odcięta od sali (zeszła drogą wiernych w głąb, a pod górę lud wchodzi
-  // najwyżej o stopień) dostaje wiadro tam, gdzie stoi, jak dawniej: robotnicy dokopali się do przedsionka
-  // i umierali tam z głodu, bo całe jedzenie zjeżdżało do sali, do której już nie mieli jak wrócić.
-  const sz = miejsceWSzybie(sim);
-  for (const g of (grupy ?? grupyWgPotrzeby(sim)).slice(0, 3)) {
-    if (sz && wZasiegu(sim, g.zb, sz)) return sz;
-    const m = miejscePrzyGrupie(sim, g);
-    if (m) return g.bezJedzenia ? { ...m, pilne: true } : m;
-  }
-  return sz;
-}
-
-/**
- * Gdzie zjedzie wiadro: kolumna liny, strop, z którego się wyłoni, kafel, na którym stanie. `pilne` — dla grupy,
- * która do żadnego wiadra nie dojdzie (zjedzie i ponad limit pełnych wiader).
- */
-export interface MiejsceWiadra { x: number; sufit: number; cel: number; szyb?: boolean; pilne?: boolean }
-
-/** Alpha: dno szybu z jedzeniem — wiadro zjeżdża tam z samej powierzchni (null, gdy góra nie ma szybu albo go zasypano). */
 export function miejsceWSzybie(sim: Sim): MiejsceWiadra | null {
-  if (!SWIAT.warstwy.wlaczone || !WIADRO.szybem) return null;
+  if (!SWIAT.warstwy.wlaczone) return null;
   const w = sim.world;
-  const x = w.szybX;
-  for (let y = SURFACE_Y - 1; y <= w.szybDol; y++) if (!w.passable(x, y)) return null;
-  let cel = w.szybDol;
-  while (cel + 1 < w.h && w.passable(x, cel + 1)) cel++;
+  const x = w.szybWiadraX;
+  for (let y = SURFACE_Y - 1; y <= w.szybWiadraDol; y++) if (!w.passable(x, y)) return null;
+  const cel = dnoKolumny(sim, x, w.szybWiadraDol);
   if (!stoi(sim, x, cel)) return null;
-  return { x, sufit: SURFACE_Y - 1, cel, szyb: true };
+  return { x, sufit: SURFACE_Y - 1, cel };
 }
 
-function miejscePrzyGrupie(sim: Sim, g: Grupa): MiejsceWiadra | null {
+/** Najniższy pusty kafel kolumny `x` od `y` w dół (tam staje wiadro). */
+function dnoKolumny(sim: Sim, x: number, y: number): number {
   const w = sim.world;
-  // Alpha: tam, dokąd dojdzie najgłodniejszy z grupy (wcześniej — ten, kto stał najbliżej jej środka)
-  const skad = g.skad;
-  if (!w.inb(Math.floor(skad.x), Math.floor(skad.y))) return null;
-  const zb = g.zb;
-  if (!zb.size) return null;
-  const gx = Math.round(skad.x);
-  const gora = Math.max(1, Math.floor(Math.min(g.gora, skad.y)) - WIADRO.nadSiedziba);
-  const fala = falaTrwa(sim);
-  let best: MiejsceWiadra | null = null, bs = Infinity;
-  for (let dx = 0; dx <= WIADRO.zasieg; dx++) {
-    for (const s of dx ? [-1, 1] : [1]) {
-      const x = gx + dx * s;
-      if (x < 2 || x >= w.w - 2) continue;
-      for (let y = gora; y < w.h - 2; y++) {
-        const i = w.idx(x, y);
-        if (!w.passable(x, y) || !w.ever[i]) continue;
-        // na dno tej pustki
-        let yy = y;
-        while (yy + 1 < w.h && w.passable(x, yy + 1)) yy++;
-        const ci = w.idx(x, yy);
-        const dobre = zb.has(ci) && stoi(sim, x, yy) && w.magma[ci] === 0 && w.water[ci] < 3 && w.tile[ci] !== T.SKY
-          && !sim.przyMagmie(x, yy, 3) && !(fala && wStrefieStraznikow(sim, x, yy, STRAZNICY.ucieczkaZapas))
-          && Math.hypot(x - w.coreX, yy - w.coreY) > 14;
-        if (!dobre) { y = yy; continue; }       // tu się nie dojdzie — szukamy niżej w tej kolumnie
-        const su = sufitNad(sim, x, yy);
-        const ocena = Math.abs(yy - skad.y) + Math.abs(x - skad.x) * 0.5 + (yy - su + 1 < WIADRO.wysokoscMin ? 10 : 0);
-        if (ocena < bs) { bs = ocena; best = { x, sufit: su, cel: yy }; }
-        break;
-      }
-    }
-  }
-  return best;
+  while (y + 1 < w.h && w.passable(x, y + 1)) y++;
+  return y;
+}
+
+/** Wiadro, które jest teraz w szybie (zapowiedź, zjazd albo stoi na dnie) — najwyżej jedno. */
+function wiadroWSzybie(sim: Sim): Wiadro | undefined {
+  return stan(sim).lista.find((wd) => wd.faza !== 'odjezdza');
 }
 
 function dodajWiadro(sim: Sim, m: MiejsceWiadra, porcje: number, nakarm: boolean): Wiadro {
   const st = stan(sim);
   const v = Math.max(WIADRO.zjazd, (m.cel - m.sufit) / WIADRO.zjazdMaks);
-  const wd: Wiadro = { id: ++st.nr, x: m.x, sufit: m.sufit, cel: m.cel, y: m.sufit - 1, faza: 'zapowiedz', od: sim.tick, porcje, pelne: porcje, v, nakarm };
-  if (m.szyb && !nakarm) wd.szyb = true;
+  const wd: Wiadro = { id: ++st.nr, x: m.x, sufit: m.sufit, cel: m.cel, y: m.sufit - 1, faza: 'zapowiedz', od: sim.tick, porcje, pelne: porcje, v, nakarm, szyb: true };
   st.lista.push(wd);
   zapisz(sim, 'swiat', `wiadro #${wd.id}: ${porcje} porcji → (${m.x}, ${m.cel})${nakarm ? ' — Nakarm' : ''}`, m.x, m.cel);
   return wd;
 }
 
+/** Z góry dosypują do wiadra, które jest w szybie (pył sypie się ze stropu). */
+function dosyp(sim: Sim, wd: Wiadro, porcje: number, limit: number): void {
+  wd.porcje = Math.min(limit, wd.porcje + porcje);
+  wd.pelne = Math.max(wd.pelne, wd.porcje);
+  for (let k = 0; k < 5; k++) sim.spark(wd.x + 0.5 + sim.rng.range(-0.6, 0.6), wd.sufit + 0.2, 'dust');
+  zapisz(sim, 'swiat', `wiadro #${wd.id} w szybie: dosypane z góry (${wd.porcje} porcji)`, wd.x, wd.cel);
+}
+
 /** Co tik symulacji (sam pilnuje rytmu). */
 export function tikWiader(sim: Sim): void {
   const st = stan(sim);
+  // etap 4: lina przecięta — z góry nic nie zjedzie, póki ktoś jej nie sklei (po naprawie wiadro zjeżdża od razu)
+  if (st.przecieta) st.nastepne = Math.max(st.nastepne, sim.tick + 1);
   if (sim.tick >= st.nastepne) {
     st.nastepne = sim.tick + WIADRO.co;
-    const grupy = klanLudu(sim) ? grupyWgPotrzeby(sim) : [];
-    // Alpha, etap 3: wiadro, do którego nikt z ludu już nie dojdzie (zostało nad zejściem, którym lud poszedł w dół —
-    // pod górę wchodzi najwyżej o stopień), odjeżdża z resztą jedzenia: zajmowało miejsce wiadrom dla tych na dole,
-    // a robotnicy przy czole drogi umierali z głodu pod limitem pełnych wiader
-    for (const wd of st.lista) {
-      if (wd.szyb || wd.nakarm || wd.faza !== 'stoi' || wd.porcje <= 0 || sim.tick - wd.od < WIADRO.nieDojdziePo) continue;
-      if (grupy.some((g) => wZasiegu(sim, g.zb, wd))) continue;
-      wd.faza = 'odjezdza'; wd.od = sim.tick;
-      zapisz(sim, 'swiat', `wiadro #${wd.id}: nikt już do niego nie dojdzie — odjeżdża z ${wd.porcje} porcjami`, wd.x, wd.cel);
-    }
-    // (wiadro w szybie i te z rytu Nakarm nie zajmują miejsca zwykłym — limit jest na wiadra przy ludzie)
-    const pelnych = st.lista.filter((wd) => !wd.szyb && !wd.nakarm && wd.porcje > 0 && wd.faza !== 'odjezdza').length;
-    const m = wybierzMiejsce(sim, grupy);
-    // Alpha: w szybie wisi jedna lina — gdy wiadro jeszcze stoi w sali, z góry dosypują do niego jedzenia
-    const wSzybie = m?.szyb ? st.lista.find((wd) => wd.szyb && wd.faza !== 'odjezdza') : undefined;
-    if (m && wSzybie) {
-      wSzybie.porcje = Math.min(WIADRO.szybMaks, wSzybie.porcje + porcjeNaLud(sim));
-      wSzybie.pelne = Math.max(wSzybie.pelne, wSzybie.porcje);
-      for (let k = 0; k < 5; k++) sim.spark(m.x + 0.5 + sim.rng.range(-0.6, 0.6), wSzybie.sufit + 0.2, 'dust');
-      zapisz(sim, 'swiat', `wiadro #${wSzybie.id} w szybie: dosypane z góry (${wSzybie.porcje} porcji)`, m.x, m.cel);
-    } else if (m && (m.szyb || pelnych < WIADRO.maks + (m.pilne ? WIADRO.ponadLimitDlaOdcietych : 0))) {
-      // (grupa odcięta od jedzenia dostaje wiadro i wtedy, gdy limit zajmują wiadra wyżej, do których dojdą inni —
-      // robotnicy, którzy przebili się do krypty, umierali tam z głodu pod pięcioma pełnymi wiadrami na drodze)
-      dodajWiadro(sim, m, porcjeNaLud(sim), false);
-    }
+    // Alpha (decyzja użytkownika): wiadro jest jedno i zjeżdża tylko szybem — nie do tych, którzy zeszli w głąb.
+    // W szybie wisi jedna lina: gdy wiadro jeszcze tam jest, z góry dosypują do niego jedzenia.
+    const m = klanLudu(sim) ? miejsceWSzybie(sim) : null;
+    const wSzybie = wiadroWSzybie(sim);
+    if (m && wSzybie) dosyp(sim, wSzybie, porcjeNaLud(sim), WIADRO.szybMaks);
+    else if (m) dodajWiadro(sim, m, porcjeNaLud(sim), false);
   }
   const w = sim.world;
   for (const wd of st.lista) {
@@ -297,21 +200,31 @@ export function tikWiader(sim: Sim): void {
     } else if (wd.faza === 'zjezdza') {
       wd.y += wd.v;
       // podłoga pod celem zniknęła (wykopana) — wiadro zjeżdża niżej, na nowe dno
-      while (wd.cel + 1 < w.h && w.passable(wd.x, wd.cel + 1)) wd.cel++;
+      wd.cel = dnoKolumny(sim, wd.x, wd.cel);
       if (wd.y >= wd.cel) {
         wd.y = wd.cel; wd.faza = 'stoi'; wd.od = sim.tick;
         sim.spark(wd.x + 0.5, wd.cel + 0.9, 'dust');
       }
-    } else if (wd.faza === 'stoi') {
-      // pusty — odjeżdża w górę; ktoś zasypał miejsce — jedzenie przepada pod gruzem
-      if (wd.porcje <= 0 || !w.passable(wd.x, wd.cel)) { wd.faza = 'odjezdza'; wd.od = sim.tick; }
-      // Alpha: zapomniane — od dawna stoi, a w pobliżu nie ma nikogo z ludu; zajmowało miejsce następnemu
-      // (najwyżej `maks` pełnych naraz), a lud głodował daleko od niego
-      else if (t > WIADRO.zapomnianePo && t % 120 === 0 && !wd.szyb
-          && !sim.creatures.some((c) => !c.dead && rolaPostaci(c) && Math.hypot(c.x - wd.x, c.y - wd.cel) < WIADRO.zapomnianeOd)) {
-        wd.faza = 'odjezdza'; wd.od = sim.tick;
-        zapisz(sim, 'swiat', `wiadro #${wd.id} zapomniane — odjeżdża z ${wd.porcje} porcjami`, wd.x, wd.cel);
+    } else if (wd.faza === 'spada') {
+      // etap 4: lina przecięta w czasie jazdy — leci w dół coraz szybciej i roztrzaskuje się na dnie
+      wd.v = Math.min(WIADRO.ciecie.spadaMaks, wd.v + WIADRO.ciecie.grawitacja);
+      wd.y += wd.v;
+      wd.cel = dnoKolumny(sim, wd.x, Math.min(wd.cel, Math.max(wd.sufit, Math.floor(wd.y))));
+      if (wd.y >= wd.cel) {
+        wd.y = wd.cel; wd.faza = 'rozbite'; wd.od = sim.tick;
+        const bylo = wd.porcje;
+        wd.porcje = Math.floor(wd.porcje * (1 - WIADRO.ciecie.strata));
+        for (let k = 0; k < 10; k++) sim.spark(wd.x + 0.5 + sim.rng.range(-1, 1), wd.cel + 0.8, 'dust');
+        sim.gdzie(wd.x, wd.cel).log(`Wiadro roztrzaskało się o dno sali — jedzenie się rozsypało (z ${bylo} porcji zostało ${wd.porcje}).`, 'krew', 'wiadro-rozbite');
+        zapisz(sim, 'swiat', `wiadro #${wd.id} roztrzaskane: ${bylo} → ${wd.porcje} porcji`, wd.x, wd.cel);
       }
+    } else if (wd.faza === 'rozbite') {
+      // zostaje na dnie, póki ktoś nie sklei liny (sim/lina-wiadra.ts sprząta je przy naprawie)
+    } else if (wd.faza === 'stoi') {
+      // pusty — odjeżdża w górę (etap 4: bez liny nie odjedzie); ktoś zasypał miejsce — jedzenie przepada pod gruzem
+      if ((wd.porcje <= 0 && !st.przecieta) || !w.passable(wd.x, wd.cel)) { wd.faza = 'odjezdza'; wd.od = sim.tick; }
+      // ktoś wykopał dziurę pod stojącym wiadrem — lina popuszcza i wiadro zjeżdża na nowe dno
+      else if (w.passable(wd.x, wd.cel + 1)) { wd.faza = 'zjezdza'; wd.od = sim.tick; wd.cel = dnoKolumny(sim, wd.x, wd.cel); }
     } else {
       wd.y = wd.cel - (wd.cel - wd.sufit + 1.6) * Math.min(1, t / WIADRO.odjazd);
     }
@@ -325,53 +238,57 @@ export function zabierzPorcje(sim: Sim, n: number): number {
   const pelne = wiadra(sim).filter((wd) => wd.porcje > 0 && wd.faza !== 'odjezdza').sort((a, b) => b.porcje - a.porcje);
   for (const wd of pelne) {
     if (zostalo <= 0) break;
-    const ile = Math.min(wd.porcje, zostalo);
-    wd.porcje -= ile; zostalo -= ile;
+    const k = Math.min(zostalo, wd.porcje);
+    wd.porcje -= k;
+    zostalo -= k;
   }
   return n - zostalo;
 }
 
 /**
- * Wiadro na start partii albo z karty: od razu, w najbliższym miejscu (bez zapowiedzi).
- * Zwraca false, gdy nie ma gdzie.
+ * Wiadro na start partii albo z karty: od razu, szybem (bez zapowiedzi); do wiadra, które już jest w szybie, dosypują.
+ * Zwraca false, gdy szyb zasypano.
  */
 export function wiadroTeraz(sim: Sim, porcje?: number): boolean {
-  const m = wybierzMiejsce(sim);
-  if (!m) return false;
-  // Alpha: w szybie wisi jedna lina — do wiadra, które już stoi w sali, dosypują
-  const wSzybie = m.szyb ? stan(sim).lista.find((wd) => wd.szyb && wd.faza !== 'odjezdza') : undefined;
-  if (wSzybie) {
-    wSzybie.porcje += porcje ?? porcjeNaLud(sim);
-    wSzybie.pelne = Math.max(wSzybie.pelne, wSzybie.porcje);
-    return true;
-  }
+  const m = miejsceWSzybie(sim);
+  if (!m || stan(sim).przecieta) return false;
+  const wSzybie = wiadroWSzybie(sim);
+  if (wSzybie) { dosyp(sim, wSzybie, porcje ?? porcjeNaLud(sim), Infinity); return true; }
   const wd = dodajWiadro(sim, m, porcje ?? porcjeNaLud(sim), false);
   wd.od = sim.tick - WIADRO.zapowiedz + 30;
   return true;
 }
 
 /**
- * Ryt „Nakarm”: dodatkowe wiadro tam, gdzie wskażesz — na dno pustki pod tym miejscem
- * (odkrytej). Zwraca opis odmowy albo null, gdy wiadro jedzie.
+ * Ryt „Nakarm”: dodatkowe jedzenie z góry — tym samym szybem, do jednego wiadra (decyzja użytkownika: wiadro jest
+ * jedno). Gdy wiadro jest w szybie, dosypują do niego; gdy nie — zjeżdża od razu. Zwraca opis odmowy albo null.
  */
-export function wiadroNaZadanie(sim: Sim, tx: number, ty: number): string | null {
-  const w = sim.world;
-  if (!w.inb(tx, ty)) return 'Tam nie sięga lina.';
-  if (wiadra(sim).some((wd) => wd.nakarm && wd.faza !== 'stoi' && wd.faza !== 'odjezdza')) return 'Wiadro już zjeżdża.';
-  // z litej skały — najbliższa pustka w tej kolumnie (w dół, potem w górę)
-  let y = ty;
-  if (!w.passable(tx, y)) {
-    let d = 1;
-    while (d < 6 && !(w.inb(tx, ty + d) && w.passable(tx, ty + d)) && !(w.inb(tx, ty - d) && w.passable(tx, ty - d))) d++;
-    if (d >= 6) return 'Tam jest lita skała.';
-    y = w.inb(tx, ty + d) && w.passable(tx, ty + d) ? ty + d : ty - d;
-  }
-  if (!w.ever[w.idx(tx, y)]) return 'Tego miejsca nikt jeszcze nie widział.';
-  let yy = y;
-  while (yy + 1 < w.h && w.passable(tx, yy + 1)) yy++;
-  if (!stoi(sim, tx, yy) || w.magma[w.idx(tx, yy)] > 0) return 'Tam wiadro nie ma na czym stanąć.';
-  dodajWiadro(sim, { x: tx, sufit: sufitNad(sim, tx, yy), cel: yy }, WIADRO.nakarmPorcji, true);
+export function wiadroNaZadanie(sim: Sim): string | null {
+  const m = miejsceWSzybie(sim);
+  if (!m) return 'Szyb z wiadrem jest zasypany.';
+  if (stan(sim).przecieta) return 'Lina wiadra jest przecięta — najpierw niech ktoś ją sklei.';
+  const wSzybie = wiadroWSzybie(sim);
+  if (wSzybie) { dosyp(sim, wSzybie, WIADRO.nakarmPorcji, Infinity); return null; }
+  dodajWiadro(sim, m, WIADRO.nakarmPorcji, true);
   return null;
+}
+
+/**
+ * Etap 4: lina sklejona. Stojące wiadro znów wisi na linie (puste odjedzie), roztrzaskane znika — resztki jedzenia
+ * zgarniają do nowego wiadra, które od razu zjeżdża z góry.
+ */
+export function poNaprawie(sim: Sim): void {
+  const st = stan(sim);
+  let resztki = 0;
+  for (const wd of st.lista) if (wd.faza === 'rozbite') resztki += wd.porcje;
+  st.lista = st.lista.filter((wd) => wd.faza !== 'rozbite');
+  st.nastepne = sim.tick + WIADRO.co;
+  const m = miejsceWSzybie(sim);
+  if (!m) return;
+  const wSzybie = wiadroWSzybie(sim);
+  if (wSzybie) { if (resztki) wSzybie.porcje += resztki; return; }
+  const wd = dodajWiadro(sim, m, porcjeNaLud(sim) + resztki, false);
+  wd.od = sim.tick - WIADRO.zapowiedz + 60;
 }
 
 // ---------------------------------------------------------------- wspinaczka po linie

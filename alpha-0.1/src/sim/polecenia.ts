@@ -12,6 +12,10 @@
  *  - etap 3c: wskazanie planu pomieszczenia — robotnicy go kują (kafel po kaflu, „kop” z polem `pom`); wskazanie
  *    gotowego warsztatu albo kuźni — robotnik w nim pracuje („praca”); sypialni — każdy idzie spać („sen”).
  *    Wolni robotnicy sami nic z tego nie biorą (sim/pomieszczenia.ts).
+ *  - etap 3f: wskazanie kuźni rycerzowi — „zbroja”: idzie pod wieszak i zakłada wykute części (sim/zbroja.ts);
+ *    gdy nic tam nie wisi, odmawia.
+ *  - etap 4: „napraw linę” (przycisk przy medalionach i na karcie postaci) — „naprawa”: idzie pod przeciętą linę
+ *    wiadra, wspina się i ją skleja (sim/lina-wiadra.ts). Skleja jeden naraz.
  * Robotnicy nie kopią już sami: bez rozkazu tylko noszą jedzenie i odpoczywają przy obozie.
  * Rozkaz wykonuje planer ludu (creatures.ts: planPolecenia); przerywa go tylko to, co pilne —
  * głód, fala Strażników, walka — a potem postać wraca do rozkazu.
@@ -21,14 +25,16 @@ import type { Creature } from './creatures';
 import { Job, Thought } from './creatures';
 import { POLECENIA as P } from '../nastawy/polecenia';
 import { rolaPostaci } from './lud';
-import { szukajDrogi, szukajKopiac, kosztKuciaLudu, budzetDrog, nowyTik, stoi } from './droga';
+import { szukajDrogi, szukajKopiac, kosztKuciaLudu, budzetDrog, nowyTik, stoi, podDroga } from './droga';
 import { czoloDrogi, nieWykopane } from './pielgrzymka';
 import { zapisz, kto } from './dziennik';
 import { kruszecKafla, type RodzajKruszcu } from './kruszce';
 import { kafleDoKucia, siegaPlanu, miejsceWPom, type Pomieszczenie } from './pomieszczenia';
 import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
+import { naWieszaku, miejscePodWieszakiem } from './zbroja';
+import { linaPrzecieta, sklejajacy, przerwijNaprawe } from './lina-wiadra';
 
-export type TypPolecenia = 'idz' | 'kop' | 'droga' | 'praca' | 'sen';
+export type TypPolecenia = 'idz' | 'kop' | 'droga' | 'praca' | 'sen' | 'zbroja' | 'naprawa';
 
 export interface Polecenie {
   typ: TypPolecenia;
@@ -42,7 +48,10 @@ export interface Polecenie {
   prob?: number;
   /** Alpha, etap 3b: „kop żyłę” — jaką rudę kuje, skąd zaczął (zasięg) i ile kafli już wykuł */
   zyla?: RodzajKruszcu; zx?: number; zy?: number; zylaIle?: number;
-  /** Alpha, etap 3c: pomieszczenie (sim/pomieszczenia.ts) — plan do wykucia („kop”), warsztat albo kuźnia („praca”), sypialnia („sen”) */
+  /**
+   * Alpha, etap 3c: pomieszczenie (sim/pomieszczenia.ts) — plan do wykucia („kop”), warsztat albo kuźnia („praca”),
+   * sypialnia („sen”); etap 3f: kuźnia, do której poszedł rycerz po zbroję z wieszaka („zbroja”)
+   */
   pom?: number;
 }
 
@@ -147,6 +156,8 @@ export function wydajPolecenie(sim: Sim, c: Creature, typ: 'idz' | 'droga', x: n
   if (w.solid(x, y)) {
     if (rola === 'robotnik' && w.hardness(x, y) > 0) {
       const cel = w.idx(x, y);
+      // (Alpha, jedno wiadro: podłoga drogi wiernych — wykuta urwałaby drogę do wiadra)
+      if (podDroga(sim, cel)) return odmow(sim, c, 'to podłoga drogi wiernych');
       // stoi obok albo dojdzie obok — kuje stamtąd; inaczej przekopuje się przez skałę
       const obok = (xx: number, yy: number) => Math.abs(xx - x) <= 1 && Math.abs(yy - y) <= 1 && stoi(sim, xx, yy);
       if (!drogaTeraz(sim, c, obok, P.szukanieDrogi) && !dokopieSie(sim, c, (i) => i === cel)) return odmow(sim, c, 'tam się nie dokopię');
@@ -265,6 +276,19 @@ function doPomieszczenia(sim: Sim, c: Creature, pom: Pomieszczenie, typ: 'praca'
   return null;
 }
 
+/** Etap 3f: rycerz idzie do kuźni zakładać części, które wiszą na wieszaku. */
+function poZbroje(sim: Sim, c: Creature, pom: Pomieszczenie): string | null {
+  if (!naWieszaku(sim).length) return odmow(sim, c, 'nie ma części na wieszaku');
+  const [mx, my] = miejscePodWieszakiem(pom);
+  const tam = (x: number, y: number) => Math.abs(x - mx) <= 1 && y === my && stoi(sim, x, y);
+  if (!tam(Math.floor(c.x), Math.floor(c.y)) && !drogaTeraz(sim, c, tam, P.szukanieDrogi)) return odmow(sim, c, 'nie dojdę do kuźni — nie ma drogi');
+  przerwij(sim, c);
+  c.polecenie = { typ: 'zbroja', x: mx, y: my, od: sim.tick, pom: pom.id };
+  c.odmowa = undefined;
+  zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — załóż zbroję z wieszaka`, mx, my);
+  return null;
+}
+
 /**
  * Alpha, etap 3c: zaznaczonym wskazano plan albo gotowe pomieszczenie. Plan — robotnicy go kują (reszta odmawia:
  * kują tylko robotnicy). Warsztat i kuźnia — robotnicy pracują, reszta wchodzi do środka. Sypialnia — każdy idzie
@@ -282,6 +306,7 @@ export function wydajNaPomieszczenie(sim: Sim, ids: readonly number[], pom: Pomi
     if (!pom.gotowe) powod = rola === 'robotnik' ? kujPlan(sim, c, pom) : odmow(sim, c, 'kują tylko robotnicy');
     else if (pom.rodzaj === 'sypialnia') powod = doPomieszczenia(sim, c, pom, 'sen', zajete);
     else if (rola === 'robotnik') powod = doPomieszczenia(sim, c, pom, 'praca', zajete);
+    else if (rola === 'rycerz' && pom.rodzaj === 'kuznia') powod = poZbroje(sim, c, pom);
     else { const [mx, my] = miejsceWPom(pom, 2); powod = wydajPolecenie(sim, c, 'idz', mx, my); }
     if (powod) odmowy.push(powod);
     else { przyjeli++; if (c.polecenie?.typ === 'praca' || c.polecenie?.typ === 'sen') zajete++; }
@@ -302,12 +327,84 @@ export function drogaGrupie(sim: Sim, ids: readonly number[]): { przyjeli: numbe
   return { przyjeli, odmowy };
 }
 
+/**
+ * Etap 4: „napraw linę”. Zaznaczeni (pierwszy, który dojdzie), a gdy nikogo nie zaznaczono — najbliższy z ludu, który
+ * dojdzie, idzie skleić przeciętą linę wiadra. Kto już na niej wisi i wiąże, tego się nie zmienia; kto dopiero szedł —
+ * oddaje rozkaz nowemu. Zwraca, kto poszedł, albo odmowy.
+ */
+export function wydajNaprawe(sim: Sim, ids: readonly number[]): { kto: Creature | null; odmowy: string[] } {
+  const lp = linaPrzecieta(sim);
+  if (!lp) return { kto: null, odmowy: ['lina jest cała'] };
+  const wisi = sklejajacy(sim);
+  if (wisi) return { kto: null, odmowy: ['już ktoś na niej wisi i ją skleja'] };
+  let lud = ids.map((id) => sim.creatureById(id)).filter((c): c is Creature => !!c && !c.dead && !!rolaPostaci(c));
+  if (!lud.length) {
+    lud = sim.creatures.filter((c) => !c.dead && !!rolaPostaci(c) && !c.straznik)
+      .sort((a, b) => Math.hypot(a.x - lp.x, a.y - lp.dno) - Math.hypot(b.x - lp.x, b.y - lp.dno));
+  }
+  const odmowy: string[] = [];
+  const tam = (x: number, y: number) => x === lp.x && y === lp.dno && stoi(sim, x, y);
+  for (const c of lud) {
+    if (!(Math.floor(c.x) === lp.x && Math.floor(c.y) === lp.dno) && !drogaTeraz(sim, c, tam, P.szukanieDrogi)) {
+      if (ids.length) odmowy.push(odmow(sim, c, 'nie dojdę do liny — nie ma drogi'));
+      continue;
+    }
+    // jeden naraz: kto dotąd szedł skleić linę, wraca do swoich zajęć
+    for (const o of sim.creatures) if (o !== c && !o.dead && o.polecenie?.typ === 'naprawa') odwolajPolecenie(sim, o);
+    przerwij(sim, c);
+    c.polecenie = { typ: 'naprawa', x: lp.x, y: lp.dno, od: sim.tick };
+    c.odmowa = undefined;
+    zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — napraw linę wiadra`, lp.x, lp.dno);
+    return { kto: c, odmowy };
+  }
+  if (!odmowy.length) odmowy.push('nikt z ludu nie dojdzie do liny');
+  return { kto: null, odmowy };
+}
+
 /** Odwołuje rozkaz — postać wraca do swoich zajęć (robotnik do noszenia jedzenia, reszta do obozu). */
 export function odwolajPolecenie(sim: Sim, c: Creature): void {
+  if (c.naprawia) przerwijNaprawe(sim, c);
   if (!c.polecenie) return;
   c.polecenie = undefined;
   c.kopieDroge = false;
   c.modliPrzyObozie = false;
   c.droga = undefined; c.drogaKopie = false;
   c.jt = 0; c.zamiarDo = sim.tick;
+}
+
+/**
+ * Alpha, etap 3d: zaznaczonym wskazano ołtarz — idą do niego i zostają (pobożny modli się tuż przy nim, na dwa
+ * kafle od krzyża; reszta staje dalej, żeby nie zasłaniać). Zwraca, ilu przyjęło rozkaz, i odmowy.
+ */
+export function wydajDoOltarza(sim: Sim, ids: readonly number[]): { przyjeli: number; odmowy: string[] } {
+  const o = sim.world.oltarz;
+  const lud = ids.map((id) => sim.creatureById(id)).filter((c): c is Creature => !!c && !c.dead && !!rolaPostaci(c));
+  lud.sort((a, b) => (rolaPostaci(a) === 'pobozny' ? 0 : 1) - (rolaPostaci(b) === 'pobozny' ? 0 : 1));
+  const zajete = new Set<number>();
+  let przyjeli = 0;
+  const odmowy: string[] = [];
+  for (const c of lud) {
+    // po tej stronie ołtarza, po której stoi — nie przechodzi przez niego bez potrzeby
+    const s = c.x < o.x + 0.5 ? -1 : 1;
+    const od = rolaPostaci(c) === 'pobozny' ? 2 : 3;
+    const dx = [od, -od, od + 1, -(od + 1), od + 2, -(od + 2), od + 3, -(od + 3)].map((d) => d * s).find((d) => !zajete.has(d)) ?? s * od;
+    zajete.add(dx);
+    const powod = wydajPolecenie(sim, c, 'idz', o.x + dx, o.y);
+    if (powod) odmowy.push(powod); else przyjeli++;
+  }
+  return { przyjeli, odmowy };
+}
+
+/** Alpha, etap 3d: okno ołtarza — „przywołaj pobożnego”: najbliższy, który dojdzie, idzie do ołtarza i tam zostaje. */
+export function przywolajDoOltarza(sim: Sim): string | null {
+  const o = sim.world.oltarz;
+  const pobozni = sim.creatures.filter((c) => !c.dead && rolaPostaci(c) === 'pobozny')
+    .sort((a, b) => Math.hypot(a.x - o.x, a.y - o.y) - Math.hypot(b.x - o.x, b.y - o.y));
+  if (!pobozni.length) return 'nie żyje żaden pobożny';
+  let powod: string | null = 'nie dojdzie';
+  for (const c of pobozni) {
+    powod = wydajPolecenie(sim, c, 'idz', o.x + (c.x < o.x + 0.5 ? -2 : 2), o.y);
+    if (!powod) return null;
+  }
+  return powod;
 }

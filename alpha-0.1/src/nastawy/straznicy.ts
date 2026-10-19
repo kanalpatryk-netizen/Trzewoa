@@ -34,6 +34,8 @@ export const STRAZNICY = {
   limitOdRdzenia: 30,
   /** Wychodzą ze skały w tej odległości od przedsionka (kafle). */
   pojawOd: 7, pojawDo: 15,
+  /** Alpha: Strażnik nie wyłania się bliżej niż tyle kafli od kogoś z ludu, kto nie walczy (losuje miejsce do skutku). */
+  pojawOdLudu: 8,
   /** Rycerz w tej odległości od Strażnika rusza do walki; uderza co `rycerzCiosCo` tików z `rycerzZasieg` kafli. */
   rycerzWidzi: 40, rycerzCiosCo: 60, rycerzZasieg: 1.6,
   /** Strażnicy biorą na cel rycerza, choćby stał o tyle kafli dalej niż ktoś inny. */

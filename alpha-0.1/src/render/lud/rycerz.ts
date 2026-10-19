@@ -6,6 +6,7 @@ import type { Stopa } from './szkielet';
 import { glowaKrzyzowca } from './helm';
 import { mieczKrzyzowca, sciezkaTarczy, strzala, tarcza } from './uzbrojenie';
 import { bez, bryla, cienieRzucane, kolcze, konczynaZgieta, KREW, KREW_SUCHA, plisa, przesiak, rgba, rozbryzg, swiatlocien, swiatloOsi, SWB, tonBryly, warstwaTuszu, zaciek, ziarno } from './tusz';
+import { nosi } from '../../sim/zbroja';
 
 /**
  * Rycerz — krzyżowiec po bitwie (Remake v2), malowany jak mroczna ilustracja tuszem: twarde cienie
@@ -17,6 +18,10 @@ import { bez, bryla, cienieRzucane, kolcze, konczynaZgieta, KREW, KREW_SUCHA, pl
  * z tyłu ciężki płaszcz w strzępach. Hełm garnczkowy albo otwarty z nosalem (helm.ts), tarcza w kształcie
  * żelazka i miecz (uzbrojenie.ts). Część nosi bandaż na przedramieniu, część — złamaną strzałę w barku.
  * Wygląd zależy od numeru postaci (los), więc każdy rycerz jest trochę inny. W szale krwi (ołtarz) żarzy się czerwienią.
+ *
+ * Alpha, etap 3f: na start tylko kolczuga, miecz i płaszcz (bez hełmu kolczy kaptur odsłania twarz). Części z kuźni
+ * (sim/zbroja.ts) pojawiają się, gdy je założy: hełm, naramienniki (czasza i dwie lamy) na barkach, napierśnik na wapenroku
+ * (z krzyżem malowanym na blasze), nakolanniki i tarcza.
  */
 
 type Tulow = (u: number, f: number) => Pkt;
@@ -40,20 +45,23 @@ export function rysujRycerza(r: Rysunek): void {
   const id = c.id;
 
   const naPlecach = r.cz === 'wspina' || r.cz === 'spada';
+  // etap 3f: co z kuźni ma na sobie
+  const zTarcza = nosi(c, 'tarcza'), naramienniki = nosi(c, 'naramienniki'), nakolanniki = nosi(c, 'nakolanniki');
   // tarcza w dłoni: opuszczona, gdy nie walczy
   const tq = { x: s.dlonB.x + 0.03 * h, y: s.dlonB.y + 0.04 * h - p.tarcza * 0.07 * h, obr: -0.12 + p.tarcza * 0.16 };
   const cienie: Cienie = { reka: new Path2D(), tarcza: null, glowa: new Path2D() };
   if (!m.prosto) {
     cienie.reka = konczynaZgieta(s.bark, 0.043 * h, s.lokA, 0.03 * h, s.dlonA, 0.024 * h);
-    if (!naPlecach) cienie.tarcza = sciezkaTarczy(h, id, tq.x, tq.y, tq.obr, 1);
+    if (!naPlecach && zTarcza) cienie.tarcza = sciezkaTarczy(h, id, tq.x, tq.y, tq.obr, 1);
     cienie.glowa.arc(s.glowa.x, s.glowa.y + s.rg * 0.2, s.rg * 1.2, 0, TAU);
   }
   plaszcz(r, T);
-  if (naPlecach) tarcza(r, s.bark.x - 0.07 * h, s.bark.y + 0.14 * h, 0.25 + pm.worek.a * 0.3, 0.85);
+  if (naPlecach && zTarcza) tarcza(r, s.bark.x - 0.07 * h, s.bark.y + 0.14 * h, 0.25 + pm.worek.a * 0.3, 0.85);
   pochwa(r, T);
   reka(r, s.barkB, s.lokB, s.dlonB, s.przedB, true, true, false);
-  noga(r, s.kolB, s.stB, true);
-  noga(r, s.kolA, s.stA, false);
+  if (naramienniki) naramiennik(r, s.barkB, s.lokB, true);
+  noga(r, s.kolB, s.stB, true, nakolanniki);
+  noga(r, s.kolA, s.stA, false, nakolanniki);
   // kolczuga na tułowiu — widać ją na barkach, pod pachą i w rozcięciu wapenroku
   const tul = tulowSciezka(s, h, 0.08, 0.066, 1.1, 1.0);
   m.ksztalt(tul, tonBryly(m, st.kolczuga, -0.46, s.biodro, s.bark, 0.15 * h), (g) => {
@@ -61,6 +69,7 @@ export function rysujRycerza(r: Rysunek): void {
     kolcze(m, g, tul, h, 0.15 * h, false, s.biodro, s.bark);
   });
   wapenrok(r, T, cienie);
+  if (nosi(c, 'napiersnik')) napiersnik(r, T, cienie);
   pas(r, T, tryb.narzedzie !== 'miecz');
   glowaKrzyzowca(r);
 
@@ -74,7 +83,7 @@ export function rysujRycerza(r: Rysunek): void {
   }
 
   // tarcza w dalszej ręce — przed tułowiem
-  if (!naPlecach) tarcza(r, tq.x, tq.y, tq.obr, 1);
+  if (!naPlecach && zTarcza) tarcza(r, tq.x, tq.y, tq.obr, 1);
 
   // miecz i bliższa ręka
   if (tryb.narzedzie === 'miecz') {
@@ -85,6 +94,7 @@ export function rysujRycerza(r: Rysunek): void {
     uderzenie(pm, p.cios, koniec, h, czas);
   }
   reka(r, s.bark, s.lokA, s.dlonA, s.przedA, false, tryb.narzedzie === 'miecz' || tryb.grzyb, los(id, 23) < 0.5);
+  if (naramienniki) naramiennik(r, s.bark, s.lokA, false);
   // żelazna zapinka płaszcza pod szyją
   {
     const f = T(1.0, 0.04), rr = Math.max(1, 0.013 * h);
@@ -191,21 +201,38 @@ function plaszcz(r: Rysunek, T: Tulow): void {
 
 // ------------------------------------------------------------------ kończyny
 
-/** Noga w kolczych nogawicach: jedna bryła od biodra po kostkę, blaszany nakolannik, ciemny but z ostrogą. */
-function noga(r: Rysunek, kol: Pkt, stp: Stopa, dalej: boolean): void {
+/** Noga w kolczych nogawicach: jedna bryła od biodra po kostkę, blaszany nakolannik (z kuźni), ciemny but z ostrogą. */
+function noga(r: Rysunek, kol: Pkt, stp: Stopa, dalej: boolean, nakolannik: boolean): void {
   const { m, s, h, st } = r;
   const ru = 0.05 * h, rk = 0.036 * h, rs = 0.027 * h;
   const cala = konczynaZgieta(s.biodro, ru, kol, rk, stp.kostka, rs, [0.004 * h, 0.01 * h, 0.012 * h, 0.003 * h]);
   m.ksztalt(cala, tonBryly(m, st.kolczuga, dalej ? -0.68 : -0.46, s.biodro, stp.kostka, ru * 1.8), (g) => kolcze(m, g, cala, h, ru * 1.8, dalej, s.biodro, stp.kostka));
   // nakolannik: płaska kopułka z blachy na przodzie kolana
+  if (nakolannik) nakolannikNa(r, kol, stp, rk, dalej);
+  butRycerza(r, stp, dalej);
+}
+
+/** Nakolannik: kopułka z blachy na przodzie kolana, z nitem pośrodku i rzemieniem pod kolanem. */
+function nakolannikNa(r: Rysunek, kol: Pkt, stp: Stopa, rk: number, dalej: boolean): void {
+  const { m, s, h, st } = r;
   const ku = katOdc(s.biodro, kol), kg = katOdc(kol, stp.kostka);
   const kn = (ku + kg) / 2, przodX = cos(kn), przodY = -sin(kn);
   const nc = { x: kol.x + przodX * rk * 0.45, y: kol.y + przodY * rk * 0.45 };
   const nk = new Path2D(); nk.ellipse(nc.x, nc.y, rk * 0.62, rk * 0.92, -kn, 0, TAU);
   m.ksztalt(nk, tonC(st.helm, dalej ? -0.66 : -0.44, CIEN.metal), (g) => {
     if (!m.bogato) return;
+    // rzemień pod kolanem i nit pośrodku kopułki
+    const pod = { x: kol.x - przodX * rk * 0.2 + Math.sin(kn) * rk * 0.9, y: kol.y - przodY * rk * 0.2 + Math.cos(kn) * rk * 0.9 };
+    g.strokeStyle = 'rgba(30,20,14,0.9)'; g.lineWidth = Math.max(0.5, rk * 0.18); g.lineCap = 'butt';
+    g.beginPath(); g.moveTo(pod.x - przodX * rk * 0.7, pod.y - przodY * rk * 0.7); g.lineTo(pod.x + przodX * rk * 0.6, pod.y + przodY * rk * 0.6); g.stroke();
+    g.fillStyle = 'rgba(255,248,232,0.5)'; g.beginPath(); g.arc(nc.x + przodX * rk * 0.12, nc.y + przodY * rk * 0.12, Math.max(0.5, rk * 0.12), 0, TAU); g.fill();
     bryla(g, nk, h, [[rk * 0.5, 'rgba(2,2,6,0.55)'], [-rk * 0.16, dalej ? 'rgba(255,248,232,0.06)' : 'rgba(255,248,232,0.26)']], swiatloOsi(kol, stp.kostka), dalej ? 0.6 : 0.9, 0, undefined, m.lod < 2);
   });
+}
+
+/** But: ciemna skóra, rzemień w kostce, ostroga. */
+function butRycerza(r: Rysunek, stp: Stopa, dalej: boolean): void {
+  const { m, h, st } = r;
   // but: ciemna skóra, rzemień w kostce, ostroga
   const b = but(stp, h, 0.068, 1.0);
   m.ksztalt(b, tonC([44, 34, 28], dalej ? -0.55 : -0.3, CIEN.tkanina), (g) => {
@@ -265,6 +292,115 @@ function reka(r: Rysunek, bark: Pkt, lok: Pkt, dl: Pkt, przed: number, dalej: bo
     if (!m.bogato) return;
     swiatlocien(g, d, [[0.016 * h, 'rgba(6,4,4,0.5)'], [-0.004 * h, 'rgba(255,240,220,0.14)']], SWB);
   });
+}
+
+// ------------------------------------------------------------------ zbroja z kuźni (etap 3f)
+
+/**
+ * Naramiennik: blaszana czasza na barku i dwie lamy pod nią, zachodzące na siebie wzdłuż ramienia,
+ * każda z nitem na końcach; dolna krawędź każdej lamy rzuca cień na następną.
+ */
+function naramiennik(r: Rysunek, bark: Pkt, lok: Pkt, dalej: boolean): void {
+  const { m, h, st } = r;
+  const ux = lok.x - bark.x, uy = lok.y - bark.y, L = Math.hypot(ux, uy) || 1;
+  const d = { x: ux / L, y: uy / L }, n = { x: -d.y, y: d.x };
+  // punkt w układzie ramienia: wzdłuż (w dół ramienia) i w poprzek, w h
+  const P = (a: number, b: number): [number, number] => [bark.x + (d.x * a + n.x * b) * h, bark.y + (d.y * a + n.y * b) * h];
+  // od dolnej lamy: każda wyższa zachodzi na tę pod nią
+  for (let i = 2; i >= 0; i--) {
+    const a0 = i === 0 ? -0.045 : 0.02 + (i - 1) * 0.034, a1 = 0.05 + i * 0.034, w = 0.06 - i * 0.004;
+    const p = new Path2D();
+    if (i === 0) { p.moveTo(...P(a1, -w)); p.quadraticCurveTo(...P(a0 - 0.02, -w * 1.05), ...P(a0, 0)); p.quadraticCurveTo(...P(a0 - 0.02, w * 1.05), ...P(a1, w)); }
+    else { p.moveTo(...P(a1, -w)); p.lineTo(...P(a0, -w * 1.02)); p.quadraticCurveTo(...P(a0 - 0.012, 0), ...P(a0, w * 1.02)); p.lineTo(...P(a1, w)); }
+    p.quadraticCurveTo(...P(a1 + 0.018, 0), ...P(a1, -w));
+    p.closePath();
+    m.ksztalt(p, tonC(st.helm, (dalej ? -0.6 : -0.22) - i * 0.06, CIEN.metal), (g) => {
+      if (m.prosto) return;
+      if (m.bogato) {
+        // nity na końcach lamy
+        for (const k of [-1, 1]) {
+          const [qx, qy] = P(a1 - 0.012, k * w * 0.72);
+          g.fillStyle = 'rgba(4,4,8,0.7)'; g.beginPath(); g.arc(qx + h * 0.001, qy + h * 0.0012, Math.max(0.4, h * 0.0045), 0, TAU); g.fill();
+          g.fillStyle = 'rgba(255,248,232,0.5)'; g.beginPath(); g.arc(qx - h * 0.0006, qy - h * 0.0008, Math.max(0.3, h * 0.0025), 0, TAU); g.fill();
+        }
+      }
+      // brzeg lamy łapie światło, pod nim cień na następnej
+      const [b0x, b0y] = P(a1, -w * 0.9), [bmx, bmy] = P(a1 + 0.016, 0), [b1x, b1y] = P(a1, w * 0.9);
+      g.strokeStyle = dalej ? 'rgba(255,248,232,0.12)' : 'rgba(255,248,232,0.4)'; g.lineWidth = Math.max(0.4, h * 0.003);
+      g.beginPath(); g.moveTo(b0x, b0y); g.quadraticCurveTo(bmx, bmy, b1x, b1y); g.stroke();
+      bryla(g, p, h, [[0.02 * h, 'rgba(2,2,6,0.5)'], [-0.006 * h, dalej ? 'rgba(255,248,232,0.06)' : 'rgba(255,248,232,0.28)']], swiatloOsi(bark, lok), dalej ? 0.6 : 0.9, 0, undefined, !m.bogato);
+    });
+  }
+}
+
+/**
+ * Napierśnik: wypukła blacha na piersi, założona na wapenrok — od szyi po pas, z dwiema lamami u dołu,
+ * rzemieniem przez bark i nitami wzdłuż boku. Krzyż patée namalowany na blasze (wapenrok go już nie pokazuje).
+ */
+function napiersnik(r: Rysunek, T: Tulow, cienie: Cienie): void {
+  const { m, s, h, st, c, czas } = r;
+  const id = c.id;
+  const k = st.helm;
+  const p = new Path2D();
+  const A = T(0.92, -0.035), B = T(0.97, 0.058), D = T(PAS + 0.05, 0.088), E = T(PAS + 0.05, -0.05);
+  p.moveTo(A.x, A.y);
+  p.quadraticCurveTo(T(1.0, 0.01).x, T(1.0, 0.01).y, B.x, B.y);
+  bez(p, T(0.82, 0.126), T(0.46, 0.112), D);
+  p.quadraticCurveTo(T(PAS + 0.035, 0.02).x, T(PAS + 0.035, 0.02).y, E.x, E.y);
+  bez(p, T(0.45, -0.066), T(0.74, -0.07), A);
+  p.closePath();
+  let styl: string | CanvasGradient = tonC(k, -0.12, CIEN.metal);
+  if (!m.prosto) {
+    const a = T(0.9, 0.11), b = T(PAS, -0.06);
+    const gr = m.g.createLinearGradient(a.x, a.y, b.x, b.y);
+    gr.addColorStop(0, tonC(k, 0.14, CIEN.metal)); gr.addColorStop(0.45, tonC(k, -0.1, CIEN.metal)); gr.addColorStop(1, tonC(k, -0.5, CIEN.metal));
+    styl = gr;
+  }
+  const kq = T(0.62, 0.05);
+  m.ksztalt(p, styl, (g) => {
+    const krzyz = krzyzPatee(kq.x, kq.y, s.katT, h, 0.95);
+    if (m.prosto) { g.fillStyle = tonC(st.krzyz, 0, CIEN.tkanina); g.fill(krzyz); return; }
+    g.save(); g.clip(p);
+    // krzyż farbą na blasze — obtłuczony na brzegach
+    g.fillStyle = tonC(st.krzyz, -0.05, CIEN.tkanina, 0.92); g.fill(krzyz);
+    if (st.szal) {
+      g.save(); g.globalCompositeOperation = 'lighter';
+      g.fillStyle = `rgba(255,40,16,${0.12 + 0.06 * sin(czas * 0.004 + id)})`; g.fill(krzyz);
+      g.restore();
+    }
+    // dwie lamy u dołu: ciemna szczelina i jasny brzeg nad nią
+    for (let i = 0; i < 2; i++) {
+      const u = PAS + 0.1 + i * 0.07;
+      const a0 = T(u, -0.07), am = T(u + 0.015, 0.03), a1 = T(u, 0.12);
+      g.strokeStyle = 'rgba(4,4,8,0.7)'; g.lineWidth = Math.max(0.5, h * 0.004);
+      g.beginPath(); g.moveTo(a0.x, a0.y); g.quadraticCurveTo(am.x, am.y, a1.x, a1.y); g.stroke();
+      const b0 = T(u + 0.012, -0.07), bm = T(u + 0.027, 0.03), b1 = T(u + 0.012, 0.12);
+      g.strokeStyle = 'rgba(255,248,232,0.3)'; g.lineWidth = Math.max(0.4, h * 0.0025);
+      g.beginPath(); g.moveTo(b0.x, b0.y); g.quadraticCurveTo(bm.x, bm.y, b1.x, b1.y); g.stroke();
+    }
+    // nity wzdłuż boku (pod pachą)
+    if (m.bogato) {
+      for (let i = 0; i < 4; i++) {
+        const q = T(0.42 + i * 0.13, -0.045 - 0.008 * Math.sin(i));
+        g.fillStyle = 'rgba(4,4,8,0.7)'; g.beginPath(); g.arc(q.x + h * 0.001, q.y + h * 0.0012, Math.max(0.4, h * 0.0045), 0, TAU); g.fill();
+        g.fillStyle = 'rgba(255,248,232,0.5)'; g.beginPath(); g.arc(q.x - h * 0.0006, q.y - h * 0.0008, Math.max(0.3, h * 0.0025), 0, TAU); g.fill();
+      }
+      cienieRzucane(g, p, [[cienie.reka, 0.024 * h, 0.36], [cienie.glowa, 0.03 * h, 0.36], [cienie.tarcza, 0.04 * h, 0.4]], true);
+    }
+    // wypolerowany grzbiet blachy wzdłuż wypukłości piersi
+    const g0 = T(0.9, 0.075), g1 = T(0.7, 0.1), g2 = T(0.45, 0.092);
+    g.strokeStyle = 'rgba(255,248,232,0.32)'; g.lineWidth = Math.max(0.8, h * 0.012); g.lineCap = 'round';
+    g.beginPath(); g.moveTo(g0.x, g0.y); g.quadraticCurveTo(g1.x, g1.y, g2.x, g2.y); g.stroke();
+    g.strokeStyle = 'rgba(255,248,232,0.6)'; g.lineWidth = Math.max(0.4, h * 0.0035);
+    g.beginPath(); g.moveTo(g0.x, g0.y); g.quadraticCurveTo(g1.x, g1.y, g2.x, g2.y); g.stroke();
+    bryla(g, p, h, [[0.045 * h, 'rgba(4,4,10,0.5)'], [0.014 * h, 'rgba(4,4,10,0.45)'], [-0.01 * h, 'rgba(255,248,232,0.18)'], [Math.max(1, 0.004 * h), 'rgba(160,176,196,0.26)', undefined, { x: 0.94, y: 0.34 }]], SWB, 1, 0, undefined, !m.bogato, true);
+    g.restore();
+  });
+  // rzemień przez bark — do pleców
+  const r0 = T(0.9, -0.03), r1 = T(1.0, -0.06), r2 = T(0.86, -0.088);
+  const sk = tonC(st.skorzane, -0.3, CIEN.tkanina), gr = Math.max(1, h * 0.011);
+  m.kreska(r0.x, r0.y, r1.x, r1.y, gr, sk);
+  m.kreska(r1.x, r1.y, r2.x, r2.y, gr, sk);
 }
 
 // ------------------------------------------------------------------ wapenrok

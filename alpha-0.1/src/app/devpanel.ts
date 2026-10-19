@@ -14,7 +14,8 @@ import { wylosuj, wymusLancuch, KARTY_LANCUCHA, KARTY_W_GRZE } from '../sim/wyda
 import { klanLudu, liczRole, nadajRole, podloga, stanyPostaci, NAZWA_ROLI, type Rola } from '../sim/lud';
 import { najwierniejsza } from '../sim/pielgrzymka';
 import { devMrok, opisMroku, naKogoPatrzy } from '../sim/mrok';
-import { devDlon, opisDloni } from '../sim/dlon';
+import { devDlon, devLina, opisDloni } from '../sim/dlon';
+import { devAniol } from '../sim/aniol';
 import { TIKOW_NA_MINUTE } from '../nastawy/czas';
 import { TEMPO } from '../nastawy/sterowanie';
 import { mnoznikNapis } from '../render/przyciski';
@@ -163,6 +164,9 @@ export class PanelDewelopera {
     zasoby.append(
       this.przycisk('+100 wiary', () => { this.gra.sim().wiara += 100; }),
       this.przycisk('+100 krwi', () => { this.gra.sim().krew += 100; }),
+      // Alpha: kruszce do prób kuźni i warsztatu (żelazo to szara sztabka na liczniku)
+      this.przycisk('+10 żelaza', () => { this.gra.sim().zelazo += 10; }, 'na zbroję w kuźni'),
+      this.przycisk('+10 złota', () => { this.gra.sim().zloto += 10; }, 'na krzyże w warsztacie'),
       this.przycisk('+ wiadro', () => { wiadroTeraz(this.gra.sim()); }, 'pełne wiadro zjeżdża od razu, przy najgłodniejszych'),
       this.przycisk('sen → 0', () => { this.gra.sim().sen = 0; }, 'powieka podnosi się'),
       this.przycisk('pęknij skorupę', () => wymusPekniecie(this.gra.sim())),
@@ -183,7 +187,9 @@ export class PanelDewelopera {
     const dlonNapis = document.createElement('span');
     dlonNapis.textContent = 'Dłoń z otchłani:';
     dlonNapis.style.color = '#9a8f7a';
-    dlon.append(dlonNapis, this.przycisk('wywołaj', () => this.pokazWynik(devDlon(this.gra.sim())), 'od razu, także poza Koszmarem — przy kimś na brzegu nieznanego'));
+    dlon.append(dlonNapis, this.przycisk('wywołaj', () => this.pokazWynik(devDlon(this.gra.sim())), 'od razu, także poza Koszmarem — przy kimś na brzegu nieznanego'),
+      this.przycisk('po linę', () => this.pokazWynik(devLina(this.gra.sim())), 'etap 4: dłoń wznosi się spod podłogi sali i przecina linę wiadra'),
+      this.przycisk('anielska', () => this.pokazWynik(devAniol(this.gra.sim())), 'etap 4: dłoń anielska schodzi od razu z losowym darem'));
     const widok = this.wiersz();
     widok.append(
       this.pole('bez ciemności', DEV.bezMroku, (v) => { DEV.bezMroku = v; }),
@@ -334,7 +340,7 @@ export class PanelDewelopera {
     const linie = [
       `${czas(sim.tick)} · tik ${sim.tick} · ${DEV.pauza ? 'pauza dewelopera' : t} · ${this.tikowNaSek} tik/s · ${this.fps} kl/s · krok ${DEV.msKroku.toFixed(2)} ms`,
       `lud ${r.pobozny + r.robotnik + r.rycerz}: pobożni ${r.pobozny} · robotnicy ${r.robotnik} · rycerze ${r.rycerz} · jedzenie ${porcjiWWiadrach(sim)} porcji · wiadro za ${Math.ceil(doNastepnego(sim) / 120)} s`,
-      `wiara ${Math.floor(sim.wiara)} · krew ${Math.floor(sim.krew)} · oddanie ${Math.round((wierni?.devotion ?? 0) * 100)}% · sen ${Math.round(sim.sen * 100)}% · pęknięć ${sim.rytual.pekniecia}${sim.rytual.otwarta ? ' · rdzeń otwarty' : ''}`,
+      `wiara ${Math.floor(sim.wiara)} · krew ${Math.floor(sim.krew)} · żelazo ${sim.zelazo} · złoto ${sim.zloto} · oddanie ${Math.round((wierni?.devotion ?? 0) * 100)}% · sen ${Math.round(sim.sen * 100)}% · pęknięć ${sim.rytual.pekniecia}${sim.rytual.otwarta ? ' · rdzeń otwarty' : ''}`,
       opisMroku(sim),
       opisDloni(sim),
     ];

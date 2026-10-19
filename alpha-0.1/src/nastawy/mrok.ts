@@ -51,6 +51,8 @@ export const MROK = {
   swiatlo: {
     robotnik: 4.6, pobozny: 3.2, pobozny_modli: 4.2, rycerz: 2.6,
     siedziba: 9, oboz: 6, rdzen: 7, cud: 11,
+    /** Alpha, etap 3d: świece na ołtarzu (przy rytuale jaśniej) i smuga dnia z szybu nad nim (u góry, u dołu). */
+    oltarz: 5.5, rytual: 8, smugaGora: 2.2, smugaDol: 4.2,
   },
   /** Lampka samotnego, na którego patrzy, przygasa do tej części promienia. */
   lampkaPrzygasa: 0.25,

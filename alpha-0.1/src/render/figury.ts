@@ -91,7 +91,7 @@ function krokPostaci(c: Creature): number {
 
 export type Czynnosc =
   | 'stoi' | 'idzie' | 'biegnie' | 'wspina' | 'spada'
-  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia';
+  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia' | 'zaklada' | 'skleja';
 
 /** Co widać: czynność wynika z zajęcia, ale i z tego, czy stworzenie w ogóle się rusza. */
 function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
@@ -103,6 +103,9 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   if (r.v < 0.6 && postepOdmowy(sim, c, czas) !== null) return 'odmawia';
   const wspina = (sim.tick - (c.wspina ?? -99)) < 4 && !sim.world.solid(Math.floor(c.x), Math.floor(c.y) + 1);
   if (wspina) return 'wspina';
+  // Alpha: na linie (nie na podłodze pod nią) — wisi na rękach i wspina się, ręka za ręką
+  const lx = Math.floor(c.x), ly = Math.floor(c.y);
+  if (sim.world.inb(lx, ly) && sim.world.lina[sim.world.idx(lx, ly)] === 1 && !sim.world.solid(lx, ly + 1)) return 'wspina';
   const przy = (x: number, y: number, d: number) => Math.abs(x + 0.5 - c.x) <= d && Math.abs(y + 0.5 - c.y) <= d + 0.6;
   const stoi = r.v < 0.6;
   // Alpha, etap 3c: przy stole albo kowadle — z młotkiem; w sypialni — leży na posłaniu
@@ -1095,6 +1098,15 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       ctx.fill();
     }
 
+    // Alpha, etap 3d: szał krwi z ołtarza — czerwona aura wokół postaci, pulsuje
+    if ((c.szalDo ?? -1) > sim.tick) {
+      const puls = 0.75 + 0.25 * Math.sin(czas * 0.008 + c.id);
+      const R = h * 0.95;
+      const ga = ctx.createRadialGradient(sx, sy - h * 0.5, 0, sx, sy - h * 0.5, R);
+      ga.addColorStop(0, `rgba(255,44,26,${0.42 * puls})`); ga.addColorStop(0.6, `rgba(220,24,14,${0.18 * puls})`); ga.addColorStop(1, 'rgba(200,20,10,0)');
+      ctx.fillStyle = ga; ctx.fillRect(sx - R, sy - h * 0.5 - R, R * 2, R * 2);
+    }
+
     let cz: Czynnosc;
     if (tlum && wybrany !== c.id && !c.straznik && !c.odmowa) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
     else {
@@ -1107,7 +1119,7 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
 
     // Remake v1: aureola nad głową — jasna przy wzmocnieniu, czerwona przy osłabieniu
     if (rolaPostaci(c)) {
-      const stany = stanyPostaci(sim, c).filter((s) => !s.uspiony);
+      const stany = stanyPostaci(sim, c).filter((s) => !s.uspiony && !s.bezAureoli);
       const dobre = stany.some((s) => s.dobry), zle = stany.some((s) => !s.dobry);
       if (dobre || zle) {
         const puls = 0.75 + 0.25 * Math.sin(czas * 0.005 + c.id);

@@ -4,6 +4,7 @@ import { T } from './tiles';
 import { aktualnyPlan } from './pielgrzymka';
 import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
 import { REMAKE } from '../nastawy/lud';
+import { linaPrzecieta, sklejajacy } from './lina-wiadra';
 
 /** Remake v2: podpis siedziby (jedzenie jest w wiadrach, nie w spiżarni). */
 export function podpisSiedziby(_sim: Sim, _k: Sim['clans'][number]): string {
@@ -91,7 +92,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     // Warta pod rdzeniem żyje z tego, co rośnie przy przedsionku. Z grzybem schodzi
     // i bez drogi powrotnej; drogę do domu można jej wydrążyć, ale nie trzeba.
     const w = sim.world;
-    // (Alpha: kto zszedł w głąb, dostaje wiadro tam, gdzie stoi — warty nie trzeba karmić rytem)
+    // (Alpha: warcie jedzenie z jedynego wiadra donoszą robotnicy — Nakarm i tak spuszcza je tylko szybem do sali)
     if (!REMAKE && sim.jedzeniePrzedsionka < PIELGRZYMKA.jedzenieWPrzedsionku) {
       kandydaci.push({
         tekst: `${najwierniejszy.name} wierzą dość mocno, by zejść pod twój rdzeń. ${REMAKE ? 'Spuść wiadro nad przedsionek rytem „Nakarm”' : 'Nakarm przedsionek nad rdzeniem'} — z tym jedzeniem ich warta przeżyje pod skorupą.`,
@@ -152,6 +153,16 @@ export function podpowiedz(sim: Sim): Podpowiedz {
         waga: 40,
       });
     }
+  }
+
+  // 6d. Alpha, etap 4: dłoń z otchłani przecięła linę wiadra — póki nikt jej nie skleja, to najpilniejsze po wymieraniu
+  const lp = linaPrzecieta(sim);
+  if (lp && !sklejajacy(sim) && !sim.creatures.some((c) => !c.dead && c.polecenie?.typ === 'naprawa')) {
+    kandydaci.push({
+      tekst: 'Lina wiadra jest przecięta — z góry nic nie zjedzie. Pod płytą „napraw linę wiadra”: ktoś pójdzie, wespnie się i ją sklei.',
+      cel: { x: lp.x + 0.5, y: lp.koniec, r: 3, tekst: 'przecięta lina' },
+      waga: 95,
+    });
   }
 
   // 7. sporo krwi na koncie

@@ -9,6 +9,7 @@ import { obrazFresku } from './freski';
 import { ustawienia } from '../core/settings-store';
 import { DEV } from '../sim/dziennik';
 import { wiadra } from '../sim/wiadro';
+import { rytualOltarza } from '../sim/oltarz';
 
 /**
  * Ciemność w górze: świat jest widoczny tylko w świetle lampek robotników, aureol
@@ -70,6 +71,16 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   // wiadro z jedzeniem świeci ciepło (pełne mocniej) — widać je w ciemności, nawet gdy nikogo przy nim nie ma
   for (const wd of wiadra(sim)) if (wd.faza !== 'zapowiedz') swiec(wd.x + 0.5, wd.y + 0.3, S.oboz * (wd.porcje > 0 ? 0.75 : 0.4));
   swiec(w.coreX + 0.5, w.coreY + 0.5, S.rdzen);
+  // Alpha, etap 3d: świece na ołtarzu i smuga światła dziennego z szybu nad nim
+  if (w.salaOltarza.x1 >= 0) {
+    const o = w.oltarz;
+    swiec(o.x + 0.5, o.y - 0.6, (rytualOltarza(sim) ? S.rytual : S.oltarz) * (0.96 + 0.06 * migotLampy(teraz + 3331)));
+    const dy = o.y - w.szybDol;
+    for (let k = 0; k <= dy; k += 1.6) {
+      const f = k / Math.max(1, dy);
+      swiec(w.szybX + 0.5 + (o.x - w.szybX) * f, w.szybDol + k, S.smugaGora + (S.smugaDol - S.smugaGora) * f, 0.75);
+    }
+  }
   for (const e of sim.efekty) if (e.rodzaj === 'cud') swiec(e.x, e.y, S.cud * (1 - e.t / e.max * 0.5));
 
   const m = sim.lud.mrok;

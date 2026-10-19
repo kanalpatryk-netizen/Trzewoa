@@ -18,6 +18,12 @@ export const POMIESZCZENIA = {
   korytarzMaks: 30,
   /** Szyb: proste schody w dół (stopień o kafel — da się nimi wrócić), najwyżej tyle stopni. */
   szybMaks: 24,
+  /**
+   * Alpha: lina (zamiast drabiny z 3d — decyzje użytkownika 18.10). Wiesza ją gracz, od razu — nikt jej nie buduje.
+   * Jedyny warunek: górny koniec uczepiony skały (strop, krawędź półki albo ściana); z haka lina spada do podłogi.
+   * Pierwsze `linyDarmowe` są za darmo, każda następna kosztuje `linaKrew`.
+   */
+  linyDarmowe: 5, linaKrew: 10,
   /** Najwięcej planów i pomieszczeń naraz. */
   maks: 12,
   /** Kując plan, robotnik sięga kilofem kafel wyżej niż zwykle — nad głowę (wnętrze ma 3 kafle wysokości). */
@@ -33,7 +39,7 @@ export const POMIESZCZENIA = {
   },
 
   kuznia: {
-    /** Kolejne części zbroi rycerza: ile żelaza i ile tików. Rysowanie części na rycerzu — etap 3f. */
+    /** Kolejne części zbroi rycerza: ile żelaza i ile tików. Co dają i jak rycerz je zakłada — nastawy/zbroja.ts. */
     czesci: [
       { id: 'helm', nazwa: 'hełm', zelazo: 3, tikow: 1500 },
       { id: 'naramienniki', nazwa: 'naramienniki', zelazo: 3, tikow: 1500 },
@@ -44,22 +50,25 @@ export const POMIESZCZENIA = {
   },
 
   sypialnia: {
-    /** Tyle tików snu zdejmuje osłabienia (okaleczenie, zatrucie); potem śpiący wstaje sam. */
-    snuTikow: 1800,
+    /**
+     * Tyle tików snu zdejmuje osłabienia (okaleczenie, zatrucie); potem śpiący wstaje sam. Etap 3d (decyzja
+     * użytkownika): ok. 60 s — ofiara krwi przy ołtarzu nie może być darmową pętlą krwi.
+     */
+    snuTikow: 7200,
   },
 };
 
-export type RodzajPomieszczenia = 'sypialnia' | 'warsztat' | 'kuznia' | 'korytarz' | 'szyb';
+export type RodzajPomieszczenia = 'sypialnia' | 'warsztat' | 'kuznia' | 'korytarz' | 'szyb' | 'lina';
 
 /** Nazwy w mianowniku — przyciski, podpisy, kronika. */
 export const NAZWA_POMIESZCZENIA: Record<RodzajPomieszczenia, string> = {
-  sypialnia: 'sypialnia', warsztat: 'warsztat', kuznia: 'kuźnia', korytarz: 'korytarz', szyb: 'szyb',
+  sypialnia: 'sypialnia', warsztat: 'warsztat', kuznia: 'kuźnia', korytarz: 'korytarz', szyb: 'szyb', lina: 'lina',
 };
 
 /** W bierniku — kronika („wykuli kuźnię”). */
 export const BIERNIK_POMIESZCZENIA: Record<RodzajPomieszczenia, string> = {
-  sypialnia: 'sypialnię', warsztat: 'warsztat', kuznia: 'kuźnię', korytarz: 'korytarz', szyb: 'szyb',
+  sypialnia: 'sypialnię', warsztat: 'warsztat', kuznia: 'kuźnię', korytarz: 'korytarz', szyb: 'szyb', lina: 'linę',
 };
 
 /** Kolejność szablonów na przyciskach i pod klawiszem B. */
-export const SZABLONY: RodzajPomieszczenia[] = ['sypialnia', 'warsztat', 'kuznia', 'korytarz', 'szyb'];
+export const SZABLONY: RodzajPomieszczenia[] = ['sypialnia', 'warsztat', 'kuznia', 'korytarz', 'szyb', 'lina'];

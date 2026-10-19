@@ -13,16 +13,19 @@ import { wolnoRuszac } from './nastroj';
  * Symulacja tylko odkłada świeży urobek (sim.urobek, sim/kruszce.ts). Animacja idzie zegarem ekranu,
  * nie tikami gry — pauza ani tempo jej nie szarpią. Liczby: OKRUCH w src/nastawy/kruszce.ts.
  * Etap 3c: tą samą drogą krzyż z warsztatu leci do licznika wiary (`dodaj('wiara', …)`, render/pomieszczenia.ts).
+ * Etap 3d: kropla krwi z ofiary leci z misy ołtarza do licznika krwi, a krew zapłacona za rytuał — z licznika
+ * do misy (`oddaj('krew', …)`, render/oltarz.ts).
  */
 
-/** Dokąd leci: licznik żelaza, złota albo wiary. */
-export type CelLotu = RodzajKruszcu | 'wiara';
+/** Dokąd leci: licznik żelaza, złota, wiary albo krwi. */
+export type CelLotu = RodzajKruszcu | 'wiara' | 'krew';
 
 /** Barwy: sztabka i okruch żelaza (stal i rdza rudy), samorodek i okruch złota, złoty krzyż do licznika wiary. */
 const BARWA: Record<CelLotu, { jasna: string; ciemna: string; obrys: string; blask: [number, number, number] }> = {
   zelazo: { jasna: 'rgba(176,184,196,1)', ciemna: 'rgba(118,62,44,1)', obrys: 'rgba(22,18,20,0.95)', blask: [255, 196, 120] },
   zloto: { jasna: 'rgba(255,222,128,1)', ciemna: 'rgba(196,140,46,1)', obrys: 'rgba(48,30,6,0.95)', blask: [255, 220, 120] },
   wiara: { jasna: 'rgba(255,244,200,1)', ciemna: 'rgba(212,160,60,1)', obrys: 'rgba(48,30,6,0.95)', blask: [255, 236, 170] },
+  krew: { jasna: 'rgba(240,104,80,1)', ciemna: 'rgba(118,14,10,1)', obrys: 'rgba(40,6,4,0.95)', blask: [255, 96, 70] },
 };
 
 /** Tani skrót liczby — stały kształt okrucha i kierunki iskier (rysunek nie sięga po los gry). */
@@ -32,13 +35,14 @@ function los(n: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-interface Lot { rodzaj: CelLotu; ile: number; x: number; y: number; od: number; ziarno: number }
+/** `wstecz` — z licznika na mapę (krew zapłacona za rytuał spływa do misy); licznik już jest pomniejszony. */
+interface Lot { rodzaj: CelLotu; ile: number; x: number; y: number; od: number; ziarno: number; wstecz?: boolean }
 
 /** Okruchy w locie i błyski liczników — jedna para na ekran gry. */
 export class Urobki {
   private widziane = new WeakSet<Urobek>();
   private loty: Lot[] = [];
-  private doleciale: Record<CelLotu, number> = { zelazo: -1e9, zloto: -1e9, wiara: -1e9 };
+  private doleciale: Record<CelLotu, number> = { zelazo: -1e9, zloto: -1e9, wiara: -1e9, krew: -1e9 };
   /** Gdzie na ekranie stoją znaczki liczników (ustawia je rysowanie liczników nad płytą). */
   cele: Partial<Record<CelLotu, { x: number; y: number }>> = {};
   /** Okruch doleciał — ekran gry daje cichy brzęk. */
@@ -59,10 +63,15 @@ export class Urobki {
     if (wolnoRuszac()) this.loty.push({ rodzaj, ile, x, y, od: teraz, ziarno: Math.round(x * 7919 + y * 104729 + teraz) });
   }
 
+  /** Etap 3d: z licznika na mapę — krew zapłacona za rytuał spływa do misy ołtarza na kaflu (x, y). */
+  oddaj(rodzaj: CelLotu, ile: number, x: number, y: number, teraz: number): void {
+    if (wolnoRuszac()) this.loty.push({ rodzaj, ile, x, y, od: teraz, ziarno: Math.round(x * 7919 + y * 104729 + teraz), wstecz: true });
+  }
+
   /** Ile kruszcu jest jeszcze w powietrzu — licznik pokazuje stan symulacji bez tego. */
   wLocie(rodzaj: CelLotu): number {
     let n = 0;
-    for (const l of this.loty) if (l.rodzaj === rodzaj) n += l.ile;
+    for (const l of this.loty) if (l.rodzaj === rodzaj && !l.wstecz) n += l.ile;
     return n;
   }
 
@@ -80,7 +89,7 @@ export class Urobki {
     ctx.save();
     for (const l of this.loty) {
       const p = (teraz - l.od) / OKRUCH.rozbloskMs;
-      if (p < 0 || p > 1 || l.rodzaj === 'wiara') continue;
+      if (p < 0 || p > 1 || l.rodzaj === 'wiara' || l.rodzaj === 'krew') continue;
       const sx = cam.toScreenX(l.x + 0.5), sy = cam.toScreenY(l.y + 0.5);
       if (sx < -z * 3 || sy < -z * 3 || sx > cam.vw + z * 3 || sy > cam.vh + z * 3) continue;
       const g = 1 - p;
@@ -135,15 +144,17 @@ export class Urobki {
     for (const l of this.loty) {
       const t = (teraz - l.od) / OKRUCH.lotMs;
       if (t >= 1) {
-        this.doleciale[l.rodzaj] = teraz;
-        this.onDolot?.(l.rodzaj);
+        if (!l.wstecz) { this.doleciale[l.rodzaj] = teraz; this.onDolot?.(l.rodzaj); }
         continue;
       }
       zostaja.push(l);
       // start: rozbity kafel (poza kadrem — z brzegu płyty, od strony kafla)
-      const x0 = Math.max(plate.x, Math.min(plate.x + plate.w, plate.x + cam.toScreenX(l.x + 0.5)));
-      const y0 = Math.max(plate.y, Math.min(plate.y + plate.h, plate.y + cam.toScreenY(l.y + 0.5)));
-      const cel = this.cele[l.rodzaj] ?? { x: plate.x + 20, y: plate.y - 10 };
+      const mx = Math.max(plate.x, Math.min(plate.x + plate.w, plate.x + cam.toScreenX(l.x + 0.5)));
+      const my = Math.max(plate.y, Math.min(plate.y + plate.h, plate.y + cam.toScreenY(l.y + 0.5)));
+      const licznik = this.cele[l.rodzaj] ?? { x: plate.x + 20, y: plate.y - 10 };
+      // (wstecz: z licznika do kafla — ten sam łuk, w drugą stronę)
+      const x0 = l.wstecz ? licznik.x : mx, y0 = l.wstecz ? licznik.y : my;
+      const cel = l.wstecz ? { x: mx, y: my } : licznik;
       const dx = cel.x - x0, dy = cel.y - y0;
       const d = Math.hypot(dx, dy);
       // łuk: najpierw w górę i lekko w bok, potem opada na licznik (nie wyżej niż tuż nad licznikiem — licznik
@@ -178,6 +189,11 @@ export class Urobki {
         // złoty krzyż z warsztatu: kołysze się w locie, nie koziołkuje
         ctx.rotate(Math.sin(t * 7) * 0.25);
         krzyz(ctx, rozm * 1.15);
+      } else if (l.rodzaj === 'krew') {
+        // kropla krwi: ostrym końcem w stronę, z której przyleciała
+        const [qx, qy] = pkt(Math.max(0, e - 0.05));
+        ctx.rotate(Math.atan2(py - qy, px - qx) - Math.PI / 2);
+        kropla(ctx, rozm * 1.1);
       } else {
         // okruch: nieregularny wielokąt, obraca się w locie
         ctx.rotate(l.ziarno + t * 9);
@@ -205,6 +221,15 @@ export class Urobki {
     ctx.restore();
     this.loty = zostaja;
   }
+}
+
+/** Obrys kropli (wysokość ok. 2`a`, ostry koniec w górze, okrągły spód) — do ścieżki bieżącej. */
+export function kropla(ctx: CanvasRenderingContext2D, a: number): void {
+  ctx.moveTo(0, -a);
+  ctx.quadraticCurveTo(a * 0.62, -a * 0.12, a * 0.55, a * 0.38);
+  ctx.arc(0, a * 0.38, a * 0.55, 0, Math.PI);
+  ctx.quadraticCurveTo(-a * 0.62, -a * 0.12, 0, -a);
+  ctx.closePath();
 }
 
 /** Obrys krzyża (ramię `a` od środka w górę i w dół, poprzeczka nad środkiem) — do ścieżki bieżącej. */

@@ -117,7 +117,8 @@ export function wykonajLudu(sim: Sim, e: Wydarzenie, id: string): boolean {
       const zajete = new Set(sim.creatures.filter((c) => !c.dead).map((c) => w.idx(Math.floor(c.x), Math.floor(c.y))));
       for (let k = 0; k < K.zawalKafli && start >= 0 && start + k < plan.sciezka.length; k++) {
         const i = plan.sciezka[start + k];
-        if (!zajete.has(i) && w.tile[i] !== T.CORE) w.tile[i] = T.ROCK;
+        // (etap 3d: w sali z ołtarzem nic się nie wali — droga do niego zostaje wolna)
+        if (!zajete.has(i) && w.tile[i] !== T.CORE && !w.wSali(i % w.w, (i / w.w) | 0)) w.tile[i] = T.ROCK;
       }
       return true;
     }

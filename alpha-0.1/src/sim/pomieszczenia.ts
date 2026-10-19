@@ -6,16 +6,20 @@
  *    i szyb (proste schody w dół — da się nimi wrócić). Oba ostatnie zaczynają się tam, gdzie lud stoi.
  *  - Kują go tylko zaznaczeni robotnicy, którym plan wskażesz (rozkaz „kop” z polem `pom`, sim/polecenia.ts);
  *    wolni robotnicy sami nic nie biorą. Kując plan, robotnik sięga kafel wyżej niż zwykle — nad głowę.
+ *  - Lina (Alpha; w 3d — drabina, budowana przez robotników): gracz wskazuje, gdzie ma wisieć hak — jedynym warunkiem
+ *    jest skała, której lina się uczepi (kotwicaLiny) — a lina spada z niego do podłogi. Wisi od razu (powiesLine,
+ *    world.lina): pierwsze kilka za darmo, potem za krew. To nie plan — nie trafia na listę.
  *  - Gotowy warsztat: robotnik wskazany na warsztat przerabia złoto na dewocjonalia, które od razu stają się wiarą.
- *    Gotowa kuźnia: z żelaza wykuwa kolejne części zbroi rycerza (sim.zbroja; rysunek na rycerzu — etap 3f).
+ *    Gotowa kuźnia: z żelaza wykuwa kolejne części zbroi rycerza (sim.zbroja); rycerz je zakłada — sim/zbroja.ts.
  *    Sypialnia: kto się w niej wyśpi, traci osłabienia (okaleczenie, zatrucie).
  * Rysunek tylko czyta stan i krótką listę zdarzeń `sim.zdarzeniaPom` (render/pomieszczenia.ts).
  * Liczby: src/nastawy/pomieszczenia.ts.
  */
 import type { Sim } from './sim';
+import type { World } from './world';
 import type { Creature } from './creatures';
 import { stoi } from './droga';
-import { kto } from './dziennik';
+import { kto, zapisz } from './dziennik';
 import { POMIESZCZENIA as P, BIERNIK_POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 
 export interface Pomieszczenie {
@@ -44,7 +48,11 @@ export type ZdarzeniePom =
   | { rodzaj: 'gotowe'; pom: number; tik: number }
   | { rodzaj: 'krzyz'; x: number; y: number; ile: number; tik: number }
   | { rodzaj: 'czesc'; x: number; y: number; czesc: string; tik: number }
-  | { rodzaj: 'wypoczety'; kto: number; tik: number };
+  | { rodzaj: 'wypoczety'; kto: number; tik: number }
+  /** etap 3f: rycerz założył część zbroi z wieszaka (x, y — wieszak) */
+  | { rodzaj: 'zbroja'; kto: number; czesc: string; x: number; y: number; tik: number }
+  /** lina spadła w kolumnie x, od kafla y0 do y1 (gracz — powiesił ją gracz; inaczej sama, na zakręcie drogi wiernych) */
+  | { rodzaj: 'lina'; x: number; y0: number; y1: number; tik: number; gracz: boolean };
 
 /** Wynik sprawdzenia planu: kafle do wykucia albo powód, dla którego tu nie wolno. */
 export interface ProbaPlanu {
@@ -92,6 +100,27 @@ export function probaPlanu(sim: Sim, rodzaj: RodzajPomieszczenia, x: number, y: 
     for (const ex of [x0 - 1, x0 + s.w]) for (let ey = yb - 1; ey <= yb + 1; ey++) if (w.passable(ex, ey) && stoi(sim, ex, ey)) wejscie = true;
     for (let xx = x0; xx < x0 + s.w && !wejscie; xx++) if (w.passable(xx, yb) && stoi(sim, xx, yb)) wejscie = true;
     if (!wejscie) return zle(p, 'brak wejścia — z boku, na poziomie podłogi');
+  } else if (rodzaj === 'lina') {
+    // Decyzja użytkownika (18.10): jedyny warunek liny — jej górny koniec musi być uczepiony skały (strop nad nią,
+    // krawędź półki obok albo ściana przy górnym kafelku); nie trzyma się powietrza. Wskazujesz, gdzie ma wisieć hak
+    // (dotknięciem albo przeciągnięciem w górę — liczy się wyższy punkt w kolumnie, od której zacząłeś); wskazana
+    // skała to strop: lina zawiśnie tuż pod nią. Z haka lina spada do podłogi.
+    let yt = Math.min(y, y2);
+    for (let k = 0; k < 3 && w.inb(x, yt) && !w.passable(x, yt); k++) yt++;
+    if (!w.inb(x, yt) || !w.passable(x, yt)) return zle({ ok: false, rodzaj, x, y: yt, w: 1, h: 1, kafle: [] }, 'lina nie przejdzie przez skałę');
+    let ys = yt;
+    while (w.inb(x, ys + 1) && w.passable(x, ys + 1)) ys++;
+    const kafle: number[] = [];
+    for (let yy = yt; yy < ys; yy++) kafle.push(w.idx(x, yy));
+    const kot = kotwicaLiny(w, x, yt);
+    p = { ok: true, rodzaj, x, y: yt, w: 1, h: ys - yt + 1, kafle, kier: kot?.strona || undefined };
+    if (!kot) return zle(p, 'lina nie ma się czego uczepić — u góry musi być skała');
+    if (!kafle.length) return zle(p, 'tu stoi się na podłodze — lina nie ma gdzie zwisać');
+    if (kafle.every((i) => w.lina[i] === 1)) return zle(p, 'tu już wisi lina');
+    // lina to nie plan: nie zajmuje miejsca na liście planów, a kosztuje krew (po kilku darmowych)
+    const k = cenaLiny(sim);
+    if (k > 0 && sim.krew - sim.rezerwa.krew < k) return zle(p, `nie starczy krwi — lina kosztuje ${k}`);
+    return p;
   } else {
     if (!w.passable(x, y) || !stoi(sim, x, y)) {
       return zle({ ok: false, rodzaj, x, y, w: 1, h: 1, kafle: [] }, rodzaj === 'korytarz' ? 'korytarz zaczyna się tam, gdzie lud stoi' : 'szyb zaczyna się tam, gdzie lud stoi');
@@ -126,12 +155,57 @@ export function probaPlanu(sim: Sim, rodzaj: RodzajPomieszczenia, x: number, y: 
   return p;
 }
 
+
+/**
+ * Gdzie lina jest uczepiona skały: jej górny kafel to (x, yGora). Najpierw krawędź półki obok (lina zwisa wzdłuż jej
+ * ściany, hak wbity w półkę tuż przy brzegu), potem strop tuż nad liną, na końcu ściana obok górnego kafla.
+ * `x`, `y` — punkt zaczepienia (kafle, ułamkowo: róg półki, spód stropu); `strona` — gdzie skała (−1, 0 — nad, 1).
+ * Null — lina wisiałaby w powietrzu.
+ */
+export function kotwicaLiny(w: World, x: number, yGora: number): { x: number; y: number; rodzaj: 'krawedz' | 'strop' | 'sciana'; strona: number } | null {
+  for (const s of [1, -1]) if (w.solid(x + s, yGora + 1) && w.passable(x + s, yGora)) return { x: x + (s > 0 ? 1 : 0), y: yGora + 1, rodzaj: 'krawedz', strona: s };
+  if (w.solid(x, yGora - 1)) return { x: x + 0.5, y: yGora, rodzaj: 'strop', strona: 0 };
+  for (const s of [1, -1]) if (w.solid(x + s, yGora)) return { x: x + (s > 0 ? 1 : 0), y: yGora + 0.2, rodzaj: 'sciana', strona: s };
+  return null;
+}
+
+/** Ile krwi kosztuje teraz lina: pierwsze `linyDarmowe` za darmo, każda następna `linaKrew`. */
+export function cenaLiny(sim: Sim): number {
+  return (sim.lud.liny ?? 0) < P.linyDarmowe ? 0 : P.linaKrew;
+}
+
+/** Ile darmowych lin jeszcze zostało. */
+export function darmoweLiny(sim: Sim): number {
+  return Math.max(0, P.linyDarmowe - (sim.lud.liny ?? 0));
+}
+
+/**
+ * Wiesza linę z próby (gracz puścił przeciąganie): płaci krew (jeśli darmowe się skończyły), lina od razu wisi
+ * w kaflach próby, a rysunek pokazuje, jak spada z haka i się napina. Zwraca powód odmowy albo null.
+ */
+export function powiesLine(sim: Sim, p: ProbaPlanu): string | null {
+  if (p.rodzaj !== 'lina') return 'to nie lina';
+  if (!p.ok) return p.powod ?? 'tu nie wolno';
+  const k = cenaLiny(sim);
+  if (k > 0 && sim.krew - sim.rezerwa.krew < k) return `nie starczy krwi — lina kosztuje ${k}`;
+  sim.krew -= k;
+  const w = sim.world;
+  for (const i of p.kafle) w.lina[i] = 1;
+  sim.lud.liny = (sim.lud.liny ?? 0) + 1;
+  const y0 = p.y, y1 = p.y + p.h - 2;
+  zdarzenie(sim, { rodzaj: 'lina', x: p.x, y0, y1, tik: sim.tick, gracz: true });
+  sim.gdzie(p.x + 0.5, y0 + 0.5).log(k > 0 ? `Powiesiłeś linę za ${k} krwi — można nią wejść i zejść.` : `Powiesiłeś linę (darmowych zostało: ${darmoweLiny(sim)}).`, 'swiat', 'lina');
+  zapisz(sim, 'praca', `gracz powiesił linę (${p.x}, ${y0}–${y1})${k > 0 ? ` za ${k} krwi` : ' za darmo'}`, p.x, y0);
+  return null;
+}
+
 /** Kładzie plan z udanej próby. */
 export function polozPlan(sim: Sim, p: ProbaPlanu): Pomieszczenie {
   const pom: Pomieszczenie = { id: sim.nrPomieszczenia++, rodzaj: p.rodzaj, x: p.x, y: p.y, w: p.w, h: p.h, kafle: [...p.kafle], kier: p.kier, od: sim.tick, gotowe: false };
   pom.doKucia = zostaloKafli(sim, pom);
   sim.pomieszczenia.push(pom);
   if (pom.doKucia) sim.gdzie(p.x + p.w / 2, p.y + p.h / 2).log(`Wyznaczyłeś ${BIERNIK_POMIESZCZENIA[p.rodzaj]} — zaznacz robotników i wskaż im plan.`, 'swiat');
+  pom.postep = 0;
   return pom;
 }
 
@@ -202,7 +276,7 @@ export function nastepnaCzesc(sim: Sim): (typeof P.kuznia.czesci)[number] | null
   return P.kuznia.czesci.find((c) => !sim.zbroja.includes(c.id)) ?? null;
 }
 
-function zdarzenie(sim: Sim, z: ZdarzeniePom): void {
+export function zdarzenie(sim: Sim, z: ZdarzeniePom): void {
   const l = sim.zdarzeniaPom;
   while (l.length && (l.length >= 32 || sim.tick - l[0].tik > 900)) l.shift();
   l.push(z);
@@ -219,7 +293,11 @@ export function tikPomieszczen(sim: Sim): void {
       zdarzenie(sim, { rodzaj: 'gotowe', pom: pom.id, tik: sim.tick });
       // (plan w pustce nikt nie kuł — pomieszczenie urządza się od razu)
       sim.gdzie(pom.x + pom.w / 2, pom.y + pom.h / 2).log(pom.doKucia === 0 ? `Urządziłeś ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.` : `Robotnicy wykuli ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.`, 'swiat');
-      for (const c of sim.creatures) if (c.polecenie?.pom === pom.id && c.polecenie.typ === 'kop') { c.polecenie = undefined; sim.efekt(c.x, c.y, 'mysl', 'wykute'); }
+      for (const c of sim.creatures) {
+        if (c.polecenie?.pom !== pom.id || c.polecenie.typ !== 'kop') continue;
+        c.polecenie = undefined; c.czynnosc = undefined; c.jt = 0;
+        sim.efekt(c.x, c.y, 'mysl', 'wykute');
+      }
       if (!czyPokoj(pom.rodzaj)) sim.pomieszczenia = sim.pomieszczenia.filter((p) => p !== pom);
     }
   }

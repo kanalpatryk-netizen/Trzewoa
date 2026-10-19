@@ -1,6 +1,8 @@
 <!doctype html>
 <html><head><meta charset="utf-8"><title>dłoń z otchłani — model</title>
-<!-- Model 3D dłoni z otchłani (Koszmar). Renderuje go scripts/dlon/renderuj.mjs; wynik: src/grafiki/dlon/dlon-z-otchlani.webp. -->
+<!-- Model 3D dłoni z otchłani (Koszmar). Renderuje go scripts/dlon/renderuj.mjs; wynik: src/grafiki/dlon/dlon-z-otchlani.webp.
+     Alpha, etap 4: ten sam model jako dłoń anielska (uAniol = 1): jasna, ciepła skóra bez żył, krótkie paznokcie zamiast
+     szponów, złote światło od nadgarstka i złota poświata na obrysie; ramię roztapia się w świetle — dlon-anielska.webp. -->
 <style>html,body{margin:0;background:#000}canvas{display:block}</style></head>
 <body><canvas id="c"></canvas>
 <script id="fs" type="x-shader/x-fragment">#version 300 es
@@ -15,6 +17,7 @@ uniform vec3 uK[25];         // pazury: 5 punktów łuku na palec
 uniform vec3 uKR[5];         // promień pazura u nasady (x)
 uniform vec3 uMw[4];         // kości śródręcza: koniec przy nadgarstku (palce 1–4)
 uniform float uDetal;
+uniform float uAniol;        // 1 — dłoń anielska
 
 // ------------------------------------------------------------------ szum
 float hash13(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
@@ -134,7 +137,7 @@ vec2 map(vec3 p) {
     float w = 0.42 + 0.12 * sin(p.x * 0.7 + 1.0);
     float x = clamp(dz / w, 0.0, 1.0);
     float zyla = 0.17 * (1.0 - x * x) * (1.0 - x * x);
-    d -= zyla * smoothstep(0.0, 1.2, p.y) * (1.0 - smoothstep(9.0, 11.0, p.x));
+    d -= zyla * smoothstep(0.0, 1.2, p.y) * (1.0 - smoothstep(9.0, 11.0, p.x)) * (1.0 - uAniol);
   }
   // palce
   for (int i = 0; i < 5; i++) d = smin(d, digit(p, i, d), i == 0 ? 1.1 : 0.7);
@@ -222,6 +225,34 @@ void main() {
   // wklęsłości (bruzdy, fałdy, szpary między palcami) — ciemniejsze, jak brud w zmarszczkach
   float wkl = clamp(map(p + n * 0.18).x / 0.18, 0.0, 1.0);
   vec3 col;
+  if (uAniol > 0.5) {
+    // dłoń anielska: złote światło od nadgarstka (z góry, skąd schodzi), miękkie cienie, ciepła skóra i perłowe paznokcie
+    vec3 La = normalize(vec3(-0.7, 0.5, -0.5));
+    float shA = cien(p + n * 0.08, La, 30.0);
+    float difA = clamp((dot(n, La) + 0.55) / 1.55, 0.0, 1.0);
+    float fresA = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 3.0);
+    vec3 H = normalize(La + V);
+    if (pazurM > 0.5) {
+      vec3 alb = vec3(0.86, 0.8, 0.72);
+      col = alb * (0.35 + 0.75 * difA * mix(0.6, 1.0, shA)) + vec3(1.0, 0.95, 0.85) * pow(clamp(dot(n, H), 0.0, 1.0), 40.0) * 0.8;
+    } else {
+      float f1 = fbm5(p * 0.8), f3 = fbm5(p * 11.0 + 3.0);
+      vec3 alb = mix(vec3(0.62, 0.5, 0.4), vec3(0.74, 0.62, 0.5), f1) * (0.94 + 0.08 * f3);
+      alb *= mix(0.72, 1.0, wkl) * (0.82 + 0.18 * ao);
+      vec3 sss = vec3(1.0, 0.5, 0.32) * pow(clamp((dot(n, La) + 0.9) / 1.9, 0.0, 1.0), 3.0) * 0.28;
+      col = alb * (vec3(1.0, 0.9, 0.72) * 1.35 * difA * mix(0.55, 1.0, shA) + sss + vec3(0.28, 0.25, 0.22) * ao);
+      col += vec3(1.0, 0.92, 0.75) * pow(clamp(dot(n, H), 0.0, 1.0), 24.0) * 0.25 * shA;
+    }
+    // złota poświata na obrysie
+    col += vec3(1.0, 0.8, 0.42) * 0.85 * fresA;
+    // ku ramieniu dłoń roztapia się w świetle
+    col = mix(col, vec3(1.0, 0.93, 0.74), (1.0 - smoothstep(-15.0, -3.0, p.x)) * 0.75);
+    float aA = smoothstep(-17.5, -7.5, p.x);
+    col = aces(col * 1.05);
+    col = pow(col, vec3(1.0 / 2.2));
+    fragColor = vec4(col * aA, aA);
+    return;
+  }
   if (pazurM > 0.5) {
     // róg: prawie czarny, z ostrym połyskiem i bursztynem prześwitującym na ostrzu
     // róg: ciemny, prążkowany wzdłuż, z miękkim połyskiem
@@ -306,9 +337,11 @@ const KCIUK = { cmc: [1.6, -0.3, -3.0], L: [4.6, 3.7, 3.0], r: [1.45, 1.12, 0.96
   o: [norm([0.55, -0.15, -0.82]), norm([0.78, -0.2, -0.6]), norm([0.92, -0.28, -0.27])],
   z: [norm([0.82, -0.43, -0.37]), norm([0.74, -0.56, 0.36]), norm([0.5, -0.18, 0.85])], u: norm([-0.2, 0.6, -0.78]) };
 
-function poza(zacisk) {
+function poza(zacisk, aniol = 0) {
   const F = [], R = [], Uv = [], K = [], KR = [], MW = [];
-  const pazur = (P2, P3, d3, u3, r3, dl) => {
+  const pazur = (P2, P3, d3, u3, r3, dl0) => {
+    // dłoń anielska: zamiast szponu krótki paznokieć
+    const dl = aniol ? dl0 * 0.15 : dl0;
     // szpon wyrasta z łożyska na grzbiecie ostatniego członu, biegnie wzdłuż palca, a za opuszką
     // zagina się łukiem w stronę dłoni (jak pazur drapieżnika)
     const A = add(mix(P2, P3, 0.42), mul(u3, r3 * 0.98));
@@ -354,10 +387,11 @@ function poza(zacisk) {
   return { F, R, Uv, K, KR, MW };
 }
 
-window.renderuj = (zacisk, szer, wys, widok, detal = 1) => {
+window.renderuj = (zacisk, szer, wys, widok, detal = 1, aniol = 0) => {
   c.width = szer; c.height = wys;
   gl.viewport(0, 0, szer, wys);
-  const p = poza(zacisk);
+  const p = poza(zacisk, aniol);
+  gl.uniform1f(U('uAniol'), aniol);
   gl.uniform2f(U('uRes'), szer, wys);
   gl.uniform4f(U('uView'), ...widok);
   gl.uniform3fv(U('uF'), p.F.flat());

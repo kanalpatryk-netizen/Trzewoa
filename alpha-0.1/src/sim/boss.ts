@@ -39,8 +39,10 @@ const sniacyKamien: Boss = {
   rozmiar: K.rozmiar,
   pojaw(sim) {
     const w = sim.world;
-    // ze ściany przedsionka — z boku, na wysokości modlących się
-    const strona = sim.rng.chance(0.5) ? -1 : 1;
+    // ze ściany przedsionka — z boku, na wysokości modlących się. Alpha: naprzeciw warty — po tej stronie, po której
+    // stoi rycerz (rani go tylko rycerz); wychodząc losowo z drugiej strony, miażdżył pobożnych, zanim rycerz doszedł
+    const straz = sim.creatures.find((o) => !o.dead && walczacy(o) && Math.hypot(o.x - w.coreX, o.y - w.przedsionekY) < S.limitOdRdzenia + S.ucieczkaZapas);
+    const strona = straz ? (straz.x < w.coreX + 0.5 ? -1 : 1) : sim.rng.chance(0.5) ? -1 : 1;
     const c = nowyStraznik(sim, w.coreX + strona * (S.pojawOd + 2), w.przedsionekY - 1, K.hp);
     if (!c) return null;
     c.boss = 'sniacyKamien';

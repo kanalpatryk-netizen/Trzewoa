@@ -7,6 +7,9 @@
  * staje jak wryta. Dłoń sięga w górę, chwyta je i cofa się z nimi w dół, w ciemność; łuna gaśnie.
  * Nie zostają nawet kości — krew i tak spływa do ciebie. Cud rzucony przy nich, zanim dłoń chwyci,
  * odpycha ją z powrotem w otchłań.
+ *
+ * Alpha, etap 4: druga zdobycz dłoni — lina wiadra. Spod podłogi sali, tuż przy wiadrze, wznosi się dłoń, sięga
+ * w górę i pazurem przecina linę (cel „lina”; sim/lina-wiadra.ts). Też ją odpędza Cud rzucony w porę.
  */
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
@@ -15,6 +18,7 @@ import { rolaPostaci, klanLudu, type Rola } from './lud';
 import { zapisz } from './dziennik';
 import { MEM_SPAN, SURFACE_Y } from './world';
 import { T } from './tiles';
+import { miejsceCiecia, przetnijLine, linaPrzecieta } from './lina-wiadra';
 
 export type FazaDloni = 'brak' | 'wstaje' | 'siega' | 'chwyta' | 'cofa' | 'gasnie';
 
@@ -43,6 +47,11 @@ export interface StanDloni {
   /** Tik, w którym otchłań się poruszyła / dłoń zacisnęła się — ekran gra wtedy dźwięk. */
   wstajeT?: number;
   chwytT?: number;
+  /** Etap 4: po co przyszła — po ludzi (domyślnie) albo po linę wiadra; los liny, cisza po niej i ile razy cięła. */
+  cel?: 'lud' | 'lina';
+  linaLosT?: number;
+  linaCiszaDo?: number;
+  ileLin?: number;
 }
 
 /** Biernik (i dopełniacz) roli: „zabrała robotnika”, „pod stopami pobożnego”. */
@@ -187,6 +196,34 @@ function chwyc(sim: Sim, d: StanDloni): void {
   if (nazwy.length) sim.gdzie(d.cx, d.cy).log(`Ogromna dłoń z otchłani zabrała w dół ${nazwy.join(' i ')}. Nie zostały nawet kości.`, 'krew');
 }
 
+/**
+ * Etap 4: dłoń sięga po linę wiadra — przebija się przez podłogę sali obok wiadra (bok losowy) i sięga w górę do miejsca
+ * tuż nad nim. Zwraca false, gdy w szybie nie ma wiadra na linie.
+ */
+function ustawLine(sim: Sim, d: StanDloni): boolean {
+  const m = miejsceCiecia(sim);
+  if (!m) return false;
+  const bok = sim.rng.next() < 0.5 ? -1 : 1;
+  d.cel = 'lina';
+  d.ofiary = [];
+  d.cx = m.x + 0.5; d.cy = m.y;
+  d.bx = m.x + 0.5 + bok * DLON.lina.bok; d.by = m.dno + 1.4;
+  d.ox = m.x + 0.5 + bok * (DLON.lina.bok + DLON.glebia * DLON.pochylenie * 0.5); d.oy = d.by + DLON.glebia;
+  return true;
+}
+
+function zacznijLine(sim: Sim, d: StanDloni): void {
+  d.faza = 'wstaje';
+  d.od = sim.tick;
+  d.wstajeT = sim.tick;
+  d.widziana = true;
+  d.odpedzona = false;
+  d.odpedzonaU = undefined;
+  d.zabrani = [];
+  sim.gdzie(d.cx, d.cy).log('Pod podłogą sali, tuż przy wiadrze, poruszyła się otchłań. Wznosi się dłoń — sięga po linę.', 'otchlan', 'dlon-lina');
+  zapisz(sim, 'swiat', 'Dłoń z otchłani: wznosi się po linę wiadra', d.cx, d.cy);
+}
+
 /** Co tik symulacji (sam pilnuje rytmu). */
 export function tikDloni(sim: Sim): void {
   if (!DLON.wlaczona || sim.ending) return;
@@ -196,16 +233,30 @@ export function tikDloni(sim: Sim): void {
   const s = sim.lud.dlon;
   // zapis sprzed zmiany: faza nazywała się „oczy”
   if ((s.faza as string) === 'oczy') s.faza = 'wstaje';
+  // etap 4: los liny wiadra — osobny od chwytania ludzi (nie patrzy, ilu ich jest)
+  if (s.faza === 'brak' && sim.koszmar && !sim.spokojnySwiat && sim.tick >= (s.linaLosT ?? DLON.lina.pierwszaPo)) {
+    s.linaLosT = sim.tick + DLON.lina.losujCo;
+    if (sim.tick >= (s.linaCiszaDo ?? 0) && (s.ileLin ?? 0) < DLON.lina.maxNaPartie && !linaPrzecieta(sim)
+      && sim.rng.next() < DLON.lina.szansa && ustawLine(sim, s)) { zacznijLine(sim, s); return; }
+  }
   if (s.faza === 'brak') {
     if (!sim.koszmar || sim.spokojnySwiat || sim.tick < s.losT) return;
     s.losT = sim.tick + DLON.losujCo;
     if (sim.tick < s.ciszaDo || s.ile >= DLON.maxNaPartie || ileLudu(sim) < DLON.minLudu) return;
     if (sim.rng.next() >= DLON.szansa) return;
-    if (znajdzOfiare(sim, s)) zacznij(sim, s);
+    if (znajdzOfiare(sim, s)) { s.cel = 'lud'; zacznij(sim, s); }
     return;
   }
+  // etap 4: miejsce cięcia idzie za wiadrem (zjeżdża); wiadra już nie ma albo lina przecięta — dłoń się cofa
+  if (s.cel === 'lina' && (s.faza === 'wstaje' || s.faza === 'siega' || s.faza === 'chwyta')) {
+    const m = miejsceCiecia(sim);
+    if (!m) { s.faza = 'cofa'; s.od = sim.tick; s.odpedzona = true; s.odpedzonaU = 0.6; return; }
+    s.cx = m.x + 0.5; s.cy = m.y;
+    // wiadro jeszcze w wąskim szybie — dłoń czeka pod jego wylotem z rozwartymi szponami, aż zjedzie do sali
+    if (m.czeka && s.faza === 'siega') s.od = Math.max(s.od, sim.tick - Math.floor(DLON.siega * 0.6));
+  }
   // miejsce chwytu idzie za ofiarami (stoją, ale mogą się osunąć)
-  if (s.faza === 'wstaje' || s.faza === 'siega') {
+  else if (s.faza === 'wstaje' || s.faza === 'siega') {
     const zywe = s.ofiary.map((id) => sim.creatures.find((q) => q.id === id)).filter((c): c is Creature => !!c && !c.dead);
     if (!zywe.length) { s.faza = 'gasnie'; s.od = sim.tick; return; }
     s.cx = zywe.reduce((a, c) => a + c.x, 0) / zywe.length + 0.5;
@@ -216,12 +267,15 @@ export function tikDloni(sim: Sim): void {
   if (sim.tick - s.od < DLUGOSC[faza]) return;
   s.faza = NASTEPNA[faza];
   s.od = sim.tick;
-  // palce zamknęły się na nich — w tej chwili znikają z góry, a dłoń cofa się z nimi
-  if (s.faza === 'cofa' && !s.odpedzona) chwyc(sim, s);
+  // palce zamknęły się na nich — w tej chwili znikają z góry, a dłoń cofa się z nimi (etap 4: albo pazur tnie linę)
+  if (s.faza === 'cofa' && !s.odpedzona) {
+    if (s.cel === 'lina') { s.chwytT = sim.tick; przetnijLine(sim, s.cy); } else chwyc(sim, s);
+  }
   if (s.faza === 'brak') {
-    s.ile++;
-    s.ciszaDo = sim.tick + DLON.przerwa;
+    if (s.cel === 'lina') { s.ileLin = (s.ileLin ?? 0) + 1; s.linaCiszaDo = sim.tick + DLON.lina.przerwa; }
+    else { s.ile++; s.ciszaDo = sim.tick + DLON.przerwa; }
     s.ofiary = [];
+    s.cel = undefined;
   }
 }
 
@@ -247,12 +301,24 @@ export function odpedzDlon(sim: Sim, tx: number, ty: number): boolean {
   return true;
 }
 
+/** Narzędzie dewelopera (etap 4): dłoń po linę wiadra od razu. */
+export function devLina(sim: Sim): string {
+  if (!sim.lud.dlon) sim.lud.dlon = nowyStan();
+  const d = sim.lud.dlon;
+  if (d.faza !== 'brak') return 'Dłoń już tu jest.';
+  if (linaPrzecieta(sim)) return 'Lina już jest przecięta.';
+  if (!ustawLine(sim, d)) return 'W szybie nie ma wiadra na linie.';
+  zacznijLine(sim, d);
+  return 'Dłoń wznosi się spod podłogi po linę wiadra.';
+}
+
 /** Narzędzie dewelopera: wydarzenie od razu (także poza Koszmarem). */
 export function devDlon(sim: Sim): string {
   if (!sim.lud.dlon) sim.lud.dlon = nowyStan();
   const d = sim.lud.dlon;
   if (d.faza !== 'brak') return 'Dłoń już tu jest.';
   if (!znajdzOfiare(sim, d) && !znajdzOfiare(sim, d, true)) return 'Nikt z ludu nie stoi nad otchłanią (nieznanym).';
+  d.cel = 'lud';
   zacznij(sim, d);
   return `Dłoń wznosi się z otchłani po ${d.ofiary.map((i) => `#${i}`).join(' i ')}.`;
 }

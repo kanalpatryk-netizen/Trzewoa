@@ -26,6 +26,12 @@ export function mnoznikNapis(m: number): string {
   return m === 0.25 ? '¼' : m === 0.5 ? '½' : String(m);
 }
 
+/** Dolna krawędź rzędu przycisków pod płytą na komputerze — niżej stoi relikwiarz krwi. */
+export function dolPrzyciskow(p: Plate, vh: number): number {
+  const r = Math.max(22, Math.min(26, p.w * 0.02));
+  return Math.min(vh - r * 1.6, p.y + p.h + r * 1.8) + r;
+}
+
 /** Lewa krawędź rzędu przycisków na szerokim ekranie — obok niego układa się Otchłań. */
 export function lewaKrawedzPrzyciskow(p: Plate): number {
   const r = Math.max(22, Math.min(26, p.w * 0.02));
@@ -71,7 +77,7 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
   const odstepW = (p.w - 12) / n;
   const r = Math.max(22, Math.min(26, p.w * 0.02));
   const odstep = r * 2.3;
-  const y = Math.min(vh - r * 1.6, p.y + p.h + r * 1.8);
+  const y = dolPrzyciskow(p, vh) - r;
   const x0 = p.x + p.w - odstep * (n - 1) - r * 1.2;
   void odstepW;
   return lista.map((z, i) => ({ ...z, x: x0 + i * odstep, y, r }));

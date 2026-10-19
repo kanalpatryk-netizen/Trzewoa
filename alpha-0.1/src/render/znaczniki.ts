@@ -35,7 +35,7 @@ export function etykietyKolonii(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     const barwa = RACES[klan.race].color;
     const cecha = cechaNacji(klan).nazwa;
     // Remake v1: jeden lud — podpis mówi, że to siedziba i ile jest w spiżarni
-    const tekst = REMAKE ? `siedziba · w wiadrach ${porcjiWWiadrach(sim)} · następne za ${Math.ceil(doNastepnego(sim) / 120)} s` : `${klan.name} · ${klan.pop}${cecha ? ` · ${cecha}` : ''}`;
+    const tekst = REMAKE ? `siedziba · w wiadrze ${porcjiWWiadrach(sim)} · następne za ${Math.ceil(doNastepnego(sim) / 120)} s` : `${klan.name} · ${klan.pop}${cecha ? ` · ${cecha}` : ''}`;
     const szer = ctx.measureText(tekst).width;
     const lx = sx + 14, ly = sy - 18 - Math.sin(teraz * 0.001 + klan.id) * 2;
 

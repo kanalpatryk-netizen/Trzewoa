@@ -20,6 +20,12 @@ import { STRAZNICY } from '../nastawy/straznicy';
 import { KARTY_LUDU } from '../nastawy/karty-ludu';
 import { tikWiader, zrodlaJedzenia, type StanWiader } from './wiadro';
 import { tikTrupow, type Trup } from './trupy';
+import type { StanOltarza } from './oltarz';
+import { OLTARZ } from '../nastawy/oltarz';
+import { ZABYTKI } from '../nastawy/zabytki';
+import { tikZabytkow, stanyZabytkow, type StanZabytkow } from './zabytki';
+import { tikAniola, type StanAniola } from './aniol';
+import { mnoznikZbroi, opisZbroi } from './zbroja';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -51,6 +57,14 @@ export interface StanLudu {
   wiadra?: StanWiader;
   /** Remake v2: trupy ludu leżą na ziemi (sim/trupy.ts). */
   trupy?: Trup[];
+  /** Alpha, etap 3d: rytuał przy ołtarzu (sim/oltarz.ts). */
+  oltarz?: StanOltarza;
+  /** Alpha: ile lin powiesił już gracz (pierwsze kilka za darmo — sim/pomieszczenia.ts: cenaLiny). */
+  liny?: number;
+  /** Alpha, etap 3e: zabytki z ruin — odkryte, wzięte, zostawione (sim/zabytki.ts). */
+  zabytki?: StanZabytkow;
+  /** Alpha, etap 4: dłoń anielska — losowy dar (sim/aniol.ts). */
+  aniol?: StanAniola;
   /** Remake v2: robotnicy w hełmach (brak rycerzy) i następny ołtarz nie wcześniej niż. */
   helmy?: boolean;
   oltarzPo?: number;
@@ -144,7 +158,7 @@ export function rolaPostaci(c: Creature): Rola | null {
   return c.race === Race.GOBLIN ? (c.rola ?? 'pobozny') : null;
 }
 
-/** Mnożnik statystyki: rola × okaleczenie × weteran × zatrucie × hełm. */
+/** Mnożnik statystyki: rola × okaleczenie × weteran × zatrucie × hełm × szał × zabytki × zbroja z kuźni. */
 export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   const r = rolaPostaci(c);
   if (!r) return 1;
@@ -154,6 +168,18 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   if (c.zatrutyDo !== undefined && sim.tick < c.zatrutyDo && (co === 'sila' || co === 'szybkosc' || co === 'kopanie')) v *= KARTY_LUDU.zatrucie;
   // Remake v2: robotnik w hełmie (rycerzy brak) — mocniejszy i walczy
   if (c.helm && r === 'robotnik' && (co === 'hp' || co === 'sila')) v *= LUD.helm[co];
+  // etap 3d: szał krwi z ołtarza
+  if (co === 'sila' && c.szalDo !== undefined && sim.tick < c.szalDo) v *= OLTARZ.rytualy.szal.sila;
+  // etap 3e: wzięte zabytki — premia i kara dla całego ludu, na zawsze
+  const wz = sim.lud.zabytki?.wziete;
+  if (wz?.length) {
+    const Z = ZABYTKI.skutki;
+    if (wz.includes('relikwiarz')) { if (co === 'modlitwa') v *= Z.relikwiarz.modlitwa; if (co === 'kopanie') v *= Z.relikwiarz.kopanie; }
+    if (wz.includes('miecz') && co === 'sila' && r === 'rycerz') v *= Z.miecz.silaRycerza;
+    if (wz.includes('kielich') && co === 'glod') v *= Z.kielich.glod;
+  }
+  // etap 3f: zbroja z kuźni — każda noszona część dokłada swoje (tylko rycerz ją nosi)
+  if (r === 'rycerz' && c.zbroja?.length) v *= mnoznikZbroi(c, co);
   return v;
 }
 
@@ -226,6 +252,8 @@ export interface StanPostaci {
   kiedy?: string;
   /** stan nieczynny — tylko wiersz na karcie, bez aureoli */
   uspiony?: boolean;
+  /** działa, ale bez aureoli — widać go na postaci (zbroja) */
+  bezAureoli?: boolean;
 }
 
 /** Wzmocnienia i osłabienia postaci: weteran, hełm, zatrucie, spojrzenie z ciemności, dłoń, okaleczenie. */
@@ -253,9 +281,17 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   if (d && (d.faza === 'wstaje' || d.faza === 'siega') && d.ofiary.includes(c.id)) {
     out.push({ nazwa: 'spod niego wznosi się dłoń z otchłani', skutek: 'zaraz go zabierze w dół — odpędzi ją tylko Cud tuż przy nim', dobry: false, do: d.od + (d.faza === 'wstaje' ? DLON.wstaje + DLON.siega : DLON.siega) });
   }
+  if (c.szalDo !== undefined && sim.tick < c.szalDo) {
+    out.push({ nazwa: 'szał krwi', skutek: `siła ×${OLTARZ.rytualy.szal.sila} (rytuał przy ołtarzu)`, dobry: true, do: c.szalDo });
+  }
   if (c.okaleczony) {
     out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false, kiedy: 'póki nie wyśpi się w sypialni' });
   }
+  // etap 3f: zbroja z kuźni — tylko wiersz na karcie (zbroję widać na rycerzu)
+  const zb = rolaPostaci(c) === 'rycerz' ? opisZbroi(c) : null;
+  if (zb) out.push({ nazwa: 'zbroja z kuźni', skutek: zb, dobry: true, kiedy: 'póki ją nosi', bezAureoli: true });
+  // etap 3e: zabytki — każdy z ludu nosi jasną aureolę premii i czerwoną kary
+  if (rolaPostaci(c)) out.push(...stanyZabytkow(sim, c));
   return out;
 }
 
@@ -464,6 +500,8 @@ export function tikLudu(sim: Sim): void {
   tikStraznikow(sim);
   tikMroku(sim);
   tikDloni(sim);
+  tikAniola(sim);
+  tikZabytkow(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {
     pilnujSiedziby(sim);
     const klan = klanLudu(sim);

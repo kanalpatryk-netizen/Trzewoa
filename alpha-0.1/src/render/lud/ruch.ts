@@ -6,6 +6,8 @@ import { clamp, cos, frac, gladko, lerp, PI, sin, szum, TAU, wej, wejWyj, wyj } 
 import { klucze, mieszajPozy, nowaPoza, nowyTryb, siegnij, type Poza, type Tryb } from './poza';
 import type { Pamiec } from './pamiec';
 import { postepOdmowy } from './odmowa';
+import { naWieszaku } from '../../sim/zbroja';
+import { ZBROJA } from '../../nastawy/zbroja';
 
 /**
  * Animacje ludu. Każda czynność daje pozę z klatek kluczowych albo z cyklu (chód, bieg, wspinaczka).
@@ -142,7 +144,7 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
   const niesie = c.carry > 0 && rola === 'robotnik';
 
   // narzędzie w dłoni: robotnik — kilof tylko przy pracy; pobożny — laska; rycerz — miecz, chowa go przy wspinaczce i jedzeniu
-  if (rola === 'rycerz') tryb.narzedzie = cz === 'wspina' || cz === 'spada' || cz === 'je' || cz === 'spi' || cz === 'buduje' ? null : 'miecz';
+  if (rola === 'rycerz') tryb.narzedzie = cz === 'wspina' || cz === 'spada' || cz === 'je' || cz === 'spi' || cz === 'buduje' || cz === 'zaklada' || cz === 'skleja' ? null : 'miecz';
   else if (rola === 'pobozny') tryb.narzedzie = cz === 'stoi' || cz === 'idzie' || cz === 'biegnie' || cz === 'walczy' ? 'laska' : cz === 'buduje' ? 'mlot' : null;
   else tryb.narzedzie = cz === 'kopie' || cz === 'walczy' ? 'kilof' : cz === 'buduje' ? 'mlot' : null;
 
@@ -254,6 +256,45 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
       p.blask = 0.45 + 0.15 * sin(czas * 0.006) + blysk * 0.55;
       p.usta = 0.25 + 0.2 * Math.max(0, sin(czas * 0.012 + id));
       tryb.ksiega = true;
+      break;
+    }
+    case 'zaklada': {
+      // etap 3f: miecz w pochwie; sięga po część zbroi na wieszaku przed sobą, zdejmuje ją oburącz i dopasowuje
+      // na sobie — hełm wkłada na głowę, naramienniki na barki, napierśnik na pierś, nakolanniki zapina klęcząc,
+      // tarczę wsuwa na ramię (sim/zbroja.ts: ile już zakłada)
+      const k = clamp((c.zakladanie ?? 0) / ZBROJA.zakladanieTikow, 0, 1);
+      const cz = naWieszaku(sim)[0];
+      p.uA = 0.05; p.kA = 0.07; p.uB = -0.06; p.kB = 0.06;
+      p.tulow = 0.04 + p.oddech * 0.015;
+      // wieszak wisi na wysokości piersi, kawałek przed nim (render/pomieszczenia.ts: uklad)
+      const gora: Poza = { ...p, tulow: 0.07, glowa: 0.12, wysilek: 0.3 };
+      const unies = gladko(clamp((k - 0.22) / 0.18, 0, 1)) * 0.06;
+      siegnij(gora, 'A', 0.31, 0.07 - unies); siegnij(gora, 'B', 0.28, 0.09 - unies);
+      const cel: Poza = { ...p, tulow: 0.08, glowa: 0.25 };
+      const [tx, ty] = cz === 'helm' ? [0.06, -0.2] : cz === 'naramienniki' ? [0.03, 0.01] : cz === 'nakolanniki' ? [0.15, 0.5]
+        : cz === 'tarcza' ? [0.17, 0.12] : [0.13, 0.12];
+      if (cz === 'nakolanniki') { cel.uA = 1.3; cel.kA = 1.5; cel.sA = 0; cel.uB = 0.14; cel.kB = 1.66; cel.sB = -0.9; cel.tulow = 0.42; cel.glowa = 0.35; }
+      if (cz === 'helm') cel.glowa = 0.02;
+      // dopasowuje: drobne szarpnięcia, póki część nie siądzie
+      const szarp = k > 0.6 && k < 0.9 ? 0.025 * sin(czas * 0.024 + id) : 0;
+      siegnij(cel, 'A', tx + szarp, ty); siegnij(cel, 'B', tx - 0.02, ty + 0.02 - szarp);
+      if (cz === 'tarcza') cel.tarcza = 1;
+      cel.wysilek = 0.3;
+      p = mieszajPozy(mieszajPozy(p, gora, gladko(clamp(k / 0.22, 0, 1))), cel, gladko(clamp((k - 0.4) / 0.2, 0, 1)));
+      break;
+    }
+    case 'skleja': {
+      // etap 4: wisi na przeciętej linie wiadra (sim/lina-wiadra.ts) — dalszą ręką trzyma się nad głową, nogą oplata
+      // linę, a bliższą owija i wiąże oba kawałki: dłoń krąży wokół węzła, co chwilę mocno szarpie supeł
+      const q = czas * 0.011 + id;
+      const szarp = Math.max(0, Math.sin(czas * 0.0023 + id)) ** 8;
+      p.wis = 1; p.wisY = 0.47;
+      p.rB = 2.95; p.eB = 0.18;
+      siegnij(p, 'A', 0.07 + 0.05 * cos(q) - szarp * 0.03, -0.2 + 0.045 * sin(q) + szarp * 0.06);
+      p.uA = 0.62; p.kA = 1.25; p.sA = 0.3;
+      p.uB = 0.12 + 0.03 * sin(q * 0.5); p.kB = 0.35; p.sB = 0.2;
+      p.tulow = 0.06 + 0.02 * sin(q); p.glowa = -0.32 + szarp * 0.1;
+      p.wysilek = 0.45 + szarp * 0.4;
       break;
     }
     case 'je': {

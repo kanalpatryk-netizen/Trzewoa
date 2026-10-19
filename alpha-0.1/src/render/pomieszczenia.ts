@@ -1,12 +1,14 @@
 import type { Sim } from '../sim/sim';
 import type { Camera } from './camera';
 import type { Creature } from '../sim/creatures';
-import { czyPokoj, zostaloKafli, type Pomieszczenie, type ProbaPlanu, type ZdarzeniePom } from '../sim/pomieszczenia';
+import { czyPokoj, zostaloKafli, kotwicaLiny, type Pomieszczenie, type ProbaPlanu, type ZdarzeniePom } from '../sim/pomieszczenia';
 import { NAZWA_POMIESZCZENIA, POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 import { wolnoRuszac } from './nastroj';
 import { SERIF } from './ink';
 import { fazaMlota, wysokoscPostaci } from './figury';
 import { krzyz, type Urobki } from './kruszce';
+import { naWieszaku } from '../sim/zbroja';
+import { ZBROJA, CZESC, type CzescZbroi } from '../nastawy/zbroja';
 
 /**
  * POMIESZCZENIA (Alpha, etap 3c) — rysunek planów i gotowych pomieszczeń:
@@ -16,9 +18,13 @@ import { krzyz, type Urobki } from './kruszce';
  *  - warsztat: stół, tygiel z roztopionym złotem i krzyż, który złoci się z postępem; gotowy rozbłyskuje i leci
  *    do licznika wiary (render/kruszce.ts);
  *  - kuźnia: palenisko z ogniem, kowadło z rozżarzoną częścią zbroi, iskry w takt młota, wieszak z gotowymi częściami;
- *    gotowa część błyska i unosi się nad kowadłem;
+ *    gotowa część błyska i unosi się nad kowadłem; etap 3f: rycerz zdejmuje część z wieszaka, ta wędruje w jego rękach
+ *    na miejsce (głowa, barki, pierś, kolana, ramię), a gdy siądzie — rozbłyska i unosi się podpis, co daje;
  *  - sypialnia: posłania i świeca, nad śpiącymi „z z z”; kto wstaje bez osłabienia — czerwona aureola rozpływa się;
- *  - gotowe pomieszczenie: obłok pyłu, a wyposażenie opada na swoje miejsce.
+ *  - gotowe pomieszczenie: obłok pyłu, a wyposażenie opada na swoje miejsce;
+ *  - lina (Alpha; w 3d była tu drabina): wisi z żelaznego haka wbitego w skałę, skręcona z konopi, z węzłami na chwyt,
+ *    i lekko się kołysze; nowa spada z haka jako zwój, który rozwija się w dół, a potem lina napina się i uspokaja
+ *    (z haka sypie się pył, na dole zostaje zwój). Podgląd: złota, przerywana lina, strzałka na półkę i cena.
  * Animacja idzie zegarem ekranu. Symulacja: src/sim/pomieszczenia.ts.
  */
 
@@ -103,6 +109,8 @@ export class Pokoje {
   private animacje: { z: ZdarzeniePom; od: number }[] = [];
   /** Kiedy (zegar ekranu) pomieszczenie stało się gotowe — wyposażenie opada na miejsce. */
   private gotoweOd = new Map<number, number>();
+  /** Liny, które właśnie spadły (zegar ekranu): kolumna, od–do — rozwijają się i uspokajają. */
+  private liny: { x: number; y0: number; y1: number; od: number }[] = [];
 
   /** Bierze świeże zdarzenia z symulacji; krzyż z warsztatu rusza do licznika wiary. */
   zbierz(sim: Sim, teraz: number, urobki: Urobki): void {
@@ -111,14 +119,17 @@ export class Pokoje {
       this.widziane.add(z);
       if (z.rodzaj === 'krzyz') urobki.dodaj('wiara', z.ile, z.x, z.y, teraz);
       if (z.rodzaj === 'gotowe') this.gotoweOd.set(z.pom, teraz);
+      if (z.rodzaj === 'lina') this.liny.push({ x: z.x, y0: z.y0, y1: z.y1, od: teraz });
       this.animacje.push({ z, od: teraz });
     }
     if (this.animacje.length) this.animacje = this.animacje.filter((a) => teraz - a.od < 2500);
+    if (this.liny.length) this.liny = this.liny.filter((a) => teraz - a.od < LINA_SPADA + LINA_USPOKAJA);
   }
 
   /** Wyposażenie gotowych pomieszczeń — rzeczy, które ciemność zakrywa (przed mrokiem). Skala postaci: człowiek ma ok. 2 kafle. */
   rysujWnetrza(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
     const z = cam.zoom;
+    rysujLiny(ctx, sim, cam, teraz, this.liny);
     ctx.save();
     ctx.lineJoin = 'round';
     for (const pom of sim.pomieszczenia) {
@@ -165,7 +176,13 @@ export class Pokoje {
         ctx.lineTo(ax - z * 0.55, ay); ctx.lineTo(ax - z * 0.55, ay + z * 0.22); ctx.lineTo(ax - z * 0.3, ay + z * 0.22); ctx.closePath();
         ctx.fill(); ctx.stroke();
         polka(ctx, u.polka, z);
-        sim.zbroja.forEach((id, i) => rysujCzesc(ctx, id, u.polka.x1 + z * (0.3 + (i % 3) * 0.48), u.polka.y + z * (0.45 + Math.floor(i / 3) * 0.6), z * 0.42, 'rgba(176,182,194,0.98)', TUSZ));
+        // na wieszaku to, czego nikt nie nosi; część, którą rycerz właśnie zdjął, jest już w jego rękach (rysujNad)
+        const zdjeta = zakladajacy(sim, pom).some((c) => postepZakladania(c) >= ZDEJMUJE);
+        naWieszaku(sim).forEach((id, i) => {
+          if (i === 0 && zdjeta) return;
+          const [hx, hy] = hakWieszaka(u, z, i);
+          rysujCzesc(ctx, id, hx, hy, z * 0.42, 'rgba(176,182,194,0.98)', TUSZ);
+        });
       } else {
         // dwa posłania na długość człowieka i świeca w niszy między nimi
         for (const [b1, b2, glowa] of u.poslania) {
@@ -278,6 +295,49 @@ export class Pokoje {
     ctx.restore();
   }
 
+  /**
+   * Etap 3f: przed postaciami (rysuje się po nich) — część zbroi w rękach rycerza i błysk, gdy siądzie na nim.
+   */
+  rysujPrzod(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
+    const z = cam.zoom;
+    ctx.save();
+    for (const pom of sim.pomieszczenia) {
+      if (!pom.gotowe || pom.rodzaj !== 'kuznia' || !widac(cam, pom)) continue;
+      const u = uklad(cam, pom);
+      for (const c of zakladajacy(sim, pom)) czescWRekach(ctx, sim, cam, c, u, teraz);
+    }
+    for (const { z: e, od } of this.animacje) {
+      if (e.rodzaj !== 'zbroja') continue;
+      const t = (teraz - od) / 1000;
+      // część siadła na rycerzu: błysk z promieniami w tym miejscu, krąg światła i podpis, co daje
+      const c = sim.creatureById(e.kto);
+      if (!c || t > 1.8) continue;
+      const cz = e.czesc as CzescZbroi;
+      const [x, y] = naCiele(cam, c, cz);
+      const p = t / 1.8, b = Math.max(0, 1 - t / 0.5);
+      const R = z * (0.5 + 1.8 * Math.min(1, t * 4));
+      const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+      g.addColorStop(0, `rgba(255,246,214,${0.85 * (1 - p)})`); g.addColorStop(0.35, `rgba(255,226,160,${0.35 * (1 - p)})`); g.addColorStop(1, 'rgba(255,220,150,0)');
+      ctx.fillStyle = g; ctx.fillRect(x - R, y - R, R * 2, R * 2);
+      if (b > 0) {
+        ctx.strokeStyle = `rgba(255,250,230,${0.95 * b})`; ctx.lineWidth = Math.max(1, z * 0.07); ctx.lineCap = 'round';
+        ctx.beginPath();
+        for (let i = 0; i < 8; i++) {
+          const a = (i / 8) * Math.PI * 2 + 0.3, r0 = z * (0.25 + t * 0.8), r1 = r0 + z * (i % 2 ? 0.35 : 0.65) * b;
+          ctx.moveTo(x + Math.cos(a) * r0, y + Math.sin(a) * r0); ctx.lineTo(x + Math.cos(a) * r1, y + Math.sin(a) * r1);
+        }
+        ctx.stroke();
+      }
+      const a = p < 0.6 ? 1 : 1 - (p - 0.6) / 0.4;
+      ctx.font = `italic ${Math.max(12, Math.min(16, z * 0.7))}px ${SERIF}`;
+      ctx.textAlign = 'center';
+      const tekst = `${CZESC[cz].nazwa}: ${CZESC[cz].skutek}`, ty = cam.toScreenY(c.y + 1) - wysokoscPostaci(c, z) * 1.15 - p * z * 1.2;
+      ctx.lineWidth = 3; ctx.strokeStyle = `rgba(8,6,5,${0.8 * a})`; ctx.strokeText(tekst, x, ty);
+      ctx.fillStyle = ZLOTO_PLANU(0.98 * a); ctx.fillText(tekst, x, ty);
+    }
+    ctx.restore();
+  }
+
   /** Obłok pyłu przy gotowym pomieszczeniu, gotowa część zbroi nad kowadłem, gasnąca czerwona aureola. */
   private rysujZdarzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
     const z = cam.zoom;
@@ -308,6 +368,24 @@ export class Pokoje {
         ctx.textAlign = 'center'; ctx.fillStyle = ZLOTO_PLANU(0.95);
         ctx.fillText(`${nazwa} dla rycerza`, x, y - z * 0.6);
         ctx.globalAlpha = 1;
+      } else if (e.rodzaj === 'lina') {
+        // pył sypie się spod haka, a gdy zwój dotknie dna — obłoczek przy podłodze
+        if (t > 1.6) continue;
+        const x = cam.toScreenX(e.x + 0.5), yh = cam.toScreenY(e.y0);
+        const p1 = Math.min(1, t / 0.6);
+        for (let i = 0; i < 9; i++) {
+          const px = x + (los(i * 5 + e.y0) - 0.5) * z * 0.8, py = yh + p1 * z * (0.5 + 1.2 * los(i * 3 + e.x));
+          ctx.fillStyle = `rgba(190,160,110,${0.7 * (1 - p1)})`;
+          ctx.beginPath(); ctx.arc(px, py, Math.max(0.8, z * 0.05), 0, Math.PI * 2); ctx.fill();
+        }
+        const tDol = t - LINA_SPADA / 1000;
+        if (tDol > 0 && tDol < 0.8) {
+          const pd = tDol / 0.8, yd = cam.toScreenY(e.y1 + 2);
+          for (let i = 0; i < 6; i++) {
+            ctx.fillStyle = `rgba(196,176,140,${0.4 * (1 - pd)})`;
+            ctx.beginPath(); ctx.arc(x + (los(i * 7 + e.x) - 0.5) * z * (0.6 + pd), yd - pd * z * 0.3, z * (0.12 + pd * 0.25), 0, Math.PI * 2); ctx.fill();
+          }
+        }
       } else if (e.rodzaj === 'wypoczety') {
         const c = sim.creatureById(e.kto);
         if (!c || t > 1.4) continue;
@@ -339,6 +417,21 @@ export class Pokoje {
     ctx.strokeStyle = barwa(0.95); ctx.lineWidth = Math.max(1.6, z * 0.1);
     obrysKafli(ctx, cam, p.kafle, w.w);
     ctx.setLineDash([]);
+    // lina: przerywany zarys liny z haka (tam, gdzie uczepi się skały) do podłogi, a przy krawędzi półki — strzałka na nią
+    if (p.rodzaj === 'lina') {
+      const k = kotwicaLiny(w, p.x, p.y);
+      const { lx, ly } = zaczepienie(p.x, p.y, k);
+      ctx.setLineDash([Math.max(3, z * 0.3), Math.max(2, z * 0.18)]);
+      ctx.strokeStyle = barwa(0.9); ctx.lineWidth = Math.max(1.6, z * 0.12);
+      ctx.beginPath(); ctx.moveTo(cam.toScreenX(lx), cam.toScreenY(ly)); ctx.lineTo(cam.toScreenX(lx), cam.toScreenY(p.y + p.h)); ctx.stroke();
+      ctx.setLineDash([]);
+      if (k) hakWSkale(ctx, cam, p.x, p.y, z, k, p.ok ? 0.75 : 0.35);
+      if (p.ok && p.kier && k?.rodzaj === 'krawedz') {
+        const ax = cam.toScreenX(p.x + 0.5 + p.kier * 0.9), ay = cam.toScreenY(p.y + 0.5);
+        ctx.fillStyle = barwa(0.95);
+        ctx.beginPath(); ctx.moveTo(ax + p.kier * z * 0.35, ay); ctx.lineTo(ax - p.kier * z * 0.1, ay - z * 0.28); ctx.lineTo(ax - p.kier * z * 0.1, ay + z * 0.28); ctx.closePath(); ctx.fill();
+      }
+    }
     // podłoga pod planem
     if (czyPokoj(p.rodzaj)) {
       ctx.strokeStyle = barwa(0.6); ctx.lineWidth = Math.max(1, z * 0.06);
@@ -357,6 +450,58 @@ function widac(cam: Camera, p: Pomieszczenie): boolean {
   const z = cam.zoom;
   const x1 = cam.toScreenX(p.x), y1 = cam.toScreenY(p.y);
   return x1 + p.w * z > -z * 4 && y1 + p.h * z > -z * 4 && x1 < cam.vw + z * 4 && y1 < cam.vh + z * 4;
+}
+
+/** Etap 3f: od tej chwili zakładania (0..1) część jest już w rękach rycerza, nie na wieszaku. */
+const ZDEJMUJE = 0.22;
+
+/** Ile rycerz już założył bieżącej części (0..1). */
+function postepZakladania(c: Creature): number {
+  return Math.max(0, Math.min(1, (c.zakladanie ?? 0) / ZBROJA.zakladanieTikow));
+}
+
+/** Rycerze, którzy stoją pod wieszakiem tej kuźni i zakładają zbroję. */
+function zakladajacy(sim: Sim, pom: Pomieszczenie): Creature[] {
+  return sim.creatures.filter((c) => !c.dead && c.czynnosc === 'zaklada' && c.doKuzni === pom.id);
+}
+
+/** Hak wieszaka, na którym wisi i-ta część (piksele ekranu). */
+function hakWieszaka(u: ReturnType<typeof uklad>, z: number, i: number): [number, number] {
+  return [u.polka.x1 + z * (0.3 + (i % 3) * 0.48), u.polka.y + z * (0.45 + Math.floor(i / 3) * 0.6)];
+}
+
+/** Gdzie na rycerzu siada część (piksele ekranu): głowa, barki, pierś, kolana, przedramię z tarczą. */
+function naCiele(cam: Camera, c: Creature, cz: CzescZbroi): [number, number] {
+  const h = wysokoscPostaci(c, cam.zoom), kier = c.face >= 0 ? 1 : -1;
+  const wys: Record<CzescZbroi, number> = { helm: 0.92, naramienniki: 0.78, napiersnik: 0.64, nakolanniki: 0.2, tarcza: 0.5 };
+  return [cam.toScreenX(c.x) + kier * h * (cz === 'tarcza' ? 0.12 : cz === 'nakolanniki' ? 0.1 : 0.05), cam.toScreenY(c.y + 1) - h * wys[cz]];
+}
+
+const gladko = (t: number): number => { const x = Math.max(0, Math.min(1, t)); return x * x * (3 - 2 * x); };
+
+/**
+ * Część zbroi w rękach rycerza: zdjęta z haka unosi się (ręce w górze — render/lud/ruch.ts: „zaklada”), schodzi
+ * na swoje miejsce na ciele, chwilę ją dopasowuje i część wtapia się w rysunek rycerza (wtedy błysk — zdarzenie).
+ */
+function czescWRekach(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, c: Creature, u: ReturnType<typeof uklad>, teraz: number): void {
+  const k = postepZakladania(c);
+  const id = naWieszaku(sim)[0];
+  if (k < ZDEJMUJE || !id) return;
+  const z = cam.zoom;
+  const [hx, hy] = hakWieszaka(u, z, 0);
+  const [tx, ty] = naCiele(cam, c, id);
+  const lot = gladko((k - 0.4) / 0.2);
+  const unos = gladko((k - ZDEJMUJE) / 0.18) * z * 0.25;
+  const szarp = k > 0.6 && k < 0.9 && wolnoRuszac() ? Math.sin(teraz * 0.03 + c.id) * z * 0.04 : 0;
+  const x = hx + (tx - hx) * lot + szarp, y = hy - unos * (1 - lot) + (ty - hy) * lot;
+  const a = k > 0.88 ? Math.max(0, 1 - (k - 0.88) / 0.12) : 1;
+  const R = z * 0.9;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+  g.addColorStop(0, `rgba(255,236,190,${0.3 * a})`); g.addColorStop(1, 'rgba(255,230,170,0)');
+  ctx.fillStyle = g; ctx.fillRect(x - R, y - R, R * 2, R * 2);
+  ctx.globalAlpha = a;
+  rysujCzesc(ctx, id, x, y, z * (0.42 + 0.08 * lot), 'rgba(196,202,214,0.98)', TUSZ);
+  ctx.globalAlpha = 1;
 }
 
 /** Ci, którzy stoją przy stole albo kowadle tego pomieszczenia. */
@@ -388,6 +533,164 @@ function podpis(ctx: CanvasRenderingContext2D, tekst: string, x: number, y: numb
   ctx.strokeText(tekst, x, y);
   ctx.fillStyle = barwa;
   ctx.fillText(tekst, x, y);
+}
+
+/** Konopie liny: jaśniejsza nić i ciemniejszy skręt. */
+const KONOPIE = 'rgba(176,138,86,0.98)', SKRET = 'rgba(92,64,36,0.9)';
+/** Ile trwa spadanie liny z haka i ile jeszcze się kołysze, zanim się uspokoi (ms). */
+const LINA_SPADA = 650, LINA_USPOKAJA = 1600;
+
+/**
+ * Liny (world.lina): każdy pionowy odcinek kafli z liną to jedna lina — z haka u góry odcinka do podłogi pod nim
+ * (gdy pod spodem jest pusty kafel, na którym się staje, lina sięga jego dna i leży tam zwojem). Świeże liny
+ * (`anim`) spadają: zwój zjeżdża z haka, za nim rozwija się lina, a potem kołysze się i uspokaja.
+ */
+function rysujLiny(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number, anim: { x: number; y0: number; y1: number; od: number }[]): void {
+  const w = sim.world;
+  const z = cam.zoom;
+  const left = Math.max(0, Math.floor(cam.x - cam.vw / 2 / z) - 1), right = Math.min(w.w - 1, Math.ceil(cam.x + cam.vw / 2 / z) + 1);
+  const top = Math.max(0, Math.floor(cam.y - cam.vh / 2 / z) - 1), bottom = Math.min(w.h - 2, Math.ceil(cam.y + cam.vh / 2 / z) + 1);
+  const ruch = wolnoRuszac();
+  ctx.save();
+  ctx.lineCap = 'round';
+  for (let x = left; x <= right; x++) {
+    for (let y = top; y <= bottom; y++) {
+      const i = y * w.w + x;
+      if (w.lina[i] !== 1) continue;
+      // odcinek liny w tej kolumnie: od tego kafla w dół, póki jest lina (a nad nim — skąd zwisa)
+      let ya = y;
+      while (ya - 1 >= 0 && w.lina[i - (y - ya + 1) * w.w] === 1) ya--;
+      let y2 = y;
+      while (y2 + 1 < w.h && w.lina[i + (y2 + 1 - y) * w.w] === 1) y2++;
+      const doPodlogi = w.passable(x, y2 + 1) ? 1 : 0;
+      const a = anim.find((q) => q.x === x && q.y0 <= y2 && q.y1 >= ya);
+      const t = a && ruch ? teraz - a.od : Infinity;
+      linaWKolumnie(ctx, cam, x, ya, y2 + doPodlogi, z, t, teraz, ruch, doPodlogi === 1, kotwicaLiny(w, x, ya));
+      y = y2;
+    }
+  }
+  ctx.restore();
+}
+
+/** Gdzie lina zwisa (kafle): kolumna liny przy skale, punkt, od którego wisi, i hak. */
+type Kotwica = ReturnType<typeof kotwicaLiny>;
+function zaczepienie(x: number, yOd: number, k: Kotwica): { lx: number; ly: number } {
+  if (!k) return { lx: x + 0.5, ly: yOd };
+  if (k.rodzaj === 'strop') return { lx: x + 0.5, ly: yOd };
+  // krawędź półki i ściana: lina zwisa tuż przy skale, od brzegu półki (albo od haka w ścianie) w dół
+  return { lx: x + 0.5 + k.strona * 0.28, ly: k.y };
+}
+
+/**
+ * Jedna lina w kolumnie `x` (odcinek kafli od `yOd` do `yDo`), uczepiona skały w `k`: z haka w krawędzi półki przez
+ * jej brzeg i wzdłuż ściany w dół, z haka w stropie albo w ścianie. `t` — ile ms temu spadła (Infinity — wisi od
+ * dawna): najpierw zwój zjeżdża w dół, potem lina się kołysze coraz słabiej.
+ */
+function linaWKolumnie(ctx: CanvasRenderingContext2D, cam: Camera, x: number, yOd: number, yDo: number, z: number, t: number, teraz: number, ruch: boolean, naPodlodze: boolean, k: Kotwica): void {
+  const { lx, ly } = zaczepienie(x, yOd, k);
+  const cx = cam.toScreenX(lx), gora = cam.toScreenY(ly), dol = cam.toScreenY(yDo + 1);
+  const dl = Math.max(1, dol - gora);
+  const rozwin = t < LINA_SPADA ? (t / LINA_SPADA) ** 1.6 : 1;
+  const koniec = gora + dl * rozwin;
+  // kołysanie: po spadnięciu mocne i gasnące, potem ledwie oddech (koniec liny leży na ziemi — tam nie kołysze;
+  // przy samej skale lina kołysze się słabiej)
+  const po = t - LINA_SPADA;
+  const mocno = t < LINA_SPADA ? 0.5 : po < LINA_USPOKAJA ? 0.5 * (1 - po / LINA_USPOKAJA) : 0;
+  const faza = ruch ? teraz * 0.004 + x * 1.7 : 0;
+  const amp = z * (0.06 + mocno) * (ruch ? 1 : 0) * (k && k.rodzaj !== 'strop' ? 0.6 : 1);
+  const odch = (s: number) => Math.sin(faza + (t < Infinity ? t * 0.012 : 0)) * amp * Math.sin(Math.PI * 0.5 * Math.min(1, s)) * (naPodlodze ? 1 - Math.max(0, s - 0.85) / 0.15 : 1);
+  const kroki = Math.max(6, Math.ceil(dl / Math.max(3, z * 0.25)));
+  const punkty: [number, number][] = [];
+  for (let n = 0; n <= kroki; n++) {
+    const s = n / kroki;
+    const py = gora + (koniec - gora) * s;
+    punkty.push([cx + odch((py - gora) / dl), py]);
+  }
+  const sciezka = () => { ctx.beginPath(); punkty.forEach(([px, py], n) => (n ? ctx.lineTo(px, py) : ctx.moveTo(px, py))); };
+  ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(2.4, z * 0.17); sciezka(); ctx.stroke();
+  ctx.strokeStyle = KONOPIE; ctx.lineWidth = Math.max(1.4, z * 0.1); sciezka(); ctx.stroke();
+  // skręt konopi: ukośne kreski co kawałek
+  ctx.strokeStyle = SKRET; ctx.lineWidth = Math.max(0.8, z * 0.035);
+  ctx.beginPath();
+  for (let n = 1; n < punkty.length; n++) {
+    const [px, py] = punkty[n];
+    ctx.moveTo(px - z * 0.05, py - z * 0.06); ctx.lineTo(px + z * 0.05, py + z * 0.02);
+  }
+  ctx.stroke();
+  // węzły na chwyt — co kafel, w połowie wysokości (tylko tam, gdzie lina już wisi)
+  for (let y = yOd; y <= yDo; y++) {
+    const wy = cam.toScreenY(y + 0.5);
+    if (wy < gora + z * 0.2) continue;
+    if (wy > koniec) break;
+    const wx = cx + odch((wy - gora) / dl);
+    ctx.fillStyle = TUSZ; ctx.beginPath(); ctx.ellipse(wx, wy, z * 0.11, z * 0.08, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = KONOPIE; ctx.beginPath(); ctx.ellipse(wx, wy, z * 0.07, z * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // zwój: zjeżdża z liną, a gdy lina sięga podłogi — leży tam
+  if (t < LINA_SPADA) zwoj(ctx, punkty[punkty.length - 1][0], koniec, z, 1 - rozwin * 0.6);
+  else if (naPodlodze) zwoj(ctx, cx + z * 0.12, dol - z * 0.08, z, 0.45);
+  hakWSkale(ctx, cam, x, yOd, z, k, 1);
+}
+
+/**
+ * Hak wbity w skałę tam, gdzie lina się jej uczepiła: w krawędź półki (kołek w półce tuż przy brzegu, lina przez brzeg
+ * w dół), w strop (płytka ze stropu i oczko) albo w ścianę (kołek w ścianie, oczko przy niej).
+ */
+function hakWSkale(ctx: CanvasRenderingContext2D, cam: Camera, x: number, yOd: number, z: number, k: Kotwica, alfa: number): void {
+  const { lx, ly } = zaczepienie(x, yOd, k);
+  if (!k || k.rodzaj === 'strop') { hak(ctx, cam.toScreenX(lx), cam.toScreenY(ly), z, alfa); return; }
+  const s = k.strona;
+  ctx.save();
+  ctx.globalAlpha = alfa;
+  ctx.lineCap = 'round';
+  if (k.rodzaj === 'krawedz') {
+    // kołek wbity w półkę, kawałek od brzegu; lina z oczka przez brzeg i w dół
+    const kx = cam.toScreenX(k.x + s * 0.4), ky = cam.toScreenY(k.y);
+    const rx = cam.toScreenX(k.x), sx = cam.toScreenX(lx);
+    for (const [barwa, gr] of [[TUSZ, Math.max(2.4, z * 0.17)], [KONOPIE, Math.max(1.4, z * 0.1)]] as const) {
+      ctx.strokeStyle = barwa; ctx.lineWidth = gr;
+      ctx.beginPath(); ctx.moveTo(kx, ky - z * 0.12); ctx.quadraticCurveTo(rx, ky - z * 0.14, sx, ky + z * 0.08); ctx.stroke();
+    }
+    ctx.fillStyle = 'rgba(70,70,76,0.98)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(1, z * 0.05);
+    ctx.beginPath(); ctx.rect(kx - z * 0.06, ky - z * 0.3, z * 0.12, z * 0.42); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,120,128,0.98)'; ctx.lineWidth = Math.max(1.2, z * 0.06);
+    ctx.beginPath(); ctx.arc(kx, ky - z * 0.3, z * 0.09, 0, Math.PI * 2); ctx.stroke();
+  } else {
+    // kołek wbity w ścianę z boku; oczko przy ścianie
+    const wx = cam.toScreenX(k.x), wy = cam.toScreenY(k.y);
+    ctx.fillStyle = 'rgba(70,70,76,0.98)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(1, z * 0.05);
+    ctx.beginPath(); ctx.rect(s > 0 ? wx - z * 0.08 : wx - z * 0.22, wy - z * 0.06, z * 0.3, z * 0.12); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle = 'rgba(120,120,128,0.98)'; ctx.lineWidth = Math.max(1.2, z * 0.06);
+    ctx.beginPath(); ctx.arc(wx - s * z * 0.12, wy + z * 0.06, z * 0.09, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Żelazny hak wbity w strop nad liną, z oczkiem, przez które przewiązano linę. */
+function hak(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, alfa: number): void {
+  ctx.save();
+  ctx.globalAlpha = alfa;
+  ctx.fillStyle = 'rgba(70,70,76,0.98)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(1, z * 0.05);
+  ctx.beginPath(); ctx.rect(x - z * 0.22, y - z * 0.1, z * 0.44, z * 0.12); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = 'rgba(120,120,128,0.98)'; ctx.lineWidth = Math.max(1.2, z * 0.06);
+  ctx.beginPath(); ctx.arc(x, y + z * 0.08, z * 0.1, 0, Math.PI * 2); ctx.stroke();
+  // owinięcie liny wokół oczka
+  ctx.strokeStyle = KONOPIE; ctx.lineWidth = Math.max(1, z * 0.06);
+  ctx.beginPath(); ctx.moveTo(x - z * 0.1, y + z * 0.12); ctx.lineTo(x + z * 0.1, y + z * 0.2); ctx.stroke();
+  ctx.restore();
+}
+
+/** Zwój liny — kilka zwojów konopi (`r` — jak duży, 0..1). */
+function zwoj(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, r: number): void {
+  ctx.save();
+  for (let k = 0; k < 3; k++) {
+    const rx = z * (0.18 + 0.14 * r) * (1 - k * 0.18), ry = rx * 0.45;
+    ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(1.6, z * 0.11);
+    ctx.beginPath(); ctx.ellipse(x, y - k * z * 0.05, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = KONOPIE; ctx.lineWidth = Math.max(1, z * 0.06);
+    ctx.beginPath(); ctx.ellipse(x, y - k * z * 0.05, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
+  }
+  ctx.restore();
 }
 
 /** Plan na skale: podwójny kontur kreską rycinową, kafle do wykucia przekreślone, nazwa i ile zostało. */
@@ -473,10 +776,12 @@ function zzz(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, ter
 }
 
 /** Co zrobią zaznaczeni po dotknięciu tego pomieszczenia (podpis nad nim). */
-export function akcjaNaPomieszczeniu(pom: Pomieszczenie, robotnikow: number, innych: number): { akcja: string; ok: boolean } {
+export function akcjaNaPomieszczeniu(pom: Pomieszczenie, robotnikow: number, innych: number, rycerzy = 0, naWieszaku = 0): { akcja: string; ok: boolean } {
   if (!pom.gotowe) return robotnikow ? { akcja: 'kujcie ten plan', ok: true } : { akcja: 'kują tylko robotnicy', ok: false };
   const r: RodzajPomieszczenia = pom.rodzaj;
   if (r === 'sypialnia') return { akcja: 'idźcie spać — sen zdejmie osłabienia', ok: true };
-  if (robotnikow) return { akcja: r === 'warsztat' ? 'pracuj: krzyże ze złota' : 'pracuj: zbroja z żelaza', ok: true };
+  // etap 3f: rycerz w kuźni zakłada części z wieszaka
+  if (r === 'kuznia' && rycerzy && !robotnikow) return naWieszaku ? { akcja: `załóż zbroję z wieszaka (${naWieszaku} ${naWieszaku === 1 ? 'część' : 'części'})`, ok: true } : { akcja: 'nie ma części na wieszaku', ok: false };
+  if (robotnikow) return { akcja: r === 'warsztat' ? 'pracuj: krzyże ze złota' : rycerzy ? 'pracuj: zbroja z żelaza (rycerz ją założy)' : 'pracuj: zbroja z żelaza', ok: true };
   return { akcja: innych ? `wejdź do środka (pracują tu robotnicy)` : '', ok: true };
 }

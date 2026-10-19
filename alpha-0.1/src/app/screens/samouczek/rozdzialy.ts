@@ -13,6 +13,7 @@ import { KOSZTY } from '../../../nastawy/moce';
 import { wiadroTeraz } from '../../../sim/wiadro';
 import { probaPlanu } from '../../../sim/pomieszczenia';
 import { POMIESZCZENIA } from '../../../nastawy/pomieszczenia';
+import { OLTARZ } from '../../../nastawy/oltarz';
 import type { Sim } from '../../../sim/sim';
 
 /** Samouczek pomieszczeń: pierwsze miejsce w skale obok sali, gdzie wolno położyć warsztat (dolny rząd wnętrza). */
@@ -108,7 +109,7 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g) => { g.sim.krew += 60; g.sim.wiara += 40; },
     etapy: [
       {
-        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrach, które zjeżdżają z góry. Wiarę i krew wydajesz na ryty i wybory na kartach.',
+        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrze, które zjeżdża z góry do sali. Wiarę i krew wydajesz na ryty i wybory na kartach.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarZasobow(s.gra.plate) }),
       },
       {
@@ -125,7 +126,7 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę i donoszą jedzenie z wiader. Rycerz broni i walczy ze Strażnikami Snu — a gdy zginie, robotnicy zakładają hełmy i walczą sami.',
+        tekst: 'Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę i donoszą jedzenie z wiadra. Rycerz broni i walczy ze Strażnikami Snu — a gdy zginie, robotnicy zakładają hełmy i walczą sami.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
       {
@@ -137,7 +138,7 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Pomieszczenia',
-    wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb. Kują je robotnicy, którym plan wskażesz.',
+    wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb — kują je robotnicy, którym plan wskażesz. Linę wieszasz sam, od razu.',
     czasowniki: [],
     etapy: [
       {
@@ -157,34 +158,62 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'polecenie' && z.rodzaj === 'pomieszczenie' && z.przyjeli > 0,
       },
       {
-        tekst: `Gotowy warsztat zamienia złoto w wiarę (${POMIESZCZENIA.warsztat.zlotoNaSztuke} złota — ${POMIESZCZENIA.warsztat.wiaraZaSztuke} wiary), kuźnia — żelazo w zbroję rycerza, a sen w sypialni zdejmuje osłabienia. Wolni robotnicy sami nic nie biorą: pracują ci, którym wskażesz.`,
+        tekst: `Gotowy warsztat zamienia złoto w wiarę (${POMIESZCZENIA.warsztat.zlotoNaSztuke} złota — ${POMIESZCZENIA.warsztat.wiaraZaSztuke} wiary), kuźnia — żelazo w zbroję rycerza (rycerz sam ją zakłada, gdy nie ma fali), a sen w sypialni zdejmuje osłabienia. Wolni robotnicy sami nic nie biorą: pracują ci, którym wskażesz.`,
         rozumiem: true,
       },
     ],
-    koniec: 'Korytarz i szyb ciągniesz palcem od miejsca, gdzie stoi lud — szyb schodzi prostymi schodami, więc da się nim wrócić.',
+    koniec: 'Korytarz i szyb ciągniesz palcem od miejsca, gdzie stoi lud — szyb schodzi prostymi schodami, więc da się nim wrócić. Linę wieszasz, wskazując skałę, której się uczepi (krawędź półki, strop) — spada z haka do podłogi; pięć pierwszych jest za darmo, potem kosztują krew.',
+  },
+  {
+    tytul: 'Ołtarz',
+    wstep: 'Na środku sali, w smudze światła z góry, stoi ołtarz. Przy nim pobożny odprawia rytuały — płacisz za nie krwią.',
+    przygotuj: (g) => { g.sim.krew = Math.max(g.sim.krew, 60); },
+    czasowniki: [],
+    etapy: [
+      {
+        tekst: 'Zaznacz pobożnych — medalion pod płytą albo S.', klawisz: 'pobozni',
+        wskaz: (s) => { const p = s.gra.miejscePolaDruzyny('rola', 'pobozny'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: p.h / 2 + 4 } : null; },
+        gotowe: (g) => g.zaznaczeniRoli('pobozny') > 0,
+      },
+      {
+        tekst: 'Dotknij ołtarza — pobożny pójdzie do niego, a otworzy się okno rytuałów.',
+        wskaz: (s) => { const o = s.gra.sim.world.oltarz; return { typ: 'swiat', cel: { x: o.x + 0.5, y: o.y - 1.5, r: 3, tekst: 'ołtarz' } }; },
+        gotowe: (_g, z) => z?.typ === 'oltarz' && z.rodzaj === 'okno',
+      },
+      {
+        tekst: `Gdy pobożny stanie przy ołtarzu, wybierz „Modlitwa” (${OLTARZ.rytualy.modlitwa.krew} krwi) — od krzyża biją promienie, a wiara rośnie.`,
+        wskaz: (s) => { const p = s.gra.poleOltarza('modlitwa'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: Math.min(p.w, p.h) / 2 + 4 } : null; },
+        gotowe: (_g, z) => z?.typ === 'oltarz' && z.rodzaj === 'modlitwa',
+      },
+      {
+        tekst: `Szał krwi rozpala rycerza na minutę. Wskrzeszenie przywraca poległego, którego ciało jeszcze leży (${OLTARZ.rytualy.wskrzeszenie.krew} krwi). Ofiara krwi i ofiara życia dają krew — tylko tutaj, nie w szeptach.`,
+        rozumiem: true,
+      },
+    ],
+    koniec: 'Ołtarz i każdy rytuał mają swoją tablicę w atlasie. Rytuał przepada, gdy pobożny odejdzie od ołtarza — krew wtedy wraca.',
   },
   {
     tytul: 'Jedzenie z góry',
-    wstep: 'Grzyba ani spiżarni nie ma. Jedzenie zjeżdża z góry w wiadrach, na linach.',
+    wstep: 'Grzyba ani spiżarni nie ma. Jedzenie zjeżdża z góry w jednym wiadrze, na linie, zawsze tym samym szybem.',
     przygotuj: (g, s) => { g.sim.krew += 60; if (!s.najblizszeWiadro()) wiadroTeraz(g.sim); },
     czasowniki: ['zasiej'],
     etapy: [
       {
-        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — szybem do sali, a tym, którzy zeszli w głąb i do sali nie wrócą, tam, gdzie stoją. Każdy może z niego jeść. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
+        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — węższym otworem do sali, na dno kolumny pod nim. Kto wykopie pod wiadrem dziurę, sprowadzi je niżej. Do tych w głębi samo nie zjedzie — zaniosą im robotnicy, a kto zszedł drogą wiernych, wróci nią po linach na zakrętach. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
         rozumiem: true,
         wskaz: (s) => { const c = s.najblizszeWiadro(); return c ? { typ: 'swiat', cel: c } : null; },
       },
       {
-        tekst: 'Gdy wiadra nie nadążają, spuść własne. Wybierz ryt „Nakarm” po lewej.', klawisz: 'zasiej', cofa: true,
+        tekst: 'Gdy jedzenia nie starcza, dosyp. Wybierz ryt „Nakarm” po lewej.', klawisz: 'zasiej', cofa: true,
         wskaz: (s) => s.ryt('zasiej'), gotowe: (g) => g.ui.verb === 'zasiej',
       },
       {
-        tekst: 'Dotknij zaznaczonego miejsca — tam zjedzie wiadro.',
+        tekst: 'Dotknij płyty — jedzenie zjedzie szybem, do tego samego wiadra.',
         wskaz: (s) => { const c = s.miejsceNaGrzyb(); return c ? { typ: 'swiat', cel: c } : null; },
         gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'zasiej',
       },
     ],
-    koniec: `Z góry zjeżdża twoje wiadro — ${WIADRO.nakarmPorcji} porcji za ${KOSZTY.zasiej.grzyb.krew} krwi. Liczba „jedzenie” nad płytą to porcje we wszystkich wiadrach.`,
+    koniec: `Z góry zjeżdża ${WIADRO.nakarmPorcji} porcji więcej za ${KOSZTY.zasiej.grzyb.krew} krwi. Liczba „jedzenie” nad płytą to porcje w wiadrze.`,
   },
   {
     tytul: 'Zrób cud',
@@ -226,7 +255,7 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'szept' && z.narzedzie === 'modl',
       },
     ],
-    koniec: `Idzie pod twój rdzeń. Gdy się tam pomodli, skorupa zacznie pękać. Inne szepty: „okalecz się” i „ofiaruj” dają krew.`,
+    koniec: `Idzie pod twój rdzeń. Gdy się tam pomodli, skorupa zacznie pękać. Krew dają ofiary przy ołtarzu — nie szepty.`,
   },
   {
     tytul: 'Zatrzymaj czas',
@@ -338,11 +367,11 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Gdy nie zostanie żaden pobożny — to koniec: nikt inny nie skruszy skorupy, a nowych nikt nie wyda. Najczęściej zabija głód: lud rozproszony daleko od wiader.',
+        tekst: 'Gdy nie zostanie żaden pobożny — to koniec: nikt inny nie skruszy skorupy, a nowych nikt nie wyda. Najczęściej zabija głód: lud rozproszony daleko od wiadra.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
     ],
-    koniec: 'Trzymaj lud razem, spuszczaj wiadra tam, gdzie głodują, i nie wysyłaj pod rdzeń ostatniego pobożnego. Wszystko, co tu było, znajdziesz w atlasie.',
+    koniec: 'Trzymaj lud razem, pilnuj, żeby robotnicy donosili jedzenie z wiadra, i nie wysyłaj pod rdzeń ostatniego pobożnego. Wszystko, co tu było, znajdziesz w atlasie.',
   },
 ];
 

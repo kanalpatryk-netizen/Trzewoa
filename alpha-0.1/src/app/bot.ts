@@ -3,7 +3,8 @@
  * Robi to, co próbni gracze ze skryptów (scripts/test-balansu.mjs, scripts/proby-graczy.mjs):
  * odpowiada na karty wydarzeń, karmi głodnych (ryt Nakarm), stawia Cud przy ludzie i posyła
  * pobożnych pod rdzeń. Alpha: drużyna jest stała, a robotnicy kopią tylko na rozkaz — bot posyła ich
- * na czoło drogi wiernych (jeden zostaje przy noszeniu jedzenia).
+ * na czoło drogi wiernych (jeden zostaje przy noszeniu jedzenia). Etap 4: gdy dłoń z otchłani przetnie linę wiadra,
+ * po kilku sekundach posyła najbliższego, żeby ją skleił („napraw linę”).
  * Wołany co BOT_CO tików symulacji; karty rozstrzyga od razu, żeby gra nie stawała.
  */
 import type { Sim } from '../sim/sim';
@@ -12,7 +13,8 @@ import { Job } from '../sim/creatures';
 import { rozstrzygnij } from '../sim/wydarzenia';
 import { seed, sign, whisper } from '../powers/powers';
 import { porcjiWWiadrach } from '../sim/wiadro';
-import { wydajPolecenie, odwolajPolecenie } from '../sim/polecenia';
+import { wydajPolecenie, odwolajPolecenie, wydajNaprawe } from '../sim/polecenia';
+import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { czoloDrogi } from '../sim/pielgrzymka';
 
@@ -159,11 +161,20 @@ function speedrun(sim: Sim): void {
   }
 }
 
+/** Etap 4: przecięta lina wiadra — po chwili (jak gracz, który to zauważył) najbliższy idzie ją skleić. */
+function naprawLine(sim: Sim): void {
+  const lp = linaPrzecieta(sim);
+  if (!lp || sim.tick - lp.od < 8 * 120 || sklejajacy(sim)) return;
+  if (sim.creatures.some((c) => !c.dead && c.polecenie?.typ === 'naprawa')) return;
+  wydajNaprawe(sim, []);
+}
+
 /** Jeden ruch bota (co BOT_CO tików). */
 export function ruchBota(sim: Sim, styl: StylBota): void {
   if (sim.ending) return;
   if (kartaBota(sim, styl)) return;
   if (styl === 'bierny') return;
+  naprawLine(sim);
   if (styl === 'budowniczy') budowniczy(sim);
   else if (styl === 'speedrun') speedrun(sim);
   else rozsadny(sim);

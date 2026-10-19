@@ -12,9 +12,7 @@ export const KOSZTY = {
   szept: {
     modl: { krew: 0, wiara: 8, otchlan: 0 },
     prorok: { krew: 0, wiara: 18, otchlan: 0 },
-    // Remake v1: krew z własnych — samookaleczenie pobożnego i ofiara z kogokolwiek
-    okalecz: { krew: 0, wiara: 4, otchlan: 0 },
-    ofiaruj: { krew: 0, wiara: 10, otchlan: 0 },
+    // (Alpha, etap 3d: okaleczenie i ofiara są rytuałami przy ołtarzu — nastawy/oltarz.ts)
     // przerwanie modlitwy nic nie kosztuje — to cofnięcie wcześniejszej decyzji
     przerwij: { krew: 0, wiara: 0, otchlan: 0 },
   },

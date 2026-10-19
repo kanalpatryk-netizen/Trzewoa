@@ -4,9 +4,11 @@ import { T, PASSABLE } from './tiles';
 import { Race, RACES } from './races';
 import { pielgrzymowKlanu, wKomorze } from './rytual';
 import { STWORZENIA as K } from '../nastawy/stworzenia';
+import { ZABYTKI } from '../nastawy/zabytki';
+import { maZabytek } from './zabytki';
 import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
 import { LUDY, PRZYPLYWY as PP } from '../nastawy/gora';
-import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchwyt, ludRuch, szukajKopiac, kosztKuciaLudu, glebiaPod } from './droga';
+import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchwyt, ludRuch, szukajKopiac, kosztKuciaLudu, glebiaPod, podDroga } from './droga';
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi, nieWykopane } from './pielgrzymka';
@@ -17,11 +19,16 @@ import { obozyLudu, obozyWgOdleglosci, najblizszyOboz, walczacy, type MiejsceJed
 import { wykutyKafel } from './kruszce';
 import { pomieszczenieId, kafleDoKucia, siegaPlanu, miejsceWPom, ktoryWPom } from './pomieszczenia';
 import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
-import { wiadroDoWspinaczki, wiadroId, krokNaLinie } from './wiadro';
+import { odprawia, type RytualOltarza } from './oltarz';
+import { NAZWA_RYTUALU } from '../nastawy/oltarz';
+import { wiadroDoWspinaczki, wiadroId, krokNaLinie, wiadra } from './wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
 import { odmow, nastepnyKafelZyly, type Polecenie, type Odmowa } from './polecenia';
 import { SWIAT } from '../nastawy/swiat';
+import { idziePoZbroje, planZbroi, ranyZbroi } from './zbroja';
+import { linaPrzecieta, krokNaprawy, zacznijNaprawe, sklejajacy } from './lina-wiadra';
+import { ZBROJA, type CzescZbroi } from '../nastawy/zbroja';
 import { LUD, REMAKE } from '../nastawy/lud';
 
 export enum Job {
@@ -137,7 +144,7 @@ ksiegaT?: number;
   /** Alpha: rozkaz gracza (sim/polecenia.ts) — trzyma się go, aż go odwołasz. */
   polecenie?: Polecenie;
   /** Alpha, etap 3c: co robi w pomieszczeniu — przy kowadle albo stole („buduje”), na posłaniu („spi”). Rysunek bierze z tego pozę. */
-  czynnosc?: 'buduje' | 'spi';
+  czynnosc?: 'buduje' | 'spi' | 'modli' | 'czyta' | 'zaklada' | 'skleja';
   /** Ile tików już przespał w sypialni (sen zdejmuje osłabienia — sim/pomieszczenia.ts). */
   snu?: number;
   /** Alpha: odmowa wykonania rozkazu — dymek nad głową i kręcenie głową. */
@@ -148,6 +155,14 @@ ksiegaT?: number;
   poprzX?: number;
   /** Remake v2: robotnik w hełmie — rycerzy brak, więc walczy jak rycerz. */
   helm?: boolean;
+  /** Alpha, etap 3f: części zbroi z kuźni, które rycerz nosi (sim/zbroja.ts); do której kuźni idzie po resztę,
+   * ile tików zakłada bieżącą część i do kiedy sam po nią nie idzie (nie doszedł). */
+  zbroja?: CzescZbroi[];
+  doKuzni?: number;
+  zakladanie?: number;
+  zbrojaBezDo?: number;
+  /** Alpha, etap 4: skleja przeciętą linę wiadra (sim/lina-wiadra.ts) — wspina się, wisi i wiąże, zsuwa się; kolumna i dno. */
+  naprawia?: { faza: 'wspina' | 'skleja' | 'schodzi'; od: number; x: number; dno: number };
   /** Remake v2: skrajnie głodny biegnie pod linę tego wiadra (id), wspina się po niej (naLinie) i wsiada do niego (naWiadrze). */
   linaDo?: number;
   naLinie?: number;
@@ -236,7 +251,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     if (c.carry === 0) { c.dostawaDla = undefined; c.doObozu = undefined; }
   }
   if (c.hunger > K.glodZabija) { c.hp -= K.glodObrazenia; c.rana = 'glod'; }
-  else if (c.hunger < K.najedzonyLeczy && c.hp < maxHp(sim, c)) c.hp = Math.min(maxHp(sim, c), c.hp + K.leczenieNaTik);
+  else if (c.hunger < K.najedzonyLeczy && c.hp < maxHp(sim, c)) c.hp = Math.min(maxHp(sim, c), c.hp + K.leczenieNaTik * leczenieZabytkow(sim));
   if (c.age > d.lifespan * m.zycie && !sim.spokojnySwiat && (LUD.starzejeSie || !rolaPostaci(c))) { c.hp -= K.starosc; c.rana = 'starosc'; }
   c.fear *= K.wygasanieStrachu;
 
@@ -255,13 +270,15 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // tylko po ciepło, wrócił z nożem na swoich)
   // Żużlowcy żyją przy ogniu głębi i głębia mniej im miesza w głowach
   const odpornosc = c.race === Race.DWARF ? K.odpornoscZuzlowcow : 1;
-  if (!podRdzeniem && depth > K.szalenstwoOdGlebokosci && c.race !== Race.TROLL && sim.rng.chance(K.szalenstwoSzansa * (depth - K.szalenstwoPunkt) * 10 * odpornosc)) {
+  // (etap 3e: wzięta księga — głębia szybciej miesza w głowach i wolniej puszcza)
+  const ksiega = REMAKE && rolaPostaci(c) && maZabytek(sim, 'ksiega');
+  if (!podRdzeniem && depth > K.szalenstwoOdGlebokosci && c.race !== Race.TROLL && sim.rng.chance(K.szalenstwoSzansa * (depth - K.szalenstwoPunkt) * 10 * odpornosc * (ksiega ? ZABYTKI.skutki.ksiega.szalenstwo : 1))) {
     c.mad = Math.min(1, c.mad + K.szalenstwoSkok);
     // Remake v1: bez trolów i sekt — szaleństwo nie przemienia nikogo
   }
-  if (podRdzeniem && c.mad > 0) c.mad = Math.max(0, c.mad - P.ochronaLeczy);
+  if (podRdzeniem && c.mad > 0) c.mad = Math.max(0, c.mad - P.ochronaLeczy * (ksiega ? ZABYTKI.skutki.ksiega.zdrowienie : 1));
   // kto wrócił wyżej, powoli dochodzi do siebie — szaleństwo nie jest już wieczne
-  else if (depth < K.zdrowiejePowyzej && c.mad > 0 && c.race !== Race.TROLL) c.mad = Math.max(0, c.mad - K.zdrowienie);
+  else if (depth < K.zdrowiejePowyzej && c.mad > 0 && c.race !== Race.TROLL) c.mad = Math.max(0, c.mad - K.zdrowienie * (ksiega ? ZABYTKI.skutki.ksiega.zdrowienie : 1));
 
   if (c.hp <= 0) {
     const r = PRZYCZYNA[c.rana ?? ''] ?? ['z wycieńczenia', c.age > d.lifespan * m.zycie ? 'starość' : 'wycieńczenie'];
@@ -271,6 +288,8 @@ function krokStworzenia(sim: Sim, c: Creature): void {
 
   // Remake v2: na linie wiadra — wspina się do niego albo jedzie w nim w dół i je (sim/wiadro.ts)
   if (c.naLinie !== undefined && krokNaLinie(sim, c)) return;
+  // Alpha, etap 4: skleja przeciętą linę wiadra — wspina się, wisi i wiąże, zsuwa się (sim/lina-wiadra.ts)
+  if (c.naprawia && krokNaprawy(sim, c)) return;
 
   // --- przysypanie: kiedy strop się osunie, stworzenie zostaje w litej skale.
   // Bez tego stało nieruchomo do śmierci i wyglądało to jak zawieszona gra.
@@ -299,7 +318,10 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   // albo schodząc szybem; w otwartej pustce spada (przepaści sam omija — droga.ts).
   const trzymaSie = (c.wspina ?? -9) >= sim.tick - K.trzymaSieTikow
     && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty) || w.solid(tx - 1, ty + 1) || w.solid(tx + 1, ty + 1));
-  if (!trzymaSie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
+  // Alpha: na linie się wisi — nie spada (wchodzi i schodzi po niej)
+  const wisiNaLinie = w.lina[i] === 1;
+  if (wisiNaLinie && c.vy > 0) c.vy = 0;
+  if (!trzymaSie && !wisiNaLinie && w.passable(tx, ty + 1) && w.water[w.idx(tx, Math.min(w.h - 1, ty + 1))] < K.wodaNiesie) {
     // Kto dopiero co się wspinał i ma ścianę pod ręką, zsuwa się po niej, zamiast lecieć.
     // Inaczej każda zmiana zamiaru w połowie szybu kończyła się upadkiem z całej wysokości.
     if ((c.wspina ?? -99) >= sim.tick - K.zsuwaSieTikow && (w.solid(tx - 1, ty) || w.solid(tx + 1, ty))
@@ -815,6 +837,11 @@ function planujLud(sim: Sim, c: Creature): void {
   const droga = (cel: (x: number, y: number) => boolean, limit: number) => szukajDrogi(sim, c, (_i, x, y) => cel(x, y), limit);
   const podroz = (d: number[]) => K.noszenieTikow + d.length * K.tikowNaKafel;
 
+  // etap 3d: odprawia rytuał przy ołtarzu — klęczy przy nim, aż skończy (głód i fala poczekają; wróg — nie,
+  // walka przerywa wszystko, a odejście od ołtarza przerywa rytuał)
+  const rytual = odprawia(sim, c);
+  if (rytual) { klecz(sim, c, rytual, naDroge, zamiar, droga, podroz); return; }
+
   // etap 3: zwykła fala Strażników — kto nie jest rycerzem, odchodzi spod rdzenia (modlitwa i tak nic nie kruszy);
   // pobożny z wyprawy wraca pod rdzeń, gdy fala minie
   // (głodny, do którego żaden Strażnik nie jest blisko, najpierw idzie jeść — na skraju strefy uciekali w kółko
@@ -881,6 +908,15 @@ function planujLud(sim: Sim, c: Creature): void {
       for (const sp of spizarnieWgOdleglosci(sim, c.x, c.y, true).filter((sp) => (!odOgnia || !sim.przyMagmie(sp.x, sp.y, 4)) && !(wFali && wStrefieStraznikow(sim, sp.x, sp.y, STRAZNICY.ucieczkaZapas))).slice(0, 3)) {
         const d = droga((x, y) => Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1, LUD.doSpizarni);
         if (d) { naDroge(d, sp.x, sp.y); zamiar('idzie jeść do wiadra', Job.ZAPAS, podroz(d)); return; }
+      }
+      // Alpha, etap 3d: do żadnego stojącego wiadra nie dojdzie, ale jedno właśnie zjeżdża tam, dokąd dojdzie — czeka
+      // pod nim, zamiast kuć dalej w dół (kopacz drogi wiernych schodził za zeskok, oddalał się od wiadra, które jechało
+      // do niego, i umierał z głodu kilka kafli niżej)
+      for (const wd of wiadra(sim)) {
+        if (wd.porcje <= 0 || (wd.faza !== 'zapowiedz' && wd.faza !== 'zjezdza') || Math.hypot(wd.x - c.x, wd.cel - c.y) > 30) continue;
+        if (wFali && wStrefieStraznikow(sim, wd.x, wd.cel, STRAZNICY.ucieczkaZapas)) continue;
+        const d = droga((x, y) => Math.abs(x - wd.x) <= 1 && Math.abs(y - wd.cel) <= 1, LUD.doSpizarni);
+        if (d) { naDroge(d, wd.x, wd.cel); zamiar('głodny — czeka na wiadro, które zjeżdża', Job.STOI, podroz(d) + 120); return; }
       }
     }
   }
@@ -956,6 +992,12 @@ function planujLud(sim: Sim, c: Creature): void {
     }
   }
   if (rola === 'rycerz' || (rola === 'robotnik' && c.helm)) {
+    // etap 3f: na wieszaku w kuźni czeka część zbroi, a fali nie ma — idzie ją założyć i wraca
+    if (!falaTrwa(sim) && idziePoZbroje(sim, c)) {
+      const r = planZbroi(sim, c, undefined, naDroge, zamiar, droga, podroz);
+      if (r === 'zaklada' || r === 'idzie') return;
+      if (r === 'nie dojdzie') c.zbrojaBezDo = sim.tick + ZBROJA.ponowPo;
+    }
     // za mało rycerzy na bossa — czekają na skraju strefy z bronią w ręku (nie uciekają do dalekiej spiżarni)
     if (rycerzeCzekaja(sim)) {
       c.jx = Math.floor(c.x); c.jy = Math.floor(c.y); c.droga = undefined;
@@ -1155,6 +1197,29 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     return poddajSie('nie dojdę do czoła drogi');
   }
 
+  // etap 4: „napraw linę” — idzie pod zwisający koniec przeciętej liny wiadra, chwyta go i dalej krokNaprawy
+  if (p.typ === 'naprawa') {
+    const lp = linaPrzecieta(sim);
+    const inny = sklejajacy(sim);
+    if (!lp || (inny && inny !== c)) { c.polecenie = undefined; if (lp) sim.efekt(c.x, c.y, 'mysl', 'ktoś już ją skleja'); return false; }
+    p.x = lp.x; p.y = lp.dno;
+    const tam = (x: number, y: number) => x === lp.x && y === lp.dno && stoi(sim, x, y);
+    if (Math.abs(c.x - (lp.x + 0.5)) < 0.6 && cy === lp.dno && zacznijNaprawe(sim, c)) { p.na = true; return true; }
+    if (tam(cx, cy)) { naDroge([], lp.x, lp.dno); zamiar('staje pod zwisającą liną', Job.WANDER, 60); return true; }
+    if (budzetDrog() <= 0) return brakCzasu();
+    const d = droga(tam, POLECENIA.szukanieDrogi);
+    if (d) { naDroge(d, lp.x, lp.dno); zamiar('idzie skleić przeciętą linę wiadra', Job.WANDER, podroz(d) + 60); p.prob = 0; return true; }
+    return poddajSie('nie dojdę do liny — nie ma drogi');
+  }
+
+  // etap 3f: rycerz posłany do kuźni — zakłada części z wieszaka, potem rozkaz się kończy
+  if (p.typ === 'zbroja') {
+    const r = planZbroi(sim, c, p.pom, naDroge, zamiar, droga, podroz);
+    if (r === 'zaklada' || r === 'idzie') { p.prob = 0; return true; }
+    if (r === 'nic') { c.polecenie = undefined; return false; }
+    return poddajSie('nie dojdę do kuźni — nie ma drogi');
+  }
+
   // etap 3c: warsztat, kuźnia, sypialnia — idzie na swoje miejsce przy stole, kowadle albo na posłaniu i tam zostaje
   if (p.typ === 'praca' || p.typ === 'sen') {
     const pom = pomieszczenieId(sim, p.pom);
@@ -1247,6 +1312,31 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     if (dk) { zamiar('przekopuje się tam, gdzie kazałeś', Job.WANDER, przekop(dk)); p.prob = 0; return true; }
   }
   return poddajSie(rola === 'robotnik' ? 'tam się nie dokopię' : 'nie dojdę tam — nie ma drogi');
+}
+
+/** Etap 3d: odprawiający rytuał staje tuż przy ołtarzu, twarzą do krzyża, i klęczy (albo unosi księgę). */
+function klecz(sim: Sim, c: Creature, r: RytualOltarza,
+  naDroge: (d: number[], x?: number, y?: number) => void,
+  zamiar: (opis: string, job: Job, jt: number) => void,
+  droga: (cel: (x: number, y: number) => boolean, limit: number) => number[] | null,
+  podroz: (d: number[]) => number): void {
+  const o = sim.world.oltarz;
+  const cx = Math.floor(c.x), cy = Math.floor(c.y);
+  const strona = c.x < o.x + 0.5 ? -1 : 1;
+  const mx = o.x + strona * 2;
+  const opis = `odprawia rytuał przy ołtarzu: ${NAZWA_RYTUALU[r.rodzaj].toLowerCase()}`;
+  if (Math.abs(cx - mx) <= 1 && cy === o.y && stoi(sim, cx, cy)) {
+    c.jx = cx; c.jy = cy; c.droga = undefined;
+    c.face = -strona;
+    c.czynnosc = r.rodzaj === 'szal' || r.rodzaj === 'wskrzeszenie' ? 'czyta' : 'modli';
+    zamiar(opis, Job.STOI, Math.max(30, Math.min(LUD.zamiarTikow, r.do - sim.tick + 1)));
+    return;
+  }
+  const d = budzetDrog() > 0 ? droga((x, y) => Math.abs(x - mx) <= 1 && y === o.y && stoi(sim, x, y), 400) : null;
+  if (d) { naDroge(d, mx, o.y); zamiar(opis, Job.WANDER, podroz(d)); return; }
+  c.jx = cx; c.jy = cy; c.droga = undefined;
+  c.czynnosc = 'modli';
+  zamiar(opis, Job.STOI, 60);
 }
 
 /** Remake v1: stoi w swoim miejscu — pobożny modli się przy obozie, rycerz pilnuje, robotnik odpoczywa. */
@@ -1581,6 +1671,9 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
       && (sim.przyMagmie(x, y, K.kopanieOgienZasieg) || nadOgniem(sim, x, y))) {
     c.dig = 0; c.jt = 0; return;
   }
+  // Alpha (jedno wiadro): podłogi pod drogą wiernych nikt z ludu nie kuje — rycerz, idąc na przełaj, wykuł złoto
+  // spod stopnia, droga się urwała i cała drużyna umarła z głodu w krypcie, z dala od wiadra
+  if (REMAKE && rolaPostaci(c) && podDroga(sim, w.idx(x, y))) { c.dig = 0; c.jt = 0; c.droga = undefined; return; }
   const sila = RACES[c.race].digPower * mnoznik(sim, c, 'kopanie') * cechaNacji(sim.clans[c.clan]).kopanie * (1 + c.mad * K.kopanieOdSzalenstwa);
   // Alpha, etap 3: w górze z warstwami lud kuje wolniej — zejście ma trwać (SWIAT.warstwy.kucie); postęp zostaje
   // w kaflu (w.kucie), nie w kopaczu: rozkaz „kop drogę” odświeżał się co pół sekundy i zerował go, więc przy
@@ -1677,7 +1770,7 @@ function doDostawa(sim: Sim, c: Creature): void {
       c.carry--; sim.meals++;
       komu.hunger = Math.max(0, komu.hunger - LUD.posilek);
     }
-    komu.hp = Math.min(maxHp(sim, komu), komu.hp + K.kesLeczy);
+    komu.hp = Math.min(maxHp(sim, komu), komu.hp + K.kesLeczy * leczenieZabytkow(sim));
     sim.spark(komu.x, komu.y - 0.5, 'spore');
     c.dostawaDla = undefined;
     c.jt = 0;
@@ -1742,10 +1835,24 @@ function doDig(sim: Sim, c: Creature): void {
 function doZbiera(sim: Sim, c: Creature): void {
   if (Math.abs(c.jx - Math.floor(c.x)) > 1 || Math.abs(c.jy - Math.floor(c.y)) > 1) { idz(sim, c, c.jx, c.jy); return; }
   const sp = c.dostawaDla !== undefined ? spizarniaW(sim, c.jx, c.jy) : null;
+  // (Alpha, jedno wiadro: najpierw sam się najada — z jedzeniem pod rdzeń i z powrotem idzie się kilkaset kafli,
+  // a kurier, który ruszył w drogę głodny, padał kilka kafli przed wiadrem)
+  if (sp && c.hunger > LUD.kurierNajadaOd) {
+    for (let n = 0; n < 4 && c.hunger > WIADRO.najadaDo && sp.wez(1) > 0; n++) {
+      sim.meals++;
+      c.hunger = Math.max(0, c.hunger - LUD.posilek);
+    }
+    sim.spark(c.x, c.y - 0.5, 'spore');
+  }
   if (sp) c.carry += sp.wez(LUD.przenoszenie);
   // niesie głodnemu: przy następnym wyborze zajęcia carry > 0 → DOSTAWA
   c.carryT = 0;
   c.jt = 0;
+}
+
+/** Etap 3e: wzięty kielich — rany goją się szybciej (posiłek, dostawa, odpoczynek najedzonego). */
+function leczenieZabytkow(sim: Sim): number {
+  return maZabytek(sim, 'kielich') ? ZABYTKI.skutki.kielich.leczenie : 1;
 }
 
 /** Posiłek z wiadra (Remake v2; dawniej ze spiżarni). */
@@ -1763,7 +1870,7 @@ function doZapas(sim: Sim, c: Creature): void {
   for (let n = 0; sp && n < 4 && (n === 0 || c.hunger > WIADRO.najadaDo) && sp.wez(1) > 0; n++) {
     sim.meals++;
     c.hunger = Math.max(0, c.hunger - LUD.posilek);
-    c.hp = Math.min(maxHp(sim, c), c.hp + K.kesLeczy);
+    c.hp = Math.min(maxHp(sim, c), c.hp + K.kesLeczy * leczenieZabytkow(sim));
   }
   c.jt = 0;
 }
@@ -1778,7 +1885,7 @@ function doEat(sim: Sim, c: Creature): void {
     w.set(c.jx, c.jy, T.AIR);
     sim.meals++;
     c.hunger = Math.max(0, c.hunger - (t === T.BONES ? K.kesKosci : K.kesGrzyba));
-    c.hp = Math.min(maxHp(sim, c), c.hp + K.kesLeczy);
+    c.hp = Math.min(maxHp(sim, c), c.hp + K.kesLeczy * leczenieZabytkow(sim));
     c.jt = 0;
   } else idz(sim, c, c.jx, c.jy);
 }
@@ -1908,7 +2015,7 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   }
   c.devotion = Math.min(1, c.devotion + P.modlitwaOddanie);
   if (!REMAKE) c.hunger = Math.max(0, c.hunger - P.modlitwaKarmi);      // wiara trawi wolniej, ale trawi (Remake v1: karmią dostawy)
-  sim.wiara += P.modlitwaWiara * sim.incomeMult();
+  sim.wiara += P.modlitwaWiara * sim.incomeMult() * (maZabytek(sim, 'ksiega') ? ZABYTKI.skutki.ksiega.wiara : 1);
   if (sim.tick % P.mysliCo === 0 && sim.rng.chance(P.mysliSzansa)) sim.efekt(c.x, c.y - 0.4, 'mysl');
 }
 
@@ -1989,7 +2096,7 @@ function doFight(sim: Sim, c: Creature): void {
   const dist = Math.hypot(foe.x - c.x, foe.y - c.y);
   if (dist < K.walkaZasieg) {
     const dmg = RACES[c.race].strength * mnoznik(sim, c, 'sila') * cechaNacji(sim.clans[c.clan]).sila * (K.walkaMin + sim.rng.next() * K.walkaRozrzut) * (1 + c.mad);
-    foe.hp -= dmg;
+    foe.hp -= dmg * ranyZbroi(foe);
     foe.fear = Math.min(1, foe.fear + K.walkaStrach);
     sim.spark(foe.x, foe.y, 'hit');
     if (foe.hp <= 0) {

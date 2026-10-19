@@ -1,6 +1,7 @@
 import { mikser } from './mikser';
 import { ustawienia } from './settings-store';
-import { GESTY } from '../nastawy/dzwiek';
+import { GESTY, GLOS_RYCERZA } from '../nastawy/dzwiek';
+import { GlosRycerza, type Wypowiedz } from './glos-rycerza';
 
 /** Pentatonika od D — kaskada wykonanego planu wspina się po niej, nigdy nie fałszuje. */
 const KASKADA = GESTY.kaskada;
@@ -17,6 +18,9 @@ export class Gesty {
   private szum: AudioBuffer | null = null;
   private ostatnie = new Map<string, number>();
   private ton: { g: GainNode; zrodla: AudioScheduledSourceNode[] } | null = null;
+  private glosy = new GlosRycerza();
+  /** Rycerz jeszcze mówi (do tej chwili, zegar kontekstu) — następna odmowa nie wchodzi mu w słowo. */
+  private mowiDo = 0;
 
   start(): void {
     if (this.ctx) return;
@@ -27,6 +31,7 @@ export class Gesty {
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     this.szum = buf;
+    this.glosy.wczytaj(ctx);
     this.odswiezGlosnosc();
   }
 
@@ -151,6 +156,27 @@ export class Gesty {
     const t = this.ctx!.currentTime;
     this.kamien(t, 150, 0.28 * V.odmowa, 0.18, 0, 0.1);
     this.kamien(t + 0.1, 118, 0.16 * V.odmowa, 0.22, 0, 0.1);
+  }
+
+  /**
+   * Rycerz odmawia na głos: jedno z nagrań (nastawy/dzwiek.ts — GLOS_RYCERZA, szanse rzadkości), tuż po głuchym
+   * stuku odmowy. `pan` — gdzie stoi na ekranie (−1 lewo … 1 prawo). Zwraca, co powiedział (fale przy dymku),
+   * albo null, gdy dźwięk wyłączony, nagrania jeszcze się nie wczytały albo poprzednia odmowa jeszcze trwa.
+   */
+  glosRycerza(pan = 0): Wypowiedz | null {
+    if (!this.gotowe || this.ctx!.currentTime < this.mowiDo || !this.wolno('glosRycerza', GLOS_RYCERZA.odstepMs)) return null;
+    const n = this.glosy.losuj();
+    if (!n) return null;
+    const ctx = this.ctx!;
+    const t = ctx.currentTime + GLOS_RYCERZA.opoznienie;
+    const src = ctx.createBufferSource();
+    src.buffer = n.bufor;
+    const g = ctx.createGain();
+    g.gain.value = n.wzm * GLOS_RYCERZA.glosnosc;
+    src.connect(g); g.connect(this.wyjscie(pan, GLOS_RYCERZA.poglos));
+    src.start(t, n.od, n.dl);
+    this.mowiDo = t + n.dl;
+    return GlosRycerza.wypowiedz(n);
   }
 
   /**

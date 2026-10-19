@@ -14,6 +14,8 @@ import { WORLD_W, WORLD_H } from './world';
  *
  * Remake v2: lud nie wspina się po ścianach i nie ma lin ani klamer — z podłogi wchodzi
  * najwyżej o jeden kafel (na stopień), a wyżej musi wykuć sobie schody (creatures.ts).
+ * Alpha: albo wejść po linie, którą powiesił gracz (albo która sama spadła na zakręcie drogi wiernych) — na linie
+ * się wisi (`stoi`), więc wchodzi się po niej kafel po kaflu i tak samo schodzi.
  * W dół łatwiej: szybem zsuwa się po ścianach, z niewysokiej półki zeskakuje; w przepaść
  * głębszą niż `LUD.spadekMaks` sam nie skacze.
  *
@@ -49,10 +51,11 @@ export function uchwyt(sim: Sim, x: number, y: number): boolean {
   return w.solid(x - 1, y) || w.solid(x + 1, y) || w.solid(x - 1, y + 1) || w.solid(x + 1, y + 1);
 }
 
-/** Czy tu się stoi: pod spodem lita skała albo woda, na której się unosi. */
+/** Czy tu się stoi: pod spodem lita skała albo woda, na której się unosi — albo na linie (Alpha; w 3d były tu drabiny). */
 export function stoi(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
   if (!w.inb(x, y + 1)) return true;
+  if (w.lina[y * w.w + x] === 1) return true;
   return w.solid(x, y + 1) || w.water[w.idx(x, y + 1)] >= 4;
 }
 
@@ -130,6 +133,8 @@ export function szukajDrogi(
     }
     const naPodlodze = stoi(sim, x, y);
     const wisi = !naPodlodze && uchwyt(sim, x, y);
+    // z liny — w dół, niżej po linie albo na podłogę pod nią
+    if (w.lina[i] === 1 && y + 1 < WORLD_H && wolny(sim, i + W, plywa)) dodaj(i + W, i);
     // w dół: z wiszenia albo w locie
     if (!naPodlodze && y + 1 < WORLD_H && wolny(sim, i + W, plywa) && !(ostrozny && wisi && przepasc(sim, x, y + 1))) dodaj(i + W, i);
     if (!naPodlodze && !wisi) continue;            // w locie nie ma innego wyboru
@@ -321,12 +326,25 @@ export function szukajKopiac(
 }
 
 /** Koszt kucia dla ludu: ziemia tanio, skała drożej; nie przy ogniu, wodzie, rdzeniu ani w skorupie. */
+/**
+ * Alpha (jedno wiadro): kafel tuż pod złotą kreską drogi wiernych, który sam do niej nie należy — jej podłoga.
+ * Tego nikt z ludu nie kuje (jak przy „kop żyłę” i planach pomieszczeń): wykuty stopień urywał drogę w obie strony
+ * i cała drużyna zostawała w krypcie, z dala od jedynego wiadra.
+ */
+export function podDroga(sim: Sim, i: number): boolean {
+  const p = sim.planDrogi;
+  if (!p || i < WORLD_W) return false;
+  const zbior = p.zbior ??= new Set(p.sciezka);
+  return zbior.has(i - WORLD_W) && !zbior.has(i);
+}
+
 export function kosztKuciaLudu(sim: Sim, mozeDoRdzenia = false): KosztKucia {
   const w = sim.world;
   return (i, x, y) => {
     const t = w.tile[i];
     const tw = HARDNESS[t];
     if (tw <= 0 || t === T.CORE) return -1;
+    if (podDroga(sim, i)) return -1;
     if (sim.przyMagmie(x, y, 2) || nadOgniem(sim, x, y)) return -1;
     for (let k = -1; k <= 1; k++) for (let j = -1; j <= 1; j++) if (w.inb(x + k, y + j) && w.water[w.idx(x + k, y + j)] > 2) return -1;
     if (!mozeDoRdzenia && Math.hypot(x - w.coreX, y - w.coreY) < LUD.strefaRdzenia) return -1;

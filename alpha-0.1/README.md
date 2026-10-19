@@ -13,23 +13,45 @@ Alphy są osobne — nie mieszają się z Remake v2.
 - **Stała drużyna:** 3 robotników, 2 pobożnych, 1 rycerz — na całą partię (i nikt się nie starzeje). Skała nie
   wydaje nowych postaci, nie ma gniazd kamiennych rycerzy (ani szeptów „przemyśl i kop” i „kop losowo”), kart
   spisku rycerzy i snu o kamiennych rycerzach. Rycerz jest jeden, ale dużo silniejszy (życie ×12, siła ×11)
-  i na bossa idzie sam; boss nie zasypia w ścianie. Przegrywasz, gdy zginie ostatni pobożny.
+  i na bossa idzie sam; boss nie zasypia w ścianie. Przegrywasz, gdy zginie ostatni pobożny. Rycerz zaczyna w kolczudze,
+  z mieczem i w płaszczu; resztę zbroi wykuwa kuźnia (3f).
 - **Rozkazy:** pod płytą trzy medaliony (robotnicy, pobożni, rycerz). Dotknięcie medalionu albo postaci zaznacza,
   dotknięcie mapy to „idź tam” — pobożny i rycerz idą tylko tam, dokąd prowadzi droga, inaczej odmawiają (kręcą
   głową, a w dymku mówią dlaczego); robotnik przekopuje się sam, wskazana skała to „kop tam”. „Kop drogę wiernych”
   — robotnicy kopią złotą kreskę pod rdzeń; bez rozkazu nie kopią, tylko noszą jedzenie. Klawisze: A/S/D — role,
   G — kop drogę, V — odwołaj, Esc i prawy przycisk — odznacz.
 - **Bez zawału od góry:** mapa się nie skraca, góra nie zamyka się za ludem.
-- **Bez lin.** Lud wchodzi najwyżej o jeden stopień (kafel) i to tylko z miejsca, na którym stoi. Wyżej nie wejdzie —
-  wykuwa sobie schody w skale. W dół zsuwa się po ścianie albo skacze, ale nie z dużej wysokości. Lina została tylko
-  przy wiadrze z jedzeniem.
-- **Góra według szkicu:** z powierzchni jeden szyb, którym zjeżdża jedzenie, do jasnej sali z siedzibą na środku
-  u góry; niżej trzy warstwy — płytka (miękka skała, żelazo), środkowa (małe jaskinie, pod nimi złoto), głęboka
+- **Bez wspinania po ścianach.** Lud wchodzi najwyżej o jeden stopień (kafel) i to tylko z miejsca, na którym stoi. Wyżej nie wejdzie —
+  wykuwa sobie schody w skale albo wchodzi po linie, którą powiesisz (jedyny warunek: górny koniec uczepiony skały — strop, krawędź
+  półki albo ściana; lina spada z haka do podłogi; 5 lin za darmo, potem po 10 krwi). W dół zsuwa się po
+  ścianie albo skacze, ale nie z dużej wysokości.
+- **Góra według szkicu:** z powierzchni dwa otwory do jasnej sali na środku u góry — szerszy, przez który pada światło
+  dzienne na ołtarz, i węższy obok, którym zjeżdża jedzenie (pod nim siedziba); niżej trzy warstwy — płytka (miękka skała, żelazo), środkowa (małe jaskinie, pod nimi złoto), głęboka
   (twarda skała); dookoła rama nie do ruszenia; na dole, na środku, rdzeń pod szeroką kryptą. Drogę w dół trzeba
-  wykuć, a kucie trwa (skała pęka pod kilofem coraz mocniej). Kto zszedł w głąb, dostaje jedzenie tam, gdzie stoi.
-- **Pomieszczenia:** „wyznacz pomieszczenie” (B) i szablon — sypialnia, warsztat, kuźnia, korytarz, szyb; kują je tylko
-  zaznaczeni robotnicy, którym plan wskażesz. W warsztacie złoto staje się wiarą (krzyż leci do licznika), w kuźni żelazo
-  — kolejnymi częściami zbroi rycerza, a sen w sypialni zdejmuje osłabienia. Wszystko z animacją.
+  wykuć, a kucie trwa (skała pęka pod kilofem coraz mocniej).
+- **Jedno wiadro:** jedzenie zjeżdża tylko węższym otworem, do sali — nigdzie indziej. Kopiąc pod wiadrem, sprowadzasz
+  je niżej; Nakarm dosypuje do tego samego wiadra. Z głębi wraca się po jedzenie drogą wiernych: na jej zakrętach
+  lina spada sama, a podłogi pod nią nikt nie kuje; warcie jedzenie donoszą robotnicy.
+- **Zbroja rycerza (3f):** kuźnia wykuwa z żelaza hełm, naramienniki, napierśnik, nakolanniki i tarczę i odkłada je
+  na wieszak. Gdy coś tam wisi, nie ma fali ani rozkazu, a rycerz jest syty, sam idzie do kuźni (albo go tam poślesz:
+  zaznacz rycerza i wskaż kuźnię): zdejmuje część z wieszaka, przykłada na miejsce i dopina — błysk i podpis, co daje.
+  Każda noszona część daje swoje: hełm — życie +15%, naramienniki — siła +15%, napierśnik — życie +25%, nakolanniki —
+  szybkość +10%, tarcza — rany −20%. Część widać na rycerzu; bez hełmu chodzi w kolczym kapturze z odsłoniętą twarzą.
+- **Dwie dłonie (4):** w Koszmarze (w Alphie zawsze) dłoń z otchłani wznosi się spod podłogi sali i jednym zamachem
+  przecina pazurem linę wiadra — wiadro w drodze się roztrzaskuje, nic nie zjeżdża, póki ktoś liny nie sklei („napraw
+  linę wiadra” pod płytą albo na karcie postaci: idzie, wspina się, wiąże, lina się napina). Dłoń anielska przychodzi
+  sama w słupie złotego światła i daje dar za darmo: podkop (kruszy kawałek drogi wiernych), nowego robotnika albo strugę
+  krwi do relikwiarza. Krew pokazuje relikwiarz z ampułką (z Remake v2).
+- **Ruiny z zabytkami (3e):** w środkowej warstwie 1–2 zawalone budowle (kaplica, kopalnia, kawałek miasta); kto z ludu
+  dojdzie do zabytku, odkrywa go — karta „Weź” (premia i kara dla całego ludu, na zawsze) albo „Zostaw”. Relikwiarz,
+  miecz krzyżowca, kielich i księga — każdy z animacją odkrycia, wzięcia (fala światła, aureole) i zgaśnięcia.
+- **Pomieszczenia:** „wyznacz pomieszczenie” (B) i szablon — sypialnia, warsztat, kuźnia, korytarz, szyb, lina; kują
+  je tylko zaznaczeni robotnicy (linę wieszasz sam, od razu), którym plan wskażesz. W warsztacie złoto staje się wiarą (krzyż leci do licznika), w kuźni żelazo
+  — kolejnymi częściami zbroi rycerza, a minuta snu w sypialni zdejmuje osłabienia. Wszystko z animacją.
+- **Ołtarz:** stoi od początku na środku sali, na kamiennym kopczyku, w smudze światła; podkopać go ani zasypać drogi do
+  niego się nie da. Dotknięcie otwiera okno rytuałów płaconych krwią — modlitwa, szał krwi rycerza, wskrzeszenie
+  poległego, ofiara krwi i ofiara życia; odprawia je pobożny stojący przy ołtarzu, każdy z własną animacją.
+  „Okalecz się” i „ofiaruj” są już tylko tutaj, nie w szeptach.
 - **Kruszce:** nad płytą liczniki żelaza i złota. Bez ekwipunku: robotnik rozbija kafel rudy, a okruch sam leci
   łukiem do licznika, który podbija liczbę i błyska. Wskazana robotnikowi ruda to „kop żyłę” — wykuwa całą kępę.
 
@@ -46,11 +68,17 @@ Alphy są osobne — nie mieszają się z Remake v2.
      licznika, „kop żyłę”, tablica atlasu „Kruszce”.
    - ~~3c. Szablony pomieszczeń do wykopania (sypialnia, warsztat, kuźnia, korytarz, szyb)~~ — zrobione (wyżej):
      złoto w warsztacie — dewocjonalia i wiara; żelazo w kuźni — części zbroi rycerza; sypialnia zdejmuje osłabienia.
-   - 3d. Ołtarz w środkowej warstwie z rytuałami — każdy z własną animacją.
-   - 3e. Ruiny z zabytkami (wydarzenie: weź — premia i kara — albo zostaw).
-   - 3f. Części zbroi widoczne na rycerzu.
-4. **Dwie dłonie** — dłoń z otchłani przecina pazurem linę wiadra (jedzenie staje, póki ktoś nie wejdzie po linie
-   i jej nie sklei); dłoń anielska z góry: podkop, dar ludzi (robotnik w dłoni), dar krwi.
+   - ~~3d. Ołtarz z rytuałami — każdy z własną animacją~~ — zrobione (wyżej): ołtarz w sali pod światłem (decyzja
+     użytkownika — nie w środkowej warstwie), drugi otwór na wiadro, okno rytuałów, pięć rytuałów za krew, drabiny (od 18.10 — liny),
+     sen 60 s.
+   - ~~3e. Ruiny z zabytkami~~ — zrobione (wyżej): kaplica, kopalnia, kawałek miasta; cztery zabytki, karta „weź/zostaw”,
+     premia i kara dla całego ludu (sen kary nie zdejmuje), animacje odkrycia, wzięcia i zgaśnięcia.
+   - ~~3f. Części zbroi widoczne na rycerzu~~ — zrobione (wyżej): rycerz zaczyna w kolczudze, z mieczem i w płaszczu;
+     części z kuźni zakłada sam, gdy nie ma fali (albo na rozkaz), z animacją i błyskiem; każda coś daje. Atlas:
+     tablice „Zbroja rycerza” i „Warstwy góry” (przekrój: szyb, sala, trzy warstwy, rama, krypta, rdzeń). Złoto
+     to także żółte znaczki „Ag” ze szkicu Pawła. **Etap 3 jest skończony.**
+4. ~~**Dwie dłonie**~~ — zrobione (wyżej): dłoń z otchłani przecina pazurem linę wiadra, „napraw linę wiadra”
+   (wspina się i skleja); dłoń anielska z góry — podkop, dar ludzi, dar krwi; relikwiarz krwi z Remake v2.
 5. **Finał, bot, samouczek** — Wielki Pomnik pęka od modlitwy, z gruzów wychodzi boss, a dłoń z otchłani mu pomaga;
    bot pod nowe zasady; nowy samouczek, w którym kroki przewija się samemu.
 

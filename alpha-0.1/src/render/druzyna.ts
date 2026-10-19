@@ -16,14 +16,15 @@ import type { Plate, Obszar } from './plate';
 import { obszarSpisu } from './plate';
 import { rolaPostaci, NAZWA_ROLI_MNOGA, type Rola } from '../sim/lud';
 import { czoloDrogi } from '../sim/pielgrzymka';
+import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
 import { rysujPostac, wysokoscPostaci } from './figury';
 import { krazek, pigment } from './fresk';
 import { SERIF } from './ink';
 import { FRESK } from '../nastawy/barwy';
 import { POLECENIA } from '../nastawy/polecenia';
-import { postepOdmowy } from './lud/odmowa';
+import { postepOdmowy, glosOdmowy } from './lud/odmowa';
 import { wolnoRuszac } from './nastroj';
-import { SZABLONY, NAZWA_POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
+import { SZABLONY, NAZWA_POMIESZCZENIA, POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 
 /** Kolejność medalionów pod płytą. */
 export const ROLE_DRUZYNY: Rola[] = ['robotnik', 'pobozny', 'rycerz'];
@@ -31,7 +32,7 @@ export const ROLE_DRUZYNY: Rola[] = ['robotnik', 'pobozny', 'rycerz'];
 /** Barwy ról (te same co dawna wstęga ludu): biel wapienna pobożnych, ugier robotników, błękit rycerzy. */
 export const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
 
-export type AkcjaDruzyny = 'rola' | 'droga' | 'odwolaj' | 'odznacz' | 'pomieszczenia' | 'szablon' | 'koniecSzablonu';
+export type AkcjaDruzyny = 'rola' | 'droga' | 'odwolaj' | 'odznacz' | 'pomieszczenia' | 'szablon' | 'koniecSzablonu' | 'naprawa';
 export interface PoleDruzyny { akcja: AkcjaDruzyny; rola?: Rola; szablon?: RodzajPomieszczenia; x: number; y: number; w: number; h: number }
 
 /** Co mówi listwa szablonów pod każdym z nich. */
@@ -41,6 +42,7 @@ const JAK_PLANOWAC: Record<RodzajPomieszczenia, string> = {
   kuznia: 'dotknij skały obok przejścia — plan stanie pod kursorem; w kuźni żelazo staje się zbroją rycerza',
   korytarz: 'przeciągnij w bok od miejsca, gdzie stoi lud — korytarz na 2 kafle',
   szyb: 'przeciągnij w dół i w bok od miejsca, gdzie stoi lud — proste schody',
+  lina: `dotknij, gdzie ma wisieć hak — przy skale, której się uczepi (krawędź półki, strop, ściana); lina spadnie do podłogi; ${POMIESZCZENIA.linyDarmowe} pierwszych za darmo, potem ${POMIESZCZENIA.linaKrew} krwi`,
 };
 
 /** Fala w miejscu wydania rozkazu (zegar ekranu): złota — przyjęli, czerwona — odmówili. */
@@ -174,7 +176,15 @@ export function rysujDruzyne(
   const rozm = Math.max(12, Math.min(14, r * 0.58));
   if (x1 - x0 > 60) {
     const robotnicy = zaznaczone.filter((c) => rolaPostaci(c) === 'robotnik').length;
-    const opcje: { akcja: AkcjaDruzyny; tekst: string; wlaczony?: boolean }[] = [];
+    const opcje: { akcja: AkcjaDruzyny; tekst: string; wlaczony?: boolean; pilne?: boolean }[] = [];
+    // etap 4: lina wiadra przecięta — pierwszy przycisk, pulsuje, póki nikt jej nie skleja
+    const lp = linaPrzecieta(sim);
+    if (lp) {
+      const wisi = sklejajacy(sim);
+      const idzie = sim.creatures.some((c) => !c.dead && c.polecenie?.typ === 'naprawa');
+      opcje.push(wisi ? { akcja: 'naprawa', tekst: 'skleja linę…', wlaczony: true }
+        : { akcja: 'naprawa', tekst: idzie ? 'napraw linę (idzie)' : 'napraw linę wiadra', pilne: !idzie });
+    }
     if (robotnicy && czoloDrogi(sim) >= 0) opcje.push({ akcja: 'droga', tekst: 'kop drogę wiernych' });
     if (zaznaczone.some((c) => c.polecenie)) opcje.push({ akcja: 'odwolaj', tekst: 'odwołaj rozkaz' });
     if (zaznaczone.length) opcje.push({ akcja: 'odznacz', tekst: 'odznacz' });
@@ -201,6 +211,15 @@ export function rysujDruzyne(
       const w = Math.min(x1 - x, ctx.measureText(op.tekst).width + 22);
       if (w < 40) break;
       const pod = op.wlaczony || (kursor.x >= x && kursor.x <= x + w && kursor.y >= yP && kursor.y <= yP + hp);
+      if (op.pilne) {
+        // pilne: czerwona poświata pulsuje wokół przycisku
+        const puls = wolnoRuszac() ? 0.5 + 0.5 * Math.sin(czas * 0.006) : 0.7;
+        ctx.save();
+        ctx.shadowColor = `rgba(230,60,40,${0.5 + 0.4 * puls})`; ctx.shadowBlur = 8 + 10 * puls;
+        ctx.strokeStyle = `rgba(236,96,72,${0.6 + 0.35 * puls})`; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.roundRect(x - 2, yP - 2, w + 4, hp + 4, hp / 2 + 2); ctx.stroke();
+        ctx.restore();
+      }
       pigulka(ctx, x, yP, w, hp, op.tekst, pod, rozm);
       pola.push({ akcja: op.akcja, x, y: yP - 4, w, h: hp + 8 });
       x += w + 8;
@@ -212,7 +231,7 @@ export function rysujDruzyne(
   return pola;
 }
 
-/** Listwa szablonów u dołu płyty: sypialnia, warsztat, kuźnia, korytarz, szyb i „gotowe”; nad nią — jak planować. */
+/** Listwa szablonów u dołu płyty: sypialnia, warsztat, kuźnia, korytarz, szyb, lina i „gotowe”; nad nią — jak planować. */
 function listwaSzablonow(ctx: CanvasRenderingContext2D, plate: Plate, szablon: RodzajPomieszczenia, kursor: { x: number; y: number }, rozm: number): PoleDruzyny[] {
   const pola: PoleDruzyny[] = [];
   const hp = Math.max(24, rozm * 1.8);
@@ -362,6 +381,30 @@ function dymek(ctx: CanvasRenderingContext2D, cam: Camera, sx: number, sy: numbe
 }
 
 /**
+ * Fale głosu przed twarzą (rycerz mówi odmowę na głos): trzy łuki rozchodzą się od ust, jaśniejsze, gdy mówi
+ * głośniej (`g` — obwiednia nagrania, 0…1). Bez ruchu (nastrój: wolno ruszać) — stoją, tylko jaśnieją.
+ */
+function faleGlosu(ctx: CanvasRenderingContext2D, sx: number, sy: number, h: number, kier: number, g: number, czas: number): void {
+  const x0 = sx + kier * h * 0.17;
+  const krok = Math.max(3, h * 0.13);
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineWidth = Math.max(1.2, h * 0.035);
+  for (let i = 0; i < 3; i++) {
+    const faza = wolnoRuszac() ? ((czas * 0.004 + i / 3) % 1) : (i + 1) / 4;
+    const r = krok * (0.7 + faza * 2.6);
+    const a = Math.min(1, 0.25 + g * 1.1) * Math.sin(faza * Math.PI);
+    if (a <= 0.02) continue;
+    ctx.strokeStyle = `rgba(246,216,142,${(a * 0.9).toFixed(3)})`;
+    ctx.beginPath();
+    const s0 = kier > 0 ? -0.75 : Math.PI - 0.75;
+    ctx.arc(x0, sy, r, s0, s0 + 1.5);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
  * Rozkazy na mapie (po postaciach): linie od zaznaczonych do ich celów, znaczniki celów (świeże rozkazy
  * innych gasną po `POLECENIA.znacznikTikow`), fala w miejscu ostatniego rozkazu i dymki odmów.
  */
@@ -402,6 +445,9 @@ export function rysujPoleceniaNaMapie(
     if (k !== null && c.odmowa) {
       const h = wysokoscPostaci(c, z);
       dymek(ctx, cam, cam.toScreenX(c.x), cam.toScreenY(c.y + 1) - h * 1.1, c.odmowa.tekst, k, dymki);
+      // rycerz mówi odmowę na głos — przed twarzą biją fale w rytm słów
+      const g = glosOdmowy(c, czas);
+      if (g !== null) faleGlosu(ctx, cam.toScreenX(c.x), cam.toScreenY(c.y + 1) - h * 0.8, h, c.face < 0 ? -1 : 1, g, czas);
     }
   }
   // czoło drogi wiernych, gdy ktoś kopie ją na rozkaz
