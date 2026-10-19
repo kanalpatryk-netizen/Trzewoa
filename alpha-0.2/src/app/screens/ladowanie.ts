@@ -29,7 +29,13 @@ export class EkranLadowania implements Ekran {
   /** Czy gracz już dotknął ekranu po załadowaniu (patrz LADOWANIE.czekajNaDotyk). */
   private obudzony = !L.czekajNaDotyk || import.meta.env.DEV;
 
-  constructor(private app: Kontekst, private etapy: Etap[], private potem: () => void) {}
+  /**
+   * `zaslona` — póki zwraca true, coś zasłania ekran (film intro): ładowanie idzie pod spodem, gra nie
+   * czeka na dotknięcie i nie przechodzi dalej. Gdy zasłona zniknie, a wszystko gotowe — od razu menu.
+   */
+  constructor(private app: Kontekst, private etapy: Etap[], private potem: () => void, private zaslona?: () => boolean) {
+    if (zaslona) this.obudzony = true;
+  }
 
   wejdz(): void { this.start = performance.now(); }
 
@@ -42,6 +48,7 @@ export class EkranLadowania implements Ekran {
       // gotowe: czekamy na dotknięcie, nie znikamy szybciej niż minimalny czas i dajemy chwilę na wygaszenie
       // okno obserwatorium nie czeka na dotknięcie — bot gra od razu
       if (!this.obudzony && !BOT.wlaczony) return;
+      if (this.zaslona) { if (!this.zaslona()) this.potem(); return; }
       if (!this.koniecOd) this.koniecOd = Math.max(teraz, this.start + L.minCzasMs);
       if (teraz >= this.koniecOd + L.wygaszenieMs) this.potem();
       return;
