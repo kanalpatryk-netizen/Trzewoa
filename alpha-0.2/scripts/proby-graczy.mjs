@@ -17,7 +17,7 @@ import { rozstrzygnij } from ${src('sim/wydarzenia.ts')};
 import { Job } from ${src('sim/creatures.ts')};
 import { czoloDrogi, nieWykopane } from ${src('sim/pielgrzymka.ts')};
 import { DZIENNIK } from ${src('sim/dziennik.ts')};
-import { ruchBota, kartaBota } from ${src('app/bot.ts')};
+import { ruchBota, kartaBota, decyzjaBota } from ${src('app/bot.ts')};
 import { porcjiWWiadrach } from ${src('sim/wiadro.ts')};
 import { procentSkorupy } from ${src('sim/rytual.ts')};
 
@@ -28,12 +28,15 @@ function role(sim: any) { const r: any = { pobozny: 0, robotnik: 0, rycerz: 0 };
 function jedzenie(sim: any) { return porcjiWWiadrach(sim); }
 
 // Alpha: próbni gracze to bot z gry (src/app/bot.ts) — te same decyzje, co w obserwatorium
+let ostatniaDecyzja = -1;
 function gracz(styl: string) {
   return (sim: any, out: string[]) => {
     const e = sim.wydarzenia.biezace;
-    if (e) { kartaBota(sim, styl as any); out.push(t(sim) + ' KARTA ' + e.rodzaj); return; }
+    const mysl = () => { const d = decyzjaBota(sim); if (d.tekst && d.od !== ostatniaDecyzja) { ostatniaDecyzja = d.od; out.push(t(sim) + ' BOT ' + d.tekst); } };
+    if (e) { kartaBota(sim, styl as any); out.push(t(sim) + ' KARTA ' + e.rodzaj); mysl(); return; }
     const przed = new Map(zywi(sim).map((c: any) => [c.id, c.polecenie?.typ]));
     ruchBota(sim, styl as any);
+    mysl();
     for (const c of zywi(sim)) if (c.polecenie && przed.get(c.id) !== c.polecenie.typ) out.push(t(sim) + ' GRACZ rozkaz ' + c.polecenie.typ + ' → ' + c.rola + ' #' + c.id);
   };
 }
@@ -103,7 +106,7 @@ export function run(z: number, styl: string, minut: number) {
       const zam: any = {};
       for (const c of zywi(sim)) { const z = (c.zamiar ?? '-').replace(/[0-9#(].*$/, '').trim().slice(0, 30); zam[z] = (zam[z] ?? 0) + 1; }
       const kuje = sim.creatures.filter((c: any) => !c.dead && c.drogaKopie).length;
-      out.push(t(sim) + ' STAN pob=' + r.pobozny + ' rob=' + r.robotnik + ' ryc=' + r.rycerz + ' krew=' + Math.round(sim.krew) + ' wiara=' + Math.round(sim.wiara) + ' żel=' + sim.zelazo + ' zł=' + sim.zloto + ' jedz=' + jedzenie(sim) + ' oddanie=' + (k ? k.devotion.toFixed(2) : '-') + ' plan=' + (sim.planDrogi ? nieWykopane(sim).length : '-') + ' pęk=' + sim.rytual.pekniecia + ' skorupa=' + procentSkorupy(sim) + '% fala=' + (sim.lud.straznicy ? sim.lud.straznicy.fala + (sim.lud.straznicy.trwa ? '!' : '') : '-') + ' kuje=' + kuje + ' | ' + Object.entries(zam).sort((a: any, b: any) => b[1] - a[1]).map(([a, b]) => b + '× ' + a).join('; '));
+      out.push(t(sim) + ' STAN pob=' + r.pobozny + ' rob=' + r.robotnik + ' ryc=' + r.rycerz + ' krew=' + Math.round(sim.krew) + ' wiara=' + Math.round(sim.wiara) + ' żel=' + sim.zelazo + ' zł=' + sim.zloto + ' jedz=' + jedzenie(sim) + ' oddanie=' + (k ? k.devotion.toFixed(2) : '-') + ' plan=' + (sim.planDrogi ? nieWykopane(sim).length : '-') + ' pęk=' + sim.rytual.pekniecia + ' skorupa=' + procentSkorupy(sim) + '% fala=' + (sim.lud.straznicy ? sim.lud.straznicy.fala + (sim.lud.straznicy.trwa ? '!' : '') : '-') + ' kuje=' + kuje + ' pom=' + (sim.pomieszczenia.map((p: any) => p.rodzaj + (p.gotowe ? '' : '?')).join(',') || '-') + ' zbroja=' + sim.zbroja.length + ' liny=' + (sim.lud.liny ?? 0) + ' | ' + Object.entries(zam).sort((a: any, b: any) => b[1] - a[1]).map(([a, b]) => b + '× ' + a).join('; '));
     }
   }
   out.push('KONIEC ' + (sim.ending ?? 'brak (limit czasu)') + ' @' + t(sim) + ' wyjątków ' + wyjatki + ' zgonów ' + [...sim.deaths.values()].reduce((a: number, b: number) => a + b, 0));

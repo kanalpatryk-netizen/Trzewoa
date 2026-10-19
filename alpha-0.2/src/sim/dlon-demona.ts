@@ -99,7 +99,9 @@ export function odbijOdTarczy(sim: Sim, od: Creature): void {
   const s = sim.lud.dlonDemona!;
   s.odbicieT = sim.tick;
   const kier = Math.sign(od.x - s.x) || s.bok;
-  od.x += kier * D.tarcza.odrzut;
+  // (nie w skałę: rycerz odrzucony w ścianę albo w zasypaną drogę zostawał w litej skale i ginął przysypany)
+  const nx = od.x + kier * D.tarcza.odrzut;
+  if (sim.world.passable(Math.floor(nx), Math.floor(od.y))) od.x = nx;
   for (let k = 0; k < 4; k++) sim.spark(s.x + sim.rng.range(-0.4, 0.4), od.y - 0.8 + sim.rng.range(-0.5, 0.5), 'hit');
 }
 
