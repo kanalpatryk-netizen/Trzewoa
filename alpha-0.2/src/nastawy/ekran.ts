@@ -93,16 +93,19 @@ export const INTRO = {
 };
 
 /**
- * KURSOR — `obrazy/kursor1.png` (stalowa rękawica) jako jedyny kursor gry, na każdym ekranie.
- * Gra sama zmniejsza obrazek do rozmiaru kursora (i ostrzejszej wersji na ekrany o gęstych pikselach),
+ * KURSOR — stalowa rękawica jako jedyny kursor gry, na każdym ekranie: `obrazy/kursor1.png` zwykle,
+ * `obrazy/kursor2.png` (palec wciska), póki przycisk myszy jest wciśnięty. Rękawicę rysuje sama gra
+ * pod myszką (systemowa strzałka się chowa) — kursor przeglądarki większy niż 32 px Chrome i Firefox
+ * zamieniają przy krawędzi okna na zwykłą strzałkę. Obrazki gra sama przycina do rękawicy i zmniejsza,
  * więc nowy kursor to po prostu podmieniony plik — najwyżej trzeba poprawić `czubek`.
  */
 export const KURSOR = {
-  /**
-   * Dłuższy bok kursora w pikselach ekranu. Więcej niż 32 nie warto: Chrome większy kursor
-   * chowa przy krawędzi okna (pokazuje wtedy zwykłą strzałkę).
-   */
-  rozmiar: 32,
+  /** Dłuższy bok rękawicy w pikselach ekranu. */
+  rozmiar: 40,
   /** Punkt, który klika (czubek palca) — w pikselach oryginalnego obrazka. */
   czubek: { x: 14, y: 17 },
+  /** To samo dla rękawicy przy kliknięciu (kursor2.png). */
+  czubekKlik: { x: 64, y: 204 },
+  /** Nawet najkrótsze kliknięcie pokazuje wciśniętą rękawicę co najmniej tyle ms. */
+  klikMinMs: 120,
 };
