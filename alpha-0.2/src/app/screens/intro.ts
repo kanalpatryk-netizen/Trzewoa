@@ -1,7 +1,6 @@
 import { KROJ } from '../../render/fonts';
 import { BARWA, rgba } from '../../render/palette';
 import { INTRO as I } from '../../nastawy/ekran';
-import { pelnyEkran } from '../../core/android';
 import filmUrl from '../../../filmy/intro.mp4?url';
 
 /**
@@ -24,6 +23,8 @@ export function puscIntro(): void {
 
   const v = document.createElement('video');
   v.src = filmUrl;
+  // film bez dźwięku przeglądarka puszcza od razu, bez czekania na gest gracza
+  v.muted = v.defaultMuted = true;
   v.playsInline = true;
   v.setAttribute('playsinline', '');
   v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000';
@@ -48,23 +49,16 @@ export function puscIntro(): void {
   warstwa = w;
   requestAnimationFrame(() => { z.style.opacity = '0.75'; });
 
-  // spacja i Esc pomijają film; klawisz idzie dalej do gry (budzi dźwięk, jak każdy pierwszy gest)
+  // spacja i Esc pomijają film; klawisz idzie dalej do gry (pierwszy gest budzi dźwięk i pełny ekran)
   addEventListener('keydown', klawisz, true);
 
-  // bez dźwięku przeglądarka puszcza film od razu, bez czekania na gest gracza
-  v.muted = false;
-  v.play().catch(() => {
-    v.muted = true;
-    v.play().catch(pominIntro);
-  });
+  v.play().catch(pominIntro);
   // film, który nie ruszył (zła taśma, przeglądarka bez kodeka), nie trzyma gry za zasłoną
   setTimeout(() => { if (trwa && v.currentTime === 0) pominIntro(); }, I.bezpiecznikMs);
 }
 
 function klawisz(e: KeyboardEvent): void {
-  if (e.key !== ' ' && e.code !== 'Space' && e.key !== 'Escape') return;
-  pominIntro();
-  pelnyEkran();                              // to naciśnięcie jest gestem — jak dawne „dotknij, aby się obudzić”
+  if (e.key === ' ' || e.code === 'Space' || e.key === 'Escape') pominIntro();
 }
 
 export function pominIntro(): void {

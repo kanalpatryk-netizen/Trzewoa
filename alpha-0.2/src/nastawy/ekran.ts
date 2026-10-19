@@ -68,13 +68,6 @@ export const LADOWANIE = {
   tytul: 'TRZEWIA',
   /** Podpis pod paskiem, gdy wszystko gotowe. */
   gotowe: 'góra się budzi',
-  /**
-   * Po załadowaniu gra czeka na dotknięcie albo klawisz — przeglądarka pozwala
-   * włączyć dźwięk dopiero po geście gracza, więc muzyka gra już w menu.
-   * (W trybie deweloperskim nie czeka.)
-   */
-  czekajNaDotyk: true,
-  dotknij: 'dotknij, aby się obudzić',
   /** Ekran ładowania nie znika szybciej niż po tylu ms (żeby nie mignął). */
   minCzasMs: 1100,
   /** Przejście do menu (ms). */

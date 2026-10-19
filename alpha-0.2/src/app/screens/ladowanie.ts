@@ -1,5 +1,4 @@
 import type { Ekran } from '../screen';
-import { BOT } from '../obserwowany';
 import type { Kontekst } from '../context';
 import { BARWA, rgba } from '../../render/palette';
 import { SERIF, tloSadzy } from '../../render/ink';
@@ -7,7 +6,6 @@ import { ramaRyciny, kartusz, dopasujKartusz } from '../../render/ozdoby';
 import { rysujSerce, tetnoRdzenia } from '../../render/rdzen';
 import { ekran } from '../../core/settings-store';
 import { LADOWANIE as L } from '../../nastawy/ekran';
-import { pelnyEkran } from '../../core/android';
 
 /** Jeden krok ładowania: napis dla gracza i robota (może być asynchroniczna). */
 export interface Etap { nazwa: string; zrob: () => void | Promise<void>; }
@@ -16,7 +14,8 @@ export interface Etap { nazwa: string; zrob: () => void | Promise<void>; }
  * Ekran ładowania. Najpierw mierzy ekran i ustawia skalę (to robi App przy starcie),
  * potem po jednym etapie na klatkę: kroje pisma, świat, ekrany, ryciny, tablice.
  * Obraz: przekrój góry, przez który złota kreska drąży szyb w dół — gdy dojdzie
- * do rdzenia, rdzeń zaczyna bić i gra przechodzi do menu.
+ * do rdzenia, rdzeń zaczyna bić i gra przechodzi do menu. Na nic nie czeka: zwykle
+ * w ogóle go nie widać, bo przez całe ładowanie leci nad nim film intro.
  */
 export class EkranLadowania implements Ekran {
   nazwa = 'ladowanie';
@@ -26,16 +25,12 @@ export class EkranLadowania implements Ekran {
   private start = 0;
   private koniecOd = 0;
   private blad = '';
-  /** Czy gracz już dotknął ekranu po załadowaniu (patrz LADOWANIE.czekajNaDotyk). */
-  private obudzony = !L.czekajNaDotyk || import.meta.env.DEV;
 
   /**
-   * `zaslona` — póki zwraca true, coś zasłania ekran (film intro): ładowanie idzie pod spodem, gra nie
-   * czeka na dotknięcie i nie przechodzi dalej. Gdy zasłona zniknie, a wszystko gotowe — od razu menu.
+   * `zaslona` — póki zwraca true, coś zasłania ekran (film intro): ładowanie idzie pod spodem i gra
+   * nie przechodzi dalej. Gdy zasłona zniknie, a wszystko gotowe — od razu menu.
    */
-  constructor(private app: Kontekst, private etapy: Etap[], private potem: () => void, private zaslona?: () => boolean) {
-    if (zaslona) this.obudzony = true;
-  }
+  constructor(private app: Kontekst, private etapy: Etap[], private potem: () => void, private zaslona?: () => boolean) {}
 
   wejdz(): void { this.start = performance.now(); }
 
@@ -45,9 +40,8 @@ export class EkranLadowania implements Ekran {
   krok(_dt: number, teraz: number): void {
     if (this.blad) return;
     if (this.zrobione >= this.etapy.length) {
-      // gotowe: czekamy na dotknięcie, nie znikamy szybciej niż minimalny czas i dajemy chwilę na wygaszenie
-      // okno obserwatorium nie czeka na dotknięcie — bot gra od razu
-      if (!this.obudzony && !BOT.wlaczony) return;
+      // gotowe: po intro prosto do menu; bez intro (okno obserwatorium) nie znikamy szybciej
+      // niż minimalny czas i dajemy chwilę na wygaszenie
       if (this.zaslona) { if (!this.zaslona()) this.potem(); return; }
       if (!this.koniecOd) this.koniecOd = Math.max(teraz, this.start + L.minCzasMs);
       if (teraz >= this.koniecOd + L.wygaszenieMs) this.potem();
@@ -62,20 +56,6 @@ export class EkranLadowania implements Ekran {
       .then(() => e.zrob())
       .then(() => { this.zrobione++; this.pracuje = false; })
       .catch((err: unknown) => { this.blad = `${e.nazwa}: ${err instanceof Error ? err.message : String(err)}`; });
-  }
-
-  /** Dotknięcie po załadowaniu budzi grę (App przy okazji włącza dźwięk). */
-  dotyk(_e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
-    if (faza === 'dol') this.obudz();
-  }
-
-  klawisz(): void { this.obudz(); }
-
-  private obudz(): void {
-    if (this.zrobione >= this.etapy.length && !this.blad && !this.obudzony) {
-      this.obudzony = true;
-      pelnyEkran();                              // to dotknięcie jest gestem, na który przeglądarka pozwala
-    }
   }
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
@@ -161,10 +141,8 @@ export class EkranLadowania implements Ekran {
     ctx.globalAlpha = alfa;
     ctx.textAlign = 'center';
     ctx.font = `italic ${rozm}px ${SERIF}`;
-    const czeka = gotowe && !this.obudzony && !this.blad;
-    const puls = czeka ? 0.8 + 0.2 * Math.sin(teraz * 0.004) : 0.9;
-    ctx.fillStyle = rgba(this.blad ? BARWA.krewJasna : czeka ? BARWA.zarBlady : BARWA.atrament, puls);
-    const napis = this.blad || (czeka ? L.dotknij : gotowe ? L.gotowe : `${this.biezacy}…`);
+    ctx.fillStyle = rgba(this.blad ? BARWA.krewJasna : BARWA.atrament, 0.9);
+    const napis = this.blad || (gotowe ? L.gotowe : `${this.biezacy}…`);
     const ny = Math.min(h - rozm * 3.6, dy + rozm * 1.8);
     ctx.fillText(napis, w / 2, ny, w * 0.86);
     ctx.font = `${rozm * 0.8}px ${SERIF}`;
