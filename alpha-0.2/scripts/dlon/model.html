@@ -189,7 +189,7 @@ vec2 map(vec3 p) {
       dl = smin(dl, sdCapsule(p, M + u0 * 0.25 - vec3(0.3, 0.0, 0.0), Mn + un * 0.25 - vec3(0.3, 0.0, 0.0), r0 * 0.78), 0.7);
     }
     // etap 5b: poduszka pod stawem po stronie dłoniowej (wnętrze dłoni u nasady palców)
-    dl = smin(dl, sdEllipsoid(p - vec3(M.x - 0.95, -1.2, M.z * 0.95), vec3(1.05, 0.55, 1.0)), 0.9);
+    dl = smin(dl, sdEllipsoid(p - vec3(M.x - 0.95, -1.0, M.z * 0.92), vec3(1.05, 0.5, 0.95)), 1.2);
     // grzbiet: zmarszczki skóry nad kostką
     if (uDetal > 0.5) dl += zmarszczki(p, M + u0 * 0.36, normalize(uF[(i + 1) * 4 + 1] - M), u0, r0 * 1.1, 0.07);
   }
