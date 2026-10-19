@@ -48,11 +48,18 @@
   .dane b { color: var(--tekst); font-weight: normal; }
   .stery { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 10px 8px; border-top: 1px solid var(--ramka); }
   .historia { padding: 0 10px 6px; color: var(--przygaszony); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* etap 5c: co bot właśnie robi — przy każdej nowej decyzji napis rozbłyska złotem */
+  .mysl { display: flex; gap: 6px; padding: 4px 10px; border-top: 1px solid var(--ramka); font-size: 13px; white-space: nowrap; overflow: hidden; }
+  .mysl .etykieta { color: var(--zloto); font-style: italic; flex: none; }
+  .mysl .tekst { color: var(--tekst); overflow: hidden; text-overflow: ellipsis; }
+  .mysl.nowa .tekst { animation: myslBlysk 1.1s ease-out; }
+  @keyframes myslBlysk { 0% { color: var(--zloto); text-shadow: 0 0 8px rgba(214,170,90,.8); transform: translateX(-4px); opacity: .2; } 25% { opacity: 1; transform: none; } 100% { color: var(--tekst); text-shadow: none; } }
   .kronika { padding: 3px 10px; color: var(--przygaszony); font-style: italic; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1px solid var(--ramka); }
   /* miniatury obok powiększonego okna: sam obraz i nagłówek */
   body.duze .okno:not(.glowne) .stery,
   body.duze .okno:not(.glowne) .historia,
   body.duze .okno:not(.glowne) .kronika,
+  body.duze .okno:not(.glowne) .mysl,
   body.duze .okno:not(.glowne) .dane { display: none; }
   body.duze .okno:not(.glowne) .naglowek .styl { display: none; }
   .ladowanie { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--przygaszony); font-style: italic; pointer-events: none; }
@@ -149,6 +156,10 @@
 
     o.dane = el('div', 'dane');
     o.kronika = el('div', 'kronika', '');
+    o.mysl = el('div', 'mysl');
+    o.mysl.append(el('span', 'etykieta', 'bot:'));
+    o.myslTekst = el('span', 'tekst', '—');
+    o.mysl.append(o.myslTekst);
 
     const stery = el('div', 'stery');
     const lab = (t, w) => { const l = el('label', '', t + ' '); l.append(w); return l; };
@@ -176,7 +187,7 @@
     stery.append(lab('tempo', o.tempo), o.pauza, lab('bot', o.stylSel), lab('ziarno', o.ziarno), nowa, lab('sama następna partia', o.auto), o.dzwiek);
     o.hist = el('div', 'historia', '');
 
-    okno.append(nag, ekran, o.dane, o.kronika, stery, o.hist);
+    okno.append(nag, ekran, o.dane, o.mysl, o.kronika, stery, o.hist);
     o.el = okno;
     kontener.append(okno);
     o.iframe.addEventListener('load', () => podepnijKlawisze(o));
@@ -269,6 +280,13 @@
       const s = el('span', '', t + ' '); s.append(el('b', '', String(v))); o.dane.append(s);
     }
     o.kronika.textContent = d.kronika || '';
+    const m = d.mysl || '—';
+    if (m !== o.myslTekst.textContent) {
+      o.myslTekst.textContent = m;
+      o.myslTekst.title = m;
+      // nowa decyzja: napis rozbłyska (zdjęcie i ponowne nadanie klasy restartuje animację)
+      o.mysl.classList.remove('nowa'); void o.mysl.offsetWidth; o.mysl.classList.add('nowa');
+    }
   });
 
   for (let i = 0; i < 4; i++) okna.push(zbuduj(i));

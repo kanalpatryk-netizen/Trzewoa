@@ -11,7 +11,7 @@ import { Race } from '../sim/races';
 import { porcjiWWiadrach } from '../sim/wiadro';
 import { ustawienia } from '../core/settings-store';
 import { mikser } from '../core/mikser';
-import type { StylBota } from './bot';
+import { myslBota, type StylBota } from './bot';
 
 export interface UstawieniaBota {
   /** Numer okna (1–4) — wraca w każdej wiadomości. */
@@ -121,6 +121,7 @@ export function wyslijStan(sim: Sim, ziarno: number, koniecOd: number): void {
     koniec: sim.ending ?? null,
     koniecOd,
     kronika: ostatni,
+    mysl: myslBota(sim, BOT.styl),
     ustawienia: { styl: BOT.styl, tempo: BOT.tempo, pauza: BOT.pauza, ziarno: BOT.ziarno, autoRestart: BOT.autoRestart, dzwiek: BOT.dzwiek },
   }, '*');
 }
