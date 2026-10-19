@@ -15,9 +15,13 @@ import { zaladujKroje } from './render/fonts';
 import { SCENY } from './cutscene/scenes';
 import * as nastawy from './nastawy';
 import { BOT, przygotujObserwowana } from './app/obserwowany';
+import { zalozKursor } from './core/kursor';
 
 // okno obserwatorium (obserwatorium.html): bot gra od razu, nic nie trafia do pamięci przeglądarki
 przygotujObserwowana();
+
+// rękawica z obrazy/kursor1.png — jedyny kursor gry
+zalozKursor();
 
 const canvas = document.getElementById('screen') as HTMLCanvasElement;
 const app = new App(canvas);
