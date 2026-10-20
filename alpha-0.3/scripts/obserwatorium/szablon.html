@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<meta name="theme-color" content="#0d0908" />
+<title>Trzewia · Alpha 0.3 · obserwatorium</title>
+<style>
+  :root {
+    --tlo: #0b0807; --karta: #16100d; --karta2: #1d1511; --ramka: #3a2a20; --ramka-jasna: #6a4a30;
+    --tekst: #e6d3b0; --przygaszony: #a08a6c; --zloto: #d6a85a; --krew: #c2503c; --zielen: #8fb57a;
+    --pole: #241a14;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--tlo); color: var(--tekst); font: 14px/1.35 Georgia, 'Times New Roman', serif; overflow: hidden; }
+  button, select, input { font: inherit; color: var(--tekst); background: var(--pole); border: 1px solid var(--ramka); border-radius: 4px; padding: 3px 8px; }
+  button { cursor: pointer; }
+  button:hover, select:hover { border-color: var(--ramka-jasna); }
+  button.wl { border-color: var(--zloto); color: var(--zloto); }
+  input[type=number] { width: 9.5em; }
+  label { display: inline-flex; align-items: center; gap: 4px; color: var(--przygaszony); }
+  #gora { height: 46px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-bottom: 1px solid var(--ramka); background: linear-gradient(#17100d, #0f0a08); white-space: nowrap; overflow-x: auto; }
+  #gora h1 { margin: 0 8px 0 0; font-size: 18px; font-weight: normal; font-style: italic; letter-spacing: .04em; color: var(--zloto); }
+  #gora .wskazowka { color: var(--przygaszony); font-style: italic; margin-left: auto; font-size: 13px; }
+  #wroc { display: none; }
+  body.duze #wroc { display: inline-block; }
+  #okna { position: absolute; top: 46px; left: 0; right: 0; bottom: 0; display: grid; gap: 8px; padding: 8px;
+    grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+  body.duze #okna { grid-template-columns: 1fr 300px; grid-template-rows: repeat(3, 1fr); }
+  .okno { position: relative; display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--karta); border: 1px solid var(--ramka); border-radius: 6px; overflow: hidden; }
+  .okno.glowne { border-color: var(--ramka-jasna); }
+  body.duze .okno.glowne { grid-column: 1; grid-row: 1 / span 3; }
+  body.duze .okno:not(.glowne) { grid-column: 2; }
+  .naglowek { display: flex; align-items: baseline; gap: 10px; padding: 5px 10px; background: var(--karta2); border-bottom: 1px solid var(--ramka); white-space: nowrap; overflow: hidden; }
+  .naglowek .nr { color: var(--zloto); font-style: italic; }
+  .naglowek .czas { font-variant-numeric: tabular-nums; }
+  .naglowek .status { margin-left: auto; color: var(--przygaszony); font-style: italic; overflow: hidden; text-overflow: ellipsis; }
+  .status.koniec-ok { color: var(--zielen); }
+  .status.koniec-zle { color: var(--krew); }
+  .ekran { position: relative; flex: 1; min-height: 0; background: #000; }
+  .ekran iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  .zaslona { position: absolute; inset: 0; cursor: zoom-in; background: transparent; }
+  .zaslona:hover { box-shadow: inset 0 0 0 2px var(--zloto); }
+  body.duze .okno.glowne .zaslona { display: none; }
+  .zaslona .napis { position: absolute; right: 8px; bottom: 8px; padding: 2px 8px; border-radius: 3px; background: rgba(10,7,6,.75); color: var(--zloto); font-style: italic; opacity: 0; transition: opacity .2s; }
+  .zaslona:hover .napis { opacity: 1; }
+  .dane { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 4px 10px; border-top: 1px solid var(--ramka); color: var(--przygaszony); font-variant-numeric: tabular-nums; }
+  .dane b { color: var(--tekst); font-weight: normal; }
+  .stery { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; padding: 6px 10px 8px; border-top: 1px solid var(--ramka); }
+  .historia { padding: 0 10px 6px; color: var(--przygaszony); font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* etap 5c: co bot właśnie robi — przy każdej nowej decyzji napis rozbłyska złotem */
+  .mysl { display: flex; gap: 6px; padding: 4px 10px; border-top: 1px solid var(--ramka); font-size: 13px; white-space: nowrap; overflow: hidden; }
+  .mysl .etykieta { color: var(--zloto); font-style: italic; flex: none; }
+  .mysl .tekst { color: var(--tekst); overflow: hidden; text-overflow: ellipsis; }
+  .mysl.nowa .tekst { animation: myslBlysk 1.1s ease-out; }
+  @keyframes myslBlysk { 0% { color: var(--zloto); text-shadow: 0 0 8px rgba(214,170,90,.8); transform: translateX(-4px); opacity: .2; } 25% { opacity: 1; transform: none; } 100% { color: var(--tekst); text-shadow: none; } }
+  .kronika { padding: 3px 10px; color: var(--przygaszony); font-style: italic; font-size: 12.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; border-top: 1px solid var(--ramka); }
+  /* miniatury obok powiększonego okna: sam obraz i nagłówek */
+  body.duze .okno:not(.glowne) .stery,
+  body.duze .okno:not(.glowne) .historia,
+  body.duze .okno:not(.glowne) .kronika,
+  body.duze .okno:not(.glowne) .mysl,
+  body.duze .okno:not(.glowne) .dane { display: none; }
+  body.duze .okno:not(.glowne) .naglowek .styl { display: none; }
+  .ladowanie { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: var(--przygaszony); font-style: italic; pointer-events: none; }
+  @media (max-width: 900px) {
+    #okna { grid-template-columns: 1fr; grid-template-rows: repeat(4, minmax(360px, 1fr)); overflow-y: auto; }
+    body.duze #okna { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    body.duze .okno:not(.glowne) { display: none; }
+    body.duze .okno.glowne { grid-row: 1; }
+    #gora .wskazowka { display: none; }
+  }
+</style>
+</head>
+<body>
+<div id="gora">
+  <h1>Trzewia · obserwatorium</h1><span style="color:var(--przygaszony);font-style:italic">alpha 0.3</span>
+  <button id="wroc" title="Wróć do wszystkich okien (Esc)">⟵ Wszystkie okna</button>
+  <label>wszystkie: tempo
+    <select id="tempoWszystkie"><option value="">—</option></select>
+  </label>
+  <button id="pauzaWszystkie">⏸ zatrzymaj wszystkie</button>
+  <button id="ruszWszystkie">▶ puść wszystkie</button>
+  <button id="noweWszystkie">⟳ nowe partie</button>
+  <span class="wskazowka">kliknij okno, żeby je powiększyć · Esc — wszystkie okna · 1–4 — przełącz okno</span>
+</div>
+<div id="okna"></div>
+
+<script>
+/*GRA*/
+</script>
+<script>
+(() => {
+  const TEMPA = [[0.25, '×¼'], [0.5, '×½'], [1, '×1 (zwykły)'], [2, '×2'], [3, '×3'], [5, '×5'], [10, '×10'], [20, '×20']];
+  const STYLE = [['rozsadny', 'rozsądny'], ['budowniczy', 'budowniczy'], ['speedrun', 'speedrun'], ['bierny', 'bierny (nic nie robi)']];
+  const DOMYSLNE = [
+    { styl: 'rozsadny' },
+    { styl: 'budowniczy' },
+    { styl: 'speedrun' },
+    { styl: 'bierny' },
+  ];
+  const PAMIEC = 'trzewia-alpha-0.3:obserwatorium';
+  let zapamietane = [];
+  try { zapamietane = JSON.parse(localStorage.getItem(PAMIEC) || '[]') || []; } catch { zapamietane = []; }
+
+  const okna = [];
+  const kontener = document.getElementById('okna');
+  let glowne = -1;
+
+  const el = (tag, cls, txt) => { const e = document.createElement(tag); if (cls) e.className = cls; if (txt !== undefined) e.textContent = txt; return e; };
+  const opcje = (sel, lista, wartosc) => { for (const [v, t] of lista) { const o = el('option', '', t); o.value = String(v); if (String(v) === String(wartosc)) o.selected = true; sel.append(o); } };
+  const mmss = (tik) => { const s = Math.floor(tik / 120); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  const opisKonca = (k) => {
+    if (!k) return '';
+    const s = String(k);
+    if (s.startsWith('uwolnienie')) return { t: 'Uwolnienie' + (s.includes(':') ? ` (${s.split(':')[1]})` : ''), ok: true };
+    if (s.startsWith('sen')) return { t: 'Góra zasnęła', ok: false };
+    if (s.startsWith('wymarcie') || s.includes('wymar')) return { t: 'Lud wymarł', ok: false };
+    return { t: s, ok: false };
+  };
+
+  function zapamietaj() {
+    try { localStorage.setItem(PAMIEC, JSON.stringify(okna.map((o) => o.ust))); } catch { /* bez pamięci */ }
+  }
+
+  function wyslij(o, wiad) { try { o.iframe.contentWindow.postMessage(wiad, '*'); } catch { /* okno jeszcze się ładuje */ } }
+  function ustaw(o, zmiany) { Object.assign(o.ust, zmiany); wyslij(o, { trzewia: 'ustaw', zmiany }); zapamietaj(); odswiezStery(o); }
+
+  function srcdoc(i, ust) {
+    const konf = { okno: i + 1, ...ust };
+    const wstawka = `<script>window.__TRZEWIA_BOT=${JSON.stringify(konf).replace(/</g, '\\u003c')};<\/script>`;
+    return GRA.replace(/<head>/i, '<head>' + wstawka);
+  }
+
+  function zbuduj(i) {
+    const ust = Object.assign({ styl: 'rozsadny', tempo: 1, pauza: false, ziarno: null, autoRestart: true, dzwiek: false }, DOMYSLNE[i], zapamietane[i] || {}, { pauza: false, dzwiek: false });
+    const o = { i, ust, stan: null, historia: [], konczyl: false };
+    const okno = el('div', 'okno');
+    okno.style.gridColumn = ''; okno.style.gridRow = '';
+    const nag = el('div', 'naglowek');
+    o.nr = el('span', 'nr', `Okno ${i + 1}`);
+    o.styl = el('span', 'styl');
+    o.czas = el('span', 'czas', '0:00');
+    o.status = el('span', 'status', 'ładuje się…');
+    nag.append(o.nr, o.styl, o.czas, o.status);
+
+    const ekran = el('div', 'ekran');
+    o.iframe = document.createElement('iframe');
+    o.iframe.title = `Okno gry ${i + 1}`;
+    const lad = el('div', 'ladowanie', 'Góra się budzi…');
+    const zaslona = el('div', 'zaslona');
+    zaslona.append(el('span', 'napis', 'powiększ'));
+    zaslona.addEventListener('click', () => powieksz(i));
+    ekran.append(o.iframe, lad, zaslona);
+    o.lad = lad;
+
+    o.dane = el('div', 'dane');
+    o.kronika = el('div', 'kronika', '');
+    o.mysl = el('div', 'mysl');
+    o.mysl.append(el('span', 'etykieta', 'bot:'));
+    o.myslTekst = el('span', 'tekst', '—');
+    o.mysl.append(o.myslTekst);
+
+    const stery = el('div', 'stery');
+    const lab = (t, w) => { const l = el('label', '', t + ' '); l.append(w); return l; };
+    o.tempo = el('select'); opcje(o.tempo, TEMPA, ust.tempo);
+    o.tempo.addEventListener('change', () => ustaw(o, { tempo: +o.tempo.value }));
+    o.pauza = el('button', '', '⏸ pauza');
+    o.pauza.addEventListener('click', () => ustaw(o, { pauza: !o.ust.pauza }));
+    o.stylSel = el('select'); opcje(o.stylSel, STYLE, ust.styl);
+    o.stylSel.addEventListener('change', () => ustaw(o, { styl: o.stylSel.value }));
+    o.ziarno = el('input'); o.ziarno.type = 'number'; o.ziarno.placeholder = 'losowe'; o.ziarno.value = ust.ziarno ?? '';
+    o.ziarno.title = 'Ziarno świata następnej partii (puste — losowe)';
+    o.ziarno.addEventListener('change', () => ustaw(o, { ziarno: o.ziarno.value === '' ? null : Math.floor(+o.ziarno.value) }));
+    const nowa = el('button', '', '⟳ nowa partia');
+    nowa.title = 'Zacznij od nowa (ziarno z pola obok; każda góra to Koszmar)';
+    nowa.addEventListener('click', () => nowaPartia(o));
+    o.auto = el('input'); o.auto.type = 'checkbox'; o.auto.checked = ust.autoRestart;
+    o.auto.addEventListener('change', () => ustaw(o, { autoRestart: o.auto.checked }));
+    o.dzwiek = el('button', '', '♪ dźwięk');
+    o.dzwiek.title = 'Dźwięk tylko z tego okna';
+    o.dzwiek.addEventListener('click', () => {
+      const wl = !o.ust.dzwiek;
+      for (const p of okna) if (p !== o && p.ust.dzwiek) ustaw(p, { dzwiek: false });
+      ustaw(o, { dzwiek: wl });
+    });
+    stery.append(lab('tempo', o.tempo), o.pauza, lab('bot', o.stylSel), lab('ziarno', o.ziarno), nowa, lab('sama następna partia', o.auto), o.dzwiek);
+    o.hist = el('div', 'historia', '');
+
+    okno.append(nag, ekran, o.dane, o.mysl, o.kronika, stery, o.hist);
+    o.el = okno;
+    kontener.append(okno);
+    o.iframe.addEventListener('load', () => podepnijKlawisze(o));
+    o.iframe.srcdoc = srcdoc(i, ust);
+    odswiezStery(o);
+    return o;
+  }
+
+  function nowaPartia(o) {
+    o.konczyl = false;
+    wyslij(o, { trzewia: 'ustaw', zmiany: { ziarno: o.ust.ziarno } });
+    wyslij(o, { trzewia: 'nowa', ziarno: o.ust.ziarno });
+  }
+
+  function odswiezStery(o) {
+    o.pauza.textContent = o.ust.pauza ? '▶ puść' : '⏸ pauza';
+    o.pauza.classList.toggle('wl', o.ust.pauza);
+    o.dzwiek.classList.toggle('wl', o.ust.dzwiek);
+    o.styl.textContent = `· bot: ${STYLE.find(([v]) => v === o.ust.styl)?.[1] ?? o.ust.styl} · koszmar`;
+  }
+
+  // Esc w powiększonym oknie gry też wraca do wszystkich (okno gry ma ten sam początek co strona)
+  function podepnijKlawisze(o) {
+    try {
+      o.iframe.contentWindow.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && glowne >= 0) { e.preventDefault(); e.stopImmediatePropagation(); wszystkie(); }
+      }, true);
+    } catch { /* inna przeglądarka — wtedy przycisk u góry */ }
+  }
+
+  function uklad() {
+    document.body.classList.toggle('duze', glowne >= 0);
+    let r = 1;
+    for (const o of okna) {
+      o.el.classList.toggle('glowne', o.i === glowne);
+      // w trybie powiększenia miniatury idą po kolei w prawej kolumnie (bez przestawiania w drzewie —
+      // przeniesione iframe przeładowałoby grę)
+      if (glowne >= 0 && o.i !== glowne) { o.el.style.gridRow = String(r++); }
+      else o.el.style.gridRow = '';
+    }
+  }
+  function powieksz(i) { glowne = i; uklad(); }
+  function wszystkie() { glowne = -1; uklad(); }
+
+  document.getElementById('wroc').addEventListener('click', wszystkie);
+  window.addEventListener('keydown', (e) => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLSelectElement) return;
+    if (e.key === 'Escape') wszystkie();
+    if (e.key >= '1' && e.key <= '4') powieksz(+e.key - 1);
+  });
+
+  const tw = document.getElementById('tempoWszystkie');
+  opcje(tw, TEMPA, '');
+  tw.addEventListener('change', () => {
+    if (tw.value === '') return;
+    for (const o of okna) { ustaw(o, { tempo: +tw.value }); o.tempo.value = tw.value; }
+    tw.value = '';
+  });
+  document.getElementById('pauzaWszystkie').addEventListener('click', () => { for (const o of okna) ustaw(o, { pauza: true }); });
+  document.getElementById('ruszWszystkie').addEventListener('click', () => { for (const o of okna) ustaw(o, { pauza: false }); });
+  document.getElementById('noweWszystkie').addEventListener('click', () => { for (const o of okna) nowaPartia(o); });
+
+  // stan z okien
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if (!d || d.trzewia !== 'stan') return;
+    const o = okna[d.okno - 1];
+    if (!o || e.source !== o.iframe.contentWindow) return;
+    o.lad.style.display = 'none';
+    o.stan = d;
+    o.czas.textContent = `${mmss(d.tick)}${d.ustawienia.tempo !== 1 ? ` · ×${d.ustawienia.tempo}` : ''}${d.ustawienia.pauza ? ' · pauza' : ''}`;
+    const k = opisKonca(d.koniec);
+    if (k) {
+      o.status.textContent = `${k.t} po ${mmss(d.tick)}${o.ust.autoRestart && !o.ust.pauza ? ` · następna za ${Math.max(0, Math.ceil((6000 - d.koniecOd) / 1000))} s` : ''}`;
+      o.status.className = 'status ' + (k.ok ? 'koniec-ok' : 'koniec-zle');
+      if (!o.konczyl) {
+        o.konczyl = true;
+        o.historia.unshift(`${d.partia}. ${k.ok ? '✓' : '✗'} ${k.t} po ${mmss(d.tick)} (ziarno ${d.ziarno})`);
+        o.historia.length = Math.min(o.historia.length, 6);
+        o.hist.textContent = 'Partie: ' + o.historia.join(' · ');
+      }
+    } else {
+      o.konczyl = false;
+      o.status.textContent = `partia ${d.partia} · ziarno ${d.ziarno}${d.koszmar ? ' · koszmar' : ''}`;
+      o.status.className = 'status';
+    }
+    const r = d.role;
+    o.dane.innerHTML = '';
+    for (const [t, v] of [['lud', d.zywych], ['pobożni', r.pobozny], ['robotnicy', r.robotnik], ['rycerze', r.rycerz], ['wiara', d.wiara], ['krew', d.krew], ['jedzenie', d.jedzenie]]) {
+      const s = el('span', '', t + ' '); s.append(el('b', '', String(v))); o.dane.append(s);
+    }
+    o.kronika.textContent = d.kronika || '';
+    const m = d.mysl || '—';
+    if (m !== o.myslTekst.textContent) {
+      o.myslTekst.textContent = m;
+      o.myslTekst.title = m;
+      // nowa decyzja: napis rozbłyska (zdjęcie i ponowne nadanie klasy restartuje animację)
+      o.mysl.classList.remove('nowa'); void o.mysl.offsetWidth; o.mysl.classList.add('nowa');
+    }
+  });
+
+  for (let i = 0; i < 4; i++) okna.push(zbuduj(i));
+})();
+</script>
+</body>
+</html>
