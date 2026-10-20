@@ -17,10 +17,12 @@ import { makeCreature } from './creatures';
 import { Race } from './races';
 import { stoi } from './droga';
 import { kto, zapisz } from './dziennik';
-import { rolaPostaci, walczacy, nadajRole, liczRole, klanLudu, maxHp, NAZWA_ROLI } from './lud';
+import { rolaPostaci, walczacy, nadajRole, liczRole, klanLudu, maxHp } from './lud';
 import { LUD } from '../nastawy/lud';
 import { GORA } from '../nastawy/gora';
 import { OLTARZ as O, NAZWA_RYTUALU, type RodzajRytualu } from '../nastawy/oltarz';
+import { maHak, perkZadzialal, wyzwol, wstalaOsoba, ktoTo, rodzaj } from './druzyna';
+import { PERK } from '../nastawy/perki';
 
 export interface RytualOltarza {
   rodzaj: RodzajRytualu;
@@ -161,7 +163,12 @@ export function odprawRytual(sim: Sim, rodzaj: RodzajRytualu, cel?: number, wola
   }
   sim.krew -= R.krew;
   const st = (sim.lud.oltarz ??= {});
-  st.rytual = { rodzaj, kto: c.id, od: sim.tick, do: sim.tick + R.tikow, krew: R.krew, cel: celId, wiaraDana: 0 };
+  // Alpha 0.3: perk „Ręka kapłana” — rytuał trwa krócej
+  const kaplan = maHak(c, 'kaplan');
+  const tikow = Math.round(R.tikow * (kaplan ? PERK.kaplanCzas : 1));
+  st.rytual = { rodzaj, kto: c.id, od: sim.tick, do: sim.tick + tikow, krew: R.krew, cel: celId, wiaraDana: 0 };
+  if (kaplan) perkZadzialal(sim, c, 'kaplan');
+  wyzwol(sim, c, 'oltarz');
   c.droga = undefined; c.jt = 0; c.zamiarDo = sim.tick;
   zdarzenie(sim, { rodzaj, faza: 'start', kto: c.id, cel: celId, cx, cy, tik: sim.tick });
   zapisz(sim, 'rytual', `${kto(sim, c)}: rytuał przy ołtarzu — ${NAZWA_RYTUALU[rodzaj]}`, c.x, c.y);
@@ -191,7 +198,7 @@ export function tikOltarza(sim: Sim): void {
   if (r.rodzaj === 'modlitwa') {
     // wiara spływa przez cały rytuał, nie naraz na końcu
     const R = O.rytualy.modlitwa;
-    const ma = R.wiara * Math.min(1, (sim.tick - r.od) / R.tikow);
+    const ma = R.wiara * Math.min(1, (sim.tick - r.od) / Math.max(1, r.do - r.od));
     const d = ma - (r.wiaraDana ?? 0);
     if (d >= 1 || (sim.tick >= r.do && d > 0)) { sim.wiara += d; r.wiaraDana = ma; }
   }
@@ -228,7 +235,7 @@ function zakoncz(sim: Sim, r: RytualOltarza, c: Creature): void {
     }
     case 'wskrzeszenie': {
       const nowy = wskrzes(sim, r.cel ?? -1);
-      if (nowy) { cx = nowy.x; cy = nowy.y; tu.log(`${NAZWA_ROLI[rolaPostaci(nowy)!]} wstał z martwych przy ołtarzu.`, 'wiara'); }
+      if (nowy) { cx = nowy.x; cy = nowy.y; tu.log(`${ktoTo(sim, nowy)} — ${rodzaj(sim, nowy, 'wstał', 'wstała')} z martwych przy ołtarzu.`, 'wiara'); }
       else { sim.krew += r.krew; tu.log('Wskrzeszenie się nie udało — krew wróciła.', 'wiara'); }
       break;
     }
@@ -237,12 +244,12 @@ function zakoncz(sim: Sim, r: RytualOltarza, c: Creature): void {
       c.hp = Math.min(c.hp, maxHp(sim, c));
       sim.krew += LUD.okaleczenieKrew;
       sim.efekt(c.x, c.y, 'mysl', `+${LUD.okaleczenieKrew} krwi`);
-      tu.log(`Pobożny upuścił krwi do misy: +${LUD.okaleczenieKrew} krwi. Słabnie, póki nie wyśpi się w sypialni.`, 'krew');
+      tu.log(`${ktoTo(sim, c)} upuszcza krwi do misy: +${LUD.okaleczenieKrew} krwi. Słabnie, póki się nie wyśpi w sypialni.`, 'krew');
       break;
     case 'ofiaraZycia':
       sim.krew += LUD.ofiaraKrew;
       sim.efekt(c.x, c.y, 'mysl', `+${LUD.ofiaraKrew} krwi`);
-      tu.log(`Pobożny oddał życie na ołtarzu: +${LUD.ofiaraKrew} krwi.`, 'krew');
+      tu.log(`${ktoTo(sim, c)} oddaje życie na ołtarzu: +${LUD.ofiaraKrew} krwi.`, 'krew');
       sim.kill(c, 'w ofierze na ołtarzu', 'ofiara');
       break;
   }
@@ -265,6 +272,9 @@ function wskrzes(sim: Sim, id: number): Creature | null {
   klan.pop++;
   klan.dead = false;
   nadajRole(sim, c, t.rola);
+  // Alpha 0.3: wstaje ta sama osoba — z imieniem, perkiem i wadą
+  wstalaOsoba(sim, c);
+  c.hp = maxHp(sim, c);
   c.helm = t.helm;
   c.face = x < o.x ? 1 : -1;
   c.hunger = 0.2;

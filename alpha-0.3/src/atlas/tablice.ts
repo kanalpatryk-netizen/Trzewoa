@@ -41,6 +41,8 @@ import { POMNIK, DEMON } from '../nastawy/pomnik';
 import { rysujPosag, rysujWstajacego, rysujKonajacego, cokol, gruz } from '../render/pomnik';
 import { rycinaDloniDemona } from '../render/dlon-demona';
 import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from '../render/relikwiarz';
+import { HISTORIA, OBSADA } from '../nastawy/druzyna';
+import { WARIANT } from '../nastawy/wariant';
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
@@ -66,7 +68,7 @@ function rysujKrew({ ctx, w, h, t }: Plotno): void {
 /** Próg w procentach — teksty tablic biorą liczby z nastaw, żeby nie kłamały po strojeniu. */
 const proc = (x: number): string => `${Math.round(x * 100)}%`;
 
-export type Grupa = 'rasy' | 'ryty' | 'zasoby' | 'prawa';
+export type Grupa = 'rasy' | 'ryty' | 'zasoby' | 'prawa' | 'historia';
 
 /**
  * Tablica z atlasu: u góry rycina, pod nią nazwa, łaciński podpis, kilka zdań
@@ -90,6 +92,7 @@ export const NAZWY_GRUP: Record<Grupa, string> = {
   ryty: 'Trzy ryty',
   zasoby: 'Czym płacisz i czym żyją',
   prawa: 'Prawa góry',
+  historia: 'Kronika góry',
 };
 
 function kosztSlowami(v: Verb, narzedzie: string): string {
@@ -1319,5 +1322,61 @@ export const TABLICE: Tablica[] = [
     rycina: (p: Plotno) => rycinaDloniDemona(p.ctx, p.w, p.h, p.t, 'zawal'),
   },
 ];
+
+// ---------------------------------------------------------------- Alpha 0.3: ukryta historia świata
+
+/**
+ * Karta kroniki góry: zwój z pismem w nieznanym, numer karty i jedna linijka, która jaśnieje.
+ * Bez losowania — glify dają stałe numery.
+ */
+function kartaKroniki(nr: number): (p: Plotno) => void {
+  return ({ ctx, w, h, t }) => {
+    ctx.save();
+    const g = ctx.createRadialGradient(w / 2, h * 0.45, 4, w / 2, h * 0.45, Math.max(w, h) * 0.6);
+    g.addColorStop(0, 'rgba(120,96,64,0.32)'); g.addColorStop(1, 'rgba(20,14,10,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
+    // zwój
+    const zw = w * 0.56, zh = h * 0.7, zx = (w - zw) / 2, zy = h * 0.14;
+    ctx.fillStyle = 'rgba(206,186,150,0.12)'; ctx.fillRect(zx, zy, zw, zh);
+    ctx.strokeStyle = 'rgba(214,190,146,0.55)'; ctx.lineWidth = 1.2;
+    ctx.strokeRect(zx, zy, zw, zh);
+    for (const yy of [zy, zy + zh]) { ctx.beginPath(); ctx.ellipse(w / 2, yy, zw * 0.54, 5, 0, 0, Math.PI * 2); ctx.stroke(); }
+    // wiersze pisma; jeden jaśnieje — to, co postać sobie przypomniała
+    const wierszy = 7, jasny = nr % wierszy;
+    for (let r = 0; r < wierszy; r++) {
+      const y = zy + zh * (0.14 + r * 0.12);
+      const a = r === jasny ? 0.55 + 0.35 * Math.sin(t * 0.0022) : 0.28;
+      ctx.strokeStyle = r === jasny ? `rgba(246,216,142,${a})` : `rgba(214,190,146,${a})`;
+      for (let k = 0; k < 6; k++) {
+        const s = Math.min(zw, zh) * 0.035;
+        ctx.save(); ctx.translate(zx + zw * (0.12 + k * 0.15), y); ctx.scale(s, s); ctx.lineWidth = 1.3 / s;
+        ctx.stroke(glif(nr * 37 + r * 11 + k, 1)); ctx.restore();
+      }
+    }
+    ctx.font = `${Math.max(14, h * 0.07)}px Georgia, serif`;
+    ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(232,206,150,0.9)';
+    ctx.fillText(['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII', 'XIV'][nr] ?? String(nr + 1), w / 2, zy + zh + h * 0.1);
+    ctx.restore();
+  };
+}
+
+const KIEDY_FRAGMENTU: Record<string, string> = {
+  gleboko: 'Odsłania się, gdy ktoś z ludu zejdzie do głębokiej warstwy.', krypta: 'Odsłania się w krypcie nad Wielkim Pomnikiem.',
+  zloto: 'Odsłania się przy wykutym złocie.', zelazo: 'Odsłania się przy wykutym żelazie.', demon: 'Odsłania się, gdy z gruzów wstaje demon.',
+  oltarz: 'Odsłania się przy rytuale na ołtarzu.', fala: 'Odsłania się, gdy padnie Strażnik Snu.', aniol: 'Odsłania się z darem dłoni anielskiej.',
+  smierc: 'Odsłania się, gdy ktoś z drużyny zginie.', weteran: 'Odsłania się, gdy ktoś zostanie weteranem.', ruiny: 'Odsłania się przy zabytku z ruin.',
+  sypialnia: 'Odsłania się po śnie w sypialni.', wskrzeszony: 'Odsłania się, gdy ktoś wstanie z martwych.',
+};
+
+for (const [nr, f] of HISTORIA.entries()) {
+  // w wizji Patryka każdy fragment należy do jednej osoby — tablica mówi czyj
+  const czyj = WARIANT === 'patryk' ? OBSADA.find((o) => o.fragment === f.id) : undefined;
+  TABLICE.push({
+    id: `historia-${f.id}`, grupa: 'historia', nazwa: f.tytul.replace(/^Karta [IVX]+ — /, ''), lacina: `Chronica montis, ${f.tytul.split(' — ')[0].replace('Karta ', 'charta ')}`,
+    opis: f.tekst,
+    kiedy: `${czyj ? `Pamięta to ${czyj.imie}. ` : ''}${KIEDY_FRAGMENTU[f.wyzwalacz] ?? ''}`,
+    rycina: kartaKroniki(nr),
+  });
+}
 
 export const tablica = (id: string): Tablica | undefined => TABLICE.find((t) => t.id === id);

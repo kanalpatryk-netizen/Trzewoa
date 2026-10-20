@@ -6,6 +6,7 @@
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { RACES } from './races';
+import { ktoTo } from './druzyna';
 
 export type KategoriaWpisu = 'praca' | 'blok' | 'zgon' | 'narodziny' | 'karta' | 'rytual' | 'swiat';
 
@@ -47,8 +48,9 @@ export function zapisz(sim: Sim, kat: KategoriaWpisu, tekst: string, x?: number,
   if (DZIENNIK.wpisy.length > DZIENNIK.max) DZIENNIK.wpisy.splice(0, DZIENNIK.wpisy.length - DZIENNIK.max);
 }
 
-/** „Ślepy Lud #12 (Grzmotowie)”. */
+/** „Ślepy Lud #12 (Grzmotowie)”; Alpha 0.3: „Bogdan, robotnik” (numer tylko w trybie deweloperskim). */
 export function kto(sim: Sim, c: Creature): string {
+  if (c.imie) return `${ktoTo(sim, c)}${DZIENNIK.wlaczony ? ` #${c.id}` : ''}`;
   const rola = c.race === 0 ? ({ pobozny: 'Pobożny', robotnik: 'Robotnik', rycerz: 'Rycerz' } as Record<string, string>)[c.rola ?? 'pobozny'] : null;
   return `${rola ?? RACES[c.race].name} #${c.id} (${sim.clans[c.clan]?.name ?? '?'})`;
 }

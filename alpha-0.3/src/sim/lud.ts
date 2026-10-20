@@ -28,6 +28,8 @@ import { tikAniola, type StanAniola } from './aniol';
 import { tikPomnika, type StanPomnika } from './pomnik';
 import { tikDloniDemona, type StanDloniDemona } from './dlon-demona';
 import { mnoznikZbroi, opisZbroi } from './zbroja';
+import { mnoznikDruzyny, tikDruzyny, type StanDruzyny } from './druzyna';
+import { tikTarota } from './tarot';
 
 export type { Rola } from '../nastawy/lud';
 
@@ -71,6 +73,8 @@ export interface StanLudu {
   pomnik?: StanPomnika;
   /** Alpha, etap 5b: dłoń z otchłani pomaga demonowi — rzut, tarcza, zawał (sim/dlon-demona.ts). */
   dlonDemona?: StanDloniDemona;
+  /** Alpha 0.3: imienna drużyna, polegli, odsłonięta historia, ślub i tarot (sim/druzyna.ts, sim/tarot.ts). */
+  druzyna?: StanDruzyny;
   /** Remake v2: robotnicy w hełmach (brak rycerzy) i następny ołtarz nie wcześniej niż. */
   helmy?: boolean;
   oltarzPo?: number;
@@ -186,6 +190,8 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   }
   // etap 3f: zbroja z kuźni — każda noszona część dokłada swoje (tylko rycerz ją nosi)
   if (r === 'rycerz' && c.zbroja?.length) v *= mnoznikZbroi(c, co);
+  // Alpha 0.3: perki i wada postaci (wizja Patryka), ślub i karty tarota (wizja Pawła)
+  if (c.perki || sim.lud.druzyna?.slub || sim.lud.druzyna?.tarot) v *= mnoznikDruzyny(sim, c, r, co);
   return v;
 }
 
@@ -510,6 +516,8 @@ export function tikLudu(sim: Sim): void {
   tikDloni(sim);
   tikAniola(sim);
   tikZabytkow(sim);
+  tikDruzyny(sim);
+  tikTarota(sim);
   if (sim.tick % LUD.siedzibaCo === 0) {
     pilnujSiedziby(sim);
     const klan = klanLudu(sim);

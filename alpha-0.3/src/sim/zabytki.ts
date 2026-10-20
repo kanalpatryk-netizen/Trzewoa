@@ -1,7 +1,8 @@
 import type { Sim } from './sim';
+import { ktoTo, rodzaj, wyzwol } from './druzyna';
 import type { Creature } from './creatures';
 import type { Wydarzenie } from './wydarzenia';
-import { rolaPostaci, NAZWA_ROLI } from './lud';
+import { rolaPostaci } from './lud';
 import { zapisz } from './dziennik';
 import { ZABYTKI, ZABYTEK, RUINA, type TypZabytku } from '../nastawy/zabytki';
 
@@ -48,7 +49,8 @@ export function tikZabytkow(sim: Sim): void {
     if (!ktos) return;
     st.stan[n] = 'odkryty'; st.od[n] = sim.tick; st.kto[n] = ktos.id;
     const zab = ZABYTEK[z.typ];
-    sim.gdzie(z.x + 0.5, z.y + 0.5).log(`${nazwa(ktos)} odkrył w ${RUINA[r.rodzaj].miejscownik} zabytek: ${zab.biernik}.`, 'swiat', `zabytek-odkryty-${n}`);
+    sim.gdzie(z.x + 0.5, z.y + 0.5).log(`${nazwa(sim, ktos)} ${rodzaj(sim, ktos, 'odkrył', 'odkryła')} w ${RUINA[r.rodzaj].miejscownik} zabytek: ${zab.biernik}.`, 'swiat', `zabytek-odkryty-${n}`);
+    wyzwol(sim, ktos, 'ruiny');
     zapisz(sim, 'swiat', `zabytek odkryty: ${zab.nazwa} (${RUINA[r.rodzaj].nazwa}, ${z.x}, ${z.y}) — odkrył #${ktos.id}`, z.x, z.y);
   });
   // karta: gdy zabytek już się uniósł, a żadna inna karta nie wisi (po wczytaniu zapisu — pokaże się znowu)
@@ -76,7 +78,7 @@ function kartaZabytku(sim: Sim, n: number): Wydarzenie {
   const c = sim.creatureById(stanZabytkow(sim).kto[n] ?? -1);
   return {
     rodzaj: 'zabytek', tytul: z.nazwa,
-    tekst: `${c ? nazwa(c) : 'Ktoś z ludu'} odkrył w ${RUINA[r.rodzaj].miejscownik} ${z.biernik}. ${z.opis}`,
+    tekst: `${c ? `${nazwa(sim, c)} ${rodzaj(sim, c, 'odkrył', 'odkryła')}` : 'Ktoś z ludu odkrył'} w ${RUINA[r.rodzaj].miejscownik} ${z.biernik}. ${z.opis}`,
     wybory: [
       { id: 'wez', tekst: 'Weź', skutek: `Cały lud, na zawsze: ${z.premia} — ale ${z.kara}. Sen w sypialni kary nie zdejmie.`, krew: 0, wiara: 0 },
       { id: 'zostaw', tekst: 'Zostaw', skutek: 'Zabytek opadnie i zgaśnie — zostanie w ruinach.', krew: 0, wiara: 0 },
@@ -124,7 +126,6 @@ export function stanyZabytkow(sim: Sim, c: Creature): { nazwa: string; skutek: s
   return out;
 }
 
-function nazwa(c: Creature): string {
-  const r = rolaPostaci(c);
-  return r ? NAZWA_ROLI[r] : 'Ktoś';
+function nazwa(sim: Sim, c: Creature): string {
+  return ktoTo(sim, c);
 }

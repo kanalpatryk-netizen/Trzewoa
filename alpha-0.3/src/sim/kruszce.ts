@@ -8,6 +8,9 @@
 import type { Sim } from './sim';
 import { T } from './tiles';
 import { KRUSZCE as K } from '../nastawy/kruszce';
+import type { Creature } from './creatures';
+import { maHak, perkZadzialal, wyzwol } from './druzyna';
+import { PERK } from '../nastawy/perki';
 
 export type RodzajKruszcu = 'zelazo' | 'zloto';
 
@@ -20,10 +23,15 @@ export function kruszecKafla(t: number): RodzajKruszcu | null {
 }
 
 /** Lud wykuł kafel (x, y), który był typu `t` — jeśli to ruda, licznik rośnie od razu. */
-export function wykutyKafel(sim: Sim, t: number, x: number, y: number): void {
+export function wykutyKafel(sim: Sim, t: number, x: number, y: number, kto?: Creature): void {
   const rodzaj = kruszecKafla(t);
   if (!rodzaj) return;
-  const ile = rodzaj === 'zelazo' ? K.zelazoZaKafel : K.zlotoZaKafel;
+  let ile = rodzaj === 'zelazo' ? K.zelazoZaKafel : K.zlotoZaKafel;
+  if (kto) {
+    wyzwol(sim, kto, rodzaj);
+    // Alpha 0.3: perk „Nos do żył” — z rudy czasem drugi okruch
+    if (maHak(kto, 'zyla') && sim.rng.chance(PERK.zylaSzansa)) { ile *= 2; perkZadzialal(sim, kto, 'zyla'); }
+  }
   if (rodzaj === 'zelazo') sim.zelazo += ile; else sim.zloto += ile;
   const u = sim.urobek;
   while (u.length && (u.length >= K.urobekMaks || sim.tick - u[0].tik > K.urobekTikow)) u.shift();

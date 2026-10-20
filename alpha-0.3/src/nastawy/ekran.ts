@@ -109,3 +109,27 @@ export const KURSOR = {
   /** Nawet najkrótsze kliknięcie pokazuje wciśniętą rękawicę co najmniej tyle ms. */
   klikMinMs: 120,
 };
+
+/**
+ * PAS (Alpha 0.3) — dolny margines to pas kart: w wizji Patryka karty postaci, w wizji Pawła medaliony ról,
+ * talia i karty tarota (src/render/pas.ts). Liczby w pikselach logicznych.
+ */
+export const PAS = {
+  /** Komputer: wysokość dolnego marginesu (część wysokości ekranu, z granicami) i górnego (zasoby, kronika, przyciski). */
+  dolCzesc: 0.24, dolMin: 158, dolMax: 214,
+  goraCzesc: 0.075, goraMin: 58, goraMax: 78,
+  /** Komputer: szerokość kolumny rozkazów (z lewej) i bloku oddania z relikwiarzem (z prawej). */
+  rozkazyW: 188, statusW: 230,
+  /** Telefon poziomo: wysokość pasa pod płytą; zwinięta tabliczka „rozkazy” z lewej. */
+  poziomDol: 78, poziomRozkazyW: 74,
+  /** Telefon pionowo: karty w dwóch rzędach po trzy (wysokość karty), pod nimi rząd: rozkazy, krew, oddanie. */
+  pionKartaH: 66, pionRzadH: 40,
+  /** Wizja Pawła, telefon pionowo: rząd medalionów z talią i dwa rzędy po trzy karty tarota. */
+  pionMedalionyH: 54, pionTarotH: 60,
+  /** Przy tylu postaciach karty się zwężają (do 8 miejsc); więcej — ostatnie miejsce to „+N” i przewijanie. */
+  kartWPasie: 6, kartMaks: 8,
+  /** Przytrzymanie karty palcem tyle ms pokazuje szczegóły (na komputerze — najechanie myszą). */
+  przytrzymanieMs: 420,
+  /** Rozbłysk karty po działającym perku (ms). */
+  blyskMs: 1400,
+};

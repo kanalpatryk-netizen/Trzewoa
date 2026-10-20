@@ -39,6 +39,8 @@ import { falaTrwa, wStrefieStraznikow } from '../sim/straznicy';
 import { scianaGruzu } from '../sim/dlon-demona';
 import { ZABYTEK, type TypZabytku } from '../nastawy/zabytki';
 import { NAZWA_ROLI } from '../sim/lud';
+import { wyciagnijKarte, czemuNieKarta, cenaKarty, slubuj } from '../sim/tarot';
+import { arkan } from '../nastawy/tarot';
 
 export type StylBota = 'rozsadny' | 'budowniczy' | 'speedrun' | 'bierny';
 
@@ -101,7 +103,7 @@ function role(sim: Sim): { pobozny: number; robotnik: number; rycerz: number } {
 function jedzenie(sim: Sim): number {
   return porcjiWWiadrach(sim);
 }
-const imie = (c: C): string => `${NAZWA_ROLI[c.rola ?? 'pobozny'].toLowerCase()} #${c.id}`;
+const imie = (c: C): string => c.imie ? `${c.imie} (${NAZWA_ROLI[c.rola ?? 'pobozny'].toLowerCase()})` : `${NAZWA_ROLI[c.rola ?? 'pobozny'].toLowerCase()} #${c.id}`;
 /** Faza końcowa: pomnik rozbity, demon wychodzi albo walczy. */
 const walkaZDemonem = (sim: Sim): boolean => ['rozpada', 'wychodzi', 'walka'].includes(stanPomnika(sim).faza);
 const demon = (sim: Sim): C | null => sim.creatures.find((c) => !c.dead && !!c.boss) ?? null;
@@ -644,6 +646,25 @@ function naprawLine(sim: Sim): void {
   if (r.kto) mysl(sim, `dłoń przecięła linę wiadra — ${imie(r.kto)} idzie ją skleić`);
 }
 
+/** Alpha 0.3 (wizja Pawła): który ślub bot składa na starcie partii. */
+export function slubBota(styl: StylBota): string {
+  return styl === 'speedrun' ? 'cisza' : styl === 'budowniczy' ? 'glod' : 'ogien';
+}
+
+/** Alpha 0.3 (wizja Pawła): bot zakłada drużynę — ślub na starcie (wołane raz, po nowej partii). */
+export function zalozBota(sim: Sim, styl: StylBota): void {
+  if (sim.lud.druzyna?.wariant === 'pawel' && !sim.lud.druzyna.slub && styl !== 'bierny') slubuj(sim, slubBota(styl));
+}
+
+/** Alpha 0.3 (wizja Pawła): ciągnie kartę z talii, gdy wiary jest z zapasem (hazard — nie wie, co wypadnie). */
+function tarot(sim: Sim, styl: StylBota): void {
+  if (sim.lud.druzyna?.wariant !== 'pawel' || czemuNieKarta(sim)) return;
+  const zapas = styl === 'speedrun' ? 30 : styl === 'budowniczy' ? 70 : 50;
+  if (sim.wiara < cenaKarty(sim) + zapas) return;
+  const k = wyciagnijKarte(sim);
+  if (typeof k !== 'string') mysl(sim, `karta z talii — ${arkan(k.arkan)?.nazwa ?? '?'}${k.odwrocona ? ' (odwrócona)' : ''}`);
+}
+
 // ---------------------------------------------------------------------------------------------------- ruch i myśl
 
 /** Jeden ruch bota (co BOT_CO tików). */
@@ -660,6 +681,7 @@ export function ruchBota(sim: Sim, styl: StylBota): void {
     robotnicy(sim, styl);
   }
   if (k % 10 === 5) { rycerzNaFale(sim); rycerzPoZbroje(sim); sen(sim); }
+  if (k % 10 === 3) tarot(sim, styl);
   if (styl === 'budowniczy') budowniczy(sim, k);
   else if (styl === 'speedrun') speedrun(sim, k);
   else rozsadny(sim, k);

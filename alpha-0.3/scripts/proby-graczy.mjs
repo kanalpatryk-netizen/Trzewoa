@@ -17,8 +17,9 @@ import { rozstrzygnij } from ${src('sim/wydarzenia.ts')};
 import { Job } from ${src('sim/creatures.ts')};
 import { czoloDrogi, nieWykopane } from ${src('sim/pielgrzymka.ts')};
 import { DZIENNIK } from ${src('sim/dziennik.ts')};
-import { ruchBota, kartaBota, decyzjaBota } from ${src('app/bot.ts')};
+import { ruchBota, kartaBota, decyzjaBota, zalozBota } from ${src('app/bot.ts')};
 import { porcjiWWiadrach } from ${src('sim/wiadro.ts')};
+import { PERK } from ${src('nastawy/perki.ts')};
 import { procentSkorupy } from ${src('sim/rytual.ts')};
 
 const M = 7200;
@@ -44,7 +45,10 @@ function gracz(styl: string) {
 // ---------------------------------------------------------------- monitoring
 const RUCHOME = new Set([Job.WANDER, Job.ZAPAS, Job.ZBIERA, Job.HAUL, Job.DOSTAWA, Job.FLEE, Job.EAT].filter((x) => x !== undefined));
 export function run(z: number, styl: string, minut: number) {
+  // Alpha 0.3: BEZ_PERKOW=1 — same imiona, perki i wady bez skutków (próba kontrolna balansu)
+  if (process.env.BEZ_PERKOW) PERK.wlaczone = false;
   const sim: any = new Sim(z);
+  zalozBota(sim, styl as any);   // Alpha 0.3 (wizja Pawła): ślub na starcie — wersję wybiera zmienna WARIANT
   const w = sim.world;
   const out: string[] = [], anom: string[] = [], dz: string[] = [];
   DZIENNIK.wlaczony = true; DZIENNIK.max = 100000;
@@ -54,12 +58,15 @@ export function run(z: number, styl: string, minut: number) {
   const zglos = (klucz: string, tekst: string) => { const o = zgloszone.get(klucz); if (o !== undefined && sim.tick - o < 2 * M) return; zgloszone.set(klucz, sim.tick); anom.push(t(sim) + ' ' + tekst); };
   const kill0 = sim.kill.bind(sim);
   sim.kill = (c: any, why: string, tag?: string) => {
-    if (c.race === Race.GOBLIN && !c.dead) {
+    // Alpha 0.3: perk „Nie do zdarcia” potrafi odwrócić śmierć — zgon liczy się dopiero, gdy naprawdę padł
+    const byl = c.race === Race.GOBLIN && !c.dead;
+    const wynik = kill0(c, why, tag);
+    if (byl && c.dead) {
       const jedz = jedzenie(sim);
-      out.push(t(sim) + ' ZGON ' + (c.rola ?? '?') + ' #' + c.id + ' [' + tag + '] ' + why + ' | ' + (c.zamiar ?? '') + ' | głód ' + c.hunger.toFixed(2) + ' @' + c.x.toFixed(0) + ',' + c.y.toFixed(0) + ' | jedzenie w spiżarniach ' + jedz);
+      out.push(t(sim) + ' ZGON ' + (c.rola ?? '?') + ' #' + c.id + (c.imie ? ' ' + c.imie : '') + ' [' + tag + '] ' + why + ' | ' + (c.zamiar ?? '') + ' | głód ' + c.hunger.toFixed(2) + ' @' + c.x.toFixed(0) + ',' + c.y.toFixed(0) + ' | jedzenie w spiżarniach ' + jedz);
       if (/wycieńcz|głod/.test(why) && jedz > 20) zglos('glod' + c.id, 'GŁÓD MIMO JEDZENIA: ' + (c.rola) + ' #' + c.id + ' zmarł z głodu, a w spiżarniach ' + jedz + ' | ' + (c.zamiar ?? '') + ' @' + c.x.toFixed(0) + ',' + c.y.toFixed(0));
-    }
-    return kill0(c, why, tag);
+    } else if (byl) out.push(t(sim) + ' OCALAŁ ' + (c.rola ?? '?') + ' #' + c.id + ' [' + tag + '] ' + why);
+    return wynik;
   };
   const ef0 = sim.efekt.bind(sim);
   sim.efekt = (x: number, y: number, rodz: string, napis?: string) => { if (rodz === 'mysl' && napis && /zgubił|zagrodził|pusto|milczy/.test(napis)) out.push(t(sim) + ' TUNEL: ' + napis + ' @' + Math.round(x) + ',' + Math.round(y)); return ef0(x, y, rodz, napis); };
@@ -109,6 +116,7 @@ export function run(z: number, styl: string, minut: number) {
       out.push(t(sim) + ' STAN pob=' + r.pobozny + ' rob=' + r.robotnik + ' ryc=' + r.rycerz + ' krew=' + Math.round(sim.krew) + ' wiara=' + Math.round(sim.wiara) + ' żel=' + sim.zelazo + ' zł=' + sim.zloto + ' jedz=' + jedzenie(sim) + ' oddanie=' + (k ? k.devotion.toFixed(2) : '-') + ' plan=' + (sim.planDrogi ? nieWykopane(sim).length : '-') + ' pęk=' + sim.rytual.pekniecia + ' skorupa=' + procentSkorupy(sim) + '% fala=' + (sim.lud.straznicy ? sim.lud.straznicy.fala + (sim.lud.straznicy.trwa ? '!' : '') : '-') + ' kuje=' + kuje + ' pom=' + (sim.pomieszczenia.map((p: any) => p.rodzaj + (p.gotowe ? '' : '?')).join(',') || '-') + ' zbroja=' + sim.zbroja.length + ' liny=' + (sim.lud.liny ?? 0) + ' | ' + Object.entries(zam).sort((a: any, b: any) => b[1] - a[1]).map(([a, b]) => b + '× ' + a).join('; '));
     }
   }
+  const dr = sim.lud.druzyna; out.push('DRUŻYNA ' + (dr ? dr.wariant + ' ślub=' + (dr.slub ?? '-') + ' kart=' + (dr.tarot?.wyciagniete ?? 0) + ' historia=' + dr.odsloniete.length + ' polegli=' + dr.osoby.filter((o: any) => o.polegl).map((o: any) => o.imie).join(',') : '-'));
   out.push('KONIEC ' + (sim.ending ?? 'brak (limit czasu)') + ' @' + t(sim) + ' wyjątków ' + wyjatki + ' zgonów ' + [...sim.deaths.values()].reduce((a: number, b: number) => a + b, 0));
   return { log: out.join('\\n'), anom: anom.join('\\n'), dz: dz.join('\\n') };
 }

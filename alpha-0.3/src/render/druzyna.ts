@@ -10,15 +10,17 @@
  * (sypialnia, warsztat, kuźnia, korytarz, szyb) — plany: src/sim/pomieszczenia.ts.
  */
 import type { Sim } from '../sim/sim';
-import { Job, type Creature } from '../sim/creatures';
+import type { Creature } from '../sim/creatures';
 import type { Camera } from './camera';
 import type { Plate, Obszar } from './plate';
-import { obszarSpisu } from './plate';
-import { rolaPostaci, NAZWA_ROLI_MNOGA, type Rola } from '../sim/lud';
+import { ukladPasa, rysujRozkazy, dymekSzczegolow } from './pas';
+import { rysujKartyPostaci, wierszeSzczegolow } from './karty';
+import { rysujPasTarota, wierszeTarota, wierszeTalii } from './tarot';
+import { WARIANT } from '../nastawy/wariant';
+import { rolaPostaci, type Rola } from '../sim/lud';
 import { czoloDrogi } from '../sim/pielgrzymka';
-import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
-import { rysujPostac, wysokoscPostaci } from './figury';
-import { krazek, pigment } from './fresk';
+import { wysokoscPostaci } from './figury';
+import { pigment } from './fresk';
 import { SERIF } from './ink';
 import { FRESK } from '../nastawy/barwy';
 import { POLECENIA } from '../nastawy/polecenia';
@@ -32,8 +34,10 @@ export const ROLE_DRUZYNY: Rola[] = ['robotnik', 'pobozny', 'rycerz'];
 /** Barwy ról (te same co dawna wstęga ludu): biel wapienna pobożnych, ugier robotników, błękit rycerzy. */
 export const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
 
-export type AkcjaDruzyny = 'rola' | 'droga' | 'odwolaj' | 'odznacz' | 'pomieszczenia' | 'szablon' | 'koniecSzablonu' | 'naprawa';
-export interface PoleDruzyny { akcja: AkcjaDruzyny; rola?: Rola; szablon?: RodzajPomieszczenia; x: number; y: number; w: number; h: number }
+export type AkcjaDruzyny = 'rola' | 'droga' | 'odwolaj' | 'odznacz' | 'pomieszczenia' | 'szablon' | 'koniecSzablonu' | 'naprawa'
+  // Alpha 0.3: menu rozkazów (telefon), karta postaci, „+N”, talia i karta tarota
+  | 'menuRozkazow' | 'postac' | 'plusKart' | 'talia' | 'tarot';
+export interface PoleDruzyny { akcja: AkcjaDruzyny; rola?: Rola; szablon?: RodzajPomieszczenia; id?: number; miejsce?: number; x: number; y: number; w: number; h: number }
 
 /** Co mówi listwa szablonów pod każdym z nich. */
 const JAK_PLANOWAC: Record<RodzajPomieszczenia, string> = {
@@ -53,35 +57,6 @@ const rgba = ([r, g, b]: [number, number, number], a: number) => `rgba(${r},${g}
 /** Żywi z ludu w tej roli. */
 export function ludRoli(sim: Sim, rola: Rola): Creature[] {
   return sim.creatures.filter((c) => !c.dead && rolaPostaci(c) === rola);
-}
-
-/** Gdzie leżą medaliony: na komputerze w paśmie dawnej wstęgi ludu, na telefonie pod rzędem przycisków. */
-function uklad(plate: Plate, vh: number): { o: Obszar; r: number; cy: number; podpisy: boolean } {
-  const o = obszarSpisu(plate, vh);
-  const mt = vh - plate.bottom;
-  if (plate.waski) {
-    const r = 19;
-    return { o: { x: plate.x + 4, y: mt + 98 - r, w: plate.w + plate.left - 12, h: r * 2 }, r, cy: mt + 98, podpisy: false };
-  }
-  if (plate.niski) {
-    const r = Math.max(13, Math.min(19, (plate.bottom - 6) / 2));
-    return { o: { ...o, y: mt + 3, h: r * 2 }, r, cy: mt + 3 + r, podpisy: false };
-  }
-  const r = Math.max(16, Math.min(26, o.h * 0.42));
-  return { o, r, cy: o.y + o.h * 0.42, podpisy: true };
-}
-
-// Miniatury w medalionach rysujemy z zastępcy postaci — własna pamięć ruchu i pozy, żeby rysunek
-// w medalionie nie mieszał się z animacją tej samej postaci na mapie.
-const zastepcy = new Map<Rola, Creature>();
-function zastepca(rola: Rola, wzor: Creature): Creature {
-  let z = zastepcy.get(rola);
-  if (!z) { z = { ...wzor }; zastepcy.set(rola, z); }
-  Object.assign(z, wzor, {
-    x: 0, y: 0, vy: 0, face: 1, carry: 0, fear: 0, mad: 0, job: Job.STOI,
-    odmowa: undefined, naLinie: undefined, naWiadrze: undefined, wspina: undefined, ksiegaT: undefined,
-  });
-  return z;
 }
 
 function pigulka(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, tekst: string, pod: boolean, rozm: number): void {
@@ -111,122 +86,54 @@ function pigulka(ctx: CanvasRenderingContext2D, x: number, y: number, w: number,
   ctx.fillText(tekst, x + w / 2, y + h / 2 + 0.5, w - 8);
 }
 
+/** Alpha 0.3: stan pasa kart po stronie ekranu gry — menu rozkazów (telefon), przewinięcie pasa, otwarte szczegóły. */
+export interface StanPasa {
+  menu: boolean;
+  przesun: number;
+  szczegoly: { rodzaj: 'postac' | 'tarot' | 'talia'; id: number } | null;
+}
+
 /**
- * Pasek drużyny pod płytą. Zwraca pola do dotknięcia (medaliony i rozkazy).
+ * Pas kart pod płytą (Alpha 0.3, render/pas.ts): rozkazy, a obok karty postaci (wizja Patryka) albo medaliony,
+ * talia i karty tarota (wizja Pawła); na końcu dymek szczegółów. Zwraca pola do dotknięcia.
  * `kursor` — gdzie jest wskaźnik (podświetlenie), `czas` — zegar ekranu (animacja miniatur).
  */
 export function rysujDruzyne(
   ctx: CanvasRenderingContext2D, sim: Sim, plate: Plate, vh: number,
   zaznaczeni: ReadonlySet<number>, kursor: { x: number; y: number }, czas: number,
-  szablon: RodzajPomieszczenia | null = null,
+  szablon: RodzajPomieszczenia | null, stan: StanPasa,
 ): PoleDruzyny[] {
-  const { o, r, cy, podpisy } = uklad(plate, vh);
+  const u = ukladPasa(plate, vh);
   const pola: PoleDruzyny[] = [];
-  const odstep = r * 2.75;
-  const rozmNazwy = Math.max(11, Math.min(14, r * 0.55));
+  const vw = plate.x + plate.w + plate.right;
   ctx.save();
-  ROLE_DRUZYNY.forEach((rola, n) => {
-    const cx = o.x + r + 6 + n * odstep;
-    const lud = ludRoli(sim, rola);
-    const ile = lud.length;
-    const zazn = lud.filter((c) => zaznaczeni.has(c.id)).length;
-    const pod = Math.hypot(kursor.x - cx, kursor.y - cy) <= r + 4;
-    const stan = ile === 0 ? 'uspiony' : zazn === ile ? 'wlaczony' : pod ? 'pod' : 'zwykly';
-    krazek(ctx, cx, cy, r, stan, `druzyna-${rola}`);
-    // miniatura: najpierw zaznaczony z tej roli, inaczej pierwszy żywy
-    const wzor = lud.find((c) => zaznaczeni.has(c.id)) ?? lud[0];
-    if (wzor) {
-      ctx.save();
-      ctx.beginPath(); ctx.arc(cx, cy, r * 0.86, 0, Math.PI * 2); ctx.clip();
-      ctx.translate(cx, cy + r * 0.8);
-      rysujPostac(ctx, sim, zastepca(rola, wzor), r * 1.5, czas, 'stoi');
-      ctx.restore();
-    } else {
-      // nikt z tej roli już nie żyje — pusty medalion z krzyżykiem
-      ctx.strokeStyle = 'rgba(214,190,150,0.45)'; ctx.lineWidth = Math.max(1.5, r * 0.08);
-      ctx.beginPath(); ctx.moveTo(cx, cy - r * 0.45); ctx.lineTo(cx, cy + r * 0.45); ctx.moveTo(cx - r * 0.3, cy - r * 0.15); ctx.lineTo(cx + r * 0.3, cy - r * 0.15); ctx.stroke();
-    }
-    // część roli zaznaczona — złoty łuk po obwodzie (tyle, ilu z nich)
-    if (zazn > 0 && zazn < ile) {
-      ctx.strokeStyle = 'rgba(246,216,142,0.95)'; ctx.lineWidth = 2.4; ctx.lineCap = 'round';
-      ctx.beginPath(); ctx.arc(cx, cy, r + 3.5, -Math.PI / 2, -Math.PI / 2 + (Math.PI * 2 * zazn) / ile); ctx.stroke();
-    }
-    // liczba w ciemnym krążku przy prawym dolnym brzegu
-    const lx = cx + r * 0.74, ly = cy + r * 0.68, lr = Math.max(8, r * 0.38);
-    ctx.fillStyle = 'rgba(16,10,7,0.94)';
-    ctx.beginPath(); ctx.arc(lx, ly, lr, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = zazn > 0 ? 'rgba(246,216,142,0.95)' : FRESK.sinopia; ctx.lineWidth = 1.3; ctx.stroke();
-    ctx.fillStyle = ile ? rgba(BARWA_ROLI[rola], 0.98) : 'rgba(226,120,100,0.9)';
-    ctx.font = `bold ${Math.round(lr * 1.15)}px ${SERIF}`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(String(ile), lx, ly + 0.5);
-    if (podpisy) {
-      ctx.font = `italic ${rozmNazwy}px ${SERIF}`;
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillStyle = rgba(BARWA_ROLI[rola], ile ? (zazn ? 0.98 : 0.8) : 0.4);
-      ctx.fillText(NAZWA_ROLI_MNOGA[rola], cx, cy + r + rozmNazwy * 1.2);
-    }
-    pola.push({ akcja: 'rola', rola, x: cx - r - 4, y: cy - r - 4, w: r * 2 + 8, h: r * 2 + 8 });
-  });
-
-  // rozkazy dla zaznaczonych — obok medalionów
-  const x0 = o.x + r + 6 + (ROLE_DRUZYNY.length - 1) * odstep + r + r * 0.9;
-  const x1 = o.x + o.w;
-  const zaznaczone = sim.creatures.filter((c) => !c.dead && zaznaczeni.has(c.id) && rolaPostaci(c));
-  const rozm = Math.max(12, Math.min(14, r * 0.58));
-  if (x1 - x0 > 60) {
-    const robotnicy = zaznaczone.filter((c) => rolaPostaci(c) === 'robotnik').length;
-    const opcje: { akcja: AkcjaDruzyny; tekst: string; wlaczony?: boolean; pilne?: boolean }[] = [];
-    // etap 4: lina wiadra przecięta — pierwszy przycisk, pulsuje, póki nikt jej nie skleja
-    const lp = linaPrzecieta(sim);
-    if (lp) {
-      const wisi = sklejajacy(sim);
-      const idzie = sim.creatures.some((c) => !c.dead && c.polecenie?.typ === 'naprawa');
-      opcje.push(wisi ? { akcja: 'naprawa', tekst: 'skleja linę…', wlaczony: true }
-        : { akcja: 'naprawa', tekst: idzie ? 'napraw linę (idzie)' : 'napraw linę wiadra', pilne: !idzie });
-    }
-    if (robotnicy && czoloDrogi(sim) >= 0) opcje.push({ akcja: 'droga', tekst: 'kop drogę wiernych' });
-    if (zaznaczone.some((c) => c.polecenie)) opcje.push({ akcja: 'odwolaj', tekst: 'odwołaj rozkaz' });
-    if (zaznaczone.length) opcje.push({ akcja: 'odznacz', tekst: 'odznacz' });
-    // etap 3c: plany pomieszczeń — zawsze pod ręką (klawisz B)
-    opcje.push({ akcja: 'pomieszczenia', tekst: szablon ? 'planujesz… (B)' : 'wyznacz pomieszczenie', wlaczony: !!szablon });
-    // podpowiedź nad przyciskami: co zrobi dotknięcie mapy
-    const hp = Math.max(22, r * 0.95);
-    const yP = podpisy ? cy - hp * 0.05 : cy - hp / 2;
-    if (podpisy) {
-      ctx.font = `italic ${rozm}px ${SERIF}`;
-      ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-      if (zaznaczone.length) {
-        ctx.fillStyle = 'rgba(246,216,142,0.92)';
-        const ile = zaznaczone.length === 1 ? 'zaznaczony 1' : `zaznaczonych ${zaznaczone.length}`;
-        ctx.fillText(`${ile} — dotknij mapy: idź tam${robotnicy ? ' (w skałę: kop; w plan: kuj)' : ''}`, x0, yP - 6, x1 - x0);
-      } else {
-        ctx.fillStyle = 'rgba(214,198,166,0.62)';
-        ctx.fillText('dotknij postaci albo medalionu — wydasz rozkaz', x0, yP - 6, x1 - x0);
-      }
-    }
-    let x = x0;
-    for (const op of opcje) {
-      ctx.font = `${rozm}px ${SERIF}`;
-      const w = Math.min(x1 - x, ctx.measureText(op.tekst).width + 22);
-      if (w < 40) break;
-      const pod = op.wlaczony || (kursor.x >= x && kursor.x <= x + w && kursor.y >= yP && kursor.y <= yP + hp);
-      if (op.pilne) {
-        // pilne: czerwona poświata pulsuje wokół przycisku
-        const puls = wolnoRuszac() ? 0.5 + 0.5 * Math.sin(czas * 0.006) : 0.7;
-        ctx.save();
-        ctx.shadowColor = `rgba(230,60,40,${0.5 + 0.4 * puls})`; ctx.shadowBlur = 8 + 10 * puls;
-        ctx.strokeStyle = `rgba(236,96,72,${0.6 + 0.35 * puls})`; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.roundRect(x - 2, yP - 2, w + 4, hp + 4, hp / 2 + 2); ctx.stroke();
-        ctx.restore();
-      }
-      pigulka(ctx, x, yP, w, hp, op.tekst, pod, rozm);
-      pola.push({ akcja: op.akcja, x, y: yP - 4, w, h: hp + 8 });
-      x += w + 8;
-    }
+  let miejscaPostaci = new Map<number, Obszar>(), miejscaTarota = new Map<number, Obszar>();
+  if (WARIANT === 'pawel') {
+    const r = rysujPasTarota(ctx, sim, u, zaznaczeni, kursor, czas);
+    pola.push(...r.pola);
+    miejscaTarota = r.miejsca;
+  } else {
+    const r = rysujKartyPostaci(ctx, sim, u, zaznaczeni, kursor, czas, stan.przesun);
+    pola.push(...r.pola);
+    miejscaPostaci = r.miejsca;
   }
+  // rozkazy po kartach — rozwinięte menu (telefon) leży nad pasem
+  pola.push(...rysujRozkazy(ctx, sim, u, zaznaczeni, kursor, czas, !!szablon, stan.menu));
   // etap 3c: listwa szablonów u dołu płyty, gdy planujesz
-  if (szablon) pola.push(...listwaSzablonow(ctx, plate, szablon, kursor, rozm));
+  if (szablon) pola.push(...listwaSzablonow(ctx, plate, szablon, kursor, 14));
+  // szczegóły: przytrzymana albo wskazana myszą karta
+  const sz = stan.szczegoly;
+  if (sz && !stan.menu) {
+    if (sz.rodzaj === 'postac') {
+      const o = sim.lud.druzyna?.osoby.find((q) => q.id === sz.id);
+      const m = miejscaPostaci.get(sz.id);
+      if (o && m) dymekSzczegolow(ctx, m, wierszeSzczegolow(sim, o), vw, 320);
+    } else if (sz.rodzaj === 'tarot') {
+      const m = miejscaTarota.get(sz.id);
+      const w = wierszeTarota(sim, sz.id);
+      if (m && w.length) dymekSzczegolow(ctx, m, w, vw, 300);
+    } else if (u.talia) dymekSzczegolow(ctx, u.talia, wierszeTalii(sim), vw, 300);
+  }
   ctx.restore();
   return pola;
 }

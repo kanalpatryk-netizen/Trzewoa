@@ -5,6 +5,8 @@
  * (telefon: wszystko pośrodku, przekrój przygaszony u dołu). Granica: `waskiPonizej`.
  * Położenia „× w” / „× h” to ułamki szerokości / wysokości ekranu.
  */
+import { WARIANT, NAZWA_WARIANTU } from '../wariant';
+
 export const MENU = {
   // ------------------------------------------------------------------ napisy
   tytul: 'TRZEWIA',
@@ -17,14 +19,14 @@ export const MENU = {
   zachetaSamouczek: 'Pierwszy raz? Zacznij od samouczka.',
   /** Podpowiedź sterowania w lewym dolnym rogu (tylko szeroki ekran). */
   /** Wersja gry — małym drukiem w prawym dolnym rogu menu. */
-  wersja: 'Alpha 0.3',
+  wersja: `Alpha 0.3 · ${NAZWA_WARIANTU[WARIANT]}`,
   podpowiedz: '',   // Android: nic — na komputerze „strzałki i enter · albo po prostu dotknij”
   /** Pozycje spisu: etykieta i opis pod spisem. Kolejność = kolejność na ekranie. */
   pozycje: {
     wroc: { etykieta: 'Graj dalej', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś' },
     nowa: { etykieta: 'Nowa gra', opis: 'nowa góra i nowi mieszkańcy — zawsze Koszmar: twarda skorupa, mało krwi i dłoń z otchłani' },
     wczytaj: { etykieta: 'Wczytaj zapis', opis: 'ostatni zapis stanu góry' },
-    samouczek: { etykieta: 'Samouczek', opis: 'dwie plansze wstępu i czternaście krótkich lekcji — palec pokazuje, gdzie dotknąć' },
+    samouczek: { etykieta: 'Samouczek', opis: 'dwie plansze wstępu i szesnaście krótkich lekcji — palec pokazuje, gdzie dotknąć' },
     bestiariusz: { etykieta: 'Atlas', opis: 'tablice ludu, rytów i praw góry — odkrywasz je, grając' },
     osiagniecia: { etykieta: 'Osiągnięcia', opis: 'cele dodatkowe — zdobywasz je, grając' },
     ustawienia: { etykieta: 'Ustawienia', opis: 'dźwięk, obraz i świat' },

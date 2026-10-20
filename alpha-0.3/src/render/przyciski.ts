@@ -4,6 +4,7 @@ import { rysujGrafike } from '../grafiki/grafiki';
 import { krazek, krazekZIkona } from './fresk';
 import { FRESK } from '../nastawy/barwy';
 import { TELEFON } from '../nastawy/ekran';
+import { miejsceKlepsydry } from './tempo';
 
 export type AkcjaPrzycisku = 'pauza' | 'wolniej' | 'szybciej' | 'zapiski' | 'atlas' | 'legenda' | 'kamera' | 'zapis';
 
@@ -14,6 +15,8 @@ export interface Przycisk {
   wlaczony?: boolean;
   /** Na wąskim ekranie pasek leży na dolnej krawędzi płyty i potrzebuje podkładu. */
   naPlycie?: boolean;
+  /** Alpha 0.3: przycisk w górnym marginesie — podpis wychodzi pod nim, nie nad. */
+  wGorze?: boolean;
 }
 
 /**
@@ -24,18 +27,6 @@ export interface Przycisk {
 /** Mnożnik czasu do podpisu: ¼, ½, 2, 10… */
 export function mnoznikNapis(m: number): string {
   return m === 0.25 ? '¼' : m === 0.5 ? '½' : String(m);
-}
-
-/** Dolna krawędź rzędu przycisków pod płytą na komputerze — niżej stoi relikwiarz krwi. */
-export function dolPrzyciskow(p: Plate, vh: number): number {
-  const r = Math.max(22, Math.min(26, p.w * 0.02));
-  return Math.min(vh - r * 1.6, p.y + p.h + r * 1.8) + r;
-}
-
-/** Lewa krawędź rzędu przycisków na szerokim ekranie — obok niego układa się Otchłań. */
-export function lewaKrawedzPrzyciskow(p: Plate): number {
-  const r = Math.max(22, Math.min(26, p.w * 0.02));
-  return p.x + p.w - r * 2.3 * 7 - r * 1.2 - r;
 }
 
 export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; zapiski: boolean; legenda: boolean; tempo: number; dev?: boolean; noweTablice?: number }): Przycisk[] {
@@ -56,14 +47,15 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
   // a osiem znaków na wąskiej płycie nachodziło na siebie
   const lista = p.waski || p.niski ? wszystkie.filter((b) => b.akcja !== 'legenda' && b.akcja !== 'zapis') : wszystkie;
   const n = lista.length;
-  // TELEFON pionowo: rząd pod płytą (przyciski nie zasłaniają już świata);
-  // poziomo: kolumna w prawym marginesie
+  // Alpha 0.3: dolny margines to pas kart — przyciski wychodzą z niego.
+  // TELEFON pionowo: kolumna w lewym marginesie, od dołu płyty w górę (nad nią ryty);
+  // poziomo: kolumna w prawym marginesie (jak dawniej); komputer: rząd w górnym marginesie, przed klepsydrą
   if (p.waski) {
-    const r = Math.min(TELEFON.pion.przyciskR, (p.w + p.left - 16) / n * 0.42);
-    const odstep = (p.w + p.left - 16) / n;
-    const x0 = 8 + odstep / 2;
-    const y = p.y + p.h + 12 + r;
-    return lista.map((z, i) => ({ ...z, x: x0 + i * odstep, y, r }));
+    const r = TELEFON.pion.przyciskR;
+    const odstep = r * 2.3;
+    const x = p.left / 2;
+    const y0 = p.y + p.h - r - 6;
+    return lista.map((z, i) => ({ ...z, x, y: y0 - i * odstep, r }));
   }
   if (p.niski) {
     const odstep = (p.h + 12) / n;
@@ -72,15 +64,16 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
     const y0 = p.y - 6 + odstep / 2;
     return lista.map((z, i) => ({ ...z, x, y: y0 + i * odstep, r }));
   }
-  // na wąskim ekranie pasek idzie na sam dół, bo margines pod płytą zajmuje spis warstw;
-  // 44 px to minimalne pole dotyku — ale znaki nie mogą na siebie wchodzić
-  const odstepW = (p.w - 12) / n;
-  const r = Math.max(22, Math.min(26, p.w * 0.02));
-  const odstep = r * 2.3;
-  const y = dolPrzyciskow(p, vh) - r;
-  const x0 = p.x + p.w - odstep * (n - 1) - r * 1.2;
-  void odstepW;
-  return lista.map((z, i) => ({ ...z, x: x0 + i * odstep, y, r }));
+  const r = Math.max(16, Math.min(20, p.top * 0.3));
+  const odstep = r * 2.35;
+  const y = p.y - p.top * 0.5 - 2;
+  const x1 = miejsceKlepsydry(p).x - miejsceKlepsydry(p).r - r - 8;
+  return lista.map((z, i) => ({ ...z, x: x1 - (n - 1 - i) * odstep, y, r, wGorze: true }));
+}
+
+/** Lewa krawędź rzędu przycisków w górnym marginesie (komputer) — do niej sięga kronika. */
+export function lewaKrawedzPrzyciskow(lista: Przycisk[]): number {
+  return lista.length ? Math.min(...lista.map((b) => b.x - b.r)) : Infinity;
 }
 
 export function rysujPrzyciski(ctx: CanvasRenderingContext2D, lista: Przycisk[], podKursorem: AkcjaPrzycisku | null, teraz: number): void {
@@ -123,7 +116,7 @@ export function rysujPrzyciski(ctx: CanvasRenderingContext2D, lista: Przycisk[],
     const szerEkranu = ctx.canvas.width / (ctx.getTransform().a || 1);
     const pol = ctx.measureText(opis.etykieta).width / 2 + 6;
     const lx = Math.max(pol, Math.min(szerEkranu - pol, opis.x));
-    const ly = Math.max(rozm + 2, opis.y - opis.r * 1.7);
+    const ly = opis.wGorze ? opis.y + opis.r * 1.4 + rozm * 0.8 : Math.max(rozm + 2, opis.y - opis.r * 1.7);
     ctx.lineWidth = 3;
     ctx.strokeStyle = 'rgba(10,7,6,0.85)';
     ctx.strokeText(opis.etykieta, lx, ly);

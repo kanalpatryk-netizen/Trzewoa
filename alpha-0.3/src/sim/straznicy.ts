@@ -5,6 +5,7 @@
  * Dopóki fala trwa, skorupa nie pęka (sim/rytual.ts pyta o `falaTrwa`).
  */
 import type { Sim } from './sim';
+import { wyzwol } from './druzyna';
 import type { Creature } from './creatures';
 import { Job } from './creatures';
 import { Race, RACES } from './races';
@@ -312,6 +313,7 @@ export function ranStraznika(sim: Sim, s: Creature, od: Creature, dmg: number): 
   if (s.hp <= 0 && s.boss && ostatnieUderzenie(sim, s, od)) return;
   if (s.hp <= 0) {
     sim.kill(s, `z ręki ludu (${rolaPostaci(od) ?? 'ktoś'})`, 'walka');
+    wyzwol(sim, od, 'fala');
     sim.efekt(s.x, s.y, 'cud');
   }
 }

@@ -20,6 +20,7 @@ import type { World } from './world';
 import type { Creature } from './creatures';
 import { stoi } from './droga';
 import { kto, zapisz } from './dziennik';
+import { wyzwol, rodzaj } from './druzyna';
 import { POMIESZCZENIA as P, BIERNIK_POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 
 export interface Pomieszczenie {
@@ -344,11 +345,12 @@ export function tikPomieszczen(sim: Sim): void {
     if (c.snu < P.sypialnia.snuTikow) continue;
     const mial = !!c.okaleczony || (c.zatrutyDo !== undefined && sim.tick < c.zatrutyDo);
     c.okaleczony = false; c.zatrutyDo = undefined; c.snu = 0;
+    wyzwol(sim, c, 'sypialnia');
     c.polecenie = undefined; c.czynnosc = undefined; c.jt = 0;
     sim.efekt(c.x, c.y, 'mysl', mial ? 'wypoczęty — osłabienie minęło' : 'wypoczęty');
     if (mial) {
       zdarzenie(sim, { rodzaj: 'wypoczety', kto: c.id, tik: sim.tick });
-      sim.gdzie(c.x, c.y).log(`${kto(sim, c)} wstaje z posłania wypoczęty — osłabienie minęło.`, 'swiat');
+      sim.gdzie(c.x, c.y).log(`${kto(sim, c)} wstaje z posłania ${rodzaj(sim, c, 'wypoczęty', 'wypoczęta')} — osłabienie minęło.`, 'swiat');
     }
   }
 }

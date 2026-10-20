@@ -6,6 +6,7 @@ import { EkranUstawien } from './app/screens/settings';
 import { EkranKroniki } from './app/screens/kronika';
 import { EkranBestiariusza } from './app/screens/bestiariusz';
 import { EkranOsiagniec } from './app/screens/osiagniecia';
+import { EkranStartu } from './app/screens/start';
 import { EkranLadowania, type Etap } from './app/screens/ladowanie';
 import { puscIntro, introTrwa } from './app/screens/intro';
 import { ustawienia } from './core/settings-store';
@@ -60,6 +61,7 @@ const etapy: Etap[] = [
       ustawieniaEkran = new EkranUstawien(app); app.zarejestruj(ustawieniaEkran);
       app.zarejestruj(new EkranKroniki(app));
       app.zarejestruj(new EkranOsiagniec(app));
+      app.zarejestruj(new EkranStartu(app));   // Alpha 0.3: drużyna albo ślub przed partią
     },
   },
   { nazwa: 'Ryję płytę', zrob: () => { gra.rozmiar(app.w, app.h); gra.rysuj(naBrudno(), app.w, app.h, performance.now()); } },

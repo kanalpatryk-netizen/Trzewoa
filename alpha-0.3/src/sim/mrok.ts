@@ -9,6 +9,7 @@
 import { maZabytek } from './zabytki';
 import { ZABYTKI } from '../nastawy/zabytki';
 import type { Sim } from './sim';
+import { maHak, perkZadzialal, ktoTo, rodzaj } from './druzyna';
 import type { Creature } from './creatures';
 import { MROK } from '../nastawy/mrok';
 import { rolaPostaci, klanLudu, NAZWA_ROLI, walczacy } from './lud';
@@ -106,11 +107,17 @@ function idz(m: StanMroku, tx: number, ty: number, tempo: number, krokow: number
 }
 
 /** Najbardziej samotny z ludu (najdalej od siedziby), albo nikt. */
+const ominiety = new Map<number, number>();
 function wypatrz(sim: Sim): Creature | null {
   const klan = klanLudu(sim);
   let naj: Creature | null = null, najD = -1;
   for (const c of sim.creatures) {
     if (!samotny(sim, c)) continue;
+    // Alpha 0.3: perk „Światło w oczach” — Patrzący go omija (ślad co minutę, żeby było widać, że ocalał)
+    if (c.perki && maHak(c, 'swiatlo')) {
+      if (sim.tick - (ominiety.get(c.id) ?? -1e9) > 7200) { ominiety.set(c.id, sim.tick); perkZadzialal(sim, c, 'swiatlo'); }
+      continue;
+    }
     const d = klan ? Math.hypot(klan.hx - c.x, klan.hy - c.y) : 0;
     if (d > najD) { najD = d; naj = c; }
   }
@@ -155,7 +162,7 @@ export function tikMroku(sim: Sim): void {
   if (!cel || cel.dead || !samotny(sim, cel)) {
     if (cel) cel.zamarlyDo = undefined;
     if (m.faza === 'patrzy' && cel && !cel.dead) {
-      sim.gdzie(cel.x, cel.y).log(`${NAZWA_ROLI[rolaPostaci(cel) ?? 'pobozny']} nie był już sam. To, co patrzyło z ciemności, cofnęło się.`, 'swiat');
+      sim.gdzie(cel.x, cel.y).log(`${ktoTo(sim, cel)} — ${rodzaj(sim, cel, 'nie był', 'nie była')} już ${rodzaj(sim, cel, 'sam', 'sama')}. To, co patrzyło z ciemności, cofnęło się.`, 'swiat');
       cel.fear = Math.max(cel.fear, 0.6);
     }
     zgas(sim, m, m.faza === 'patrzy' ? MROK.przerwaPoUcieczce : 0);
@@ -174,7 +181,7 @@ export function tikMroku(sim: Sim): void {
       cel.fear = 1;
       // stoi jak wryty: sam już nie odejdzie — uratuje go Cud albo ktoś, kto do niego przyjdzie
       cel.zamarlyDo = sim.tick + MROK.patrzyTikow + CO;
-      sim.gdzie(cel.x, cel.y).log(`${NAZWA_ROLI[rolaPostaci(cel) ?? 'pobozny']} został sam w ciemności. Coś na niego patrzy.`, 'otchlan');
+      sim.gdzie(cel.x, cel.y).log(`${ktoTo(sim, cel)} — ${rodzaj(sim, cel, 'został sam', 'została sama')} w ciemności. Coś na ${rodzaj(sim, cel, 'niego', 'nią')} patrzy.`, 'otchlan');
       zapisz(sim, 'swiat', `Patrzący patrzy na #${cel.id}`, cel.x, cel.y);
     }
     return;
@@ -186,9 +193,9 @@ export function tikMroku(sim: Sim): void {
   if (sim.tick - m.od >= MROK.patrzyTikow) {
     m.ofiary++;
     m.zabranyT = sim.tick; m.zabranyX = cel.x; m.zabranyY = cel.y;
-    const kto = NAZWA_ROLI[rolaPostaci(cel) ?? 'pobozny'];
-    sim.kill(cel, 'zabrany przez ciemność', 'mrok');
-    sim.gdzie(cel.x, cel.y).log(`${kto} poszedł w ciemność i nie wrócił.`, 'krew');
+    // (Alpha 0.3: kronikę z imieniem pisze sim.kill — „…, poległ — poszedł w ciemność i nie wrócił”)
+    sim.kill(cel, cel.imie ? `${rodzaj(sim, cel, 'poszedł', 'poszła')} w ciemność i nie ${rodzaj(sim, cel, 'wrócił', 'wróciła')}` : 'zabrany przez ciemność', 'mrok');
+    if (!cel.imie) sim.gdzie(cel.x, cel.y).log(`${NAZWA_ROLI[rolaPostaci(cel) ?? 'pobozny']} poszedł w ciemność i nie wrócił.`, 'krew');
     zgas(sim, m, MROK.przerwaPoOfierze);
   }
 }

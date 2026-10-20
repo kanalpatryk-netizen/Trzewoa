@@ -29,7 +29,12 @@ import { rysujDev } from '../../render/dev';
 import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { naWieszaku } from '../../sim/zbroja';
-import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
+import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu, type StanPasa } from '../../render/druzyna';
+import { rysujSladyNaMapie } from '../../render/karty';
+import { wyciagnijKarte } from '../../sim/tarot';
+import { arkan } from '../../nastawy/tarot';
+import { osoba, imieOsoby } from '../../sim/druzyna';
+import { PAS } from '../../nastawy/ekran';
 import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
 import { GLOS_RYCERZA } from '../../nastawy/dzwiek';
@@ -41,7 +46,7 @@ import { linaPrzecieta } from '../../sim/lina-wiadra';
 import { rysujZnacznikiLudu } from '../../render/lud';
 import { rysujPasekFali, rysujStraznikowWSkale } from '../../render/straznicy';
 import { LUD, REMAKE } from '../../nastawy/lud';
-import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, type Przycisk } from '../../render/przyciski';
+import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, lewaKrawedzPrzyciskow, type Przycisk } from '../../render/przyciski';
 import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
@@ -68,7 +73,8 @@ import { rysujMrok, rysujPatrzacego } from '../../render/mrok';
 import { rysujDlon } from '../../render/dlon';
 import { rysujAniola, rysujStrugeKrwi } from '../../render/aniol';
 import { BOT, BOT_GRA, wyslijStan, ziarnoPartii } from '../obserwowany';
-import { BOT_CO, kartaBota, ruchBota } from '../bot';
+import { BOT_CO, kartaBota, ruchBota, zalozBota } from '../bot';
+import { slubuj } from '../../sim/tarot';
 import { wolnoRuszac } from '../../render/nastroj';
 import { NASTROJ } from '../../nastawy/wyglad/nastroj';
 import { MROK } from '../../nastawy/mrok';
@@ -114,6 +120,8 @@ export type ZdarzenieGry =
   | { typ: 'moc'; czasownik: string; narzedzie: string; zPlanu?: boolean }
   | { typ: 'szept'; narzedzie: string }
   | { typ: 'wybranoCzasownik'; czasownik: string | null }
+  // Alpha 0.3 (wizja Pawła): wyciągnięta karta tarota
+  | { typ: 'tarot'; karta: string; odwrocona: boolean }
   | { typ: 'kamera'; rodzaj: 'przesun' | 'zoom' | 'powrot' }
   | { typ: 'rozkaz'; czasownik: string; narzedzie: string }
   | { typ: 'zaznaczono'; ile: number }
@@ -171,6 +179,14 @@ export class EkranGry implements Ekran {
   zaznaczeni = new Set<number>();
   /** Pola paska drużyny pod płytą (medaliony ról i rozkazy) z ostatniej klatki. */
   private polaDruzyny: PoleDruzyny[] = [];
+  /** Alpha 0.3: pas kart — menu rozkazów (telefon), przewinięcie, szczegóły przypięte przytrzymaniem albo dotknięciem. */
+  private pas: StanPasa = { menu: false, przesun: 0, szczegoly: null };
+  /** Karta pod palcem: krótkie dotknięcie — akcja, przytrzymanie — szczegóły. */
+  private wcisnieta: { pole: PoleDruzyny; id: number; od: number; sx: number; sy: number; dokladaj: boolean } | null = null;
+  /** Ostatni wskaźnik to mysz (szczegóły po najechaniu) czy palec (po przytrzymaniu). */
+  private mysz = true;
+  /** Gdzie w górnym marginesie kończą się liczniki zasobów — od tego miejsca pisze kronika. */
+  private koniecZasobow = 0;
   /** Fala w miejscu ostatniego rozkazu (render/druzyna.ts). */
   private falaRozkazu: FalaRozkazu | null = null;
   /** Samouczek gra na własnej górze i nie ma prawa nadpisać zapisu gracza. */
@@ -282,7 +298,12 @@ export class EkranGry implements Ekran {
     this.straz.zeruj();
     this.slad = null;
     const tryb = (dane as { tryb?: string } | undefined)?.tryb;
-    if (tryb === 'nowa') this.nowaGra();
+    if (tryb === 'nowa') {
+      this.nowaGra();
+      // Alpha 0.3 (wizja Pawła): ślub wybrany na ekranie startu
+      const s = (dane as { slub?: string }).slub;
+      if (s) slubuj(this.sim, s);
+    }
     else if (tryb === 'bot') {
       // okno obserwatorium: gra od razu, a obserwatorium może zacząć nową partię wiadomością
       BOT_GRA.nowaGra = (z) => this.nowaGra(z ?? ziarnoPartii());
@@ -306,6 +327,12 @@ export class EkranGry implements Ekran {
    */
   private zapas = new Map<number, Sim>();
 
+  /** Alpha 0.3: góra przygotowana na następną nową grę — ekran startu pokazuje jej drużynę. */
+  przygotowana(): Sim {
+    this.przygotuj();
+    return this.zapas.get(-1)!;
+  }
+
   /** Generuje górę teraz, żeby „Nowa gra” (albo samouczek) nie czekały. */
   przygotuj(ziarno?: number): void {
     const klucz = ziarno ?? -1;
@@ -323,7 +350,9 @@ export class EkranGry implements Ekran {
     if (BOT.wlaczony) {
       BOT.partia++;
       this.sim.wydarzenia.gracz = true;
+      zalozBota(this.sim, BOT.styl);       // Alpha 0.3 (wizja Pawła): bot składa ślub
     }
+    this.pas = { menu: false, przesun: 0, szczegoly: null };
     // Remake v2: jedna trudność — Koszmar (krew na start i reszta ustawia się w Sim)
     this.ui.verb = null; this.ui.tool = null; this.ui.selected = null;
     this.cam.zoom = KAMERA.start;
@@ -474,6 +503,8 @@ export class EkranGry implements Ekran {
     if (sim.tick > 4000) cicho('schody');
     // Alpha, etap 3b: pierwsza wykuta ruda odkrywa tablicę kruszców
     if (sim.urobek.length || sim.zelazo || sim.zloto) odkrycia.odkryj('kruszce');
+    // Alpha 0.3: odsłonięte fragmenty historii świata — każdy to tablica „Kronika góry” (pokazana od razu)
+    for (const f of sim.lud.druzyna?.odsloniete ?? []) odkrycia.odkryj(`historia-${f}`);
     // etap 3f: warstwy góry — gdy ktoś z ludu zejdzie pod salę (albo po cichu po minucie); zbroja — pierwsza wykuta część
     if (sim.creatures.some((c) => !c.dead && c.rola && c.y > sim.world.salaStart.y + 6)) odkrycia.odkryj('warstwy');
     if (sim.tick > 7200) cicho('warstwy');
@@ -621,6 +652,7 @@ export class EkranGry implements Ekran {
       } else ctx.fillText(l, x, y);
       x += kaw(l, fL) + odst;
     }
+    this.koniecZasobow = x;
     ctx.restore();
   }
 
@@ -1038,6 +1070,8 @@ export class EkranGry implements Ekran {
     this.pokoje.rysujPrzod(ctx, sim, cam, teraz);
     rysujPrzodWiader(ctx, sim, cam, teraz);
     rysujPoleceniaNaMapie(ctx, sim, cam, teraz, this.zaznaczeni, this.falaRozkazu);
+    // Alpha 0.3: znak nad postacią, której perk (albo karta tarota) właśnie zadziałał
+    rysujSladyNaMapie(ctx, sim, cam);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
     if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
@@ -1081,17 +1115,19 @@ export class EkranGry implements Ekran {
     drawFrame(ctx, plate, teraz, oddech, this.ui.pointer);
     // (Alpha, etap 5: wstęgi „Droga do wolności” już nie ma — decyzja użytkownika: „jest bez sensu”)
     if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) rysujMinimape(ctx, sim, cam, plate, teraz);
-    this.polaDruzyny = rysujDruzyne(ctx, sim, plate, h, this.zaznaczeni, this.ui.pointer, teraz, this.szablon);
     drawOddanie(ctx, plate, sim, h);
     drawKrew(ctx, plate, sim, h, teraz);
     // etap 4: dar krwi — struga z dłoni anielskiej do ampułki relikwiarza
     rysujStrugeKrwi(ctx, sim, plate, h, teraz);
-    if (ustawienia.kronika) drawChronicle(ctx, plate, sim, w, h);
-    this.ui.draw(ctx, sim, teraz);
     this.przyciski = rozmiescPrzyciski(plate, h, {
       pauza: this.pauza, zapiski: this.zapiski, legenda: this.legenda, noweTablice: odkrycia.niezobaczone,
       tempo: this.tempoTeraz(), dev: ustawienia.trybDeweloperski,
     });
+    // Alpha 0.3: kronika w górnym marginesie — między licznikami zasobów a rzędem przycisków
+    if (ustawienia.kronika) drawChronicle(ctx, plate, sim, this.koniecZasobow + 28, lewaKrawedzPrzyciskow(this.przyciski) - 18);
+    this.ui.draw(ctx, sim, teraz);
+    // Alpha 0.3: pas kart zamiast dawnego panelu (render/pas.ts) — po rytach, żeby dymek szczegółów leżał na wierzchu
+    this.polaDruzyny = rysujDruzyne(ctx, sim, plate, h, this.zaznaczeni, this.ui.pointer, teraz, this.szablon, this.stanPasa());
     const podPrzyciskiem = przyciskPod(this.przyciski, this.ui.pointer.x, this.ui.pointer.y);
     rysujPrzyciski(ctx, this.przyciski, podPrzyciskiem?.akcja ?? null, teraz);
     this.ui.plan = this.pauza ? this.rozkazy : null;
@@ -1192,7 +1228,10 @@ export class EkranGry implements Ekran {
 
   /** Gdzie leży pole na pasku drużyny (np. „wyznacz pomieszczenie”, medalion roli) — samouczek je wskazuje. */
   miejscePolaDruzyny(akcja: PoleDruzyny['akcja'], rola?: Rola): PoleDruzyny | null {
-    return this.polaDruzyny.find((p) => p.akcja === akcja && (!rola || p.rola === rola)) ?? null;
+    const p = this.polaDruzyny.find((q) => q.akcja === akcja && (!rola || q.rola === rola));
+    if (p || akcja !== 'rola' || !rola) return p ?? null;
+    // Alpha 0.3 (wizja Patryka): medalionów nie ma — wskazuje się pierwszą kartę osoby z tej roli
+    return this.polaDruzyny.find((q) => q.akcja === 'postac' && q.id !== undefined && rolaPostaci(this.sim.creatureById(q.id) ?? ({} as Creature)) === rola) ?? null;
   }
 
   /** Etap 3d: ilu zaznaczonych ma tę rolę (samouczek ołtarza). */
@@ -1273,8 +1312,75 @@ export class EkranGry implements Ekran {
     return this.polaDruzyny.find((p) => x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h) ?? null;
   }
 
+  /**
+   * Alpha 0.3: co pokazuje dymek szczegółów — przytrzymana palcem karta (dłużej niż PAS.przytrzymanieMs),
+   * karta pod myszą albo przypięta dotknięciem (poległa postać, karta tarota).
+   */
+  private stanPasa(): StanPasa {
+    const w = this.wcisnieta;
+    let sz = this.pas.szczegoly;
+    const rodzaj = (p: PoleDruzyny): 'postac' | 'tarot' | 'talia' | null => p.akcja === 'postac' ? 'postac' : p.akcja === 'tarot' ? 'tarot' : p.akcja === 'talia' ? 'talia' : null;
+    if (w && performance.now() - w.od >= PAS.przytrzymanieMs) { const r = rodzaj(w.pole); if (r) sz = { rodzaj: r, id: w.id }; }
+    else if (this.mysz && !this.pas.menu) {
+      const p = this.poleDruzynyPod(this.ui.pointer.x, this.ui.pointer.y);
+      const r = p ? rodzaj(p) : null;
+      if (p && r) sz = { rodzaj: r, id: p.id ?? p.miejsce ?? 0 };
+    }
+    return { ...this.pas, szczegoly: sz };
+  }
+
+  /** Alpha 0.3: krótkie dotknięcie karty postaci (zaznacz / dołóż / kamera), „+N”, talii albo karty tarota. */
+  private dotknijKarty(p: PoleDruzyny, dokladaj: boolean): void {
+    const { sim, ui } = this;
+    if (p.akcja === 'plusKart') {
+      const n = sim.lud.druzyna?.osoby.length ?? 0;
+      const widac = PAS.kartMaks - 1;
+      this.pas.przesun = this.pas.przesun + widac >= n ? 0 : this.pas.przesun + widac;
+      this.app.gesty.klik();
+      return;
+    }
+    if (p.akcja === 'talia') {
+      const k = wyciagnijKarte(sim);
+      if (typeof k === 'string') { ui.say(k[0].toUpperCase() + k.slice(1) + '.', sim.tick); this.app.gesty.odmowa(); return; }
+      const a = arkan(k.arkan);
+      ui.say(`${a?.nr} — ${a?.nazwa}${k.odwrocona ? ', odwrócona' : ''}.`, sim.tick);
+      this.app.gesty.klik();
+      this.nasluch?.({ typ: 'tarot', karta: k.arkan, odwrocona: k.odwrocona });
+      return;
+    }
+    if (p.akcja === 'tarot') {
+      const id = p.miejsce ?? 0;
+      this.pas.szczegoly = this.pas.szczegoly?.rodzaj === 'tarot' && this.pas.szczegoly.id === id ? null : { rodzaj: 'tarot', id };
+      return;
+    }
+    if (p.akcja !== 'postac' || p.id === undefined) return;
+    const o = osoba(sim, p.id);
+    const c = sim.creatureById(p.id);
+    if (!o || !c || c.dead || o.polegl) {
+      // poległa karta: dotknięcie przypina szczegóły (kto, od czego); ciało — kamera do niego
+      this.pas.szczegoly = this.pas.szczegoly?.id === p.id ? null : { rodzaj: 'postac', id: p.id };
+      const t = sim.lud.trupy?.find((q) => q.id === p.id);
+      if (t) this.pokazMiejsce(t.x, t.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+      return;
+    }
+    this.pas.szczegoly = null;
+    if (this.zaznaczeni.has(c.id) && !dokladaj) {
+      // drugie dotknięcie zaznaczonej: kamera do niej
+      this.pokazMiejsce(c.x, c.y, Math.max(this.cam.zoom, KAMERA.pokazZoom));
+      return;
+    }
+    // kolejne dotknięcia dokładają do zaznaczenia (z Shiftem — zdejmują)
+    this.zaznacz([c.id], true);
+    const ile = this.zaznaczeni.size;
+    ui.say(ile > 1 ? `${imieOsoby(o)} i ${ile - 1} innych — dotknij mapy, dokąd mają iść.` : `${imieOsoby(o)} — dotknij mapy, dokąd ma iść.`, sim.tick);
+  }
+
   /** Dotknięcie medalionu albo rozkazu na pasku drużyny. */
   private akcjaDruzyny(p: PoleDruzyny, dokladaj: boolean): void {
+    if (p.akcja === 'menuRozkazow') { this.pas.menu = !this.pas.menu; this.pas.szczegoly = null; this.app.gesty.klik(); return; }
+    // rozkaz z rozwiniętego menu (telefon) — menu się zwija
+    if (p.akcja !== 'rola') this.pas.menu = false;
+    if (p.akcja === 'postac' || p.akcja === 'plusKart' || p.akcja === 'talia' || p.akcja === 'tarot') { this.dotknijKarty(p, dokladaj); this.dirty = true; return; }
     if (p.akcja === 'rola' && p.rola) this.zaznaczRole(p.rola, dokladaj);
     else if (p.akcja === 'droga') this.kopDroge();
     else if (p.akcja === 'odwolaj') this.odwolajRozkazy();
@@ -1601,6 +1707,19 @@ export class EkranGry implements Ekran {
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
     const { ui, sim } = this;
     ui.pointer.x = e.clientX; ui.pointer.y = e.clientY;
+    this.mysz = e.pointerType === 'mouse' || e.pointerType === undefined;
+    // Alpha 0.3: karta pod palcem — puszczenie bez przytrzymania to dotknięcie; przytrzymanie pokazało szczegóły
+    const w = this.wcisnieta;
+    if (w && faza !== 'dol') {
+      if (faza === 'ruch' && Math.hypot(e.clientX - w.sx, e.clientY - w.sy) > STEROWANIE.progPrzewijania) this.wcisnieta = null;
+      else if (faza === 'gora') {
+        this.wcisnieta = null;
+        if (performance.now() - w.od < PAS.przytrzymanieMs || this.mysz) this.akcjaDruzyny(w.pole, w.dokladaj);
+        else if (w.pole.akcja === 'postac' || w.pole.akcja === 'tarot') this.pas.szczegoly = null;
+        this.dirty = true;
+      }
+      return;
+    }
     // tryb deweloperski: kafel pod kursorem, a Shift+klik wybiera postać do inspektora
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) {
       if (this.naPlycie(e.clientX, e.clientY)) {
@@ -1724,9 +1843,16 @@ export class EkranGry implements Ekran {
     if (faza === 'dol') {
       const b = przyciskPod(this.przyciski, e.clientX, e.clientY);
       if (b) { this.przyciskWcisniety(b); return; }
-      // pasek drużyny pod płytą: medaliony ról i rozkazy dla zaznaczonych
+      // pasek drużyny pod płytą: karty (albo medaliony i tarot) i rozkazy dla zaznaczonych
       const pd = e.button !== 2 && !sim.ending ? this.poleDruzynyPod(e.clientX, e.clientY) : null;
+      if (pd && (pd.akcja === 'postac' || pd.akcja === 'talia' || pd.akcja === 'tarot')) {
+        // karta: akcja przy puszczeniu (przytrzymanie palcem — szczegóły)
+        this.wcisnieta = { pole: pd, id: pd.id ?? pd.miejsce ?? 0, od: performance.now(), sx: e.clientX, sy: e.clientY, dokladaj: e.shiftKey };
+        return;
+      }
       if (pd) { this.akcjaDruzyny(pd, e.shiftKey); return; }
+      // dotknięcie poza menu rozkazów albo poza przypiętym dymkiem — zwija je
+      if (this.pas.menu || this.pas.szczegoly) { this.pas.menu = false; this.pas.szczegoly = null; this.dirty = true; return; }
     }
 
     if (faza === 'dol') {
@@ -1907,6 +2033,7 @@ export class EkranGry implements Ekran {
       case 'menu':
         // „wstecz” telefonu (i Esc): najpierw zamyka to, co otwarte — dopiero potem menu
         if (this.zapiski) { this.zapiski = false; break; }
+        if (this.pas.menu || this.pas.szczegoly) { this.pas.menu = false; this.pas.szczegoly = null; break; }
         if (this.oknoOltarza) { this.oknoOltarza = false; break; }
         if (ui.selected) { ui.selected = null; break; }
         if (this.alarm) { this.alarm = null; break; }

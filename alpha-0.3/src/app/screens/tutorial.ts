@@ -319,7 +319,7 @@ export class EkranSamouczka implements Ekran {
 
   private graj(): void {
     this.gra.dozwolone = null;
-    this.app.idz('gra', { tryb: 'nowa' });   // pierwsza prawdziwa góra (Remake v2: zawsze Koszmar)
+    this.app.idz('start');   // pierwsza prawdziwa góra — najpierw drużyna albo ślub (Alpha 0.3)
   }
 
   private doMenu(): void {

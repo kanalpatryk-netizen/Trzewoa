@@ -1,14 +1,12 @@
 import { Sim } from '../sim/sim';
-import { RACES, RACE_COUNT, Race, odmien } from '../sim/races';
+import { Race } from '../sim/races';
 import { SERIF } from './overlay';
 import { ustawienia } from '../core/settings-store';
-import { dolPrzyciskow, lewaKrawedzPrzyciskow } from './przyciski';
-import { EKRAN, TELEFON } from '../nastawy/ekran';
+import { EKRAN, TELEFON, PAS } from '../nastawy/ekran';
+import { dolPasaPion, ukladPasa } from './pas';
 import { PIELGRZYMKA } from '../nastawy/rytual';
 import { najwierniejsza } from '../sim/pielgrzymka';
 import { cost } from '../powers/powers';
-import { liczRole } from '../sim/lud';
-import { REMAKE } from '../nastawy/lud';
 import { GORA } from '../nastawy/gora';
 import { OLTARZ } from '../nastawy/oltarz';
 import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from './relikwiarz';
@@ -40,8 +38,9 @@ export function computePlate(vw: number, vh: number): Plate {
   const T = waski ? TELEFON.pion : niski ? TELEFON.poziom : null;
   const left = T ? T.lewo : Math.max(58, Math.min(104, vw * 0.075));
   const right = T ? T.prawo : Math.max(58, Math.min(104, vw * 0.075));
-  const top = T ? T.gora : Math.max(34, Math.min(72, vh * 0.07));
-  const bottom = T ? T.dol : Math.max(132, Math.min(206, vh * 0.26));
+  // Alpha 0.3: dolny margines to pas kart (render/pas.ts), a górny mieści zasoby, kronikę i przyciski
+  const top = T ? T.gora : Math.max(PAS.goraMin, Math.min(PAS.goraMax, vh * PAS.goraCzesc));
+  const bottom = waski ? dolPasaPion() : niski ? PAS.poziomDol : Math.max(PAS.dolMin, Math.min(PAS.dolMax, vh * PAS.dolCzesc));
   return { x: left, y: top, w: Math.max(80, vw - left - right), h: Math.max(80, vh - top - bottom), left, right, top, bottom, waski, niski };
 }
 
@@ -50,37 +49,13 @@ const INK = 'rgba(206,192,166,';
 /** Prostokąt na ekranie — samouczek wskazuje nim organy w ramie. */
 export interface Obszar { x: number; y: number; w: number; h: number; }
 
-/**
- * Dolny margines telefonu — wszystko liczone od górnej krawędzi marginesu (dół płyty):
- * pionowo rząd przycisków, spis ras, a na dole krew i oddanie obok siebie;
- * poziomo jeden cienki pasek: spis, oddanie, krew.
- */
-const TEL = {
-  // rzadY: krew i oddanie schodzą pod wiersz „ze skały” (TELEFON.pion.dol)
-  pion: { spisY: 82, spisH: 12, rzadY: 144, oddanieBok: 34 },
-  poziom: { spisY: 17, spisH: 9, oddanieBok: 24, spisCzesc: 0.46 },
-};
 
 /**
- * Relikwiarz krwi z podpisem (Alpha, etap 4 — z Remake v2). Na komputerze stoi od dołu marginesu aż pod przyciski
- * i dłonie oddania — ma być wysoki, żeby z bliska było widać złotnictwo; na telefonie ma wysokość dłoni.
+ * Relikwiarz krwi z podpisem (Alpha, etap 4 — z Remake v2). Alpha 0.3: na komputerze w bloku z prawej strony pasa
+ * kart (pod dłońmi oddania), na telefonie poziomo — w górnym pasku, pionowo — w dolnym rzędzie (render/pas.ts).
  */
 export function obszarKrwi(p: Plate, vh: number): Obszar {
-  const o = obszarOddania(p, vh);
-  if (p.waski) {
-    // obok dłoni oddania, w dolnym rzędzie marginesu
-    return { x: p.x + 28, y: o.y, w: o.x - p.x - 28 - 16, h: o.h };
-  }
-  if (p.niski) {
-    const x = o.x + o.w + 14;
-    return { x, y: o.y, w: p.x + p.w - x, h: o.h };
-  }
-  const cx0 = p.x + p.w * 0.6;
-  const base = vh - p.bottom * 0.1;
-  const nadOddaniem = o.x + o.w > cx0 ? o.y + o.h : vh - p.bottom;
-  const gora = Math.max(dolPrzyciskow(p, vh), nadOddaniem) + 8;
-  const h = Math.max(p.bottom * 0.34, base - gora);
-  return { x: cx0, y: base - h, w: p.x + p.w - cx0, h };
+  return ukladPasa(p, vh).krew;
 }
 
 /** Środek ampułki relikwiarza na ekranie — tam spływa krew (dar dłoni anielskiej, render/aniol.ts). */
@@ -89,51 +64,19 @@ export function srodekAmpulki(p: Plate, vh: number): { x: number; y: number } {
   return { x: o.x + o.h * RELIKWIARZ_PROPORCJA * 0.5, y: o.y + o.h * 0.42 };
 }
 
-/** Złożone dłonie oddania razem z podpisem (na komputerze w tym miejscu stoi Otchłań). */
+/** Złożone dłonie oddania razem z podpisem (Alpha 0.3: obok relikwiarza — render/pas.ts). */
 export function obszarOddania(p: Plate, vh: number): Obszar {
-  const mt = vh - p.bottom;
-  if (p.waski) {
-    const bok = TEL.pion.oddanieBok;
-    const w = bok + 6 + 18 * 6.6;
-    return { x: p.x + p.w - w, y: mt + TEL.pion.rzadY + 4, w, h: bok };
-  }
-  if (p.niski) {
-    const bok = TEL.poziom.oddanieBok;
-    const w = bok + 6 + 13 * 5.6;
-    return { x: p.x + p.w * TEL.poziom.spisCzesc + 18, y: mt + 12, w, h: bok };
-  }
-  const bok = Math.max(26, Math.min(46, p.bottom * 0.28));
-  // szerokość z podpisem („pielgrzymka od 50%”) — podpis nie może wyjść poza płytę
-  const w = bok + 6 + Math.max(13, bok * 0.3) * 9;
-  // szeroko: w połowie, ale nigdy na przyciskach
-  const x = Math.min(p.x + p.w * 0.5, lewaKrawedzPrzyciskow(p) - w - 14);
-  const y = vh - p.bottom + p.bottom * 0.14;
-  return { x, y, w, h: bok };
+  return ukladPasa(p, vh).oddanie;
 }
 
-/** Szerokość wstęgi spisu ras — kończy się przed dłońmi oddania. */
-function szerokoscSpisu(p: Plate, vh: number): number {
-  if (p.niski) return p.w * TEL.poziom.spisCzesc;
-  return p.waski ? p.w - 28 : Math.max(p.w * 0.25, Math.min(p.w * 0.46, obszarOddania(p, vh).x - p.x - 16));
+/** Alpha 0.3: dawna wstęga ludu — teraz cały pas kart (samouczek wskazuje go palcem). */
+export function obszarSpisu(p: Plate, vh: number): Obszar {
+  return ukladPasa(p, vh).karty;
 }
 
 /** Pasmo dymu Wiary pod górną krawędzią płyty. */
 export function obszarWiary(p: Plate): Obszar {
   return { x: p.x, y: p.y, w: p.w, h: Math.max(30, p.h * 0.13) };
-}
-
-/** Wstęga warstw — spis ras. */
-export function obszarSpisu(p: Plate, vh: number): Obszar {
-  const { y, h } = pasmoSpisu(p, vh);
-  return { x: p.x, y: y - h * 0.4, w: szerokoscSpisu(p, vh), h: h * 2.4 };
-}
-
-/** Górna krawędź i grubość wstęgi spisu. */
-function pasmoSpisu(p: Plate, vh: number): { y: number; h: number } {
-  const mt = vh - p.bottom;
-  if (p.waski) return { y: mt + TEL.pion.spisY, h: TEL.pion.spisH };
-  if (p.niski) return { y: mt + TEL.poziom.spisY, h: TEL.poziom.spisH };
-  return { y: mt + p.bottom * 0.17, h: Math.max(12, p.bottom * 0.11) };
 }
 
 /**
@@ -180,139 +123,7 @@ export function drawFrame(ctx: CanvasRenderingContext2D, p: Plate, time: number,
   ctx.restore();
 }
 
-const SIGIL: Record<number, (ctx: CanvasRenderingContext2D, s: number) => void> = {
-  [Race.GOBLIN]: (c, s) => { c.moveTo(-s, s * 0.6); c.lineTo(0, -s); c.lineTo(s, s * 0.6); },
-  [Race.DWARF]: (c, s) => { c.rect(-s * 0.8, -s * 0.8, s * 1.6, s * 1.6); },
-  [Race.TROLL]: (c, s) => { c.moveTo(-s, s * 0.8); c.lineTo(-s * 0.5, -s); c.lineTo(s * 0.5, -s); c.lineTo(s, s * 0.8); },
-  [Race.SPINNER]: (c, s) => { for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2; c.moveTo(0, 0); c.lineTo(Math.cos(a) * s, Math.sin(a) * s); } },
-  [Race.HUMAN]: (c, s) => { c.moveTo(0, -s); c.lineTo(0, s); c.moveTo(-s * 0.7, -s * 0.2); c.lineTo(s * 0.7, -s * 0.2); },
-  [Race.MYCELIUM]: (c, s) => { c.moveTo(-s, s * 0.6); c.quadraticCurveTo(0, -s * 1.2, s, s * 0.6); },
-};
-
-/**
- * Spis ras jako rdzeń wiertniczy: poziomy wycinek skały z warstwami. Każda rasa
- * ma własny kąt kreskowania, granice są pęknięciami, a nie krawędziami widgetu —
- * pasek postępu w tym interfejsie byłby ciałem obcym.
- */
-export function drawCensus(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vh: number): void {
-  // grzybnia nie liczy się do dominacji, więc nie ma prawa zajmować połowy wstęgi;
-  // idzie osobnym, cieńszym pasmem na końcu
-  let total = 0;
-  for (let r = 0; r < RACE_COUNT; r++) if (r !== Race.MYCELIUM) total += sim.popByRace[r];
-  // górne pasmo marginesu należy do spisu; kronika zaczyna się dopiero pod nim
-  const { y, h } = pasmoSpisu(p, vh);
-  const telefon = p.waski || p.niski;
-  const x0 = p.x + (p.waski ? 28 : 0), x1 = x0 + szerokoscSpisu(p, vh);
-  const jag = (t: number, seed: number) => Math.sin(t * 37.1 + seed) * (h * 0.09) + Math.sin(t * 11.3 + seed * 2) * (h * 0.06);
-
-  ctx.save();
-  // na telefonie pionowo lewy margines to kolumna rytów — etykieta wchodzi w pas nad krwią
-  if (!p.niski) etykietaPionowa(ctx, 'ludy', x0 - 16, y + h / 2);
-  // cienkie linie stropu i spągu — wstęga ma ramę jak wszystko inne na marginesie
-  ctx.strokeStyle = `${INK}0.18)`;
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(x0, y - h * 0.25 + 0.5); ctx.lineTo(x1, y - h * 0.25 + 0.5);
-  ctx.moveTo(x0, y + h * 1.25 + 0.5); ctx.lineTo(x1, y + h * 1.25 + 0.5);
-  ctx.moveTo(x0 + 0.5, y - h * 0.25 - 3); ctx.lineTo(x0 + 0.5, y + h * 1.25 + 3);
-  ctx.moveTo(x1 - 0.5, y - h * 0.25 - 3); ctx.lineTo(x1 - 0.5, y + h * 1.25 + 3);
-  ctx.stroke();
-  if (total > 0) {
-    let cx = x0;
-    // grzybnia dostaje swój kawałek z tej samej szerokości — wcześniej doklejała się
-    // za pełną wstęgą i wchodziła na Otchłań obok
-    const udzialGrzybni = Math.min(0.22, sim.popByRace[Race.MYCELIUM] / Math.max(1, total + sim.popByRace[Race.MYCELIUM])) * 0.8;
-    const szerRas = (x1 - x0) * (1 - udzialGrzybni);
-    for (let r = 0; r < RACE_COUNT; r++) {
-      const grzyb = r === Race.MYCELIUM;
-      const share = grzyb ? udzialGrzybni / 0.8 : sim.popByRace[r] / total;
-      if (share <= 0.001) continue;
-      const bw = grzyb ? (x1 - x0) * udzialGrzybni : szerRas * share;
-      const raw = RACES[r].color;
-      const col = [(206 + raw[0]) / 2 | 0, (192 + raw[1]) / 2 | 0, (166 + raw[2]) / 2 | 0];
-      const ang = 0.35 + r * 0.5;
-
-      ctx.save();
-      ctx.beginPath();                               // warstwa z poszarpanym stropem i spągiem
-      ctx.moveTo(cx, y + jag(cx * 0.05, r));
-      for (let x = cx; x <= cx + bw; x += 4) ctx.lineTo(x, y + jag(x * 0.05, r));
-      ctx.lineTo(cx + bw, y + h + jag((cx + bw) * 0.05, r + 3));
-      for (let x = cx + bw; x >= cx; x -= 4) ctx.lineTo(x, y + h + jag(x * 0.05, r + 3));
-      ctx.closePath();
-      ctx.clip();
-      ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},0.75)`;
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let k = -h * 2; k < bw + h * 2; k += 4) {
-        ctx.moveTo(cx + k, y + h * 1.6);
-        ctx.lineTo(cx + k + Math.cos(ang) * h * 3, y - h * 0.6);
-      }
-      ctx.stroke();
-      ctx.restore();
-
-      if (r > 0) {                                   // pęknięcie między warstwami
-        ctx.strokeStyle = `${INK}0.45)`;
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(cx + jag(cx, r) * 0.4, y - 1);
-        ctx.lineTo(cx - jag(cx, r + 1) * 0.5, y + h * 0.5);
-        ctx.lineTo(cx + jag(cx, r + 2) * 0.4, y + h + 1);
-        ctx.stroke();
-      }
-
-      if (bw > 14 && !p.niski) {                    // poziomo nad wstęgą jest już rama płyty
-        ctx.save();
-        ctx.translate(cx + bw / 2, y - h * 0.62);
-        ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},0.95)`;
-        ctx.lineWidth = 1.3;
-        ctx.beginPath();
-        SIGIL[r](ctx, Math.min(8, h * 0.4));
-        ctx.stroke();
-        ctx.restore();
-      }
-      // nazwa nacji wprost pod jej warstwą — spis przestaje być paskiem kolorów
-      const podpisRasy = telefon ? 12 : Math.max(12, Math.min(h * 0.78, p.w * 0.024));
-      ctx.font = `${r === Race.MYCELIUM ? "italic " : ""}${podpisRasy}px ${SERIF}`;
-      const etykieta = RACES[r].short;
-      if (bw > ctx.measureText(etykieta).width + 8) {
-        ctx.textAlign = 'center';
-        ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},0.9)`;
-        ctx.fillText(etykieta, cx + bw / 2, y + h + podpisRasy * 1.05);
-      }
-      cx += bw;
-    }
-  }
-  // na telefonie zdanie o dominacji zabierało miejsce płycie — jest w radzie i w atlasie
-  if (telefon) { ctx.restore(); return; }
-  ctx.fillStyle = `${INK}0.86)`;
-  const rozmiarPodpisu = Math.max(14, Math.min(h * 0.86, p.w * 0.042));
-  ctx.font = `italic ${rozmiarPodpisu}px ${SERIF}`;
-  ctx.textAlign = 'left';
-  let podpis = censusLine(sim);
-  while (ctx.measureText(podpis).width > p.w * 0.95 && podpis.length > 16) podpis = podpis.slice(0, -2);
-  if (podpis !== censusLine(sim)) podpis += '…';
-  ctx.textAlign = 'left';
-  ctx.fillText(podpis, x0, y + h + Math.max(14, rozmiarPodpisu * 1.15) + Math.max(12, Math.min(h * 0.78, p.w * 0.024)) * 1.1);
-  ctx.restore();
-}
-
-function censusLine(sim: Sim): string {
-  // Remake v1: jeden lud — zamiast przewagi ras liczba rąk w każdej roli
-  if (REMAKE) {
-    const n = liczRole(sim);
-    const wszyscy = n.pobozny + n.robotnik + n.rycerz;
-    if (!wszyscy) return 'W górze nie został nikt z twoich.';
-    return `Twój lud: ${n.pobozny} pobożnych, ${n.robotnik} robotników, ${n.rycerz} rycerzy.`;
-  }
-  const dom = sim.dominance;
-  if (sim.domRace < 0) return 'Zadna krew nie goruje. Karmisz sie z wielu naraz.'.replace('Zadna', 'Żadna').replace('goruje', 'góruje').replace('sie', 'się');
-  const r = sim.domRace;
-  const name = RACES[r].name;
-  if (dom > 0.92) return `${name} ${odmien(r, 'został sam', 'zostali sami')}. Nie ma się już kogo bać.`;
-  if (dom > 0.78) return `${name} ${odmien(r, 'zajmuje', 'zajmują')} już prawie wszystko w tobie.`;
-  if (dom > 0.62) return `${name} ${odmien(r, 'bierze', 'biorą')} górę.`;
-  return 'Żadna krew nie góruje. Karmisz się z wielu naraz.';
-}
+// (Alpha 0.3: spis ras — wstęga ludu — zniknął razem z dolnym panelem; nikt go już nie rysował)
 
 /**
  * Krew: relikwiarz z ampułką (render/relikwiarz.ts) — krew stoi w szkle, a obok napis, ile jej jest i co z tego
@@ -374,18 +185,6 @@ function prog(ctx: CanvasRenderingContext2D, x1: number, x2: number, y: number, 
   ctx.restore();
 }
 
-/** Pionowy podpis działu na lewym marginesie: rozstrzelone kapitaliki czytane od dołu. */
-function etykietaPionowa(ctx: CanvasRenderingContext2D, tekst: string, x: number, yc: number): void {
-  ctx.save();
-  ctx.translate(x, yc);
-  ctx.rotate(-Math.PI / 2);
-  ctx.font = `9px ${SERIF}`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillStyle = 'rgba(224,168,96,0.6)';
-  ctx.fillText(tekst.toUpperCase().split('').join(' '), 0, 0);
-  ctx.restore();
-}
 
 /**
  * Złożone do modlitwy dłonie w kwadracie 100×100. Opisana jest prawa dłoń, lewa to jej lustro;
@@ -599,24 +398,19 @@ export function drawEyelid(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, te
 }
 
 /**
- * Kronika: główny tekst ekranu, własne pasmo w dolnym marginesie. Nie może wchodzić
- * ani na spis ras, ani na szczelinę — cztery elementy w jednym rogu wyglądały jak awaria.
+ * Kronika: na komputerze (Alpha 0.3) — w górnym marginesie, między zasobami a przyciskami: najnowsza linijka
+ * na wysokości zasobów, dwie starsze cichsze nad nią. Na telefonie nie ma na nią miejsca — cała kronika jest
+ * pod przyciskiem zapisków.
  */
-export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, vw: number, vh: number): void {
-  // na telefonie nie ma na nią miejsca pod płytą — cała kronika jest pod przyciskiem zapisków
-  if (p.waski || p.niski) return;
-  // pasmo kroniki: dolne 46% marginesu, nic innego tam nie wchodzi
-  const bandTop = vh - p.bottom * (p.waski ? 0.72 : 0.46);
-  const yBase = vh - p.bottom * (p.waski ? 0.3 : 0.05);
-  const lines3 = (yBase - bandTop) / 3 / 1.4;
-  const size = Math.max(14, Math.min(Math.min(22, vw / 46), lines3));
-  const x = p.x;
-  if (sim.chronicle.length) etykietaPionowa(ctx, 'kronika', x - 16, (bandTop + yBase) / 2);
-  // na telefonie kronika dzieli dolny margines z dłońmi oddania — nie może na nią wchodzić
-  const maxW = p.waski ? p.w - obszarOddania(p, vh).w - 14 : p.w * 0.58;
+export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, x0: number, x1: number): void {
+  if (p.waski || p.niski || x1 - x0 < 160) return;
+  const size = Math.max(14, Math.min(17, p.top * 0.24));
+  const yBase = p.y - p.top * 0.34;
+  const x = x0;
+  const maxW = x1 - x0;
   ctx.save();
   ctx.textAlign = 'left';
-  const lines = sim.chronicle.slice(-3);
+  const lines = sim.chronicle.slice(-2);
   for (let i = lines.length - 1; i >= 0; i--) {
     const e = lines[i];
     const back = lines.length - 1 - i;
@@ -625,7 +419,7 @@ export function drawChronicle(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim,
     const zycie = e.kind === 'koniec' ? 12000 : e.kind === 'krew' || e.kind === 'otchlan' ? 6000 : 3400;
     // starsze linijki cichną, ale nie znikają — dawniej gasły do ledwie widocznej szarości
     const fade = Math.max(0.34, 1 - age / zycie) * (1 - back * 0.2);
-    const y = yBase - back * size * 1.4;
+    const y = yBase - back * size * 1.25;
     ctx.font = `${back === 0 ? '' : 'italic '}${size * (back === 0 ? 1 : 0.84)}px ${SERIF}`;
     let text = e.text;
     while (ctx.measureText(text).width > maxW && text.length > 12) text = text.slice(0, -2);

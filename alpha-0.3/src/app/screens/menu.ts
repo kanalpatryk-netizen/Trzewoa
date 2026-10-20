@@ -334,7 +334,8 @@ export class EkranMenu implements Ekran {
     this.app.gesty.klik();
     if (p.id === 'wroc') this.app.idz('gra');
     // Remake v2: jedna trudność — Koszmar; nowa gra zaczyna się od razu
-    else if (p.id === 'nowa') this.app.idz('gra', { tryb: 'nowa' });
+    // Alpha 0.3: przed partią ekran startu — drużyna (Patryk) albo ślub (Paweł)
+    else if (p.id === 'nowa') this.app.idz('start');
     else if (p.id === 'osiagniecia') this.app.idz('osiagniecia');
     else if (p.id === 'wczytaj') this.app.idz('gra', { tryb: 'wczytaj' });
     else if (p.id === 'samouczek') this.app.idz('samouczek');

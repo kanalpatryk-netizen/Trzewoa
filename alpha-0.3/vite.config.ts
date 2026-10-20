@@ -30,6 +30,8 @@ function shotPlugin(): Plugin {
 export default defineConfig({
   base: './',
   plugins: [shotPlugin()],
+  // Alpha 0.3: wersja gry (src/nastawy/wariant.ts) — WARIANT=patryk albo WARIANT=pawel
+  define: { __WARIANT__: JSON.stringify(process.env.WARIANT === 'pawel' ? 'pawel' : 'patryk') },
   // Gra wychodzi jako jeden plik HTML, więc każdy obrazek ma trafić do kodu jako data:.
   build: { target: 'es2019', assetsInlineLimit: () => true },
   server: { host: true, port: 5180 },

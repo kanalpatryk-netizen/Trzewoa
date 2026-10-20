@@ -24,6 +24,7 @@ if (obrazki.length) {
   process.exit(1);
 }
 
-const out = path.resolve('trzewia.html');
+// Alpha 0.3: dwie wersje — nazwa pliku z argumentu (npm run pack buduje trzewia-patryk.html i trzewia-pawel.html)
+const out = path.resolve(process.argv[2] ?? 'trzewia.html');
 fs.writeFileSync(out, html);
 console.log(`${out} — ${(fs.statSync(out).size / 1024).toFixed(1)} kB`);

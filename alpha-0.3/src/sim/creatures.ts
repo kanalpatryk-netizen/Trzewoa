@@ -174,6 +174,9 @@ ksiegaT?: number;
   linaDo?: number;
   naLinie?: number;
   naWiadrze?: boolean;
+  /** Alpha 0.3: imię (sim/druzyna.ts) i perki z wadą (id z nastawy/perki.ts) — mnożnik roli czyta je co tik. */
+  imie?: string;
+  perki?: string[];
 }
 
 /** Numer nadaje symulacja: licznik wspólny dla wszystkich gór sprawiał, że ta sama góra
@@ -1705,7 +1708,7 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
   w.set(x, y, T.AIR);
   sim.dug++;
   // Alpha, etap 3b: ruda wykuta przez lud od razu podbija licznik żelaza albo złota (bez noszenia)
-  if (rolaPostaci(c)) wykutyKafel(sim, t, x, y);
+  if (rolaPostaci(c)) wykutyKafel(sim, t, x, y, c);
   if (DZIENNIK.wlaczony) zapisz(sim, 'blok', `blok (${x}, ${y}) zniszczony: ${NAZWY_KAFLI[t] ?? t} → pustka — kopał ${kto(sim, c)}`, x, y);
 }
 

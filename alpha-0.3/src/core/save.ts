@@ -2,6 +2,7 @@ import { Sim } from '../sim/sim';
 import type { Creature } from '../sim/creatures';
 import { applyTaintEffect } from '../powers/powers';
 import { SWIAT } from '../nastawy/swiat';
+import { zalozDruzyne } from '../sim/druzyna';
 
 /**
  * Zapis stanu. Przy grze o pokoleniach i przypływach to nie wygoda, tylko narzędzie:
@@ -10,7 +11,9 @@ import { SWIAT } from '../nastawy/swiat';
 const KEY = 'trzewia-alpha-0.3:zapis';
 // Alpha, etap 3: góra z warstwami jest szersza (192 kafle zamiast 176) — stare zapisy się nie wczytają
 // (etap 3d: drugi otwór z wiadrem, ołtarz i kamienna podłoga sali — znów nowa góra; etap 3e: ruiny z zabytkami)
-const VERSION = 4;
+// (Alpha 0.3: imienna drużyna — sim.lud.druzyna i c.imie, c.perki; zapis z 4 wczytuje się, a lud dostaje imiona przy wczytaniu)
+const VERSION = 5;
+const CZYTA = [4, 5];
 
 function toB64(buf: ArrayBufferView): string {
   const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
@@ -53,7 +56,7 @@ export function serialize(sim: Sim): string {
 export function restore(json: string): Sim | null {
   let data: any;
   try { data = JSON.parse(json); } catch { return null; }
-  if (!data || data.v !== VERSION) return null;
+  if (!data || !CZYTA.includes(data.v)) return null;
 
   const sim = new Sim(data.seed);          // ta sama góra, potem nadpisana stanem
   const w = sim.world;
@@ -99,6 +102,8 @@ export function restore(json: string): Sim | null {
   let maxId = 0;
   for (const c of sim.creatures) if (c.id > maxId) maxId = c.id;
   sim.nextId = Math.max(data.nextId ?? 1, maxId + 1);
+  // Alpha 0.3: zapis bez drużyny (wersja 4) — imiona i perki nadane teraz, życie zostaje, jakie było
+  if (!data.lud?.druzyna) { sim.lud.druzyna = undefined; zalozDruzyne(sim, false); }
   sim.target.clear();
   sim.particles.length = 0;
 

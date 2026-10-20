@@ -15,6 +15,7 @@ import { probaPlanu } from '../../../sim/pomieszczenia';
 import { POMIESZCZENIA } from '../../../nastawy/pomieszczenia';
 import { OLTARZ } from '../../../nastawy/oltarz';
 import type { Sim } from '../../../sim/sim';
+import { WARIANT } from '../../../nastawy/wariant';
 
 /** Samouczek pomieszczeń: pierwsze miejsce w skale obok sali, gdzie wolno położyć warsztat (dolny rząd wnętrza). */
 function miejsceNaWarsztat(sim: Sim): { x: number; y: number } | null {
@@ -95,7 +96,7 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (g, z, s) => z?.typ === 'kamera' && z.rodzaj === 'zoom' && Math.abs(Math.log(g.cam.zoom / s.kamStart.zoom)) > 0.25,
       },
       {
-        tekst: 'Dotknij oka pod płytą — kamera wróci do mieszkańców.', klawisz: 'kamera',
+        tekst: 'Dotknij oka — przycisku „wróć do swoich” — kamera wróci do mieszkańców.', klawisz: 'kamera',
         wskaz: (s) => s.przycisk('kamera'),
         gotowe: (_g, z) => z?.typ === 'kamera' && z.rodzaj === 'powrot',
       },
@@ -136,6 +137,41 @@ export const ROZDZIALY: Rozdzial[] = [
     ],
     koniec: 'Każda postać ma swój zamiar — dotknij jej, a karta powie, co robi i ile jeszcze.',
   },
+  // Alpha 0.3: pas kart pod płytą — wizja Patryka (karty postaci) albo Pawła (ślub i tarot)
+  WARIANT === 'patryk' ? {
+    tytul: 'Twoja drużyna',
+    wstep: 'Pod płytą leży sześć kart — jedna karta to jedna osoba z imieniem. Każda ma perk, którego nie ma nikt inny, a czasem i wadę.',
+    czasowniki: [],
+    etapy: [
+      {
+        tekst: 'Dotknij karty — zaznaczysz tę osobę (kolejne karty dokładają się do zaznaczenia). Dotknij jej jeszcze raz — kamera pojedzie do niej.',
+        wskaz: (s) => { const p = s.gra.miejscePolaDruzyny('postac'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: Math.min(p.w, p.h) / 2 + 4 } : null; },
+        gotowe: (_g, z) => z?.typ === 'zaznaczono',
+      },
+      {
+        tekst: 'Najedź na kartę myszą albo przytrzymaj ją palcem — zobaczysz perk, wadę i to, kim ta osoba była. Każda pamięta też kawałek historii tej góry: odsłoni go, gdy coś przeżyje.',
+        rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
+      },
+    ],
+    koniec: 'Kto padnie, zostaje na karcie — zgaszony, przekreślony, z przyczyną śmierci. Wskrzeszenie przy ołtarzu przywraca tę samą osobę.',
+  } : {
+    tytul: 'Ślub i tarot',
+    wstep: 'Na starcie drużyna składa ślub — trzyma ją przez całą partię. A pod płytą leży talia tarota: hazard za wiarę.',
+    przygotuj: (g) => { g.sim.wiara = Math.max(g.sim.wiara, 60); },
+    czasowniki: [],
+    etapy: [
+      {
+        tekst: 'Dotknij talii — wyciągniesz kartę. Prosto daje całej kompanii buff, odwrócona — nerf. Działa półtorej minuty, potem gaśnie.',
+        wskaz: (s) => { const p = s.gra.miejscePolaDruzyny('talia'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: Math.min(p.w, p.h) / 2 + 4 } : null; },
+        gotowe: (_g, z) => z?.typ === 'tarot',
+      },
+      {
+        tekst: 'Najedź na kartę albo przytrzymaj ją palcem — zobaczysz, co robi i ile jeszcze. Każda następna karta kosztuje więcej wiary, a naraz leży najwyżej sześć.',
+        rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
+      },
+    ],
+    koniec: 'Medaliony obok talii zaznaczają całą rolę — jak dawniej. Karta o kronice góry trafia do atlasu, gdy ktoś z ludu przeżyje coś ważnego.',
+  },
   {
     tytul: 'Pomieszczenia',
     wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb — kują je robotnicy, którym plan wskażesz. Linę wieszasz sam, od razu.',
@@ -153,7 +189,7 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'plan',
       },
       {
-        tekst: 'Zaznacz robotników (medalion albo A) i dotknij planu — wykują go.', klawisz: 'robotnicy',
+        tekst: WARIANT === 'patryk' ? 'Zaznacz robotników (karty albo A) i dotknij planu — wykują go.' : 'Zaznacz robotników (medalion albo A) i dotknij planu — wykują go.', klawisz: 'robotnicy',
         wejdz: (g) => g.ustawSzablon(null),
         gotowe: (_g, z) => z?.typ === 'polecenie' && z.rodzaj === 'pomieszczenie' && z.przyjeli > 0,
       },
@@ -171,7 +207,7 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Zaznacz pobożnych — medalion pod płytą albo S.', klawisz: 'pobozni',
+        tekst: WARIANT === 'patryk' ? 'Zaznacz pobożnych — karta pod płytą albo S.' : 'Zaznacz pobożnych — medalion pod płytą albo S.', klawisz: 'pobozni',
         wskaz: (s) => { const p = s.gra.miejscePolaDruzyny('rola', 'pobozny'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: p.h / 2 + 4 } : null; },
         gotowe: (g) => g.zaznaczeniRoli('pobozny') > 0,
       },

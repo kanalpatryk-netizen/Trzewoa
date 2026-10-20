@@ -2,7 +2,8 @@ import type { Sim } from './sim';
 import { Race } from './races';
 import { makeCreature } from './creatures';
 import { T } from './tiles';
-import { klanLudu, nadajRole, podloga, rolaPostaci } from './lud';
+import { klanLudu, nadajRole, podloga, rolaPostaci, maxHp } from './lud';
+import { nadajTozsamosc, wyzwol } from './druzyna';
 import { nieWykopane } from './pielgrzymka';
 import { wykutyKafel } from './kruszce';
 import { kto, zapisz } from './dziennik';
@@ -133,6 +134,10 @@ function darTik(sim: Sim, s: StanAniola, t: number): void {
     klan.pop++;
     klan.dead = false;
     nadajRole(sim, c, 'robotnik');
+    // Alpha 0.3: przybysz to następna osoba z obsady (albo imię z puli) — i przychodzi z okruchem historii
+    nadajTozsamosc(sim, c, true);
+    c.hp = maxHp(sim, c);
+    wyzwol(sim, c, 'aniol');
     c.hunger = 0.15;
     c.devotion = Math.max(c.devotion, 0.8);
     c.od = sim.tick;

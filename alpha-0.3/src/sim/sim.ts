@@ -17,7 +17,8 @@ import { GORA as G, LUDY as L, ZASIEDLENIE as Z, PRZYPLYWY as PP } from '../nast
 import { SWIAT } from '../nastawy/swiat';
 import { cechaNacji, losujCeche } from './cechy';
 import type { Podsumowanie } from '../core/osiagniecia';
-import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, type StanLudu } from './lud';
+import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, maxHp, type StanLudu } from './lud';
+import { zalozDruzyne, ocalonyPerkiem, poleglaOsoba, type SladDruzyny } from './druzyna';
 import { zostawTrupa } from './trupy';
 import { wiadroTeraz } from './wiadro';
 import { LUD, REMAKE } from '../nastawy/lud';
@@ -109,6 +110,8 @@ export class Sim {
   zdarzeniaPom: ZdarzeniePom[] = [];
   /** Alpha, etap 3d: zdarzenia rytuałów przy ołtarzu dla rysunku (start, koniec, przerwany). Nie idą do zapisu. */
   zdarzeniaOltarza: ZdarzenieOltarza[] = [];
+  /** Alpha 0.3: ślady drużyny dla rysunku (perk zadziałał, fragment historii, śmierć, wskrzeszenie). Nie idą do zapisu. */
+  sladyDruzyny: SladDruzyny[] = [];
   /** Otchłań nie jest dochodem — jest miarą tego, o czym nikt nie pamięta. */
   get otchlan(): number { return this.world.unknown * OTCHLAN_PER_TILE; }
   sen = 0;                    // 0 = czuwasz, 1 = zasnąłeś na zawsze
@@ -258,6 +261,8 @@ export class Sim {
         if (c) { nadajRole(this, c, rola); c.age = this.rng.int(Math.floor(RACES[Race.GOBLIN].lifespan * Z.dorosliDo)); }
       }
     }
+    // Alpha 0.3: imiona, perki i wady (sim/druzyna.ts) — bez sim.rng, żeby góra i jej przebieg się nie zmieniły
+    zalozDruzyne(this, true, (c) => maxHp(this, c));
 
     // to, co wiedzą od pokoleń: okolice własnych gniazd
     for (const clan of this.clans) {
@@ -542,7 +547,10 @@ export class Sim {
   /** Ile ich na co ginie — do strojenia; gracz widzi tylko poziom krwi. */
   kill(c: Creature, why: string, tag = 'inne'): void {
     if (c.dead) return;
+    // Alpha 0.3: perk „Nie do zdarcia” — raz na partię śmiertelny cios nie zabija
+    if (c.perki && ocalonyPerkiem(this, c, why, tag, maxHp(this, c))) return;
     c.dead = true;
+    if (c.imie) poleglaOsoba(this, c, why);
     zapisz(this, 'zgon', `${kto(this, c)} umiera: ${why}`, c.x, c.y);
     this.deaths.set(tag + ':' + RACES[c.race].short, (this.deaths.get(tag + ':' + RACES[c.race].short) ?? 0) + 1);
     const d = RACES[c.race];
