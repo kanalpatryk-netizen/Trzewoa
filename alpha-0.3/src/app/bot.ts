@@ -41,6 +41,7 @@ import { ZABYTEK, type TypZabytku } from '../nastawy/zabytki';
 import { NAZWA_ROLI } from '../sim/lud';
 import { wyciagnijKarte, czemuNieKarta, cenaKarty, slubuj } from '../sim/tarot';
 import { arkan } from '../nastawy/tarot';
+import { maTarot } from '../nastawy/wariant';
 
 export type StylBota = 'rozsadny' | 'budowniczy' | 'speedrun' | 'bierny';
 
@@ -653,12 +654,12 @@ export function slubBota(styl: StylBota): string {
 
 /** Alpha 0.3 (wizja Pawła): bot zakłada drużynę — ślub na starcie (wołane raz, po nowej partii). */
 export function zalozBota(sim: Sim, styl: StylBota): void {
-  if (sim.lud.druzyna?.wariant === 'pawel' && !sim.lud.druzyna.slub && styl !== 'bierny') slubuj(sim, slubBota(styl));
+  if (sim.lud.druzyna && maTarot(sim.lud.druzyna.wariant) && !sim.lud.druzyna.slub && styl !== 'bierny') slubuj(sim, slubBota(styl));
 }
 
 /** Alpha 0.3 (wizja Pawła): ciągnie kartę z talii, gdy wiary jest z zapasem (hazard — nie wie, co wypadnie). */
 function tarot(sim: Sim, styl: StylBota): void {
-  if (sim.lud.druzyna?.wariant !== 'pawel' || czemuNieKarta(sim)) return;
+  if (!sim.lud.druzyna || !maTarot(sim.lud.druzyna.wariant) || czemuNieKarta(sim)) return;
   // zapas wiary na Cud i szepty — karta to hazard, nie powinna zjadać wiary potrzebnej do oddania
   const zapas = styl === 'speedrun' ? 60 : styl === 'budowniczy' ? 100 : 80;
   if (sim.wiara < cenaKarty(sim) + zapas) return;

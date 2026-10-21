@@ -5,7 +5,7 @@
  * (telefon: wszystko pośrodku, przekrój przygaszony u dołu). Granica: `waskiPonizej`.
  * Położenia „× w” / „× h” to ułamki szerokości / wysokości ekranu.
  */
-import { WARIANT, NAZWA_WARIANTU } from '../wariant';
+import { WARIANT, NAZWA_WARIANTU, RYTY } from '../wariant';
 
 export const MENU = {
   // ------------------------------------------------------------------ napisy
@@ -26,7 +26,7 @@ export const MENU = {
     wroc: { etykieta: 'Graj dalej', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś' },
     nowa: { etykieta: 'Nowa gra', opis: 'nowa góra i nowi mieszkańcy — zawsze Koszmar: twarda skorupa, mało krwi i dłoń z otchłani' },
     wczytaj: { etykieta: 'Wczytaj zapis', opis: 'ostatni zapis stanu góry' },
-    samouczek: { etykieta: 'Samouczek', opis: 'dwie plansze wstępu i szesnaście krótkich lekcji — palec pokazuje, gdzie dotknąć' },
+    samouczek: { etykieta: 'Samouczek', opis: `dwie plansze wstępu i ${RYTY.widoczne ? 'szesnaście' : 'czternaście'} krótkich lekcji — palec pokazuje, gdzie dotknąć` },
     bestiariusz: { etykieta: 'Atlas', opis: 'tablice ludu, rytów i praw góry — odkrywasz je, grając' },
     osiagniecia: { etykieta: 'Osiągnięcia', opis: 'cele dodatkowe — zdobywasz je, grając' },
     ustawienia: { etykieta: 'Ustawienia', opis: 'dźwięk, obraz i świat' },

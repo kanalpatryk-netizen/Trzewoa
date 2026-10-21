@@ -14,7 +14,7 @@
 #   trzewia-alpha-0.1-obserwatorium.html — Alpha 0.1: cztery okna gry, w każdym gra bot
 #   trzewia-alpha-0.2.html — Alpha 0.2 na komputer (folder alpha-0.2/)
 #   trzewia-alpha-0.2-obserwatorium.html — Alpha 0.2: cztery okna gry, w każdym gra bot
-#   trzewia-alpha-0.3-patryk.html, trzewia-alpha-0.3-pawel.html — Alpha 0.3, dwie wersje (folder alpha-0.3/), i ich obserwatoria
+#   trzewia-alpha-0.3.html — Alpha 0.3 (folder alpha-0.3/): wersja połączona; -patryk, -pawel — dwie wizje osobno; i ich obserwatoria
 #   audio-test.html       — pracownia dźwięku, do odsłuchu nowego soundtracku (folder pracownia-dzwieku/)
 # Linki …/releases/latest/download/<plik> zawsze pobierają najświeższą grę.
 # Można też uruchomić ręcznie: Actions → „Gra do pobrania” → Run workflow.
@@ -131,12 +131,14 @@ jobs:
           mv trzewia.html trzewia-alpha-0.2.html
           mv obserwatorium.html trzewia-alpha-0.2-obserwatorium.html
 
-      - name: Alpha 0.3 — budowa (dwie wersje: wizja Patryka i Pawła, z obserwatoriami)
+      - name: Alpha 0.3 — budowa (wersja połączona oraz wizje Patryka i Pawła, z obserwatoriami)
         working-directory: alpha-0.3
         run: |
           npm ci
           npx tsc --noEmit
           npm run obserwatorium
+          mv trzewia-razem.html trzewia-alpha-0.3.html
+          mv obserwatorium-razem.html trzewia-alpha-0.3-obserwatorium.html
           mv trzewia-patryk.html trzewia-alpha-0.3-patryk.html
           mv trzewia-pawel.html trzewia-alpha-0.3-pawel.html
           mv obserwatorium-patryk.html trzewia-alpha-0.3-patryk-obserwatorium.html
@@ -156,6 +158,7 @@ jobs:
           - \`trzewia.html\` — na komputer ($(kb pc/trzewia.html) kB)
           - \`trzewia-android.html\` — na telefon z Androidem ($(kb android/trzewia-android.html) kB)
           - \`trzewia-v3-remake.html\` — gra z telefonu (v3) na komputer, myszą
+          - \`trzewia-alpha-0.3.html\` — Alpha 0.3 na komputer: najnowsza gra — obie wizje razem: ślub i talia tarota (Paweł) oraz drużyna z imionami i perkami jako kafelki po lewej (Patryk); \`trzewia-alpha-0.3-obserwatorium.html\` — jej obserwatorium
           - \`trzewia-alpha-0.3-patryk.html\` — Alpha 0.3, wizja Patryka: imienna drużyna — 6 kart postaci z perkami zamiast dolnego panelu
           - \`trzewia-alpha-0.3-pawel.html\` — Alpha 0.3, wizja Pawła: ślub drużyny na starcie i talia tarota (buffy i nerfy za wiarę)
           - \`trzewia-alpha-0.3-patryk-obserwatorium.html\`, \`trzewia-alpha-0.3-pawel-obserwatorium.html\` — Alpha 0.3: obserwatoria obu wersji
@@ -178,10 +181,10 @@ jobs:
           # jedno stałe wydanie, podmieniane przy każdej zmianie — linki /releases/latest/download/ się nie zmieniają
           # pliki podmieniamy w istniejącym wydaniu — gdy tworzenie nowego się nie udało, linki nie znikają
           if gh release view gra >/dev/null 2>&1; then
-            gh release upload gra pc/trzewia.html android/trzewia-android.html v3-remake/trzewia-v3-remake.html v4-beta/trzewia-v4-beta.html v4.1-beta/trzewia-v4.1-beta.html v4.2-beta/trzewia-v4.2-beta.html remake-v1/trzewia-remake-v1.html remake-v2/trzewia-remake-v2.html remake-v2/trzewia-remake-v2-obserwatorium.html alpha-0.1/trzewia-alpha-0.1.html alpha-0.1/trzewia-alpha-0.1-obserwatorium.html alpha-0.2/trzewia-alpha-0.2.html alpha-0.2/trzewia-alpha-0.2-obserwatorium.html alpha-0.3/trzewia-alpha-0.3-patryk.html alpha-0.3/trzewia-alpha-0.3-pawel.html alpha-0.3/trzewia-alpha-0.3-patryk-obserwatorium.html alpha-0.3/trzewia-alpha-0.3-pawel-obserwatorium.html audio-test.html --clobber
+            gh release upload gra pc/trzewia.html android/trzewia-android.html v3-remake/trzewia-v3-remake.html v4-beta/trzewia-v4-beta.html v4.1-beta/trzewia-v4.1-beta.html v4.2-beta/trzewia-v4.2-beta.html remake-v1/trzewia-remake-v1.html remake-v2/trzewia-remake-v2.html remake-v2/trzewia-remake-v2-obserwatorium.html alpha-0.1/trzewia-alpha-0.1.html alpha-0.1/trzewia-alpha-0.1-obserwatorium.html alpha-0.2/trzewia-alpha-0.2.html alpha-0.2/trzewia-alpha-0.2-obserwatorium.html alpha-0.3/trzewia-alpha-0.3.html alpha-0.3/trzewia-alpha-0.3-obserwatorium.html alpha-0.3/trzewia-alpha-0.3-patryk.html alpha-0.3/trzewia-alpha-0.3-pawel.html alpha-0.3/trzewia-alpha-0.3-patryk-obserwatorium.html alpha-0.3/trzewia-alpha-0.3-pawel-obserwatorium.html audio-test.html --clobber
             gh release edit gra --notes-file notatki.md --latest
           else
-            gh release create gra pc/trzewia.html android/trzewia-android.html v3-remake/trzewia-v3-remake.html v4-beta/trzewia-v4-beta.html v4.1-beta/trzewia-v4.1-beta.html v4.2-beta/trzewia-v4.2-beta.html remake-v1/trzewia-remake-v1.html remake-v2/trzewia-remake-v2.html remake-v2/trzewia-remake-v2-obserwatorium.html alpha-0.1/trzewia-alpha-0.1.html alpha-0.1/trzewia-alpha-0.1-obserwatorium.html alpha-0.2/trzewia-alpha-0.2.html alpha-0.2/trzewia-alpha-0.2-obserwatorium.html alpha-0.3/trzewia-alpha-0.3-patryk.html alpha-0.3/trzewia-alpha-0.3-pawel.html alpha-0.3/trzewia-alpha-0.3-patryk-obserwatorium.html alpha-0.3/trzewia-alpha-0.3-pawel-obserwatorium.html audio-test.html \
+            gh release create gra pc/trzewia.html android/trzewia-android.html v3-remake/trzewia-v3-remake.html v4-beta/trzewia-v4-beta.html v4.1-beta/trzewia-v4.1-beta.html v4.2-beta/trzewia-v4.2-beta.html remake-v1/trzewia-remake-v1.html remake-v2/trzewia-remake-v2.html remake-v2/trzewia-remake-v2-obserwatorium.html alpha-0.1/trzewia-alpha-0.1.html alpha-0.1/trzewia-alpha-0.1-obserwatorium.html alpha-0.2/trzewia-alpha-0.2.html alpha-0.2/trzewia-alpha-0.2-obserwatorium.html alpha-0.3/trzewia-alpha-0.3.html alpha-0.3/trzewia-alpha-0.3-obserwatorium.html alpha-0.3/trzewia-alpha-0.3-patryk.html alpha-0.3/trzewia-alpha-0.3-pawel.html alpha-0.3/trzewia-alpha-0.3-patryk-obserwatorium.html alpha-0.3/trzewia-alpha-0.3-pawel-obserwatorium.html audio-test.html \
               --target "$GITHUB_SHA" \
               --title "Trzewia — najnowsza wersja" \
               --notes-file notatki.md \

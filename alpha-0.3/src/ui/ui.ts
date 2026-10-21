@@ -1,4 +1,5 @@
 import { Sim } from '../sim/sim';
+import { RYTY } from '../nastawy/wariant';
 import { RACES } from '../sim/races';
 import { cechaNacji } from '../sim/cechy';
 import { rolaPostaci, NAZWA_ROLI, stanyPostaci } from '../sim/lud';
@@ -89,7 +90,7 @@ export class Ui {
   miejsce(rodzaj: 'verb' | 'tool' | 'thought', id: string): { x: number; y: number; hw: number; hh: number } | null {
     if (rodzaj === 'verb') {
       const i = VERBS.findIndex((v) => v.id === id);
-      if (i < 0 || !this.plate) return null;
+      if (i < 0 || !this.plate || !RYTY.widoczne) return null;
       const { x, y } = this.pozycjaRytu(i);
       return { x, y, hw: this.gs * 0.8, hh: this.gs * 0.8 };
     }
@@ -115,7 +116,8 @@ export class Ui {
   draw(ctx: CanvasRenderingContext2D, sim: Sim, time: number): void {
     this.hits = [];
     let opisRytu: { i: number; v: Verb; ready: boolean } | null = null;
-    for (let i = 0; i < VERBS.length; i++) {
+    // Alpha 0.3 (wersja „razem”): ryty chwilowo schowane — w lewej kolumnie stoją kafelki drużyny (render/karty.ts)
+    for (let i = 0; i < (RYTY.widoczne ? VERBS.length : 0); i++) {
       const v = VERBS[i];
       const { x, y } = this.pozycjaRytu(i);
       const ready = TOOLS[v.id].some((t) => affordable(sim, v.id, t.id));

@@ -10,6 +10,7 @@ import type { Rola } from './lud';
 import type { MnoznikiRoli } from '../nastawy/lud';
 import { TAROT, ARKANA, arkan, slub, type SkutekRol, type StronaKarty } from '../nastawy/tarot';
 import { GORA } from '../nastawy/gora';
+import { WARIANT } from '../nastawy/wariant';
 import type { StanDruzyny } from './druzyna';
 
 export interface KartaNaStole {
@@ -29,7 +30,7 @@ export interface StanTarota {
 }
 
 function stan(sim: Sim): StanTarota {
-  const d = (sim.lud.druzyna ??= { wariant: 'pawel', osoby: [], nastepny: 0, odsloniete: [] });
+  const d = (sim.lud.druzyna ??= { wariant: WARIANT, osoby: [], nastepny: 0, odsloniete: [] });
   return (d.tarot ??= { stol: [], wyciagniete: 0 });
 }
 
@@ -111,7 +112,7 @@ export function mnoznikTarota(sim: Sim, d: StanDruzyny, r: Rola, co: keyof Mnozn
 export function slubuj(sim: Sim, id: string): void {
   const s = slub(id);
   if (!s) return;
-  const d = (sim.lud.druzyna ??= { wariant: 'pawel', osoby: [], nastepny: 0, odsloniete: [] });
+  const d = (sim.lud.druzyna ??= { wariant: WARIANT, osoby: [], nastepny: 0, odsloniete: [] });
   d.slub = s.id;
   sim.log(`Drużyna złożyła ${s.nazwa.replace('Ślub', 'ślub')}: ${s.motto}`, 'wiara');
 }

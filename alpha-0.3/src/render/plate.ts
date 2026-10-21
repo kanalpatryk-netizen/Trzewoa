@@ -4,6 +4,7 @@ import { SERIF } from './overlay';
 import { ustawienia } from '../core/settings-store';
 import { EKRAN, TELEFON, PAS } from '../nastawy/ekran';
 import { dolPasaPion, ukladPasa } from './pas';
+import { WARIANT } from '../nastawy/wariant';
 import { PIELGRZYMKA } from '../nastawy/rytual';
 import { najwierniejsza } from '../sim/pielgrzymka';
 import { cost } from '../powers/powers';
@@ -36,10 +37,13 @@ export function computePlate(vw: number, vh: number): Plate {
     : vw < EKRAN.waskiPonizej && vh >= TELEFON.niskiPonizej;
   const niski = !waski && !pion && vh < TELEFON.niskiPonizej;
   const T = waski ? TELEFON.pion : niski ? TELEFON.poziom : null;
-  const left = T ? T.lewo : Math.max(58, Math.min(104, vw * 0.075));
+  // Alpha 0.3 (wersja „razem”): lewy margines to kolumna kafelków drużyny — szerszy niż dawna kolumna rytów
+  const kolumna = WARIANT === 'razem';
+  const left = kolumna ? (waski ? PAS.pionLewo : niski ? PAS.poziomLewo : Math.max(PAS.kolumnaMin, Math.min(PAS.kolumnaMax, vw * PAS.kolumnaCzesc)))
+    : T ? T.lewo : Math.max(58, Math.min(104, vw * 0.075));
   const right = T ? T.prawo : Math.max(58, Math.min(104, vw * 0.075));
   // Alpha 0.3: dolny margines to pas kart (render/pas.ts), a górny mieści zasoby, kronikę i przyciski
-  const top = T ? T.gora : Math.max(PAS.goraMin, Math.min(PAS.goraMax, vh * PAS.goraCzesc));
+  const top = kolumna && waski ? PAS.pionGora : T ? T.gora : Math.max(PAS.goraMin, Math.min(PAS.goraMax, vh * PAS.goraCzesc));
   const bottom = waski ? dolPasaPion() : niski ? PAS.poziomDol : Math.max(PAS.dolMin, Math.min(PAS.dolMax, vh * PAS.dolCzesc));
   return { x: left, y: top, w: Math.max(80, vw - left - right), h: Math.max(80, vh - top - bottom), left, right, top, bottom, waski, niski };
 }
@@ -298,7 +302,8 @@ export function drawOddanie(ctx: CanvasRenderingContext2D, p: Plate, sim: Sim, v
   if (p.niski) {
     // poziomo pasek ma jedną linijkę wysokości
     ctx.font = `italic 12px ${SERIF}`;
-    ctx.fillText(`oddanie ${ile}`, x + bok + 6, y + bok * 0.66);
+    const { w: szer } = obszarOddania(p, vh);
+    ctx.fillText(ctx.measureText(`oddanie ${ile}`).width <= szer - bok - 8 ? `oddanie ${ile}` : ile, x + bok + 6, y + bok * 0.66);
   } else {
     ctx.fillText(`oddanie ${ile}`, x + bok + 6, y + bok * 0.55);
     ctx.fillStyle = dosc ? 'rgba(246,216,142,0.95)' : `${INK}0.7)`;

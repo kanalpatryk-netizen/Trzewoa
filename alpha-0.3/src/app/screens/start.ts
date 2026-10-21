@@ -14,7 +14,7 @@ import type { Sim } from '../../sim/sim';
 import { tloSadzy, SERIF, SERIF_TYTUL } from '../../render/ink';
 import { ramaRyciny } from '../../render/ozdoby';
 import { RAMA } from '../../nastawy/wyglad/ozdoby';
-import { WARIANT, NAZWA_WARIANTU } from '../../nastawy/wariant';
+import { WARIANT, NAZWA_WARIANTU, maTarot } from '../../nastawy/wariant';
 import { SLUBY, type Slub } from '../../nastawy/tarot';
 import { perk } from '../../nastawy/perki';
 import type { Rola } from '../../sim/lud';
@@ -41,7 +41,7 @@ export class EkranStartu implements Ekran {
   constructor(private app: Kontekst) {}
 
   wejdz(): void {
-    this.wybrany = WARIANT === 'pawel' ? -1 : 0;
+    this.wybrany = maTarot(WARIANT) ? -1 : 0;
     const gra = this.app.ekran('gra') as EkranGry | undefined;
     this.sim = gra?.przygotowana() ?? null;
     this.zastepcy.clear();
@@ -58,7 +58,8 @@ export class EkranStartu implements Ekran {
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     tloSadzy(ctx, w, h, teraz);
-    const pawel = WARIANT === 'pawel';
+    // ekran ślubu: wizja Pawła i wersja „razem” (drużyna z perkami pod ślubami); „Twoja drużyna” — tylko Patryk
+    const pawel = maTarot(WARIANT);
     ramaRyciny(ctx, w, h, 1, pawel ? 'Trzewia · ślub drużyny' : 'Trzewia · twoja drużyna', `Alpha 0.3 · ${NAZWA_WARIANTU[WARIANT]}`, teraz);
     const m = Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc)) + 22;
     this.pola = [];
@@ -84,13 +85,15 @@ export class EkranStartu implements Ekran {
     const y1 = dolPrzycisku - przyciskH - (pawel ? 30 : 12);
     if (pawel) this.sluby(ctx, m, y0, w - 2 * m, y1 - y0, teraz);
     else this.druzyna(ctx, m, y0, w - 2 * m, y1 - y0, teraz);
-    // drużyna Pawła: same imiona (bez perków) — kto zejdzie w tę górę
+    // kto zejdzie w tę górę (Paweł: same imiona, „razem”: imiona z perkami)
     if (pawel && this.sim) {
       const osoby = this.sim.lud.druzyna?.osoby ?? [];
       ctx.save();
       ctx.font = `italic 14px ${SERIF}`; ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(214,198,166,0.85)';
-      ctx.fillText(skroc(ctx, `Schodzą: ${osoby.map((o) => `${o.imie} (${rolaOsoby(o)})`).join(', ')}`, w - 2 * m), w / 2, y1 + 20);
+      // wersja „razem”: przy imieniu perk (to on odróżnia osoby), u Pawła — rola
+      const kto = (o: Osoba) => `${o.imie} (${o.perk ? perk(o.perk)?.nazwa ?? rolaOsoby(o) : rolaOsoby(o)})`;
+      ctx.fillText(skroc(ctx, `Schodzą: ${osoby.map(kto).join(', ')}`, w - 2 * m), w / 2, y1 + 20);
       ctx.restore();
     }
     // przyciski: wróć i dalej
@@ -236,9 +239,9 @@ export class EkranStartu implements Ekran {
   }
 
   private zacznij(): void {
-    if (WARIANT === 'pawel' && this.wybrany < 0) return;
+    if (maTarot(WARIANT) && this.wybrany < 0) return;
     this.app.gesty.klik();
-    this.app.idz('gra', { tryb: 'nowa', slub: WARIANT === 'pawel' ? SLUBY[this.wybrany].id : undefined });
+    this.app.idz('gra', { tryb: 'nowa', slub: maTarot(WARIANT) ? SLUBY[this.wybrany].id : undefined });
   }
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
@@ -255,9 +258,9 @@ export class EkranStartu implements Ekran {
 
   klawisz(akcja: Akcja | null, e: KeyboardEvent): void {
     if (akcja === 'menu') { this.app.idz('menu'); return; }
-    if (WARIANT === 'pawel' && (e.key === 'ArrowLeft' || e.key === 'ArrowUp')) this.wybrany = Math.max(0, this.wybrany - 1);
-    if (WARIANT === 'pawel' && (e.key === 'ArrowRight' || e.key === 'ArrowDown')) this.wybrany = Math.min(SLUBY.length - 1, this.wybrany + 1);
-    if (WARIANT === 'pawel' && (e.key === '1' || e.key === '2' || e.key === '3')) this.wybrany = Number(e.key) - 1;
+    if (maTarot(WARIANT) && (e.key === 'ArrowLeft' || e.key === 'ArrowUp')) this.wybrany = Math.max(0, this.wybrany - 1);
+    if (maTarot(WARIANT) && (e.key === 'ArrowRight' || e.key === 'ArrowDown')) this.wybrany = Math.min(SLUBY.length - 1, this.wybrany + 1);
+    if (maTarot(WARIANT) && (e.key === '1' || e.key === '2' || e.key === '3')) this.wybrany = Number(e.key) - 1;
     if (e.key === 'Enter' || e.key === ' ') this.zacznij();
   }
 }

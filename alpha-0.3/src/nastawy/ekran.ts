@@ -132,4 +132,10 @@ export const PAS = {
   przytrzymanieMs: 420,
   /** Rozbłysk karty po działającym perku (ms). */
   blyskMs: 1400,
+  /**
+   * Wersja „razem”: lewy margines to kolumna poziomych kafelków drużyny (zamiast rytów). Szerokość lewego marginesu:
+   * komputer — część szerokości ekranu z granicami, telefon poziomo i pionowo — stała. Telefon pionowo: przyciski poleceń
+   * idą do drugiego rzędu górnego marginesu (`pionGora`).
+   */
+  kolumnaCzesc: 0.125, kolumnaMin: 176, kolumnaMax: 230, poziomLewo: 136, pionLewo: 120, pionGora: 104,
 };

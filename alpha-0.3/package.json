@@ -7,13 +7,13 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "pack": "WARIANT=patryk vite build && node scripts/inline.mjs trzewia-patryk.html && WARIANT=pawel vite build && node scripts/inline.mjs trzewia-pawel.html",
-    "test": "node scripts/test-swiata.mjs 100 && node scripts/test-pomnika.mjs && WARIANT=pawel node scripts/test-pomnika.mjs",
+    "pack": "WARIANT=razem vite build && node scripts/inline.mjs trzewia-razem.html && WARIANT=patryk vite build && node scripts/inline.mjs trzewia-patryk.html && WARIANT=pawel vite build && node scripts/inline.mjs trzewia-pawel.html",
+    "test": "node scripts/test-swiata.mjs 100 && node scripts/test-pomnika.mjs && WARIANT=pawel node scripts/test-pomnika.mjs && WARIANT=patryk node scripts/test-pomnika.mjs",
     "test:swiat": "node scripts/test-swiata.mjs 100",
     "test:pomnik": "node scripts/test-pomnika.mjs",
     "test:balans": "node scripts/test-balansu.mjs",
     "test:nakladanie": "node scripts/test-nakladania.mjs",
-    "obserwatorium": "npm run pack && node scripts/obserwatorium.mjs trzewia-patryk.html obserwatorium-patryk.html && node scripts/obserwatorium.mjs trzewia-pawel.html obserwatorium-pawel.html"
+    "obserwatorium": "npm run pack && node scripts/obserwatorium.mjs trzewia-razem.html obserwatorium-razem.html && node scripts/obserwatorium.mjs trzewia-patryk.html obserwatorium-patryk.html && node scripts/obserwatorium.mjs trzewia-pawel.html obserwatorium-pawel.html"
   },
   "devDependencies": {
     "typescript": "5.9.3",

@@ -4,8 +4,8 @@ Stan na 18.10.2026, po etapie 5a (Wielki Pomnik demona, wygrana po pokonaniu dem
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
-- **Alpha 0.3 (od 20.10, gałąź `claude/trusting-darwin-f3gxu5`).** Folder `alpha-0.3/` (kopia 0.2 + zmiany), dwie wersje z jednego
-  kodu — przełącznik `src/nastawy/wariant.ts` (`WARIANT=patryk|pawel`, w buildzie `__WARIANT__` z `vite.config.ts`). Szczegóły
+- **Alpha 0.3 (od 20.10, gałąź `claude/trusting-darwin-f3gxu5`).** Folder `alpha-0.3/` (kopia 0.2 + zmiany), trzy wersje z jednego
+  kodu — od 21.10 główna jest **połączona** (`razem`, sekcja 0.5); wizje Patryka i Pawła zostają do porównania — przełącznik `src/nastawy/wariant.ts` (`WARIANT=patryk|pawel`, w buildzie `__WARIANT__` z `vite.config.ts`). Szczegóły
   w sekcji 0 niżej. Alpha 0.2 bez zmian. PR do `main` tylko na prośbę użytkownika.
 - **Alpha 0.2 (od 18.10).** Na polecenie użytkownika („zapisz na githubie jako alpha 0.2”) stan po etapie 5a zapisany jako nowa wersja w folderze `alpha-0.2/` (osobne zapisy: klucze `trzewia-alpha-0.2:`, plik `trzewia-alpha-0.2.html`). **Dalej pracuje się w `alpha-0.2/`**; `alpha-0.1/` zostaje bez zmian (etapy 1–4 i głos rycerza) — punkt odniesienia. Ścieżki `src/…` niżej przy etapie 5 dotyczą `alpha-0.2/`.
 - **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etapy 1–4 i 5a; z etapu 5 zostały 5b–5e.
@@ -81,6 +81,18 @@ z Dodatku A (z parametrem repo i ziaren):
   tekstem pasa — tak było i w 0.2 (tło, nie interfejs).
 - Wizja Pawła: tarot ma tylko skutki z mnożników i natychmiastowe krew/wiara — bez zdarzeń w świecie (np. „Wieża — pęka strop”).
 
+
+### 0.5 Wersja połączona (21.10)
+- Polecenie użytkownika: „połącz te pomysły, zostaje wszystko czego chciał Paweł, i po lewej stronie ekranu gry teraz są 3 opcje
+  cud nakarm i szepnij, chwilowo je usuń, i tam daj poziome kwadraty z jednostkami”.
+- `WARIANT = 'razem'` (domyślny przy budowie i w `npx vite`): `maObsade` (stała drużyna z perkami), `maTarot` (ślub, talia),
+  `maZyciorysy` — tylko Patryk (Paweł: bez biografii), `RYTY.widoczne = false` (ui.ts nie rysuje rytów i nie podaje ich miejsc,
+  `wybierzCzasownik` nic nie robi, samouczek pomija lekcje z `czasowniki`, wstęp w `cutscene/scenes.ts` bez rytów).
+- Rysunek: `ukladPasa` → `u.kolumna` (lewy margines), `rysujKartyPostaci(..., kolumna)` → tryb `'kafel'` w `karty.ts`
+  (poziomy kafelek; wysoki — imię z przydomkiem, rola · stan, perk z nazwą; niski — imię i paski), dymek szczegółów obok
+  kafelka (`dymekSzczegolow(..., obok)`), `computePlate` — szerszy `left` (`PAS.kolumna*`, `poziomLewo`, `pionLewo`, `pionGora`),
+  `menuRect` w rogu ekranu, `rozmiescPrzyciski` — telefon pionowo: rząd w górnym marginesie.
+- Próby botów (32 partie, 30 min): WYNIKI_RAZEM
 ---
 
 ## 1. Cel — wszystko, co jeszcze trzeba zrobić

@@ -16,7 +16,7 @@ import type { Plate, Obszar } from './plate';
 import { ukladPasa, rysujRozkazy, dymekSzczegolow } from './pas';
 import { rysujKartyPostaci, wierszeSzczegolow } from './karty';
 import { rysujPasTarota, wierszeTarota, wierszeTalii } from './tarot';
-import { WARIANT } from '../nastawy/wariant';
+import { WARIANT, maObsade, maTarot } from '../nastawy/wariant';
 import { rolaPostaci, type Rola } from '../sim/lud';
 import { czoloDrogi } from '../sim/pielgrzymka';
 import { wysokoscPostaci } from './figury';
@@ -109,12 +109,14 @@ export function rysujDruzyne(
   const x0 = plate.x, x1 = plate.x + plate.w;
   ctx.save();
   let miejscaPostaci = new Map<number, Obszar>(), miejscaTarota = new Map<number, Obszar>();
-  if (WARIANT === 'pawel') {
+  // pas na dole: tarot (Paweł, razem) albo karty postaci (Patryk); wersja „razem” — kafelki drużyny w lewej kolumnie
+  if (maTarot(WARIANT)) {
     const r = rysujPasTarota(ctx, sim, u, zaznaczeni, kursor, czas);
     pola.push(...r.pola);
     miejscaTarota = r.miejsca;
-  } else {
-    const r = rysujKartyPostaci(ctx, sim, u, zaznaczeni, kursor, czas, stan.przesun);
+  }
+  if (maObsade(WARIANT)) {
+    const r = rysujKartyPostaci(ctx, sim, u, zaznaczeni, kursor, czas, stan.przesun, u.kolumna);
     pola.push(...r.pola);
     miejscaPostaci = r.miejsca;
   }
@@ -128,7 +130,8 @@ export function rysujDruzyne(
     if (sz.rodzaj === 'postac') {
       const o = sim.lud.druzyna?.osoby.find((q) => q.id === sz.id);
       const m = miejscaPostaci.get(sz.id);
-      if (o && m) dymekSzczegolow(ctx, m, wierszeSzczegolow(sim, o), x0, x1, 320);
+      // kafelek w lewej kolumnie — dymek obok niego, na płycie; karta w pasie — nad nią
+      if (o && m) dymekSzczegolow(ctx, m, wierszeSzczegolow(sim, o), x0, x1, 320, !!u.kolumna);
     } else if (sz.rodzaj === 'tarot') {
       const m = miejscaTarota.get(sz.id);
       const w = wierszeTarota(sim, sz.id);

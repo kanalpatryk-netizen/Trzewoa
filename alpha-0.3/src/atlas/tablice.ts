@@ -42,7 +42,7 @@ import { rysujPosag, rysujWstajacego, rysujKonajacego, cokol, gruz } from '../re
 import { rycinaDloniDemona } from '../render/dlon-demona';
 import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from '../render/relikwiarz';
 import { HISTORIA, OBSADA } from '../nastawy/druzyna';
-import { WARIANT } from '../nastawy/wariant';
+import { WARIANT, maObsade } from '../nastawy/wariant';
 
 const lerp = (a: number, b: number, t: number): number => a + (b - a) * t;
 
@@ -1370,7 +1370,7 @@ const KIEDY_FRAGMENTU: Record<string, string> = {
 
 for (const [nr, f] of HISTORIA.entries()) {
   // w wizji Patryka każdy fragment należy do jednej osoby — tablica mówi czyj
-  const czyj = WARIANT === 'patryk' ? OBSADA.find((o) => o.fragment === f.id) : undefined;
+  const czyj = maObsade(WARIANT) ? OBSADA.find((o) => o.fragment === f.id) : undefined;
   TABLICE.push({
     id: `historia-${f.id}`, grupa: 'historia', nazwa: f.tytul.replace(/^Karta [IVX]+ — /, ''), lacina: `Chronica montis, ${f.tytul.split(' — ')[0].replace('Karta ', 'charta ')}`,
     opis: f.tekst,

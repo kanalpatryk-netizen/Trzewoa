@@ -1,4 +1,5 @@
 import type { Scena } from './cutscene';
+import { RYTY } from '../nastawy/wariant';
 import { rysujGore } from './art/gora';
 import { rysujPamiec } from './art/pamiec';
 import { rysujZyly } from './art/zyly';
@@ -52,7 +53,10 @@ export const SCENY: Record<string, Scena> = {
     id: 'narzedzia', tytul: 'Czym działasz',
     rysunek: rysujOrgany,
     linie: [
-      'Masz trzy ryty: Nakarm (wiadro z jedzeniem z góry), Szepnij i Cud. Płacisz Krwią (z każdej śmierci) i Wiarą (z każdej modlitwy).',
+      // Alpha 0.3 (wersja „razem”): ryty chwilowo schowane — po lewej stoi drużyna
+      RYTY.widoczne
+        ? 'Masz trzy ryty: Nakarm (wiadro z jedzeniem z góry), Szepnij i Cud. Płacisz Krwią (z każdej śmierci) i Wiarą (z każdej modlitwy).'
+        : 'Po lewej stoi twoja drużyna — sześć osób z imionami. Płacisz Krwią (z każdej śmierci) i Wiarą (z każdej modlitwy): wiarą za karty z talii tarota, krwią za rytuały przy ołtarzu.',
       'Każda góra to Koszmar: krwi jest mało, skorupa jest twarda, drużyna jest mała i nikt nowy nie przyjdzie, a w ciemności coś patrzy. Co chwilę coś się dzieje — czas wtedy staje, a ty wybierasz.',
       'U dołu płyty zawsze widać, co teraz zrobić, żeby zbliżyć się do wolności. Zaraz pokażę ci wszystko palcem.',
     ],

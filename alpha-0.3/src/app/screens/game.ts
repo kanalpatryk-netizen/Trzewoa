@@ -35,6 +35,7 @@ import { wyciagnijKarte } from '../../sim/tarot';
 import { arkan } from '../../nastawy/tarot';
 import { osoba, imieOsoby } from '../../sim/druzyna';
 import { PAS } from '../../nastawy/ekran';
+import { RYTY, WARIANT } from '../../nastawy/wariant';
 import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
 import { GLOS_RYCERZA } from '../../nastawy/dzwiek';
@@ -604,7 +605,8 @@ export class EkranGry implements Ekran {
     ];
     const teraz = performance.now();
     ctx.save();
-    const y = plate.niski ? plate.y - plate.top * 0.3 : plate.y - plate.top * 0.34;
+    // wersja „razem” na telefonie pionowo: liczniki w pierwszym rzędzie górnego marginesu, przyciski w drugim
+    const y = plate.waski && WARIANT === 'razem' ? 34 : plate.niski ? plate.y - plate.top * 0.3 : plate.y - plate.top * 0.34;
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
     const kaw = (t: string, f: string) => { ctx.font = f; return ctx.measureText(t).width; };
@@ -1246,7 +1248,7 @@ export class EkranGry implements Ekran {
       droga: null, rada: this.radaRect, menu: this.menuRect(),
       // Alpha 0.3: pas kart (bez rozwiniętego menu i dymka) i górny margines: liczniki zasobów, kronika
       pas: this.pas.menu ? [] : this.polaDruzyny.filter((q) => q.akcja !== 'szablon' && q.akcja !== 'koniecSzablonu'),
-      zasoby: { x: this.plate.x + 10, y: this.plate.y - this.plate.top * 0.34 - 18, w: this.koniecZasobow - this.plate.x - 10, h: 22 },
+      zasoby: { x: this.plate.x + 10, y: (this.plate.waski && WARIANT === 'razem' ? 34 : this.plate.y - this.plate.top * 0.34) - 18, w: this.koniecZasobow - this.plate.x - 10, h: 22 },
       kronika: this.plate.waski || this.plate.niski ? null : { x: this.koniecZasobow + 28, y: this.plate.y - this.plate.top * 0.34 - 36, w: Math.max(0, lewaKrawedzPrzyciskow(this.przyciski) - 18 - this.koniecZasobow - 28), h: 40 },
     });
   }
@@ -1299,6 +1301,8 @@ export class EkranGry implements Ekran {
   }
 
   private menuRect(): { x: number; y: number; w: number; h: number } {
+    // wersja „razem”: lewy margines należy do kafelków drużyny — znak menu w lewym górnym rogu ekranu
+    if (WARIANT === 'razem') return { x: 10, y: this.plate.niski ? 2 : 10, w: 34, h: this.plate.niski ? 24 : 30 };
     return { x: this.plate.x - (this.plate.waski ? 38 : 44), y: this.plate.y + 8, w: 34, h: 30 };
   }
 
@@ -2103,6 +2107,7 @@ export class EkranGry implements Ekran {
 
   wybierzCzasownik(v: string): void {
     if (this.dozwolone && !this.dozwolone.has(v)) return;
+    if (!RYTY.widoczne) return;             // wersja „razem”: ryty chwilowo schowane (także pod klawiszami)
     const ui = this.ui;
     ui.verb = ui.verb === v ? null : (v as typeof ui.verb);
     ui.tool = ui.verb ? TOOLS[ui.verb][0].id : null;

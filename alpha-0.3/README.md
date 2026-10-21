@@ -1,4 +1,4 @@
-# Trzewia — Alpha 0.3 (komputer) — dwie wersje do porównania
+# Trzewia — Alpha 0.3 (komputer) — wersja połączona i dwie wizje do porównania
 
 Dalszy ciąg Alphy 0.2 w folderze `alpha-0.3/`. Alpha 0.2 zostaje bez zmian w [`../alpha-0.2/`](../alpha-0.2). Z jednego kodu
 budują się **dwie wersje** — dwa pomysły zespołu na to, jak przywiązać gracza do drużyny:
@@ -7,6 +7,21 @@ budują się **dwie wersje** — dwa pomysły zespołu na to, jak przywiązać g
 **[⬇️ trzewia-alpha-0.3-pawel.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.3-pawel.html)** — wizja Pawła ·
 obserwatoria: [Patryk](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.3-patryk-obserwatorium.html), [Paweł](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.3-pawel-obserwatorium.html).
 Zapisy, ustawienia, atlas i osiągnięcia Alphy 0.3 są osobne (klucze `trzewia-alpha-0.3:`). Wersja robocza — wygląd jest szkicem.
+
+## Wersja połączona (od 21.10) — `trzewia-alpha-0.3.html`
+Na polecenie użytkownika („połącz te pomysły, zostaje wszystko, czego chciał Paweł; po lewej stronie ekranu są 3 opcje:
+cud, nakarm i szepnij — chwilowo je usuń i tam daj poziome kwadraty z jednostkami”) obie wizje są w jednej grze:
+- **Od Pawła — wszystko:** ślub drużyny po „Nowa gra”, pod płytą medaliony ról, talia tarota i karty na stole; lore tylko jako
+  historia świata (Kronika góry w atlasie) — **bez życiorysów** (zdanie „kim była” nie pojawia się na kafelkach ani w szczegółach).
+- **Od Patryka:** stała drużyna z imionami, perkami i wadami — jako **poziome kafelki w lewej kolumnie** (portret, imię, rola
+  i stan, perk ze znakiem, paski życia, głodu i wiary). Dotknięcie zaznacza (kolejne dokładają), drugie wiezie kamerę;
+  najechanie albo przytrzymanie — szczegóły obok kafelka; poległy zostaje zgaszony z krzyżem. Ponad 6 osób — kafelki się
+  zwężają do 8, potem „+N”.
+- **Ryty schowane** (Nakarm, Szepnij, Cud — także pod klawiszami): przełącznik `RYTY` w `src/nastawy/wariant.ts`. Kod rytów
+  zostaje (bot dalej ich używa), samouczek pomija lekcje rytów (14 lekcji). Wiadro z jedzeniem dalej zjeżdża samo.
+- Układ: lewy margines poszerzony pod kafelki (`PAS.kolumna*`, `poziomLewo`, `pionLewo` w `src/nastawy/ekran.ts`); znak menu
+  w lewym górnym rogu ekranu; na telefonie pionowo przyciski poleceń w drugim rzędzie górnego marginesu.
+Wersje „wizja Patryka” i „wizja Pawła” zostają do porównania (`trzewia-alpha-0.3-patryk.html`, `-pawel.html`).
 
 ## Nowe w 0.3
 - **Wizja Patryka — imienna drużyna.** Zamiast dolnego panelu leży pas 6 kart postaci. Postacie są stałe — te same w każdej
@@ -39,8 +54,9 @@ Zapisy, ustawienia, atlas i osiągnięcia Alphy 0.3 są osobne (klucze `trzewia-
 - **Samouczek**: lekcja „Twoja drużyna” (Patryk) albo „Ślub i tarot” (Paweł); 16 lekcji.
 
 ## Budowa
-`npm run pack` buduje obie wersje: `trzewia-patryk.html` i `trzewia-pawel.html`; `npm run obserwatorium` — także
-`obserwatorium-patryk.html` i `obserwatorium-pawel.html`. Serwer deweloperski: `npx vite` (Patryk) albo `WARIANT=pawel npx vite`.
+`npm run pack` buduje trzy wersje: `trzewia-razem.html` (połączona), `trzewia-patryk.html` i `trzewia-pawel.html`;
+`npm run obserwatorium` — także `obserwatorium-*.html`. Serwer deweloperski: `npx vite` (połączona), `WARIANT=patryk npx vite`
+albo `WARIANT=pawel npx vite`.
 Testy: `npm test` (światy i Wielki Pomnik w obu wersjach). Próby botów: `WARIANT=pawel node scripts/proby-graczy.mjs . <ziarno> <styl> <minut> <plik.log>`
 (`BEZ_PERKOW=1` — imiona bez skutków perków, `BEZ=lakomy,kulawy` — wybrane perki zdjęte; do porównań balansu).
 

@@ -15,7 +15,7 @@ import { Race } from './races';
 import { Rng } from '../core/rng';
 import { rolaPostaci, weteranStaz, NAZWA_ROLI, type Rola } from './lud';
 import type { MnoznikiRoli } from '../nastawy/lud';
-import { WARIANT, type Wariant } from '../nastawy/wariant';
+import { WARIANT, maObsade, type Wariant } from '../nastawy/wariant';
 import { OBSADA, IMIONA, HISTORIA, SZANSA_KOBIETY, DRUZYNA, type Plec, type Wyzwalacz, type Fragment } from '../nastawy/druzyna';
 import { PERK, perk, type HakPerku } from '../nastawy/perki';
 import { SWIAT } from '../nastawy/swiat';
@@ -108,7 +108,7 @@ export function nadajTozsamosc(sim: Sim, c: Creature, zDaru = false): Osoba | nu
   const juz = osoba(sim, c.id);
   if (juz) { zalozNaPostac(c, juz); return juz; }
   let o: Osoba;
-  if (d.wariant === 'patryk') {
+  if (maObsade(d.wariant)) {
     // start: pierwsza wolna osoba tej roli spośród sześciu; dar: następny przybysz z listy
     const zajete = new Set(d.osoby.map((x) => x.nr));
     let nr = -1;
@@ -272,7 +272,7 @@ export function wyzwol(sim: Sim, c: Creature, w: Wyzwalacz): void {
   const d = sim.lud.druzyna;
   if (!d) return;
   let f: Fragment | undefined;
-  if (d.wariant === 'patryk') {
+  if (maObsade(d.wariant)) {
     const o = osoba(sim, c.id);
     if (!o?.fragment) return;
     f = HISTORIA.find((h) => h.id === o.fragment && h.wyzwalacz === w);

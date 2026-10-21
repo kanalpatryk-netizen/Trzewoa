@@ -16,7 +16,7 @@ import type { Sim } from '../sim/sim';
 import type { Plate, Obszar } from './plate';
 import { SERIF } from './ink';
 import { PAS } from '../nastawy/ekran';
-import { WARIANT } from '../nastawy/wariant';
+import { WARIANT, maTarot } from '../nastawy/wariant';
 import { FRESK } from '../nastawy/barwy';
 import { rolaPostaci } from '../sim/lud';
 import { czoloDrogi } from '../sim/pielgrzymka';
@@ -35,19 +35,32 @@ export interface UkladPasa {
   talia?: Obszar;
   oddanie: Obszar;
   krew: Obszar;
+  /** wersja „razem”: lewa kolumna poziomych kafelków drużyny (w miejscu rytów) */
+  kolumna?: Obszar;
   /** telefon (palec) — cele dotyku co najmniej 44 px, szczegóły po przytrzymaniu */
   telefon: boolean;
 }
 
 /** Telefon pionowo: wysokość dolnego marginesu (wizja Pawła ma o rząd medalionów więcej). */
 export function dolPasaPion(): number {
-  const karty = WARIANT === 'pawel' ? PAS.pionMedalionyH + 6 + PAS.pionTarotH * 2 + 6 : PAS.pionKartaH * 2 + 6;
+  const karty = maTarot(WARIANT) ? PAS.pionMedalionyH + 6 + PAS.pionTarotH * 2 + 6 : PAS.pionKartaH * 2 + 6;
   return 12 + karty + 10 + PAS.pionRzadH + 8;
 }
 
 export function ukladPasa(p: Plate, vh: number): UkladPasa {
+  const u = ukladDolu(p, vh);
+  // wersja „razem”: kafelki drużyny w lewym marginesie (pod nim wolny dół — pas ma tam swoje tabliczki)
+  if (WARIANT === 'razem') {
+    u.kolumna = p.waski ? { x: 4, y: p.y, w: p.left - 12, h: p.h }
+      : p.niski ? { x: 4, y: p.y - 4, w: p.left - 16, h: p.h + 8 }
+      : { x: 12, y: p.y, w: p.left - 30, h: p.h };
+  }
+  return u;
+}
+
+function ukladDolu(p: Plate, vh: number): UkladPasa {
   const mt = vh - p.bottom;
-  const pawel = WARIANT === 'pawel';
+  const pawel = maTarot(WARIANT);
   if (p.waski) {
     const vw = p.x + p.w + p.right;
     const y0 = mt + 12;
@@ -73,8 +86,10 @@ export function ukladPasa(p: Plate, vh: number): UkladPasa {
     const y0 = mt + 12, h = vh - 4 - y0;
     const rozkazy = { x: 6, y: y0, w: PAS.poziomRozkazyW, h };
     // oddanie i krew w górnym pasku — przed klepsydrą w prawym rogu
-    const krew = { x: p.x + p.w - 58 - 118, y: 3, w: 118, h: Math.max(20, p.top - 6) };
-    const oddanie = { x: krew.x - 12 - 100, y: 3, w: 100, h: krew.h };
+    // wąska płyta (np. 640 px z kolumną kafelków): krótsze podpisy — „80”, „0%” — i węższe pola
+    const ciasno = p.w < 520;
+    const krew = { x: p.x + p.w - 58 - (ciasno ? 84 : 118), y: 3, w: ciasno ? 84 : 118, h: Math.max(20, p.top - 6) };
+    const oddanie = { x: krew.x - 10 - (ciasno ? 62 : 100), y: 3, w: ciasno ? 62 : 100, h: krew.h };
     const x0 = 6 + PAS.poziomRozkazyW + 8, w0 = vw - 6 - x0;
     if (pawel) {
       const mw = Math.round(h * 0.78) * 3, tw = Math.round(h * 1.6);
@@ -233,7 +248,7 @@ function opcjeRozkazow(sim: Sim, zaznaczeni: ReadonlySet<number>, planuje: boole
 
 function podpowiedz(sim: Sim, zaznaczeni: ReadonlySet<number>): { tekst: string; zloto: boolean } {
   const zazn = sim.creatures.filter((c) => !c.dead && zaznaczeni.has(c.id) && rolaPostaci(c));
-  if (!zazn.length) return { tekst: WARIANT === 'patryk' ? 'dotknij karty albo postaci — potem mapy: tam pójdzie' : 'dotknij medalionu albo postaci — potem mapy: tam pójdzie', zloto: false };
+  if (!zazn.length) return { tekst: WARIANT === 'razem' ? 'dotknij kafelka albo postaci — potem mapy: tam pójdzie' : WARIANT !== 'pawel' ? 'dotknij karty albo postaci — potem mapy: tam pójdzie' : 'dotknij medalionu albo postaci — potem mapy: tam pójdzie', zloto: false };
   const robotnicy = zazn.some((c) => rolaPostaci(c) === 'robotnik');
   const kto = zazn.length === 1 ? (zazn[0].imie ?? 'zaznaczony') : `zaznaczonych ${zazn.length}`;
   return { tekst: `${kto} — dotknij mapy: idź tam${robotnicy ? ' (skała: kop; plan: kuj)' : ''}`, zloto: true };
@@ -313,7 +328,7 @@ export interface Wiersz { tekst: string; rozm: number; barwa: string; kursywa?: 
  * Dymek ze szczegółami nad kartą (perki, wada, lore; karta tarota). Leży nad płytą (między `x0` a `x1` — nie wchodzi na
  * kolumny rytów i przycisków po bokach) i nie zasłania karty, o której mówi.
  */
-export function dymekSzczegolow(ctx: CanvasRenderingContext2D, nad: Obszar, wiersze: Wiersz[], x0: number, x1: number, szer: number): Obszar {
+export function dymekSzczegolow(ctx: CanvasRenderingContext2D, nad: Obszar, wiersze: Wiersz[], x0: number, x1: number, szer: number, obok = false): Obszar {
   const vw = x1 + 8;
   const w = Math.min(szer, x1 - x0 - 16);
   const linie: { t: string; w: Wiersz; odstep: number }[] = [];
@@ -325,8 +340,10 @@ export function dymekSzczegolow(ctx: CanvasRenderingContext2D, nad: Obszar, wier
   let h = 14;
   for (const l of linie) h += l.w.rozm * 1.32 + l.odstep;
   h += 8;
-  const x = Math.max(x0 + 8, Math.min(vw - w - 16, nad.x + nad.w / 2 - w / 2));
-  const y = Math.max(6, nad.y - h - 8);
+  // `obok` — kafelek w lewej kolumnie: dymek na płycie, na wysokości kafelka (ale w całości na ekranie)
+  const x = obok ? x0 + 8 : Math.max(x0 + 8, Math.min(vw - w - 16, nad.x + nad.w / 2 - w / 2));
+  const dol = ctx.canvas.height / (ctx.getTransform().d || 1);
+  const y = obok ? Math.max(6, Math.min(dol - h - 6, nad.y + nad.h / 2 - h / 2)) : Math.max(6, nad.y - h - 8);
   tablica(ctx, x, y, w, h, 'wlaczona');
   let yy = y + 12;
   ctx.textAlign = 'left'; ctx.textBaseline = 'top';

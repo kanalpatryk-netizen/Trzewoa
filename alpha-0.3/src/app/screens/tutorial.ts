@@ -15,6 +15,7 @@ import { T, PASSABLE } from '../../sim/tiles';
 import { Race } from '../../sim/races';
 import { STEROWANIE } from '../../nastawy/sterowanie';
 import { wiadra } from '../../sim/wiadro';
+import { RYTY } from '../../nastawy/wariant';
 import { ROZDZIALY, type Rozdzial, type Wskazanie, type Gest, type Tekst } from './samouczek/rozdzialy';
 
 
@@ -160,7 +161,8 @@ export class EkranSamouczka implements Ekran {
 
   // ------------------------------------------------------------- rozdziały
 
-  private rozdzialy: Rozdzial[] = ROZDZIALY;
+  // Alpha 0.3 (wersja „razem”): ryty chwilowo schowane — bez lekcji, które ich wymagają
+  private rozdzialy: Rozdzial[] = ROZDZIALY.filter((r) => RYTY.widoczne || !r.czasowniki?.length);
 
   constructor(private app: Kontekst) {
     this.gra = new EkranGry(app);

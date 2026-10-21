@@ -19,6 +19,7 @@ import { imieOsoby, rolaOsoby, type Osoba } from '../sim/druzyna';
 import { perk, type ZnakPerku } from '../nastawy/perki';
 import { HISTORIA, type Wyzwalacz } from '../nastawy/druzyna';
 import { PAS } from '../nastawy/ekran';
+import { WARIANT, maZyciorysy } from '../nastawy/wariant';
 import { FRESK } from '../nastawy/barwy';
 import { arkan } from '../nastawy/tarot';
 import { miejscaKart, tablica, skroc, dopasuj, lam, type UkladPasa, type Wiersz } from './pas';
@@ -132,15 +133,17 @@ function blysk(sim: Sim, id: number): { k: number; barwa: string; co?: string } 
  */
 export function rysujKartyPostaci(
   ctx: CanvasRenderingContext2D, sim: Sim, u: UkladPasa, zaznaczeni: ReadonlySet<number>,
-  kursor: { x: number; y: number }, czas: number, przesun: number,
+  kursor: { x: number; y: number }, czas: number, przesun: number, kolumna?: Obszar,
 ): { pola: PoleKarty[]; miejsca: Map<number, Obszar> } {
   const osoby = sim.lud.druzyna?.osoby ?? [];
   const pola: PoleKarty[] = [];
   const miejsca = new Map<number, Obszar>();
   const n = osoby.length;
   const miejsc = n <= PAS.kartWPasie ? PAS.kartWPasie : PAS.kartMaks;
-  const wiersze = u.wiersze === 2 && miejsc > 6 ? 2 : u.wiersze;
-  const sloty = miejscaKart(u.karty, miejsc, wiersze, u.telefon ? 6 : 8);
+  const wiersze = kolumna ? miejsc : u.wiersze === 2 && miejsc > 6 ? 2 : u.wiersze;
+  // wersja „razem”: jedna kolumna poziomych kafelków w lewym marginesie
+  const tryb: TrybKarty = kolumna ? 'kafel' : u.telefon ? 'telefon' : 'pion';
+  const sloty = miejscaKart(kolumna ?? u.karty, miejsc, wiersze, kolumna ? (u.telefon ? 3 : 6) : u.telefon ? 6 : 8);
   const nadmiar = n > miejsc;
   const widac = nadmiar ? miejsc - 1 : miejsc;
   const start = nadmiar ? Math.max(0, Math.min(przesun, n - widac)) : 0;
@@ -154,10 +157,11 @@ export function rysujKartyPostaci(
       ctx.save();
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = FRESK.tekst;
-      ctx.font = `${u.telefon ? 18 : 22}px ${SERIF}`;
-      ctx.fillText(start + widac < n ? `+${n - start - widac}` : '↺', s.x + s.w / 2, s.y + s.h / 2 - 7);
+      const niska = s.h < 50;
+      ctx.font = `${u.telefon || niska ? 18 : 22}px ${SERIF}`;
+      ctx.fillText(start + widac < n ? `+${n - start - widac}` : '↺', s.x + s.w / 2 - (niska ? 26 : 0), s.y + s.h / 2 - (niska ? 0 : 7));
       ctx.font = `italic 12px ${SERIF}`;
-      ctx.fillText(start + widac < n ? 'dalej' : 'od początku', s.x + s.w / 2, s.y + s.h / 2 + 13);
+      ctx.fillText(start + widac < n ? 'dalej' : 'od początku', s.x + s.w / 2 + (niska ? 18 : 0), s.y + s.h / 2 + (niska ? 0 : 13));
       ctx.restore();
       void reszta;
       pola.push({ akcja: 'plusKart', x: s.x, y: s.y, w: s.w, h: s.h });
@@ -173,7 +177,7 @@ export function rysujKartyPostaci(
       continue;
     }
     const c = sim.creatureById(o.id);
-    karta(ctx, sim, s, o, c && !c.dead ? c : undefined, zaznaczeni.has(o.id), kursor, czas, u.telefon);
+    karta(ctx, sim, s, o, c && !c.dead ? c : undefined, zaznaczeni.has(o.id), kursor, czas, tryb, u.telefon);
     miejsca.set(o.id, s);
     pola.push({ akcja: 'postac', id: o.id, x: s.x, y: s.y, w: s.w, h: s.h });
   }
@@ -189,10 +193,16 @@ function pasek(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h
   ctx.strokeRect(x + 0.4, y + 0.4, w - 0.8, h - 0.8);
 }
 
+/** Karta stojąca w pasie (komputer), niska w pasie telefonu albo poziomy kafelek w lewej kolumnie (wersja „razem”). */
+type TrybKarty = 'pion' | 'telefon' | 'kafel';
+
 function karta(
   ctx: CanvasRenderingContext2D, sim: Sim, s: Obszar, o: Osoba, c: Creature | undefined,
-  zazn: boolean, kursor: { x: number; y: number }, czas: number, telefon: boolean,
+  zazn: boolean, kursor: { x: number; y: number }, czas: number, tryb: TrybKarty, palec: boolean,
 ): void {
+  const telefon = tryb !== 'pion';
+  // kafelek dość wysoki (komputer): pod imieniem rola i stan, nad paskami perk z nazwą
+  const bogaty = tryb === 'kafel' && s.h >= 64 && !palec;
   const zywy = !!c && !o.polegl;
   const podK = kursor.x >= s.x && kursor.x <= s.x + s.w && kursor.y >= s.y && kursor.y <= s.y + s.h;
   tablica(ctx, s.x, s.y, s.w, s.h, !zywy ? 'uspiona' : zazn ? 'wlaczona' : podK ? 'pod' : 'zwykla', czas);
@@ -207,7 +217,8 @@ function karta(
   const imieY = rolaY - 15;
   // telefon: portret oddaje miejsce imieniu (przy ośmiu kartach w pasie), ale nie mniej niż 22 px
   ctx.font = `14px ${SERIF}`;
-  const pW = telefon ? Math.max(22, Math.min(s.h - 10, s.w * 0.32, s.w - 16 - ctx.measureText(o.imie).width))
+  const pW = tryb === 'kafel' ? Math.max(22, Math.min(s.h - 10, s.w * 0.34, s.w - 16 - ctx.measureText(o.imie).width))
+    : telefon ? Math.max(22, Math.min(s.h - 10, s.w * 0.32, s.w - 16 - ctx.measureText(o.imie).width))
     : Math.max(24, Math.min(s.w - 14, imieY - 17 - (s.y + 5)));
   const px = s.x + (telefon ? 5 : (s.w - pW) / 2), py = s.y + 5, pH = telefon ? s.h - 10 : pW;
   ctx.save();
@@ -287,19 +298,37 @@ function karta(
     // telefon: imię i stan obok portretu, paski u dołu, znak perku w rogu portretu
     const tx = px + pW + 6, tw = s.x + s.w - 5 - tx;
     ctx.textAlign = 'left';
-    ctx.font = `14px ${SERIF}`;
+    ctx.font = `${bogaty ? 15 : 14}px ${SERIF}`;
     ctx.fillStyle = zywy ? (zazn ? '#f6e4b8' : '#ead9b4') : 'rgba(200,186,160,0.6)';
-    ctx.fillText(dopasuj(ctx, [o.imie], tw), tx, s.y + 18);
+    ctx.fillText(dopasuj(ctx, bogaty ? [imieOsoby(o), o.imie] : [o.imie], tw), tx, s.y + 18);
     ctx.font = `italic 12px ${SERIF}`;
-    ctx.fillStyle = st.zly ? 'rgba(232,120,96,0.95)' : 'rgba(214,198,166,0.8)';
-    ctx.fillText(skroc(ctx, st.tekst, tw), tx, s.y + 33);
+    if (bogaty) {
+      // rola w barwie roli · stan
+      const r = rolaOsoby({ rola, plec: o.plec });
+      const rW = ctx.measureText(r + ' · ').width;
+      ctx.fillStyle = zywy ? rgba(bR, 0.9) : 'rgba(180,170,150,0.55)';
+      if (rW < tw * 0.6) { ctx.fillText(r + ' · ', tx, s.y + 33); }
+      ctx.fillStyle = st.zly ? 'rgba(232,120,96,0.95)' : 'rgba(214,198,166,0.8)';
+      ctx.fillText(skroc(ctx, !zywy && o.polegl ? `${st.tekst} — ${o.polegl.przyczyna}` : st.tekst, rW < tw * 0.6 ? tw - rW : tw), rW < tw * 0.6 ? tx + rW : tx, s.y + 33);
+      // perk ze znakiem i nazwą
+      if (p) {
+        const zs = 12, yy = s.y + 48;
+        znakPerku(ctx, p.znak, tx + zs / 2, yy - 4, zs, barwaPerku);
+        ctx.font = `12px ${SERIF}`; ctx.fillStyle = barwaPerku;
+        ctx.fillText(skroc(ctx, p.nazwa, tw - zs - 4), tx + zs + 4, yy);
+      }
+    } else if (s.h >= 56) {
+      ctx.fillStyle = st.zly ? 'rgba(232,120,96,0.95)' : 'rgba(214,198,166,0.8)';
+      ctx.fillText(skroc(ctx, st.tekst, tw), tx, s.y + 33);
+    }
+    // (niski kafelek — telefon poziomo: imię i paski; stan po przytrzymaniu)
     if (zywy && c) {
       const bh = 3, by = s.y + s.h - 6 - bh * 3 - 4;
       pasek(ctx, tx, by, tw, bh, c.hp / Math.max(1, maxHp(sim, c)), 'rgba(196,64,48,0.95)');
       pasek(ctx, tx, by + bh + 2, tw, bh, c.hunger, c.hunger > 0.7 ? 'rgba(232,140,60,0.95)' : 'rgba(176,136,70,0.9)');
       pasek(ctx, tx, by + 2 * (bh + 2), tw, bh, c.devotion, 'rgba(232,200,120,0.95)');
     }
-    if (p) {
+    if (p && !bogaty) {
       const zs = 12;
       ctx.fillStyle = 'rgba(12,8,6,0.85)';
       ctx.beginPath(); ctx.arc(px + pW - zs * 0.55, py + zs * 0.6, zs * 0.62, 0, Math.PI * 2); ctx.fill();
@@ -337,7 +366,8 @@ export function wierszeSzczegolow(sim: Sim, o: Osoba): Wiersz[] {
   const wd = o.wada ? perk(o.wada) : undefined;
   if (wd) w.push({ tekst: `Wada: ${wd.nazwa} — ${wd.opis}`, rozm: 14, barwa: 'rgba(232,128,104,0.95)', odstep: 2 });
   if (p?.hak === 'twardy' && o.zuzyty) w.push({ tekst: '„Nie do zdarcia” już raz ocalił — drugi raz nie ocali.', rozm: 13, barwa: 'rgba(214,198,166,0.8)', kursywa: true });
-  if (o.kim) w.push({ tekst: o.kim, rozm: 14, barwa: 'rgba(214,198,166,0.92)', kursywa: true, odstep: 6 });
+  // (wersja „razem” i Pawła: bez życiorysów — Paweł: „nikt nie będzie czytał biografii, jeśli nic nie dają”)
+  if (o.kim && maZyciorysy(WARIANT)) w.push({ tekst: o.kim, rozm: 14, barwa: 'rgba(214,198,166,0.92)', kursywa: true, odstep: 6 });
   if (o.fragment) {
     const f = HISTORIA.find((h) => h.id === o.fragment);
     const znany = sim.lud.druzyna?.odsloniete.includes(o.fragment);

@@ -5,6 +5,7 @@ import { krazek, krazekZIkona } from './fresk';
 import { FRESK } from '../nastawy/barwy';
 import { TELEFON } from '../nastawy/ekran';
 import { miejsceKlepsydry } from './tempo';
+import { WARIANT } from '../nastawy/wariant';
 
 export type AkcjaPrzycisku = 'pauza' | 'wolniej' | 'szybciej' | 'zapiski' | 'atlas' | 'legenda' | 'kamera' | 'zapis';
 
@@ -50,6 +51,12 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
   // Alpha 0.3: dolny margines to pas kart — przyciski wychodzą z niego.
   // TELEFON pionowo: kolumna w lewym marginesie, od dołu płyty w górę (nad nią ryty);
   // poziomo: kolumna w prawym marginesie (jak dawniej); komputer: rząd w górnym marginesie, przed klepsydrą
+  if (p.waski && WARIANT === 'razem') {
+    // wersja „razem”: lewa kolumna to kafelki drużyny — przyciski w drugim rzędzie górnego marginesu, od prawej
+    const r = 20, odstep = r * 2.35;
+    const x1 = p.x + p.w + p.right - 8 - r;
+    return lista.map((z, i) => ({ ...z, x: x1 - (n - 1 - i) * odstep, y: p.top - r - 6, r }));
+  }
   if (p.waski) {
     // pod rytami (ui.ts: od góry kolumny, co gs × 1,8) — na niskim telefonie przyciski gęstnieją, ale nie maleją poniżej 17 px
     const gs = Math.max(20, Math.min(38, p.left * 0.5));

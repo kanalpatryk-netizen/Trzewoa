@@ -1,5 +1,13 @@
 # Zmiany
 
+## Alpha 0.3 — wersja połączona (21.10)
+Użytkownik: „połącz te pomysły, zostaje wszystko, czego chciał Paweł; po lewej stronie ekranu gry są 3 opcje — cud, nakarm
+i szepnij — chwilowo je usuń i tam daj poziome kwadraty z jednostkami”. Nowa wersja `razem` (główna,
+`trzewia-alpha-0.3.html`): ślub, talia tarota i Kronika góry od Pawła (bez życiorysów), a w lewej kolumnie — w miejscu rytów —
+poziome kafelki stałej drużyny z perkami (Patryk). Ryty schowane przełącznikiem `RYTY` (`src/nastawy/wariant.ts`), samouczek bez
+ich lekcji, napis wstępu bez rytów. Lewy margines szerszy, znak menu w rogu ekranu, na telefonie pionowo przyciski w górnym
+rzędzie. Wizje Patryka i Pawła zostają osobno do porównania.
+
 ## Alpha 0.3 (komputer) — dwie wersje: wizja Patryka i wizja Pawła
 Dalszy ciąg Alphy 0.2 w folderze `alpha-0.3/` (Alpha 0.2 bez zmian). Zapisy, ustawienia, atlas i osiągnięcia osobne
 (klucze `trzewia-alpha-0.3:`). Z jednego kodu dwie gry: `trzewia-alpha-0.3-patryk.html` i `trzewia-alpha-0.3-pawel.html`
