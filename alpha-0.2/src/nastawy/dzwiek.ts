@@ -131,7 +131,7 @@ export const GESTY = {
  * pliku do innej grupy (i popraw szanse, jeśli liczba plików w grupie się zmieni).
  * Nagranie spoza listy (nowy plik w folderze) gra jak pospolite.
  */
-export const GLOS_RYCERZA = {
+export const GLOS_RYCERZA: NastawyGlosu = {
   /** Które odmowy rycerz mówi na głos: te, których powód zaczyna się tak (wszystkie „nie dojdę…” i „tam …”). */
   odmowy: ['nie dojdę', 'tam '],
   /** Głośność głosu (mnożnik; razem z suwakiem głośności i przełącznikiem efektów). */
@@ -152,5 +152,44 @@ export const GLOS_RYCERZA = {
     rzadsze: { szansa: 8, pliki: ['10', '12', '14'] },
     bardzoRzadkie: { szansa: 2.5, pliki: ['15', '17', '19'] },
     ekstremalnieRzadkie: { szansa: 0.5, pliki: ['20'] },
-  } as Record<string, { szansa: number; pliki: string[] }>,
+  },
 };
+
+/**
+ * GŁOS POBOŻNEGO (Alpha) — nagrania z gra222/dzwieki/odmowy/pobozny/: pobożny mówi je na głos tak samo jak rycerz,
+ * gdy odmawia pójścia tam, gdzie się nie da dojść. Te same zasady co GLOS_RYCERZA wyżej: szansa to procent na jedno
+ * nagranie, razem 100 (tu: 11 × 9,09 — wszystkie tak samo częste). Rzadsze nagranie: przenieś jego numer
+ * (…_part-NN.mp3) do nowej grupy z mniejszą szansą i popraw resztę. Naraz mówi jeden — pobożny nie wchodzi w słowo rycerzowi.
+ */
+export const GLOS_POBOZNEGO: NastawyGlosu = {
+  /** Które odmowy pobożny mówi na głos: te, których powód zaczyna się tak (wszystkie „nie dojdę…” i „tam …”). */
+  odmowy: ['nie dojdę', 'tam '],
+  /** Głośność głosu (mnożnik; razem z suwakiem głośności i przełącznikiem efektów). */
+  glosnosc: 0.7,
+  /** Ile głosu idzie w pogłos jaskini. */
+  poglos: 0.16,
+  /** Głos wchodzi tyle sekund po głuchym stuku odmowy (żeby się nie zlały). */
+  opoznienie: 0.12,
+  /** Najmniej tyle ms między dwiema odmowami pobożnego na głos. */
+  odstepMs: 500,
+  /** Nagrania wyrównuje się do jednej głośności: średnia z głośnych fragmentów (dBFS), szczyt najwyżej −1 dBFS. */
+  wyrownajDo: -20,
+  /** Cisza na początku i końcu nagrania (poniżej tylu dBFS) jest odcinana — pobożny odpowiada od razu. */
+  ciszaPonizej: -45,
+  /** Grupy rzadkości: szansa jednego nagrania (%) i numery plików (…_part-NN.mp3). */
+  rzadkosc: {
+    pospolite: { szansa: 9.09, pliki: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11'] },
+  },
+};
+
+/** Nastawy głosu jednej roli (GLOS_RYCERZA, GLOS_POBOZNEGO) — core/glos-odmowy.ts. */
+export interface NastawyGlosu {
+  odmowy: string[];
+  glosnosc: number;
+  poglos: number;
+  opoznienie: number;
+  odstepMs: number;
+  wyrownajDo: number;
+  ciszaPonizej: number;
+  rzadkosc: Record<string, { szansa: number; pliki: string[] }>;
+}

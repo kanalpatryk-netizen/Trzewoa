@@ -2,7 +2,7 @@ import type { Sim } from '../../sim/sim';
 import type { Creature } from '../../sim/creatures';
 import type { Odmowa } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
-import type { Wypowiedz } from '../../core/glos-rycerza';
+import type { Wypowiedz } from '../../core/glos-odmowy';
 
 /**
  * Alpha, etap 2: odmowa rozkazu na ekranie — postać kręci głową, macha dłonią „nie” i rozkłada ręce,
@@ -27,7 +27,7 @@ export function postepOdmowy(sim: Sim, c: Creature, czas: number): number | null
   return k >= 0 && k < 1 ? k : null;
 }
 
-/** Rycerz mówi odmowę na głos (core/glos-rycerza.ts): od kiedy (zegar ekranu) i obwiednia słów. */
+/** Rycerz albo pobożny mówi odmowę na głos (core/glos-odmowy.ts): od kiedy (zegar ekranu) i obwiednia słów. */
 const glosy = new WeakMap<Odmowa, { t0: number; w: Wypowiedz }>();
 
 export function zacznijGlosOdmowy(o: Odmowa, w: Wypowiedz, czas: number): void {

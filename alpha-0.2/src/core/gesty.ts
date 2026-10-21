@@ -1,7 +1,7 @@
 import { mikser } from './mikser';
 import { ustawienia } from './settings-store';
-import { GESTY, GLOS_RYCERZA } from '../nastawy/dzwiek';
-import { GlosRycerza, type Wypowiedz } from './glos-rycerza';
+import { GESTY } from '../nastawy/dzwiek';
+import { GlosOdmowy, type KtoMowi, type Wypowiedz } from './glos-odmowy';
 
 /** Pentatonika od D — kaskada wykonanego planu wspina się po niej, nigdy nie fałszuje. */
 const KASKADA = GESTY.kaskada;
@@ -18,8 +18,8 @@ export class Gesty {
   private szum: AudioBuffer | null = null;
   private ostatnie = new Map<string, number>();
   private ton: { g: GainNode; zrodla: AudioScheduledSourceNode[] } | null = null;
-  private glosy = new GlosRycerza();
-  /** Rycerz jeszcze mówi (do tej chwili, zegar kontekstu) — następna odmowa nie wchodzi mu w słowo. */
+  private glosy: Record<KtoMowi, GlosOdmowy> = { rycerz: new GlosOdmowy('rycerz'), pobozny: new GlosOdmowy('pobozny') };
+  /** Ktoś jeszcze mówi (do tej chwili, zegar kontekstu) — następna odmowa nie wchodzi mu w słowo. */
   private mowiDo = 0;
 
   start(): void {
@@ -31,7 +31,7 @@ export class Gesty {
     const d = buf.getChannelData(0);
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     this.szum = buf;
-    this.glosy.wczytaj(ctx);
+    for (const g of Object.values(this.glosy)) g.wczytaj(ctx);
     this.odswiezGlosnosc();
   }
 
@@ -159,24 +159,26 @@ export class Gesty {
   }
 
   /**
-   * Rycerz odmawia na głos: jedno z nagrań (nastawy/dzwiek.ts — GLOS_RYCERZA, szanse rzadkości), tuż po głuchym
-   * stuku odmowy. `pan` — gdzie stoi na ekranie (−1 lewo … 1 prawo). Zwraca, co powiedział (fale przy dymku),
-   * albo null, gdy dźwięk wyłączony, nagrania jeszcze się nie wczytały albo poprzednia odmowa jeszcze trwa.
+   * Rycerz albo pobożny odmawia na głos: jedno z jego nagrań (nastawy/dzwiek.ts — GLOS_RYCERZA, GLOS_POBOZNEGO,
+   * szanse rzadkości), tuż po głuchym stuku odmowy. `pan` — gdzie stoi na ekranie (−1 lewo … 1 prawo). Zwraca, co
+   * powiedział (fale przy dymku), albo null, gdy dźwięk wyłączony, nagrania jeszcze się nie wczytały albo poprzednia
+   * odmowa (czyjakolwiek) jeszcze trwa.
    */
-  glosRycerza(pan = 0): Wypowiedz | null {
-    if (!this.gotowe || this.ctx!.currentTime < this.mowiDo || !this.wolno('glosRycerza', GLOS_RYCERZA.odstepMs)) return null;
-    const n = this.glosy.losuj();
+  glosOdmowy(kto: KtoMowi, pan = 0): Wypowiedz | null {
+    const glos = this.glosy[kto], G = glos.G;
+    if (!this.gotowe || this.ctx!.currentTime < this.mowiDo || !this.wolno(`glos:${kto}`, G.odstepMs)) return null;
+    const n = glos.losuj();
     if (!n) return null;
     const ctx = this.ctx!;
-    const t = ctx.currentTime + GLOS_RYCERZA.opoznienie;
+    const t = ctx.currentTime + G.opoznienie;
     const src = ctx.createBufferSource();
     src.buffer = n.bufor;
     const g = ctx.createGain();
-    g.gain.value = n.wzm * GLOS_RYCERZA.glosnosc;
-    src.connect(g); g.connect(this.wyjscie(pan, GLOS_RYCERZA.poglos));
+    g.gain.value = n.wzm * G.glosnosc;
+    src.connect(g); g.connect(this.wyjscie(pan, G.poglos));
     src.start(t, n.od, n.dl);
     this.mowiDo = t + n.dl;
-    return GlosRycerza.wypowiedz(n);
+    return glos.wypowiedz(n);
   }
 
   /**
