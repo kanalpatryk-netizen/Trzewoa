@@ -1,16 +1,51 @@
-# Trzewia — Alpha 0.2 (komputer)
+# Trzewia — Alpha 0.3 (komputer) — dwie wersje do porównania
 
-Nowa gra, w budowie — dalszy ciąg Alphy 0.1 (etap 5 wspólnego planu: Wielki Pomnik, demon, nowy bot i samouczek).
-Alpha 0.1 (etapy 1–4: stała drużyna, rozkazy, pomieszczenia i rudy, ołtarz, dwie dłonie) zostaje bez zmian
-w [`../alpha-0.1/`](../alpha-0.1) — punkt odniesienia. Nowe w 0.2: **Wielki Pomnik demona** na dnie zamiast rdzenia,
-**demon z jego gruzów** i **wygrana po pokonaniu demona**, bez wstęgi „Droga do wolności” (szczegóły niżej).
+Dalszy ciąg Alphy 0.2 w folderze `alpha-0.3/`. Alpha 0.2 zostaje bez zmian w [`../alpha-0.2/`](../alpha-0.2). Z jednego kodu
+budują się **dwie wersje** — dwa pomysły zespołu na to, jak przywiązać gracza do drużyny:
 
-**[⬇️ Pobierz trzewia-alpha-0.2.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.2.html)** — gra ·
-**[⬇️ Pobierz trzewia-alpha-0.2-obserwatorium.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.2-obserwatorium.html)** — obserwatorium.
-Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Zapisy, ustawienia, atlas i osiągnięcia
-Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
+**[⬇️ trzewia-alpha-0.3-patryk.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.3-patryk.html)** — wizja Patryka ·
+**[⬇️ trzewia-alpha-0.3-pawel.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.3-pawel.html)** — wizja Pawła ·
+obserwatoria: [Patryk](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.3-patryk-obserwatorium.html), [Paweł](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-0.3-pawel-obserwatorium.html).
+Zapisy, ustawienia, atlas i osiągnięcia Alphy 0.3 są osobne (klucze `trzewia-alpha-0.3:`). Wersja robocza — wygląd jest szkicem.
 
-## Co jest inaczej niż w Remake v2
+## Nowe w 0.3
+- **Wizja Patryka — imienna drużyna.** Zamiast dolnego panelu leży pas 6 kart postaci. Postacie są stałe — te same w każdej
+  partii: Radost (pobożna, *Żarliwy*, wada *Wątły*), Dobromir (pobożny, *Ręka kapłana*), Bogdan „Kret” (robotnik, *Ciężka ręka*,
+  wada *Łakomy*), Mszczuj (robotnik, *Nos do żył*), Jarosta (robotnica, *Wytrwały*, wada *Kulawy*), Wojsław (rycerz, *Nie do
+  zdarcia*); kolejnych 8 przychodzi po kolei z darem ludzi. Każda karta: portret, imię i rola, paski życia, głodu i wiary, perk
+  ze znakiem, stan (kopie, modli się, walczy, w dłoni, ogłuszony, ranny, w szale, poległy). Dotknięcie zaznacza (kolejne dokładają),
+  drugie dotknięcie wiezie kamerę; najechanie myszą albo przytrzymanie palcem — szczegóły: perk, wada, kim była, fragment
+  historii. Poległy zostaje na karcie — zgaszony, przekreślony, z przyczyną śmierci; wskrzeszenie przywraca tę samą osobę.
+  Działający perk: rozbłysk karty, znak nad postacią na mapie, a przy ważnych zdarzeniach wpis w kronice. Po „Nowa gra” —
+  ekran „Twoja drużyna”. Perki: `src/nastawy/perki.ts`, obsada: `src/nastawy/druzyna.ts`, logika: `src/sim/druzyna.ts`,
+  karty: `src/render/karty.ts`.
+- **Wizja Pawła — ślub i tarot.** Postacie mają imiona (losowane ziarnem partii), ale bez perków. Po „Nowa gra” drużyna
+  składa jeden z trzech ślubów, który działa na każdą rolę przez całą partię: *Ślub ciszy* (+10% kopania, modlitwy, ciosów),
+  *Ślub ognia* (szybkość i życie), *Ślub głodu* (−20% głodu). Pod płytą: medaliony ról jak dawniej, talia tarota i 6 miejsc na
+  karty. Karta kosztuje wiarę (15, każda następna o 5 więcej), pada prosto (buff dla całej kompanii) albo odwrócona (nerf, co
+  trzecia), działa 90 s, potem gaśnie i wraca do talii. 22 wielkie arkana, każde z animacją: zjazd z talii, odwrócenie,
+  rozbłysk, świeca czasu. Nastawy: `src/nastawy/tarot.ts`, logika: `src/sim/tarot.ts`, pas: `src/render/tarot.ts`.
+- **Kronika góry** (obie wersje): 14 ukrytych kart historii świata — gród na grzbiecie góry, demon zwany Trzewiem, umowa
+  biskupa, zakonnicy, którzy skamienieli w Strażników… Odsłaniają się zdarzeniem w grze (zejście w głąb, krypta, złoto,
+  rytuał, pokonany Strażnik, śmierć…) i trafiają do atlasu (grupa „Kronika góry”). U Patryka każdy fragment pamięta jedna osoba.
+- **Dolny panel zastąpiony pasem kart** (`src/render/pas.ts`). Nic nie zniknęło: rozkazy (wyznacz pomieszczenie, kop drogę,
+  odwołaj, odznacz, napraw linę) w kolumnie z lewej strony pasa — na telefonie pod tabliczką „rozkazy”; oddanie i relikwiarz
+  krwi z prawej (telefon poziomo: w górnym pasku, pionowo: w dolnym rzędzie); przyciski poleceń w górnym marginesie
+  (telefon pionowo: w lewej kolumnie pod rytami, poziomo: jak dawniej w prawej); kronika w górnym marginesie (telefon: pod
+  przyciskiem „zapiski”). Klawisze bez zmian (A/S/D, G, V, B, Esc).
+- **Zapis** w wersji 5 (`src/core/save.ts`): imiona, perki, polegli, odsłonięta historia, ślub i karty na stole. Zapis z wersji 4
+  wczytuje się — drużyna dostaje imiona przy wczytaniu.
+- **Kronika z imionami**: „Bogdan „Kret”, robotnik, poległ — z ręki Strażnika Snu.” Numery `#id` tylko w trybie deweloperskim.
+- **Samouczek**: lekcja „Twoja drużyna” (Patryk) albo „Ślub i tarot” (Paweł); 16 lekcji.
+
+## Budowa
+`npm run pack` buduje obie wersje: `trzewia-patryk.html` i `trzewia-pawel.html`; `npm run obserwatorium` — także
+`obserwatorium-patryk.html` i `obserwatorium-pawel.html`. Serwer deweloperski: `npx vite` (Patryk) albo `WARIANT=pawel npx vite`.
+Testy: `npm test` (światy i Wielki Pomnik w obu wersjach). Próby botów: `WARIANT=pawel node scripts/proby-graczy.mjs . <ziarno> <styl> <minut> <plik.log>`
+(`BEZ_PERKOW=1` — imiona bez skutków perków, `BEZ=lakomy,kulawy` — wybrane perki zdjęte; do porównań balansu).
+
+## Z Alphy 0.2 (bez zmian, poza dolnym panelem)
+
 - **Intro:** film `filmy/intro.mp4` rusza od razu po otwarciu gry (bez klikania; góra ładuje się pod nim), po nim menu. Na dole
   przez cały film stoi mały znaczek „spacja – pomiń” — spacja (albo Esc) pomija intro.
 - **Kursor:** stalowa rękawica z `obrazy/kursor1.png` — jedyny kursor gry, na każdym ekranie; póki przycisk myszy jest
@@ -30,7 +65,7 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
   rycerz koziołkuje, uderza o strop, spada ranny i ogłuszony), tarcza (otwarta dłoń przed demonem, ciosy się od niej
   odbijają) albo zawał (szpony drą strop, ściana gruzu odcina demona na 15 s; robotnicy mogą ją rozkuć).
   Dłoń ma teraz prawdziwe wnętrze (linie, poduszki, zgięcia palców, jaśniejsza skóra) i grzbiet (sine żyły, kostki).
-- **Rozkazy:** pod płytą trzy medaliony (robotnicy, pobożni, rycerz). Dotknięcie medalionu albo postaci zaznacza,
+- **Rozkazy:** (Alpha 0.3: u Patryka karty postaci, u Pawła medaliony obok talii — patrz wyżej). Dotknięcie karty, medalionu albo postaci zaznacza,
   dotknięcie mapy to „idź tam” — pobożny i rycerz idą tylko tam, dokąd prowadzi droga, inaczej odmawiają (kręcą
   głową, a w dymku mówią dlaczego); robotnik przekopuje się sam, wskazana skała to „kop tam”. „Kop drogę wiernych”
   — robotnicy kopią złotą kreskę do krypty; bez rozkazu nie kopią, tylko noszą jedzenie. Klawisze: A/S/D — role,
@@ -104,7 +139,7 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
 
 Grafika (menu, boss i Strażnicy, ikonki) i muzyka adaptacyjna — zadania zespołu (Paweł, Milan).
 
-## Obserwatorium (`trzewia-alpha-0.2-obserwatorium.html`)
+## Obserwatorium (`trzewia-alpha-0.3-patryk-obserwatorium.html`, `trzewia-alpha-0.3-pawel-obserwatorium.html`)
 Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo. Każde okno osobno: tempo (×¼ … ×20),
 pauza, styl bota (*rozsądny*, *budowniczy*, *speedrun*, *bierny*), ziarno świata, „nowa partia”, „sama następna partia”
 i dźwięk. Kliknij okno — powiększa się na cały ekran; **Esc** wraca, klawisze **1–4** przełączają. Okna obserwatorium

@@ -48,6 +48,8 @@ export function run(z: number, styl: string, minut: number) {
   // Alpha 0.3: BEZ_PERKOW=1 — same imiona, perki i wady bez skutków (próba kontrolna balansu)
   if (process.env.BEZ_PERKOW) PERK.wlaczone = false;
   const sim: any = new Sim(z);
+  // Alpha 0.3: BEZ=lakomy,kulawy — te perki (albo wady) zdjęte z postaci od startu (próby, który perk psuje balans)
+  if (process.env.BEZ) { const bez = process.env.BEZ.split(','); for (const c of sim.creatures) if (c.perki) { c.perki = c.perki.filter((p: string) => !bez.includes(p)); if (!c.perki.length) c.perki = undefined; } }
   zalozBota(sim, styl as any);   // Alpha 0.3 (wizja Pawła): ślub na starcie — wersję wybiera zmienna WARIANT
   const w = sim.world;
   const out: string[] = [], anom: string[] = [], dz: string[] = [];

@@ -19,6 +19,9 @@ type Prost = { x: number; y: number; w: number; h: number };
 export function zbierzObszaryHud(d: {
   plate: Plate; vh: number; ui: Ui; przyciski: Przycisk[];
   droga: Prost | null; rada: Prost | null; menu: Prost;
+  /** Alpha 0.3: pola pasa kart (karty, talia, medaliony, tabliczki rozkazów) i kronika w górnym marginesie. */
+  pas?: { akcja: string; id?: number; miejsce?: number; rola?: string; x: number; y: number; w: number; h: number }[];
+  kronika?: Prost | null; zasoby?: Prost | null;
 }): ObszarHud[] {
   const { plate: p, vh } = d;
   const out: ObszarHud[] = [];
@@ -37,9 +40,13 @@ export function zbierzObszaryHud(d: {
   }
   for (const b of d.przyciski) dodaj(`przycisk:${b.akcja}`, kolo(b.x, b.y, b.r));
   dodaj('oddanie', obszarOddania(p, vh));
-  if (ustawienia.spisRas) dodaj('spis', obszarSpisu(p, vh));
+  // (Alpha 0.3: „spis” to teraz cały pas kart — jego pola liczą się niżej, każde osobno)
+  if (ustawienia.spisRas && !d.pas) dodaj('spis', obszarSpisu(p, vh));
   dodaj('krew', obszarKrwi(p, vh));
   if (ustawienia.skalaGlebokosci && !p.waski && !p.niski) dodaj('minimapa', obszarMinimapy(p));
+  for (const q of d.pas ?? []) dodaj(`pas:${q.akcja}${q.id ?? q.miejsce ?? q.rola ?? ''}`, q);
+  dodaj('kronika', d.kronika);
+  dodaj('zasoby', d.zasoby);
   dodaj('droga', d.droga);
   dodaj('rada', d.rada);
   return out;

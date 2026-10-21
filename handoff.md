@@ -4,11 +4,82 @@ Stan na 18.10.2026, po etapie 5a (Wielki Pomnik demona, wygrana po pokonaniu dem
 Z użytkownikiem rozmawia się po polsku.
 
 **Najważniejsze**
+- **Alpha 0.3 (od 20.10, gałąź `claude/trusting-darwin-f3gxu5`).** Folder `alpha-0.3/` (kopia 0.2 + zmiany), dwie wersje z jednego
+  kodu — przełącznik `src/nastawy/wariant.ts` (`WARIANT=patryk|pawel`, w buildzie `__WARIANT__` z `vite.config.ts`). Szczegóły
+  w sekcji 0 niżej. Alpha 0.2 bez zmian. PR do `main` tylko na prośbę użytkownika.
 - **Alpha 0.2 (od 18.10).** Na polecenie użytkownika („zapisz na githubie jako alpha 0.2”) stan po etapie 5a zapisany jako nowa wersja w folderze `alpha-0.2/` (osobne zapisy: klucze `trzewia-alpha-0.2:`, plik `trzewia-alpha-0.2.html`). **Dalej pracuje się w `alpha-0.2/`**; `alpha-0.1/` zostaje bez zmian (etapy 1–4 i głos rycerza) — punkt odniesienia. Ścieżki `src/…` niżej przy etapie 5 dotyczą `alpha-0.2/`.
 - **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etapy 1–4 i 5a; z etapu 5 zostały 5b–5e.
 - **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
 - **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e, 3f i etap 4 zrobione na polecenie użytkownika. Etap 5 ruszył na polecenie użytkownika; 5a zrobione — **przed 5b powiedz użytkownikowi, co w nim będzie, i czekaj na polecenie.** Stanem wizualnym rycerza „zajmiemy się kiedy indziej” — użytkownik 18.10.)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
+
+---
+
+## 0. Alpha 0.3 — imienna drużyna (wizja Patryka) i ślub z tarotem (wizja Pawła)
+
+### 0.1 Skąd i decyzje użytkownika (20.10)
+- Ustalenia zespołu (Patryk, Paweł): gracz ma się przywiązać do drużyny. Patryk: wyrzucić dolny panel, dać 6 kart postaci
+  z imionami, perkami i lore. Paweł: biografii nikt nie czyta — lore tylko jako odsłanianie historii świata; na starcie wybór
+  1 z 3 bonusów dla wszystkich ról; i karty tarota z czasowymi buffami/nerfami dla całej kompanii, losowane z talii.
+- Odpowiedzi użytkownika: imiona i perki **stałe na całą kampanię** (1c); ekran wyboru po „Nowa gra” — tak; więcej niż 6
+  postaci — karty zwężają się do 8, potem „+N”; poległy zostaje na karcie, wskrzeszenie przywraca tę samą osobę; **nowa wersja
+  `alpha-0.3/`**; **dwie wersje** — Patryka i Pawła. „Wszystkie pytania i wątpliwości musisz sam ogarnąć”, „wersja mocno robocza,
+  nie skupiaj się niesamowicie na designie”.
+- Podział, który przyjąłem: **Patryk** — stała obsada z perkami, wadami, zdaniem „kim była” i fragmentem historii; pas 6 kart;
+  ekran „Twoja drużyna”. **Paweł** — imiona z puli (bez perków), ślub na starcie, talia tarota (koszt wiarą 15+5/kartę, prosto
+  buff / odwrócona nerf co trzecia, 90 s, 6 miejsc), medaliony ról zostają. **Obie** — Kronika góry (14 fragmentów historii
+  w atlasie), pas zamiast dolnego panelu, kronika z imionami.
+
+### 0.2 Pliki
+- Nastawy: `wariant.ts`, `perki.ts` (12 perków + 5 wad, `PERK`), `druzyna.ts` (`OBSADA` 6+8, `IMIONA`, `HISTORIA`), `tarot.ts`
+  (`SLUBY`, `ARKANA`, `TAROT`), `ekran.ts` (`PAS` — wymiary pasa).
+- Symulacja: `src/sim/druzyna.ts` (osoby w `sim.lud.druzyna`, `c.imie`/`c.perki`, `mnoznikDruzyny` w `mnoznik()`, haki: `zyla`
+  w `kruszce.ts`, `wytrwaly` w mnożniku głodu, `swiatlo` w `mrok.ts: wypatrz`, `kaplan` w `oltarz.ts: odprawRytual`, `twardy`
+  w `sim.kill`; `wyzwol()` — wyzwalacze historii; `sim.sladyDruzyny` — ślady dla rysunku, bez zapisu), `src/sim/tarot.ts`.
+  Imiona nie używają `sim.rng` (osobne `Rng` z ziarna) — przebieg góry bez perków jest identyczny jak w 0.2 (sprawdzone).
+- Rysunek: `src/render/pas.ts` (układ pasa w 3 trybach, tabliczki, rozkazy, dymek szczegółów), `karty.ts` (karty postaci,
+  znaki perków, znak nad postacią na mapie), `tarot.ts` (medaliony, talia, karty tarota z animacją). `render/druzyna.ts:
+  rysujDruzyne` rozdziela wersje. Przyciski: `przyciski.ts` (komputer — górny margines, telefon pionowo — lewa kolumna pod rytami,
+  `ui.ts` przesuwa ryty na górę kolumny), kronika: `plate.ts: drawChronicle` (górny margines komputera).
+- Ekrany: `src/app/screens/start.ts` (Twoja drużyna / Ślub drużyny; `EkranGry.przygotowana()` daje górę następnej partii),
+  `game.ts` (pas: `stanPasa`, `dotknijKarty`, przytrzymanie `wcisnieta`, `koniecZasobow`), samouczek: lekcja 4 w `rozdzialy.ts`.
+- Atlas: grupa `historia` w `tablice.ts` (tablice `historia-h1`…`h14`, odkrywane w `game.ts: odkrywaj`).
+- Zapis: `VERSION = 5`, czyta też 4 (drużyna nadana przy wczytaniu).
+- Bot: `zalozBota` (ślub), `tarot()` w `ruchBota` (ciągnie kartę, gdy wiary jest z zapasem 60–100).
+- Skrypty: `npm run pack` → `trzewia-patryk.html`, `trzewia-pawel.html`; `npm run obserwatorium` → też `obserwatorium-*.html`;
+  `npm test` sprawdza pomnik w obu wersjach; `proby-graczy.mjs` czyta `WARIANT`, `BEZ_PERKOW=1`, `BEZ=lakomy,kulawy`;
+  `test-nakladania.mjs` liczy też pola pasa, kronikę i liczniki. Workflow „Gra do pobrania” buduje 4 pliki Alphy 0.3.
+
+### 0.3 Próby i balans
+Próby botów (20.10), 32 partie na zestaw (ziarna 1–16, style budowniczy i speedrun, limit 30 min), narzędzie `proby.sh`
+z Dodatku A (z parametrem repo i ziaren):
+
+| zestaw | wygrane | przegrane | bez końca (30 min) | zgony ludu (z głodu, w ciemności) |
+|---|---|---|---|---|
+| Alpha 0.2 (punkt odniesienia) | 6 | 9 | 17 | 75 (35, 12) |
+| Alpha 0.3, Patryk | 6 | 8 | 18 | 96 (58, 12) |
+| Alpha 0.3, Paweł | 4 | 10 | 18 | 102 (48, 19) |
+
+- Wygrane i przegrane jak w 0.2, ale ludu ginie więcej (o 28% u Patryka, o 36% u Pawła), głównie z głodu. Głód bierze się
+  z logistyki wiadra (w wiadrach leży 30–40 porcji), która jest w tej grze bardzo czuła na każdą zmianę tempa chodu i głodu.
+- Pierwsza wersja wad (+20% głodu, −15% chodu) dawała 60 zgonów na 16 partii; bez wad — 40 (0.2: 36), z 5 wygranymi;
+  bez „Nosa do żył” i „Ciężkiej ręki” — wynik jak w 0.2. Stąd złagodzone wady (Łakomy +10%, Kulawy −8%, Bogdan *Wątły*).
+  Następny krok strojenia: zamienić resztę wad na głód i chód (Jarosta *Kulawy*, Dobrawa *Łakoma*) na wady „bezpieczne”
+  (życie, praca, modlitwa) i powtórzyć próby.
+- Wizja Pawła: bot ciągnie 0–6 kart na partię (zapas wiary 60–100); nerfy na głód i chód złagodzone (do +10–18%).
+- Próba kontrolna `BEZ_PERKOW=1` daje stan identyczny z Alphą 0.2 (warstwa imion nie zmienia przebiegu).
+- Bot przeżył cios dzięki „Nie do zdarcia” 4 razy na 32 partie; odsłania 3–8 fragmentów historii na partię.
+- `npm test`: 100/100 światów, pomnik 12/12 w obu wersjach; `tsc` czysty; test nakładania: 19 rozmiarów bez nakładania w obu
+  wersjach (360×640 … 1920×1080).
+
+### 0.4 Czego nie zrobiono / znane problemy
+- **Bot nie kończy walki z demonem** w wielu partiach (także w 0.2, przed moimi zmianami): dłoń z otchłani co ~20 s zawala strop,
+  demon za gruzem się zrasta, a bot nie wysyła robotników do gruzu — to zadanie 5c („bot pod nowe zasady”), poza tym etapem.
+- Na telefonie karta postaci pokazuje znak perku bez nazwy (brak miejsca) — nazwa i opis po przytrzymaniu.
+- Listwa szablonów pomieszczeń (w płycie, przy planowaniu) dalej ma „pigułki” z 0.2 — nie należała do dolnego panelu.
+- Napisy w nieznanym piśmie, które czasem przechodzą przez brzeg ekranu (`render/nastroj.ts`), mogą na chwilę przejść pod
+  tekstem pasa — tak było i w 0.2 (tło, nie interfejs).
+- Wizja Pawła: tarot ma tylko skutki z mnożników i natychmiastowe krew/wiara — bez zdarzeń w świecie (np. „Wieża — pęka strop”).
 
 ---
 

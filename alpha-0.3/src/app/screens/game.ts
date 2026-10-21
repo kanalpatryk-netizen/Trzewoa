@@ -59,7 +59,7 @@ import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { etykietyKolonii, podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
-import { computePlate, drawFrame, drawKrew, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
+import { computePlate, drawFrame, drawKrew, drawSmoke, drawEyelid, drawChronicle, drawOddanie, obszarOddania, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
 import { seed, sign, nakarm, TOOLS, type Verb } from '../../powers/powers';
 import { Rozkazy } from '../../powers/rozkazy';
@@ -604,11 +604,31 @@ export class EkranGry implements Ekran {
     ];
     const teraz = performance.now();
     ctx.save();
-    const rozm = Math.max(13, Math.min(17, w / 30));
     const y = plate.niski ? plate.y - plate.top * 0.3 : plate.y - plate.top * 0.34;
     ctx.textBaseline = 'alphabetic';
     ctx.textAlign = 'left';
     const kaw = (t: string, f: string) => { ctx.font = f; return ctx.measureText(t).width; };
+    // Alpha 0.3: na telefonie poziomo w tym samym pasku stoją oddanie i krew — liczniki muszą się zmieścić przed nimi:
+    // najpierw mniejsze pismo, potem kruszce bez podpisów, na końcu krótkie podpisy (pismo nie schodzi poniżej 13 px)
+    const granica = plate.niski ? obszarOddania(plate, this.app.h).x - 12 : Infinity;
+    const KROTKO: Record<string, string> = { jedzenie: 'jedz.' };
+    let rozm = Math.max(13, Math.min(17, w / 30)), bezKruszcow = plate.waski, krotko = false, bezPodpisow = false;
+    const szerokosc = (r: number, bk: boolean, kr: boolean, bp: boolean): number => {
+      const e1 = `italic ${r * 0.82}px ${SERIF}`, l1 = `${r * 1.05}px ${SERIF}`;
+      let s = 10;
+      for (const [e, l] of czesci) {
+        const kr2 = e === 'żelazo' || e === 'złoto';
+        if (kr2) s += r * 1.5;
+        if (!bp && (!kr2 || !bk)) s += kaw((kr && KROTKO[e] ? KROTKO[e] : e) + ' ', e1);
+        s += kaw(l, l1) + r * 1.1;
+      }
+      return s;
+    };
+    // ostatnia deska ratunku (najwęższy telefon): same liczby w barwach zasobów i znaczki kruszców
+    for (const [r, bk, kr, bp] of [[rozm, bezKruszcow, false, false], [13, bezKruszcow, false, false], [13, true, false, false], [13, true, true, false], [13, true, true, true]] as [number, boolean, boolean, boolean][]) {
+      rozm = r; bezKruszcow = bk; krotko = kr; bezPodpisow = bp;
+      if (plate.x + szerokosc(r, bk, kr, bp) <= granica) break;
+    }
     const fE = `italic ${rozm * 0.82}px ${SERIF}`, fL = `${rozm * 1.05}px ${SERIF}`;
     const odst = rozm * 1.1;
     let x = plate.x + 10;
@@ -617,14 +637,15 @@ export class EkranGry implements Ekran {
       const kruszec = e === 'żelazo' ? 'zelazo' : e === 'złoto' ? 'zloto' : null;
       const cel: CelLotu | null = kruszec ?? (e === 'wiara' ? 'wiara' : e === 'krew' ? 'krew' : null);
       const kb = cel ? this.urobki.blysk(cel, teraz) : 0;
-      if (cel === 'wiara' || cel === 'krew') this.urobki.cele[cel] = { x: x + kaw(e + ' ', fE) + kaw(l, fL) / 2, y: y - rozm * 0.35 };
+      if (cel === 'wiara' || cel === 'krew') this.urobki.cele[cel] = { x: x + (bezPodpisow ? 0 : kaw((krotko && KROTKO[e] ? KROTKO[e] : e) + ' ', fE)) + kaw(l, fL) / 2, y: y - rozm * 0.35 };
       if (kruszec) {
         const s = rozm * 1.25;
         znaczekKruszcu(ctx, kruszec, x + s / 2, y - rozm * 0.32, s, kb, this.urobki.dolot(kruszec));
         this.urobki.cele[kruszec] = { x: x + s / 2, y: y - rozm * 0.32 };
         x += s + rozm * 0.25;
       }
-      if (!kruszec || !plate.waski) { ctx.font = fE; ctx.fillStyle = 'rgba(160,146,124,0.85)'; ctx.fillText(e + ' ', x, y); x += kaw(e + ' ', fE); }
+      const pod = krotko && KROTKO[e] ? KROTKO[e] : e;
+      if (!bezPodpisow && (!kruszec || !bezKruszcow)) { ctx.font = fE; ctx.fillStyle = 'rgba(160,146,124,0.85)'; ctx.fillText(pod + ' ', x, y); x += kaw(pod + ' ', fE); }
       // liczba, która się zmieniła, żarzy się chwilę: złotem, gdy rośnie, krwią, gdy maleje
       const z = this.zmianyZasobow.get(e);
       const n = Number(l);
@@ -1223,6 +1244,10 @@ export class EkranGry implements Ekran {
     return zbierzObszaryHud({
       plate: this.plate, vh: this.app.h, ui: this.ui, przyciski: this.przyciski,
       droga: null, rada: this.radaRect, menu: this.menuRect(),
+      // Alpha 0.3: pas kart (bez rozwiniętego menu i dymka) i górny margines: liczniki zasobów, kronika
+      pas: this.pas.menu ? [] : this.polaDruzyny.filter((q) => q.akcja !== 'szablon' && q.akcja !== 'koniecSzablonu'),
+      zasoby: { x: this.plate.x + 10, y: this.plate.y - this.plate.top * 0.34 - 18, w: this.koniecZasobow - this.plate.x - 10, h: 22 },
+      kronika: this.plate.waski || this.plate.niski ? null : { x: this.koniecZasobow + 28, y: this.plate.y - this.plate.top * 0.34 - 36, w: Math.max(0, lewaKrawedzPrzyciskow(this.przyciski) - 18 - this.koniecZasobow - 28), h: 40 },
     });
   }
 
@@ -1372,7 +1397,7 @@ export class EkranGry implements Ekran {
     // kolejne dotknięcia dokładają do zaznaczenia (z Shiftem — zdejmują)
     this.zaznacz([c.id], true);
     const ile = this.zaznaczeni.size;
-    ui.say(ile > 1 ? `${imieOsoby(o)} i ${ile - 1} innych — dotknij mapy, dokąd mają iść.` : `${imieOsoby(o)} — dotknij mapy, dokąd ma iść.`, sim.tick);
+    ui.say(ile > 1 ? `${imieOsoby(o)} i jeszcze ${ile - 1} — dotknij mapy, dokąd mają iść.` : `${imieOsoby(o)} — dotknij mapy, dokąd ma iść.`, sim.tick);
   }
 
   /** Dotknięcie medalionu albo rozkazu na pasku drużyny. */

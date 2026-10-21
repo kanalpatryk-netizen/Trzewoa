@@ -115,7 +115,8 @@ function wypatrz(sim: Sim): Creature | null {
     if (!samotny(sim, c)) continue;
     // Alpha 0.3: perk „Światło w oczach” — Patrzący go omija (ślad co minutę, żeby było widać, że ocalał)
     if (c.perki && maHak(c, 'swiatlo')) {
-      if (sim.tick - (ominiety.get(c.id) ?? -1e9) > 7200) { ominiety.set(c.id, sim.tick); perkZadzialal(sim, c, 'swiatlo'); }
+      const o = ominiety.get(c.id) ?? -1e9;
+      if (o > sim.tick || sim.tick - o > 7200) { ominiety.set(c.id, sim.tick); perkZadzialal(sim, c, 'swiatlo'); }
       continue;
     }
     const d = klan ? Math.hypot(klan.hx - c.x, klan.hy - c.y) : 0;

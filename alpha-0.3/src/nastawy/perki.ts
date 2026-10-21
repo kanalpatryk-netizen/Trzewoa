@@ -68,9 +68,10 @@ export const PERKI: Perk[] = [
   { id: 'zelazny', nazwa: 'Żelazne zdrowie', opis: 'Ma o 25% więcej życia.', role: ['rycerz'], efekt: { hp: 1.25 }, znak: 'zbroja' },
   // każdy
   { id: 'lekki', nazwa: 'Lekka stopa', opis: 'Chodzi o 20% szybciej.', role: ['robotnik', 'pobozny', 'rycerz'], efekt: { szybkosc: 1.2 }, znak: 'stopa' },
-  // wady
-  { id: 'lakomy', nazwa: 'Łakomy', opis: 'Głodnieje o 20% szybciej.', role: ['robotnik', 'pobozny', 'rycerz'], efekt: { glod: 1.2 }, wada: true, znak: 'wada' },
-  { id: 'kulawy', nazwa: 'Kulawy', opis: 'Chodzi o 15% wolniej.', role: ['robotnik', 'pobozny', 'rycerz'], efekt: { szybkosc: 0.85 }, wada: true, znak: 'wada' },
+  // wady — próby botów (20.10): wady na głód i chód (dawniej +20% głodu, −15% chodu) podwajały śmierci z głodu,
+  // bo logistyka wiadra jest w tej grze bardzo czuła; dlatego łagodniejsze niż perki, a częściej „bezpieczne” (życie, praca)
+  { id: 'lakomy', nazwa: 'Łakomy', opis: 'Głodnieje o 10% szybciej.', role: ['robotnik', 'pobozny', 'rycerz'], efekt: { glod: 1.1 }, wada: true, znak: 'wada' },
+  { id: 'kulawy', nazwa: 'Kulawy', opis: 'Chodzi o 8% wolniej.', role: ['robotnik', 'pobozny', 'rycerz'], efekt: { szybkosc: 0.92 }, wada: true, znak: 'wada' },
   { id: 'watly', nazwa: 'Wątły', opis: 'Ma o 20% mniej życia.', role: ['robotnik', 'pobozny', 'rycerz'], efekt: { hp: 0.8 }, wada: true, znak: 'wada' },
   { id: 'watpiacy', nazwa: 'Wątpiący', opis: 'Modli się o 15% słabiej.', role: ['pobozny'], efekt: { modlitwa: 0.85 }, wada: true, znak: 'wada' },
   { id: 'niezdara', nazwa: 'Niezdara', opis: 'Kopie o 15% wolniej.', role: ['robotnik'], efekt: { kopanie: 0.85 }, wada: true, znak: 'wada' },

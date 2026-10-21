@@ -659,7 +659,8 @@ export function zalozBota(sim: Sim, styl: StylBota): void {
 /** Alpha 0.3 (wizja Pawła): ciągnie kartę z talii, gdy wiary jest z zapasem (hazard — nie wie, co wypadnie). */
 function tarot(sim: Sim, styl: StylBota): void {
   if (sim.lud.druzyna?.wariant !== 'pawel' || czemuNieKarta(sim)) return;
-  const zapas = styl === 'speedrun' ? 30 : styl === 'budowniczy' ? 70 : 50;
+  // zapas wiary na Cud i szepty — karta to hazard, nie powinna zjadać wiary potrzebnej do oddania
+  const zapas = styl === 'speedrun' ? 60 : styl === 'budowniczy' ? 100 : 80;
   if (sim.wiara < cenaKarty(sim) + zapas) return;
   const k = wyciagnijKarte(sim);
   if (typeof k !== 'string') mysl(sim, `karta z talii — ${arkan(k.arkan)?.nazwa ?? '?'}${k.odwrocona ? ' (odwrócona)' : ''}`);

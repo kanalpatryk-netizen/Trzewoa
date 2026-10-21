@@ -217,8 +217,9 @@ function sladyMnoznikow(sim: Sim): void {
       || (e.sila && (c.job === Job.FIGHT || c.job === Job.WARTA)) || (p.hak === 'wytrwaly' && c.job === Job.DIG)
       || (e.szybkosc && !!c.droga && c.droga.length > 6);
     if (!pracuje) continue;
+    // (pamięć z poprzedniej partii — tik z przyszłości — się nie liczy)
     const ost = ostatniSlad.get(c.id) ?? -1e9;
-    if (sim.tick - ost < PERK.sladCo) continue;
+    if (ost <= sim.tick && sim.tick - ost < PERK.sladCo) continue;
     ostatniSlad.set(c.id, sim.tick);
     slad(sim, c.id, 'perk', id);
   }

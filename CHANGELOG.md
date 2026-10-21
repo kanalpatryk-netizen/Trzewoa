@@ -1,5 +1,28 @@
 # Zmiany
 
+## Alpha 0.3 (komputer) — dwie wersje: wizja Patryka i wizja Pawła
+Dalszy ciąg Alphy 0.2 w folderze `alpha-0.3/` (Alpha 0.2 bez zmian). Zapisy, ustawienia, atlas i osiągnięcia osobne
+(klucze `trzewia-alpha-0.3:`). Z jednego kodu dwie gry: `trzewia-alpha-0.3-patryk.html` i `trzewia-alpha-0.3-pawel.html`
+(przełącznik `src/nastawy/wariant.ts`, budowa `npm run pack`). Ustalenia zespołu (Patryk, Paweł): gracz ma się przywiązać do
+drużyny; Patryk — imienne postacie z perkami na kartach zamiast dolnego panelu; Paweł — biografii nikt nie czyta, lore tylko jako
+odsłanianie historii świata, a na starcie wybór 1 z 3 bonusów dla ról, do tego talia tarota z buffami i nerfami dla kompanii.
+- **Wizja Patryka:** 6 stałych postaci (te same w każdej partii) + 8 kolejnych z daru ludzi, każda z perkiem (12 perków,
+  `src/nastawy/perki.ts`: mnożniki ról i haki — drugi okruch rudy, wolniejszy głód przy kopaniu, Patrzący omija, krótszy rytuał,
+  raz na partię przeżyty śmiertelny cios), czasem z wadą, zdaniem o tym, kim była, i fragmentem historii. Pas 6 kart: portret,
+  imię i rola, życie/głód/wiara, perk, stan; zaznaczanie kartą, kamera drugim dotknięciem, szczegóły po najechaniu albo
+  przytrzymaniu; poległy zostaje na karcie (krzyż, przyczyna), wskrzeszenie przywraca tę samą osobę; więcej niż 6 — karty się
+  zwężają do 8, potem „+N”. Ekran „Twoja drużyna” po „Nowa gra”.
+- **Wizja Pawła:** imiona z puli (ziarno partii), bez perków; ekran ślubu po „Nowa gra” (cisza, ogień, głód — bonus dla każdej
+  roli na całą partię); talia 22 wielkich arkanów: karta za wiarę (15 + 5 za każdą następną), prosto buff, odwrócona nerf, 90 s,
+  najwyżej 6 naraz; animacja zjazdu z talii, odwrócenia, rozbłysku i świecy czasu. Medaliony ról zostają obok talii.
+- **Kronika góry:** 14 ukrytych kart historii świata, odsłanianych zdarzeniami (atlas, nowa grupa).
+- **Dolny panel zastąpiony pasem kart** (`src/render/pas.ts`): rozkazy w kolumnie (telefon: menu „rozkazy”), oddanie i relikwiarz
+  obok pasa (telefon poziomo: górny pasek), przyciski i kronika w górnym marginesie (telefon pionowo: przyciski w lewej kolumnie).
+- **Zapis v5** (czyta też v4), kronika z imionami, lekcja w samouczku, bot ciągnie karty tarota i składa ślub.
+- **Balans (próby botów, 32 partie po 30 min na zestaw):** wygrane/przegrane — 0.2: 6/9, Patryk: 6/8, Paweł: 4/10; zgony ludu
+  75 / 96 / 102 (głównie z głodu). Pierwsze wady (+20% głodu, −15% chodu) podwajały śmierci z głodu — złagodzone (+10% głodu,
+  −8% chodu; Bogdan *Wątły* zamiast *Łakomego*); nerfy tarota na głód i chód też łagodniejsze. Do dalszego strojenia.
+
 ## Alpha 0.2 (komputer)
 Dalszy ciąg Alphy 0.1 w folderze `alpha-0.2/` (etap 5 planu). Alpha 0.1 zostaje bez zmian. Zapisy, ustawienia, atlas i osiągnięcia Alphy 0.2 są osobne (klucze `trzewia-alpha-0.2:`).
 - **Kursor większy i drugi przy kliknięciu** (`src/core/kursor.ts`, `KURSOR` w `src/nastawy/ekran.ts`). Użytkownik (19.10): „powiększ subtelnie kursor, dodatkowo dodałem drugi kursor kursor2, który ma być widoczny przy kliknięciu”. Rękawica ma teraz 40 px zamiast 32, a póki przycisk myszy jest wciśnięty, widać `obrazy/kursor2.png` (palec wciska; nawet najkrótsze kliknięcie pokazuje ją przez 120 ms). Kursora przeglądarki większego niż 32 px Chrome i Firefox nie pokazują przy krawędzi okna (zamieniają na strzałkę — na dole gry są medaliony i przyciski), więc rękawicę rysuje teraz sama gra: obrazek w osobnej warstwie nad wszystkim, przesuwany za myszką, a systemowa strzałka chowa się dopiero, gdy rękawica stoi pod myszką (na dotyku jej nie ma). Oba obrazki gra sama przycina do rękawicy i zmniejsza do tej samej wielkości; czubek palca każdego trafia w punkt myszy, więc przy kliknięciu palec nie skacze.

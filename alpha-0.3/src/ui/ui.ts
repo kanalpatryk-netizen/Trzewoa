@@ -72,6 +72,8 @@ export class Ui {
     this.gy = plate.y + plate.h / 2 - this.gap * (rzedy - 1) / 2;
     // pierwszy ryt nie może wejść na znak menu w lewym górnym rogu płyty
     const odGory = plate.y + ZNAK_MENU_DOL + this.gs * 0.85;
+    // Alpha 0.3: telefon pionowo — ryty zaczynają się u góry kolumny, bo pod nimi stoją przyciski poleceń
+    if (plate.waski) { this.gy = odGory; this.gap = Math.min(this.gap, this.gs * 1.8); }
     if (this.gy < odGory) {
       const dol = plate.y + plate.h - this.gs * 0.85;
       this.gap = Math.min(this.gap, (dol - odGory) / Math.max(1, rzedy - 1));

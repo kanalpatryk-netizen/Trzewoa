@@ -105,7 +105,8 @@ export function rysujDruzyne(
 ): PoleDruzyny[] {
   const u = ukladPasa(plate, vh);
   const pola: PoleDruzyny[] = [];
-  const vw = plate.x + plate.w + plate.right;
+  // dymek szczegółów leży nad płytą — nie na kolumnach rytów i przycisków
+  const x0 = plate.x, x1 = plate.x + plate.w;
   ctx.save();
   let miejscaPostaci = new Map<number, Obszar>(), miejscaTarota = new Map<number, Obszar>();
   if (WARIANT === 'pawel') {
@@ -127,12 +128,12 @@ export function rysujDruzyne(
     if (sz.rodzaj === 'postac') {
       const o = sim.lud.druzyna?.osoby.find((q) => q.id === sz.id);
       const m = miejscaPostaci.get(sz.id);
-      if (o && m) dymekSzczegolow(ctx, m, wierszeSzczegolow(sim, o), vw, 320);
+      if (o && m) dymekSzczegolow(ctx, m, wierszeSzczegolow(sim, o), x0, x1, 320);
     } else if (sz.rodzaj === 'tarot') {
       const m = miejscaTarota.get(sz.id);
       const w = wierszeTarota(sim, sz.id);
-      if (m && w.length) dymekSzczegolow(ctx, m, w, vw, 300);
-    } else if (u.talia) dymekSzczegolow(ctx, u.talia, wierszeTalii(sim), vw, 300);
+      if (m && w.length) dymekSzczegolow(ctx, m, w, x0, x1, 300);
+    } else if (u.talia) dymekSzczegolow(ctx, u.talia, wierszeTalii(sim), x0, x1, 300);
   }
   ctx.restore();
   return pola;

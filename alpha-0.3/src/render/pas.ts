@@ -73,7 +73,7 @@ export function ukladPasa(p: Plate, vh: number): UkladPasa {
     const y0 = mt + 12, h = vh - 4 - y0;
     const rozkazy = { x: 6, y: y0, w: PAS.poziomRozkazyW, h };
     // oddanie i krew w górnym pasku — przed klepsydrą w prawym rogu
-    const krew = { x: p.x + p.w - 44 - 118, y: 3, w: 118, h: Math.max(20, p.top - 6) };
+    const krew = { x: p.x + p.w - 58 - 118, y: 3, w: 118, h: Math.max(20, p.top - 6) };
     const oddanie = { x: krew.x - 12 - 100, y: 3, w: 100, h: krew.h };
     const x0 = 6 + PAS.poziomRozkazyW + 8, w0 = vw - 6 - x0;
     if (pawel) {
@@ -309,9 +309,13 @@ export function rysujRozkazy(
 
 export interface Wiersz { tekst: string; rozm: number; barwa: string; kursywa?: boolean; odstep?: number }
 
-/** Dymek ze szczegółami nad kartą (perki, wada, lore; karta tarota). Mieści się na ekranie i nie wchodzi na kartę. */
-export function dymekSzczegolow(ctx: CanvasRenderingContext2D, nad: Obszar, wiersze: Wiersz[], vw: number, szer: number): Obszar {
-  const w = Math.min(szer, vw - 16);
+/**
+ * Dymek ze szczegółami nad kartą (perki, wada, lore; karta tarota). Leży nad płytą (między `x0` a `x1` — nie wchodzi na
+ * kolumny rytów i przycisków po bokach) i nie zasłania karty, o której mówi.
+ */
+export function dymekSzczegolow(ctx: CanvasRenderingContext2D, nad: Obszar, wiersze: Wiersz[], x0: number, x1: number, szer: number): Obszar {
+  const vw = x1 + 8;
+  const w = Math.min(szer, x1 - x0 - 16);
   const linie: { t: string; w: Wiersz; odstep: number }[] = [];
   ctx.save();
   for (const r of wiersze) {
@@ -321,7 +325,7 @@ export function dymekSzczegolow(ctx: CanvasRenderingContext2D, nad: Obszar, wier
   let h = 14;
   for (const l of linie) h += l.w.rozm * 1.32 + l.odstep;
   h += 8;
-  const x = Math.max(8, Math.min(vw - w - 8, nad.x + nad.w / 2 - w / 2));
+  const x = Math.max(x0 + 8, Math.min(vw - w - 16, nad.x + nad.w / 2 - w / 2));
   const y = Math.max(6, nad.y - h - 8);
   tablica(ctx, x, y, w, h, 'wlaczona');
   let yy = y + 12;

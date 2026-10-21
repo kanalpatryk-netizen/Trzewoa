@@ -70,7 +70,7 @@ export interface Postac {
 export const OBSADA: Postac[] = [
   { imie: 'Radost', plec: 'k', rola: 'pobozny', perk: 'zarliwy', wada: 'watly', kim: 'Przeoryszka klasztoru pod Płockiem, który spłonął w jedną noc.', fragment: 'h4' },
   { imie: 'Dobromir', plec: 'm', rola: 'pobozny', perk: 'kaplan', kim: 'Wiejski klecha — jedyny, który zszedł za swoimi pod ziemię.', fragment: 'h5' },
-  { imie: 'Bogdan', przydomek: 'Kret', plec: 'm', rola: 'robotnik', perk: 'kilof', wada: 'lakomy', kim: 'Kopał sól pod Bochnią, póki szyb nie zasypał mu braci.', fragment: 'h1' },
+  { imie: 'Bogdan', przydomek: 'Kret', plec: 'm', rola: 'robotnik', perk: 'kilof', wada: 'watly', kim: 'Kopał sól pod Bochnią, póki szyb nie zasypał mu braci.', fragment: 'h1' },
   { imie: 'Mszczuj', plec: 'm', rola: 'robotnik', perk: 'zyla', kim: 'Syn kowala z Gniezna. Mówi, że żelazo samo go woła.', fragment: 'h2' },
   { imie: 'Jarosta', plec: 'k', rola: 'robotnik', perk: 'wytrwaly', wada: 'kulawy', kim: 'Nosiła worki na grodzisku, aż przyszli ludzie w czerni.', fragment: 'h3' },
   { imie: 'Wojsław', plec: 'm', rola: 'rycerz', perk: 'twardy', kim: 'Ostatni z pocztu, który wjechał w tę górę po zaginionego księcia.', fragment: 'h6' },

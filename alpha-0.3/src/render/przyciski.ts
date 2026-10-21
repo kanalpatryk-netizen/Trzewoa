@@ -51,8 +51,12 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
   // TELEFON pionowo: kolumna w lewym marginesie, od dołu płyty w górę (nad nią ryty);
   // poziomo: kolumna w prawym marginesie (jak dawniej); komputer: rząd w górnym marginesie, przed klepsydrą
   if (p.waski) {
-    const r = TELEFON.pion.przyciskR;
-    const odstep = r * 2.3;
+    // pod rytami (ui.ts: od góry kolumny, co gs × 1,8) — na niskim telefonie przyciski gęstnieją, ale nie maleją poniżej 17 px
+    const gs = Math.max(20, Math.min(38, p.left * 0.5));
+    const rytyDol = p.y + 40 + gs * 0.85 + 2 * Math.min(p.h / 5.6, gs * 1.8) + gs * 0.8 + 4;
+    const miejsce = p.y + p.h - 6 - rytyDol;
+    const odstep = Math.min(TELEFON.pion.przyciskR * 2.3, miejsce / n);
+    const r = Math.max(17, Math.min(TELEFON.pion.przyciskR, odstep / 2.15));
     const x = p.left / 2;
     const y0 = p.y + p.h - r - 6;
     return lista.map((z, i) => ({ ...z, x, y: y0 - i * odstep, r }));
@@ -67,7 +71,8 @@ export function rozmiescPrzyciski(p: Plate, vh: number, stan: { pauza: boolean; 
   const r = Math.max(16, Math.min(20, p.top * 0.3));
   const odstep = r * 2.35;
   const y = p.y - p.top * 0.5 - 2;
-  const x1 = miejsceKlepsydry(p).x - miejsceKlepsydry(p).r - r - 8;
+  const k = miejsceKlepsydry(p);
+  const x1 = k.x - k.s * 1.9 - r - 10;
   return lista.map((z, i) => ({ ...z, x: x1 - (n - 1 - i) * odstep, y, r, wGorze: true }));
 }
 
