@@ -6,7 +6,8 @@ i szepnij — chwilowo je usuń i tam daj poziome kwadraty z jednostkami”. Now
 `trzewia-alpha-0.3.html`): ślub, talia tarota i Kronika góry od Pawła (bez życiorysów), a w lewej kolumnie — w miejscu rytów —
 poziome kafelki stałej drużyny z perkami (Patryk). Ryty schowane przełącznikiem `RYTY` (`src/nastawy/wariant.ts`), samouczek bez
 ich lekcji, napis wstępu bez rytów. Lewy margines szerszy, znak menu w rogu ekranu, na telefonie pionowo przyciski w górnym
-rzędzie. Wizje Patryka i Pawła zostają osobno do porównania.
+rzędzie. Wizje Patryka i Pawła zostają osobno do porównania. Próby botów (32 partie po 30 min): 9 wygranych, 7 przegranych,
+83 zgony ludu (Alpha 0.2: 6 / 9, 75 zgonów).
 
 ## Alpha 0.3 (komputer) — dwie wersje: wizja Patryka i wizja Pawła
 Dalszy ciąg Alphy 0.2 w folderze `alpha-0.3/` (Alpha 0.2 bez zmian). Zapisy, ustawienia, atlas i osiągnięcia osobne

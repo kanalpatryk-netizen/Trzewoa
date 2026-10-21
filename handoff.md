@@ -92,7 +92,9 @@ z Dodatku A (z parametrem repo i ziaren):
   (poziomy kafelek; wysoki — imię z przydomkiem, rola · stan, perk z nazwą; niski — imię i paski), dymek szczegółów obok
   kafelka (`dymekSzczegolow(..., obok)`), `computePlate` — szerszy `left` (`PAS.kolumna*`, `poziomLewo`, `pionLewo`, `pionGora`),
   `menuRect` w rogu ekranu, `rozmiescPrzyciski` — telefon pionowo: rząd w górnym marginesie.
-- Próby botów (32 partie, 30 min): WYNIKI_RAZEM
+- Próby botów (32 partie, 30 min, ziarna 1–16): wygrane 9, przegrane 7, bez końca 16; zgony ludu 83 (z głodu 39, w ciemności 15).
+  Dla porównania Alpha 0.2: 6 / 9 / 17, zgonów 75. Bez wyjątków. (Bot i tak nie używa rytów przez interfejs, więc ich
+  schowanie nie zmienia jego gry — dla gracza to mniej narzędzi: bez Cudu oddanie rośnie tylko z modlitw.)
 ---
 
 ## 1. Cel — wszystko, co jeszcze trzeba zrobić
