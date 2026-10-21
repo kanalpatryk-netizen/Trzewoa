@@ -44,8 +44,12 @@ function szansaPliku(G: NastawyGlosu, nazwa: string): number {
   return G.rzadkosc.pospolite?.szansa ?? 1;
 }
 
-/** Skąd dokąd mowa, jak głośno i obwiednia słów. */
-function zmierz(G: NastawyGlosu, b: AudioBuffer): Omit<Nagranie, 'nazwa' | 'szansa' | 'bufor'> {
+/**
+ * Skąd dokąd mowa, jak głośno i obwiednia słów — albo null, gdy w nagraniu nie ma czego słuchać (sama cisza).
+ * Mowa zaczyna się od pierwszego fragmentu nie cichszego niż `mowaOd` dB pod najgłośniejszym: szum, stuk
+ * i oddech przed słowami odpadają, więc postać odzywa się od razu. Koniec — gdzie gaśnie poniżej `ciszaPonizej`.
+ */
+function zmierz(G: NastawyGlosu, b: AudioBuffer): Omit<Nagranie, 'nazwa' | 'szansa' | 'bufor'> | null {
   const n = b.length, sr = b.sampleRate, k = b.numberOfChannels;
   const d = new Float32Array(n);
   let szczyt = 0;
@@ -53,12 +57,25 @@ function zmierz(G: NastawyGlosu, b: AudioBuffer): Omit<Nagranie, 'nazwa' | 'szan
     const x = b.getChannelData(c);
     for (let i = 0; i < n; i++) { d[i] += x[i] / k; const a = Math.abs(x[i]); if (a > szczyt) szczyt = a; }
   }
+  if (szczyt < 10 ** (G.pustePonizej / 20)) return null;
+  const krok = Math.max(1, Math.round(KROK * sr));
+  const cale = new Float32Array(Math.ceil(n / krok));
+  let najg = 0;
+  for (let j = 0; j < cale.length; j++) {
+    let s = 0;
+    const p = j * krok, q = Math.min(n, p + krok);
+    for (let i = p; i < q; i++) s += d[i] * d[i];
+    cale[j] = Math.sqrt(s / Math.max(1, q - p));
+    if (cale[j] > najg) najg = cale[j];
+  }
+  const progMowy = najg * 10 ** (G.mowaOd / 20);
+  let pierwszy = 0;
+  while (pierwszy < cale.length - 1 && cale[pierwszy] < progMowy) pierwszy++;
   const prog = 10 ** (G.ciszaPonizej / 20);
-  let a = 0, z = n - 1;
-  while (a < n && Math.abs(d[a]) < prog) a++;
+  let a = pierwszy * krok, z = n - 1;
   while (z > a && Math.abs(d[z]) < prog) z--;
   if (a >= z) { a = 0; z = n - 1; }
-  const od = Math.max(0, a / sr - 0.015), koniec = Math.min(n / sr, z / sr + 0.06);
+  const od = Math.max(0, a / sr - 0.03), koniec = Math.min(n / sr, z / sr + 0.06);
   const blok = Math.max(1, Math.round(KROK * sr)), i0 = Math.floor(od * sr), i1 = Math.ceil(koniec * sr);
   const obwiednia = new Float32Array(Math.max(1, Math.ceil((i1 - i0) / blok)));
   let max = 0;
@@ -95,7 +112,12 @@ export class GlosOdmowy {
       fetch(url)
         .then((r) => r.arrayBuffer())
         .then((dane) => new Promise<AudioBuffer>((ok, zle) => ctx.decodeAudioData(dane, ok, zle)))
-        .then((bufor) => { this.gotowe.push({ nazwa, szansa: szansaPliku(G, nazwa), bufor, ...zmierz(G, bufor) }); })
+        .then((bufor) => {
+          const m = zmierz(G, bufor);
+          // puste nagranie (sama cisza) nie gra wcale — inaczej postać „mówi” milczeniem i zagłusza następną odmowę
+          if (!m) { console.warn(`Głos odmowy: ${this.kto}/${nazwa} jest cichy jak grób — pomijam.`); return; }
+          this.gotowe.push({ nazwa, szansa: szansaPliku(G, nazwa), bufor, ...m });
+        })
         .catch(() => { /* nagranie się nie wczytało — postać odmówi bez głosu */ });
     }
   }

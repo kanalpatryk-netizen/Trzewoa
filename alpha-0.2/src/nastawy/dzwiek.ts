@@ -144,8 +144,15 @@ export const GLOS_RYCERZA: NastawyGlosu = {
   odstepMs: 500,
   /** Nagrania wyrównuje się do jednej głośności: średnia z głośnych fragmentów (dBFS), szczyt najwyżej −1 dBFS. */
   wyrownajDo: -20,
-  /** Cisza na początku i końcu nagrania (poniżej tylu dBFS) jest odcinana — rycerz odpowiada od razu. */
+  /**
+   * Początek nagrania (szum, stuk, oddech) jest odcinany aż do pierwszego fragmentu nie cichszego niż tyle dB pod
+   * najgłośniejszym — rycerz odpowiada od razu. Więcej (np. −40) zostawia cichsze początki słów, mniej (−20) tnie śmielej.
+   */
+  mowaOd: -30,
+  /** Cisza na końcu nagrania (poniżej tylu dBFS) jest odcinana. */
   ciszaPonizej: -45,
+  /** Nagranie, którego najgłośniejsze miejsce jest cichsze niż tyle dBFS, uchodzi za puste i nie gra wcale. */
+  pustePonizej: -50,
   /** Grupy rzadkości: szansa jednego nagrania (%) i numery plików (dziweki_part-NN.mp3). */
   rzadkosc: {
     pospolite: { szansa: 17, pliki: ['02', '04', '06', '08'] },
@@ -174,8 +181,15 @@ export const GLOS_POBOZNEGO: NastawyGlosu = {
   odstepMs: 500,
   /** Nagrania wyrównuje się do jednej głośności: średnia z głośnych fragmentów (dBFS), szczyt najwyżej −1 dBFS. */
   wyrownajDo: -20,
-  /** Cisza na początku i końcu nagrania (poniżej tylu dBFS) jest odcinana — pobożny odpowiada od razu. */
+  /**
+   * Początek nagrania (szum, stuk, oddech) jest odcinany aż do pierwszego fragmentu nie cichszego niż tyle dB pod
+   * najgłośniejszym — pobożny odpowiada od razu. Więcej (np. −40) zostawia cichsze początki słów, mniej (−20) tnie śmielej.
+   */
+  mowaOd: -30,
+  /** Cisza na końcu nagrania (poniżej tylu dBFS) jest odcinana. */
   ciszaPonizej: -45,
+  /** Nagranie, którego najgłośniejsze miejsce jest cichsze niż tyle dBFS, uchodzi za puste i nie gra wcale. */
+  pustePonizej: -50,
   /** Grupy rzadkości: szansa jednego nagrania (%) i numery plików (…_part-NN.mp3). */
   rzadkosc: {
     pospolite: { szansa: 9.09, pliki: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11'] },
@@ -190,6 +204,8 @@ export interface NastawyGlosu {
   opoznienie: number;
   odstepMs: number;
   wyrownajDo: number;
+  mowaOd: number;
   ciszaPonizej: number;
+  pustePonizej: number;
   rzadkosc: Record<string, { szansa: number; pliki: string[] }>;
 }
