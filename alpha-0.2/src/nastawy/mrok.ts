@@ -19,8 +19,11 @@ export const MROK = {
   swiatlo: {
     robotnik: 7.6, pobozny: 5.6, pobozny_modli: 6.6, rycerz: 5.4,
     siedziba: 10, oboz: 7, rdzen: 7, cud: 11,
-    /** Alpha, etap 3d: świece na ołtarzu (przy rytuale jaśniej) i smuga dnia z szybu nad nim (u góry, u dołu). */
-    oltarz: 5.5, rytual: 8, smugaGora: 2.2, smugaDol: 4.2,
+    /**
+     * Alpha, etap 3d: świece na ołtarzu (przy rytuale jaśniej) i smuga dnia z szybu nad nim — u góry (w całym szybie,
+     * od nieba do stropu sali) i u dołu, przy ołtarzu. Węższym szybem, którym zjeżdża wiadro, dnia wpada mniej.
+     */
+    oltarz: 5.5, rytual: 8, smugaGora: 2.2, smugaDol: 4.2, szybWiadra: 1.4,
     /**
      * Jasna sala cała w świetle (dzień z szybu i świece): plamy o tym promieniu co tyle kafli wzdłuż sali.
      * Gotowe pomieszczenia świecą poza swój obrys o tyle kafli: kuźnia ogniem, warsztat świecą, sypialnia ledwo.

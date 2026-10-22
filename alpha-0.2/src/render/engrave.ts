@@ -5,6 +5,7 @@ import { ustawienia, skalaRenderu } from '../core/settings-store';
 import { Camera } from './camera';
 import { rolaPostaci, klanLudu } from '../sim/lud';
 import { SWIAT, RDZEN } from '../nastawy/swiat';
+import { odWidoku } from './shafts';
 
 import { TON_MAX, MATERIALY, MASA, RYCINA_SWIATA as RS, SWIATLO_RYCINY as SR, type Kreskowanie } from '../nastawy/wyglad/rycina';
 import { FRESK_SWIATA as FS } from '../nastawy/wyglad/fresk-swiata';
@@ -367,7 +368,6 @@ export class Engraver {
     this.lx0 = x0; this.ly0 = y0;
     const L = this.light, F = this.fresh;
     L.fill(0);
-    const so = w.salaOltarza;
     const gr = graniceWarstw(w);
 
     for (let y = 0; y < tilesY; y++) {
@@ -379,15 +379,14 @@ export class Engraver {
         const i = w.idx(wx, wy);
         const age = sim.tick - w.lastSeen[i];
         // to, co zrobiła twoja ręka, nie blaknie do zera
-        // jasna sala jest zawsze na widoku — dzień z szybu nie pozwala jej zapomnieć
-        let podstawa = wy <= w.surface[wx] + 1 || (wx >= so.x0 - 1 && wx <= so.x1 + 1 && wy >= so.y0 - 1 && wy <= so.y1 + 2) ? 1
+        // jasna sala i oba szyby nad nią są zawsze na widoku — dzień z powierzchni nie pozwala ich zapomnieć
+        const dW = odWidoku(w, wx, wy);
+        let podstawa = wy <= w.surface[wx] + 1 || dW === 0 ? 1
           : (w.ever[i] ? Math.max(0, 1 - age / MEM_SPAN) : 0);
-        // wokół sali pamięć gaśnie łagodnie przez kilka kafli (bez prostego brzegu z kafli); poniżej 0,82,
+        // wokół nich pamięć gaśnie łagodnie przez kilka kafli (bez prostego brzegu z kafli); poniżej 0,82,
         // więc nigdy niewidziany kafel rysuje się tam jako lita skała warstwy, nie zdradza jaskiń
-        if (podstawa < 0.8 && so.x1 >= 0) {
-          const ddx = wx < so.x0 - 1 ? so.x0 - 1 - wx : wx > so.x1 + 1 ? wx - so.x1 - 1 : 0;
-          const ddy = wy < so.y0 - 1 ? so.y0 - 1 - wy : wy > so.y1 + 2 ? wy - so.y1 - 2 : 0;
-          const ws = 0.8 - Math.sqrt(ddx * ddx + ddy * ddy) * 0.16;
+        if (podstawa < 0.8) {
+          const ws = 0.8 - dW * 0.16;
           if (ws > podstawa) podstawa = ws;
         }
         F[k] = w.slad[i] ? Math.max(0.42, podstawa) : podstawa;
@@ -662,6 +661,8 @@ export class Engraver {
     if (so.x1 >= 0) {
       prostokat(so.x0 + 1, so.y0, so.x1, so.y1 + 1, SR.sala.brzeg, SR.sala.moc);
       prostokat(w.szybX - 1, SURFACE_Y - 2, w.szybX + 2, so.y0, 2.5, SR.sala.moc * 0.8);
+      // węższym szybem, którym zjeżdża wiadro, dnia wpada mniej
+      prostokat(w.szybWiadraX, SURFACE_Y - 2, w.szybWiadraX + SWIAT.warstwy.szybWiadra.szer, w.szybWiadraDol + 1, 1.5, SR.sala.moc * 0.5);
       plama(w.oltarz.x + 0.5, w.oltarz.y - 1, SR.oltarz.r, SR.oltarz.moc);
     }
     for (const p of sim.pomieszczenia) {

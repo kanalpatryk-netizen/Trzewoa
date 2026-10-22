@@ -13,11 +13,12 @@ import { rysujLud } from './postacie';
 import { wysokoscPostaci } from './figury';
 import { kropla, type Urobki } from './kruszce';
 import { LUD } from '../nastawy/lud';
+import { SURFACE_Y } from '../sim/world';
 
 /**
  * OŁTARZ (Alpha, etap 3d) — rysunek ołtarza na środku sali i animacje rytuałów:
- *  - kamienny kopczyk, na nim kamienna mensa z misą i dwiema świecami, za nią drewniany krzyż; z szybu nad nim
- *    pada smuga światła dziennego z pyłem, który w niej wiruje (w mroku też ją widać — render/mrok.ts);
+ *  - kamienny kopczyk, na nim kamienna mensa z misą i dwiema świecami, za nią drewniany krzyż; z nieba, szybem nad
+ *    nim, pada smuga światła dziennego z pyłem, który w niej wiruje (w mroku też ją widać — render/mrok.ts);
  *  - modlitwa: od krzyża biją promienie, złote iskry płyną od klęczącego do krzyża;
  *  - szał krwi: krew spływa po krzyżu do misy, wokół ołtarza zapala się krąg czerwonych znaków (glif z
  *    render/tajemnica.ts), na koniec czerwona smuga leci do rycerza — jego czerwoną poświatę rysuje już strój;
@@ -146,8 +147,13 @@ export class Oltarz {
     const widac = !(u.cx < -z * 8 || u.cx > cam.vw + z * 8 || u.yp < -z * 3 || u.krzyz.gora > cam.vh + z * 6);
     const pr = postep(sim);
     ctx.save();
+    // smuga dnia sięga od nieba do posadzki — widać ją, choćby sam ołtarz był już poza ekranem
+    const w = sim.world;
+    const gx = cam.toScreenX(w.szybX + 0.5), gora = cam.toScreenY(SURFACE_Y);
+    if (Math.max(gx, u.cx) + z * 3 > 0 && Math.min(gx, u.cx) - z * 3 < cam.vw && u.yp > 0 && gora < cam.vh) {
+      smugaDnia(ctx, gx, gora, cam.toScreenY(w.szybDol), u, teraz, ruch);
+    }
     if (widac) {
-      smugaDnia(ctx, cam.toScreenX(sim.world.szybX + 0.5), cam.toScreenY(sim.world.szybDol), u, teraz, ruch);
       // płomienie świec — przy rytuale wyższe i jaśniejsze
       plomienie(ctx, u, teraz, pr ? 1.25 : 1, ruch);
       krewWMisie(ctx, u, this.misa);
@@ -454,37 +460,50 @@ function krewWMisie(ctx: CanvasRenderingContext2D, u: Uklad, ile: number): void 
   ctx.beginPath(); ctx.ellipse(m.x - m.rx * 0.2, m.y - m.h, m.rx * 0.18, Math.max(0.6, z * 0.02), 0, 0, Math.PI * 2); ctx.fill();
 }
 
-/** Smuga światła dziennego z szybu (dół szybu w gx, gy) na ołtarz, w niej wirujący pył. */
-function smugaDnia(ctx: CanvasRenderingContext2D, gx: number, gy: number, u: Uklad, teraz: number, ruch: boolean): void {
+/**
+ * Smuga światła dziennego na ołtarz, w niej wirujący pył: wpada z nieba wylotem szybu (`gora`), idzie szybem w jego
+ * szerokości (środek szybu w `gx`), a od jego dna (`gy`, strop sali) rozchodzi się na ołtarz. Dawniej zaczynała się
+ * dopiero u stropu sali — nie było widać, skąd pada.
+ */
+function smugaDnia(ctx: CanvasRenderingContext2D, gx: number, gora: number, gy: number, u: Uklad, teraz: number, ruch: boolean): void {
   const z = u.z;
   const dy = u.yp - gy;
   if (dy < z * 2) return;
+  const cala = u.yp - gora;
+  const s = (gy - gora) / cala;             // ta część smugi biegnie szybem
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  const g = ctx.createLinearGradient(0, gy, 0, u.yp);
-  g.addColorStop(0, 'rgba(240,226,190,0.16)');
-  g.addColorStop(0.7, 'rgba(236,214,170,0.09)');
+  // w szybie pełny dzień, w sali gaśnie ku posadzce
+  const g = ctx.createLinearGradient(0, gora, 0, u.yp);
+  g.addColorStop(0, 'rgba(244,232,200,0.2)');
+  g.addColorStop(s, 'rgba(240,226,190,0.16)');
+  g.addColorStop(s + (1 - s) * 0.7, 'rgba(236,214,170,0.09)');
   g.addColorStop(1, 'rgba(236,214,170,0.03)');
   ctx.fillStyle = g;
   ctx.beginPath();
-  ctx.moveTo(gx - z * 1.5, gy); ctx.lineTo(gx + z * 1.5, gy);
+  ctx.moveTo(gx - z * 1.5, gora); ctx.lineTo(gx + z * 1.5, gora); ctx.lineTo(gx + z * 1.5, gy);
   ctx.lineTo(u.cx + z * 2.8, u.yp); ctx.lineTo(u.cx - z * 2.8, u.yp);
+  ctx.lineTo(gx - z * 1.5, gy);
   ctx.closePath(); ctx.fill();
   // jaśniejszy środek smugi
-  const g2 = ctx.createLinearGradient(0, gy, 0, u.yp);
-  g2.addColorStop(0, 'rgba(255,244,214,0.12)'); g2.addColorStop(1, 'rgba(255,244,214,0.02)');
+  const g2 = ctx.createLinearGradient(0, gora, 0, u.yp);
+  g2.addColorStop(0, 'rgba(255,244,214,0.14)'); g2.addColorStop(s, 'rgba(255,244,214,0.12)'); g2.addColorStop(1, 'rgba(255,244,214,0.02)');
   ctx.fillStyle = g2;
   ctx.beginPath();
-  ctx.moveTo(gx - z * 0.6, gy); ctx.lineTo(gx + z * 0.6, gy);
+  ctx.moveTo(gx - z * 0.6, gora); ctx.lineTo(gx + z * 0.6, gora); ctx.lineTo(gx + z * 0.6, gy);
   ctx.lineTo(u.cx + z * 1.2, u.yp); ctx.lineTo(u.cx - z * 1.2, u.yp);
+  ctx.lineTo(gx - z * 0.6, gy);
   ctx.closePath(); ctx.fill();
-  // pył w świetle: drobinki krążą powoli w dół i na boki
-  for (let i = 0; i < 22; i++) {
-    const f = ruch ? (teraz * 0.00004 * (0.6 + los(i * 3)) + los(i)) % 1 : los(i);
-    const yy = gy + f * dy;
-    const szer = z * 1.5 + (z * 2.8 - z * 1.5) * f;
-    const xx = gx + (u.cx - gx) * f + (los(i * 7) * 2 - 1) * szer * 0.8 + (ruch ? Math.sin(teraz * 0.0007 + i) * z * 0.3 : 0);
-    const al = 0.5 * Math.sin(f * Math.PI) * (ruch ? 0.6 + 0.4 * Math.sin(teraz * 0.003 + i * 2) : 0.8);
+  // pył w świetle: drobinki krążą powoli w dół i na boki — w szybie i w sali (w sali tak gęsto i wolno jak dawniej,
+  // a w długiej smudze z szybem widać je na całej drodze, nie tylko w jej połowie)
+  const ile = Math.min(60, Math.round(22 * cala / dy)), pik = s > 0 ? 1.6 : 1;
+  for (let i = 0; i < ile; i++) {
+    const f = ruch ? (teraz * 0.00004 * (dy / cala) * (0.6 + los(i * 3)) + los(i)) % 1 : los(i);
+    const yy = gora + f * cala;
+    const fs = yy < gy ? 0 : (yy - gy) / dy;
+    const szer = z * 1.5 + (z * 2.8 - z * 1.5) * fs;
+    const xx = gx + (u.cx - gx) * fs + (los(i * 7) * 2 - 1) * szer * 0.8 + (ruch ? Math.sin(teraz * 0.0007 + i) * z * 0.3 : 0);
+    const al = 0.5 * Math.min(1, pik * Math.sin(f * Math.PI)) * (ruch ? 0.6 + 0.4 * Math.sin(teraz * 0.003 + i * 2) : 0.8);
     ctx.fillStyle = `rgba(255,246,220,${al})`;
     ctx.beginPath(); ctx.arc(xx, yy, Math.max(0.7, z * 0.04), 0, Math.PI * 2); ctx.fill();
   }
@@ -689,7 +708,7 @@ function aura(ctx: CanvasRenderingContext2D, cam: Camera, c: Creature, z: number
  */
 export function oltarzNaRycinie(ctx: CanvasRenderingContext2D, cx: number, yp: number, z: number, t: number, rodzaj?: RodzajRytualu, p = 0.75): void {
   const u = ukladZ(cx, yp, z);
-  smugaDnia(ctx, cx, yp - z * 8, u, t, true);
+  smugaDnia(ctx, cx, yp - z * 8, yp - z * 8, u, t, true);
   rysujKamien(ctx, u);
   plomienie(ctx, u, t, rodzaj ? 1.25 : 1, true);
   if (!rodzaj) return;
