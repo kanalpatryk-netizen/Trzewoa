@@ -99,6 +99,18 @@ export type Czynnosc =
   | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia' | 'zaklada' | 'skleja';
 
 /** Co widać: czynność wynika z zajęcia, ale i z tego, czy stworzenie w ogóle się rusza. */
+/** Kuje kafel w tej chwili (ostatnie uderzenie najwyżej 0,2 s temu). */
+function kujeTeraz(sim: Sim, c: Creature): boolean {
+  return c.kujeT !== undefined && sim.tick - c.kujeT >= 0 && sim.tick - c.kujeT < 24;
+}
+
+/** Zwrot przy kopaniu: twarzą do kutego kafla, gdy leży z boku (w symulacji c.face zostaje bez zmian). */
+function zwrotKucia(sim: Sim, c: Creature, kier: number): number {
+  if (!kujeTeraz(sim, c) || c.kujeX === undefined) return kier;
+  const d = c.kujeX + 0.5 - c.x;
+  return Math.abs(d) > 0.3 ? Math.sign(d) : kier;
+}
+
 function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   // Remake v2: w zjeżdżającym wiadrze je, na linie pod nim się wspina
   if (c.naWiadrze) return 'je';
@@ -118,6 +130,9 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   const stoi = r.v < 0.6;
   // Alpha, etap 3c: przy stole albo kowadle — z młotkiem; w sypialni — leży na posłaniu
   if (c.czynnosc && stoi) return c.czynnosc;
+  // kuje kafel (cel zajęcia albo skałę na drodze do niego — „kop tam”, „kop drogę”, przejście przez skałę);
+  // dawniej kopanie widać było tylko tuż przy celu zajęcia, więc robotnik kuł drogę, stojąc z pustymi rękami
+  if (kujeTeraz(sim, c)) return 'kopie';
   switch (c.job) {
     case Job.SLEEP: return 'spi';
     case Job.DIG: case Job.DESCEND:
@@ -1171,7 +1186,7 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       // etap 5b: ciśnięty przez dłoń z otchłani koziołkuje w locie (wokół środka ciała)
       if (c.lot) { ctx.translate(0, -h * 0.5); ctx.rotate((sim.tick - c.lot.od) * 0.16 * (Math.sign(c.lot.vx) || 1)); ctx.translate(0, h * 0.5); }
       // (niski korytarz: lud kuca — poza w render/postacie.ts; dawne zgniatanie rysunku w pionie zniekształcało postać)
-      ctx.scale(kier, 1);
+      ctx.scale(zwrotKucia(sim, c, kier), 1);
       cz = rysujPostac(ctx, sim, c, h, czas);
       ctx.restore();
     }
