@@ -20,8 +20,11 @@ export const POMNIK = {
   konanie: 420, zwolnienie: 150, zwolnienieTempo: 0.25,
 
   // ---------------------------------------------------------------- wygląd (kafle)
-  /** Wysokość posągu (od dna komory w górę) i szerokość u podstawy. */
-  wysokosc: 12, szerokosc: 13,
+  /**
+   * Wysokość posągu (od dna komory w górę) i szerokość u podstawy. Przykucnięty posąg ma tyle, ile stojący demon,
+   * który z niego wstaje (dawniej 12 — demon wstawał o połowę mniejszy od kamienia, z którego wyszedł).
+   */
+  wysokosc: 8, szerokosc: 13,
 };
 
 /** Kto śpi w pomniku — boss ostatniej fali (sim/boss.ts: demon). Liczby walki jak Śniącego Kamienia. */

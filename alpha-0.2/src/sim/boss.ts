@@ -72,6 +72,9 @@ function tikKamienny(sim: Sim, c: Creature, L: { hp: number; sila: number; ciosC
   }
   const w = sim.world;
   if (!cel) { ruchStraznika(sim, c, w.coreX + 0.5, w.przedsionekY - 2, L.szybkosc, S.limitOdRdzenia); return; }
+  // cel w dłoni z otchłani albo w locie po rzucie — boss stoi na ziemi i patrzy (dawniej szybował za nim pod strop
+  // i wisiał w skale nad podłogą)
+  if (cel.wDloni || cel.lot) { c.face = cel.x > c.x ? 1 : -1; return; }
   if (Math.hypot(cel.x - c.x, cel.y - c.y) > L.zasieg) { ruchStraznika(sim, c, cel.x, cel.y - 0.5, L.szybkosc, S.limitOdRdzenia); return; }
   c.face = cel.x > c.x ? 1 : -1;
   if (sim.tick - (c.ciosT ?? -1e9) < L.ciosCo) return;

@@ -18,7 +18,8 @@ uniform vec3 uKR[5];         // promień pazura u nasady (x)
 uniform vec3 uMw[4];         // kości śródręcza: koniec przy nadgarstku (palce 1–4)
 uniform float uDetal;
 uniform float uAniol;        // 1 — dłoń anielska
-uniform mat3 uRot;           // Alpha, etap 5b: obrót dłoni wokół jej osi (tarcza — wnętrzem dłoni do widza)
+uniform mat3 uRot;
+uniform float uPiesc;        // 0..1 — jak bardzo dłoń jest zaciśnięta w pięść (wypełnia wnętrze pięści)           // Alpha, etap 5b: obrót dłoni wokół jej osi (tarcza — wnętrzem dłoni do widza)
 
 // ------------------------------------------------------------------ szum
 float hash13(vec3 p) { p = fract(p * 0.1031); p += dot(p, p.zyx + 31.32); return fract((p.x + p.y) * p.z); }
@@ -43,72 +44,125 @@ float sdRoundCone(vec3 p, vec3 a, vec3 b, float r1, float r2) {
   if (sign(y) * a2 * y2 < k) return sqrt(x2 + y2) * il2 - r1;
   return (sqrt(x2 * a2 * il2) + y * rr) * il2 - r1;
 }
+// odległość od trójkąta (iq)
+float udTrojkat(vec3 p, vec3 a, vec3 b, vec3 c) {
+  vec3 ba = b - a, pa = p - a, cb = c - b, pb = p - b, ac = a - c, pc = p - c;
+  vec3 nor = cross(ba, ac);
+  float s = sign(dot(cross(ba, nor), pa)) + sign(dot(cross(cb, nor), pb)) + sign(dot(cross(ac, nor), pc));
+  if (s < 2.0) {
+    vec3 e1 = ba * clamp(dot(ba, pa) / dot(ba, ba), 0.0, 1.0) - pa;
+    vec3 e2 = cb * clamp(dot(cb, pb) / dot(cb, cb), 0.0, 1.0) - pb;
+    vec3 e3 = ac * clamp(dot(ac, pc) / dot(ac, ac), 0.0, 1.0) - pc;
+    return sqrt(min(min(dot(e1, e1), dot(e2, e2)), dot(e3, e3)));
+  }
+  return sqrt(dot(nor, pa) * dot(nor, pa) / dot(nor, nor));
+}
 float seg2(vec2 p, vec2 a, vec2 b) { vec2 pa = p - a, ba = b - a; float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0); return length(pa - ba * h); }
 
-// zmarszczki w poprzek stawu, po stronie grzbietowej
+// zmarszczki w poprzek stawu, po stronie grzbietowej (płytkie, kilka łuków nad kostką — nie pierścienie dookoła palca)
 float zmarszczki(vec3 p, vec3 J, vec3 ax, vec3 up, float r, float sila) {
   vec3 q = p - J;
-  float t = dot(q, ax);
+  float t = dot(q, ax) / r;
   float bok = dot(q, up) / r;
-  float m = exp(-t * t / (r * r * 0.28)) * smoothstep(0.1, 0.85, bok);
   float bocz = dot(q, cross(ax, up)) / r;
-  float fala = sin(t * 30.0 / r + 2.5 * sin(bocz * 2.3) + 4.0 * vnoise(q * 3.0));
-  return sila * m * smoothstep(0.2, 1.0, fala) * max(0.0, 1.0 - 0.6 * bocz * bocz);
+  float m = exp(-t * t / 0.22) * smoothstep(0.35, 0.95, bok) * max(0.0, 1.0 - 0.9 * bocz * bocz);
+  // łuki wygięte w stronę palca, jak skóra marszcząca się nad stawem
+  float fala = sin(t * 19.0 - 3.0 * bocz * bocz + 3.0 * vnoise(q * 3.0));
+  return sila * m * smoothstep(0.35, 1.0, fala);
 }
 
-// Alpha, etap 5b: bruzda zgięcia po stronie dłoniowej stawu (dwie linie, jak u człowieka) — wnętrze dłoni jest teraz widać
-float bruzda(vec3 p, vec3 J, vec3 ax, vec3 dol, float r, float sila) {
+// bruzda zgięcia po stronie dłoniowej stawu: miękki rowek (gł — głębokość, druga — siła drugiej, równoległej linii)
+float bruzda(vec3 p, vec3 J, vec3 ax, vec3 dol, float r, float gl, float druga) {
   vec3 q = p - J;
   float t = dot(q, ax) / r;
   float bok = dot(q, dol) / r;
-  float m = smoothstep(0.3, 0.9, bok);
-  t += 0.06 * (vnoise(q * 4.0) - 0.5);
-  float a = (t - 0.1) / 0.09, b = (t + 0.14) / 0.08;
-  float l = exp(-a * a) + 0.6 * exp(-b * b);
-  return sila * m * l;
+  float m = smoothstep(0.25, 0.85, bok);
+  t += 0.05 * (vnoise(q * 4.0) - 0.5);
+  float a = (t - 0.08) / 0.075, b = (t + 0.16) / 0.065;
+  return gl * m * (exp(-a * a) + druga * exp(-b * b));
+}
+
+// ------------------------------------------------------------------ śródręcze
+// obrys płyty śródręcza w rzucie na xz (x — od nadgarstka ku palcom, z — od kciuka ku małemu palcowi):
+// wąska przy nadgarstku, szersza przy kostkach, łukiem wzdłuż kostek (środkowy palec najdalej)
+const int NO = 9;
+const vec2 OBRYS[NO] = vec2[NO](
+  vec2(-0.2, -2.05), vec2(5.6, -3.0), vec2(9.0, -3.5), vec2(10.6, -2.75), vec2(11.0, -0.85),
+  vec2(10.7, 0.95), vec2(9.9, 2.75), vec2(7.6, 3.35), vec2(-0.2, 2.3)
+);
+float sdObrys(vec2 p) {
+  float d = dot(p - OBRYS[0], p - OBRYS[0]), s = 1.0;
+  for (int i = 0, j = NO - 1; i < NO; j = i, i++) {
+    vec2 e = OBRYS[j] - OBRYS[i], w = p - OBRYS[i];
+    vec2 b = w - e * clamp(dot(w, e) / dot(e, e), 0.0, 1.0);
+    d = min(d, dot(b, b));
+    bvec3 c = bvec3(p.y >= OBRYS[i].y, p.y < OBRYS[j].y, e.x * w.y > e.y * w.x);
+    if (all(c) || all(not(c))) s = -s;
+  }
+  return s * sqrt(d);
+}
+// płyta śródręcza: grzbiet lekko wypukły w poprzek i wznoszący się ku kostkom, spód grubszy przy nasadzie dłoni
+float plyta(vec3 p) {
+  float d2 = sdObrys(p.xz);
+  if (d2 > 2.5) return d2;
+  float xn = smoothstep(-0.5, 10.5, p.x);
+  float zn = (p.z + 0.15) / 3.3;
+  float gora = mix(1.32, 1.78, xn) - 0.36 * zn * zn;
+  float dol = mix(-1.22, -0.45, xn) + 0.12 * zn * zn;
+  float yc = 0.5 * (gora + dol), th = 0.5 * (gora - dol);
+  float R = min(1.05, th * 0.92);
+  vec2 w = vec2(d2 + R, abs(p.y - yc) - th + R);
+  return min(max(w.x, w.y), 0.0) + length(max(w, 0.0)) - R;
 }
 
 // linie dłoni (rzut na płaszczyznę xz, po stronie dłoniowej): serca, głowy, życia i dwie bransolety nadgarstka
-const int NL = 15;
+const int NL = 16;
 const vec4 LINIE[NL] = vec4[NL](
-  vec4(10.2, 3.2, 8.6, 1.9), vec4(8.6, 1.9, 8.4, 0.2), vec4(8.4, 0.2, 9.2, -1.4),
-  vec4(8.4, -2.7, 7.0, -0.9), vec4(7.0, -0.9, 6.1, 1.1), vec4(6.1, 1.1, 5.2, 2.9),
-  vec4(8.1, -2.6, 6.4, -1.5), vec4(6.4, -1.5, 4.2, -1.2), vec4(4.2, -1.2, 2.0, -1.5), vec4(2.0, -1.5, 0.7, -2.3),
-  vec4(-0.3, -2.4, -0.4, 0.0), vec4(-0.4, 0.0, -0.3, 2.4),
-  vec4(-1.2, -2.5, -1.3, 0.0), vec4(-1.3, 0.0, -1.2, 2.5),
-  vec4(7.6, 1.5, 6.4, 3.0)
+  // linia serca: spod małego palca łukiem ku przerwie między wskazującym a środkowym
+  vec4(7.9, 3.3, 7.75, 1.9), vec4(7.75, 1.9, 8.05, 0.4), vec4(8.05, 0.4, 8.75, -0.9), vec4(8.75, -0.9, 9.5, -1.7),
+  // linia głowy: od krawędzi między kciukiem a wskazującym w poprzek dłoni, lekko w dół
+  vec4(7.6, -3.3, 6.75, -1.9), vec4(6.75, -1.9, 6.05, -0.2), vec4(6.05, -0.2, 5.4, 1.4), vec4(5.4, 1.4, 4.9, 2.4),
+  // linia życia: łukiem dookoła kłębu kciuka aż do nadgarstka
+  vec4(7.5, -3.3, 6.2, -2.35), vec4(6.2, -2.35, 4.4, -1.75), vec4(4.4, -1.75, 2.6, -1.6), vec4(2.6, -1.6, 1.1, -1.8),
+  // bransolety nadgarstka (płytsze)
+  vec4(-0.3, -2.0, -0.4, 0.0), vec4(-0.4, 0.0, -0.3, 2.1),
+  vec4(-1.15, -2.0, -1.25, 0.0), vec4(-1.25, 0.0, -1.15, 2.1)
 );
 float linieDloni(vec3 p) {
-  // linie nie są proste: lekko falują i miejscami się zwężają
-  vec2 q = p.xz + 0.22 * vec2(vnoise(vec3(p.xz * 0.9, 1.0)) - 0.5, vnoise(vec3(p.xz * 0.9, 5.0)) - 0.5);
+  // linie nie są proste: lekko falują i miejscami się zwężają, płytsze na końcach
+  vec2 q = p.xz + 0.16 * vec2(vnoise(vec3(p.xz * 0.9, 1.0)) - 0.5, vnoise(vec3(p.xz * 0.9, 5.0)) - 0.5);
   float dz = 1e9, gl = 0.0;
   for (int k = 0; k < NL; k++) {
     float d = seg2(q, LINIE[k].xy, LINIE[k].zw);
-    // główne linie głębsze, bransolety i drobna linia płytsze
-    float w = k < 10 ? 1.0 : 0.4;
+    float w = k < 12 ? 1.0 : 0.45;
     if (d < dz) { dz = d; gl = w; }
   }
-  float szer = 0.022 + 0.02 * vnoise(vec3(p.xz * 1.6, 9.0));
-  return gl * exp(-dz * dz / szer);
+  float szer = 0.035 + 0.025 * vnoise(vec3(p.xz * 1.6, 9.0));
+  return gl * exp(-dz * dz / szer) * (0.65 + 0.35 * vnoise(vec3(p.xz * 2.2, 3.0)));
 }
 
-// żyły na grzbiecie dłoni i przedramienia (rzut na płaszczyznę xz)
-const int NZ = 14;
+// żyły na grzbiecie dłoni i przedramienia (rzut na płaszczyznę xz): od szpar między kostkami zbiegają się w łuk
+// na grzbiecie, a z niego dwie żyły biegną przez nadgarstek — od strony kciuka i od strony małego palca
+const int NZ = 18;
 const vec4 ZYLY[NZ] = vec4[NZ](
-  vec4(-15.0, 1.6, -9.0, 1.1), vec4(-9.0, 1.1, -4.5, 0.4), vec4(-4.5, 0.4, -1.0, -0.5), vec4(-1.0, -0.5, 2.6, -1.1),
-  vec4(2.6, -1.1, 5.6, -1.7), vec4(5.6, -1.7, 8.6, -2.3), vec4(-1.0, -0.5, 2.4, 0.5), vec4(2.4, 0.5, 5.4, 0.7),
-  vec4(5.4, 0.7, 8.8, 0.2), vec4(2.4, 0.5, 5.0, 1.7), vec4(5.0, 1.7, 8.0, 2.1), vec4(-12.0, -1.8, -6.0, -1.9),
-  vec4(-6.0, -1.9, -1.5, -2.3), vec4(-1.5, -2.3, 3.0, -2.8)
+  // od strony kciuka
+  vec4(9.0, -1.9, 7.5, -1.7), vec4(7.5, -1.7, 6.0, -1.75), vec4(6.0, -1.75, 4.5, -2.0), vec4(4.5, -2.0, 3.0, -2.25),
+  vec4(3.0, -2.25, 1.0, -2.35), vec4(1.0, -2.35, -2.5, -2.15), vec4(-2.5, -2.15, -9.0, -1.5), vec4(-9.0, -1.5, -15.0, -1.0),
+  // spomiędzy środkowej i serdecznej kostki — łagodnym łukiem do żyły od strony kciuka
+  vec4(9.0, 0.0, 7.6, 0.15), vec4(7.6, 0.15, 6.3, -0.2), vec4(6.3, -0.2, 5.2, -0.9), vec4(5.2, -0.9, 4.5, -1.95),
+  // od strony małego palca
+  vec4(8.6, 1.75, 7.0, 1.65), vec4(7.0, 1.65, 5.4, 1.8), vec4(5.4, 1.8, 3.6, 2.15), vec4(3.6, 2.15, 1.4, 2.35),
+  vec4(1.4, 2.35, -3.0, 2.25), vec4(-3.0, 2.25, -10.0, 1.7)
 );
 
 // żyły: 0..1 (wypukłość nad żyłą), tylko po stronie grzbietowej
 float zylyDloni(vec3 p) {
-  vec2 pz = p.xz + vec2(0.0, 0.18 * sin(p.x * 1.3) + 0.12 * sin(p.x * 3.1 + 1.0));
+  vec2 pz = p.xz + vec2(0.0, 0.12 * sin(p.x * 1.1) + 0.06 * sin(p.x * 2.7 + 1.0));
   float dz = 1e9;
   for (int k = 0; k < NZ; k++) dz = min(dz, seg2(pz, ZYLY[k].xy, ZYLY[k].zw));
-  float w = 0.52 + 0.12 * sin(p.x * 0.7 + 1.0);
+  float w = 0.34 + 0.08 * sin(p.x * 0.7 + 1.0);
   float x = clamp(dz / w, 0.0, 1.0);
-  return (1.0 - x * x) * (1.0 - x * x) * smoothstep(0.0, 1.2, p.y) * (1.0 - smoothstep(9.0, 11.0, p.x));
+  return (1.0 - x * x) * (1.0 - x * x) * smoothstep(0.6, 1.4, p.y) * (1.0 - smoothstep(8.6, 9.6, p.x));
 }
 
 float digit(vec3 p, int i, float best) {
@@ -117,29 +171,33 @@ float digit(vec3 p, int i, float best) {
   float b = min(sdCapsule(p, P0, P1, r.x + 0.9), min(sdCapsule(p, P1, P2, r.y + 0.9), sdCapsule(p, P2, P3, r.z + 0.9)));
   if (b > best + 1.3) return b;
   vec3 u0 = uU[i * 3], u1 = uU[i * 3 + 1], u2 = uU[i * 3 + 2];
-  float d1 = sdRoundCone(p, P0, P1, r.x, r.y * 0.9);
-  float d2 = sdRoundCone(p, P1, P2, r.y * 0.92, r.z * 0.88);
-  float d3 = sdRoundCone(p, P2, P3, r.z * 0.9, r.w);
-  float d = smin(d1, d2, 0.45);
-  d = smin(d, d3, 0.38);
-  // kościste stawy, wypukłe od grzbietu
+  vec3 a1 = normalize(P1 - P0), a2 = normalize(P2 - P1), a3 = normalize(P3 - P2);
+  float L1 = length(P1 - P0), L2 = length(P2 - P1), L3 = length(P3 - P2);
+  // kościstość: dłoń z otchłani ma wcięte trzony członów i wyraźne stawy, anielska — gładkie, pełne palce
+  float kosc = mix(1.0, 0.35, uAniol);
+  // człony: zwężają się płynnie od nasady ku czubkowi; trzon członu lekko wcięty w połowie
+  float h1 = clamp(dot(p - P0, a1) / L1, 0.0, 1.0), h2 = clamp(dot(p - P1, a2) / L2, 0.0, 1.0), h3 = clamp(dot(p - P2, a3) / L3, 0.0, 1.0);
+  float d1 = sdRoundCone(p, P0, P1, r.x, r.y) + 0.07 * kosc * r.x * sin(3.1416 * h1);
+  float d2 = sdRoundCone(p, P1, P2, r.y * 0.97, r.z) + 0.06 * kosc * r.y * sin(3.1416 * h2);
+  float d3 = sdRoundCone(p, P2, P3, r.z * 0.96, r.w) + 0.03 * kosc * r.z * sin(3.1416 * h3);
+  float d = smin(d1, d2, 0.28 * r.y);
+  d = smin(d, d3, 0.24 * r.z);
+  // stawy wypukłe tylko od grzbietu (od wnętrza palca ich nie widać)
   vec3 j1 = normalize(u0 + u1), j2 = normalize(u1 + u2);
-  d = smin(d, length(p - (P1 + j1 * r.y * 0.18)) - r.y * 0.97, 0.55);
-  d = smin(d, length(p - (P2 + j2 * r.z * 0.16)) - r.z * 0.93, 0.45);
-  // opuszka po stronie dłoniowej
-  vec3 a3 = normalize(P3 - P2);
-  d = smin(d, sdEllipsoid(p - (mix(P2, P3, 0.6) - u2 * r.w * 0.35), vec3(r.w * 1.05)), 0.3);
-  // etap 5b: mięsiste poduszki członów po stronie dłoniowej (od wnętrza palce nie są już patykami)
-  vec3 a1 = normalize(P1 - P0), a2 = normalize(P2 - P1);
-  d = smin(d, sdCapsule(p, P0 + a1 * r.x * 0.5 - u0 * r.x * 0.32, P1 - a1 * r.y * 0.45 - u0 * r.y * 0.3, r.y * 0.8), 0.4);
-  d = smin(d, sdCapsule(p, P1 + a2 * r.y * 0.45 - u1 * r.y * 0.3, P2 - a2 * r.z * 0.4 - u1 * r.z * 0.28, r.z * 0.8), 0.35);
+  d = smin(d, length(p - (P1 + j1 * r.y * mix(0.36, 0.24, uAniol))) - r.y * 0.8, 0.35 * r.y);
+  d = smin(d, length(p - (P2 + j2 * r.z * mix(0.32, 0.2, uAniol))) - r.z * 0.8, 0.3 * r.z);
+  // poduszki członów po stronie dłoniowej, rozdzielone bruzdami zgięć
+  d = smin(d, sdCapsule(p, P0 + a1 * L1 * 0.4 - u0 * r.x * 0.3, P1 - a1 * r.y * 0.55 - u0 * r.y * 0.3, r.y * 0.8), 0.35 * r.y);
+  d = smin(d, sdCapsule(p, P1 + a2 * r.y * 0.5 - u1 * r.y * 0.28, P2 - a2 * r.z * 0.5 - u1 * r.z * 0.28, r.z * 0.8), 0.3 * r.z);
+  // opuszka czubka: pełna od spodu
+  d = smin(d, sdEllipsoid(p - (mix(P2, P3, 0.58) - u2 * r.w * 0.36), vec3(r.w * 1.05)), 0.25);
   if (uDetal > 0.5) {
-    d += zmarszczki(p, P1, normalize(P2 - P0), j1, r.y, 0.05);
-    d += zmarszczki(p, P2, normalize(P3 - P1), j2, r.z, 0.04);
-    // bruzdy zgięć od wnętrza: u nasady palca, przy obu stawach
-    d += bruzda(p, P0 + a1 * r.x * 0.35, a1, -u0, r.x, 0.11);
-    d += bruzda(p, P1, normalize(a1 + a2), -normalize(u0 + u1), r.y, 0.1);
-    d += bruzda(p, P2, normalize(a2 + a3), -normalize(u1 + u2), r.z, 0.08);
+    d += zmarszczki(p, P1 + j1 * r.y * 0.2, normalize(P2 - P0), j1, r.y, mix(0.045, 0.012, uAniol));
+    d += zmarszczki(p, P2 + j2 * r.z * 0.2, normalize(P3 - P1), j2, r.z, mix(0.03, 0.008, uAniol));
+    // bruzdy zgięć od wnętrza: u nasady palca (na wysokości fałdu między palcami), przy obu stawach
+    d += bruzda(p, P0 + a1 * L1 * 0.36, a1, -u0, r.x, 0.045, 0.0);
+    d += bruzda(p, P1, normalize(a1 + a2), -normalize(u0 + u1), r.y, 0.045, 0.7);
+    d += bruzda(p, P2, normalize(a2 + a3), -normalize(u1 + u2), r.z, 0.035, 0.0);
   }
   return d;
 }
@@ -164,63 +222,87 @@ float pazur(vec3 p, int i, float best) {
 // x: odległość, y: materiał (0 skóra, 1 pazur)
 vec2 map(vec3 p) {
   p = uRot * p;
-  // przedramię: spłaszczone, z mięśniem przy łokciu, kłykciami przy nadgarstku
-  vec3 q = p; q.y *= 1.3;
-  float d = sdRoundCone(q, vec3(-19.0, 0.0, 0.2), vec3(-0.6, 0.2, 0.0), 3.5, 2.35) / 1.3;
-  d = smin(d, sdEllipsoid(p - vec3(-13.0, 1.0, 0.6), vec3(5.8, 2.3, 2.9)), 2.6);
-  d = smin(d, sdEllipsoid(p - vec3(-11.0, -0.8, -1.4), vec3(5.0, 1.9, 2.0)), 2.0);
-  d = smin(d, length(p - vec3(-1.5, 0.95, 2.35)) - 0.95, 0.8);
-  d = smin(d, length(p - vec3(-1.3, -0.1, -2.55)) - 0.85, 0.8);
-  // śródręcze
-  float dl = sdEllipsoid(p - vec3(4.9, -0.15, 0.05), vec3(6.3, 1.45, 4.2));
-  dl = smin(dl, sdEllipsoid(p - vec3(3.0, -0.95, -2.55), vec3(3.3, 1.55, 2.0)), 1.0);   // kłąb kciuka
-  dl = smin(dl, sdEllipsoid(p - vec3(4.8, -0.65, 2.95), vec3(3.9, 1.25, 1.45)), 1.0);   // kłąb małego palca
-  dl = smin(dl, sdEllipsoid(p - vec3(5.2, 0.35, -2.75), vec3(2.6, 1.05, 1.0)), 0.9);    // fałd między kciukiem a wskazującym
+  // przedramię: spłaszczone, z mięśniami przy łokciu, zwęża się płynnie w nadgarstek
+  vec3 q = p; q.y *= 1.42;
+  float d = sdRoundCone(q, vec3(-19.0, 0.0, 0.2), vec3(-1.0, 0.14, 0.0), 3.5, 2.15) / 1.42;
+  d = smin(d, sdEllipsoid(p - vec3(-13.0, 0.9, 0.6), vec3(5.8, 2.2, 2.9)), 2.6);
+  d = smin(d, sdEllipsoid(p - vec3(-11.0, -0.8, -1.4), vec3(5.0, 1.8, 2.0)), 2.0);
+  d = smin(d, length(p - vec3(-1.4, 0.55, 2.3)) - 0.7, 0.8);                           // głowa kości łokciowej
+  // śródręcze: płyta (trapez, grubsza u nasady) z kłębami, poduszkami i kośćmi pod skórą grzbietu
+  float dl = plyta(p);
+  // kłąb kciuka: mięsień wzdłuż kości śródręcza kciuka, od nadgarstka aż po staw — kciuk wyrasta z niego, nie z krawędzi
+  {
+    vec3 T0 = uF[0], T1 = uF[1];
+    vec3 at = normalize(T1 - T0);
+    vec3 ku = normalize(vec3(0.0, 0.0, 1.0) - at * at.z);                              // od kciuka w stronę środka dłoni
+    dl = smin(dl, sdRoundCone(p, T0 + vec3(0.2, -0.7, 0.0) + ku * 1.25, mix(T0, T1, 0.72) + vec3(0.0, -0.6, 0.0) + ku * 0.7, 1.6, 1.05), 1.3);
+    // fałd skóry między kciukiem a wskazującym: cienka błona rozpięta między stawem kciuka, nasadą wskazującego
+    // i środkiem dłoni (trójkąt, nie sznur — pod nim nie ma dziury)
+    vec3 W0 = mix(T0, T1, 0.92) + ku * 0.3, W1 = uF[4] + vec3(-1.3, -0.1, -0.3), W2 = vec3(4.2, 0.85, -1.9);
+    dl = smin(dl, udTrojkat(p, W0, W1, W2) - 0.55, 1.0);
+  }
+  // kłąb małego palca: wzdłuż krawędzi dłoni od nasady
+  dl = smin(dl, sdRoundCone(p, vec3(1.0, -0.95, 1.7), vec3(7.4, -0.4, 2.55), 1.3, 0.85), 1.1);
   for (int i = 0; i < 4; i++) {
     vec3 M = uF[(i + 1) * 4];
     vec3 u0 = uU[(i + 1) * 3];
+    vec3 a0 = normalize(uF[(i + 1) * 4 + 1] - M);
     float r0 = uR[i + 1].x;
-    dl = smin(dl, sdCapsule(p, uMw[i], M, r0 * 0.78), 0.95);                          // kość śródręcza
-    dl = smin(dl, length(p - (M + u0 * 0.42)) - r0 * 1.08, 0.5);                      // kostka (wyraźniejsza)
-    dl = smin(dl, sdCapsule(p, vec3(-3.2, 1.2, uMw[i].z * 0.7), M + u0 * r0 * 0.62, 0.33), 0.55); // ścięgno
-    // etap 5b: fałd skóry między kostkami (bez czarnych dziur między palcami, gdy patrzy się na grzbiet)
+    vec3 Mw = uMw[i];
+    // kość śródręcza: pod skórą przy nadgarstku, wyraźna dopiero ku kostce
+    dl = smin(dl, sdRoundCone(p, vec3(Mw.x + 1.4, 0.72, mix(Mw.z, M.z, 0.12)), M - vec3(0.6, 0.06, 0.0), 0.5, 0.82 * r0), 0.8);
+    // kostka: łuk kostek, środkowa najwyżej
+    dl = smin(dl, length(p - (M + u0 * mix(0.3, 0.2, uAniol))) - r0 * 0.95, 0.55);
+    // ścięgno prostownika: wachlarzem od nadgarstka do kostki
+    dl = smin(dl, sdCapsule(p, vec3(-2.4, 1.2, Mw.z * 0.55), M + u0 * r0 * 0.55 - vec3(0.5, 0.0, 0.0), mix(0.22, 0.16, uAniol)), 0.45);
+    // fałd skóry między kostkami (bez czarnych dziur między palcami od grzbietu)
     if (i < 3) {
       vec3 Mn = uF[(i + 2) * 4], un = uU[(i + 2) * 3];
-      dl = smin(dl, sdCapsule(p, M + u0 * 0.25 - vec3(0.3, 0.0, 0.0), Mn + un * 0.25 - vec3(0.3, 0.0, 0.0), r0 * 0.78), 0.7);
+      dl = smin(dl, sdCapsule(p, M + u0 * 0.2 - vec3(0.35, 0.0, 0.0), Mn + un * 0.2 - vec3(0.35, 0.0, 0.0), r0 * 0.74), 0.7);
+      // błona między nasadami palców (od wnętrza dłoni): palce nie wyrastają z krawędzi jak szprychy
+      vec3 a0n = normalize(uF[(i + 2) * 4 + 1] - Mn);
+      float rn = uR[i + 2].x;
+      dl = smin(dl, sdCapsule(p, M + a0 * 1.25 - u0 * r0 * 0.3, Mn + a0n * 1.25 - un * rn * 0.3, 0.6), 0.9);
     }
-    // etap 5b: poduszka pod stawem po stronie dłoniowej (wnętrze dłoni u nasady palców)
-    dl = smin(dl, sdEllipsoid(p - vec3(M.x - 0.95, -1.0, M.z * 0.92), vec3(1.05, 0.5, 0.95)), 1.2);
-    // grzbiet: zmarszczki skóry nad kostką
-    if (uDetal > 0.5) dl += zmarszczki(p, M + u0 * 0.36, normalize(uF[(i + 1) * 4 + 1] - M), u0, r0 * 1.1, 0.07);
+    // poduszka pod nasadą palca po stronie dłoniowej
+    dl = smin(dl, sdEllipsoid(p - vec3(M.x - 0.7, M.y - r0 * 1.0, M.z * 0.95), vec3(1.25, 0.55, r0 * 0.95)), 0.9);
+    // grzbiet: kilka płytkich zmarszczek nad kostką
+    if (uDetal > 0.5) dl += zmarszczki(p, M + u0 * 0.5, normalize(uF[(i + 1) * 4 + 1] - M), u0, r0 * 1.1, mix(0.035, 0.0, uAniol));
   }
-  // etap 5b: wnętrze dłoni — płytkie zagłębienie pośrodku (kłęby kciuka i małego palca zostają wypukłe)
-  // (łagodne wciśnięcie powierzchni, nie odjęcie elipsoidy — odjęcie zostawiało w środku czarny dołek)
+  // wnętrze dłoni: płytkie zagłębienie pośrodku (kłęby kciuka i małego palca zostają wypukłe)
   {
-    vec2 c = (p.xz - vec2(5.2, 0.3)) / vec2(2.7, 1.8);
-    dl += 0.38 * exp(-dot(c, c)) * smoothstep(-0.2, -1.5, p.y);
+    vec2 c = (p.xz - vec2(5.6, 0.2)) / vec2(2.8, 1.9);
+    dl += 0.38 * exp(-dot(c, c)) * smoothstep(-0.2, -1.2, p.y);
   }
-  // ścięgna zginaczy na nadgarstku od wnętrza i guzek kości łokciowej z boku
-  dl = smin(dl, sdCapsule(p, vec3(-7.0, -1.35, -0.4), vec3(0.6, -1.15, -0.2), 0.36), 0.9);
-  dl = smin(dl, sdCapsule(p, vec3(-7.0, -1.3, 0.8), vec3(0.4, -1.1, 0.7), 0.3), 0.9);
-  dl = smin(dl, length(p - vec3(-1.6, 0.4, 2.55)) - 0.62, 0.6);
-  d = smin(d, dl, 1.4);
+  // ścięgna zginaczy na nadgarstku od wnętrza (ledwie widoczne)
+  dl = smin(dl, sdCapsule(p, vec3(-7.0, -1.25, -0.4), vec3(0.2, -1.05, -0.2), 0.3), 0.9);
+  dl = smin(dl, sdCapsule(p, vec3(-7.0, -1.2, 0.8), vec3(0.0, -1.0, 0.7), 0.26), 0.9);
+  d = smin(d, dl, 1.6);
   // żyły
-  d -= 0.15 * zylyDloni(p) * (1.0 - uAniol);
+  d -= 0.09 * zylyDloni(p) * (1.0 - uAniol);
   // palce
-  for (int i = 0; i < 5; i++) d = smin(d, digit(p, i, d), i == 0 ? 1.1 : 0.7);
+  for (int i = 0; i < 5; i++) d = smin(d, digit(p, i, d), i == 0 ? 0.9 : 0.6);
+  // wnętrze zaciśniętej pięści: poduszki palców i dłoni wypełniają zwój palców — z boku nie widać przez pięść na wylot
+  if (uPiesc > 0.01) {
+    vec3 sp = vec3(0.0, mix(0.2, -2.15, uPiesc), 0.0);
+    d = smin(d, sdCapsule(p, vec3(9.3, 0.0, -2.6) + sp, vec3(8.8, 0.25, 2.2) + sp, 1.5 * uPiesc), 0.6);
+    // pod kciukiem: zwinięty palec wskazujący i kłąb domykają szparę (bez ciemnej dziury jak nozdrze)
+    d = smin(d, sdCapsule(p, vec3(6.3, -2.5, -3.3), vec3(8.2, -3.4, -2.8), 1.2 * uPiesc), 0.7);
+  }
   // faktura skóry
   if (uDetal > 0.5 && d < 0.6) {
-    d += 0.03 * (fbm3(p * 4.6) - 0.5) + 0.012 * (vnoise(p * 15.0) - 0.5);
-    // etap 5b: linie dłoni (tylko od wnętrza) i drobne fałdy skóry na grzbiecie nad nadgarstkiem
-    float wn = smoothstep(-0.4, -1.3, p.y) * smoothstep(-3.2, -2.5, p.y) * (1.0 - smoothstep(10.0, 11.0, p.x)) * smoothstep(-2.5, -1.5, p.x);
+    d += mix(0.026, 0.012, uAniol) * (fbm3(p * 4.6) - 0.5) + 0.01 * (vnoise(p * 15.0) - 0.5);
+    // linie dłoni (tylko od wnętrza): płytkie, miękkie rowki
+    float wn = smoothstep(-0.3, -1.0, p.y) * (1.0 - smoothstep(10.0, 11.0, p.x)) * smoothstep(-2.0, -1.0, p.x);
     if (wn > 0.0) {
       vec2 r1 = mat2(0.8, 0.6, -0.6, 0.8) * p.xz, r2 = mat2(0.8, -0.6, 0.6, 0.8) * p.xz;
       float siat = smoothstep(0.62, 0.85, vnoise(vec3(r1 * vec2(1.5, 7.0), 2.0))) + smoothstep(0.62, 0.85, vnoise(vec3(r2 * vec2(1.5, 7.0), 4.0)));
-      d += 0.12 * wn * linieDloni(p) + 0.008 * wn * siat;
+      d += wn * (mix(0.075, 0.05, uAniol) * linieDloni(p) + 0.006 * siat);
     }
-    float gx = (p.x + 0.8) / 2.2;
-    float gr = smoothstep(0.6, 1.5, p.y) * exp(-gx * gx);
-    if (gr > 0.0) d += 0.035 * gr * smoothstep(0.2, 1.0, sin(p.x * 7.0 + 1.5 * vnoise(p * 2.0)));
+    // nadgarstek od grzbietu: dwie ledwie widoczne fałdy
+    float g1 = (p.x + 0.55) / 0.1, g2 = (p.x + 1.3) / 0.09;
+    float gr = smoothstep(0.7, 1.4, p.y) * (exp(-g1 * g1) + 0.6 * exp(-g2 * g2)) * (0.6 + 0.4 * vnoise(p * 2.0));
+    d += mix(0.02, 0.008, uAniol) * gr;
   }
   // pazury
   float dk = 1e9;
@@ -308,26 +390,38 @@ void main() {
     // dłoń anielska: złote światło od nadgarstka (z góry, skąd schodzi), miękkie cienie, ciepła skóra i perłowe paznokcie
     vec3 La = normalize(vec3(-0.7, 0.5, -0.5));
     float shA = cien(p + n * 0.08, La, 30.0);
-    float difA = clamp((dot(n, La) + 0.55) / 1.55, 0.0, 1.0);
-    float fresA = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 3.0);
+    float difA = clamp((dot(n, La) + 0.15) / 1.15, 0.0, 1.0);
+    float fresA = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 3.5);
     vec3 H = normalize(La + V);
     if (pazurM > 0.5) {
-      vec3 alb = vec3(0.86, 0.8, 0.72);
-      col = alb * (0.35 + 0.75 * difA * mix(0.6, 1.0, shA)) + vec3(1.0, 0.95, 0.85) * pow(clamp(dot(n, H), 0.0, 1.0), 40.0) * 0.8;
+      // paznokieć: różowawa kość słoniowa, oświetlona jak skóra (nie szara perła), z wąskim połyskiem
+      vec3 alb = vec3(0.76, 0.5, 0.42);
+      col = alb * (vec3(1.0, 0.88, 0.68) * 1.45 * difA * mix(0.45, 1.0, shA) + vec3(0.3, 0.13, 0.08) + vec3(0.15, 0.115, 0.1) * ao);
+      col += vec3(1.0, 0.93, 0.8) * pow(clamp(dot(n, H), 0.0, 1.0), 60.0) * 0.22 * shA;
     } else {
       float f1 = fbm5(p * 0.8), f3 = fbm5(p * 11.0 + 3.0);
-      vec3 alb = mix(vec3(0.62, 0.5, 0.4), vec3(0.74, 0.62, 0.5), f1) * (0.94 + 0.08 * f3);
-      alb *= mix(0.72, 1.0, wkl) * (0.82 + 0.18 * ao);
-      vec3 sss = vec3(1.0, 0.5, 0.32) * pow(clamp((dot(n, La) + 0.9) / 1.9, 0.0, 1.0), 3.0) * 0.28;
-      col = alb * (vec3(1.0, 0.9, 0.72) * 1.35 * difA * mix(0.55, 1.0, shA) + sss + vec3(0.28, 0.25, 0.22) * ao);
+      vec3 nm = uRot * n, pm = uRot * p;
+      // żywa, ciepła skóra z drobną zmiennością (dawniej równa jak gipsowy odlew albo manekin)
+      vec3 alb = mix(vec3(0.64, 0.42, 0.31), vec3(0.72, 0.5, 0.37), f1) * (0.9 + 0.14 * f3);
+      // rumieniec: krew prześwituje przez skórę na opuszkach, stawach i we wnętrzu dłoni
+      float rum = 0.0;
+      for (int i = 0; i < 5; i++) {
+        vec3 c3 = pm - uF[i * 4 + 3], c1 = pm - uF[i * 4 + 1];
+        rum += exp(-dot(c3, c3) / (uR[i].w * uR[i].w * 3.0)) + 0.5 * exp(-dot(c1, c1) / (uR[i].y * uR[i].y * 1.2));
+      }
+      float volar = smoothstep(0.2, -0.6, nm.y) * smoothstep(-7.0, -1.5, pm.x);
+      alb = mix(alb, alb * vec3(1.12, 0.7, 0.6), clamp(rum, 0.0, 1.0) * 0.85 + volar * 0.35);
+      alb *= mix(0.5, 1.0, wkl) * (0.66 + 0.34 * ao);
+      vec3 sss = vec3(1.0, 0.42, 0.26) * pow(clamp((dot(n, La) + 0.75) / 1.75, 0.0, 1.0), 2.0) * 0.4;
+      col = alb * (vec3(1.0, 0.88, 0.68) * 1.55 * difA * mix(0.45, 1.0, shA) + sss + vec3(0.15, 0.115, 0.1) * ao);
       col += vec3(1.0, 0.92, 0.75) * pow(clamp(dot(n, H), 0.0, 1.0), 24.0) * 0.25 * shA;
     }
     // złota poświata na obrysie
-    col += vec3(1.0, 0.8, 0.42) * 0.85 * fresA;
+    col += vec3(1.0, 0.8, 0.42) * 0.4 * fresA;
     // ku ramieniu dłoń roztapia się w świetle
-    col = mix(col, vec3(1.0, 0.93, 0.74), (1.0 - smoothstep(-15.0, -3.0, p.x)) * 0.75);
+    col = mix(col, vec3(1.4, 1.16, 0.84), (1.0 - smoothstep(-15.0, -3.0, p.x)) * 0.6);
     float aA = smoothstep(-17.5, -7.5, p.x);
-    col = aces(col * 1.05);
+    col = aces(col * 0.64);
     col = pow(col, vec3(1.0 / 2.2));
     fragColor = vec4(col * aA, aA);
     return;
@@ -336,8 +430,23 @@ void main() {
     // róg: prawie czarny, z ostrym połyskiem i bursztynem prześwitującym na ostrzu
     // róg: ciemny, prążkowany wzdłuż, z miękkim połyskiem
     // stary róg: brudnożółty, matowy, z podłużnymi bruzdami i ciemniejszym brudem u nasady
-    float prazki = 0.92 + 0.08 * sin(dot(p, vec3(4.0, 17.0, 9.0)) * 1.6 + 3.0 * vnoise(p * 3.0));
-    vec3 ka = mix(vec3(0.062, 0.053, 0.04), vec3(0.11, 0.094, 0.068), fbm3(p * 1.4)) * prazki;
+    // szpon: róg u łożyska prawie czarny (brud, zgrubienie), ku ostrzu cieńszy i prześwitujący bursztynem —
+    // szpon czyta się jako ciemny hak na tle skóry, nie jasny guz na czubku palca
+    vec3 pmk = uRot * p;
+    float ostrze = 0.0, dmin = 1e9;
+    for (int i = 0; i < 5; i++) {
+      for (int k = 0; k < 4; k++) {
+        vec3 A = uK[i * 5 + k], B = uK[i * 5 + k + 1];
+        vec3 pa = pmk - A, ba = B - A;
+        float hh = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+        float dd = length(pa - ba * hh);
+        if (dd < dmin) { dmin = dd; ostrze = (float(k) + hh) / 4.0; }
+      }
+    }
+    float prazki = 0.9 + 0.1 * sin(dot(p, vec3(4.0, 17.0, 9.0)) * 1.6 + 3.0 * vnoise(p * 3.0));
+    vec3 ka = mix(vec3(0.045, 0.034, 0.025), vec3(0.08, 0.06, 0.04), fbm3(p * 1.4)) * prazki;
+    // ku ostrzu tylko trochę jaśniej (dawniej jasny bursztyn — szpony czytały się jak mosiężne stalówki)
+    ka = mix(ka, vec3(0.1, 0.065, 0.04), smoothstep(0.7, 1.0, ostrze));
     {
       float e = 0.03; vec3 sp = p * 5.0; float b0 = fbm3(sp);
       vec3 g = vec3(fbm3(sp + vec3(e * 5.0, 0, 0)) - b0, fbm3(sp + vec3(0, e * 5.0, 0)) - b0, fbm3(sp + vec3(0, 0, e * 5.0)) - b0) / e;
@@ -345,10 +454,13 @@ void main() {
     }
     float dif = clamp(dot(n, L1), 0.0, 1.0) * sh;
     vec3 H = normalize(L1 + V);
-    float spec = pow(clamp(dot(n, H), 0.0, 1.0), 16.0) * 0.18 * sh;
+    // twardy, wąski połysk rogu (blik, nie złota poświata)
+    float spec = pow(clamp(dot(n, H), 0.0, 1.0), 30.0) * 0.09 * sh;
     float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 4.0);
-    col = ka * (vec3(1.0, 0.72, 0.5) * 1.6 * (0.25 + 0.75 * dif) + 0.15 * ao) + vec3(1.0, 0.8, 0.6) * spec;
-    col += vec3(1.0, 0.1, 0.04) * 1.6 * fres * clamp(dot(n, L2) + 0.6, 0.0, 1.0) * mix(0.3, 1.0, sh2);
+    col = ka * (vec3(1.0, 0.72, 0.5) * 1.6 * (0.25 + 0.75 * dif) + 0.15 * ao) + vec3(1.0, 0.86, 0.7) * spec;
+    // ostrze prześwituje bursztynem pod światło lampek
+    col += vec3(0.5, 0.2, 0.06) * smoothstep(0.8, 1.0, ostrze) * pow(clamp(dot(-n, L1) * 0.5 + 0.5, 0.0, 1.0), 2.0) * 0.08 * att * 1.9;
+    col += vec3(1.0, 0.1, 0.04) * 1.0 * fres * clamp(dot(n, L2) + 0.6, 0.0, 1.0) * mix(0.3, 1.0, sh2);
     col += vec3(0.6, 0.05, 0.02) * pow(clamp(dot(reflect(-V, n), L2), 0.0, 1.0), 24.0) * 1.2;
   } else {
     // skóra: popielata, martwa, z sinymi i rdzawymi plamami; w bruzdach brud
@@ -361,12 +473,14 @@ void main() {
     // i bruzdach zgięć ciemny brud (wnętrze dłoni jest teraz widać przy tarczy i zawale)
     vec3 nm = uRot * n, pm = uRot * p;
     float volar = smoothstep(0.2, -0.6, nm.y) * smoothstep(-7.0, -1.5, pm.x);
-    vec3 albV = mix(vec3(0.118, 0.1, 0.094), vec3(0.135, 0.104, 0.096), smoothstep(0.3, 0.7, f1));
+    // ten sam martwy, popielaty ton co grzbiet, tylko jaśniejszy — dawniej różowe, ludzkie wnętrze dłoni
+    // przy sinym grzbiecie wyglądało jak dwie różne dłonie
+    vec3 albV = mix(vec3(0.106, 0.096, 0.096), vec3(0.118, 0.1, 0.098), smoothstep(0.3, 0.7, f1));
     albV *= 0.9 + 0.2 * f3;
     albV = mix(albV, vec3(0.095, 0.085, 0.088), smoothstep(0.55, 0.85, f2) * 0.5);   // szarawe przebarwienia
-    float wnL = smoothstep(-0.4, -1.3, pm.y) * smoothstep(-3.2, -2.5, pm.y) * (1.0 - smoothstep(10.0, 11.0, pm.x)) * smoothstep(-2.5, -1.5, pm.x);
+    float wnL = smoothstep(-0.3, -1.0, pm.y) * (1.0 - smoothstep(10.0, 11.0, pm.x)) * smoothstep(-2.0, -1.0, pm.x);
     float lin = wnL * sqrt(linieDloni(pm));
-    albV *= 1.0 - 0.5 * lin;
+    albV *= 1.0 - 0.42 * lin;
     alb = mix(alb, albV, volar);
     // grzbiet: skóra na kostkach i stawach palców ciemniejsza, sinoczerwona (zdarta, zgrubiała)
     float kost = 0.0;
@@ -377,12 +491,12 @@ void main() {
     }
     alb = mix(alb, alb * vec3(0.9, 0.58, 0.58), clamp(kost, 0.0, 1.0) * (1.0 - volar) * 0.9);
     // żyły prześwitują sino przez skórę grzbietu
-    alb = mix(alb, alb * vec3(0.62, 0.62, 0.9), zylyDloni(pm) * (1.0 - volar) * 0.8);
-    alb *= mix(mix(0.45, 0.38, volar), 1.0, wkl) * (0.7 + 0.3 * ao);
+    alb = mix(alb, alb * vec3(0.8, 0.6, 0.85), zylyDloni(pm) * (1.0 - volar) * 0.75);
+    alb *= mix(mix(0.45, 0.62, volar), 1.0, wkl) * (0.7 + 0.3 * ao);
     float w = 0.45;
     float dif = clamp((dot(n, L1) + w) / (1.0 + w), 0.0, 1.0);
     vec3 sss = vec3(0.8, 0.22, 0.14) * pow(clamp((dot(n, L1) + 0.9) / 1.9, 0.0, 1.0), 3.0) * 0.16;
-    col = alb * (vec3(1.0, 0.7, 0.46) * 1.5 * dif * sh + sss * att * 1.9);
+    col = alb * (vec3(1.0, 0.7, 0.46) * 1.5 * dif * sh + sss * att * 1.9 * (1.0 - 0.6 * volar));
     // czerwona łuna otchłani na obrysie
     float fres = pow(1.0 - clamp(dot(n, V), 0.0, 1.0), 3.4);
     col += vec3(1.0, 0.07, 0.03) * 1.1 * fres * clamp(dot(n, L2) + 0.3, 0.0, 1.0) * mix(0.15, 1.0, sh2);
@@ -390,7 +504,7 @@ void main() {
     col += alb * vec3(0.8, 0.1, 0.06) * 0.4 * clamp(dot(n, L3), 0.0, 1.0) * ao;
     col += alb * vec3(0.06, 0.06, 0.08) * ao;
     // wnętrze dłoni: ciepłe światło odbite od ziemi i kłębów — w zagłębieniu półmrok, nie czerń
-    col += alb * vec3(0.6, 0.36, 0.28) * 0.32 * volar * ao * (0.4 + 0.6 * wkl);
+    col += alb * vec3(0.46, 0.32, 0.3) * 0.22 * volar * ao * (0.4 + 0.6 * wkl);
     // tłusty połysk na kostkach i ścięgnach
     vec3 H = normalize(L1 + V);
     float spec = pow(clamp(dot(n, H), 0.0, 1.0), 34.0) * (0.04 + 0.96 * pow(1.0 - clamp(dot(H, V), 0.0, 1.0), 5.0));
@@ -429,13 +543,16 @@ const mix = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
 const ss = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 const Y = [0, 1, 0];
 
+// palce o ok. 20% krótsze niż dawniej i grubsze u nasady — długie i cienkie czytały się jak pajęcze odnóża
+// (środkowy palec mniej więcej tak długi jak śródręcze, jak u człowieka)
+const KROTSZE = 0.8;
 const PALCE = [
-  { mcp: [10.2, 0.95, -2.75], mw: [0.6, 0.85, -1.4], L: [5.6, 3.6, 2.6], r: [0.95, 0.82, 0.7, 0.55], rozO: -0.4, rozZ: -0.08, kl: 4.9 },
-  { mcp: [10.75, 1.1, -0.9], mw: [0.4, 0.95, -0.45], L: [6.2, 4.1, 2.9], r: [1.0, 0.86, 0.73, 0.57], rozO: -0.13, rozZ: -0.02, kl: 5.3 },
-  { mcp: [10.45, 1.0, 0.85], mw: [0.5, 0.9, 0.45], L: [5.8, 3.8, 2.7], r: [0.95, 0.82, 0.69, 0.54], rozO: 0.14, rozZ: 0.04, kl: 5.0 },
-  { mcp: [9.6, 0.75, 2.5], mw: [0.8, 0.75, 1.3], L: [4.6, 3.0, 2.3], r: [0.82, 0.7, 0.6, 0.47], rozO: 0.44, rozZ: 0.1, kl: 4.2 },
+  { mcp: [10.2, 0.95, -2.75], mw: [0.6, 0.85, -1.4], L: [5.6, 3.6, 2.6].map((x) => x * KROTSZE), r: [1.2, 0.99, 0.82, 0.63], rozO: -0.4, rozZ: -0.08, kl: 4.4 },
+  { mcp: [10.75, 1.1, -0.9], mw: [0.4, 0.95, -0.45], L: [6.2, 4.1, 2.9].map((x) => x * KROTSZE), r: [1.25, 1.02, 0.84, 0.65], rozO: -0.13, rozZ: -0.02, kl: 4.8 },
+  { mcp: [10.45, 1.0, 0.85], mw: [0.5, 0.9, 0.45], L: [5.8, 3.8, 2.7].map((x) => x * KROTSZE), r: [1.19, 0.97, 0.8, 0.62], rozO: 0.14, rozZ: 0.04, kl: 4.5 },
+  { mcp: [9.6, 0.75, 2.5], mw: [0.8, 0.75, 1.3], L: [4.6, 3.0, 2.3].map((x) => x * KROTSZE), r: [1.05, 0.85, 0.7, 0.55], rozO: 0.44, rozZ: 0.1, kl: 3.8 },
 ];
-const KCIUK = { cmc: [1.6, -0.3, -3.0], L: [4.6, 3.7, 3.0], r: [1.45, 1.12, 0.96, 0.7], kl: 4.4,
+const KCIUK = { cmc: [1.6, -0.3, -3.0], L: [4.6, 3.4, 2.7], r: [1.5, 1.2, 1.04, 0.76], kl: 4.0,
   o: [norm([0.55, -0.15, -0.82]), norm([0.78, -0.2, -0.6]), norm([0.92, -0.28, -0.27])],
   z: [norm([0.82, -0.43, -0.37]), norm([0.74, -0.56, 0.36]), norm([0.5, -0.18, 0.85])], u: norm([-0.2, 0.6, -0.78]) };
 
@@ -462,7 +579,7 @@ function poza(zacisk, aniol = 0, opis = null) {
       const th = tmax * Math.pow(k / 4, 0.85);
       K.push(add(add(A, mul(dd, Rc * Math.sin(th))), mul(uu, -Rc * (1 - Math.cos(th)))));
     }
-    KR.push([r3 * 0.86, 0, 0]);
+    KR.push([r3 * 1.0, 0, 0]);
   };
   // kciuk
   {
@@ -504,6 +621,9 @@ window.renderuj = (zacisk, szer, wys, widok, detal = 1, aniol = 0, opis = null, 
   const co = Math.cos(obrot), si = Math.sin(obrot);
   gl.uniformMatrix3fv(U('uRot'), false, [1, 0, 0, 0, co, si, 0, -si, co]);
   gl.uniform1f(U('uAniol'), aniol);
+  // pięść: wszystkie stawy czterech palców mocno zgięte
+  const zg = opis ? Math.min(...opis.p.flat()) : zacisk;
+  gl.uniform1f(U('uPiesc'), ss(0.6, 0.9, zg));
   gl.uniform2f(U('uRes'), szer, wys);
   gl.uniform4f(U('uView'), ...widok);
   gl.uniform3fv(U('uF'), p.F.flat());

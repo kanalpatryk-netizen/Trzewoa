@@ -4,7 +4,7 @@ import { doKopania, type PlanDrogi } from '../sim/pielgrzymka';
 
 /**
  * Droga pielgrzymów narysowana na płycie jak szkic w atlasie: kropki tam, gdzie już
- * da się przejść, przerywana kreska tam, gdzie trzeba wydrążyć skałę. Wyraźniejsza,
+ * da się przejść, znaki wyryte w skale tam, gdzie trzeba ją wydrążyć. Wyraźniejsza,
  * kiedy gracz trzyma Kształtowanie — wtedy to jest instrukcja, nie ozdoba.
  */
 export function rysujDrogePielgrzymow(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, plan: PlanDrogi, teraz: number, wyrazna: boolean): void {
@@ -30,35 +30,34 @@ export function rysujDrogePielgrzymow(ctx: CanvasRenderingContext2D, sim: Sim, c
     ctx.arc(px(s[k]), py(s[k]), Math.max(1, z * 0.12), 0, Math.PI * 2);
     ctx.fill();
   }
-  // skała do wydrążenia: przerywana, płynąca kreska od gniazda w stronę rdzenia
-  ctx.strokeStyle = `rgba(250,196,110,${0.85 * moc})`;
-  ctx.lineWidth = Math.max(1.5, z * 0.28);
-  ctx.setLineDash([Math.max(3, z * 0.6), Math.max(3, z * 0.5)]);
-  ctx.lineDashOffset = (teraz * 0.02) % 100;
-  ctx.beginPath();
-  let otwarta = false;
-  for (let k = 0; k < s.length; k++) {
+  // skała do wydrążenia: delikatne znaki wyryte w skale co kafel — szewrony w stronę przedsionka, nacięcie z jasną
+  // wargą (dawniej przerywana, płynąca żółta kreska — jak trasa w edytorze map)
+  const ile = s.length, sz = Math.max(2.5, z * 0.26);
+  for (let k = 0; k < ile; k++) {
     const i = s[k];
-    if (kop.has(i)) {
-      if (!otwarta) {
-        const p = k > 0 ? s[k - 1] : i;
-        ctx.moveTo(px(p), py(p));
-        otwarta = true;
-      }
-      ctx.lineTo(px(i), py(i));
-    } else if (otwarta) {
-      ctx.lineTo(px(i), py(i));
-      otwarta = false;
-    }
+    if (!kop.has(i)) continue;
+    const a = s[Math.max(0, k - 2)], b = s[Math.min(ile - 1, k + 2)];
+    let dx = px(a) - px(b), dy = py(a) - py(b);
+    const d = Math.hypot(dx, dy) || 1;
+    dx /= d; dy /= d;
+    const x = px(i), y = py(i), nx = -dy, ny = dx;
+    const szewron = (ox: number, oy: number): void => {
+      ctx.beginPath();
+      ctx.moveTo(x + ox - dx * sz * 0.5 + nx * sz * 0.6, y + oy - dy * sz * 0.5 + ny * sz * 0.6);
+      ctx.lineTo(x + ox + dx * sz * 0.4, y + oy + dy * sz * 0.4);
+      ctx.lineTo(x + ox - dx * sz * 0.5 - nx * sz * 0.6, y + oy - dy * sz * 0.5 - ny * sz * 0.6);
+      ctx.stroke();
+    };
+    ctx.lineWidth = Math.max(1, z * 0.07);
+    ctx.strokeStyle = `rgba(22,14,10,${0.7 * moc})`;
+    szewron(0, 0);
+    ctx.lineWidth = Math.max(0.8, z * 0.04);
+    ctx.strokeStyle = `rgba(232,200,142,${0.6 * moc})`;
+    szewron(0, Math.max(0.8, z * 0.06));
   }
-  ctx.stroke();
-  ctx.setLineDash([]);
   // oba końce: gniazdo i przedsionek
   const koniec = (i: number, tekst: string) => {
     const x = px(i), y = py(i);
-    ctx.strokeStyle = `rgba(250,210,140,${0.7 * moc})`;
-    ctx.lineWidth = 1.2;
-    ctx.beginPath(); ctx.arc(x, y, Math.max(4, z * 0.9), 0, Math.PI * 2); ctx.stroke();
     if (wyrazna && z >= 4) {
       ctx.font = `italic ${Math.max(12, Math.min(16, z * 1.2))}px "Trzewia Tekst", Georgia, serif`;
       ctx.textAlign = 'center';

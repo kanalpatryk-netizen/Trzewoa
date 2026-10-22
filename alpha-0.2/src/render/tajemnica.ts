@@ -96,9 +96,10 @@ function rysujWiniete(b: Bufor): void {
   g.translate(cx, cy);
   g.scale(w / 2, h / 2);
   const rg = g.createRadialGradient(0, 0, 0.55, 0, 0, 1.45);
+  // (lżej niż dawniej: płyta i tak jest ciemna, a winieta zjadała połowę kadru)
   rg.addColorStop(0, 'rgba(6,4,3,0)');
-  rg.addColorStop(0.4, 'rgba(6,4,3,0.18)');
-  rg.addColorStop(1, 'rgba(4,3,2,0.6)');
+  rg.addColorStop(0.45, 'rgba(6,4,3,0.1)');
+  rg.addColorStop(1, 'rgba(4,3,2,0.42)');
   g.fillStyle = rg;
   g.fillRect(-1, -1, 2, 2);
   g.restore();
@@ -107,7 +108,7 @@ function rysujWiniete(b: Bufor): void {
   const sila = (x: number, y: number) => {
     const dx = (x - cx) / (w / 2), dy = (y - cy) / (h / 2);
     const d = Math.sqrt(dx * dx * 0.8 + dy * dy * 0.8 + Math.max(dx * dx, dy * dy) * 0.35);
-    return Math.max(0, Math.min(1, (d - 0.72) / 0.5));
+    return Math.max(0, Math.min(1, (d - 0.8) / 0.45));
   };
   const POZIOMY = 7;
   const sciezki: Path2D[] = Array.from({ length: POZIOMY }, () => new Path2D());
@@ -136,7 +137,7 @@ function rysujWiniete(b: Bufor): void {
   kreskuj(-1, 4.1, 0.55);
   g.lineCap = 'round';
   for (let i = 0; i < POZIOMY; i++) {
-    g.strokeStyle = `rgba(3,2,2,${0.08 + (i / (POZIOMY - 1)) * 0.46})`;
+    g.strokeStyle = `rgba(3,2,2,${0.06 + (i / (POZIOMY - 1)) * 0.34})`;
     g.lineWidth = 0.7 + i * 0.09;
     g.stroke(sciezki[i]);
   }

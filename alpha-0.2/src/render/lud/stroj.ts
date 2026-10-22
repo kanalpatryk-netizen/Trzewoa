@@ -15,6 +15,8 @@ import { clamp, los, mieszaj, type Rgb } from './matma';
  * - rycerz — krzyżowiec po bitwie (Remake v2): kolczuga, brudny wapenrok z krwawym krzyżem, podarty ciemny
  *   płaszcz, garnczkowy albo otwarty hełm, wyszczerbiona tarcza z krzyżem — krew, blizny, bandaże.
  * Stałe cechy (karnacja, włosy, broda, barwy szat) losowane z numeru postaci.
+ * Półtony szat są o ton jaśniejsze niż w pierwszym malowaniu — na jaśniejszej rycinie świata ciemnoszare
+ * postacie zlewały się z cieniem skały; czernie (płaszcz rycerza, kapa) zostają prawie czarne.
  */
 export interface Stroj {
   /** Alpha: szał krwi z ołtarza — rycerz żarzy się czerwienią (wizjer, krzyż, smuga miecza, tarcza) */
@@ -51,19 +53,19 @@ const OBWODKA: Record<Rola | 'szal', Rgb> = {
 const SKORY: Rgb[] = [[182, 142, 104], [168, 128, 94], [196, 160, 122], [150, 112, 80], [188, 156, 124], [160, 124, 96]];
 const WLOSY: Rgb[] = [[38, 28, 22], [26, 20, 18], [66, 42, 28], [54, 40, 30]];
 /** Kopacz (Remake v2): szorstka wełna w barwach ziemi — ugier, szarobrązowy, umbra. */
-const TUNIKI: Rgb[] = [[132, 106, 72], [120, 100, 74], [138, 112, 78], [114, 96, 72]];
-const KAPTURY: Rgb[] = [[86, 66, 48], [76, 68, 60], [102, 60, 44], [80, 78, 64], [94, 78, 54]];
-const NOGAWICE: Rgb[] = [[58, 50, 44], [50, 46, 42], [62, 52, 40]];
+const TUNIKI: Rgb[] = [[144, 116, 80], [132, 110, 82], [150, 122, 86], [126, 106, 80]];
+const KAPTURY: Rgb[] = [[98, 76, 56], [88, 79, 70], [114, 70, 52], [92, 89, 74], [106, 88, 62]];
+const NOGAWICE: Rgb[] = [[68, 59, 52], [60, 55, 50], [72, 61, 48]];
 const CLAVI: Rgb[] = [[108, 38, 28], [88, 40, 36], [76, 58, 40]];
 /** Pobożny (Remake v2): len alby zżółkły jak kość albo szary od sadzy, stuła z ciemnego karmazynu. */
 const SZATY: Rgb[] = [[178, 166, 140], [170, 160, 138], [184, 172, 148], [166, 160, 146]];
 const STULE: Rgb[] = [[116, 30, 28], [100, 26, 30], [92, 38, 34]];
-const KAPY: Rgb[] = [[44, 38, 36], [38, 35, 38], [48, 38, 32]];
+const KAPY: Rgb[] = [[52, 45, 43], [46, 42, 46], [56, 45, 38]];
 const SPODNICE: Rgb[] = [[60, 76, 88], [72, 84, 66], [88, 50, 46]];
 const CHLAMIDY: Rgb[] = [[132, 42, 32], [118, 36, 30], [144, 58, 36]];
 /** Krzyżowiec: płótno wapenroku (brudna kość, popiół), płaszcze (węgiel, umbra, wino tak ciemne, że prawie czarne). */
 const WAPENROKI: Rgb[] = [[152, 142, 120], [144, 135, 116], [158, 148, 126], [138, 130, 112]];
-const PLASZCZE: Rgb[] = [[40, 35, 34], [34, 31, 34], [46, 34, 30], [44, 28, 28]];
+const PLASZCZE: Rgb[] = [[50, 44, 42], [44, 40, 43], [56, 42, 37], [54, 35, 34]];
 /** Tarcza: czerwone pole z krzyżem z kości albo brudnobiałe pole z krwawym krzyżem. */
 const TARCZE: [Rgb, Rgb][] = [[[104, 26, 22], [164, 152, 128]], [[104, 26, 22], [164, 152, 128]], [[146, 136, 114], [120, 22, 20]]];
 
@@ -84,11 +86,11 @@ export function stroj(rola: Rola, c: Creature, sim: Sim): Stroj {
     kaptur: wybierz(KAPTURY, 14), nogawice: wybierz(NOGAWICE, 15), wKapturze: l(16) < 0.72, ogon: l(17) < 0.6,
     szata: wybierz(SZATY, 10), stula: wybierz(STULE, 6), kapa: wybierz(KAPY, 18), wKapie: l(19) < 0.55,
     zbroja: [134, 116, 80], spodnica: wybierz(SPODNICE, 7),
-    chlamida: wybierz(CHLAMIDY, 8), helm: [104, 104, 108],
-    kolczuga: [84, 86, 92], wapenrok: wybierz(WAPENROKI, 11),
+    chlamida: wybierz(CHLAMIDY, 8), helm: [112, 112, 116],
+    kolczuga: [92, 94, 100], wapenrok: wybierz(WAPENROKI, 11),
     krzyz: szal ? [150, 18, 12] : [122, 22, 20], plaszcz: wybierz(PLASZCZE, 12), krewSucha: [86, 14, 12],
     skorzane: [66, 46, 32], tarcza: tarcza[0], znak: szal ? [160, 24, 16] : tarcza[1],
-    zloto: [184, 148, 78], drewno: [96, 68, 46], zelazo: [92, 92, 94], glina: [156, 92, 58], buty: [62, 44, 32], krew: [116, 20, 16],
+    zloto: [184, 148, 78], drewno: [96, 68, 46], zelazo: [92, 92, 94], glina: [156, 92, 58], buty: [70, 50, 37], krew: [116, 20, 16],
     zatruty, okaleczony: !!c.okaleczony,
     szalenstwo: clamp(c.mad ?? 0, 0, 1), strach: clamp(c.fear ?? 0, 0, 1),
   };

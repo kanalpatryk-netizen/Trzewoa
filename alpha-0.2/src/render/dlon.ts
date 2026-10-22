@@ -29,10 +29,10 @@ const gladko = (t: number) => { const u = Math.max(0, Math.min(1, t)); return u 
  */
 export const ARKUSZ = { kolumny: 2, klatek: 10, szer: 792, wys: 360, x0: -17, y1: 9, pxNaJedn: 18 };
 /** Miejsce chwytu (między palcami a kciukiem) w otwartej dłoni i środek zaciśniętej pięści — jednostki modelu. */
-const CHWYT_OTWARTA = { x: 18, y: -6.0 };
-const CHWYT_PIESC = { x: 10, y: -3.3 };
-/** Koniec najdłuższego szponu (od nadgarstka) — do wychylania się z ciemności. */
-const ZASIEG_SZPONOW = 25.5;
+const CHWYT_OTWARTA = { x: 16.4, y: -5.6 };
+const CHWYT_PIESC = { x: 9.6, y: -3.2 };
+/** Koniec najdłuższego szponu (od nadgarstka) — do wychylania się z ciemności (palce krótsze niż dawniej). */
+const ZASIEG_SZPONOW = 23.1;
 /** Kafle świata na jednostkę modelu przy DLON.wielkosc = 1 (dłoń z szponami ok. 5,4 kafla). */
 export const KAFLE_NA_JEDN = 0.21;
 
@@ -59,7 +59,7 @@ export function chwyt(zacisk: number): { x: number; y: number } {
 export function rysujKlatkeDloni(ctx: CanvasRenderingContext2D, sx: number, sy: number, kat: number, skala: number, zacisk: number, lustro: number, alfa: number, luna = 1): boolean {
   const o = obrazArkusza();
   if (!o) return false;
-  return rysujKlatke(ctx, o, sx, sy, kat, skala, zacisk, lustro, alfa, luna > 0 ? `rgba(200,24,12,${0.75 * luna})` : null);
+  return rysujKlatke(ctx, o, sx, sy, kat, skala, zacisk, lustro, alfa, luna > 0 ? `rgba(200,24,12,${0.4 * luna})` : null);
 }
 
 /**
@@ -76,9 +76,10 @@ export function rysujKlatke(ctx: CanvasRenderingContext2D, o: HTMLImageElement, 
   ctx.translate(sx, sy);
   ctx.rotate(kat);
   ctx.scale(s, s * lustro);
+  // poświata wąska — szeroka zjadała kształt dłoni (z daleka czerwona smuga bez szponów)
   if (poswiata) {
     ctx.shadowColor = poswiata;
-    ctx.shadowBlur = Math.max(6, skala * 0.9);
+    ctx.shadowBlur = Math.max(4, skala * 0.4);
   }
   ctx.imageSmoothingEnabled = true;
   ctx.drawImage(o, kx, ky, ARKUSZ.szer, ARKUSZ.wys, -wx, -wy, ARKUSZ.szer, ARKUSZ.wys);
@@ -105,6 +106,54 @@ export function lunaOtchlani(ctx: CanvasRenderingContext2D, x: number, y: number
   g.addColorStop(1, 'rgba(30,0,0,0)');
   ctx.fillStyle = g;
   ctx.fillRect(-r, -r, r * 2, r * 2);
+  ctx.restore();
+}
+
+/**
+ * Wyrwa w posadzce tam, gdzie dłoń z otchłani przebija się na wierzch (`bx, by` — brzeg w kaflach, `a` — jak bardzo
+ * otwarta): poszarpana dziura z żarem w głębi, pęknięcia po posadzce i odłamki wyrzucone w chwili przebicia (`t` tiki).
+ */
+function wyrwa(ctx: CanvasRenderingContext2D, cam: Camera, bx: number, by: number, z: number, a: number, t: number, ruch: boolean): void {
+  if (a <= 0.01) return;
+  const x = cam.toScreenX(bx), y = cam.toScreenY(by);
+  const rx = z * (0.6 + 0.8 * a), ry = z * (0.18 + 0.12 * a);
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  // pęknięcia rozchodzą się po posadzce
+  ctx.strokeStyle = `rgba(14,8,6,${0.85 * a})`; ctx.lineWidth = Math.max(1, z * 0.06);
+  ctx.beginPath();
+  for (let i = 0; i < 6; i++) {
+    const s = i < 3 ? -1 : 1, dl = z * (0.9 + 0.5 * ((i * 7) % 3)) * a;
+    let px = x + s * rx * 0.8, py = y;
+    ctx.moveTo(px, py);
+    for (let k = 1; k <= 3; k++) { px += s * dl / 3; py += (((i * 5 + k * 3) % 5) - 2) * z * 0.04; ctx.lineTo(px, py); }
+  }
+  ctx.stroke();
+  // dziura: poszarpany brzeg, w głębi żar otchłani
+  const n = 12;
+  ctx.beginPath();
+  for (let i = 0; i < n; i++) {
+    const kat = (i / n) * Math.PI * 2, r = 0.78 + 0.22 * (((i * 7) % 5) / 4);
+    ctx.lineTo(x + Math.cos(kat) * rx * r, y + Math.sin(kat) * ry * r);
+  }
+  ctx.closePath();
+  const g = ctx.createRadialGradient(x, y + ry * 0.3, 0, x, y, rx);
+  g.addColorStop(0, `rgba(120,18,10,${0.95 * a})`); g.addColorStop(0.6, `rgba(30,6,4,${0.95 * a})`); g.addColorStop(1, `rgba(8,4,3,${0.95 * a})`);
+  ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = `rgba(170,150,126,${0.6 * a})`; ctx.lineWidth = Math.max(1, z * 0.05); ctx.stroke();
+  // odłamki wyrzucone przy przebiciu
+  if (t < 90) {
+    const u = t / 90;
+    for (let i = 0; i < 9; i++) {
+      const kat = -Math.PI / 2 + (i - 4) * 0.28, v = z * (1.4 + (i % 3) * 0.5);
+      const px = x + Math.cos(kat) * v * u * 1.3, py = y + Math.sin(kat) * v * u * 1.3 + z * 3 * u * u;
+      const r = z * (0.08 + (i % 3) * 0.04);
+      ctx.save(); ctx.translate(px, py); ctx.rotate(ruch ? u * 6 + i : i);
+      ctx.fillStyle = `rgba(110,96,82,${1 - u})`; ctx.strokeStyle = `rgba(14,8,6,${1 - u})`; ctx.lineWidth = Math.max(0.8, z * 0.03);
+      ctx.beginPath(); ctx.moveTo(-r, -r * 0.6); ctx.lineTo(r * 0.8, -r); ctx.lineTo(r, r * 0.5); ctx.lineTo(-r * 0.5, r); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.restore();
+    }
+  }
   ctx.restore();
 }
 
@@ -219,6 +268,8 @@ export function rysujDlon(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   const katOsi = Math.atan2(dy, dx);
   const zrodlo = naOsi(sBrzeg - 1.2);
   lunaOtchlani(ctx, cam.toScreenX(zrodlo.x), cam.toScreenY(zrodlo.y), DLON.lunaPromien * z, katOsi + Math.PI / 2, sila, teraz, ruch);
+  // dłoń przebija posadzkę: wyrwa, pęknięcia i odłamki (dawniej wyrastała z litej podłogi bez śladu)
+  wyrwa(ctx, cam, d.bx, d.by, z, Math.min(1, sila), d.faza === 'wstaje' ? t : 1e9, ruch);
 
   // nadgarstek: z głębi pod brzegiem w górę do miejsca chwytu i z powrotem w dół
   let w: Pkt, zacisk = 0, alfa = 1;

@@ -12,6 +12,15 @@ import { rysujRobotnika } from './lud/robotnik';
 import { rysujRycerza } from './lud/rycerz';
 import { stroj } from './lud/stroj';
 import { szkielet } from './lud/szkielet';
+import { swiatloOtoczenia } from './lud/oswietlenie';
+
+/** Gdzie wypadła głowa w ostatnim rysunku: środek i promień jako części wysokości postaci, od środka stóp (twarzą w prawo). */
+const glowy = new WeakMap<Creature, { x: number; y: number; r: number }>();
+
+/** Głowa postaci z ostatniego rysunku (np. aureola nad nią — także klęczącego i leżącego); brak — nie rysowano. */
+export function glowaPostaci(c: Creature): { x: number; y: number; r: number } | undefined {
+  return glowy.get(c);
+}
 
 /**
  * Remake v1: postacie ludu — robotnik, pobożny, rycerz.
@@ -38,12 +47,15 @@ export function rysujLud(
   // gdy gra tnie jakość (ustawienie „szybka” albo auto przy małej liczbie klatek) — bez najdrobniejszych szczegółów
   const taniej = ustawienia.jakosc === 'szybka' || (ustawienia.jakosc === 'auto' && jakoscAuto.taniej);
   const m = new Malarz(ctx, h, h * (Math.hypot(t.a, t.b) || 1), taniej ? 1 : 2);
+  m.swiatlo = swiatloOtoczenia();
   const st = stroj(rola, c, sim);
   ctx.save();
   if (tryb.lezy) { ctx.translate(-h * 0.45, -h * 0.07); ctx.rotate(-Math.PI / 2); }
   // drgnięcie przy trafieniu narzędziem
   if (p.cios > 0.05) ctx.translate(sin(czas * 0.09) * 0.01 * h * p.cios, 0);
   const s = szkielet(p, h, tryb);
+  // leżący: układ obrócony o −90° wokół (−0,45h, −0,07h) — jak wyżej
+  glowy.set(c, tryb.lezy ? { x: -0.45 + s.glowa.y / h, y: -0.07 - s.glowa.x / h, r: s.rg / h } : { x: s.glowa.x / h, y: s.glowa.y / h, r: s.rg / h });
   const r = { m, s, p, tryb, st, h, c, cz, czas, pm, sim };
   if (rola === 'robotnik') rysujRobotnika(r);
   else if (rola === 'pobozny') rysujPoboznego(r);

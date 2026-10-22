@@ -43,8 +43,12 @@ const TUSZ = 'rgba(20,12,8,0.95)';
 const KRAG: Record<RodzajRytualu, [number, number, number]> = {
   modlitwa: [255, 226, 150], szal: [255, 64, 44], wskrzeszenie: [255, 244, 210], ofiaraKrwi: [236, 70, 52], ofiaraZycia: [190, 24, 20],
 };
-/** Rytuały, które mają krąg znaków (modlitwa ma promienie). */
-const Z_KREGIEM: RodzajRytualu[] = ['szal', 'wskrzeszenie', 'ofiaraKrwi', 'ofiaraZycia'];
+/**
+ * Rytuały z kręgiem znaków: tylko wskrzeszenie. Rytuały krwi mają własne motywy (szał — czerwona aura rycerza,
+ * ofiara krwi — struga do misy, ofiara życia — dusza, która ulatuje); dawniej wszystkie trzy miały ten sam
+ * jaskrawy krąg czerwonych run.
+ */
+const Z_KREGIEM: RodzajRytualu[] = ['wskrzeszenie'];
 
 /** Układ ołtarza na ekranie (piksele kamery) — wspólny dla kamienia, świateł i trafienia kursorem. */
 function uklad(sim: Sim, cam: Camera) {
@@ -157,7 +161,12 @@ export class Oltarz {
         if (Z_KREGIEM.includes(pr.rodzaj)) kragZnakow(ctx, u, teraz, pr.rodzaj, Math.min(1, pr.p * 1.25), a, ruch);
         if (pr.rodzaj === 'szal') krewPoKrzyzu(ctx, u, teraz, pr.p, ruch);
         if (pr.rodzaj === 'ofiaraKrwi' && c) kroplezReki(ctx, u, cam, c, teraz, ruch);
-        if (pr.rodzaj === 'ofiaraZycia') slupKrwi(ctx, u, teraz, pr.p, ruch);
+        if (pr.rodzaj === 'ofiaraZycia' && c) dusza(ctx, cam, c, u.z, teraz, pr.p, 0, ruch);
+      }
+      // szał: rycerz, którego rytuał rozpala, płonie czerwoną aurą (gdziekolwiek stoi)
+      if (pr.rodzaj === 'szal') {
+        const ryc = sim.creatureById(pr.cel ?? -1);
+        if (ryc && !ryc.dead) aura(ctx, cam, ryc, u.z, teraz, gladko(pr.p * 1.6), ruch);
       }
       if (pr.rodzaj === 'wskrzeszenie') this.wskrzeszanie(ctx, sim, cam, u, teraz, pr.p, pr.cel, ruch);
     }
@@ -298,13 +307,13 @@ export class Oltarz {
             }
             ctx.stroke();
           }
-          if (t > 0.6) {
-            const pp = Math.min(1, (t - 0.6) / 1.2);
-            ctx.strokeStyle = `rgba(255,70,48,${0.9 * (1 - pp)})`;
-            ctx.lineWidth = Math.max(1.5, z * 0.1);
-            ctx.beginPath(); ctx.ellipse(rx, ry, hh * (0.3 + pp * 0.8), hh * (0.12 + pp * 0.3), 0, 0, Math.PI * 2); ctx.stroke();
-          }
+          // aura rozbłyska, gdy smuga dobiegnie (zamiast elipsy jak znacznik zaznaczenia)
+          if (t > 0.6) aura(ctx, cam, ryc, z, teraz, 1 + 0.8 * Math.max(0, 1 - (t - 0.6) / 0.6), wolnoRuszac());
         }
+      } else if (e.rodzaj === 'ofiaraZycia' && e.cx !== undefined && e.cy !== undefined && t < 2.4) {
+        // dusza ulatuje w górę i gaśnie
+        const atr = { x: e.cx, y: e.cy, rola: 'pobozny', dead: false } as unknown as Creature;
+        dusza(ctx, cam, atr, z, teraz, 1, t / 2.4, wolnoRuszac());
       } else if (e.rodzaj === 'wskrzeszenie' && e.cx !== undefined && e.cy !== undefined && t < 2) {
         // błysk przy wstającym i iskry, które wznoszą się nad nim
         const x = cam.toScreenX(e.cx), y = cam.toScreenY(e.cy + 1) - z * 1;
@@ -342,13 +351,26 @@ function rysujKamien(ctx: CanvasRenderingContext2D, u: Uklad): void {
   ctx.bezierCurveTo(u.cx - rx * 0.7, u.yp - h * 0.9, u.cx - rx * 0.35, u.yp - h * 1.05, u.cx, u.yp - h * 1.05);
   ctx.bezierCurveTo(u.cx + rx * 0.35, u.yp - h * 1.05, u.cx + rx * 0.7, u.yp - h * 0.9, u.cx + rx, u.yp);
   ctx.closePath(); ctx.fill(); ctx.stroke();
-  // kamienie w kopczyku
-  for (let i = 0; i < 9; i++) {
-    const fx = (i + 0.5) / 9 * 2 - 1;
-    const kx = u.cx + fx * rx * 0.86, ky = u.yp - h * (1 - fx * fx) * (0.35 + 0.35 * los(i * 5)) - z * 0.06;
-    const kr = z * (0.16 + 0.1 * los(i * 9));
-    ctx.fillStyle = `rgba(${132 + Math.round(30 * los(i))},${118 + Math.round(26 * los(i))},${100 + Math.round(20 * los(i))},0.98)`;
-    ctx.beginPath(); ctx.ellipse(kx, ky, kr * 1.3, kr, los(i * 3) - 0.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // kamienie w kopczyku: kanciaste, różnej wielkości, w dwóch warstwach — dolne większe, górne mniejsze, stykają się
+  // (dawniej jeden rząd równych owali — „parówki”)
+  for (const [warstwa, ile, wys, wielk] of [[0, 7, 0.28, 0.24], [1, 5, 0.66, 0.17]] as const) {
+    for (let i = 0; i < ile; i++) {
+      const id = warstwa * 31 + i;
+      const fx = ((i + 0.5) / ile * 2 - 1) * (warstwa ? 0.62 : 0.9);
+      const kx = u.cx + fx * rx * 0.9 + (los(id * 7) - 0.5) * z * 0.12;
+      const ky = u.yp - h * wys * (1 - fx * fx * 0.6) - z * 0.04;
+      const kr = z * wielk * (0.75 + 0.5 * los(id * 9));
+      const n = 5 + Math.floor(los(id * 13) * 2), a0 = los(id * 3) * Math.PI;
+      ctx.beginPath();
+      for (let j = 0; j < n; j++) {
+        const a = a0 + (j / n) * Math.PI * 2, rr = kr * (0.75 + 0.35 * los(id * 17 + j));
+        ctx.lineTo(kx + Math.cos(a) * rr * 1.25, ky + Math.sin(a) * rr * 0.8);
+      }
+      ctx.closePath();
+      const t = 0.75 + 0.3 * los(id) - warstwa * 0.05;
+      ctx.fillStyle = `rgba(${Math.round(118 * t)},${Math.round(106 * t)},${Math.round(92 * t)},0.99)`;
+      ctx.fill(); ctx.stroke();
+    }
   }
   // mensa: kamienny blok, na nim gruba płyta; na czole wyryty krzyżyk
   const b = u.blok, pl = u.plyta;
@@ -409,14 +431,15 @@ function plomienie(ctx: CanvasRenderingContext2D, u: Uklad, teraz: number, moc: 
   for (const [i, sx] of u.swiece.entries()) {
     const mg = ruch ? 0.85 + 0.3 * migotLampy(teraz + i * 1777) : 1;
     const fy = u.plyta.y - u.swiecaH - z * 0.14;
-    const R = z * 1.3 * moc * mg;
+    // płomyk z ciepłą, wąską poświatą — dawniej szeroki biały rozbłysk czytał się jak flara
+    const R = z * 0.9 * moc * mg;
     const g = ctx.createRadialGradient(sx, fy, 0, sx, fy, R);
-    g.addColorStop(0, `rgba(255,214,140,${0.45 * mg})`); g.addColorStop(1, 'rgba(255,200,120,0)');
+    g.addColorStop(0, `rgba(255,200,120,${0.32 * mg})`); g.addColorStop(1, 'rgba(255,180,100,0)');
     ctx.fillStyle = g; ctx.fillRect(sx - R, fy - R, R * 2, R * 2);
     ctx.fillStyle = `rgba(255,232,160,${0.95 * mg})`;
     ctx.beginPath(); ctx.ellipse(sx + (ruch ? Math.sin(teraz * 0.009 + i) * z * 0.015 : 0), fy, z * 0.055 * moc, z * 0.13 * moc * mg, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = `rgba(255,255,236,${0.9 * mg})`;
-    ctx.beginPath(); ctx.ellipse(sx, fy + z * 0.04, z * 0.025, z * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(255,240,200,${0.85 * mg})`;
+    ctx.beginPath(); ctx.ellipse(sx, fy + z * 0.04, z * 0.022, z * 0.045, 0, 0, Math.PI * 2); ctx.fill();
   }
 }
 
@@ -479,21 +502,23 @@ function promienie(ctx: CanvasRenderingContext2D, u: Uklad, teraz: number, a: nu
   const kx = u.krzyz.x, ky = u.krzyz.belka;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  const R = z * 3.4;
+  // glorie rytownika: miękka łuna i gęste, cienkie kreski promieni różnej długości
+  // (dawniej szesnaście grubych białych promieni — wielka gwiazda-rozbłysk)
+  const R = z * 2.6;
   const h = ctx.createRadialGradient(kx, ky, 0, kx, ky, R);
-  h.addColorStop(0, `rgba(255,236,170,${0.42 * a})`); h.addColorStop(1, 'rgba(255,220,140,0)');
+  h.addColorStop(0, `rgba(255,232,170,${0.3 * a})`); h.addColorStop(1, 'rgba(255,220,140,0)');
   ctx.fillStyle = h; ctx.fillRect(kx - R, ky - R, R * 2, R * 2);
   ctx.lineCap = 'round';
-  const obrot = ruch ? teraz * 0.00018 : 0;
-  for (let i = 0; i < 16; i++) {
-    const kat = (i / 16) * Math.PI * 2 + obrot;
-    const dl = z * (2.0 + 1.4 * los(i * 13) + (ruch ? 0.5 * Math.sin(teraz * 0.0021 + i * 1.7) : 0));
-    const x1 = kx + Math.cos(kat) * z * 0.5, y1 = ky + Math.sin(kat) * z * 0.5;
+  const obrot = ruch ? teraz * 0.00012 : 0;
+  for (let i = 0; i < 30; i++) {
+    const kat = (i / 30) * Math.PI * 2 + obrot;
+    const dl = z * (1.3 + 1.2 * los(i * 13) + (ruch ? 0.3 * Math.sin(teraz * 0.0021 + i * 1.7) : 0));
+    const x1 = kx + Math.cos(kat) * z * 0.55, y1 = ky + Math.sin(kat) * z * 0.55;
     const x2 = kx + Math.cos(kat) * dl, y2 = ky + Math.sin(kat) * dl;
     const g = ctx.createLinearGradient(x1, y1, x2, y2);
-    g.addColorStop(0, `rgba(255,240,190,${0.6 * a})`); g.addColorStop(1, 'rgba(255,220,140,0)');
+    g.addColorStop(0, `rgba(255,232,180,${0.42 * a})`); g.addColorStop(1, 'rgba(255,220,140,0)');
     ctx.strokeStyle = g;
-    ctx.lineWidth = Math.max(1.2, z * (i % 2 ? 0.08 : 0.14));
+    ctx.lineWidth = Math.max(0.8, z * 0.035);
     ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
   }
   // iskry modlitwy: od dłoni klęczącego łukiem do krzyża
@@ -584,27 +609,77 @@ function kroplezReki(ctx: CanvasRenderingContext2D, u: Uklad, cam: Camera, c: Cr
   const px = cam.toScreenX(c.x) + (u.cx > cam.toScreenX(c.x) ? 1 : -1) * hh * 0.18, py = cam.toScreenY(c.y + 1) - hh * 0.5;
   const m = u.misa;
   ctx.save();
-  for (let i = 0; i < 4; i++) {
-    const f = ruch ? (teraz * 0.0011 + i / 4) % 1 : i / 4;
+  // struga: cienka, ciemna nić krwi z ręki łukiem do misy, a po niej krople
+  ctx.strokeStyle = 'rgba(150,16,12,0.85)';
+  ctx.lineWidth = Math.max(1.2, z * 0.05);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  for (let q = 0; q <= 16; q++) {
+    const f = q / 16;
+    const x = px + (m.x - px) * f, y = py + (m.y - m.h - py) * f - Math.sin(f * Math.PI) * z * 0.8;
+    if (q === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+  for (let i = 0; i < 6; i++) {
+    const f = ruch ? (teraz * 0.0011 + i / 6) % 1 : i / 6;
     const x = px + (m.x - px) * f, y = py + (m.y - m.h - py) * f - Math.sin(f * Math.PI) * z * 0.8;
     ctx.fillStyle = 'rgba(196,26,18,0.95)';
-    ctx.save(); ctx.translate(x, y); ctx.beginPath(); kropla(ctx, Math.max(1.5, z * 0.09)); ctx.fill(); ctx.restore();
+    ctx.save(); ctx.translate(x, y); ctx.beginPath(); kropla(ctx, Math.max(1.8, z * 0.12)); ctx.fill(); ctx.restore();
   }
   ctx.restore();
 }
 
-/** Ofiara życia: słup ciemnoczerwonego światła nad mensą. */
-function slupKrwi(ctx: CanvasRenderingContext2D, u: Uklad, teraz: number, p: number, ruch: boolean): void {
-  const z = u.z;
-  const szer = z * (0.5 + 1.3 * gladko(p));
-  const wys = z * 7 * gladko(p * 1.5);
-  const puls = ruch ? 0.85 + 0.15 * Math.sin(teraz * 0.008) : 1;
+/**
+ * Ofiara życia: dusza — blady płomyk — wysuwa się z piersi ofiarującego (`p` 0…1) i, gdy ofiara się dopełni,
+ * ulatuje w górę (`lot` 0…1) i gaśnie.
+ */
+function dusza(ctx: CanvasRenderingContext2D, cam: Camera, c: Creature, z: number, teraz: number, p: number, lot: number, ruch: boolean): void {
+  const hh = Math.max(16, z * 1.9 * 1.15);
+  const px = cam.toScreenX(c.x), piers = cam.toScreenY(c.y + 1) - hh * 0.62;
+  const wysun = gladko(p * 1.3), gas = 1 - gladko((lot - 0.5) / 0.5);
+  const y = piers - z * 0.9 * wysun - z * 6 * gladko(lot);
+  const x = px + (ruch ? Math.sin(teraz * 0.003) * z * 0.12 : 0);
+  const a = Math.min(1, 0.25 + 0.75 * wysun) * gas;
+  if (a <= 0.01) return;
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  const g = ctx.createLinearGradient(0, u.plyta.y, 0, u.plyta.y - wys);
-  g.addColorStop(0, `rgba(220,30,20,${0.5 * puls})`); g.addColorStop(1, 'rgba(160,10,10,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(u.cx - szer / 2, u.plyta.y - wys, szer, wys);
+  const R = z * 1.1;
+  const g = ctx.createRadialGradient(x, y, 0, x, y, R);
+  g.addColorStop(0, `rgba(236,238,244,${0.4 * a})`); g.addColorStop(1, 'rgba(220,226,240,0)');
+  ctx.fillStyle = g; ctx.fillRect(x - R, y - R, R * 2, R * 2);
+  // płomyk: łza z ogonem w dół, ku ciału — blady, z cienkim konturem (na jasnej sali samo światło ginęło)
+  ctx.globalCompositeOperation = 'source-over';
+  const r = z * 0.26, ogon = z * (0.6 + 0.5 * wysun);
+  ctx.beginPath();
+  ctx.moveTo(x, y - r * 1.4);
+  ctx.bezierCurveTo(x + r * 1.2, y - r * 0.6, x + r, y + r * 0.8, x + (ruch ? Math.sin(teraz * 0.004 + 1) * r * 0.5 : 0), y + ogon);
+  ctx.bezierCurveTo(x - r, y + r * 0.8, x - r * 1.2, y - r * 0.6, x, y - r * 1.4);
+  ctx.fillStyle = `rgba(238,240,246,${0.78 * a})`;
+  ctx.fill();
+  ctx.strokeStyle = `rgba(70,74,90,${0.55 * a})`;
+  ctx.lineWidth = Math.max(1, z * 0.04);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Szał: czerwona aura wokół rycerza (`moc` 0…1, ponad 1 — rozbłysk na końcu rytuału) i iskry żaru, które z niej ulatują. */
+function aura(ctx: CanvasRenderingContext2D, cam: Camera, c: Creature, z: number, teraz: number, moc: number, ruch: boolean): void {
+  if (moc <= 0.01) return;
+  const hh = wysokoscPostaci(c, z);
+  const x = cam.toScreenX(c.x), y = cam.toScreenY(c.y + 1) - hh * 0.5;
+  const puls = ruch ? 0.85 + 0.15 * Math.sin(teraz * 0.009) : 1;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const R = hh * (0.7 + 0.25 * Math.min(1, moc));
+  const g = ctx.createRadialGradient(x, y, hh * 0.1, x, y, R);
+  g.addColorStop(0, `rgba(255,70,40,${0.32 * moc * puls})`); g.addColorStop(1, 'rgba(200,30,20,0)');
+  ctx.fillStyle = g; ctx.fillRect(x - R, y - R, R * 2, R * 2);
+  for (let i = 0; i < 7; i++) {
+    const f = ruch ? (teraz * 0.0009 + i / 7) % 1 : i / 7;
+    const ix = x + (los(i * 11) - 0.5) * hh * 0.6, iy = y + hh * 0.3 - f * hh * 1.1;
+    ctx.fillStyle = `rgba(255,120,70,${0.8 * Math.min(1, moc) * Math.sin(f * Math.PI)})`;
+    ctx.beginPath(); ctx.arc(ix, iy, Math.max(0.8, z * 0.05), 0, Math.PI * 2); ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -622,7 +697,7 @@ export function oltarzNaRycinie(ctx: CanvasRenderingContext2D, cx: number, yp: n
   if (Z_KREGIEM.includes(rodzaj)) kragZnakow(ctx, u, t, rodzaj, p, 1, true);
   if (rodzaj === 'szal') { krewPoKrzyzu(ctx, u, t, p, true); krewWMisie(ctx, u, p); }
   if (rodzaj === 'ofiaraKrwi') krewWMisie(ctx, u, p);
-  if (rodzaj === 'ofiaraZycia') slupKrwi(ctx, u, t, p, true);
+  void p;
 }
 
 /** Atrapa poległego do rysunku (to samo, co czyta rysunek ludu — jak w render/trupy.ts). */

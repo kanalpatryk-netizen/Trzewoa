@@ -162,16 +162,20 @@ export class Urobki {
       const kx = x0 + dx * 0.35, ky = Math.max(cel.y - 30, Math.min(y0, cel.y) - d * OKRUCH.luk);
       // najpierw podskok z kafla (wolno), potem przyspiesza ku licznikowi
       const e = t * t * (3 - 2 * t);
-      const pkt = (s: number): [number, number] => [
+      // krzyż z warsztatu nie leci przez skałę do licznika (wyglądał jak element interfejsu wklejony w świat):
+      // unosi się nad warsztatem i gaśnie w świetle, a licznik wiary rośnie, gdy zgaśnie
+      const unosi = l.rodzaj === 'wiara' && !l.wstecz;
+      const pkt = (s: number): [number, number] => unosi ? [mx, my - z * 0.6 - s * z * 2.2] : [
         (1 - s) * (1 - s) * x0 + 2 * (1 - s) * s * kx + s * s * cel.x,
         (1 - s) * (1 - s) * y0 + 2 * (1 - s) * s * ky + s * s * cel.y,
       ];
+      ctx.globalAlpha = unosi ? Math.min(1, t * 6) * (1 - Math.max(0, (t - 0.55) / 0.45)) : 1;
       const [px, py] = pkt(e);
       const rozm = Math.max(6, Math.min(12, z * 0.55)) * (1 - 0.3 * e);
       const b = BARWA[l.rodzaj];
       const [r, g, bb] = b.blask;
       // smuga za okruchem i poświata wokół — na ciemnej skale i ramie musi go być widać
-      for (let k = 1; k <= 7; k++) {
+      for (let k = 1; k <= (unosi ? 0 : 7); k++) {
         const s = Math.max(0, e - k * 0.03);
         const [qx, qy] = pkt(s);
         ctx.fillStyle = `rgba(${r},${g},${bb},${0.4 * (1 - k / 8)})`;
@@ -218,6 +222,7 @@ export class Urobki {
       ctx.beginPath(); ctx.arc(-rozm * 0.3, -rozm * 0.3, Math.max(0.8, rozm * 0.18), 0, Math.PI * 2); ctx.fill();
       ctx.restore();
     }
+    ctx.globalAlpha = 1;
     ctx.restore();
     this.loty = zostaja;
   }

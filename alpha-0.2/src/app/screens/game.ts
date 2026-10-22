@@ -1,5 +1,6 @@
 import { rysujWiadra, rysujPrzodWiader } from '../../render/wiadro';
 import { rysujKucie } from '../../render/kucie';
+import { rysujZyly } from '../../render/zyly';
 import { Urobki, znaczekKruszcu, type CelLotu } from '../../render/kruszce';
 import { Pokoje, akcjaNaPomieszczeniu, type PodKursorem } from '../../render/pomieszczenia';
 import { Oltarz, oltarzPod } from '../../render/oltarz';
@@ -30,7 +31,7 @@ import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { naWieszaku } from '../../sim/zbroja';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
-import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa } from '../../sim/polecenia';
+import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, odmawia, type Odmowa } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
 import { NASTAWY_GLOSU } from '../../core/glos-odmowy';
 import { zacznijGlosOdmowy } from '../../render/lud/odmowa';
@@ -47,7 +48,6 @@ import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { scianaKrypty, tynkSwiata } from '../../render/fresk';
-import { FRESK } from '../../nastawy/barwy';
 import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujRdzen } from '../../render/rdzen';
@@ -66,7 +66,7 @@ import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { rysujWydarzenie, type PoleWyboru } from '../../render/wydarzenie';
 import { rysujMrok, rysujPatrzacego } from '../../render/mrok';
 import { rysujDlon } from '../../render/dlon';
-import { rysujAniola, rysujStrugeKrwi } from '../../render/aniol';
+import { rysujAniola } from '../../render/aniol';
 import { BOT, BOT_GRA, wyslijStan, ziarnoPartii } from '../obserwowany';
 import { BOT_CO, kartaBota, ruchBota } from '../bot';
 import { wolnoRuszac } from '../../render/nastroj';
@@ -333,7 +333,7 @@ export class EkranGry implements Ekran {
 
   /** Wraca do najgęstszego skupiska i oddaje kamerę automatowi. */
   doMieszkancow(): void {
-    const serce = this.sim.heartOfLife();
+    const serce = this.ogniskoKamery();
     this.recznaKamera = false;
     if (!serce) { this.ui.say('Nie ma już do kogo wracać.', this.sim.tick); return; }
     this.cam.x = this.camTarget.x = serce.x;
@@ -383,8 +383,60 @@ export class EkranGry implements Ekran {
     this.recznaKamera = true;
   }
 
+  /**
+   * Gdzie patrzy kamera „za życiem”: grupa ludu, w której coś się dzieje — nie środek ramki wokół wszystkich.
+   * Gdy drużyna się rozdzieliła (robotnicy w sali, pobożni i rycerz w krypcie), środek wypadał w pustej skale,
+   * a kadr nie miał ani jednej postaci. Kolejno: zaznaczeni, walka z bossem, potem grupa o największej wadze
+   * (ludzie i to, co robią); grupa, za którą kamera już idzie, dostaje przewagę — kamera nie skacze przy remisie.
+   */
+  private ogniskoKamery(): { x: number; y: number; w: number; h: number } | null {
+    const sim = this.sim;
+    const lud = sim.creatures.filter((c) => !c.dead && rolaPostaci(c));
+    if (!lud.length) return sim.heartOfLife();
+    const ramka = (g: readonly Creature[]): { x: number; y: number; w: number; h: number } => {
+      let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+      for (const c of g) { x0 = Math.min(x0, c.x); x1 = Math.max(x1, c.x); y0 = Math.min(y0, c.y); y1 = Math.max(y1, c.y); }
+      return { x: (x0 + x1) / 2, y: (y0 + y1) / 2 - 1, w: Math.max(6, x1 - x0), h: Math.max(4, y1 - y0) };
+    };
+    // skupiska łańcuchem: sąsiad bliżej niż tyle kafli w poziomie i w pionie
+    const skupiska = (kto: readonly Creature[]): Creature[][] => {
+      const grupa = kto.map((_, i) => i);
+      const korzen = (i: number): number => { while (grupa[i] !== i) i = grupa[i] = grupa[grupa[i]]; return i; };
+      for (let i = 0; i < kto.length; i++) {
+        for (let j = i + 1; j < kto.length; j++) {
+          if (Math.abs(kto[i].x - kto[j].x) < KAMERA.grupaX && Math.abs(kto[i].y - kto[j].y) < KAMERA.grupaY) grupa[korzen(i)] = korzen(j);
+        }
+      }
+      const m = new Map<number, Creature[]>();
+      kto.forEach((c, i) => { const k = korzen(i); const g = m.get(k); if (g) g.push(c); else m.set(k, [c]); });
+      return [...m.values()];
+    };
+    const wybierz = (grupy: Creature[][], waga: (g: Creature[]) => number) => {
+      let best: { x: number; y: number; w: number; h: number } | null = null, bestW = -Infinity;
+      for (const g of grupy) {
+        const r = ramka(g);
+        const ta = Math.abs(r.x - this.camTarget.x) < r.w / 2 + 8 && Math.abs(r.y - this.camTarget.y) < r.h / 2 + 6;
+        const wg = waga(g) + (ta ? KAMERA.przewagaBiezacej : 0);
+        if (wg > bestW) { bestW = wg; best = r; }
+      }
+      return best;
+    };
+    // zaznaczeni: gracz właśnie nimi dowodzi
+    const zazn = lud.filter((c) => this.zaznaczeni.has(c.id));
+    if (zazn.length) return wybierz(skupiska(zazn), (g) => g.length);
+    // walka z bossem: boss i ci, którzy są przy nim — i rycerz w dłoni albo w locie po rzucie (cały łuk lotu w kadrze)
+    const boss = sim.creatures.find((c) => !c.dead && c.boss);
+    if (boss && (sim.lud.pomnik?.faza ?? 'stoi') !== 'stoi') {
+      const przy = lud.filter((c) => c.wDloni || c.lot || (Math.abs(c.x - boss.x) < KAMERA.grupaX * 1.5 && Math.abs(c.y - boss.y) < KAMERA.grupaY * 1.5));
+      return ramka([boss, ...przy]);
+    }
+    const dzieje = (c: Creature): boolean => !!c.polecenie || c.job === Job.DIG || c.job === Job.PRAY || c.job === Job.FIGHT
+      || c.job === Job.PIELGRZYM || c.job === Job.BUILD || c.job === Job.SACRIFICE;
+    return wybierz(skupiska(lud), (g) => g.length + g.filter(dzieje).length * KAMERA.wagaCzynnosci);
+  }
+
   private doSerca(natychmiast = false): void {
-    const serce = this.sim.heartOfLife();
+    const serce = this.ogniskoKamery();
     if (!serce) return;
     if (natychmiast) {
       this.cam.x = this.camTarget.x = serce.x;
@@ -833,15 +885,19 @@ export class EkranGry implements Ekran {
       // kiedy gracz trzyma czasownik albo maluje, kamera musi stać: inaczej tunel
       // ucieka spod kursora i drąży się w zupełnie innym miejscu
       const wRobocie = this.painting || this.ui.verb !== null || this.pointers.size > 0;
-      if (ustawienia.kameraZaZyciem && !this.recznaKamera && !wRobocie && this.sim.tick % 4 === 0) {
-        const serce = this.sim.heartOfLife();
+      // krok kamery liczony z czasu klatki (dawniej co 4. tik — przy dwóch tikach na klatkę kamera potrafiła stać,
+      // a przy szybszym czasie szarpała); `podazanie` i `dopasowanie` to ułamki na 1/30 s
+      if (ustawienia.kameraZaZyciem && !this.recznaKamera && !wRobocie && dt > 0) {
+        const serce = this.ogniskoKamery();
         if (serce) {
-          this.camTarget.x += (serce.x - this.camTarget.x) * KAMERA.podazanie;
-          this.camTarget.y += (serce.y - this.camTarget.y) * KAMERA.podazanie;
-          this.cam.drift(this.camTarget.x, this.camTarget.y, KAMERA.podazanie);
+          const kroki = Math.min(10, dt / (1000 / 30));
+          const k = 1 - Math.pow(1 - KAMERA.podazanie, kroki), kz = 1 - Math.pow(1 - KAMERA.dopasowanie, kroki);
+          this.camTarget.x += (serce.x - this.camTarget.x) * k;
+          this.camTarget.y += (serce.y - this.camTarget.y) * k;
+          this.cam.drift(this.camTarget.x, this.camTarget.y, k);
           if (ustawienia.autoZoom) {
             const fit = Math.min(this.cam.vw / (serce.w + KAMERA.zapasX), this.cam.vh / (serce.h + KAMERA.zapasY));
-            this.cam.zoom += (Math.max(this.cam.minZoom, Math.min(KAMERA.autoMaxZoom, fit)) - this.cam.zoom) * KAMERA.dopasowanie;
+            this.cam.zoom += (Math.max(this.cam.minZoom, Math.min(KAMERA.autoMaxZoom, fit)) - this.cam.zoom) * kz;
           }
           this.cam.clamp(this.sim.world.w, this.sim.world.h);
         }
@@ -941,18 +997,17 @@ export class EkranGry implements Ekran {
     // Rycina jest najdroższa w klatce. Ruch kamery przerysowuje ją od razu (inaczej świat
     // odjeżdżałby spod postaci), a zmiany samego świata wystarczą trzydzieści razy na sekundę.
     const kameraRuszona = cam.x !== this.rysKam[0] || cam.y !== this.rysKam[1] || cam.zoom !== this.rysKam[2];
-    if (kameraRuszona || (this.dirty && teraz - this.lastInk > 30) || teraz - this.lastInk > 150) {
+    // (eng.niedokonczona: po zmianie przybliżenia rycina dopracowuje zgrubną odbitkę przez kilka klatek)
+    if (kameraRuszona || eng.niedokonczona || (this.dirty && teraz - this.lastInk > 30) || teraz - this.lastInk > 150) {
       eng.fresk = ustawienia.swiat !== 'rycina';
       eng.rebuild(sim, cam, teraz);
       this.lastInk = teraz; this.dirty = false;
       this.rysKam[0] = cam.x; this.rysKam[1] = cam.y; this.rysKam[2] = cam.zoom;
     }
 
-    const rate = (0.0007 + sim.sen * 0.0016) * (this.zamrozone() ? 0.12 : this.spowolnione() ? 0.45 : 1);
+    // (rycina już nie drga co klatkę ani nie oddycha skalą: losowe przesunięcie o pół piksela i zmiana
+    // skali przepróbkowywały cienką kreskę w każdej klatce — świat migotał jak szum telewizora)
     const ruch = ustawienia.oddech && !ustawienia.ograniczRuch;
-    const breath = ruch ? 1 + Math.sin(teraz * rate) * 0.0035 : 1;
-    const jx = ruch ? (Math.random() - 0.5) * 0.5 : 0;
-    const jy = ruch ? (Math.random() - 0.5) * 0.5 : 0;
     // rdzeń oddycha tym samym rytmem, którym dudni skała — ciemność na brzegach
     // zaciska się i puszcza, znaki w nieznanym ledwo żarzą
     const oddech = ruch ? oddechRdzenia(sim, teraz, this.app.dzwiek.oddech(sim.sen)) : 0.5;
@@ -966,34 +1021,28 @@ export class EkranGry implements Ekran {
     ctx.clip();
     ctx.translate(plate.x, plate.y);
     ctx.save();
-    ctx.translate(cam.vw / 2 + jx, cam.vh / 2 + jy);
-    ctx.scale(breath, breath);
-    ctx.translate(-cam.vw / 2, -cam.vh / 2);
-    ctx.imageSmoothingEnabled = eng.scale > 1;
-    ctx.drawImage(eng.buf, 0, 0, cam.vw, cam.vh);
+    // wygładzanie zawsze: płyta bywa większa od bufora (skala ekranu), a najbliższy sąsiad szarpał kreskę
+    ctx.imageSmoothingEnabled = true;
+    // bufor leży na siatce pikseli świata: rysowany w skali 1:1, przesunięty o ułamek piksela kamery
+    const bw = eng.buf.width * eng.scale, bh = eng.buf.height * eng.scale;
+    ctx.drawImage(eng.buf, eng.dx, eng.dy, bw, bh);
     // v4.2 beta: jasność ryciny — ta sama rycina jeszcze raz w trybie „lighter” mnoży kolory
     // o (1 + nadwyżka); filtr brightness() kosztował prawie dwa razy więcej na klatkę
     if (ustawienia.jasnosc > 1) {
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
       ctx.globalAlpha = Math.min(1, ustawienia.jasnosc - 1);
-      ctx.drawImage(eng.buf, 0, 0, cam.vw, cam.vh);
+      ctx.drawImage(eng.buf, eng.dx, eng.dy, bw, bh);
       ctx.restore();
     }
-    if (eng.fresk) {
-      // fresk: faktura tynku przyklejona do świata — jedzie razem ze skałą, gdy przesuwasz kamerę
-      tynkSwiata(ctx, cam);
-    } else {
-      // rycina świata w ugrze, jak rysunek sinopią na tynku: biel kreski przechodzi w ciepły ochrowy
-      ctx.save();
-      ctx.globalCompositeOperation = 'multiply';
-      ctx.fillStyle = FRESK.tonRyciny;
-      ctx.fillRect(0, 0, cam.vw, cam.vh);
-      ctx.restore();
-    }
-    this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.5);
+    // fresk: faktura tynku przyklejona do świata — jedzie razem ze skałą, gdy przesuwasz kamerę
+    // (rycina ma barwy warstw wpisane w kreskę — dawny ochrowy filtr „multiply” gasił chłodny łupek głębi)
+    if (eng.fresk) tynkSwiata(ctx, cam);
+    this.poswiata.nalozy(ctx, eng.emis, eng.dx, eng.dy, bw, bh, 0.5);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     rysujRdzen(ctx, sim, cam, teraz);
+    // kruszec w skale: bryłki żelaza i żyłki złota (pod rysami kucia i pod mrokiem)
+    rysujZyly(ctx, sim, cam, teraz);
     // Alpha, etap 3: skała napoczęta kilofem pęka coraz mocniej
     rysujKucie(ctx, sim, cam, teraz);
     // etap 3c: wyposażenie gotowych pomieszczeń (stół, kowadło, posłania) — w mroku ginie jak skała
@@ -1059,6 +1108,11 @@ export class EkranGry implements Ekran {
       ctx.fillRect(-cam.vw, -cam.vh, cam.vw * 3, cam.vh * 3);
       rysujRozkazy(ctx, sim, cam, this.rozkazy.lista, teraz);
     }
+    if (this.cel?.klan !== undefined) {
+      // pierścień siedziby idzie za siedzibą — po przeprowadzce strzałka wskazywała stare miejsce
+      const k = sim.clans[this.cel.klan];
+      if (k && !k.dead) { this.cel.x = k.hx; this.cel.y = k.hy; }
+    }
     if (this.cel) podswietlCel(ctx, cam, this.cel, teraz);
     ctx.restore();
     ctx.restore();
@@ -1086,8 +1140,6 @@ export class EkranGry implements Ekran {
     this.polaDruzyny = rysujDruzyne(ctx, sim, plate, h, this.zaznaczeni, this.ui.pointer, teraz, this.szablon);
     drawOddanie(ctx, plate, sim, h);
     drawKrew(ctx, plate, sim, h, teraz);
-    // etap 4: dar krwi — struga z dłoni anielskiej do ampułki relikwiarza
-    rysujStrugeKrwi(ctx, sim, plate, h, teraz);
     if (ustawienia.kronika) drawChronicle(ctx, plate, sim, w, h);
     this.ui.draw(ctx, sim, teraz);
     this.przyciski = rozmiescPrzyciski(plate, h, {
@@ -1255,6 +1307,22 @@ export class EkranGry implements Ekran {
     return [...this.zaznaczeni].map((id) => this.sim.creatureById(id)).filter((c): c is Creature => !!c);
   }
 
+  /**
+   * Odmowa rozkazu: gdy ktoś z odmawiających stoi w kadrze, jego dymek już mówi „nie” — ten sam tekst przy
+   * kursorze byłby trzecią kopią (dwa dymki i napis kursywą). Napis przy kursorze tylko wtedy, gdy dymka nie widać.
+   */
+  private odmowa(odmowy: string[], ids: readonly number[], domyslna = 'Nie.'): void {
+    const { sim, cam } = this;
+    const widac = ids.some((id) => {
+      const c = sim.creatureById(id);
+      if (!c || !odmawia(sim, c)) return false;
+      const x = cam.toScreenX(c.x), y = cam.toScreenY(c.y);
+      return x > 0 && y > 0 && x < cam.vw && y < cam.vh;
+    });
+    if (!widac) this.ui.say(odmowy[0] ?? domyslna, sim.tick);
+    this.app.gesty.odmowa();
+  }
+
   /** Zaznacza postacie (z Shiftem dokłada albo zdejmuje jedną); ryt w ręku i karta mieszkańca się odkładają. */
   private zaznacz(ids: number[], dokladaj = false): void {
     const ui = this.ui;
@@ -1312,7 +1380,7 @@ export class EkranGry implements Ekran {
     if (!robotnicy.length) { ui.say('Kopią tylko robotnicy — zaznacz robotnika.', sim.tick); this.app.gesty.odmowa(); return; }
     const { przyjeli, odmowy } = drogaGrupie(sim, robotnicy.map((c) => c.id));
     if (przyjeli) { ui.say(przyjeli === 1 ? 'Idzie kopać drogę wiernych.' : `Idą kopać drogę wiernych (${przyjeli}).`, sim.tick); this.app.gesty.klik(); }
-    else { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
+    else this.odmowa(odmowy, robotnicy.map((c) => c.id));
     this.nasluch?.({ typ: 'polecenie', rodzaj: 'droga', przyjeli });
   }
 
@@ -1329,7 +1397,7 @@ export class EkranGry implements Ekran {
       ui.say(`${NAZWA_ROLI[rolaPostaci(kto) ?? 'robotnik']} idzie skleić linę wiadra — wespnie się po niej i ją zwiąże.`, sim.tick);
       this.app.gesty.klik();
       this.pokazMiejsce(lp.x + 0.5, lp.dno - 1, Math.max(this.cam.zoom, KAMERA.pokazZoom));
-    } else { ui.say(odmowy[0] ?? 'Nikt nie dojdzie do liny.', sim.tick); this.app.gesty.odmowa(); }
+    } else this.odmowa(odmowy, ids ?? this.zaznaczeniZywi().map((c) => c.id), 'Nikt nie dojdzie do liny.');
     this.nasluch?.({ typ: 'polecenie', rodzaj: 'naprawa', przyjeli: kto ? 1 : 0 });
   }
 
@@ -1485,7 +1553,7 @@ export class EkranGry implements Ekran {
         const { przyjeli, odmowy } = wydajDoOltarza(sim, ids);
         const o = sim.world.oltarz;
         this.falaRozkazu = { x: o.x + 0.5, y: o.y, t: performance.now(), ok: przyjeli > 0 };
-        if (!przyjeli) { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
+        if (!przyjeli) this.odmowa(odmowy, ids);
         else { ui.say(przyjeli === 1 ? 'Idzie do ołtarza.' : `Idą do ołtarza: ${przyjeli}.`, sim.tick); this.app.gesty.klik(); }
         this.nasluch?.({ typ: 'polecenie', rodzaj: 'oltarz', przyjeli });
       }
@@ -1500,7 +1568,7 @@ export class EkranGry implements Ekran {
     if (!ids.length) return;
     const { przyjeli, odmowy } = pom ? wydajNaPomieszczenie(sim, ids, pom) : wydajGrupie(sim, ids, Math.floor(fx), Math.floor(fy));
     this.falaRozkazu = { x: fx, y: fy, t: performance.now(), ok: przyjeli > 0 };
-    if (!przyjeli) { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
+    if (!przyjeli) this.odmowa(odmowy, ids);
     else {
       ui.say((przyjeli === 1 ? 'Idzie.' : `Idą: ${przyjeli}.`) + (odmowy.length ? ` Odmawia: ${odmowy.length}.` : ''), sim.tick);
       this.app.gesty.klik();

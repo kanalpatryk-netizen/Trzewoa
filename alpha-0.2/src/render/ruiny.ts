@@ -52,7 +52,11 @@ export class Ruiny {
       // łuki i filary w tle, potem belki, mury, gruz, a na wierzchu wózek
       for (const l of r.luki) luk(ctx, cam, l, r.dno, z);
       for (const b of r.belki) belka(ctx, cam, b, z);
-      for (const i of r.mury) if (w.solid(i % w.w, (i / w.w) | 0)) ciosy(ctx, cam, i % w.w, (i / w.w) | 0, z, i);
+      for (const i of r.mury) {
+        const mx = i % w.w, my = (i / w.w) | 0;
+        // korona: nad kaflem muru już nie ma muru — tam bloki są wykruszone
+        if (w.solid(mx, my)) ciosy(ctx, cam, mx, my, z, i, !w.solid(mx, my - 1));
+      }
       for (const i of r.gruz) if (w.solid(i % w.w, (i / w.w) | 0)) gruz(ctx, cam, i % w.w, (i / w.w) | 0, z, i);
       if (r.wozek) wozek(ctx, cam, r, z);
       // zabytek na posadzce: nieodkryty — przyćmiony; zostawiony — szary, zgaszony (gaśnie w rysujNad)
@@ -207,19 +211,31 @@ function blask(ctx: CanvasRenderingContext2D, x: number, y: number, R: number, a
   ctx.beginPath(); ctx.moveTo(x - R * 0.5, y); ctx.lineTo(x + R * 0.5, y); ctx.moveTo(x, y - R * 0.5); ctx.lineTo(x, y + R * 0.5); ctx.stroke();
 }
 
-/** Mur z ciosów w kaflu (x, y): dwa rzędy bloków w wiązaniu, fugi tuszem, każdy blok w trochę innym odcieniu. */
-function ciosy(ctx: CanvasRenderingContext2D, cam: Camera, x: number, y: number, z: number, i: number): void {
+/**
+ * Mur z ciosów w kaflu (x, y): dwa rzędy bloków w wiązaniu, każdy blok trochę krzywy i w innym odcieniu, fugi tuszem;
+ * na koronie muru część bloków wypadła (dawniej idealnie proste klocki ze schodkowanym dachem).
+ */
+function ciosy(ctx: CanvasRenderingContext2D, cam: Camera, x: number, y: number, z: number, i: number, korona: boolean): void {
   const sx = cam.toScreenX(x), sy = cam.toScreenY(y);
+  const drg = (n: number) => (los(n) - 0.5) * z * 0.1;
   for (let rz = 0; rz < 2; rz++) {
     const przes = (y * 2 + rz) % 2 ? 0.5 : 0;
     for (let k = -1; k < 2; k++) {
       const bx0 = Math.max(0, (k + przes) * 0.5 + 0.0), bx1 = Math.min(1, (k + przes) * 0.5 + 0.5);
       if (bx1 <= bx0) continue;
-      const v = los(i * 7 + rz * 3 + k);
-      ctx.fillStyle = `rgba(${104 + Math.round(30 * v)},${94 + Math.round(26 * v)},${80 + Math.round(20 * v)},0.97)`;
-      ctx.fillRect(sx + bx0 * z, sy + rz * z * 0.5, (bx1 - bx0) * z, z * 0.5);
+      const id = i * 7 + rz * 3 + k;
+      // korona muru wykruszona: górny rząd ma luki
+      if (korona && rz === 0 && los(id * 13) < 0.4) continue;
+      const v = los(id);
+      const xa = sx + bx0 * z, xb = sx + bx1 * z, ya = sy + rz * z * 0.5, yb = ya + z * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(xa + drg(id * 3), ya + drg(id * 5)); ctx.lineTo(xb + drg(id * 7), ya + drg(id * 11));
+      ctx.lineTo(xb + drg(id * 13), yb + drg(id * 17) * 0.5); ctx.lineTo(xa + drg(id * 19), yb + drg(id * 23) * 0.5);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${96 + Math.round(36 * v)},${86 + Math.round(30 * v)},${74 + Math.round(24 * v)},0.97)`;
+      ctx.fill();
       ctx.strokeStyle = 'rgba(30,22,16,0.85)'; ctx.lineWidth = Math.max(0.6, z * 0.05);
-      ctx.strokeRect(sx + bx0 * z, sy + rz * z * 0.5, (bx1 - bx0) * z, z * 0.5);
+      ctx.stroke();
     }
   }
   // tu i ówdzie pęknięcie
@@ -229,62 +245,99 @@ function ciosy(ctx: CanvasRenderingContext2D, cam: Camera, x: number, y: number,
   }
 }
 
-/** Gruz po zawalonym sklepieniu: kupka kamieni różnej wielkości. */
+/** Gruz po zawalonym sklepieniu: kupka kanciastych kamieni różnej wielkości. */
 function gruz(ctx: CanvasRenderingContext2D, cam: Camera, x: number, y: number, z: number, i: number): void {
   const sx = cam.toScreenX(x), sy = cam.toScreenY(y);
   ctx.fillStyle = 'rgba(52,44,38,0.97)'; ctx.fillRect(sx, sy, z, z);
   for (let k = 0; k < 6; k++) {
     const px = sx + z * (0.12 + 0.76 * los(i * 5 + k)), py = sy + z * (0.2 + 0.7 * los(i * 9 + k));
-    const r = z * (0.12 + 0.12 * los(i + k * 3));
+    const r = z * (0.12 + 0.13 * los(i + k * 3));
     const v = los(i * 3 + k);
-    ctx.fillStyle = `rgba(${110 + Math.round(30 * v)},${100 + Math.round(26 * v)},${86 + Math.round(20 * v)},0.98)`;
+    ctx.fillStyle = `rgba(${104 + Math.round(34 * v)},${94 + Math.round(28 * v)},${80 + Math.round(22 * v)},0.98)`;
     ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.6, z * 0.04);
-    ctx.beginPath(); ctx.ellipse(px, py, r * 1.25, r, los(k + i) * 3, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    const n = 5, a0 = los(k + i) * 3;
+    ctx.beginPath();
+    for (let j = 0; j < n; j++) {
+      const a = a0 + (j / n) * Math.PI * 2, rr = r * (0.7 + 0.45 * los(i * 17 + k * 5 + j));
+      ctx.lineTo(px + Math.cos(a) * rr * 1.2, py + Math.sin(a) * rr * 0.85);
+    }
+    ctx.closePath(); ctx.fill(); ctx.stroke();
   }
 }
 
-/** Kamienny łuk w tle (od x0 do x1, podstawa na y), z klińcami; z filarami do posadzki, gdy `filary`. */
+/**
+ * Kamienny łuk w tle (od x0 do x1, podstawa na y): pełne, grube klińce z cieniem pod łukiem; czasem wypadł klucz
+ * albo kliniec obok (ruina). Z filarami do posadzki, gdy `filary`. Dawniej cienkie podwójne linie — jak szkielet.
+ */
 function luk(ctx: CanvasRenderingContext2D, cam: Camera, l: Ruina['luki'][number], dno: number, z: number): void {
   const cx = cam.toScreenX((l.x0 + l.x1) / 2), cy = cam.toScreenY(l.y);
-  const R = ((l.x1 - l.x0) / 2) * z, gr = z * 0.32;
+  const R = ((l.x1 - l.x0) / 2) * z, gr = z * 0.62;
   ctx.save();
-  ctx.globalAlpha = 0.9;
+  ctx.globalAlpha = 0.92;
   if (l.filary) {
     for (const fx of [l.x0, l.x1]) {
       const x = cam.toScreenX(fx);
+      const fs = gr * 0.9;
       ctx.fillStyle = 'rgba(96,86,74,0.95)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.8, z * 0.05);
-      ctx.beginPath(); ctx.rect(x - gr / 2, cy, gr, cam.toScreenY(dno) - cy); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.rect(x - fs / 2, cy, fs, cam.toScreenY(dno) - cy); ctx.fill(); ctx.stroke();
+      // bębny filara i cień po jednej stronie
+      ctx.fillStyle = 'rgba(20,14,10,0.25)'; ctx.fillRect(x + fs * 0.15, cy, fs * 0.35, cam.toScreenY(dno) - cy);
+      ctx.beginPath();
+      for (let yy = cy + z * 0.8; yy < cam.toScreenY(dno) - z * 0.2; yy += z * 0.8) { ctx.moveTo(x - fs / 2, yy); ctx.lineTo(x + fs / 2, yy); }
+      ctx.stroke();
       // głowica i baza
-      ctx.beginPath(); ctx.rect(x - gr * 0.8, cy - z * 0.08, gr * 1.6, z * 0.14); ctx.fill(); ctx.stroke();
-      ctx.beginPath(); ctx.rect(x - gr * 0.8, cam.toScreenY(dno) - z * 0.14, gr * 1.6, z * 0.14); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = 'rgba(106,96,82,0.95)';
+      ctx.beginPath(); ctx.rect(x - fs * 0.85, cy - z * 0.12, fs * 1.7, z * 0.2); ctx.fill(); ctx.stroke();
+      ctx.beginPath(); ctx.rect(x - fs * 0.85, cam.toScreenY(dno) - z * 0.2, fs * 1.7, z * 0.2); ctx.fill(); ctx.stroke();
     }
   }
-  // klińce łuku
-  const n = Math.max(5, Math.round(R / (z * 0.35)));
+  // cień pod łukiem: wnętrze łuku ciemniejsze (głębia), nie pusta przestrzeń
+  ctx.fillStyle = 'rgba(14,10,8,0.28)';
+  ctx.beginPath(); ctx.arc(cx, cy, Math.max(1, R - gr / 2), Math.PI, 0); ctx.closePath(); ctx.fill();
+  // klińce łuku — jeden albo dwa przy kluczu mogły wypaść
+  const n = Math.max(5, Math.round(R / (z * 0.42)));
+  const wypadl = los(Math.round(l.x0) * 31) < 0.5 ? Math.floor(n / 2) + (los(Math.round(l.x0) * 7) < 0.5 ? 0 : 1) : -1;
   for (let k = 0; k < n; k++) {
+    if (k === wypadl) continue;
     const a0 = Math.PI + (k / n) * Math.PI, a1 = Math.PI + ((k + 1) / n) * Math.PI;
     const v = los(k * 11 + Math.round(l.x0));
-    ctx.fillStyle = `rgba(${112 + Math.round(26 * v)},${100 + Math.round(22 * v)},${86 + Math.round(18 * v)},0.96)`;
-    ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.6, z * 0.045);
+    ctx.fillStyle = `rgba(${108 + Math.round(30 * v)},${96 + Math.round(26 * v)},${82 + Math.round(20 * v)},0.97)`;
+    ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.6, z * 0.05);
     ctx.beginPath();
     ctx.arc(cx, cy, R + gr / 2, a0, a1);
     ctx.arc(cx, cy, Math.max(1, R - gr / 2), a1, a0, true);
     ctx.closePath(); ctx.fill(); ctx.stroke();
+    // jasna faza od strony światła (górna krawędź klińca)
+    ctx.strokeStyle = 'rgba(220,198,160,0.3)'; ctx.lineWidth = Math.max(0.6, z * 0.04);
+    ctx.beginPath(); ctx.arc(cx, cy, R + gr / 2 - z * 0.05, a0 + 0.02, a1 - 0.02); ctx.stroke();
   }
   ctx.restore();
 }
 
-/** Belka z ciemnego drewna (odcinek w kaflach), z sękami i gwoździami na końcach. */
+/** Belka z ciemnego drewna (odcinek w kaflach): gruba, ze słojami, na jednym końcu złamana w drzazgi. */
 function belka(ctx: CanvasRenderingContext2D, cam: Camera, b: Ruina['belki'][number], z: number): void {
   const x0 = cam.toScreenX(b[0]), y0 = cam.toScreenY(b[1]), x1 = cam.toScreenX(b[2]), y1 = cam.toScreenY(b[3]);
-  ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(2.5, z * 0.26);
-  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-  ctx.strokeStyle = 'rgba(96,64,38,0.98)'; ctx.lineWidth = Math.max(1.5, z * 0.17);
-  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-  ctx.strokeStyle = 'rgba(140,100,62,0.7)'; ctx.lineWidth = Math.max(0.6, z * 0.04);
-  ctx.beginPath(); ctx.moveTo(x0, y0 - z * 0.03); ctx.lineTo(x1, y1 - z * 0.03); ctx.stroke();
-  ctx.fillStyle = 'rgba(40,40,44,0.95)';
-  for (const [px, py] of [[x0, y0], [x1, y1]]) { ctx.beginPath(); ctx.arc(px, py, Math.max(0.8, z * 0.05), 0, Math.PI * 2); ctx.fill(); }
+  const dx = x1 - x0, dy = y1 - y0, d = Math.hypot(dx, dy) || 1, nx = -dy / d, ny = dx / d;
+  const g = Math.max(3, z * 0.42);
+  // pień belki jako czworokąt z drzazgami na końcu (x1)
+  ctx.beginPath();
+  ctx.moveTo(x0 + nx * g / 2, y0 + ny * g / 2);
+  ctx.lineTo(x1 + nx * g / 2 - dx / d * g * 0.3, y1 + ny * g / 2 - dy / d * g * 0.3);
+  for (let k = 0; k <= 4; k++) {
+    const t = 0.5 - k / 4, wys = (k % 2 ? 0.2 : 0.75) * g;
+    ctx.lineTo(x1 + nx * g * t + dx / d * wys - dx / d * g * 0.3, y1 + ny * g * t + dy / d * wys - dy / d * g * 0.3);
+  }
+  ctx.lineTo(x0 - nx * g / 2, y0 - ny * g / 2);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(90,60,36,0.98)'; ctx.fill();
+  ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.8, z * 0.05); ctx.stroke();
+  // słoje wzdłuż i cień po dolnej stronie
+  ctx.strokeStyle = 'rgba(52,34,20,0.6)'; ctx.lineWidth = Math.max(0.5, z * 0.03);
+  ctx.beginPath();
+  for (const t of [-0.22, 0.05, 0.28]) { ctx.moveTo(x0 + nx * g * t, y0 + ny * g * t); ctx.lineTo(x1 + nx * g * t - dx / d * g * 0.4, y1 + ny * g * t - dy / d * g * 0.4); }
+  ctx.stroke();
+  ctx.strokeStyle = 'rgba(150,110,70,0.45)'; ctx.lineWidth = Math.max(0.6, z * 0.04);
+  ctx.beginPath(); ctx.moveTo(x0 + nx * g * 0.42, y0 + ny * g * 0.42); ctx.lineTo(x1 + nx * g * 0.42 - dx / d * g * 0.4, y1 + ny * g * 0.42 - dy / d * g * 0.4); ctx.stroke();
 }
 
 /** Kopalnia: szyny po spągu na całej długości chodnika i porzucony wózek na kołach. */
@@ -386,9 +439,9 @@ export function ruinaNaRycinie(ctx: CanvasRenderingContext2D, cx: number, yp: nu
   luk(ctx, cam, { x0: -3, x1: 0, y: -3.5, filary: true }, 0, z);
   luk(ctx, cam, { x0: 0, x1: 3, y: -3.5, filary: true }, 0, z);
   belka(ctx, cam, [3.6, -5.2, 1.6, -0.4], z);
-  for (let x = -5; x <= 4; x++) ciosy(ctx, cam, x, 0, z, x + 40);
-  for (let y = -5; y < 0; y++) { ciosy(ctx, cam, -5, y, z, y * 7 + 3); if (y < -2) ciosy(ctx, cam, 4, y, z, y * 5 + 9); }
-  for (let x = -5; x <= 0; x++) ciosy(ctx, cam, x, -6, z, x * 3 + 77);
+  for (let x = -5; x <= 4; x++) ciosy(ctx, cam, x, 0, z, x + 40, false);
+  for (let y = -5; y < 0; y++) { ciosy(ctx, cam, -5, y, z, y * 7 + 3, false); if (y < -2) ciosy(ctx, cam, 4, y, z, y * 5 + 9, y === -5); }
+  for (let x = -5; x <= 0; x++) ciosy(ctx, cam, x, -6, z, x * 3 + 77, true);
   gruz(ctx, cam, 2, -1, z, 5); gruz(ctx, cam, 3, -1, z, 9); gruz(ctx, cam, 3, -2, z, 13);
   const bob = Math.sin(t * 0.003) * z * 0.08;
   swiatlo(ctx, cx + z * 0.5, yp - z * 1.4 + bob, z, 1, t, true);

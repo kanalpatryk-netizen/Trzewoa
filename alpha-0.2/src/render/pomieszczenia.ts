@@ -63,6 +63,103 @@ function uklad(cam: Camera, pom: Pomieszczenie) {
   };
 }
 
+/**
+ * Tylna ściana, podłoga i rama gotowego pokoju — bez nich pokój wyglądał jak zwykły korytarz w skale.
+ * Kuźnia: okopcona cegła (sadza gęstnieje ku stropowi); warsztat: pionowe deski; sypialnia: bielony tynk z lamperią.
+ * Podłoga: płyty w kuźni, deski w warsztacie i sypialni. Rama: dwa słupy i belka nad wejściem — pokój jest zbudowany.
+ */
+function scianaPokoju(ctx: CanvasRenderingContext2D, cam: Camera, pom: Pomieszczenie): void {
+  const z = cam.zoom;
+  const x0 = cam.toScreenX(pom.x), x1 = cam.toScreenX(pom.x + pom.w);
+  const y0 = cam.toScreenY(pom.y), yp = cam.toScreenY(pom.y + pom.h);
+  const W = x1 - x0, H = yp - y0;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(x0, y0, W, H); ctx.clip();
+  const lw = Math.max(1, z * 0.05);
+  if (pom.rodzaj === 'kuznia') {
+    ctx.fillStyle = 'rgb(92,52,40)'; ctx.fillRect(x0, y0, W, H);
+    // cegły na zakładkę: rząd = pół kafla, cegła = kafel; co któraś ciemniejsza
+    const rh = z * 0.5;
+    for (let r = 0, y = yp - rh; y > y0 - rh; r++, y -= rh) {
+      for (let c = -1, x = x0 - (r & 1) * z * 0.5; x < x1; c++, x += z) {
+        const ciemna = ((c * 7 + r * 13) & 3) === 0;
+        ctx.fillStyle = ciemna ? 'rgba(40,18,12,0.35)' : 'rgba(150,90,64,0.12)';
+        ctx.fillRect(x + lw, y + lw, z - lw * 2, rh - lw * 2);
+      }
+    }
+    ctx.strokeStyle = 'rgba(28,14,10,0.7)'; ctx.lineWidth = lw;
+    ctx.beginPath();
+    for (let r = 0, y = yp; y > y0; r++, y -= rh) {
+      ctx.moveTo(x0, y); ctx.lineTo(x1, y);
+      for (let x = x0 - (r & 1) * z * 0.5; x < x1; x += z) { ctx.moveTo(x, y); ctx.lineTo(x, y - rh); }
+    }
+    ctx.stroke();
+    // sadza: od paleniska (lewa ściana) w górę i pod stropem
+    const sadza = ctx.createLinearGradient(0, y0, 0, yp);
+    sadza.addColorStop(0, 'rgba(14,8,6,0.75)'); sadza.addColorStop(0.55, 'rgba(14,8,6,0.2)'); sadza.addColorStop(1, 'rgba(14,8,6,0)');
+    ctx.fillStyle = sadza; ctx.fillRect(x0, y0, W, H);
+  } else if (pom.rodzaj === 'warsztat') {
+    ctx.fillStyle = 'rgb(112,80,52)'; ctx.fillRect(x0, y0, W, H);
+    // pionowe deski z słojami i sękami, belka pod stropem
+    const dw = z * 0.5;
+    ctx.lineWidth = lw;
+    for (let i = 0, x = x0; x < x1; i++, x += dw) {
+      ctx.fillStyle = (i * 5) % 3 === 0 ? 'rgba(60,36,20,0.18)' : (i % 2 ? 'rgba(170,124,80,0.1)' : 'rgba(0,0,0,0)');
+      ctx.fillRect(x, y0, dw, H);
+      ctx.strokeStyle = 'rgba(36,22,12,0.75)';
+      ctx.beginPath(); ctx.moveTo(x, y0); ctx.lineTo(x, yp); ctx.stroke();
+      ctx.strokeStyle = 'rgba(52,32,18,0.3)';
+      ctx.beginPath();
+      for (let k = 1; k <= 2; k++) { const sx = x + dw * k / 3; ctx.moveTo(sx, y0); ctx.bezierCurveTo(sx + dw * 0.08, y0 + H * 0.35, sx - dw * 0.08, y0 + H * 0.65, sx, yp); }
+      ctx.stroke();
+      if (((i * 11) & 3) === 1) { ctx.fillStyle = 'rgba(46,28,14,0.6)'; ctx.beginPath(); ctx.ellipse(x + dw * 0.5, y0 + H * (0.3 + ((i * 7) % 5) * 0.1), dw * 0.12, dw * 0.08, 0, 0, Math.PI * 2); ctx.fill(); }
+    }
+  } else {
+    // sypialnia w półmroku: ciepły, przybrudzony tynk (dawniej biały — najjaśniejszy punkt kadru, jak ikona kłódki)
+    ctx.fillStyle = 'rgb(116,96,76)'; ctx.fillRect(x0, y0, W, H);
+    // tynk: plamy wilgoci i rysy, ciemniejsza lamperia u dołu
+    const plama = ctx.createRadialGradient(x0 + W * 0.7, y0 + H * 0.2, 0, x0 + W * 0.7, y0 + H * 0.2, W * 0.5);
+    plama.addColorStop(0, 'rgba(70,56,42,0.3)'); plama.addColorStop(1, 'rgba(70,56,42,0)');
+    ctx.fillStyle = plama; ctx.fillRect(x0, y0, W, H);
+    ctx.fillStyle = 'rgba(64,46,32,0.6)'; ctx.fillRect(x0, yp - z * 0.55, W, z * 0.55);
+    ctx.strokeStyle = 'rgba(60,42,30,0.6)'; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(x0, yp - z * 0.55); ctx.lineTo(x1, yp - z * 0.55); ctx.stroke();
+    ctx.strokeStyle = 'rgba(90,76,58,0.45)';
+    ctx.beginPath(); ctx.moveTo(x0 + W * 0.18, y0); ctx.lineTo(x0 + W * 0.22, y0 + H * 0.2); ctx.lineTo(x0 + W * 0.19, y0 + H * 0.33); ctx.stroke();
+  }
+  // cień w kątach: ściana chowa się pod stropem i przy bokach skały
+  const gora = ctx.createLinearGradient(0, y0, 0, y0 + z * 0.8);
+  gora.addColorStop(0, 'rgba(10,6,4,0.55)'); gora.addColorStop(1, 'rgba(10,6,4,0)');
+  ctx.fillStyle = gora; ctx.fillRect(x0, y0, W, z * 0.8);
+  for (const [xs, kier] of [[x0, 1], [x1, -1]] as const) {
+    const bok = ctx.createLinearGradient(xs, 0, xs + kier * z * 0.6, 0);
+    bok.addColorStop(0, 'rgba(10,6,4,0.45)'); bok.addColorStop(1, 'rgba(10,6,4,0)');
+    ctx.fillStyle = bok; ctx.fillRect(Math.min(xs, xs + kier * z * 0.6), y0, z * 0.6, H);
+  }
+  ctx.restore();
+  // podłoga: pas na wierzchu litej podłogi — płyty w kuźni, deski gdzie indziej
+  const ph = Math.max(2, z * 0.2);
+  ctx.save();
+  ctx.lineWidth = lw; ctx.strokeStyle = TUSZ;
+  ctx.fillStyle = pom.rodzaj === 'kuznia' ? 'rgb(88,84,80)' : 'rgb(120,86,54)';
+  ctx.beginPath(); ctx.rect(x0, yp, W, ph); ctx.fill(); ctx.stroke();
+  ctx.beginPath();
+  const krok = pom.rodzaj === 'kuznia' ? z * 0.9 : z * 0.6;
+  for (let x = x0 + krok; x < x1 - 1; x += krok) { ctx.moveTo(x, yp); ctx.lineTo(x, yp + ph); }
+  ctx.stroke();
+  // obramowanie skałą: poszarpana krawędź wykutego wnętrza tuszem (dawniej gruba belka i słupy — szafka w ścianie)
+  ctx.lineWidth = Math.max(1.2, z * 0.07);
+  ctx.beginPath();
+  const drg = (n: number) => (Math.sin(n * 12.9898 + pom.x * 78.233) * 43758.5453 % 1) * z * 0.06;
+  ctx.moveTo(x0, yp);
+  for (let k = 0, y = yp; y > y0; k++, y -= z * 0.4) ctx.lineTo(x0 + drg(k), y);
+  for (let k = 0, x = x0; x < x1; k++, x += z * 0.4) ctx.lineTo(x, y0 + drg(k + 50));
+  for (let k = 0, y = y0; y < yp; k++, y += z * 0.4) ctx.lineTo(x1 + drg(k + 90), y);
+  ctx.lineTo(x1, yp);
+  ctx.stroke();
+  ctx.restore();
+}
+
 /** Półka albo wieszak na lewej ścianie. */
 function polka(ctx: CanvasRenderingContext2D, p: { x1: number; x2: number; y: number }, z: number): void {
   ctx.fillStyle = DREWNO;
@@ -139,6 +236,7 @@ export class Pokoje {
       if (k <= 0) continue;
       const u = uklad(cam, pom);
       ctx.globalAlpha = k;
+      scianaPokoju(ctx, cam, pom);
       ctx.save();
       ctx.translate(0, -(1 - k) * (1 - k) * z * 1.2);            // wyposażenie opada na miejsce
       ctx.lineWidth = Math.max(1, z * 0.06);
@@ -194,11 +292,20 @@ export class Pokoje {
           ctx.fillStyle = 'rgba(206,190,156,0.98)';
           ctx.beginPath(); ctx.ellipse(glowa < 0 ? b1 + d * 0.14 : b2 - d * 0.14, u.yp - z * 0.36, d * 0.11, z * 0.12, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
         }
+        // nisza świecy: płytkie, szerokie wgłębienie w tynku, rozjaśnione od płomienia (dawniej czarny łuk
+        // z białą świecą — dziurka od klucza na białej ścianie)
         const s = u.swieca;
-        ctx.fillStyle = 'rgba(14,9,7,0.95)';
-        ctx.beginPath(); ctx.moveTo(s.x - z * 0.3, s.y + z * 0.1); ctx.lineTo(s.x - z * 0.3, s.y - z * 0.45); ctx.quadraticCurveTo(s.x, s.y - z * 0.8, s.x + z * 0.3, s.y - z * 0.45); ctx.lineTo(s.x + z * 0.3, s.y + z * 0.1); ctx.closePath(); ctx.fill(); ctx.stroke();
-        ctx.fillStyle = 'rgba(230,220,196,0.98)';
-        ctx.beginPath(); ctx.rect(s.x - z * 0.06, s.y - z * 0.3, z * 0.12, z * 0.38); ctx.fill(); ctx.stroke();
+        const nisza = new Path2D();
+        nisza.moveTo(s.x - z * 0.42, s.y + z * 0.1); nisza.lineTo(s.x - z * 0.42, s.y - z * 0.2);
+        nisza.quadraticCurveTo(s.x - z * 0.42, s.y - z * 0.5, s.x, s.y - z * 0.52);
+        nisza.quadraticCurveTo(s.x + z * 0.42, s.y - z * 0.5, s.x + z * 0.42, s.y - z * 0.2);
+        nisza.lineTo(s.x + z * 0.42, s.y + z * 0.1); nisza.closePath();
+        const gn = ctx.createRadialGradient(s.x, s.y - z * 0.25, 0, s.x, s.y - z * 0.2, z * 0.55);
+        gn.addColorStop(0, 'rgba(150,104,62,0.95)'); gn.addColorStop(1, 'rgba(58,40,28,0.95)');
+        ctx.fillStyle = gn; ctx.fill(nisza);
+        ctx.lineWidth = Math.max(1, z * 0.04); ctx.strokeStyle = 'rgba(30,20,14,0.8)'; ctx.stroke(nisza);
+        ctx.fillStyle = 'rgba(214,196,160,0.98)';
+        ctx.beginPath(); ctx.rect(s.x - z * 0.05, s.y - z * 0.2, z * 0.1, z * 0.28); ctx.fill(); ctx.stroke();
       }
       ctx.restore();
       ctx.globalAlpha = 1;
@@ -536,7 +643,8 @@ function podpis(ctx: CanvasRenderingContext2D, tekst: string, x: number, y: numb
 }
 
 /** Konopie liny: jaśniejsza nić i ciemniejszy skręt. */
-const KONOPIE = 'rgba(176,138,86,0.98)', SKRET = 'rgba(92,64,36,0.9)';
+// zgaszone konopie, nie złoto — jasna nić na krótkich odcinkach czytała się jak złote pałeczki albo zapałki
+const KONOPIE = 'rgba(142,112,78,0.98)', SKRET = 'rgba(66,46,28,0.9)';
 /** Ile trwa spadanie liny z haka i ile jeszcze się kołysze, zanim się uspokoi (ms). */
 const LINA_SPADA = 650, LINA_USPOKAJA = 1600;
 

@@ -44,7 +44,7 @@ export const DLON = {
 
   // ---------------------------------------------------------------- wygląd (kafle)
   /** Wielkość dłoni (mnożnik; 1 = dłoń od nadgarstka po szpony ok. 5,4 kafla, a postać ma ok. 2,5). */
-  wielkosc: 1.8,
+  wielkosc: 2.05,
   /** Czerwona łuna otchłani pod ofiarą: promień (kafle). */
   lunaPromien: 6,
 
@@ -68,7 +68,7 @@ export const DLON = {
   demon: {
     wlaczona: true as boolean,
     pierwszaPo: 300, przerwa: 720,
-    wielkosc: { rzut: 1.3, tarcza: 1.2, zawal: 1.35 } as Record<'rzut' | 'tarcza' | 'zawal', number>,
+    wielkosc: { rzut: 1.6, tarcza: 1.5, zawal: 1.6 } as Record<'rzut' | 'tarcza' | 'zawal', number>,
     wagi: { rzut: 2, tarcza: 1, zawal: 1.5 } as Record<'rzut' | 'tarcza' | 'zawal', number>,
     /**
      * Rzut: spod podłogi pod rycerzem wyrasta dłoń, obejmuje go palcami (nie pięścią), unosi i ciska w górę i w bok, z dala

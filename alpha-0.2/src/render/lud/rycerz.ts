@@ -314,7 +314,8 @@ function naramiennik(r: Rysunek, bark: Pkt, lok: Pkt, dalej: boolean): void {
     else { p.moveTo(...P(a1, -w)); p.lineTo(...P(a0, -w * 1.02)); p.quadraticCurveTo(...P(a0 - 0.012, 0), ...P(a0, w * 1.02)); p.lineTo(...P(a1, w)); }
     p.quadraticCurveTo(...P(a1 + 0.018, 0), ...P(a1, -w));
     p.closePath();
-    m.ksztalt(p, tonC(st.helm, (dalej ? -0.6 : -0.22) - i * 0.06, CIEN.metal), (g) => {
+    // jaśniejsza, wypolerowana blacha — przy zwykłym przybliżeniu zbroja ma odcinać się od wapenroku
+    m.ksztalt(p, tonC(st.helm, (dalej ? -0.5 : -0.02) - i * 0.06, CIEN.metal), (g) => {
       if (m.prosto) return;
       if (m.bogato) {
         // nity na końcach lamy
@@ -326,7 +327,7 @@ function naramiennik(r: Rysunek, bark: Pkt, lok: Pkt, dalej: boolean): void {
       }
       // brzeg lamy łapie światło, pod nim cień na następnej
       const [b0x, b0y] = P(a1, -w * 0.9), [bmx, bmy] = P(a1 + 0.016, 0), [b1x, b1y] = P(a1, w * 0.9);
-      g.strokeStyle = dalej ? 'rgba(255,248,232,0.12)' : 'rgba(255,248,232,0.4)'; g.lineWidth = Math.max(0.4, h * 0.003);
+      g.strokeStyle = dalej ? 'rgba(255,248,232,0.16)' : 'rgba(255,248,232,0.6)'; g.lineWidth = Math.max(m.bogato ? 0.4 : 0.9, h * 0.003);
       g.beginPath(); g.moveTo(b0x, b0y); g.quadraticCurveTo(bmx, bmy, b1x, b1y); g.stroke();
       bryla(g, p, h, [[0.02 * h, 'rgba(2,2,6,0.5)'], [-0.006 * h, dalej ? 'rgba(255,248,232,0.06)' : 'rgba(255,248,232,0.28)']], swiatloOsi(bark, lok), dalej ? 0.6 : 0.9, 0, undefined, !m.bogato);
     });
@@ -353,7 +354,7 @@ function napiersnik(r: Rysunek, T: Tulow, cienie: Cienie): void {
   if (!m.prosto) {
     const a = T(0.9, 0.11), b = T(PAS, -0.06);
     const gr = m.g.createLinearGradient(a.x, a.y, b.x, b.y);
-    gr.addColorStop(0, tonC(k, 0.14, CIEN.metal)); gr.addColorStop(0.45, tonC(k, -0.1, CIEN.metal)); gr.addColorStop(1, tonC(k, -0.5, CIEN.metal));
+    gr.addColorStop(0, tonC(k, 0.32, CIEN.metal)); gr.addColorStop(0.45, tonC(k, 0.06, CIEN.metal)); gr.addColorStop(1, tonC(k, -0.42, CIEN.metal));
     styl = gr;
   }
   const kq = T(0.62, 0.05);
@@ -389,9 +390,10 @@ function napiersnik(r: Rysunek, T: Tulow, cienie: Cienie): void {
     }
     // wypolerowany grzbiet blachy wzdłuż wypukłości piersi
     const g0 = T(0.9, 0.075), g1 = T(0.7, 0.1), g2 = T(0.45, 0.092);
-    g.strokeStyle = 'rgba(255,248,232,0.32)'; g.lineWidth = Math.max(0.8, h * 0.012); g.lineCap = 'round';
+    // z daleka grzbiet blachy szerszy i jaśniejszy — połysk, po którym poznać zbroję przy zwykłym przybliżeniu
+    g.strokeStyle = 'rgba(255,248,232,0.42)'; g.lineWidth = Math.max(m.bogato ? 0.8 : 1.6, h * 0.012); g.lineCap = 'round';
     g.beginPath(); g.moveTo(g0.x, g0.y); g.quadraticCurveTo(g1.x, g1.y, g2.x, g2.y); g.stroke();
-    g.strokeStyle = 'rgba(255,248,232,0.6)'; g.lineWidth = Math.max(0.4, h * 0.0035);
+    g.strokeStyle = 'rgba(255,248,232,0.75)'; g.lineWidth = Math.max(m.bogato ? 0.4 : 0.8, h * 0.0035);
     g.beginPath(); g.moveTo(g0.x, g0.y); g.quadraticCurveTo(g1.x, g1.y, g2.x, g2.y); g.stroke();
     bryla(g, p, h, [[0.045 * h, 'rgba(4,4,10,0.5)'], [0.014 * h, 'rgba(4,4,10,0.45)'], [-0.01 * h, 'rgba(255,248,232,0.18)'], [Math.max(1, 0.004 * h), 'rgba(160,176,196,0.26)', undefined, { x: 0.94, y: 0.34 }]], SWB, 1, 0, undefined, !m.bogato, true);
     g.restore();
