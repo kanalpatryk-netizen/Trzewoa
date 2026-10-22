@@ -26,7 +26,7 @@ export interface Trup {
 }
 
 /** Śmierci, po których nie zostaje ciało. */
-const BEZ_CIALA = new Set(['mrok', 'otchlan']);
+const BEZ_CIALA = new Set(['otchlan']);
 
 /** Wołane z sim.kill: zostawia ciało postaci ludu. Zwraca true, gdy ciało zostało. */
 export function zostawTrupa(sim: Sim, c: Creature, tag: string): boolean {

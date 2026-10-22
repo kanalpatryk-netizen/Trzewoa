@@ -75,7 +75,7 @@ export const NIEPOKOJ = {
   trzaskCo: 7, trzaskRozrzut: 14, trzaskGlos: 0.09,
   /** Chór bez słów: co tyle s (+ losowo), głośność, długość frazy; formanty samogłosek. */
   chorCo: 38, chorRozrzut: 30, chorGlos: 0.022, chorDlugosc: 9,
-  /** Ten, który patrzy: szept z ciemności (głośność sylab) i głuche uderzenie, gdy kogoś zabiera. */
+  /** Szept z ciemności (głośność sylab) i głuche uderzenie, gdy dłoń z otchłani kogoś zabiera. */
   szeptGlos: 0.05, zabranieGlos: 0.16,
   /** Pomruk otchłani, gdy z głębi zaczyna się wznosić dłoń (Koszmar: dłoń z otchłani). */
   otchlanGlos: 0.22,

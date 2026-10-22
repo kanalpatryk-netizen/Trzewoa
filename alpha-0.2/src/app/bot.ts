@@ -129,8 +129,8 @@ function wazZabytek(sim: Sim, typ: TypZabytku): [boolean, string] {
       // modlitwa mocniejsza, kucie wolniejsze — opłaca się, gdy droga wiernych już wykopana
       return czoloDrogi(sim) < 0 ? [true, 'droga gotowa — modlitwa ważniejsza niż kucie'] : [false, 'droga niegotowa — kucie ważniejsze'];
     case 'miecz':
-      // rycerz bije mocniej, ale Ten, który patrzy, poluje częściej — tylko na ostatnią prostą
-      return proc >= 70 ? [true, 'blisko demona — mocniejszy rycerz się przyda'] : [false, 'za wcześnie — Ten, który patrzy, polowałby długo'];
+      // rycerz bije mocniej, ale chodzi wolniej — tylko na ostatnią prostą
+      return proc >= 70 ? [true, 'blisko demona — mocniejszy rycerz się przyda'] : [false, 'za wcześnie — wolniejszy rycerz długo by się wlókł'];
     case 'kielich': {
       // rany goją się szybciej, głód rośnie szybciej — gdy jedzenia dość i nikt nie głoduje
       const glodni = zywi(sim).some((c) => c.hunger > 0.5);

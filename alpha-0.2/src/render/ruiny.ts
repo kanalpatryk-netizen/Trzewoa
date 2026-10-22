@@ -2,9 +2,8 @@ import type { Sim } from '../sim/sim';
 import type { Camera } from './camera';
 import type { Ruina } from '../sim/ruiny';
 import type { TypZabytku } from '../nastawy/zabytki';
-import { ZABYTKI, ZABYTEK } from '../nastawy/zabytki';
+import { ZABYTKI } from '../nastawy/zabytki';
 import { wolnoRuszac } from './nastroj';
-import { SERIF } from './ink';
 import { wysokoscPostaci } from './figury';
 
 /**
@@ -93,7 +92,6 @@ export class Ruiny {
         kurz(ctx, cam, r, z, dt);
         swiatlo(ctx, zx, y, z, p, teraz, ruch);
         rysujZabytek(ctx, r.zabytek.typ, zx, y, z * 0.75 * (1 + 0.15 * p), 1, 0);
-        if (z >= 6 && p >= 1) podpis(ctx, `${ZABYTEK[r.zabytek.typ].nazwa.toLowerCase()} — weź albo zostaw`, zx, y - z * 1.6, z);
       } else if (stan === 'wziety') {
         wziecie(ctx, sim, cam, r, n, zx, dol - z * 0.95, z, dt, teraz);
       } else if (stan === 'zostawiony' && dt < GASNIE) {
@@ -360,15 +358,6 @@ function wozek(ctx: CanvasRenderingContext2D, cam: Camera, r: Ruina, z: number):
   for (const dx of [-0.38, 0.38]) { ctx.beginPath(); ctx.arc(wx + dx * z, wy + z * 0.02, z * 0.16, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = TUSZ; ctx.stroke(); }
 }
 
-/** Podpis nad zabytkiem: kursywa z ciemnym obrysem. */
-function podpis(ctx: CanvasRenderingContext2D, tekst: string, x: number, y: number, z: number): void {
-  ctx.font = `italic ${Math.max(12, Math.min(16, z * 0.7))}px ${SERIF}`;
-  ctx.textAlign = 'center'; ctx.textBaseline = 'alphabetic';
-  ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,7,6,0.85)';
-  ctx.strokeText(tekst, x, y);
-  ctx.fillStyle = 'rgba(255,228,160,0.98)';
-  ctx.fillText(tekst, x, y);
-}
 
 /**
  * Zabytek na ekranie: środek dołu w (x, y), rozmiar `s` (pikseli na kafel), `alfa`; `szary` 0..1 — zgaszony

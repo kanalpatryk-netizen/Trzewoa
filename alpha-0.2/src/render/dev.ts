@@ -1,7 +1,6 @@
 /**
  * Rysunki trybu deweloperskiego: śledzona postać z jej drogą i celem, obrys kafla pod
- * kursorem, a na życzenie to, czego gracz nie widzi — Patrzący w każdej fazie (z celem
- * i punktem krążenia), gniazda kamiennych rycerzy i drogi wszystkich postaci.
+ * kursorem, a na życzenie gniazda kamiennych rycerzy i drogi wszystkich postaci.
  * Rysowane w układzie płyty, na wierzchu świata.
  */
 import type { Sim } from '../sim/sim';
@@ -48,28 +47,6 @@ export function rysujDev(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, t
     ctx.strokeStyle = 'rgba(120,220,255,0.9)';
     ctx.lineWidth = 1.5;
     ctx.strokeRect(sx(DEV.kursor.x), sy(DEV.kursor.y), z, z);
-  }
-  if (DEV.pokazUkryte) {
-    // Patrzący w każdej fazie, także gdy gracz go nie widzi
-    const m = sim.lud.mrok;
-    if (m) {
-      const x = sx(m.x), y = sy(m.y);
-      const kolor = m.faza === 'patrzy' ? '#ff6a50' : m.faza === 'podchodzi' ? '#ffb070' : '#c79bff';
-      ctx.strokeStyle = kolor;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
-      ctx.beginPath(); ctx.arc(x, y, Math.max(10, z * 0.9), 0, Math.PI * 2); ctx.stroke();
-      if (m.faza === 'krazy') {
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(sx(m.kx), sy(m.ky)); ctx.stroke();
-        ctx.beginPath(); ctx.arc(sx(m.kx), sy(m.ky), 3, 0, Math.PI * 2); ctx.stroke();
-      }
-      const cel = m.cel !== null ? sim.creatures.find((c) => c.id === m.cel && !c.dead) : undefined;
-      if (cel && (m.faza === 'podchodzi' || m.faza === 'patrzy')) {
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(sx(cel.x + 0.5), sy(cel.y)); ctx.stroke();
-      }
-      ctx.setLineDash([]);
-      podpis(ctx, `Patrzący: ${m.faza}${cel ? ` → #${cel.id}` : ''}`, x, y - Math.max(14, z * 1.2), kolor);
-    }
   }
   const c = DEV.sledzony >= 0 ? sim.creatures.find((q) => q.id === DEV.sledzony && !q.dead) : undefined;
   if (c) {

@@ -15,7 +15,6 @@ import { wiadra, type Wiadro, type LinaPrzecieta } from '../sim/wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { SURFACE_Y } from '../sim/world';
 import { wysokoscPostaci } from './figury';
-import { SERIF } from './ink';
 
 /** Tani skrót liczby — stałe kształty strzępów i klepek (rysunek nie sięga po los gry). */
 function los(n: number): number {
@@ -111,17 +110,6 @@ export function rysujWiadra(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
     ctx.rotate(kat);
     kubel(ctx, wd, Z);
     ctx.restore();
-    // ile porcji zostało — z bliska, przy stojącym wiadrze
-    if (wd.faza === 'stoi' && z >= 7 && wd.porcje > 0) {
-      ctx.font = `italic ${Math.max(11, Math.min(15, z * 0.9))}px ${SERIF}`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = 'rgba(12,8,7,0.75)';
-      const t = `${wd.porcje}`, tw = ctx.measureText(t).width;
-      const lx = bx + Z * 0.6, ly = top + Z * 0.2;
-      ctx.fillRect(lx - 3, ly - 11, tw + 6, 14);
-      ctx.fillStyle = 'rgba(246,214,150,0.95)';
-      ctx.fillText(t, lx + tw / 2, ly);
-    }
   }
   ctx.restore();
 }
@@ -294,16 +282,6 @@ function rozbite(ctx: CanvasRenderingContext2D, sim: Sim, wd: Wiadro, cam: Camer
       ctx.fillStyle = `rgba(196,176,140,${0.5 * a})`;
       ctx.beginPath(); ctx.arc(x + s * Z * (0.4 + t * 0.02), dno - Z * 0.1 - t * z * 0.006 * (1 + los(i)), Z * (0.1 + t * 0.004), 0, Math.PI * 2); ctx.fill();
     }
-  }
-  if (z >= 7 && wd.porcje > 0) {
-    ctx.font = `italic ${Math.max(11, Math.min(15, z * 0.9))}px ${SERIF}`;
-    ctx.textAlign = 'center';
-    ctx.fillStyle = 'rgba(12,8,7,0.75)';
-    const tx = `${wd.porcje}`, tw = ctx.measureText(tx).width;
-    const lx = x + Z * 0.9, ly = dno - Z * 0.5;
-    ctx.fillRect(lx - 3, ly - 11, tw + 6, 14);
-    ctx.fillStyle = 'rgba(246,214,150,0.95)';
-    ctx.fillText(tx, lx + tw / 2, ly);
   }
   ctx.restore();
 }

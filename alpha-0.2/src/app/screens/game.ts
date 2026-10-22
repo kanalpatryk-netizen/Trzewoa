@@ -31,10 +31,9 @@ import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { naWieszaku } from '../../sim/zbroja';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
-import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, odmawia, type Odmowa } from '../../sim/polecenia';
+import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
 import { NASTAWY_GLOSU } from '../../core/glos-odmowy';
-import { zacznijGlosOdmowy } from '../../render/lud/odmowa';
 import { POMNIK } from '../../nastawy/pomnik';
 import { rysujNadPomnikiem, rysujPomnik } from '../../render/pomnik';
 import { rysujDlonDemona } from '../../render/dlon-demona';
@@ -52,7 +51,7 @@ import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
-import { etykietyKolonii, podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
+import { podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
 import { computePlate, drawFrame, drawKrew, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
@@ -64,7 +63,7 @@ import { zbierzObszaryHud, type ObszarHud } from '../obszary-hud';
 import { Straznik, type Alarm } from '../alarmy';
 import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { rysujWydarzenie, type PoleWyboru } from '../../render/wydarzenie';
-import { rysujMrok, rysujPatrzacego } from '../../render/mrok';
+import { rysujMrok } from '../../render/mrok';
 import { rysujDlon } from '../../render/dlon';
 import { rysujAniola } from '../../render/aniol';
 import { BOT, BOT_GRA, wyslijStan, ziarnoPartii } from '../obserwowany';
@@ -165,8 +164,6 @@ export class EkranGry implements Ekran {
   dozwolone: Set<string> | null = null;
   /** Miejsce, na które gra wprost każe patrzeć (samouczek, podpowiedzi). */
   cel: Cel | null = null;
-  /** Czy rysować podpisy nacji. */
-  etykiety = true;
   /** Alpha, etap 2: zaznaczone postacie ludu (id) — dotknięcie mapy wydaje im rozkaz „idź tam”. */
   zaznaczeni = new Set<number>();
   /** Pola paska drużyny pod płytą (medaliony ról i rozkazy) z ostatniej klatki. */
@@ -207,8 +204,6 @@ export class EkranGry implements Ekran {
   private przytrzymanie: { id: number; v: string; sx: number; sy: number; od: number; verb: Verb | null; tool: string | null } | null = null;
   /** Podpowiedź nad płytą jako odnośnik do miejsca, o którym mówi. */
   private radaRect: { x: number; y: number; w: number; h: number } | null = null;
-  /** Które zdarzenia Patrzącego już zabrzmiały (tik szeptu i zabrania). */
-  private slyszanyMrok: { szept?: number; zabrany?: number } = {};
   private slyszanaDlon: { wstaje?: number; chwyt?: number } = {};
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
   private straznik = new Straznik();
@@ -547,7 +542,6 @@ export class EkranGry implements Ekran {
     if (Object.keys(sim.lud.zabytki?.stan ?? {}).length) odkrycia.odkryj('zabytki');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
-    if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
     if (sim.lud.dlon?.widziana) odkrycia.odkryj('dlon');
     // etap 4: przecięta lina wiadra i dłoń anielska — przy pierwszym razie
     if (sim.lud.wiadra?.przecieta || (sim.lud.wiadra?.ciec ?? 0) > 0) odkrycia.odkryj('lina-wiadra');
@@ -725,7 +719,7 @@ export class EkranGry implements Ekran {
    * w drodze — mówi to na głos (nastawy/dzwiek.ts: GLOS_RYCERZA, GLOS_POBOZNEGO). Naraz mówi jeden; odmowa
    * wydana w pauzie też.
    */
-  private glosOdmowy(teraz: number): void {
+  private glosOdmowy(): void {
     const sim = this.sim;
     let mowil = false;
     for (const c of sim.creatures) {
@@ -736,8 +730,7 @@ export class EkranGry implements Ekran {
       if (mowil || sim.tick - o.od > POLECENIA.odmowaTikow || (kto !== 'rycerz' && kto !== 'pobozny')) continue;
       if (!NASTAWY_GLOSU[kto].odmowy.some((p) => o.tekst.startsWith(p))) continue;
       const pan = Math.max(-1, Math.min(1, (this.cam.toScreenX(c.x) / Math.max(1, this.cam.vw)) * 2 - 1)) * 0.6;
-      const w = this.app.gesty.glosOdmowy(kto, pan);
-      if (w) { zacznijGlosOdmowy(o, w, teraz); mowil = true; }
+      if (this.app.gesty.glosOdmowy(kto, pan)) mowil = true;
     }
   }
 
@@ -846,7 +839,7 @@ export class EkranGry implements Ekran {
     // plan wykonuje się także wtedy, gdy pauzę zdjęło coś innego niż przycisk
     if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
     this.sluchaj();
-    this.glosOdmowy(teraz);
+    this.glosOdmowy();
     this.patrzNaPomnik();
     this.sluchajDloniDemona();
     if (!this.zamrozone()) {
@@ -967,17 +960,10 @@ export class EkranGry implements Ekran {
         this.sim.sen,
         this.zamrozone(),
       );
-      // Ten, który patrzy: gdy podchodzi i gdy patrzy, muzyka gęstnieje jak przy zasypianiu
-      const mrok = this.sim.lud.mrok;
-      const napiecieMroku = mrok?.faza === 'patrzy' ? 0.75 : mrok?.faza === 'podchodzi' ? 0.45 : 0;
       // dłoń z otchłani: od pierwszego drgnięcia otchłani do chwytu muzyka jest na granicy
       const dlon = this.sim.lud.dlon;
       const napiecieDloni = dlon && dlon.faza !== 'brak' && dlon.faza !== 'gasnie' ? (dlon.faza === 'wstaje' ? 0.85 : 1) : 0;
-      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2, napiecieMroku, napiecieDloni));
-      if (mrok) {
-        if (mrok.szeptT !== undefined && mrok.szeptT !== this.slyszanyMrok.szept) { this.slyszanyMrok.szept = mrok.szeptT; this.app.muzyka.szept(); }
-        if (mrok.zabranyT !== undefined && mrok.zabranyT !== this.slyszanyMrok.zabrany) { this.slyszanyMrok.zabrany = mrok.zabranyT; this.app.muzyka.zabranie(); }
-      }
+      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2, napiecieDloni));
       if (dlon) {
         if (dlon.wstajeT !== undefined && dlon.wstajeT !== this.slyszanaDlon.wstaje) { this.slyszanaDlon.wstaje = dlon.wstajeT; this.app.muzyka.otchlan(); }
         if (dlon.chwytT !== undefined && dlon.chwytT !== this.slyszanaDlon.chwyt) { this.slyszanaDlon.chwyt = dlon.chwytT; this.app.muzyka.zabranie(); }
@@ -1091,12 +1077,10 @@ export class EkranGry implements Ekran {
     rysujPoleceniaNaMapie(ctx, sim, cam, teraz, this.zaznaczeni, this.falaRozkazu);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
-    if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
     rysujZnacznikiLudu(ctx, sim, cam);
     rysujStraznikowWSkale(ctx, sim, cam, teraz);
     // etap 5: błyski pomnika, rozpad i konanie demona (fala światła, popiół)
     rysujNadPomnikiem(ctx, sim, cam, teraz);
-    rysujPatrzacego(ctx, sim, cam, teraz);
     rysujDlon(ctx, sim, cam, teraz);
     // etap 5b: dłoń z otchłani pomaga demonowi — rzut, tarcza, zawał (i ściana gruzu, gwiazdki ogłuszonych)
     rysujDlonDemona(ctx, sim, cam, teraz);
@@ -1307,22 +1291,6 @@ export class EkranGry implements Ekran {
     return [...this.zaznaczeni].map((id) => this.sim.creatureById(id)).filter((c): c is Creature => !!c);
   }
 
-  /**
-   * Odmowa rozkazu: gdy ktoś z odmawiających stoi w kadrze, jego dymek już mówi „nie” — ten sam tekst przy
-   * kursorze byłby trzecią kopią (dwa dymki i napis kursywą). Napis przy kursorze tylko wtedy, gdy dymka nie widać.
-   */
-  private odmowa(odmowy: string[], ids: readonly number[], domyslna = 'Nie.'): void {
-    const { sim, cam } = this;
-    const widac = ids.some((id) => {
-      const c = sim.creatureById(id);
-      if (!c || !odmawia(sim, c)) return false;
-      const x = cam.toScreenX(c.x), y = cam.toScreenY(c.y);
-      return x > 0 && y > 0 && x < cam.vw && y < cam.vh;
-    });
-    if (!widac) this.ui.say(odmowy[0] ?? domyslna, sim.tick);
-    this.app.gesty.odmowa();
-  }
-
   /** Zaznacza postacie (z Shiftem dokłada albo zdejmuje jedną); ryt w ręku i karta mieszkańca się odkładają. */
   private zaznacz(ids: number[], dokladaj = false): void {
     const ui = this.ui;
@@ -1378,9 +1346,9 @@ export class EkranGry implements Ekran {
     const { sim, ui } = this;
     const robotnicy = this.zaznaczeniZywi().filter((c) => rolaPostaci(c) === 'robotnik');
     if (!robotnicy.length) { ui.say('Kopią tylko robotnicy — zaznacz robotnika.', sim.tick); this.app.gesty.odmowa(); return; }
-    const { przyjeli, odmowy } = drogaGrupie(sim, robotnicy.map((c) => c.id));
+    const { przyjeli } = drogaGrupie(sim, robotnicy.map((c) => c.id));
     if (przyjeli) { ui.say(przyjeli === 1 ? 'Idzie kopać drogę wiernych.' : `Idą kopać drogę wiernych (${przyjeli}).`, sim.tick); this.app.gesty.klik(); }
-    else this.odmowa(odmowy, robotnicy.map((c) => c.id));
+    else { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
     this.nasluch?.({ typ: 'polecenie', rodzaj: 'droga', przyjeli });
   }
 
@@ -1392,13 +1360,19 @@ export class EkranGry implements Ekran {
     const { sim, ui } = this;
     const lp = linaPrzecieta(sim);
     if (!lp) return;
-    const { kto, odmowy } = wydajNaprawe(sim, ids ?? this.zaznaczeniZywi().map((c) => c.id));
+    const { kto } = wydajNaprawe(sim, ids ?? this.zaznaczeniZywi().map((c) => c.id));
     if (kto) {
       ui.say(`${NAZWA_ROLI[rolaPostaci(kto) ?? 'robotnik']} idzie skleić linę wiadra — wespnie się po niej i ją zwiąże.`, sim.tick);
       this.app.gesty.klik();
       this.pokazMiejsce(lp.x + 0.5, lp.dno - 1, Math.max(this.cam.zoom, KAMERA.pokazZoom));
-    } else this.odmowa(odmowy, ids ?? this.zaznaczeniZywi().map((c) => c.id), 'Nikt nie dojdzie do liny.');
+    } else { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
     this.nasluch?.({ typ: 'polecenie', rodzaj: 'naprawa', przyjeli: kto ? 1 : 0 });
+  }
+
+  /** Odmowa bez słów: czerwony krzyżyk na chwilę tam, gdzie stoi kursor (render/druzyna.ts — fala z `ok: false`). */
+  private krzyzykPodKursorem(): void {
+    const p = this.ui.pointer;
+    this.falaRozkazu = { x: this.cam.toWorldX(p.x - this.plate.x), y: this.cam.toWorldY(p.y - this.plate.y), t: performance.now(), ok: false };
   }
 
   private odwolajRozkazy(): void {
@@ -1550,10 +1524,10 @@ export class EkranGry implements Ekran {
     // etap 3d: ołtarz pod palcem — otwiera okno rytuałów; zaznaczeni idą do niego i tam zostają
     if (oltarzPod(sim, this.cam, sx - this.plate.x, sy - this.plate.y)) {
       if (ids.length) {
-        const { przyjeli, odmowy } = wydajDoOltarza(sim, ids);
+        const { przyjeli } = wydajDoOltarza(sim, ids);
         const o = sim.world.oltarz;
         this.falaRozkazu = { x: o.x + 0.5, y: o.y, t: performance.now(), ok: przyjeli > 0 };
-        if (!przyjeli) this.odmowa(odmowy, ids);
+        if (!przyjeli) { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
         else { ui.say(przyjeli === 1 ? 'Idzie do ołtarza.' : `Idą do ołtarza: ${przyjeli}.`, sim.tick); this.app.gesty.klik(); }
         this.nasluch?.({ typ: 'polecenie', rodzaj: 'oltarz', przyjeli });
       }
@@ -1568,7 +1542,7 @@ export class EkranGry implements Ekran {
     if (!ids.length) return;
     const { przyjeli, odmowy } = pom ? wydajNaPomieszczenie(sim, ids, pom) : wydajGrupie(sim, ids, Math.floor(fx), Math.floor(fy));
     this.falaRozkazu = { x: fx, y: fy, t: performance.now(), ok: przyjeli > 0 };
-    if (!przyjeli) this.odmowa(odmowy, ids);
+    if (!przyjeli) this.app.gesty.odmowa();
     else {
       ui.say((przyjeli === 1 ? 'Idzie.' : `Idą: ${przyjeli}.`) + (odmowy.length ? ` Odmawia: ${odmowy.length}.` : ''), sim.tick);
       this.app.gesty.klik();

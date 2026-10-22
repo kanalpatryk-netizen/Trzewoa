@@ -4,7 +4,7 @@
  *    zaznacza wszystkich tej roli, a obok nich rozkazy dla zaznaczonych („kop drogę wiernych”, „odwołaj”, „odznacz”);
  *  - na mapie: złoty pierścień pod stopami zaznaczonych, znaczniki celów rozkazów (proporczyk „idź tam”,
  *    kilof „kop tam”, strzałki nad czołem drogi wiernych), fala w miejscu wydania rozkazu
- *    i dymek z powodem odmowy (sama odmowa — kręcenie głową — to poza w render/lud/ruch.ts).
+ *    (odmowa bez słów — kręcenie głową to poza w render/lud/ruch.ts, a w miejscu rozkazu czerwony krzyżyk).
  * Rozkazy wykonuje symulacja: src/sim/polecenia.ts; ekran gry: src/app/screens/game.ts.
  * Etap 3c: przycisk „wyznacz pomieszczenie” (klawisz B) i, gdy planujesz, listwa szablonów u dołu płyty
  * (sypialnia, warsztat, kuźnia, korytarz, szyb) — plany: src/sim/pomieszczenia.ts.
@@ -23,7 +23,6 @@ import { krazek, pigment } from './fresk';
 import { SERIF } from './ink';
 import { FRESK } from '../nastawy/barwy';
 import { POLECENIA } from '../nastawy/polecenia';
-import { postepOdmowy, glosOdmowy } from './lud/odmowa';
 import { wolnoRuszac } from './nastroj';
 import { SZABLONY, NAZWA_POMIESZCZENIA, POMIESZCZENIA, type RodzajPomieszczenia } from '../nastawy/pomieszczenia';
 
@@ -48,6 +47,9 @@ const JAK_PLANOWAC: Record<RodzajPomieszczenia, string> = {
 
 /** Fala w miejscu wydania rozkazu (zegar ekranu): złota — przyjęli, czerwona — odmówili. */
 export interface FalaRozkazu { x: number; y: number; t: number; ok: boolean }
+
+/** Ile trwa czerwony krzyżyk odmowy (ms). */
+const KRZYZYK_MS = 900;
 
 const rgba = ([r, g, b]: [number, number, number], a: number) => `rgba(${r},${g},${b},${a})`;
 
@@ -344,72 +346,9 @@ function strzalki(ctx: CanvasRenderingContext2D, x: number, y: number, z: number
   ctx.globalAlpha = 1;
 }
 
-/** Dymek z powodem odmowy nad głową postaci. `zajete` — dymki już narysowane w tej klatce (następny nie wchodzi na nie). */
-function dymek(ctx: CanvasRenderingContext2D, cam: Camera, sx: number, sy: number, tekst: string, k: number, zajete: { x: number; y: number; w: number; h: number }[]): void {
-  const a = Math.min(1, k / 0.08, (1 - k) / 0.18);
-  if (a <= 0) return;
-  const rozm = Math.max(12, Math.min(16, cam.zoom * 0.85));
-  ctx.save();
-  ctx.globalAlpha = a;
-  ctx.font = `italic ${rozm}px ${SERIF}`;
-  const tw = ctx.measureText(tekst).width;
-  const ikona = rozm * 1.1;
-  const bw = tw + ikona + rozm * 1.3, bh = rozm * 1.9;
-  const unies = wolnoRuszac() ? Math.sin(k * Math.PI * 3) * 1.5 : 0;
-  let bx = sx - bw / 2;
-  bx = Math.max(4, Math.min(cam.vw - bw - 4, bx));
-  let by = Math.max(4, sy - bh - 10 + unies);
-  // grupa odmawia naraz — dymki układają się jeden nad drugim
-  for (let n = 0; n < 6 && zajete.some((z) => bx < z.x + z.w && bx + bw > z.x && by < z.y + z.h && by + bh + 8 > z.y); n++) by -= bh + 6;
-  zajete.push({ x: bx, y: by, w: bw, h: bh + 8 });
-  const r = bh * 0.38;
-  const p = new Path2D();
-  p.moveTo(bx + r, by); p.lineTo(bx + bw - r, by); p.quadraticCurveTo(bx + bw, by, bx + bw, by + r);
-  p.lineTo(bx + bw, by + bh - r); p.quadraticCurveTo(bx + bw, by + bh, bx + bw - r, by + bh);
-  // ogonek do głowy
-  const ox = Math.max(bx + r + 4, Math.min(bx + bw - r - 4, sx));
-  p.lineTo(ox + 6, by + bh); p.lineTo(ox, by + bh + 8); p.lineTo(ox - 6, by + bh);
-  p.lineTo(bx + r, by + bh); p.quadraticCurveTo(bx, by + bh, bx, by + bh - r);
-  p.lineTo(bx, by + r); p.quadraticCurveTo(bx, by, bx + r, by); p.closePath();
-  ctx.fillStyle = 'rgba(26,16,11,0.94)'; ctx.fill(p);
-  ctx.strokeStyle = 'rgba(192,83,58,0.95)'; ctx.lineWidth = 1.5; ctx.stroke(p);
-  // czerwony krzyżyk „nie”
-  const ix = bx + rozm * 0.55 + ikona / 2, iy = by + bh / 2, ir = ikona * 0.36;
-  ctx.strokeStyle = 'rgba(226,96,72,0.98)'; ctx.lineWidth = Math.max(1.8, rozm * 0.14); ctx.lineCap = 'round';
-  ctx.beginPath(); ctx.moveTo(ix - ir, iy - ir); ctx.lineTo(ix + ir, iy + ir); ctx.moveTo(ix + ir, iy - ir); ctx.lineTo(ix - ir, iy + ir); ctx.stroke();
-  ctx.fillStyle = FRESK.tekst;
-  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-  ctx.fillText(tekst, bx + rozm * 0.75 + ikona, by + bh / 2 + 0.5);
-  ctx.restore();
-}
-
-/**
- * Fale głosu przed twarzą (rycerz mówi odmowę na głos): trzy łuki rozchodzą się od ust, jaśniejsze, gdy mówi
- * głośniej (`g` — obwiednia nagrania, 0…1). Bez ruchu (nastrój: wolno ruszać) — stoją, tylko jaśnieją.
- */
-function faleGlosu(ctx: CanvasRenderingContext2D, sx: number, sy: number, h: number, kier: number, g: number, czas: number): void {
-  const x0 = sx + kier * h * 0.17;
-  const krok = Math.max(3, h * 0.13);
-  ctx.save();
-  ctx.lineCap = 'round';
-  ctx.lineWidth = Math.max(1.2, h * 0.035);
-  for (let i = 0; i < 3; i++) {
-    const faza = wolnoRuszac() ? ((czas * 0.004 + i / 3) % 1) : (i + 1) / 4;
-    const r = krok * (0.7 + faza * 2.6);
-    const a = Math.min(1, 0.25 + g * 1.1) * Math.sin(faza * Math.PI);
-    if (a <= 0.02) continue;
-    ctx.strokeStyle = `rgba(246,216,142,${(a * 0.9).toFixed(3)})`;
-    ctx.beginPath();
-    const s0 = kier > 0 ? -0.75 : Math.PI - 0.75;
-    ctx.arc(x0, sy, r, s0, s0 + 1.5);
-    ctx.stroke();
-  }
-  ctx.restore();
-}
-
 /**
  * Rozkazy na mapie (po postaciach): linie od zaznaczonych do ich celów, znaczniki celów (świeże rozkazy
- * innych gasną po `POLECENIA.znacznikTikow`), fala w miejscu ostatniego rozkazu i dymki odmów.
+ * innych gasną po `POLECENIA.znacznikTikow`) i fala w miejscu ostatniego rozkazu (odmowa — czerwony krzyżyk).
  */
 export function rysujPoleceniaNaMapie(
   ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, czas: number,
@@ -419,7 +358,6 @@ export function rysujPoleceniaNaMapie(
   const w = sim.world;
   ctx.save();
   let czolo = false;
-  const dymki: { x: number; y: number; w: number; h: number }[] = [];
   for (const c of sim.creatures) {
     if (c.dead || !rolaPostaci(c)) continue;
     const p = c.polecenie;
@@ -443,29 +381,31 @@ export function rysujPoleceniaNaMapie(
         else czolo = true;
       }
     }
-    // dymek odmowy
-    const k = postepOdmowy(sim, c, czas);
-    if (k !== null && c.odmowa) {
-      const h = wysokoscPostaci(c, z), px = cam.toScreenX(c.x + przesuniecieX(c));
-      dymek(ctx, cam, px, cam.toScreenY(c.y + 1) - h * 1.1, c.odmowa.tekst, k, dymki);
-      // rycerz albo pobożny mówi odmowę na głos — przed twarzą biją fale w rytm słów
-      const g = glosOdmowy(c, czas);
-      if (g !== null) faleGlosu(ctx, px, cam.toScreenY(c.y + 1) - h * 0.8, h, c.face < 0 ? -1 : 1, g, czas);
-    }
   }
   // czoło drogi wiernych, gdy ktoś kopie ją na rozkaz
   if (czolo) {
     const cz = czoloDrogi(sim);
     if (cz >= 0) strzalki(ctx, cam.toScreenX((cz % w.w) + 0.5), cam.toScreenY((cz / w.w) | 0), z, 1, czas);
   }
-  // fala w miejscu wydania rozkazu
+  // fala w miejscu wydania rozkazu; odmowa — czerwony krzyżyk w tym miejscu (pod kursorem), bez słów
   if (fala) {
-    const t = (performance.now() - fala.t) / 650;
+    const t = (performance.now() - fala.t) / (fala.ok ? 650 : KRZYZYK_MS);
     if (t >= 0 && t < 1) {
       const fx = cam.toScreenX(fala.x), fy = cam.toScreenY(fala.y);
-      ctx.strokeStyle = fala.ok ? `rgba(246,216,142,${0.9 * (1 - t)})` : `rgba(226,96,72,${0.9 * (1 - t)})`;
-      ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.ellipse(fx, fy, 6 + t * z * 1.6, (6 + t * z * 1.6) * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+      if (fala.ok) {
+        ctx.strokeStyle = `rgba(246,216,142,${0.9 * (1 - t)})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.ellipse(fx, fy, 6 + t * z * 1.6, (6 + t * z * 1.6) * 0.45, 0, 0, Math.PI * 2); ctx.stroke();
+      } else {
+        // wskakuje (lekko większy), chwilę stoi, gaśnie
+        const r = Math.max(9, Math.min(16, z * 0.6)) * (t < 0.12 ? 0.7 + t * 4 : 1.18 - Math.min(0.18, (t - 0.12) * 0.6));
+        const a = t < 0.65 ? 1 : 1 - (t - 0.65) / 0.35;
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = `rgba(10,7,6,${0.7 * a})`; ctx.lineWidth = Math.max(4, r * 0.42);
+        ctx.beginPath(); ctx.moveTo(fx - r, fy - r); ctx.lineTo(fx + r, fy + r); ctx.moveTo(fx + r, fy - r); ctx.lineTo(fx - r, fy + r); ctx.stroke();
+        ctx.strokeStyle = `rgba(226,70,52,${0.98 * a})`; ctx.lineWidth = Math.max(2.4, r * 0.24);
+        ctx.stroke();
+      }
     }
   }
   ctx.restore();

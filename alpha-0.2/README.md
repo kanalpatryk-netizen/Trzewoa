@@ -32,13 +32,19 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
   Dłoń ma teraz prawdziwe wnętrze (linie, poduszki, zgięcia palców, jaśniejsza skóra) i grzbiet (sine żyły, kostki).
 - **Rozkazy:** pod płytą trzy medaliony (robotnicy, pobożni, rycerz). Dotknięcie medalionu albo postaci zaznacza,
   dotknięcie mapy to „idź tam” — pobożny i rycerz idą tylko tam, dokąd prowadzi droga, inaczej odmawiają (kręcą
-  głową, a w dymku mówią dlaczego); robotnik przekopuje się sam, wskazana skała to „kop tam”. „Kop drogę wiernych”
+  głową, a w miejscu kliknięcia miga czerwony krzyżyk); robotnik przekopuje się sam, wskazana skała to „kop tam”. „Kop drogę wiernych”
   — robotnicy kopią złotą kreskę do krypty; bez rozkazu nie kopią, tylko noszą jedzenie. Klawisze: A/S/D — role,
   G — kop drogę, V — odwołaj, Esc i prawy przycisk — odznacz.
-- **Odmowy na głos:** gdy rycerz albo pobożny odmawia pójścia tam, gdzie nie dojdzie („nie dojdę tam — nie ma drogi”,
-  „tam nie ma na czym stanąć”…), mówi to na głos — losowe nagranie z `gra222/dzwieki/odmowy/rycerz/` albo
-  `gra222/dzwieki/odmowy/pobozny/`, a przed twarzą biją fale w rytm słów. Naraz mówi jeden. Nowy plik .mp3 w folderze
+- **Odmowy na głos, bez słów na ekranie:** gdy rycerz albo pobożny odmawia pójścia tam, gdzie nie dojdzie, kręci głową
+  i mówi to na głos — losowe nagranie z `gra222/dzwieki/odmowy/rycerz/` albo `gra222/dzwieki/odmowy/pobozny/`; w miejscu
+  kliknięcia na chwilę wskakuje czerwony krzyżyk (bez dymka i bez napisu z powodem). Naraz mówi jeden. Nowy plik .mp3 w folderze
   trafia do gry sam. Kod: `src/core/glos-odmowy.ts`, liczby i szanse: `GLOS_RYCERZA` i `GLOS_POBOZNEGO` w `src/nastawy/dzwiek.ts`.
+- **Bez napisów na mapie:** świat nie ma podpisów — ani „siedziba · w wiadrze…”, ani „przedsionek”, „żelazo” przy kółkach
+  podpowiedzi, ani podpisu Wielkiego Pomnika, obozów, zabytków i końców drogi wiernych, ani liczb porcji przy wiadrach
+  (jedzenie jest na liczniku nad płytą). Kółka i strzałki podpowiedzi zostają, bez słów.
+- **Bez Tego, który patrzy:** nie ma go wcale — ani oczu w ciemności, ani zabierania samotnych, ani jego ostrzeżenia,
+  tablicy w atlasie, rozdziału samouczka i osiągnięcia „Światło w ciemności”. Ciemność poza światłem lampek zostaje.
+  Miecz krzyżowca kosztuje teraz co innego: rycerz chodzi o 20% wolniej.
 - **Bez zawału od góry:** mapa się nie skraca, góra nie zamyka się za ludem.
 - **Bez wspinania po ścianach.** Lud wchodzi najwyżej o jeden stopień (kafel) i to tylko z miejsca, na którym stoi. Wyżej nie wejdzie —
   wykuwa sobie schody w skale albo wchodzi po linie, którą powiesisz (jedyny warunek: górny koniec uczepiony skały — strop, krawędź
