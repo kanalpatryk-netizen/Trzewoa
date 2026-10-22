@@ -307,7 +307,7 @@ export class EkranSamouczka implements Ekran {
     ustaw('samouczekZrobiony', true);
     // co pokazał samouczek, to trafia do atlasu — bez wyskakujących tablic
     for (const id of ['rasa-0', 'ryt-zasiej', 'ryt-szept', 'ryt-znak', 'krew', 'wiara', 'wiadro', 'role', 'rozkazy',
-      'oddanie', 'pielgrzymka', 'wydarzenia', 'schody', 'helmy', 'trupy', 'patrzacy', 'dlon',
+      'oddanie', 'pielgrzymka', 'wydarzenia', 'schody', 'helmy', 'trupy', 'dlon',
       'straznicy', 'boss', 'droga', 'skorupa', 'rdzen', 'sen', 'pauza']) odkrycia.odkryj(id, false);
     this.faza = 'final';
     const g = this.gra;

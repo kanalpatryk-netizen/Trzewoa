@@ -13,7 +13,6 @@ import { wymusPekniecie } from '../sim/rytual';
 import { wylosuj, wymusLancuch, KARTY_LANCUCHA, KARTY_W_GRZE } from '../sim/wydarzenia';
 import { klanLudu, liczRole, nadajRole, podloga, stanyPostaci, NAZWA_ROLI, type Rola } from '../sim/lud';
 import { najwierniejsza } from '../sim/pielgrzymka';
-import { devMrok, opisMroku, naKogoPatrzy } from '../sim/mrok';
 import { devDlon, devLina, opisDloni } from '../sim/dlon';
 import { devAniol } from '../sim/aniol';
 import { devRozbijPomnik } from '../sim/pomnik';
@@ -142,7 +141,7 @@ export class PanelDewelopera {
     }
     const szukaj = document.createElement('input');
     szukaj.type = 'search';
-    szukaj.placeholder = 'szukaj w logach (np. #59, rycerz, Patrzący)…';
+    szukaj.placeholder = 'szukaj w logach (np. #59, rycerz, dłoń)…';
     szukaj.style.cssText = `${STYL_POLA};margin-top:3px`;
     szukaj.addEventListener('input', () => { this.szukaj = szukaj.value.trim().toLowerCase(); this.przebuduj(); });
     const lista = (this.lista = document.createElement('div'));
@@ -177,15 +176,6 @@ export class PanelDewelopera {
     const lud = this.wiersz();
     for (const r of ['robotnik', 'pobozny', 'rycerz'] as Rola[]) lud.append(this.przycisk(`+ ${NAZWA_ROLI[r].toLowerCase()}`, () => this.przywolaj(r), 'przy siedzibie, bez krwi'));
     lud.append(this.przycisk('odkryj mapę', () => this.odkryj(), 'cała góra trafia do pamięci'));
-    const mrok = this.wiersz();
-    const mrokNapis = document.createElement('span');
-    mrokNapis.textContent = 'Patrzący:';
-    mrokNapis.style.color = '#9a8f7a';
-    mrok.append(
-      mrokNapis,
-      this.przycisk('wywołaj', () => this.pokazWynik(devMrok(this.gra.sim(), 'wyjdz')), 'wychodzi teraz i idzie do najbardziej samotnego'),
-      this.przycisk('cofnij', () => this.pokazWynik(devMrok(this.gra.sim(), 'cofnij')), 'wraca w głąb na 3 minuty'),
-    );
     const dlon = this.wiersz();
     const dlonNapis = document.createElement('span');
     dlonNapis.textContent = 'Dłoń z otchłani:';
@@ -205,7 +195,6 @@ export class PanelDewelopera {
     const widok = this.wiersz();
     widok.append(
       this.pole('bez ciemności', DEV.bezMroku, (v) => { DEV.bezMroku = v; }),
-      this.pole('pokaż ukryte', DEV.pokazUkryte, (v) => { DEV.pokazUkryte = v; }, 'Patrzący na płycie'),
       this.pole('drogi wszystkich', DEV.pokazDrogi, (v) => { DEV.pokazDrogi = v; }),
     );
     const karty = this.wiersz();
@@ -353,7 +342,6 @@ export class PanelDewelopera {
       `${czas(sim.tick)} · tik ${sim.tick} · ${DEV.pauza ? 'pauza dewelopera' : t} · ${this.tikowNaSek} tik/s · ${this.fps} kl/s · krok ${DEV.msKroku.toFixed(2)} ms`,
       `lud ${r.pobozny + r.robotnik + r.rycerz}: pobożni ${r.pobozny} · robotnicy ${r.robotnik} · rycerze ${r.rycerz} · jedzenie ${porcjiWWiadrach(sim)} porcji · wiadro za ${Math.ceil(doNastepnego(sim) / 120)} s`,
       `wiara ${Math.floor(sim.wiara)} · krew ${Math.floor(sim.krew)} · żelazo ${sim.zelazo} · złoto ${sim.zloto} · oddanie ${Math.round((wierni?.devotion ?? 0) * 100)}% · sen ${Math.round(sim.sen * 100)}% · pęknięć ${sim.rytual.pekniecia}${sim.rytual.otwarta ? ' · rdzeń otwarty' : ''}`,
-      opisMroku(sim),
       opisDloni(sim),
     ];
     this.stanSwiata.textContent = linie.join('\n');
@@ -372,7 +360,6 @@ export class PanelDewelopera {
         if (c.zamiar) linie.push(`zamiar: ${c.zamiar}${c.zamiarDo !== undefined && c.zamiarDo > sim.tick ? ` (jeszcze ${Math.ceil((c.zamiarDo - sim.tick) / 120)} s)` : ''}`);
         linie.push(`${OPIS_PRACY[c.job] ?? 'zajęcie ' + c.job} → (${c.jx}, ${c.jy}) · jest (${Math.floor(c.x)}, ${Math.floor(c.y)})${c.droga ? ` · droga ${c.droga.length - (c.drogaI ?? 0)} kafli` : ''} · stoi ${c.stall} tików`);
         const stany = stanyPostaci(sim, c).map((s) => s.nazwa);
-        if (naKogoPatrzy(sim) === c.id) stany.unshift('PATRZY NA NIEGO PATRZĄCY');
         if (stany.length) linie.push(`stany: ${stany.join(', ')}`);
       }
     } else linie.push('Shift+klik na postać w świecie albo klik we wpis z #numerem.');

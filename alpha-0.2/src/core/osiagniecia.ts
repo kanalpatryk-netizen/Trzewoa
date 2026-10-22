@@ -29,7 +29,6 @@ export const OSIAGNIECIA: Osiagniecie[] = [
   { id: 'helmy', nazwa: 'Kilofy zamiast mieczy', opis: 'Wygraj partię, w której robotnicy musieli założyć hełmy.', sprawdz: (s, w) => w && s.stat.helmy > 0 },
   { id: 'weterani', nazwa: 'Stara gwardia', opis: `Miej naraz ${CELE.weteranow} weteranów.`, sprawdz: (s) => s.stat.weteranowMax >= CELE.weteranow },
   { id: 'ludna', nazwa: 'Ludna góra', opis: `Miej naraz ${CELE.lud} postaci ludu.`, sprawdz: (s) => s.stat.ludMax >= CELE.lud },
-  { id: 'swiatlo', nazwa: 'Światło w ciemności', opis: 'Przegoń Cudem Tego, który patrzy.', sprawdz: (s) => s.stat.przegnany > 0 },
   { id: 'dlon', nazwa: 'Wyrwani z dłoni', opis: 'Odepchnij Cudem dłoń z otchłani, zanim kogoś chwyci.', sprawdz: (s) => s.stat.odepchnieta > 0 },
   { id: 'dlug', nazwa: 'Dłużnik', opis: 'Weź krew od głębi i mimo to wygraj.', sprawdz: (s, w) => w && s.stat.dlug > 0 },
 ];

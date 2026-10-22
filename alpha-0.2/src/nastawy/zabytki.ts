@@ -40,8 +40,8 @@ export const ZABYTKI = {
   skutki: {
     /** Relikwiarz świętego: modlitwa mocniejsza, kucie wolniejsze. */
     relikwiarz: { modlitwa: 1.35, kopanie: 0.75 },
-    /** Miecz krzyżowca: rycerz bije mocniej, a Ten, który patrzy, przychodzi częściej — także do małej drużyny. */
-    miecz: { silaRycerza: 1.45, przerwyPatrzacego: 0.55, patrzyNaMalych: 1 },
+    /** Miecz krzyżowca: rycerz bije mocniej, ale ciężar go spowalnia. */
+    miecz: { silaRycerza: 1.45, szybkoscRycerza: 0.8 },
     /** Kielich: rany goją się szybciej, głód rośnie szybciej. */
     kielich: { leczenie: 1.8, glod: 1.22 },
     /** Księga: modlitwa daje więcej wiary, a głębia szybciej miesza w głowach (i wolniej puszcza). */
@@ -64,8 +64,8 @@ export const ZABYTEK: Record<TypZabytku, { nazwa: string; biernik: string; premi
   miecz: {
     nazwa: 'Miecz krzyżowca', biernik: 'miecz krzyżowca',
     premia: `rycerz bije ${proc(S.miecz.silaRycerza, 'mocniej', 'słabiej')}`,
-    kara: 'Ten, który patrzy, wraca prawie dwa razy szybciej i poluje też na małą drużynę',
-    opis: 'Wyszczerbiony miecz, wciąż ostry. Rycerz poczuje go w ręku — a coś w ciemności poczuje, że go wzięliście.',
+    kara: `rycerz chodzi ${proc(S.miecz.szybkoscRycerza, 'szybciej', 'wolniej')}`,
+    opis: 'Wyszczerbiony miecz, wciąż ostry. Rycerz poczuje go w ręku — i w nogach, bo jest ciężki jak grzech.',
   },
   kielich: {
     nazwa: 'Kielich', biernik: 'kielich',

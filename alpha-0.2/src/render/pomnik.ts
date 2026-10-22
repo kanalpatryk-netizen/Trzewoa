@@ -11,7 +11,6 @@ import { rysujDemona, type PozaDemona } from './demon';
 import { tetnoRdzenia } from './rdzen';
 import { glif } from './tajemnica';
 import { wolnoRuszac } from './nastroj';
-import { SERIF } from './ink';
 
 /**
  * WIELKI POMNIK DEMONA (Alpha, etap 5) — rysunek do sim/pomnik.ts. Na dnie komory pod kryptą, na cokole z wyrytymi
@@ -261,18 +260,6 @@ export function rysujPomnik(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
     if (faza === 'wychodzi') wstajacyDemon(ctx, sim, cam, bx, by, H, teraz);
   }
 
-  // podpis — póki kamera jest blisko
-  if (z >= 9) {
-    const rozm = Math.max(12, Math.min(18, z * 1.2));
-    ctx.font = `italic ${rozm}px ${SERIF}`;
-    ctx.textAlign = 'center';
-    const proc = procentSkorupy(sim);
-    const tekst = faza === 'stoi' ? (proc > 0 ? `Wielki Pomnik — modlitwa kruszy go: ${proc}%` : 'Wielki Pomnik — modlitwa pobożnych go skruszy')
-      : faza === 'rozpada' ? 'Wielki Pomnik się rozpada' : faza === 'wychodzi' ? 'z gruzów wstaje demon' : 'gruz Wielkiego Pomnika';
-    const ty = by + rozm * 1.6;
-    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,7,6,0.85)'; ctx.strokeText(tekst, bx, ty);
-    ctx.fillStyle = 'rgba(250,214,160,0.95)'; ctx.fillText(tekst, bx, ty);
-  }
   ctx.restore();
 }
 

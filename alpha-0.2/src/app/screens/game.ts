@@ -52,7 +52,7 @@ import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
-import { etykietyKolonii, podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
+import { podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
 import { computePlate, drawFrame, drawKrew, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
 import { Ui } from '../../ui/ui';
@@ -64,7 +64,7 @@ import { zbierzObszaryHud, type ObszarHud } from '../obszary-hud';
 import { Straznik, type Alarm } from '../alarmy';
 import { rysujAlarm, type PoleAlarmu } from '../../render/alarm';
 import { rysujWydarzenie, type PoleWyboru } from '../../render/wydarzenie';
-import { rysujMrok, rysujPatrzacego } from '../../render/mrok';
+import { rysujMrok } from '../../render/mrok';
 import { rysujDlon } from '../../render/dlon';
 import { rysujAniola, rysujStrugeKrwi } from '../../render/aniol';
 import { BOT, BOT_GRA, wyslijStan, ziarnoPartii } from '../obserwowany';
@@ -165,8 +165,6 @@ export class EkranGry implements Ekran {
   dozwolone: Set<string> | null = null;
   /** Miejsce, na które gra wprost każe patrzeć (samouczek, podpowiedzi). */
   cel: Cel | null = null;
-  /** Czy rysować podpisy nacji. */
-  etykiety = true;
   /** Alpha, etap 2: zaznaczone postacie ludu (id) — dotknięcie mapy wydaje im rozkaz „idź tam”. */
   zaznaczeni = new Set<number>();
   /** Pola paska drużyny pod płytą (medaliony ról i rozkazy) z ostatniej klatki. */
@@ -207,8 +205,6 @@ export class EkranGry implements Ekran {
   private przytrzymanie: { id: number; v: string; sx: number; sy: number; od: number; verb: Verb | null; tool: string | null } | null = null;
   /** Podpowiedź nad płytą jako odnośnik do miejsca, o którym mówi. */
   private radaRect: { x: number; y: number; w: number; h: number } | null = null;
-  /** Które zdarzenia Patrzącego już zabrzmiały (tik szeptu i zabrania). */
-  private slyszanyMrok: { szept?: number; zabrany?: number } = {};
   private slyszanaDlon: { wstaje?: number; chwyt?: number } = {};
   /** Strażnik auto-pauzy i karta sytuacji, którą właśnie pokazuje. */
   private straznik = new Straznik();
@@ -495,7 +491,6 @@ export class EkranGry implements Ekran {
     if (Object.keys(sim.lud.zabytki?.stan ?? {}).length) odkrycia.odkryj('zabytki');
     if (sim.tick > LUD.weteranPo) odkrycia.odkryj('weterani');
     if (sim.lud.straznicy?.trwa) odkrycia.odkryj('straznicy');
-    if (sim.lud.mrok?.widziany) odkrycia.odkryj('patrzacy');
     if (sim.lud.dlon?.widziana) odkrycia.odkryj('dlon');
     // etap 4: przecięta lina wiadra i dłoń anielska — przy pierwszym razie
     if (sim.lud.wiadra?.przecieta || (sim.lud.wiadra?.ciec ?? 0) > 0) odkrycia.odkryj('lina-wiadra');
@@ -911,17 +906,10 @@ export class EkranGry implements Ekran {
         this.sim.sen,
         this.zamrozone(),
       );
-      // Ten, który patrzy: gdy podchodzi i gdy patrzy, muzyka gęstnieje jak przy zasypianiu
-      const mrok = this.sim.lud.mrok;
-      const napiecieMroku = mrok?.faza === 'patrzy' ? 0.75 : mrok?.faza === 'podchodzi' ? 0.45 : 0;
       // dłoń z otchłani: od pierwszego drgnięcia otchłani do chwytu muzyka jest na granicy
       const dlon = this.sim.lud.dlon;
       const napiecieDloni = dlon && dlon.faza !== 'brak' && dlon.faza !== 'gasnie' ? (dlon.faza === 'wstaje' ? 0.85 : 1) : 0;
-      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2, napiecieMroku, napiecieDloni));
-      if (mrok) {
-        if (mrok.szeptT !== undefined && mrok.szeptT !== this.slyszanyMrok.szept) { this.slyszanyMrok.szept = mrok.szeptT; this.app.muzyka.szept(); }
-        if (mrok.zabranyT !== undefined && mrok.zabranyT !== this.slyszanyMrok.zabrany) { this.slyszanyMrok.zabrany = mrok.zabranyT; this.app.muzyka.zabranie(); }
-      }
+      this.app.muzyka.ustawNapiecie(Math.max(this.sim.sen, Math.max(0, this.sim.dominance - 0.55) * 2, napiecieDloni));
       if (dlon) {
         if (dlon.wstajeT !== undefined && dlon.wstajeT !== this.slyszanaDlon.wstaje) { this.slyszanaDlon.wstaje = dlon.wstajeT; this.app.muzyka.otchlan(); }
         if (dlon.chwytT !== undefined && dlon.chwytT !== this.slyszanaDlon.chwyt) { this.slyszanaDlon.chwyt = dlon.chwytT; this.app.muzyka.zabranie(); }
@@ -1042,12 +1030,10 @@ export class EkranGry implements Ekran {
     rysujPoleceniaNaMapie(ctx, sim, cam, teraz, this.zaznaczeni, this.falaRozkazu);
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz);
-    if (this.etykiety) etykietyKolonii(ctx, sim, cam, teraz, this.cel);
     rysujZnacznikiLudu(ctx, sim, cam);
     rysujStraznikowWSkale(ctx, sim, cam, teraz);
     // etap 5: błyski pomnika, rozpad i konanie demona (fala światła, popiół)
     rysujNadPomnikiem(ctx, sim, cam, teraz);
-    rysujPatrzacego(ctx, sim, cam, teraz);
     rysujDlon(ctx, sim, cam, teraz);
     // etap 5b: dłoń z otchłani pomaga demonowi — rzut, tarcza, zawał (i ściana gruzu, gwiazdki ogłuszonych)
     rysujDlonDemona(ctx, sim, cam, teraz);

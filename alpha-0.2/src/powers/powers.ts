@@ -5,7 +5,6 @@ import { Creature, Thought, Job } from '../sim/creatures';
 import { KOSZTY, MOCE, SKAZY } from '../nastawy/moce';
 import { odswiezPlan } from '../sim/pielgrzymka';
 import { LUD } from '../nastawy/lud';
-import { odpedzMrok } from '../sim/mrok';
 import { odpedzDlon } from '../sim/dlon';
 import { wiadroNaZadanie } from '../sim/wiadro';
 import { REMAKE } from '../nastawy/lud';
@@ -169,8 +168,7 @@ export function sign(sim: Sim, tool: string, tx: number, ty: number): boolean {
   }
   sim.efekt(tx + 0.5, ty + 0.5, 'cud');
   for (let i = 0; i < 8; i++) sim.spark(tx + 0.5, ty + 0.5, 'pray');
-  // światło Cudu przegania to, co patrzy z ciemności
-  odpedzMrok(sim, tx + 0.5, ty + 0.5);
+  // światło Cudu przegania dłoń z otchłani
   odpedzDlon(sim, tx + 0.5, ty + 0.5);
   const names = [...seen].map((i) => sim.clans[i].name).slice(0, 3).join(', ');
   sim.log(tool === 'objawienie'

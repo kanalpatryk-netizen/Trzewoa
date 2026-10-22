@@ -188,7 +188,7 @@ export class Muzyka {
   }
 
   /**
-   * Szept z ciemności (Ten, który patrzy): kilka sylab szumu w paśmie mowy, z jednej strony,
+   * Szept z ciemności (przy dłoni z otchłani): kilka sylab szumu w paśmie mowy, z jednej strony,
    * z długim echem korytarzy. Słów nie da się zrozumieć.
    */
   szept(strona = Math.random() < 0.5 ? -1 : 1): void {

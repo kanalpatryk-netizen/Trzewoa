@@ -128,20 +128,6 @@ export function rysujRdzen(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
       ctx.restore();
     }
   }
-  // podpis — cel gry nazwany wprost, póki kamera jest blisko
-  if (z >= RW.podpisOdZoom) {
-    const rozm = Math.max(12, Math.min(18, z * 1.2));
-    ctx.font = `italic ${rozm}px "Trzewia Tekst", Georgia, serif`;
-    ctx.textAlign = 'center';
-    const tekst = otwarta ? RW.podpisOtwarty
-      : proc > 0 ? RW.podpisPeka.replace('{proc}', String(proc)) : RW.podpisZamkniety;
-    const ty = sy + Rw + rozm * 2.4;
-    ctx.lineWidth = 3;
-    ctx.strokeStyle = 'rgba(10,7,6,0.85)';
-    ctx.strokeText(tekst, sx, ty);
-    ctx.fillStyle = 'rgba(250,214,160,0.95)';
-    ctx.fillText(tekst, sx, ty);
-  }
   ctx.restore();
 }
 

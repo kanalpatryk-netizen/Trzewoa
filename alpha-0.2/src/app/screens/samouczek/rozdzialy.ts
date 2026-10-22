@@ -6,7 +6,6 @@ import { wylosuj } from '../../../sim/wydarzenia';
 import { PIELGRZYMKA } from '../../../nastawy/rytual';
 import { LUD } from '../../../nastawy/lud';
 import { WIADRO } from '../../../nastawy/wiadro';
-import { MROK } from '../../../nastawy/mrok';
 import { DLON } from '../../../nastawy/dlon';
 import { STRAZNICY } from '../../../nastawy/straznicy';
 import { KOSZTY } from '../../../nastawy/moce';
@@ -310,10 +309,6 @@ export const ROZDZIALY: Rozdzial[] = [
     wstep: 'Poza światłem lampek, siedziby i rdzenia góra jest ciemna. I coś w tej ciemności jest.',
     czasowniki: [],
     etapy: [
-      {
-        tekst: `Po ${Math.round(MROK.pierwszyPo / 7200)} minutach Ten, który patrzy, zaczyna wypatrywać kogoś, kto został sam daleko od obozu. Samotny staje jak wryty, w skale świecą oczy — po ${Math.round(MROK.patrzyTikow / 120)} s zabiera go. Cud tuż przy oczach albo ktoś z ludu przy samotnym go przegania.`,
-        rozumiem: true,
-      },
       {
         tekst: `Rzadko, po ${Math.round(DLON.pierwszaPo / 7200)} minutach, spod nieznanego pod czyimiś stopami sączy się czerwona łuna, a z głębi wznosi się ogromna dłoń. Rzuć Cud przy ofierze, zanim chwyci.`,
         rozumiem: true,
