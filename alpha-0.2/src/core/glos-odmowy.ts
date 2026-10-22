@@ -3,9 +3,8 @@ import { GLOS_RYCERZA, GLOS_POBOZNEGO, type NastawyGlosu } from '../nastawy/dzwi
 /**
  * Nagrania odmów na głos (Alpha): rycerz i pobożny, każdy ze swojego folderu w gra222/dzwieki/odmowy/.
  * Każdy plik .mp3 z folderu trafia do gry sam (w pliku HTML jako data:). Przy pierwszym dźwięku gry
- * wszystkie się dekodują i mierzą — skąd do dokąd ktoś mówi (cisza z brzegów odpada), jak głośno
- * (wyrównanie do jednej głośności) i obwiednia słów, w rytm której przy dymku odmowy biją fale
- * (render/druzyna.ts). Szanse grup — nastawy/dzwiek.ts (GLOS_RYCERZA, GLOS_POBOZNEGO).
+ * wszystkie się dekodują i mierzą — skąd do dokąd ktoś mówi (cisza z brzegów odpada) i jak głośno
+ * (wyrównanie do jednej głośności). Szanse grup — nastawy/dzwiek.ts (GLOS_RYCERZA, GLOS_POBOZNEGO).
  */
 const PLIKI = {
   rycerz: import.meta.glob('../../gra222/dzwieki/odmowy/rycerz/*.mp3', { eager: true, query: '?url', import: 'default' }) as Record<string, string>,
@@ -30,12 +29,7 @@ export interface Nagranie {
   od: number; dl: number;
   /** Wzmocnienie do wspólnej głośności. */
   wzm: number;
-  /** Głośność słów co `KROK` s (0…1). */
-  obwiednia: Float32Array;
 }
-
-/** Co postać właśnie powiedziała — dla fal przy dymku. */
-export interface Wypowiedz { nazwa: string; ms: number; opoznienieMs: number; krokMs: number; obwiednia: Float32Array }
 
 /** Szansa nagrania według numeru w nazwie (…_part-NN.mp3); spoza listy — jak pospolite. */
 function szansaPliku(G: NastawyGlosu, nazwa: string): number {
@@ -45,7 +39,7 @@ function szansaPliku(G: NastawyGlosu, nazwa: string): number {
 }
 
 /**
- * Skąd dokąd mowa, jak głośno i obwiednia słów — albo null, gdy w nagraniu nie ma czego słuchać (sama cisza).
+ * Skąd dokąd mowa i jak głośno — albo null, gdy w nagraniu nie ma czego słuchać (sama cisza).
  * Mowa zaczyna się od pierwszego fragmentu nie cichszego niż `mowaOd` dB pod najgłośniejszym: szum, stuk
  * i oddech przed słowami odpadają, więc postać odzywa się od razu. Koniec — gdzie gaśnie poniżej `ciszaPonizej`.
  */
@@ -91,8 +85,7 @@ function zmierz(G: NastawyGlosu, b: AudioBuffer): Omit<Nagranie, 'nazwa' | 'szan
   for (const r of obwiednia) if (r > max * 0.1) { moc += r * r; ile++; }
   const rms = Math.sqrt(moc / Math.max(1, ile)) || 1;
   const wzm = Math.min(8, 10 ** (G.wyrownajDo / 20) / rms, 10 ** (-1 / 20) / (szczyt || 1));
-  for (let j = 0; j < obwiednia.length; j++) obwiednia[j] = max > 0 ? obwiednia[j] / max : 0;
-  return { od, dl: koniec - od, wzm, obwiednia };
+  return { od, dl: koniec - od, wzm };
 }
 
 /** Wszystkie nagrania jednej roli: dekodowane raz, przy pierwszym dźwięku gry. */
@@ -129,9 +122,5 @@ export class GlosOdmowy {
     let r = Math.random() * lista.reduce((s, n) => s + n.szansa, 0);
     for (const n of lista) if ((r -= n.szansa) < 0) return n;
     return lista[lista.length - 1];
-  }
-
-  wypowiedz(n: Nagranie): Wypowiedz {
-    return { nazwa: n.nazwa, ms: n.dl * 1000, opoznienieMs: this.G.opoznienie * 1000, krokMs: KROK * 1000, obwiednia: n.obwiednia };
   }
 }

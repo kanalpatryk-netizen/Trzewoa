@@ -54,22 +54,13 @@ export function rysujDrogePielgrzymow(ctx: CanvasRenderingContext2D, sim: Sim, c
   ctx.stroke();
   ctx.setLineDash([]);
   // oba końce: gniazdo i przedsionek
-  const koniec = (i: number, tekst: string) => {
+  const koniec = (i: number) => {
     const x = px(i), y = py(i);
     ctx.strokeStyle = `rgba(250,210,140,${0.7 * moc})`;
     ctx.lineWidth = 1.2;
     ctx.beginPath(); ctx.arc(x, y, Math.max(4, z * 0.9), 0, Math.PI * 2); ctx.stroke();
-    if (wyrazna && z >= 4) {
-      ctx.font = `italic ${Math.max(12, Math.min(16, z * 1.2))}px "Trzewia Tekst", Georgia, serif`;
-      ctx.textAlign = 'center';
-      ctx.lineWidth = 3;
-      ctx.strokeStyle = 'rgba(10,7,6,0.8)';
-      ctx.strokeText(tekst, x, y - Math.max(8, z * 1.4));
-      ctx.fillStyle = 'rgba(250,224,170,0.95)';
-      ctx.fillText(tekst, x, y - Math.max(8, z * 1.4));
-    }
   };
-  koniec(s[0], 'przedsionek');
-  koniec(s[s.length - 1], 'gniazdo');
+  koniec(s[0]);
+  koniec(s[s.length - 1]);
   ctx.restore();
 }

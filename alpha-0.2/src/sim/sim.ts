@@ -147,12 +147,12 @@ export class Sim {
   koszmar = true;
   /**
    * v4 beta — statystyki partii na ekran końcowy i do osiągnięć (src/core/osiagniecia.ts).
-   * Remake v2: zgony ludu i z głodu, wspinaczki do wiadra, hełmy, Nakarm, przegnany Patrzący,
+   * Remake v2: zgony ludu i z głodu, wspinaczki do wiadra, hełmy, Nakarm,
    * odepchnięta dłoń, najwięcej weteranów i ludu naraz.
    */
   stat = {
     urodzen: 0, kart: 0, szczyt: 0, walka: 0, dlug: 0, przysiega: 0, proroctwo: 0, lancuch: 0, podsumowana: 0,
-    ludZgonow: 0, zGlodu: 0, wspinaczek: 0, helmy: 0, nakarm: 0, przegnany: 0, odepchnieta: 0, weteranowMax: 0, ludMax: 0,
+    ludZgonow: 0, zGlodu: 0, wspinaczek: 0, helmy: 0, nakarm: 0, odepchnieta: 0, weteranowMax: 0, ludMax: 0,
     dewocjonalia: 0, rytualow: 0, wskrzeszen: 0,
     /** Alpha, etap 4: sklejone liny wiadra i dary dłoni anielskiej. */
     naprawLin: 0, darow: 0,

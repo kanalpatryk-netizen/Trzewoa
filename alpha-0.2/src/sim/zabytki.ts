@@ -10,7 +10,7 @@ import { ZABYTKI, ZABYTEK, RUINA, type TypZabytku } from '../nastawy/zabytki';
  * z ruin sypie się kurz, zabytek rozbłyskuje i unosi się nad posadzką, a po chwili świat staje i pokazuje kartę
  * (taką jak karty wydarzeń): „Weź” — premia i kara dla całego ludu, na zawsze (sen w sypialni kary nie zdejmuje),
  * albo „Zostaw” — zabytek opada i gaśnie. Skutki czytają mnoznik() i stanyPostaci() (sim/lud.ts), leczenie, wiara
- * i szaleństwo (creatures.ts, sim.ts) oraz Ten, który patrzy (sim/mrok.ts). Rysunek: render/ruiny.ts.
+ * i szaleństwo (creatures.ts, sim.ts). Rysunek: render/ruiny.ts.
  * Decyzje użytkownika 18.10: zabytek działa na cały lud; kara nie schodzi snem; cztery zabytki z planu.
  */
 export type StanZabytku = 'odkryty' | 'wziety' | 'zostawiony';
@@ -66,7 +66,7 @@ export function tikZabytkow(sim: Sim): void {
 
 /**
  * Co wybiera automat (bot w próbach i obserwatorium): na razie zostawia każdy zabytek — kary bywają ciężkie
- * (z mieczem Patrzący zabierał robotników jednego po drugim), a ważyć je nauczy się w etapie 5.
+ * (miecz spowalnia rycerza), a ważyć je nauczy się w etapie 5.
  */
 const BRAC: Record<TypZabytku, boolean> = { relikwiarz: false, miecz: false, kielich: false, ksiega: false };
 
@@ -117,8 +117,9 @@ export function stanyZabytkow(sim: Sim, c: Creature): { nazwa: string; skutek: s
     const n = sim.world.ruiny.findIndex((r) => r.zabytek.typ === typ);
     if (n >= 0 && st.stan[n] === 'wziety' && sim.tick - (st.od[n] ?? 0) < ZABYTKI.aureolePo) continue;
     const z = ZABYTEK[typ];
-    // miecz wzmacnia tylko rycerza; kara (Patrzący) dotyczy każdego
-    if (typ !== 'miecz' || rola === 'rycerz') out.push({ nazwa: z.nazwa.toLowerCase(), skutek: z.premia, dobry: true, kiedy: 'zabytek — na zawsze' });
+    // miecz działa tylko na rycerza — i premia, i kara
+    if (typ === 'miecz' && rola !== 'rycerz') continue;
+    out.push({ nazwa: z.nazwa.toLowerCase(), skutek: z.premia, dobry: true, kiedy: 'zabytek — na zawsze' });
     out.push({ nazwa: `${z.nazwa.toLowerCase()} — cena`, skutek: z.kara, dobry: false, kiedy: 'zabytek — na zawsze, sen tego nie zdejmie' });
   }
   return out;

@@ -33,10 +33,8 @@ export const DEV = {
   kursor: null as { x: number; y: number } | null,
   /** Średni czas jednego kroku symulacji w ms. */
   msKroku: 0,
-  /** Rysunek bez ciemności (mrok i Patrzący działają dalej — tylko ich nie widać). */
+  /** Rysunek bez ciemności (mrok działa dalej — tylko go nie widać). */
   bezMroku: false,
-  /** Na płycie: to, czego gracz nie widzi — Patrzący (w każdej fazie). */
-  pokazUkryte: true,
   /** Na płycie: drogi wszystkich postaci, nie tylko śledzonej. */
   pokazDrogi: false,
 };

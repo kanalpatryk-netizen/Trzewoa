@@ -1,7 +1,7 @@
 import { mikser } from './mikser';
 import { ustawienia } from './settings-store';
 import { GESTY } from '../nastawy/dzwiek';
-import { GlosOdmowy, type KtoMowi, type Wypowiedz } from './glos-odmowy';
+import { GlosOdmowy, type KtoMowi } from './glos-odmowy';
 
 /** Pentatonika od D — kaskada wykonanego planu wspina się po niej, nigdy nie fałszuje. */
 const KASKADA = GESTY.kaskada;
@@ -160,15 +160,15 @@ export class Gesty {
 
   /**
    * Rycerz albo pobożny odmawia na głos: jedno z jego nagrań (nastawy/dzwiek.ts — GLOS_RYCERZA, GLOS_POBOZNEGO,
-   * szanse rzadkości), tuż po głuchym stuku odmowy. `pan` — gdzie stoi na ekranie (−1 lewo … 1 prawo). Zwraca, co
-   * powiedział (fale przy dymku), albo null, gdy dźwięk wyłączony, nagrania jeszcze się nie wczytały albo poprzednia
-   * odmowa (czyjakolwiek) jeszcze trwa.
+   * szanse rzadkości), tuż po głuchym stuku odmowy. `pan` — gdzie stoi na ekranie (−1 lewo … 1 prawo). Zwraca, czy
+   * powiedział — false, gdy dźwięk wyłączony, nagrania jeszcze się nie wczytały albo poprzednia odmowa (czyjakolwiek)
+   * jeszcze trwa.
    */
-  glosOdmowy(kto: KtoMowi, pan = 0): Wypowiedz | null {
+  glosOdmowy(kto: KtoMowi, pan = 0): boolean {
     const glos = this.glosy[kto], G = glos.G;
-    if (!this.gotowe || this.ctx!.currentTime < this.mowiDo || !this.wolno(`glos:${kto}`, G.odstepMs)) return null;
+    if (!this.gotowe || this.ctx!.currentTime < this.mowiDo || !this.wolno(`glos:${kto}`, G.odstepMs)) return false;
     const n = glos.losuj();
-    if (!n) return null;
+    if (!n) return false;
     const ctx = this.ctx!;
     const t = ctx.currentTime + G.opoznienie;
     const src = ctx.createBufferSource();
@@ -178,7 +178,7 @@ export class Gesty {
     src.connect(g); g.connect(this.wyjscie(pan, G.poglos));
     src.start(t, n.od, n.dl);
     this.mowiDo = t + n.dl;
-    return glos.wypowiedz(n);
+    return true;
   }
 
   /**

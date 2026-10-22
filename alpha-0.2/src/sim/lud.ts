@@ -12,10 +12,8 @@ import { Job } from './creatures';
 import { szukajDrogi, budzetDrog, nowyTik } from './droga';
 import { PIELGRZYMKA as P } from '../nastawy/rytual';
 import { tikStraznikow, type StanStraznikow } from './straznicy';
-import { tikMroku, naKogoPatrzy, type StanMroku } from './mrok';
 import { tikDloni, type StanDloni } from './dlon';
 import { DLON } from '../nastawy/dlon';
-import { MROK } from '../nastawy/mrok';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { KARTY_LUDU } from '../nastawy/karty-ludu';
 import { tikWiader, zrodlaJedzenia, type StanWiader } from './wiadro';
@@ -51,8 +49,6 @@ export interface StanLudu {
   obozT?: number;
   /** Etap 3: fale Strażników Snu. */
   straznicy?: StanStraznikow;
-  /** Ten, który patrzy z ciemności (sim/mrok.ts). */
-  mrok?: StanMroku;
   /** Koszmar: dłoń z otchłani (sim/dlon.ts). */
   dlon?: StanDloni;
   /** Remake v2: wiadra z jedzeniem (sim/wiadro.ts) — jedyne jedzenie ludu. */
@@ -181,7 +177,7 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   if (wz?.length) {
     const Z = ZABYTKI.skutki;
     if (wz.includes('relikwiarz')) { if (co === 'modlitwa') v *= Z.relikwiarz.modlitwa; if (co === 'kopanie') v *= Z.relikwiarz.kopanie; }
-    if (wz.includes('miecz') && co === 'sila' && r === 'rycerz') v *= Z.miecz.silaRycerza;
+    if (wz.includes('miecz') && r === 'rycerz') { if (co === 'sila') v *= Z.miecz.silaRycerza; if (co === 'szybkosc') v *= Z.miecz.szybkoscRycerza; }
     if (wz.includes('kielich') && co === 'glod') v *= Z.kielich.glod;
   }
   // etap 3f: zbroja z kuźni — każda noszona część dokłada swoje (tylko rycerz ją nosi)
@@ -279,9 +275,6 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   }
   if (c.zatrutyDo !== undefined && sim.tick < c.zatrutyDo) {
     out.push({ nazwa: 'zatruty', skutek: `−${Math.round((1 - KARTY_LUDU.zatrucie) * 100)}% siły, szybkości i kopania (zatrute plony)`, dobry: false, do: c.zatrutyDo });
-  }
-  if (naKogoPatrzy(sim) === c.id && sim.lud.mrok) {
-    out.push({ nazwa: 'patrzy na niego coś z ciemności', skutek: 'jeśli zostanie sam, zniknie — ocali go Cud tuż obok albo ktoś z ludu przy nim', dobry: false, do: sim.lud.mrok.od + MROK.patrzyTikow });
   }
   const d = sim.lud.dlon;
   if (d && (d.faza === 'wstaje' || d.faza === 'siega') && d.ofiary.includes(c.id)) {
@@ -506,7 +499,6 @@ export function tikLudu(sim: Sim): void {
   tikStraznikow(sim);
   tikPomnika(sim);
   tikDloniDemona(sim);
-  tikMroku(sim);
   tikDloni(sim);
   tikAniola(sim);
   tikZabytkow(sim);

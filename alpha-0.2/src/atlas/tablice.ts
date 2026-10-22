@@ -19,7 +19,6 @@ import { STRAZNICY } from '../nastawy/straznicy';
 import { MOCE } from '../nastawy/moce';
 import { WYDARZENIA } from '../nastawy/wydarzenia';
 import { LUD, type Rola } from '../nastawy/lud';
-import { MROK } from '../nastawy/mrok';
 import { DLON } from '../nastawy/dlon';
 import { WIADRO } from '../nastawy/wiadro';
 import { lunaOtchlani, rysujKlatkeDloni } from '../render/dlon';
@@ -951,33 +950,6 @@ function dlonAnielska({ ctx, w, h, t }: Plotno): void {
   robotnikNaRycinie(ctx, x + h * 0.02, y, h * 0.3, t, 'stoi');
 }
 
-/** Ten, który patrzy: lita, kreskowana skała, a w niej para oczu i blade światło lampki z boku. */
-function patrzacy({ ctx, w, h, t }: Plotno): void {
-  ctx.save();
-  ctx.fillStyle = '#0b0807';
-  ctx.fillRect(0, 0, w, h);
-  const blok = new Path2D();
-  blok.rect(0, 0, w, h);
-  kreskuj(ctx, blok, -0.7, 5, rgba(BARWA.atrament, 0.08), 1);
-  const l = ctx.createRadialGradient(w * 0.18, h * 0.78, 2, w * 0.18, h * 0.78, h * 0.5);
-  l.addColorStop(0, 'rgba(236,190,110,0.32)');
-  l.addColorStop(1, 'rgba(236,190,110,0)');
-  ctx.fillStyle = l;
-  ctx.fillRect(0, 0, w, h);
-  const mrug = Math.sin(t * 0.0009) > 0.93 ? 0.15 : 1;
-  for (const dx of [-1, 1]) {
-    const x = w * 0.62 + dx * h * 0.06, y = h * 0.4;
-    const g = ctx.createRadialGradient(x, y, 0, x, y, h * 0.06);
-    g.addColorStop(0, 'rgba(255,170,110,0.95)');
-    g.addColorStop(1, 'rgba(160,30,20,0)');
-    ctx.fillStyle = g;
-    ctx.fillRect(x - h * 0.06, y - h * 0.06, h * 0.12, h * 0.12);
-    ctx.fillStyle = 'rgba(255,224,190,0.95)';
-    ctx.beginPath(); ctx.ellipse(x, y, h * 0.018, h * 0.009 * mrug, 0, 0, Math.PI * 2); ctx.fill();
-  }
-  ctx.restore();
-}
-
 /** Pismo w skale: blok litej skały z żarzącymi się znakami, które gasną w smudze światła. */
 function pismo({ ctx, w, h, t }: Plotno): void {
   ctx.save();
@@ -1046,8 +1018,8 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'ryt-znak', grupa: 'ryty', nazwa: 'Cud', lacina: 'Signum manifestum',
-    opis: `Jawny cud widziany w promieniu ${MOCE.znakZasieg} kafli. Każdy, kto go widzi, wierzy mocniej (+${proc(MOCE.objawienieOddanie)}) i mniej się boi, a oddanie ludu rośnie o ${proc(MOCE.objawienieNacja)}. Zostaje świecący znak w skale, przy którym pobożni się modlą. Światło Cudu przegania Tego, który patrzy (do ${MROK.cudPromien} kafli od niego) i odpycha dłoń z otchłani (do ${DLON.cudPromien} kafli).`,
-    kiedy: 'Przy siedzibie, żeby lud uwierzył dość mocno i sam ruszył pod rdzeń — i zawsze tam, gdzie z ciemności patrzą oczy albo spod ziemi bije czerwona łuna.',
+    opis: `Jawny cud widziany w promieniu ${MOCE.znakZasieg} kafli. Każdy, kto go widzi, wierzy mocniej (+${proc(MOCE.objawienieOddanie)}) i mniej się boi, a oddanie ludu rośnie o ${proc(MOCE.objawienieNacja)}. Zostaje świecący znak w skale, przy którym pobożni się modlą. Światło Cudu odpycha dłoń z otchłani (do ${DLON.cudPromien} kafli).`,
+    kiedy: 'Przy siedzibie, żeby lud uwierzył dość mocno i sam ruszył pod rdzeń — i zawsze tam, gdzie spod ziemi bije czerwona łuna.',
     koszt: kosztSlowami('znak', 'objawienie'),
     rycina: cala(rysujZnak),
   },
@@ -1276,12 +1248,6 @@ export const TABLICE: Tablica[] = [
     rycina: pismo,
   },
   {
-    id: 'patrzacy', grupa: 'prawa', nazwa: 'Ten, który patrzy', lacina: 'Qui in tenebris spectat',
-    opis: `Poza światłem lampek, obozów i rdzenia góra jest ciemna — i coś w tej ciemności jest. Po ${Math.round(MROK.pierwszyPo / 7200)} minutach zaczyna krążyć w skale wokół siedziby i wypatruje tego, kto został sam daleko od obozu (rycerzy nie rusza). Gdy go znajdzie, patrzy na niego: samotny staje jak wryty, w skale świecą oczy, a lampka przygasa. Po ${Math.round(MROK.patrzyTikow / 120)} sekundach zabiera go — krew zostaje dla ciebie. Potem na kilka minut cichnie.`,
-    kiedy: 'Nie puszczaj nikogo samego daleko od obozu. Gdy zobaczysz oczy — rzuć Cud tuż przy nich albo poślij kogoś do samotnego.',
-    rycina: patrzacy,
-  },
-  {
     id: 'dlon', grupa: 'prawa', nazwa: 'Dłoń z otchłani', lacina: 'Manus ex abysso',
     opis: `Rzadko, najwcześniej po ${Math.round(DLON.pierwszaPo / 7200)} minutach i najwyżej ${DLON.maxNaPartie} razy w partii. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu, a pod nim zaczyna się otchłań, spod ziemi sączy się czerwona łuna, a on (czasem dwoje naraz) staje jak wryty. Z głębi, zawsze od dołu, wznosi się ogromna dłoń — po ${Math.round((DLON.wstaje + DLON.siega) / 120)} sekundach sięga, chwyta ich i zapada się z nimi w ciemność. Nie zostają nawet trupy — krew i tak spływa do ciebie.`,
     kiedy: 'Nie stawiaj ludu nad nieznanym daleko od obozu. Gdy otchłań pod kimś zaczerwieni się — rzuć Cud przy nim, zanim dłoń chwyci.',
@@ -1296,7 +1262,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'dlon-anielska', grupa: 'prawa', nazwa: 'Dłoń anielska', lacina: 'Manus angelica',
     opis: `Czasem — najwcześniej po ${Math.round(ANIOL.pierwszaPo / 7200)} minutach, najwyżej ${ANIOL.maxNaPartie} razy w partii — z góry, przez skałę, sączy się słup złotego światła i schodzi w nim jasna dłoń, palcami w dół. Daje dar, który sama wybiera, za darmo: ${DAR.podkop.nazwa.toLowerCase()} — ${DAR.podkop.opis} (droga idzie schodami, więc nikt nie utknie w przepaści, a ruda trafia do liczników); ${DAR.ludzie.nazwa.toLowerCase()} — ${DAR.ludzie.opis}, póki ludu jest mniej niż ${ANIOL.dary.ludzie.maksLudu}; ${DAR.krew.nazwa.toLowerCase()} — ${DAR.krew.opis}: struga spływa z jej dłoni prosto do ampułki. Potem wraca w światło.`,
-    kiedy: `Nie wywołasz jej — przychodzi sama. Dar ludzi to jedyna, poza wskrzeszeniem, droga do nowych rąk w drużynie — ale gdy ludu jest ${MROK.minLudu} albo więcej, z ciemności zaczyna patrzeć Ten, który patrzy.`,
+    kiedy: `Nie wywołasz jej — przychodzi sama. Dar ludzi to jedyna, poza wskrzeszeniem, droga do nowych rąk w drużynie.`,
     rycina: dlonAnielska,
   },
   // ---------------------------------------------------------------- etap 5b: dłoń z otchłani pomaga demonowi
