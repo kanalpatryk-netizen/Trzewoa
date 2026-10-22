@@ -134,7 +134,8 @@ function plaszcz(r: Rysunek, T: Tulow): void {
   const a = clamp(pm.peleryna.a + 0.18, -1.6, 0.4) * 0.8 - 0.05;
   const dol = { x: sin(a), y: cos(a) }, bok = { x: cos(a), y: -sin(a) };
   const A = T(0.99, -0.072), F = T(1.02, 0.03);
-  const dl = 0.6 * h;
+  // w przysiadzie (biodro nisko) płaszcz kończy się nad ziemią — nie wchodzi w posadzkę (strzępy wiszą jeszcze niżej)
+  const dl = Math.min(0.6 * h, Math.max(0.22 * h, (-0.09 * h - A.y) / Math.max(0.3, dol.y)));
   const H = { x: A.x + dol.x * dl, y: A.y + dol.y * dl };
   const fal = sin(czas * 0.006 + id) * 0.012 * h * clamp(Math.abs(pm.vx) / 3 + 0.25, 0, 1);
   const Hp = { x: H.x + bok.x * 0.1 * h, y: H.y + bok.y * 0.1 * h };
@@ -631,8 +632,11 @@ function pas(r: Rysunek, T: Tulow, wPochwie: boolean): void {
 /** Pochwa na dalszym biodrze: wystaje ukosem do tyłu spod płaszcza i wapenroku; żelazne okucia. */
 function pochwa(r: Rysunek, T: Tulow): void {
   const { m, h } = r;
-  const d = kier(-0.42), n = kier(-0.42 - PI / 2);
   const a = T(PAS - 0.02, -0.03), dl = 0.4 * h;
+  // w przysiadzie pochwa odchyla się bardziej do tyłu, żeby jej koniec nie wchodził w posadzkę
+  const v = (-0.012 * h - a.y) / dl;
+  const kat = v < Math.cos(0.42) ? -Math.acos(clamp(v, Math.cos(1.45), 1)) : -0.42;
+  const d = kier(kat), n = kier(kat - PI / 2);
   const P = (wd: number, wn: number): [number, number] => [a.x + d.x * wd + n.x * wn, a.y + d.y * wd + n.y * wn];
   const po = new Path2D();
   po.moveTo(...P(0, 0.011 * h)); po.lineTo(...P(dl * 0.94, 0.008 * h)); po.quadraticCurveTo(...P(dl, 0.006 * h), ...P(dl, 0));

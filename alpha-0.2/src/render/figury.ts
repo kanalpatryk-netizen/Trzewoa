@@ -1170,11 +1170,8 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       ctx.translate(sx, sy);
       // etap 5b: ciśnięty przez dłoń z otchłani koziołkuje w locie (wokół środka ciała)
       if (c.lot) { ctx.translate(0, -h * 0.5); ctx.rotate((sim.tick - c.lot.od) * 0.16 * (Math.sign(c.lot.vx) || 1)); ctx.translate(0, h * 0.5); }
-      // niski korytarz (nad głową lita skała już w następnym kaflu): postać się schyla — dawniej korytarz kopacza miał
-      // kafel, postać dwa, i robotnik sterczał głową w skale
-      const schyl = naZiemi && !c.lot && sim.world.solid(Math.floor(c.x + dx), Math.floor(c.y) - 1)
-        ? Math.max(0.55, Math.min(1, z / (h * 0.9))) : 1;
-      ctx.scale(kier * (schyl < 1 ? 1.12 : 1), schyl);
+      // (niski korytarz: lud kuca — poza w render/postacie.ts; dawne zgniatanie rysunku w pionie zniekształcało postać)
+      ctx.scale(kier, 1);
       cz = rysujPostac(ctx, sim, c, h, czas);
       ctx.restore();
     }
