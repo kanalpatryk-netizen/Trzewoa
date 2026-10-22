@@ -33,7 +33,6 @@ import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type Po
 import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
 import { NASTAWY_GLOSU } from '../../core/glos-odmowy';
-import { zacznijGlosOdmowy } from '../../render/lud/odmowa';
 import { POMNIK } from '../../nastawy/pomnik';
 import { rysujNadPomnikiem, rysujPomnik } from '../../render/pomnik';
 import { rysujDlonDemona } from '../../render/dlon-demona';
@@ -668,7 +667,7 @@ export class EkranGry implements Ekran {
    * w drodze — mówi to na głos (nastawy/dzwiek.ts: GLOS_RYCERZA, GLOS_POBOZNEGO). Naraz mówi jeden; odmowa
    * wydana w pauzie też.
    */
-  private glosOdmowy(teraz: number): void {
+  private glosOdmowy(): void {
     const sim = this.sim;
     let mowil = false;
     for (const c of sim.creatures) {
@@ -679,8 +678,7 @@ export class EkranGry implements Ekran {
       if (mowil || sim.tick - o.od > POLECENIA.odmowaTikow || (kto !== 'rycerz' && kto !== 'pobozny')) continue;
       if (!NASTAWY_GLOSU[kto].odmowy.some((p) => o.tekst.startsWith(p))) continue;
       const pan = Math.max(-1, Math.min(1, (this.cam.toScreenX(c.x) / Math.max(1, this.cam.vw)) * 2 - 1)) * 0.6;
-      const w = this.app.gesty.glosOdmowy(kto, pan);
-      if (w) { zacznijGlosOdmowy(o, w, teraz); mowil = true; }
+      if (this.app.gesty.glosOdmowy(kto, pan)) mowil = true;
     }
   }
 
@@ -789,7 +787,7 @@ export class EkranGry implements Ekran {
     // plan wykonuje się także wtedy, gdy pauzę zdjęło coś innego niż przycisk
     if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
     this.sluchaj();
-    this.glosOdmowy(teraz);
+    this.glosOdmowy();
     this.patrzNaPomnik();
     this.sluchajDloniDemona();
     if (!this.zamrozone()) {
@@ -1296,9 +1294,9 @@ export class EkranGry implements Ekran {
     const { sim, ui } = this;
     const robotnicy = this.zaznaczeniZywi().filter((c) => rolaPostaci(c) === 'robotnik');
     if (!robotnicy.length) { ui.say('Kopią tylko robotnicy — zaznacz robotnika.', sim.tick); this.app.gesty.odmowa(); return; }
-    const { przyjeli, odmowy } = drogaGrupie(sim, robotnicy.map((c) => c.id));
+    const { przyjeli } = drogaGrupie(sim, robotnicy.map((c) => c.id));
     if (przyjeli) { ui.say(przyjeli === 1 ? 'Idzie kopać drogę wiernych.' : `Idą kopać drogę wiernych (${przyjeli}).`, sim.tick); this.app.gesty.klik(); }
-    else { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
+    else { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
     this.nasluch?.({ typ: 'polecenie', rodzaj: 'droga', przyjeli });
   }
 
@@ -1310,13 +1308,19 @@ export class EkranGry implements Ekran {
     const { sim, ui } = this;
     const lp = linaPrzecieta(sim);
     if (!lp) return;
-    const { kto, odmowy } = wydajNaprawe(sim, ids ?? this.zaznaczeniZywi().map((c) => c.id));
+    const { kto } = wydajNaprawe(sim, ids ?? this.zaznaczeniZywi().map((c) => c.id));
     if (kto) {
       ui.say(`${NAZWA_ROLI[rolaPostaci(kto) ?? 'robotnik']} idzie skleić linę wiadra — wespnie się po niej i ją zwiąże.`, sim.tick);
       this.app.gesty.klik();
       this.pokazMiejsce(lp.x + 0.5, lp.dno - 1, Math.max(this.cam.zoom, KAMERA.pokazZoom));
-    } else { ui.say(odmowy[0] ?? 'Nikt nie dojdzie do liny.', sim.tick); this.app.gesty.odmowa(); }
+    } else { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
     this.nasluch?.({ typ: 'polecenie', rodzaj: 'naprawa', przyjeli: kto ? 1 : 0 });
+  }
+
+  /** Odmowa bez słów: czerwony krzyżyk na chwilę tam, gdzie stoi kursor (render/druzyna.ts — fala z `ok: false`). */
+  private krzyzykPodKursorem(): void {
+    const p = this.ui.pointer;
+    this.falaRozkazu = { x: this.cam.toWorldX(p.x - this.plate.x), y: this.cam.toWorldY(p.y - this.plate.y), t: performance.now(), ok: false };
   }
 
   private odwolajRozkazy(): void {
@@ -1468,10 +1472,10 @@ export class EkranGry implements Ekran {
     // etap 3d: ołtarz pod palcem — otwiera okno rytuałów; zaznaczeni idą do niego i tam zostają
     if (oltarzPod(sim, this.cam, sx - this.plate.x, sy - this.plate.y)) {
       if (ids.length) {
-        const { przyjeli, odmowy } = wydajDoOltarza(sim, ids);
+        const { przyjeli } = wydajDoOltarza(sim, ids);
         const o = sim.world.oltarz;
         this.falaRozkazu = { x: o.x + 0.5, y: o.y, t: performance.now(), ok: przyjeli > 0 };
-        if (!przyjeli) { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
+        if (!przyjeli) { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
         else { ui.say(przyjeli === 1 ? 'Idzie do ołtarza.' : `Idą do ołtarza: ${przyjeli}.`, sim.tick); this.app.gesty.klik(); }
         this.nasluch?.({ typ: 'polecenie', rodzaj: 'oltarz', przyjeli });
       }
@@ -1486,7 +1490,7 @@ export class EkranGry implements Ekran {
     if (!ids.length) return;
     const { przyjeli, odmowy } = pom ? wydajNaPomieszczenie(sim, ids, pom) : wydajGrupie(sim, ids, Math.floor(fx), Math.floor(fy));
     this.falaRozkazu = { x: fx, y: fy, t: performance.now(), ok: przyjeli > 0 };
-    if (!przyjeli) { ui.say(odmowy[0] ?? 'Nie.', sim.tick); this.app.gesty.odmowa(); }
+    if (!przyjeli) this.app.gesty.odmowa();
     else {
       ui.say((przyjeli === 1 ? 'Idzie.' : `Idą: ${przyjeli}.`) + (odmowy.length ? ` Odmawia: ${odmowy.length}.` : ''), sim.tick);
       this.app.gesty.klik();

@@ -1172,7 +1172,6 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     if (p.prob < POLECENIA.prob) { zamiar('szuka drogi tam, gdzie kazałeś', Job.STOI, 240); return true; }
     c.polecenie = undefined;
     odmow(sim, c, tekst);
-    sim.efekt(c.x, c.y, 'mysl', tekst);
     return false;
   };
 
