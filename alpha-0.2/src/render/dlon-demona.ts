@@ -3,7 +3,10 @@ import type { Camera } from './camera';
 import { DLON } from '../nastawy/dlon';
 import { ustawienia } from '../core/settings-store';
 import { ARKUSZ, KAFLE_NA_JEDN, rysujKlatke, lunaOtchlani } from './dlon';
-import { wysokoscPostaci } from './figury';
+import { rysujPostac, wysokoscPostaci } from './figury';
+import { przesuniecieX } from './lud/rozstep';
+import { swiatloDla, ustawSwiatlo } from './lud/oswietlenie';
+import { walczacy } from '../sim/lud';
 import { T } from '../sim/tiles';
 import rzutUrl from '../grafiki/dlon/dlon-rzut.webp';
 import tarczaUrl from '../grafiki/dlon/dlon-tarcza.webp';
@@ -73,9 +76,10 @@ function dlonZBrzegu(ctx: CanvasRenderingContext2D, img: HTMLImageElement, sx: n
   sc = Math.min(sc, 2048 / Math.max(1, x1 - x0, y1 - y0));
   const pw = Math.ceil((x1 - x0) * sc), ph = Math.ceil((y1 - y0) * sc);
   const g = dajWarstwe(pw, ph);
-  if (!g) { rysujKlatke(ctx, img, sx, sy, kat, skala, klatka, lustro, alfa, `rgba(200,24,12,${0.7 * luna})`); return; }
+  // poświata słabsza niż dawniej (0,7) — zjadała kształt dłoni i szpony
+  if (!g) { rysujKlatke(ctx, img, sx, sy, kat, skala, klatka, lustro, alfa, `rgba(200,24,12,${0.45 * luna})`); return; }
   g.setTransform(sc, 0, 0, sc, -x0 * sc, -y0 * sc);
-  rysujKlatke(g, img, sx, sy, kat, skala, klatka, lustro, 1, `rgba(200,24,12,${0.7 * luna})`);
+  rysujKlatke(g, img, sx, sy, kat, skala, klatka, lustro, 1, `rgba(200,24,12,${0.45 * luna})`);
   const brzegX = sx + (brzegY - sy) * Math.cos(kat) / (Math.sin(kat) || 1e-6);
   // za brzegiem dłoń tonie w ciemności…
   const pas = Math.max(6, skala * 3);
@@ -87,8 +91,8 @@ function dlonZBrzegu(ctx: CanvasRenderingContext2D, img: HTMLImageElement, sx: n
   if (zDolu) g.fillRect(x0, brzegY, x1 - x0, y1 - brzegY); else g.fillRect(x0, y0, x1 - x0, brzegY - y0);
   // …a od brzegu bije na nią czerwień otchłani
   g.globalCompositeOperation = 'source-atop';
-  const czerwien = g.createLinearGradient(0, brzegY, 0, brzegY + (zDolu ? -pas * 2.5 : pas * 2.5));
-  czerwien.addColorStop(0, `rgba(170,22,10,${0.45 * luna})`);
+  const czerwien = g.createLinearGradient(0, brzegY, 0, brzegY + (zDolu ? -pas * 1.6 : pas * 1.6));
+  czerwien.addColorStop(0, `rgba(170,22,10,${0.32 * luna})`);
   czerwien.addColorStop(1, 'rgba(170,22,10,0)');
   g.fillStyle = czerwien;
   g.fillRect(x0, y0, x1 - x0, y1 - y0);
@@ -343,23 +347,55 @@ function rysujTarcze(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, s: St
   if (!img) return;
   const drz = ruch && s.faza === 'stoi' ? Math.sin(teraz * 0.05) * z * 0.03 : 0;
   const kat = -Math.PI / 2 + (ruch && s.faza === 'stoi' ? Math.sin(teraz * 0.004) * 0.03 : 0);
+  // tarcza: czerwona łuna otchłani za dłonią, póki stoi (dawniej różowa elipsa — jak znacznik zaznaczenia); trafiona —
+  // łuna rozbłyska i sypią się iskry. Łuna leży pod dłonią: nałożona na wierzch zalewała ją czerwienią
+  if (s.faza === 'stoi') {
+    const odb0 = sim.tick - (s.odbicieT ?? -1e9);
+    const px = fx + s.bok * z * 0.4, py = fy - z * 1.9;
+    const bl = odb0 < 40 ? 1 - odb0 / 40 : 0;
+    const R = z * (2.8 + 1.2 * bl);
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const g = ctx.createRadialGradient(px, py, z * 0.4, px, py, R);
+    g.addColorStop(0, `rgba(255,70,36,${0.14 + 0.08 * Math.sin(teraz * 0.006) + 0.35 * bl})`);
+    g.addColorStop(1, 'rgba(200,30,16,0)');
+    ctx.fillStyle = g; ctx.fillRect(px - R, py - R, R * 2, R * 2);
+    ctx.restore();
+  }
   // nadgarstek pod podłogą — wnętrze dłoni i palce nad nią
   dlonZBrzegu(ctx, img, fx + drz, fy + z * 0.3 + glebiej, kat, skala, klatka, s.bok, alfa, fy, true, Math.min(1, luna));
-  // trafiona: iskry i fala na wnętrzu dłoni
   const odb = sim.tick - (s.odbicieT ?? -1e9);
+  walczacyPrzedDlonia(ctx, sim, cam, s.x, 3, teraz);
   if (s.faza === 'stoi' && odb < 40) {
     const k = odb / 40;
     const px = fx, py = fy - z * 1.8;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.strokeStyle = `rgba(255,120,80,${0.7 * (1 - k)})`;
-    ctx.lineWidth = Math.max(1.5, z * 0.1 * (1 - k));
-    ctx.beginPath(); ctx.ellipse(px, py, z * (0.5 + k * 2.2), z * (0.8 + k * 3), 0, 0, Math.PI * 2); ctx.stroke();
     for (let i = 0; i < 8; i++) {
       const a = los(odb + i) * Math.PI * 2, d = z * (0.3 + k * 1.6) * (0.6 + los(i + 5));
       ctx.fillStyle = `rgba(255,230,180,${1 - k})`;
       ctx.fillRect(px + Math.cos(a) * d + s.bok * z * 0.8, py + Math.sin(a) * d, Math.max(1.5, z * 0.1), Math.max(1.5, z * 0.1));
     }
+    ctx.restore();
+  }
+}
+
+/**
+ * Walczący przy tarczy — rysowani raz jeszcze, przed dłonią: tarcza stoi między nimi a demonem, a rycerz bije w jej
+ * wnętrze (dawniej chował się za dłonią i wystawał mu tylko miecz).
+ */
+function walczacyPrzedDlonia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, x: number, zasieg: number, teraz: number): void {
+  const z = cam.zoom;
+  if (z < 9) return;            // z daleka postacie są zgrupowane (figury.ts) — pojedynczej nie dorysowujemy
+  for (const c of sim.creatures) {
+    if (c.dead || c.straznik || c.lot || c.wDloni || !walczacy(c) || Math.abs(c.x - x) > zasieg) continue;
+    const h = wysokoscPostaci(c, z);
+    ctx.save();
+    ctx.translate(cam.toScreenX(c.x + przesuniecieX(c)), cam.toScreenY(c.y + 1));
+    ctx.scale(c.face >= 0 ? 1 : -1, 1);
+    ustawSwiatlo(swiatloDla(sim, c, h / z));
+    rysujPostac(ctx, sim, c, h, teraz);
+    ustawSwiatlo(null);
     ctx.restore();
   }
 }
@@ -399,6 +435,22 @@ function rysujZawal(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, s: Sta
   }
   lunaOtchlani(ctx, cx, cy, z * 3, Math.PI, luna * 0.8, teraz, ruch);
   rysa(ctx, cx, cy, z, rysaK, 131, false);
+  // szpony drą strop: cztery równoległe, skośne bruzdy w skale nad przejściem, żarzące się w głębi
+  // (dawniej jedna pozioma czerwona kreska)
+  if (s.faza === 'drze' || s.faza === 'wali' || (s.faza === 'cofa' && rysaK > 0.05)) {
+    const ile = s.faza === 'drze' ? Math.min(1, t / 25) : 1;
+    ctx.save();
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      const ox = cx + (i - 1.5) * z * 0.55 * -s.bok, oy = cy - z * 0.25;
+      const ex = ox + s.bok * z * 0.8 * ile, ey = oy - z * 1.2 * ile;
+      for (const [kol, gr] of [['rgba(206,186,160,0.35)', Math.max(2.4, z * 0.24)], ['rgba(8,4,3,0.9)', Math.max(1.6, z * 0.15)], [`rgba(200,60,30,${0.35 * rysaK})`, Math.max(0.8, z * 0.04)]] as const) {
+        ctx.strokeStyle = kol; ctx.lineWidth = gr;
+        ctx.beginPath(); ctx.moveTo(ox, oy); ctx.quadraticCurveTo((ox + ex) / 2 + s.bok * z * 0.2, (oy + ey) / 2, ex, ey); ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
   // ze stropu sypie się: przy przebiciu i przy każdym szarpnięciu
   if (s.faza === 'wstaje') odlamki(ctx, cx, cy, z, t / Z.wstaje, 141, false, 10);
   if (s.faza === 'drze') { odlamki(ctx, cx, cy, z, (t % 30) / 30, 151 + Math.floor(t / 30), false, 6); pyl(ctx, cx, cy + z * 0.5, z * 1.5, 0.5); }
@@ -436,22 +488,27 @@ function scianaGruzu(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz
   const kr = sc.kruszy !== undefined ? Math.min(1, (sim.tick - sc.kruszy) / D.zawal.kruszy) : 0;
   ctx.save();
   ctx.lineJoin = 'round';
+  const tony = ['#7a6f62', '#5e554b', '#6c6156', '#544b42', '#857a6c'];
   for (const i of sc.kafle) {
     if (w.tile[i] !== T.ROCK && kr === 0) continue;      // rozkute — puste
     const x = i % w.w, y = (i / w.w) | 0;
-    for (let j = 0; j < 2; j++) {
-      const n = i * 2 + j;
-      const gx = cam.toScreenX(x + 0.3 + los(n) * 0.4), gy0 = cam.toScreenY(y + 0.3 + los(n + 1) * 0.4);
-      // kruszenie: głaz pęka, zsuwa się w dół i blednie
+    // ciemne tło między kamieniami: ubita ściana, nie stos żetonów
+    if (kr === 0) { ctx.fillStyle = 'rgba(30,24,20,0.95)'; ctx.fillRect(cam.toScreenX(x) - z * 0.1, cam.toScreenY(y), z * 1.2, z); }
+    for (let j = 0; j < 4; j++) {
+      const n = i * 4 + j;
+      // kamienie różnej wielkości i kształtu (płyty, bryły), wychodzą trochę poza kafel i zachodzą na sąsiadów
+      const gx = cam.toScreenX(x + 0.15 + los(n) * 0.7), gy0 = cam.toScreenY(y + 0.15 + los(n + 1) * 0.7);
       const opoz = los(n + 2) * 0.5;
       const kk = Math.max(0, Math.min(1, (kr - opoz) / 0.5));
       const gy = gy0 + kk * kk * z * 3;
-      const r = z * (0.42 + los(n + 3) * 0.2) * (1 - kk * 0.4);
+      const r = z * (0.2 + los(n + 3) * 0.26) * (1 - kk * 0.4);
+      const plaski = los(n + 4) < 0.4 ? 0.55 : 0.85;
       ctx.globalAlpha = 1 - kk;
-      ctx.fillStyle = j ? '#5e554b' : '#7a6f62';
-      ctx.strokeStyle = 'rgba(18,12,8,0.95)'; ctx.lineWidth = Math.max(1, z * 0.07);
+      ctx.fillStyle = tony[Math.floor(los(n + 5) * tony.length)];
+      ctx.strokeStyle = 'rgba(18,12,8,0.95)'; ctx.lineWidth = Math.max(1, z * 0.06);
       ctx.beginPath();
-      for (let q = 0; q < 6; q++) { const a = (q / 6) * Math.PI * 2 + los(n * 5 + q) * 0.6; const rr = r * (0.75 + los(n * 11 + q) * 0.35); ctx.lineTo(gx + Math.cos(a) * rr, gy + Math.sin(a) * rr); }
+      const ile = 5 + Math.floor(los(n + 6) * 3), obr = los(n + 7) * 3;
+      for (let q = 0; q < ile; q++) { const a = obr + (q / ile) * Math.PI * 2 + los(n * 5 + q) * 0.5; const rr = r * (0.7 + los(n * 11 + q) * 0.45); ctx.lineTo(gx + Math.cos(a) * rr * 1.2, gy + Math.sin(a) * rr * plaski); }
       ctx.closePath(); ctx.fill(); ctx.stroke();
       if (kr > 0 && kk < 1) {
         ctx.strokeStyle = 'rgba(10,6,4,0.9)';

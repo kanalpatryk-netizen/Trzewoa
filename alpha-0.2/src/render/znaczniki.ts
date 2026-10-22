@@ -1,7 +1,7 @@
 import type { Camera } from './camera';
 import { BARWA, rgba } from './palette';
 
-export interface Cel { x: number; y: number; r: number; tekst?: string; }
+export interface Cel { x: number; y: number; r: number; tekst?: string; klan?: number; }
 
 /**
  * Podświetlenie celu: pierścień i strzałka na krawędzi, gdy cel jest poza kadrem.
@@ -21,24 +21,35 @@ export function strzalkaCelu(cam: Camera, cel: Cel): { x: number; y: number; kat
   return { x: cx + Math.cos(kat) * (cam.vw / 2 - 52), y: cy + Math.sin(kat) * (cam.vh / 2 - 52), kat };
 }
 
+/** Od kiedy wisi ten sam cel (tekst i miejsce) — podpowiedź odświeża się co kilka sekund nowym obiektem. */
+const wiekCelu = { klucz: '', od: 0 };
+
 export function podswietlCel(ctx: CanvasRenderingContext2D, cam: Camera, cel: Cel, teraz: number): void {
   const z = cam.zoom;
   const left = cam.x - cam.vw / 2 / z, top = cam.y - cam.vh / 2 / z;
   const sx = (cel.x - left) * z, sy = (cel.y - top) * z;
-  const puls = 0.6 + 0.4 * Math.sin(teraz * 0.004);
-  const r = Math.max(22, cel.r * z);
+  const klucz = `${cel.tekst ?? ''}|${Math.round(cel.x)}|${Math.round(cel.y)}`;
+  if (klucz !== wiekCelu.klucz) { wiekCelu.klucz = klucz; wiekCelu.od = teraz; }
+  // świeży cel woła, a po kilku sekundach przygasa — rytuał trwa minutami i pierścień nad kryptą wisiał jak znacznik debugowy
+  const wiek = (teraz - wiekCelu.od) / 1000;
+  const glos = wiek < 6 ? 1 : Math.max(0.4, 1 - (wiek - 6) * 0.2);
+  const puls = (0.6 + 0.4 * Math.sin(teraz * 0.004)) * glos;
+  // pierścień nie większy niż kawałek kadru — dawniej dwa wielkie okręgi z nacięciami zasłaniały scenę
+  const r = Math.min(Math.max(18, cel.r * z), Math.min(cam.vw, cam.vh) * 0.11);
 
   const wKadrze = sx > 0 && sy > 0 && sx < cam.vw && sy < cam.vh;
   ctx.save();
   if (wKadrze) {
-    ctx.strokeStyle = rgba(BARWA.zarBlady, 0.45 + 0.35 * puls);
-    ctx.lineWidth = 2;
+    // jeden cienki, oddychający pierścień i delikatna poświata pod nim
+    ctx.strokeStyle = rgba(BARWA.zarBlady, 0.12 * glos + 0.08 * puls);
+    ctx.lineWidth = 5;
     ctx.beginPath();
-    ctx.arc(sx, sy, r * (0.9 + 0.12 * puls), 0, Math.PI * 2);
+    ctx.arc(sx, sy, r * (0.94 + 0.08 * puls), 0, Math.PI * 2);
     ctx.stroke();
-    ctx.strokeStyle = rgba(BARWA.zarBlady, 0.25);
+    ctx.strokeStyle = rgba(BARWA.zarBlady, 0.3 * glos + 0.25 * puls);
+    ctx.lineWidth = 1.2;
     ctx.beginPath();
-    ctx.arc(sx, sy, r * 1.35, 0, Math.PI * 2);
+    ctx.arc(sx, sy, r * (0.94 + 0.08 * puls), 0, Math.PI * 2);
     ctx.stroke();
     // cztery nacięcia celownika
     for (let i = 0; i < 4; i++) {

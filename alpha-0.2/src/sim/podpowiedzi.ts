@@ -11,7 +11,8 @@ export function podpisSiedziby(_sim: Sim, _k: Sim['clans'][number]): string {
   return 'siedziba';
 }
 
-export interface Podpowiedz { tekst: string; cel?: { x: number; y: number; r: number; tekst: string }; waga: number; }
+/** Cel podpowiedzi; `klan` — pierścień siedziby, który idzie za nią, gdy siedziba się przeniesie. */
+export interface Podpowiedz { tekst: string; cel?: { x: number; y: number; r: number; tekst: string; klan?: number }; waga: number; }
 
 /**
  * Jedno zdanie o tym, co w tej chwili warto zrobić. Sandbox bez takiego zdania jest
@@ -20,6 +21,8 @@ export interface Podpowiedz { tekst: string; cel?: { x: number; y: number; r: nu
  */
 export function podpowiedz(sim: Sim): Podpowiedz {
   const kandydaci: Podpowiedz[] = [];
+  // od rozpadu pomnika do końca walki pierścień siedziby nie ma sensu (siedziba bywa wtedy w krypcie, pod bossem)
+  const walka = (sim.lud.pomnik?.faza ?? 'stoi') !== 'stoi';
 
   // 1. ktoś wymiera — to najpilniejsze, bo monokultura cię usypia.
   // Nie na starcie: świeża góra ma z natury dwa–trzy trole i pierwsze zdanie gry
@@ -43,7 +46,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
       : 'Nakarm ich — przeciągnij palcem po ich jaskini.';
     kandydaci.push({
       tekst: `${nazwa} ${odmien(r, 'jest', 'są')} o krok od wygaśnięcia. ${rada}`,
-      cel: klan ? { x: klan.hx, y: klan.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, klan) : nazwa } : undefined,
+      cel: klan && !walka ? { x: klan.hx, y: klan.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, klan) : nazwa, klan: klan.id } : undefined,
       waga: 100 - ilu,
     });
   }
@@ -56,7 +59,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     const klan = sim.clans.filter((k) => !k.dead && k.race === sim.domRace && k.pop > 0).sort((a, b) => b.pop - a.pop)[0];
     kandydaci.push({
       tekst: `${nazwa} ${odmien(sim.domRace, 'bierze', 'biorą')} górę. Szepnij komuś z nich „prorokuj” — nacja pęknie na dwie. Klęski z kart kieruj na nich.`,
-      cel: klan ? { x: klan.hx, y: klan.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, klan) : nazwa } : undefined,
+      cel: klan && !walka ? { x: klan.hx, y: klan.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, klan) : nazwa, klan: klan.id } : undefined,
       waga: 80 + sim.dominance * 20,
     });
   }
@@ -122,12 +125,12 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   // (Alpha: lud ma stałe sześć głów — próg „dużej nacji” go nie dotyczy; liczy się tylko twój lud)
   const duzeWierne = sim.clans.filter((k) => !k.dead && (REMAKE ? k.race === Race.GOBLIN && k.pop > 0 : k.pop >= 8) && RACES[k.race].faithGain > 0)
     .sort((a, b) => b.devotion - a.devotion)[0];
-  if (sim.tick > 3000 && sim.rytual.pekniecia === 0 && duzeWierne && duzeWierne.devotion <= PIELGRZYMKA.oddanieNacji) {
+  if (sim.tick > 3000 && !walka && sim.rytual.pekniecia === 0 && duzeWierne && duzeWierne.devotion <= PIELGRZYMKA.oddanieNacji) {
     kandydaci.push({
       tekst: REMAKE
         ? 'Żeby cię uwolnić, lud musi uwierzyć mocniej. Zrób Cud przy siedzibie albo szepnij pobożnym „módl się”.'
         : `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij pobożnym „módl się”.`,
-      cel: { x: duzeWierne.hx, y: duzeWierne.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, duzeWierne) : duzeWierne.name },
+      cel: { x: duzeWierne.hx, y: duzeWierne.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, duzeWierne) : duzeWierne.name, klan: duzeWierne.id },
       waga: 25,
     });
   }

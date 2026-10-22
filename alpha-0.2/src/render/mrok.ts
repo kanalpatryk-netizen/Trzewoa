@@ -80,6 +80,20 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
     }
   }
   for (const e of sim.efekty) if (e.rodzaj === 'cud') swiec(e.x, e.y, S.cud * (1 - e.t / e.max * 0.5));
+  // jasna sala: cała w świetle, nie tylko krąg wokół ołtarza — to tu lud odpoczywa i tu wraca
+  const so = w.salaOltarza;
+  if (so.x1 >= 0) {
+    const cy = (so.y0 + so.y1) / 2 + 1;
+    for (let x = so.x0 + 3; x <= so.x1 - 2; x += S.salaKrok) swiec(x + 0.5, cy, S.sala);
+  }
+  // gotowe pomieszczenia: kuźnia jaśnieje ogniem, warsztat świecą, sypialnia ledwo (korytarz i szyb — nic)
+  for (const p of sim.pomieszczenia) {
+    const z = p.gotowe ? S.pomieszczenia[p.rodzaj] : undefined;
+    if (!z) continue;
+    const r = Math.max(p.w, p.h) / 2 + z;
+    const migotP = p.rodzaj === 'kuznia' && !ustawienia.ograniczRuch ? 0.94 + 0.08 * migotLampy(teraz + p.id * 613) : 1;
+    swiec(p.x + p.w / 2, p.y + p.h / 2, r * migotP, p.rodzaj === 'sypialnia' ? 0.75 : 1);
+  }
 
   for (const c of sim.creatures) {
     if (c.dead || c.straznik) continue;
@@ -93,4 +107,21 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   g.globalAlpha = 1;
   g.globalCompositeOperation = 'source-over';
   ctx.drawImage(warstwa, 0, 0, cam.vw, cam.vh);
+  // żar kuźni na ścianach: ciepła, pomarańczowa poświata nad mrokiem (drga razem z ogniem)
+  for (const p of sim.pomieszczenia) {
+    if (!p.gotowe || p.rodzaj !== 'kuznia') continue;
+    const R = MROK.zarKuzniPromien * cam.zoom;
+    const sx = cam.toScreenX(p.x + p.w / 2), sy = cam.toScreenY(p.y + p.h * 0.7);
+    if (sx + R < 0 || sy + R < 0 || sx - R > cam.vw || sy - R > cam.vh) continue;
+    const a = MROK.zarKuzni * (ustawienia.ograniczRuch ? 1 : 0.9 + 0.12 * migotLampy(teraz + p.id * 613));
+    const gr = ctx.createRadialGradient(sx, sy, 0, sx, sy, R);
+    gr.addColorStop(0, `rgba(255,128,48,${a})`);
+    gr.addColorStop(0.5, `rgba(220,90,30,${a * 0.4})`);
+    gr.addColorStop(1, 'rgba(160,50,20,0)');
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = gr;
+    ctx.fillRect(sx - R, sy - R, R * 2, R * 2);
+    ctx.restore();
+  }
 }

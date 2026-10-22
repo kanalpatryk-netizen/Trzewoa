@@ -32,7 +32,7 @@ export const ANIOL = {
 
   // ---------------------------------------------------------------- wygląd (kafle)
   /** Wielkość dłoni (mnożnik jak DLON.wielkosc) i szerokość słupa światła. */
-  wielkosc: 1.6, swiatloSzer: 2.6,
+  wielkosc: 1.3, swiatloSzer: 2.6,
 };
 
 /** Co dał (kronika, atlas). */

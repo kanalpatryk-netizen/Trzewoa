@@ -519,7 +519,8 @@ export class Sim {
 
   /** Dodaje widoczny znak w świecie. */
   efekt(x: number, y: number, rodzaj: RodzajEfektu, tekst?: string): void {
-    const max = rodzaj === 'cud' || rodzaj === 'skaza' ? G.efektCud : rodzaj === 'mysl' ? G.efektMysl : G.efektInny;
+    const max = rodzaj === 'cud' || rodzaj === 'skaza' ? G.efektCud : rodzaj === 'mysl' ? G.efektMysl
+      : rodzaj === 'objawienie' ? G.efektObjawienie : rodzaj === 'szept' ? G.efektSzept : rodzaj === 'smierc' ? G.efektSmierc : G.efektInny;
     this.efekty.push({ x, y, rodzaj, t: 0, max, tekst });
     if (this.efekty.length > G.efektowMax) this.efekty.shift();
   }
@@ -557,8 +558,9 @@ export class Sim {
     // Remake v2: ciało ludu zostaje na ziemi (sim/trupy.ts) — bez kości w kaflach
     if (REMAKE) zostawTrupa(this, c, tag);
     else if (this.world.passable(x, y) && this.world.get(x, y) === T.AIR) this.world.set(x, y, T.BONES);
-    this.spark(c.x, c.y, 'hit');
-    this.efekt(c.x, c.y, 'smierc');
+    // Strażnik Snu jest z kamienia: rozsypuje się w pył, nie krwawi (i nie zostawia krzyżyka w korytarzu)
+    this.spark(c.x, c.y, c.straznik ? 'dust' : 'hit');
+    this.efekt(c.x, c.y, c.straznik ? 'zawal' : 'smierc');
     if (c.prophet) this.gdzie(c.x, c.y).log(`Prorok ${this.clans[c.clan].name} zginął ${why}.`, 'krew');
     if (this.clans[c.clan].pop <= 0 && !this.clans[c.clan].dead && !c.straznik) {
       this.clans[c.clan].dead = true;

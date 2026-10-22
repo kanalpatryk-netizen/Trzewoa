@@ -96,11 +96,13 @@ export function ustaw<K extends keyof Settings>(klucz: K, wartosc: Settings[K]):
 /** Stan trybu „auto”: czy strażnik klatek kazał już rysować taniej (patrz nastawy JAKOSC). */
 export const jakoscAuto = { taniej: false };
 
-/** Skala renderu ryciny: „ostra" rysuje w pełnej rozdzielczości, „szybka" w połowie. */
-export function skalaRenderu(szerokosc: number): number {
+/**
+ * Skala renderu ryciny: „ostra" rysuje w pełnej rozdzielczości, „szybka" w połowie. „Auto" zaczyna
+ * w pełnej — w połowie cienka kreska rozpadała się na deszcz pikseli — i schodzi do połowy dopiero,
+ * gdy strażnik klatek (render/straz-klatek.ts) zobaczy, że komputer nie nadąża.
+ */
+export function skalaRenderu(_szerokosc: number): number {
   if (ustawienia.jakosc === 'ostra') return 1;
   if (ustawienia.jakosc === 'szybka' || jakoscAuto.taniej) return 2;
-  // powiększony ekran i tak rozciąga rycinę — rysujemy ją wtedy w pełnej rozdzielczości logicznej
-  if (ekran.skala >= 1.4) return 1;
-  return szerokosc > 900 ? 2 : 1;
+  return 1;
 }

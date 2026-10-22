@@ -132,7 +132,7 @@ export function whisper(sim: Sim, tool: string, c: Creature): boolean {
   c.jt = 0;
   if (tool === 'uciekaj') c.fear = 1;
   const napis = TOOLS.szept.find((t) => t.id === tool)?.label ?? tool;
-  sim.efekt(c.x, c.y, 'mysl', napis);
+  sim.efekt(c.x, c.y, 'szept', napis);
   // wysłany pod rdzeń musi mieć czym iść — plan drogi liczymy od razu, a nie za dziesięć sekund
   if (tool === 'modl') odswiezPlan(sim);
   sim.spark(c.x, c.y - 0.5, 'pray');
@@ -166,7 +166,7 @@ export function sign(sim: Sim, tool: string, tx: number, ty: number): boolean {
     const k = sim.clans[id];
     k.devotion = tool === 'objawienie' ? Math.min(1, k.devotion + MOCE.objawienieNacja) : Math.max(0, k.devotion - MOCE.panikaNacja);
   }
-  sim.efekt(tx + 0.5, ty + 0.5, 'cud');
+  sim.efekt(tx + 0.5, ty + 0.5, tool === 'objawienie' ? 'objawienie' : 'cud');
   for (let i = 0; i < 8; i++) sim.spark(tx + 0.5, ty + 0.5, 'pray');
   // światło Cudu przegania dłoń z otchłani
   odpedzDlon(sim, tx + 0.5, ty + 0.5);

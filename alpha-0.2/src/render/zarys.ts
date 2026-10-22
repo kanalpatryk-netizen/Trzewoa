@@ -18,16 +18,8 @@ export function rysujZarys(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
   ctx.lineWidth = Math.max(1, z * 0.08);
   ctx.strokeStyle = rgba(BARWA.atrament, 0.3);
 
-  // linia powierzchni
-  if (top < 40) {
-    ctx.beginPath();
-    const x0 = Math.max(0, Math.floor(left) - 1), x1 = Math.min(w.w - 1, Math.ceil(right) + 1);
-    for (let x = x0; x <= x1; x++) {
-      const px = (x - left) * z, py = (w.surface[x] - top) * z;
-      if (x === x0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-  }
+  // (linii powierzchni już tu nie ma: kontur grzbietu góry rysuje rycina — prosta linia po płaskiej powierzchni
+  // przecinała grzbiet jak linijka)
 
   // boki i dno góry
   ctx.beginPath();

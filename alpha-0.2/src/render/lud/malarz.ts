@@ -1,5 +1,6 @@
 import { CIEN, clamp, cos, PI, sin, TAU, tonC, type Pkt, type Rgb } from './matma';
 import type { Szkielet, Stopa } from './szkielet';
+import type { SwiatloOtoczenia } from './oswietlenie';
 
 /**
  * Malarz zbiera części sylwetki (od tyłu do przodu) i maluje je jak fresk:
@@ -83,6 +84,8 @@ export class Malarz {
   readonly prosto: boolean;
   /** rola może go zmienić (rycerz: przygaszona aura, kontur tuszem zamiast sinopii) */
   obrys: Obrys = { aura: 1, kontur: 'rgba(66,28,18,0.96)' };
+  /** cudze światło z otoczenia (kierunek na ekranie) — od jego strony aura przechodzi w ciepłą krawędź */
+  swiatlo: SwiatloOtoczenia | null = null;
 
   /** wysokość postaci w pikselach ekranu */
   readonly px: number;
@@ -171,15 +174,34 @@ export class Malarz {
     const a = clamp(1.02 - h / 160, 0.42, 0.88) * this.obrys.aura;
     const aura = `rgba(${(obwodka[0] * 0.4 + 222 * 0.6) | 0},${(obwodka[1] * 0.4 + 206 * 0.6) | 0},${(obwodka[2] * 0.4 + 170 * 0.6) | 0},${a.toFixed(2)})`;
     g.lineJoin = 'round'; g.lineCap = 'round';
-    for (const [szer, barwa] of [[jasna + ciemna, aura], [ciemna, this.obrys.kontur]] as const) {
-      if (barwa === aura && a < 0.01) continue;
+    const obwiedz = (szer: number, barwa: string): void => {
       g.strokeStyle = barwa;
       for (const c of this.czesci) {
         if (c.bezObrysu) continue;
         if (c.sciezka) { g.lineWidth = szer * 2; g.stroke(c.sciezka); }
         else if (c.kreska) { const [x1, y1, x2, y2, w] = c.kreska; g.lineWidth = w + szer * 2; g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke(); }
       }
+    };
+    if (a >= 0.01) obwiedz(jasna + ciemna, aura);
+    // ciepła krawędź od strony cudzego światła: ta sama obwódka przesunięta ku niemu — wychodzi sierp
+    // tylko po stronie światła, a tusz konturu (niżej) zostaje nietknięty
+    const sw = this.swiatlo;
+    if (sw && sw.sila > 0.05) {
+      const t = g.getTransform(), wyz = t.a * t.d - t.b * t.c;
+      if (Math.abs(wyz) > 1e-9) {
+        // kierunek z ekranu do układu postaci (lustro, leżenie)
+        let lx = (t.d * sw.x - t.c * sw.y) / wyz, ly = (-t.b * sw.x + t.a * sw.y) / wyz;
+        const dl = Math.hypot(lx, ly) || 1;
+        const d = (jasna + ciemna) * (0.4 + 0.3 * sw.sila);
+        lx = (lx / dl) * d; ly = (ly / dl) * d;
+        const [r, gg, b] = sw.barwa;
+        g.save();
+        g.translate(lx, ly);
+        obwiedz(jasna + ciemna, `rgba(${r | 0},${gg | 0},${b | 0},${(0.22 + 0.4 * sw.sila).toFixed(3)})`);
+        g.restore();
+      }
     }
+    obwiedz(ciemna, this.obrys.kontur);
     const wzor = this.lod > 0 ? tynk(g) : null;
     let spadek: CanvasGradient | null = null;
     if (this.obrys.spadek && this.lod === 2) {

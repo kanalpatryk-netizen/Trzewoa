@@ -1,7 +1,7 @@
 import type { Sim, Clan } from '../sim/sim';
 import { rolaPostaci, stanyPostaci, type Rola } from '../sim/lud';
 import { rysujStraznika } from './straznicy';
-import { rysujLud } from './postacie';
+import { glowaPostaci, rysujLud } from './postacie';
 import type { Creature } from '../sim/creatures';
 import { pierwszaGrafika, rysujGrafike, RASY_W_PLIKACH } from '../grafiki/grafiki';
 import { Job } from '../sim/creatures';
@@ -10,6 +10,11 @@ import type { Camera } from './camera';
 import { ustawienia } from '../core/settings-store';
 import { BUDOWA, MAKS_KROKOW_NA_SEKUNDE, type Budowa } from '../nastawy/wyglad/postacie';
 import { postepOdmowy } from './lud/odmowa';
+import { przesuniecieX, rozstawTlum, wTle } from './lud/rozstep';
+import { swiatloDla, ustawSwiatlo } from './lud/oswietlenie';
+import { kropla } from './kruszce';
+
+export { przesuniecieX } from './lud/rozstep';
 
 /**
  * Mieszkańcy jak postacie z ryciny: sylwetka obwiedziona barwą nacji, w środku
@@ -94,6 +99,18 @@ export type Czynnosc =
   | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia' | 'zaklada' | 'skleja';
 
 /** Co widać: czynność wynika z zajęcia, ale i z tego, czy stworzenie w ogóle się rusza. */
+/** Kuje kafel w tej chwili (ostatnie uderzenie najwyżej 0,2 s temu). */
+function kujeTeraz(sim: Sim, c: Creature): boolean {
+  return c.kujeT !== undefined && sim.tick - c.kujeT >= 0 && sim.tick - c.kujeT < 24;
+}
+
+/** Zwrot przy kopaniu: twarzą do kutego kafla, gdy leży z boku (w symulacji c.face zostaje bez zmian). */
+function zwrotKucia(sim: Sim, c: Creature, kier: number): number {
+  if (!kujeTeraz(sim, c) || c.kujeX === undefined) return kier;
+  const d = c.kujeX + 0.5 - c.x;
+  return Math.abs(d) > 0.3 ? Math.sign(d) : kier;
+}
+
 function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   // Remake v2: w zjeżdżającym wiadrze je, na linie pod nim się wspina
   if (c.naWiadrze) return 'je';
@@ -113,6 +130,9 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   const stoi = r.v < 0.6;
   // Alpha, etap 3c: przy stole albo kowadle — z młotkiem; w sypialni — leży na posłaniu
   if (c.czynnosc && stoi) return c.czynnosc;
+  // kuje kafel (cel zajęcia albo skałę na drodze do niego — „kop tam”, „kop drogę”, przejście przez skałę);
+  // dawniej kopanie widać było tylko tuż przy celu zajęcia, więc robotnik kuł drogę, stojąc z pustymi rękami
+  if (kujeTeraz(sim, c)) return 'kopie';
   switch (c.job) {
     case Job.SLEEP: return 'spi';
     case Job.DIG: case Job.DESCEND:
@@ -1056,6 +1076,51 @@ function postacZeSzkicu(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h:
   return cz;
 }
 
+let plamaCienia: HTMLCanvasElement | null = null;
+
+/** Miękki cień pod stopami: plama z gradientu (raz narysowana), spłaszczona w elipsę. */
+function cienKontaktowy(ctx: CanvasRenderingContext2D, sx: number, sy: number, h: number): void {
+  if (!plamaCienia) {
+    plamaCienia = document.createElement('canvas');
+    plamaCienia.width = plamaCienia.height = 64;
+    const g = plamaCienia.getContext('2d')!;
+    const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+    gr.addColorStop(0, 'rgba(6,4,4,0.74)'); gr.addColorStop(0.35, 'rgba(6,4,4,0.52)');
+    gr.addColorStop(0.7, 'rgba(6,4,4,0.18)'); gr.addColorStop(1, 'rgba(6,4,4,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+  }
+  const rx = h * 0.4, ry = Math.max(2.2, h * 0.085);
+  ctx.drawImage(plamaCienia, sx - rx, sy - ry * 0.85, rx * 2, ry * 2);
+}
+
+let plotnoTla: HTMLCanvasElement | null = null;
+
+/**
+ * Postać stojąca z tyłu (rozstęp w wąskim szybie): rysowana na boku i przyciemniona tuszem przez całą
+ * sylwetkę naraz — `ciemniej` to krycie ciemnej warstwy (0..1). Klatka po klatce, bez szkiców tłumu.
+ */
+function postacWTle(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h: number, czas: number, kier: number, sx: number, sy: number, ciemniej: number): Czynnosc {
+  const t = ctx.getTransform();
+  const skala = Math.max(1, Math.min(4, Math.hypot(t.a, t.b)));
+  const w = h * 2.4, wys = h * 2.1, stopy = h * 1.6;
+  const pw = Math.ceil(w * skala), ph = Math.ceil(wys * skala);
+  const p = plotnoTla ??= document.createElement('canvas');
+  if (p.width < pw || p.height < ph) { p.width = Math.max(p.width, pw); p.height = Math.max(p.height, ph); }
+  const g = p.getContext('2d')!;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, pw, ph);
+  g.setTransform(skala, 0, 0, skala, (w / 2) * skala, stopy * skala);
+  g.scale(kier, 1);
+  const cz = rysujPostac(g, sim, c, h, czas);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'source-atop';
+  g.fillStyle = `rgba(16,10,8,${ciemniej.toFixed(3)})`;
+  g.fillRect(0, 0, pw, ph);
+  g.globalCompositeOperation = 'source-over';
+  ctx.drawImage(p, 0, 0, pw, ph, sx - w / 2, sy - stopy, w, wys);
+  return cz;
+}
+
 /** Wysokość sylwetki na ekranie (px) — ta sama, którą rysuje rysujStworzenia (pierścienie i dymki do niej się mierzą). */
 export function wysokoscPostaci(c: Creature, zoom: number): number {
   return Math.max(16, RACES[c.race].size * zoom * 1.9 * ustawienia.wielkoscSylwetek) * (c.rola === 'rycerz' ? 1.3 : 1);
@@ -1063,6 +1128,8 @@ export function wysokoscPostaci(c: Creature, zoom: number): number {
 
 export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, czas: number, wybrany?: number): void {
   const z = cam.zoom;
+  // stojący prawie w jednym miejscu rozchodzą się na rysunku obok siebie (render/lud/rozstep.ts)
+  rozstawTlum(sim, cam, czas, wysokoscPostaci);
   const left = cam.x - cam.vw / 2 / z, top = cam.y - cam.vh / 2 / z;
   const right = left + cam.vw / z, bottom = top + cam.vh / z;
 
@@ -1081,25 +1148,22 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     zajete.set(klucz, wpis);
     doRysowania.push(wpis);
   }
-  // dalsze (wyżej na ekranie) pierwsze — niższe zachodzą na nie, jak na rycinie z głębią
-  doRysowania.sort((a, b) => a.c.y - b.c.y);
+  // dalsze (wyżej na ekranie) pierwsze — niższe zachodzą na nie, jak na rycinie z głębią; stojący z tyłu (rozstęp) też
+  doRysowania.sort((a, b) => (a.c.y - wTle(a.c) * 0.3) - (b.c.y - wTle(b.c) * 0.3));
   const tlum = doRysowania.length > TLUM.od;
 
   for (const { c, n } of doRysowania) {
     // minimalny rozmiar w pikselach: sylwetka musi być widoczna przy każdym zoomie
     const h = wysokoscPostaci(c, z);
-    const sx = (c.x - left) * z;
+    const dx = n > 1 ? 0 : przesuniecieX(c);
+    const sx = (c.x + dx - left) * z;
     const sy = (c.y + 1 - top) * z;
     const kier = c.face >= 0 ? 1 : -1;
+    const tlo = n > 1 ? 0 : wTle(c);
 
-    // cień kontaktowy — tylko na ziemi
-    const naZiemi = c.vy <= 0.3 && sim.world.solid(Math.floor(c.x), Math.floor(c.y) + 1);
-    if (naZiemi && !(tlum && wybrany !== c.id)) {
-      ctx.fillStyle = 'rgba(6,4,4,0.55)';
-      ctx.beginPath();
-      ctx.ellipse(sx, sy, h * 0.32, h * 0.065, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
+    // cień kontaktowy — tylko na ziemi: miękka plama, najciemniejsza tuż pod stopami
+    const naZiemi = c.vy <= 0.3 && sim.world.solid(Math.floor(c.x + dx), Math.floor(c.y) + 1);
+    if (naZiemi && !(tlum && wybrany !== c.id)) cienKontaktowy(ctx, sx, sy, h);
 
     // Alpha, etap 3d: szał krwi z ołtarza — czerwona aura wokół postaci, pulsuje
     if ((c.szalDo ?? -1) > sim.tick) {
@@ -1111,37 +1175,48 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     }
 
     let cz: Czynnosc;
-    if (tlum && wybrany !== c.id && !c.straznik && !c.odmowa) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
+    // cudze światło z otoczenia kładzie ciepłą krawędź po swojej stronie sylwetki (render/lud/oswietlenie.ts)
+    const szkic = tlum && wybrany !== c.id && !c.straznik && !c.odmowa;
+    ustawSwiatlo(!szkic && rolaPostaci(c) ? swiatloDla(sim, c, h / z) : null);
+    if (szkic) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
+    else if (tlo > 0.02 && !c.lot) cz = postacWTle(ctx, sim, c, h, czas, kier, sx, sy, 0.42 * tlo);
     else {
       ctx.save();
       ctx.translate(sx, sy);
       // etap 5b: ciśnięty przez dłoń z otchłani koziołkuje w locie (wokół środka ciała)
       if (c.lot) { ctx.translate(0, -h * 0.5); ctx.rotate((sim.tick - c.lot.od) * 0.16 * (Math.sign(c.lot.vx) || 1)); ctx.translate(0, h * 0.5); }
-      ctx.scale(kier, 1);
+      // (niski korytarz: lud kuca — poza w render/postacie.ts; dawne zgniatanie rysunku w pionie zniekształcało postać)
+      ctx.scale(zwrotKucia(sim, c, kier), 1);
       cz = rysujPostac(ctx, sim, c, h, czas);
       ctx.restore();
     }
+    ustawSwiatlo(null);
 
-    // Remake v1: aureola nad głową — jasna przy wzmocnieniu, czerwona przy osłabieniu
+    // Aureola znaczy świętość: tylko nad pobożnym, który się modli. Wzmocnienia i osłabienia to małe znaki ryciny
+    // przy głowie (szewron weterana, płomień szału, kropla krwi okaleczonego, kropla trucizny) — dawniej każde
+    // wzmocnienie dawało złotą aureolę, a osłabienie czerwoną, i rycerz w szale chodził jak święty.
+    // Zabytki działają na cały lud naraz — ich premie i kary są tylko na karcie.
     if (rolaPostaci(c)) {
-      const stany = stanyPostaci(sim, c).filter((s) => !s.uspiony && !s.bezAureoli);
-      const dobre = stany.some((s) => s.dobry), zle = stany.some((s) => !s.dobry);
-      if (dobre || zle) {
-        const puls = 0.75 + 0.25 * Math.sin(czas * 0.005 + c.id);
-        // Alpha, etap 3c: śpiący w sypialni leży — aureola nad głową, nie tam, gdzie stałby (render/postacie.ts: lezy)
-        const lezy = c.czynnosc === 'spi';
-        const ax = lezy ? sx - kier * h * 1.3 : sx + kier * h * 0.05, ay = lezy ? sy - h * 0.45 : sy - h * 1.08;
-        const rx = Math.max(7, h * 0.26), ry = Math.max(2.4, h * 0.08);
+      const gl = glowaPostaci(c);
+      const lezy = c.czynnosc === 'spi';
+      const ax = gl ? sx + kier * gl.x * h : lezy ? sx - kier * h * 1.3 : sx + kier * h * 0.05;
+      const ay = gl ? sy + (gl.y - gl.r * 2.1) * h : lezy ? sy - h * 0.45 : sy - h * 1.08;
+      const rx = Math.max(6, h * 0.22), ry = Math.max(2, h * 0.066);
+      if (cz === 'modli' && rolaPostaci(c) === 'pobozny') {
+        const puls = ustawienia.ograniczRuch ? 0.85 : 0.7 + 0.3 * Math.sin(czas * 0.004 + c.id);
         ctx.save();
-        ctx.lineWidth = Math.max(2, h * 0.065);
-        const rysuj = (barwa: string, cien: string, dy: number) => {
-          ctx.shadowColor = cien; ctx.shadowBlur = Math.max(6, h * 0.35);
-          ctx.strokeStyle = barwa;
-          ctx.beginPath(); ctx.ellipse(ax, ay + dy, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
-        };
-        if (zle) rysuj(`rgba(236,70,56,${0.95 * puls})`, 'rgba(255,40,30,0.9)', 0);
-        if (dobre) rysuj(`rgba(255,240,180,${0.98 * puls})`, 'rgba(255,230,150,0.95)', zle ? -ry * 2.6 : 0);
+        ctx.lineWidth = Math.max(1.2, h * 0.035);
+        ctx.shadowColor = 'rgba(255,226,150,0.8)'; ctx.shadowBlur = Math.max(4, h * 0.16);
+        ctx.strokeStyle = `rgba(255,236,180,${0.8 * puls})`;
+        ctx.beginPath(); ctx.ellipse(ax, ay, rx, ry, 0, 0, Math.PI * 2); ctx.stroke();
         ctx.restore();
+      }
+      const znaki = stanyPostaci(sim, c)
+        .filter((st) => !st.uspiony && !st.bezAureoli && !(st.kiedy ?? '').startsWith('zabytek'))
+        .map(znakStanu).filter((zn): zn is ZnakStanu => zn !== null);
+      if (znaki.length) {
+        const S = Math.max(4, h * 0.11);
+        [...new Set(znaki)].forEach((zn, i) => rysujZnakStanu(ctx, zn, ax + rx * 0.9 + S * (1.2 + i * 1.7), ay + S * 0.4, S));
       }
     }
     // ilu ich tu stoi
@@ -1179,4 +1254,52 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       ctx.fill();
     }
   }
+}
+
+type ZnakStanu = 'szewron' | 'plomien' | 'krew' | 'trucizna' | 'gora' | 'dol';
+
+/** Znak stanu przy głowie (null — stan widać na samej postaci albo w świecie: hełm, spojrzenie z ciemności, dłoń). */
+function znakStanu(st: { nazwa: string; dobry: boolean }): ZnakStanu | null {
+  const n = st.nazwa;
+  if (n === 'weteran') return 'szewron';
+  if (n === 'szał krwi') return 'plomien';
+  if (n === 'okaleczony') return 'krew';
+  if (n === 'zatruty') return 'trucizna';
+  if (n.startsWith('w hełmie') || n.startsWith('patrzy') || n.startsWith('spod niego')) return null;
+  return st.dobry ? 'gora' : 'dol';
+}
+
+/** Mały znak ryciny (środek w x, y; wysokość ok. 2S): kontur tuszem i barwa. */
+function rysujZnakStanu(ctx: CanvasRenderingContext2D, zn: ZnakStanu, x: number, y: number, S: number): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.beginPath();
+  if (zn === 'szewron') {
+    for (const dy of [-S * 0.45, S * 0.35]) {
+      ctx.moveTo(-S * 0.7, dy + S * 0.35); ctx.lineTo(0, dy - S * 0.3); ctx.lineTo(S * 0.7, dy + S * 0.35);
+    }
+    ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = S * 0.55; ctx.stroke();
+    ctx.strokeStyle = 'rgba(236,196,110,0.98)'; ctx.lineWidth = S * 0.28; ctx.stroke();
+  } else if (zn === 'gora' || zn === 'dol') {
+    const k = zn === 'gora' ? -1 : 1;
+    ctx.moveTo(0, k * S * 0.8); ctx.lineTo(S * 0.7, -k * S * 0.5); ctx.lineTo(-S * 0.7, -k * S * 0.5); ctx.closePath();
+    ctx.fillStyle = zn === 'gora' ? 'rgba(236,196,110,0.98)' : 'rgba(170,44,32,0.98)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = Math.max(1, S * 0.18); ctx.stroke();
+  } else if (zn === 'plomien') {
+    ctx.moveTo(0, -S);
+    ctx.bezierCurveTo(S * 0.9, -S * 0.2, S * 0.7, S * 0.8, 0, S * 0.8);
+    ctx.bezierCurveTo(-S * 0.7, S * 0.8, -S * 0.9, -S * 0.1, -S * 0.15, -S * 0.35);
+    ctx.quadraticCurveTo(-S * 0.1, -S * 0.7, 0, -S);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(232,92,40,0.98)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = Math.max(1, S * 0.18); ctx.stroke();
+    ctx.beginPath(); ctx.ellipse(0, S * 0.35, S * 0.28, S * 0.36, 0, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,214,130,0.95)'; ctx.fill();
+  } else {
+    kropla(ctx, S);
+    ctx.fillStyle = zn === 'krew' ? 'rgba(160,20,14,0.98)' : 'rgba(112,138,58,0.98)'; ctx.fill();
+    ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = Math.max(1, S * 0.18); ctx.stroke();
+  }
+  ctx.restore();
 }

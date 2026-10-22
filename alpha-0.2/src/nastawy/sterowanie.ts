@@ -20,6 +20,12 @@ export const KAMERA = {
   podazanie: 0.05, dopasowanie: 0.04,
   /** Automatyczne przybliżenie nie przekracza tego. */
   autoMaxZoom: 20,
+  /**
+   * Za kim idzie kamera: grupa to postacie bliżej siebie niż grupaX × grupaY kafli (łańcuchem). Waga grupy to
+   * liczba postaci plus wagaCzynnosci za każdą, która coś robi (rozkaz, kopanie, modlitwa, walka);
+   * grupa, za którą kamera już idzie, ma przewagę przewagaBiezacej.
+   */
+  grupaX: 10, grupaY: 6, wagaCzynnosci: 0.6, przewagaBiezacej: 1,
   /** Przybliżenie przy pokazywaniu miejsca (rada, wpis kroniki, alarm) — co najmniej tyle. */
   pokazZoom: 10,
 };

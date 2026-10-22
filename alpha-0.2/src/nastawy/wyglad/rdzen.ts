@@ -14,6 +14,19 @@ export const RDZEN_WYGLAD = {
   skorupaZasieg: 12,
   /** Kolor bloku, faktura ciosu i jasne obrzeże. */
   blok: 'rgba(34,26,24,0.72)', blokFaktura: 'rgba(150,120,96,0.22)', blokObrzeze: 'rgba(214,176,128,0.55)',
+  /**
+   * Mur skorupy: ciosy na zakładkę (blok = `ciosDl` kafli, co drugi rząd przesunięty o pół), barwa kamienia [r, g, b]
+   * i jej rozrzut między blokami, fuga, jasna faza u góry ciosu i ciemna u dołu (od jakiego przybliżenia).
+   */
+  ciosDl: 2, mur: [74, 62, 54] as [number, number, number], murRozrzut: 0.14,
+  fuga: 'rgba(16,10,8,0.85)', faza: 'rgba(232,204,164,0.22)', fazaCien: 'rgba(10,6,4,0.35)', fazaOdZoom: 8,
+  /** Wnętrze komory pomnika: ciemna tylna ściana z wielkich ciosów (szerokość ciosu i wysokość rzędu w kaflach), ledwie widocznych. */
+  scianaKomory: [40, 32, 29] as [number, number, number], fugaKomory: 'rgba(8,4,4,0.3)', ciosSciany: 3.4, rzadSciany: 1.6,
+  /**
+   * Pierścień klińców wokół komory: długość klińca wzdłuż obrysu i jego głębokość (kafle), głębokość płyt posadzki,
+   * co który kliniec ma wyryty znak (jeden fryz zamiast pieczątek na każdej cegle).
+   */
+  klin: 1.35, klinGlebia: 1.7, posadzkaGlebia: 0.9, znakCo: 4,
   /** Wyryte znaki: od jakiego przybliżenia i jakim kolorem. */
   znakiOdZoom: 7, znak: 'rgba(226,160,110,0.45)',
 

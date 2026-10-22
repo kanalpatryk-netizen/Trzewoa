@@ -18,6 +18,7 @@ import { rolaPostaci, NAZWA_ROLI_MNOGA, type Rola } from '../sim/lud';
 import { czoloDrogi } from '../sim/pielgrzymka';
 import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
 import { rysujPostac, wysokoscPostaci } from './figury';
+import { przesuniecieX, rozstawTlum } from './lud/rozstep';
 import { krazek, pigment } from './fresk';
 import { SERIF } from './ink';
 import { FRESK } from '../nastawy/barwy';
@@ -267,10 +268,12 @@ function listwaSzablonow(ctx: CanvasRenderingContext2D, plate: Plate, szablon: R
 /** Złoty pierścień pod stopami zaznaczonych (rysowany przed postaciami — leży na ziemi). */
 export function rysujZaznaczenie(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, czas: number, zaznaczeni: ReadonlySet<number>): void {
   if (!zaznaczeni.size) return;
+  // pierścień leży pod postacią tam, gdzie ją widać (rozstęp tłumu przesuwa rysunek, nie symulację)
+  rozstawTlum(sim, cam, czas, wysokoscPostaci);
   ctx.save();
   for (const c of sim.creatures) {
     if (c.dead || !zaznaczeni.has(c.id)) continue;
-    const sx = cam.toScreenX(c.x), sy = cam.toScreenY(c.y + 1);
+    const sx = cam.toScreenX(c.x + przesuniecieX(c)), sy = cam.toScreenY(c.y + 1);
     if (sx < -40 || sy < -40 || sx > cam.vw + 40 || sy > cam.vh + 80) continue;
     const h = wysokoscPostaci(c, cam.zoom);
     const puls = wolnoRuszac() ? 0.5 + 0.5 * Math.sin(czas * 0.005 + c.id) : 1;
@@ -285,7 +288,7 @@ export function rysujZaznaczenie(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
     // znak roli nad głową: drobny romb w barwie roli
     const rola = rolaPostaci(c);
     if (rola) {
-      const ty = sy - h * 1.18, t = Math.max(3, h * 0.07);
+      const ty = sy - h * 1.2, t = Math.max(3.5, h * 0.085);
       ctx.shadowBlur = 0;
       ctx.fillStyle = rgba(BARWA_ROLI[rola], 0.95);
       ctx.beginPath(); ctx.moveTo(sx, ty - t); ctx.lineTo(sx + t * 0.8, ty); ctx.lineTo(sx, ty + t); ctx.lineTo(sx - t * 0.8, ty); ctx.closePath(); ctx.fill();
@@ -369,7 +372,7 @@ export function rysujPoleceniaNaMapie(
           // przerywana nić od postaci do celu
           ctx.strokeStyle = 'rgba(246,216,142,0.42)'; ctx.lineWidth = 1.2;
           ctx.setLineDash([4, 5]); ctx.lineDashOffset = wolnoRuszac() ? -czas * 0.015 : 0;
-          ctx.beginPath(); ctx.moveTo(cam.toScreenX(c.x), cam.toScreenY(c.y + 0.4));
+          ctx.beginPath(); ctx.moveTo(cam.toScreenX(c.x + przesuniecieX(c)), cam.toScreenY(c.y + 0.4));
           ctx.lineTo(tx, cam.toScreenY(p.y + (p.typ === 'kop' ? 0.5 : 0.9))); ctx.stroke();
           ctx.setLineDash([]);
         }

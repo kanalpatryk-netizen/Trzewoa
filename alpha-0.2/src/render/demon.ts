@@ -129,7 +129,8 @@ function pasek(a: P, c: P, b: P, w0: number, w1 = 0, n = 10): { path: Path2D; pt
 /** Barwy: kamień posągu albo skóra żywego demona (dalsze części ciemniejsze). */
 function barwy(zywy: boolean): { blisko: [string, string]; daleko: string; tusz: string; plyty: string } {
   return zywy
-    ? { blisko: ['#7a2a1c', '#2a0b08'], daleko: '#240a07', tusz: 'rgba(14,4,3,0.96)', plyty: 'rgba(160,70,40,0.55)' }
+    // ciemna, przygaszona skóra (dawniej nasycona czerwień — diabełek z kreskówki obok rytej ryciny)
+    ? { blisko: ['#5e3027', '#1c0f0c'], daleko: '#1a0d0a', tusz: 'rgba(12,5,4,0.96)', plyty: 'rgba(132,74,54,0.5)' }
     : { blisko: ['#9a8e7e', '#3e362e'], daleko: '#463e36', tusz: 'rgba(22,15,10,0.95)', plyty: 'rgba(40,30,22,0.45)' };
 }
 
@@ -159,6 +160,24 @@ export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDem
     ctx.strokeStyle = B.tusz; ctx.lineWidth = w * px; ctx.stroke(path);
   };
   const cialo = new Path2D();
+  /**
+   * Bryła z kilku części (kości, mięśnie, tułów) z jednym obrysem: najpierw gruby kontur pod wszystkimi częściami,
+   * potem wypełnienia na wierzch — szwy i kółka w stawach znikają, zostaje sylwetka jak z jednego kamienia
+   * (dawniej każdy odcinek miał własny obrys i demon wyglądał jak kukiełka na zawiasach).
+   */
+  const bryla = (czesci: Path2D[], fill: string | CanvasGradient, w = 1.6): void => {
+    ctx.strokeStyle = B.tusz; ctx.lineWidth = w * 2 * px;
+    for (const c of czesci) ctx.stroke(c);
+    ctx.fillStyle = fill;
+    for (const c of czesci) { ctx.fill(c); cialo.addPath(c); }
+  };
+  /** Mięsień: elipsa wzdłuż odcinka a→b, w `t` jego długości, gruba na `grub`, długa na `dl` odcinka (z każdej strony). */
+  const miesien = (a: P, b: P, t: number, grub: number, dl = 0.36): Path2D => {
+    const c = mp(a, b, t), d = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    const e = new Path2D();
+    e.ellipse(c[0], c[1], d * dl, grub / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), 0, Math.PI * 2);
+    return e;
+  };
 
   // --- skrzydła: korzeń między łopatkami; złożone opadają jak płaszcz, rozpostarte sięgają szeroko w tył
   const R: P = plus(s.shB, [-0.03, 0.01]);
@@ -193,11 +212,11 @@ export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDem
   };
   skrzydlo(0.035, -0.025, B.daleko, false);
 
-  // --- dalsza ręka i noga (ciemniejsze), ogon
+  // --- dalsza ręka i noga (ciemniejsze), ogon; każda kończyna to jedna bryła: kości, mięśnie i bark
   const reka = (sh: P, el: P, wr: P, fill: string | CanvasGradient): void => {
-    const a = kon(sh, el, 0.078, 0.058), b = kon(el, wr, 0.058, 0.04);
-    obrys(a, fill); obrys(b, fill);
-    cialo.addPath(a); cialo.addPath(b);
+    const bark = new Path2D();
+    bark.arc(sh[0], sh[1], 0.05, 0, Math.PI * 2);
+    bryla([kon(sh, el, 0.088, 0.064), miesien(sh, el, 0.42, 0.106), kon(el, wr, 0.064, 0.042), miesien(el, wr, 0.3, 0.074, 0.3), bark], fill);
     // szpony: trzy zakrzywione w dół i do przodu
     const d = Math.atan2(wr[1] - el[1], wr[0] - el[0]);
     ctx.strokeStyle = B.tusz; ctx.lineWidth = 1.6 * px;
@@ -210,9 +229,8 @@ export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDem
     }
   };
   const noga = (n: [P, P, P, P], fill: string | CanvasGradient): void => {
-    const a = kon(n[0], n[1], 0.11, 0.07), b = kon(n[1], n[2], 0.064, 0.042), c = kon(n[2], n[3], 0.04, 0.028);
-    obrys(a, fill); obrys(b, fill); obrys(c, fill);
-    cialo.addPath(a); cialo.addPath(b); cialo.addPath(c);
+    bryla([kon(n[0], n[1], 0.13, 0.08), miesien(n[0], n[1], 0.46, 0.16, 0.4), kon(n[1], n[2], 0.076, 0.046),
+      miesien(n[1], n[2], 0.32, 0.086, 0.3), kon(n[2], n[3], 0.046, 0.03)], fill);
     ctx.strokeStyle = B.tusz; ctx.lineWidth = 1.5 * px;
     ctx.beginPath();
     for (let k = 0; k < 3; k++) { ctx.moveTo(n[3][0] - 0.01 + k * 0.012, n[3][1] - 0.006); ctx.lineTo(n[3][0] + 0.012 + k * 0.012, n[3][1] + 0.002); }
@@ -233,8 +251,8 @@ export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDem
   const nx = -dy / dl, ny = dx / dl;
   const wzdl = (t: number, w: number, strona: number): P => [s.hip[0] + dx * t + nx * w * strona, s.hip[1] + dy * t + ny * w * strona];
   const tul = new Path2D();
-  const przod = [wzdl(0, 0.08, -1), wzdl(0.35, 0.066, -1), wzdl(0.7, 0.13, -1), wzdl(0.95, 0.095, -1)];
-  const tyl = [wzdl(0.95, 0.1, 1), wzdl(0.7, 0.135, 1), wzdl(0.35, 0.07, 1), wzdl(0, 0.085, 1)];
+  const przod = [wzdl(0, 0.085, -1), wzdl(0.35, 0.072, -1), wzdl(0.7, 0.145, -1), wzdl(0.95, 0.1, -1)];
+  const tyl = [wzdl(0.95, 0.11, 1), wzdl(0.7, 0.15, 1), wzdl(0.35, 0.078, 1), wzdl(0, 0.09, 1)];
   tul.moveTo(przod[0][0], przod[0][1]);
   tul.quadraticCurveTo(przod[1][0], przod[1][1], mp(przod[1], przod[2], 0.5)[0], mp(przod[1], przod[2], 0.5)[1]);
   tul.quadraticCurveTo(przod[2][0], przod[2][1], przod[3][0], przod[3][1]);
@@ -242,8 +260,8 @@ export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDem
   tul.quadraticCurveTo(tyl[1][0], tyl[1][1], mp(tyl[1], tyl[2], 0.5)[0], mp(tyl[1], tyl[2], 0.5)[1]);
   tul.quadraticCurveTo(tyl[2][0], tyl[2][1], tyl[3][0], tyl[3][1]);
   tul.closePath();
-  obrys(tul, grad, 1.7);
-  cialo.addPath(tul);
+  // tułów razem z karkiem — głowa siedzi na szyi, a nie wisi nad barkami
+  bryla([tul, kon(s.neck, s.head, 0.085, 0.062)], grad, 1.7);
   // płyty brzucha i żebra
   ctx.strokeStyle = B.plyty; ctx.lineWidth = 1.1 * px;
   ctx.beginPath();
@@ -333,18 +351,7 @@ export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDem
   const krok = Math.max(2.4 * px, 0.012);
   for (let x = -0.5; x < 0.5; x += krok) { ctx.moveTo(x, -1); ctx.lineTo(x + 1.0, 0); }
   ctx.stroke();
-  // ubytki: wyszczerbienia barku i uda — ciemna dziura z jasną krawędzią przełomu
-  if (p.ubytki > 0.01) {
-    ctx.globalAlpha = Math.min(1, p.ubytki * 1.5);
-    for (const [q, r] of [[plus(s.shF, [-0.02, 0.0]), 0.03], [plus(s.nF[1], [-0.03, 0.02]), 0.025], [wzdl(0.5, 0.06, 1), 0.028]] as [P, number][]) {
-      const d = new Path2D();
-      d.moveTo(q[0] - r, q[1]); d.lineTo(q[0] - r * 0.3, q[1] - r * 0.9); d.lineTo(q[0] + r * 0.8, q[1] - r * 0.4);
-      d.lineTo(q[0] + r * 0.6, q[1] + r * 0.7); d.lineTo(q[0] - r * 0.4, q[1] + r * 0.8); d.closePath();
-      ctx.fillStyle = 'rgba(18,12,8,0.85)'; ctx.fill(d);
-      ctx.strokeStyle = 'rgba(190,175,150,0.8)'; ctx.lineWidth = 1 * px; ctx.stroke(d);
-    }
-    ctx.globalAlpha = 1;
-  }
+  // (ubytki — odpadłe kawałki — wycina z sylwetki render/pomnik.ts: wyciecUbytki; tu tylko utrącony róg i skrzydło)
   ctx.restore();
 
   // --- rysy (idą za pozą): ciemne, a z żarem — świecą od środka
@@ -369,24 +376,26 @@ export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDem
         if (k === 2 && los(i, 8) > 0.5) { lin.lineTo(x + Math.cos(ang + 1.2) * dlug * 0.25, y + Math.sin(ang + 1.2) * dlug * 0.25); lin.moveTo(x, y); }
       }
     }
+    // szczelina: ciemna i szeroka jak rysa w kamieniu, z jasną wargą od światła — widać ją od pierwszego pęknięcia
+    ctx.save();
+    ctx.clip(cialo);
+    ctx.strokeStyle = 'rgba(200,185,160,0.4)'; ctx.lineWidth = 1.1 * px;
+    ctx.translate(0.9 * px, 0.9 * px); ctx.stroke(lin); ctx.translate(-0.9 * px, -0.9 * px);
+    ctx.strokeStyle = 'rgba(12,7,4,0.95)'; ctx.lineWidth = (2.2 + 0.8 * p.zar) * px;
+    ctx.stroke(lin);
     if (p.zar > 0.01) {
-      ctx.save();
-      const barwa = p.swiatlo ? '255,226,150' : '255,96,40';
-      ctx.shadowColor = `rgba(${barwa},1)`; ctx.shadowBlur = 14 * p.zar;
-      ctx.strokeStyle = `rgba(${barwa},${0.5 + 0.5 * p.zar})`;
-      ctx.lineWidth = (1.6 + 2.2 * p.zar) * px;
+      // żar: świeci dno szczeliny (cienki gorący rdzeń między ciemnymi brzegami), nie cała kreska — bez pręg
+      const barwa = p.swiatlo ? '255,226,150' : '255,120,52';
+      ctx.shadowColor = `rgba(${barwa},0.9)`; ctx.shadowBlur = 6 * p.zar;
+      ctx.strokeStyle = `rgba(${barwa},${0.55 + 0.45 * p.zar})`;
+      ctx.lineWidth = (0.7 + 0.8 * p.zar) * px;
       ctx.stroke(lin);
       ctx.shadowBlur = 0;
-      ctx.strokeStyle = `rgba(255,248,225,${0.6 * p.zar})`;
-      ctx.lineWidth = 0.9 * px;
+      ctx.strokeStyle = `rgba(255,236,190,${0.55 * p.zar})`;
+      ctx.lineWidth = 0.5 * px;
       ctx.stroke(lin);
-      ctx.restore();
-    } else {
-      ctx.strokeStyle = 'rgba(12,7,4,0.92)'; ctx.lineWidth = 1.4 * px;
-      ctx.stroke(lin);
-      ctx.strokeStyle = 'rgba(200,185,160,0.35)'; ctx.lineWidth = 0.8 * px;
-      ctx.translate(0.6 * px, 0.6 * px); ctx.stroke(lin);
     }
+    ctx.restore();
   }
   ctx.restore();
   const piers = mp(s.chest, s.neck, 0.2);

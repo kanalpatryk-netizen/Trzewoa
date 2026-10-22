@@ -7,7 +7,7 @@ import { aktywnyBoss } from '../sim/boss';
 import { POMNIK } from '../nastawy/pomnik';
 import { RACES, Race } from '../sim/races';
 import { ustawienia } from '../core/settings-store';
-import { rysujDemona, type PozaDemona } from './demon';
+import { rysujDemona, type PozaDemona, type PunktyDemona } from './demon';
 import { tetnoRdzenia } from './rdzen';
 import { glif } from './tajemnica';
 import { wolnoRuszac } from './nastroj';
@@ -42,39 +42,109 @@ export function wysokoscDemona(z: number): number {
 }
 
 /**
- * Rysuje coś pocięte na kawałki, które rozlatują się od środka (`k` 0…1): rozpad posągu i demona.
- * `opad` > 0 — kawałki spadają (kamień), < 0 — unoszą się (popiół).
+ * Rysuje coś pocięte na kawałki, które się rozpadają (`k` 0…1): rozpad posągu i konanie demona. Kawałki to
+ * nieregularne bryły (siatka z rozedrganymi węzłami — sąsiednie bryły pasują do siebie), nie kliny od środka
+ * (dawniej posąg kroił się jak tort). `opad` > 0 — bryły spadają i toczą się w bok (kamień), < 0 — unoszą się (popiół).
  */
 function rozbite(ctx: CanvasRenderingContext2D, cx: number, cy: number, R: number, k: number, ziarno: number, opad: number, rysuj: () => void): void {
-  const n = 11;
-  const katy: number[] = [];
-  for (let i = 0; i < n; i++) katy.push(((i + 0.2 + los(ziarno + i) * 0.6) / n) * Math.PI * 2);
-  for (let i = 0; i < n; i++) {
-    const a0 = katy[i], a1 = katy[(i + 1) % n] + (i === n - 1 ? Math.PI * 2 : 0);
-    for (const [r0, r1] of [[0, 0.42], [0.42, 2.2]]) {
-      const id = ziarno + i * 2 + (r0 ? 1 : 0);
-      const am = (a0 + a1) / 2, rm = (r0 + Math.min(r1, 1)) / 2 * R;
-      const sila = (0.5 + los(id * 3) * 0.8) * (r0 ? 1 : 0.6);
-      const dx = Math.cos(am) * R * 1.1 * sila * k;
-      const dy = Math.sin(am) * R * 0.8 * sila * k + opad * R * 1.6 * k * k;
-      const obrot = (los(id * 5) - 0.5) * 2.4 * k;
-      const ox = cx + Math.cos(am) * rm, oy = cy + Math.sin(am) * rm;
+  const nx = 5, ny = 6;
+  const x0 = cx - R * 1.15, y0 = cy - R * 1.35, sw = (R * 2.3) / nx, sh = (R * 2.7) / ny;
+  const wezel = (i: number, j: number): [number, number] => {
+    const brzeg = i === 0 || j === 0 || i === nx || j === ny;
+    const jx = brzeg ? 0 : (los(ziarno + i * 31 + j * 7) - 0.5) * sw * 0.7;
+    const jy = brzeg ? 0 : (los(ziarno + i * 13 + j * 29 + 5) - 0.5) * sh * 0.7;
+    return [x0 + i * sw + jx, y0 + j * sh + jy];
+  };
+  for (let j = 0; j < ny; j++) {
+    for (let i = 0; i < nx; i++) {
+      const id = ziarno + j * nx + i;
+      const a = wezel(i, j), b = wezel(i + 1, j), c = wezel(i + 1, j + 1), d = wezel(i, j + 1);
+      const mx = (a[0] + b[0] + c[0] + d[0]) / 4, my = (a[1] + b[1] + c[1] + d[1]) / 4;
+      // górne bryły ruszają pierwsze; każda z własnym opóźnieniem
+      const opoz = (1 - j / ny) * 0.25 + los(id * 3) * 0.15;
+      const t = Math.max(0, Math.min(1, (k - opoz) / (1 - opoz)));
+      const bok = (mx - cx) / R;
+      const dx = (bok * 0.5 + (los(id * 7) - 0.5) * 0.6) * R * t;
+      const dy = opad > 0 ? (cy + R * 1.35 - my) * gladko(t * 1.2) * opad : opad * R * 1.8 * t * t;
+      const obrot = (los(id * 5) - 0.5) * 1.8 * t;
       ctx.save();
-      ctx.globalAlpha *= 1 - gladko((k - 0.45) / 0.55);
-      ctx.translate(ox + dx, oy + dy);
+      ctx.globalAlpha *= 1 - gladko((t - 0.7) / 0.3);
+      ctx.translate(mx + dx, my + dy);
       ctx.rotate(obrot);
-      ctx.translate(-ox, -oy);
+      ctx.translate(-mx, -my);
       ctx.beginPath();
-      ctx.moveTo(cx + Math.cos(a0) * r0 * R, cy + Math.sin(a0) * r0 * R);
-      ctx.lineTo(cx + Math.cos(a0) * r1 * R, cy + Math.sin(a0) * r1 * R);
-      ctx.lineTo(cx + Math.cos(a1) * r1 * R, cy + Math.sin(a1) * r1 * R);
-      ctx.lineTo(cx + Math.cos(a1) * r0 * R, cy + Math.sin(a1) * r0 * R);
+      ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.lineTo(c[0], c[1]); ctx.lineTo(d[0], d[1]);
       ctx.closePath();
       ctx.clip();
       rysuj();
       ctx.restore();
     }
   }
+}
+
+/**
+ * Odpadłe kawałki posągu (w jednostkach H, stopy w 0,0; środek i promień): czubek skrzydła i kęs z jego brzegu,
+ * bark, palce stopy, koniec ogona — zawsze na brzegu sylwetki (w środku wyglądałyby jak dziura na wylot).
+ */
+const UBYTKI: [number, number, number][] = [[-0.07, -0.665, 0.04], [-0.205, -0.42, 0.034], [0.02, -0.565, 0.032], [0.19, -0.012, 0.026], [-0.3, -0.02, 0.03]];
+
+interface WarstwaPosagu { c: HTMLCanvasElement; cw: number; ch: number; W: number; Hh: number; ox: number; oy: number; pkt: PunktyDemona }
+
+/**
+ * Posąg z prawdziwymi ubytkami na osobnej warstwie: z niej wycina się odpadłe kawałki (sylwetka traci róg skrzydła,
+ * kolano i palce), a na przełomie zostaje jasna krawędź świeżego kamienia. Stopy w (ox, oy) warstwy.
+ */
+function warstwaPosagu(ctx: CanvasRenderingContext2D, H: number, poza: PozaDemona): WarstwaPosagu {
+  const m = ctx.getTransform(), dpr = Math.max(1, Math.hypot(m.a, m.b));
+  const W = Math.ceil(H * 1.5), Hh = Math.ceil(H * 1.35), ox = W / 2, oy = H * 1.15;
+  warstwa ??= document.createElement('canvas');
+  const cw = Math.ceil(W * dpr), ch = Math.ceil(Hh * dpr);
+  if (warstwa.width < cw || warstwa.height < ch) { warstwa.width = cw; warstwa.height = ch; }
+  const g = warstwa.getContext('2d')!;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, cw, ch);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  g.translate(ox, oy);
+  const pkt = rysujDemona(g, H, poza);
+  g.scale(H, H);
+  const wyrwa = new Path2D();
+  UBYTKI.forEach(([ux, uy, r], i) => {
+    const n = 6;
+    for (let j = 0; j < n; j++) {
+      const a = (j / n) * Math.PI * 2 + los(i * 17 + j) * 0.6;
+      const rr = r * (0.65 + los(i * 23 + j) * 0.6);
+      if (j === 0) wyrwa.moveTo(ux + Math.cos(a) * rr, uy + Math.sin(a) * rr);
+      else wyrwa.lineTo(ux + Math.cos(a) * rr, uy + Math.sin(a) * rr);
+    }
+    wyrwa.closePath();
+  });
+  g.globalAlpha = Math.min(1, poza.ubytki * 1.5);
+  g.globalCompositeOperation = 'destination-out';
+  g.fill(wyrwa);
+  // przełom: jasna krawędź świeżego kamienia i cień pod nią — tylko tam, gdzie kamień został
+  g.globalCompositeOperation = 'source-atop';
+  g.strokeStyle = 'rgba(214,200,174,0.9)'; g.lineWidth = 2.6 / H;
+  g.stroke(wyrwa);
+  g.strokeStyle = 'rgba(20,14,10,0.5)'; g.lineWidth = 1.2 / H;
+  g.translate(0.8 / H, 1.4 / H); g.stroke(wyrwa);
+  g.globalCompositeOperation = 'source-over';
+  g.globalAlpha = 1;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  return { c: warstwa, cw, ch, W, Hh, ox, oy, pkt };
+}
+let warstwa: HTMLCanvasElement | null = null;
+
+/** Posąg (stopy w x, top): z ubytkami — z warstwy, bez nich — wprost. */
+function posagZUbytkami(ctx: CanvasRenderingContext2D, x: number, top: number, H: number, poza: PozaDemona): PunktyDemona {
+  if (poza.ubytki <= 0.01 || typeof document === 'undefined') {
+    ctx.save(); ctx.translate(x, top);
+    const p = rysujDemona(ctx, H, poza);
+    ctx.restore();
+    return p;
+  }
+  const L = warstwaPosagu(ctx, H, poza);
+  ctx.drawImage(L.c, 0, 0, L.cw, L.ch, x - L.ox, top - L.oy, L.W, L.Hh);
+  return L.pkt;
 }
 
 /** Cokół: ciosany blok z wyrytymi znakami (rozbity — tylko dolna połowa, w szczerbach). */
@@ -139,7 +209,8 @@ function lancuch(ctx: CanvasRenderingContext2D, a: [number, number], b: [number,
 /** Kopiec gruzu u stóp pomnika (`k` 0…1 — rośnie przy rozpadzie); z kawałkami: róg, kawał skrzydła, łapa. */
 export function gruz(ctx: CanvasRenderingContext2D, x: number, y: number, H: number, k: number, czas: number, z: number): void {
   if (k <= 0) return;
-  const w = H * 0.7, h = H * 0.13 * k;
+  // kopiec do połowy komory (dawniej gruz wielkości kota po kilkumetrowym posągu)
+  const w = H * 1.3, h = H * 0.48 * k;
   ctx.save();
   const g = ctx.createLinearGradient(0, y - h, 0, y);
   g.addColorStop(0, '#6a6054'); g.addColorStop(1, '#2a241f');
@@ -154,8 +225,8 @@ export function gruz(ctx: CanvasRenderingContext2D, x: number, y: number, H: num
   }
   ctx.closePath(); ctx.fill(); ctx.stroke();
   // bryły na kopcu
-  for (let i = 0; i < 12; i++) {
-    const bx = x + (los(i + 70) - 0.5) * w * 0.8, r = H * (0.02 + los(i + 80) * 0.035) * k;
+  for (let i = 0; i < 16; i++) {
+    const bx = x + (los(i + 70) - 0.5) * w * 0.8, r = H * (0.03 + los(i + 80) * 0.05) * k;
     const by = y - h * Math.sin((bx - x + w / 2) / w * Math.PI) * 0.85;
     ctx.beginPath();
     for (let j = 0; j < 5; j++) { const a = (j / 5) * Math.PI * 2 + los(i * 9 + j); const rr = r * (0.7 + los(i * 11 + j) * 0.5); ctx.lineTo(bx + Math.cos(a) * rr, by + Math.sin(a) * rr); }
@@ -190,7 +261,7 @@ function pozaPosagu(stan: number, teraz: number, zar = 0): PozaDemona {
   const tetno = tetnoRdzenia(teraz);
   return {
     zywy: false, kuca: 1, skrzydla: 0.12, glowa: 0, cios: 0, oddech: 0,
-    rysy: [0, 0.35, 0.7, 1][Math.min(3, stan)],
+    rysy: [0, 0.5, 0.8, 1][Math.min(3, stan)],
     ubytki: stan >= 2 ? 1 : 0,
     zar: Math.max(zar, stan >= 3 ? 0.45 + 0.35 * tetno : 0),
     oczy: Math.max(zar, stan >= 3 ? 0.35 + 0.4 * tetno : stan >= 2 ? 0.08 : 0),
@@ -236,19 +307,16 @@ export function rysujPomnik(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
     const top = cokol(ctx, bx, by, H, k >= PEK, z);
     const drga = ruch ? Math.sin(teraz * 0.11) * H * 0.012 * gladko(k / PEK) : 0;
     if (k < PEK) {
-      ctx.save();
-      ctx.translate(bx + drga, top);
-      const pkt = rysujDemona(ctx, H, pozaPosagu(3, teraz, gladko(k / PEK)));
-      ctx.restore();
+      const pkt = posagZUbytkami(ctx, bx + drga, top, H, pozaPosagu(3, teraz, gladko(k / PEK)));
       for (const [w, strona] of [[pkt.wrF, 1], [pkt.wrB, -1]] as const) {
         lancuch(ctx, [bx + drga + w[0] * H, top + w[1] * H], [bx + strona * H * 0.29, top + H * 0.02], z);
       }
     } else {
       const kk = (k - PEK) / (1 - PEK);
       gruz(ctx, bx, by, H, gladko(kk * 1.6), teraz, z);
-      rozbite(ctx, bx, top - H * 0.35, H * 0.5, kk, 300, 1, () => {
-        ctx.save(); ctx.translate(bx, top); rysujDemona(ctx, H, pozaPosagu(3, teraz, 1 - kk)); ctx.restore();
-      });
+      // posąg raz na warstwę, a bryły tylko ją przykładają (30 brył × cały rysunek demona to za dużo na klatkę)
+      const L = warstwaPosagu(ctx, H, pozaPosagu(3, teraz, 1 - kk));
+      rozbite(ctx, bx, top - H * 0.35, H * 0.5, kk, 300, 1, () => { ctx.drawImage(L.c, 0, 0, L.cw, L.ch, bx - L.ox, top - L.oy, L.W, L.Hh); });
       // zerwane łańcuchy opadają
       lancuch(ctx, [bx + H * 0.15, top - H * 0.3], [bx + H * 0.29, top + H * 0.02], z, gladko(kk * 2));
       lancuch(ctx, [bx + H * 0.08, top - H * 0.3], [bx - H * 0.29, top + H * 0.02], z, gladko(kk * 2));
@@ -270,10 +338,7 @@ export function rysujPomnik(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
 export function rysujPosag(ctx: CanvasRenderingContext2D, bx: number, by: number, H: number, z: number, stan: number, teraz: number, swieze = 0, ruch = true): void {
   const drga = ruch && swieze > 0 ? Math.sin(teraz * 0.09) * H * 0.006 * swieze : 0;
   const top = cokol(ctx, bx, by, H, false, z);
-  ctx.save();
-  ctx.translate(bx + drga, top);
-  const pkt = rysujDemona(ctx, H, pozaPosagu(stan, teraz, swieze * 0.7));
-  ctx.restore();
+  const pkt = posagZUbytkami(ctx, bx + drga, top, H, pozaPosagu(stan, teraz, swieze * 0.7));
   // kajdany: od nadgarstków do pierścieni w cokole
   for (const [w, strona] of [[pkt.wrF, 1], [pkt.wrB, -1]] as const) {
     lancuch(ctx, [bx + drga + w[0] * H, top + w[1] * H], [bx + strona * H * 0.29, top + H * 0.02], z);
@@ -449,9 +514,28 @@ export function rysujNadPomnikiem(ctx: CanvasRenderingContext2D, sim: Sim, cam: 
     }
     if (k > PEK) {
       const kk = (k - PEK) / (1 - PEK);
-      ctx.strokeStyle = `rgba(255,230,170,${0.8 * (1 - kk)})`;
-      ctx.lineWidth = Math.max(2, h * 0.05 * (1 - kk));
-      ctx.beginPath(); ctx.ellipse(dx, dy + h * 0.3, h * (0.4 + kk * 4), h * (0.15 + kk * 1.2), 0, 0, Math.PI * 2); ctx.stroke();
+      // światło zalewa kryptę: rosnąca, miękka łuna i snopy promieni rytych kreską
+      // (dawniej cienka biała elipsa przez pół ekranu — jak z gry na telefon)
+      const R = h * (1.2 + kk * 7), moc = 1 - kk * 0.65;
+      const g2 = ctx.createRadialGradient(dx, dy, 0, dx, dy, R);
+      g2.addColorStop(0, `rgba(255,236,190,${0.45 * moc})`);
+      g2.addColorStop(0.5, `rgba(255,222,160,${0.2 * moc})`);
+      g2.addColorStop(1, 'rgba(255,210,140,0)');
+      ctx.fillStyle = g2; ctx.fillRect(dx - R, dy - R, R * 2, R * 2);
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.lineCap = 'round';
+      ctx.strokeStyle = `rgba(255,236,196,${0.3 * (1 - kk)})`;
+      ctx.lineWidth = Math.max(1, h * 0.012);
+      ctx.beginPath();
+      for (let i = 0; i < 40; i++) {
+        const kat = (i / 40) * Math.PI * 2 + los(i + 300) * 0.08;
+        const r0 = h * 0.35, r1 = R * (0.45 + 0.4 * los(i + 310));
+        ctx.moveTo(dx + Math.cos(kat) * r0, dy + Math.sin(kat) * r0);
+        ctx.lineTo(dx + Math.cos(kat) * r1, dy + Math.sin(kat) * r1);
+      }
+      ctx.stroke();
+      ctx.restore();
       // popiół i iskry wznoszą się i gasną
       for (let i = 0; i < 26; i++) {
         const t = Math.min(1, kk * (0.7 + los(i + 200) * 0.6));

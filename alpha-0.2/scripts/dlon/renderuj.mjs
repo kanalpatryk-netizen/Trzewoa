@@ -47,8 +47,9 @@ const P = {
   drgnie: { p: palce(0.1, 0.16, 0.1), kc: [0.02, 0.05, 0.05], roz: 1.7 },
   // zawał: szpony zakrzywione w hak (stawy u nasady proste, końcowe zgięte) — drą skałę; potem płaskie uderzenie
   rozwarta: { p: palce(0.0, 0.05, 0.05), kc: [0.1, 0.1, 0.1], roz: 1.3 },
-  hak: { p: palce(-0.35, 1.0, 1.0), kc: [0.1, 0.5, 0.8], roz: 1.6 },
-  drze: { p: palce(-0.2, 1.15, 1.1), kc: [0.2, 0.6, 0.9], roz: 1.35 },
+  // (stawy u nasady lekko zgięte — dawny przeprost u nasady przy zgiętych końcach plątał palce)
+  hak: { p: palce(0.1, 0.9, 0.7), kc: [0.15, 0.45, 0.6], roz: 1.5 },
+  drze: { p: palce(0.22, 1.0, 0.8), kc: [0.25, 0.55, 0.7], roz: 1.3 },
   plaska: { p: palce(-0.05, -0.02, 0), kc: [-0.1, 0, 0], roz: 1.5 },
   uderza: { p: palce(-0.12, -0.04, 0), kc: [-0.15, 0, 0], roz: 1.75 },
 };

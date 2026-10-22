@@ -98,6 +98,8 @@ export interface Creature {
   drogaKopie?: boolean;
   /** Remake v2: kierunek schodów, które kuje na przełaj pod górę (−1 / 1) — trzyma go, aż wejdzie na wysokość celu. */
   schody?: number;
+  /** Kiedy (tik) i który kafel ostatnio kuł — dla rysunku: animacja kopania także w drodze przez skałę. */
+  kujeT?: number; kujeX?: number; kujeY?: number;
   /** Remake v1: rola w ludzie (pobożny, robotnik, rycerz); brak = pobożny. */
   rola?: Rola;
   /** Remake v1: pobożny, który się okaleczył dla krwi — słabszy na zawsze. */
@@ -1690,6 +1692,8 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
   // Alpha (jedno wiadro): podłogi pod drogą wiernych nikt z ludu nie kuje — rycerz, idąc na przełaj, wykuł złoto
   // spod stopnia, droga się urwała i cała drużyna umarła z głodu w krypcie, z dala od wiadra
   if (REMAKE && rolaPostaci(c) && podDroga(sim, w.idx(x, y))) { c.dig = 0; c.jt = 0; c.droga = undefined; return; }
+  // rysunek: kuje właśnie ten kafel (animacja kopania nie zależy od tego, czy to cel zajęcia, czy kafel na drodze)
+  c.kujeT = sim.tick; c.kujeX = x; c.kujeY = y;
   const sila = RACES[c.race].digPower * mnoznik(sim, c, 'kopanie') * cechaNacji(sim.clans[c.clan]).kopanie * (1 + c.mad * K.kopanieOdSzalenstwa);
   // Alpha, etap 3: w górze z warstwami lud kuje wolniej — zejście ma trwać (SWIAT.warstwy.kucie); postęp zostaje
   // w kaflu (w.kucie), nie w kopaczu: rozkaz „kop drogę” odświeżał się co pół sekundy i zerował go, więc przy

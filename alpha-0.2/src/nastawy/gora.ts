@@ -103,6 +103,10 @@ export const GORA = {
   // ------------------------------------------------------------- efekty
   /** Jak długo (tiki) trwają znaki w świecie: cud i skaza / myśl / reszta. */
   efektCud: 90, efektMysl: 140, efektInny: 40,
+  /** Cud gracza (słup światła z góry) i szept (nić światła i znak nad głową) trwają dłużej — to twoje ręce. */
+  efektObjawienie: 360, efektSzept: 300,
+  /** Śmierć: krew tryska i opada, nad miejscem krótki krzyżyk. */
+  efektSmierc: 130,
   /** Najwięcej naraz. */
   efektowMax: 60,
   /** Najwięcej cząsteczek naraz. */

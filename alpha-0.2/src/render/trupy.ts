@@ -35,9 +35,16 @@ export function rysujTrupy(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
     if (t.x < left - 3 || t.x > right + 3 || t.y < top - 3 || t.y > bottom + 3) continue;
     const h = Math.max(16, RACES[Race.GOBLIN].size * z * 1.9 * ustawienia.wielkoscSylwetek) * (t.rola === 'rycerz' ? 1.3 : 1);
     const sx = cam.toScreenX(t.x), sy = cam.toScreenY(t.y + 1);
-    // plama pod ciałem
-    ctx.fillStyle = 'rgba(40,8,6,0.5)';
-    ctx.beginPath(); ctx.ellipse(sx, sy - 1, h * 0.55, h * 0.07, 0, 0, Math.PI * 2); ctx.fill();
+    // kałuża krwi pod ciałem: ciemna, nieregularna, z jaśniejszym połyskiem (dawniej szara plama)
+    // szersza niż ciało — widać ją spod stóp tych, którzy stoją obok
+    const glowa = -t.face;
+    ctx.fillStyle = 'rgba(92,10,7,0.8)';
+    ctx.beginPath();
+    ctx.ellipse(sx + glowa * h * 0.2, sy - 1, h * 0.78, h * 0.085, 0, 0, Math.PI * 2);
+    ctx.ellipse(sx + glowa * h * 0.75, sy - 1, h * 0.32, h * 0.065, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(176,60,44,0.45)';
+    ctx.beginPath(); ctx.ellipse(sx + glowa * h * 0.55, sy - 1.5, h * 0.18, h * 0.022, 0, 0, Math.PI * 2); ctx.fill();
     const w = h * 1.5, wys = h * 0.8, oy = wys * 0.62;
     const klucz = `${Math.round(h)}|${skala}`;
     let sz = szkice.get(t.id);
@@ -50,10 +57,10 @@ export function rysujTrupy(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera,
       // leżąca poza („śpi”) układa się w lewo od stóp — przesunięcie kładzie ciało na środku
       g.translate(h * 0.95, h * 0.04);
       rysujLud(g, sim, zmarly(t), t.rola, h, teraz, 'spi', 0, 0, 0);
-      // śmierć: wyblakłe, ziemiste barwy
+      // śmierć: przygaszone, ziemiste barwy — ciało, nie duch (dawniej szara mgiełka czytała się jak zjawa)
       g.setTransform(1, 0, 0, 1, 0, 0);
       g.globalCompositeOperation = 'source-atop';
-      g.fillStyle = 'rgba(46,40,38,0.55)';
+      g.fillStyle = 'rgba(34,26,22,0.32)';
       g.fillRect(0, 0, p.width, p.height);
       g.globalCompositeOperation = 'source-over';
       sz = { p, klucz };
