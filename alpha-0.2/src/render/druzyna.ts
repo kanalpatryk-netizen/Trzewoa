@@ -445,7 +445,7 @@ export function rysujPoleceniaNaMapie(
     if (k !== null && c.odmowa) {
       const h = wysokoscPostaci(c, z);
       dymek(ctx, cam, cam.toScreenX(c.x), cam.toScreenY(c.y + 1) - h * 1.1, c.odmowa.tekst, k, dymki);
-      // rycerz mówi odmowę na głos — przed twarzą biją fale w rytm słów
+      // rycerz albo pobożny mówi odmowę na głos — przed twarzą biją fale w rytm słów
       const g = glosOdmowy(c, czas);
       if (g !== null) faleGlosu(ctx, cam.toScreenX(c.x), cam.toScreenY(c.y + 1) - h * 0.8, h, c.face < 0 ? -1 : 1, g, czas);
     }

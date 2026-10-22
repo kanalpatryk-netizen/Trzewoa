@@ -32,7 +32,7 @@ import { naWieszaku } from '../../sim/zbroja';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
 import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
-import { GLOS_RYCERZA } from '../../nastawy/dzwiek';
+import { NASTAWY_GLOSU } from '../../core/glos-odmowy';
 import { zacznijGlosOdmowy } from '../../render/lud/odmowa';
 import { POMNIK } from '../../nastawy/pomnik';
 import { rysujNadPomnikiem, rysujPomnik } from '../../render/pomnik';
@@ -669,8 +669,9 @@ export class EkranGry implements Ekran {
    * więc tak samo i żadnej nie da się pominąć.
    */
   /**
-   * Rycerz, który właśnie odmówił pójścia tam, gdzie się nie da dojść — od razu przy rozkazie albo w drodze —
-   * mówi to na głos (nastawy/dzwiek.ts: GLOS_RYCERZA). Naraz mówi jeden; odmowa wydana w pauzie też.
+   * Rycerz albo pobożny, który właśnie odmówił pójścia tam, gdzie się nie da dojść — od razu przy rozkazie albo
+   * w drodze — mówi to na głos (nastawy/dzwiek.ts: GLOS_RYCERZA, GLOS_POBOZNEGO). Naraz mówi jeden; odmowa
+   * wydana w pauzie też.
    */
   private glosOdmowy(teraz: number): void {
     const sim = this.sim;
@@ -679,10 +680,11 @@ export class EkranGry implements Ekran {
       const o = c.odmowa;
       if (!o || c.dead || this.slyszaneOdmowy.has(o)) continue;
       this.slyszaneOdmowy.add(o);
-      if (mowil || sim.tick - o.od > POLECENIA.odmowaTikow || rolaPostaci(c) !== 'rycerz') continue;
-      if (!GLOS_RYCERZA.odmowy.some((p) => o.tekst.startsWith(p))) continue;
+      const kto = rolaPostaci(c);
+      if (mowil || sim.tick - o.od > POLECENIA.odmowaTikow || (kto !== 'rycerz' && kto !== 'pobozny')) continue;
+      if (!NASTAWY_GLOSU[kto].odmowy.some((p) => o.tekst.startsWith(p))) continue;
       const pan = Math.max(-1, Math.min(1, (this.cam.toScreenX(c.x) / Math.max(1, this.cam.vw)) * 2 - 1)) * 0.6;
-      const w = this.app.gesty.glosRycerza(pan);
+      const w = this.app.gesty.glosOdmowy(kto, pan);
       if (w) { zacznijGlosOdmowy(o, w, teraz); mowil = true; }
     }
   }
