@@ -73,7 +73,7 @@ export function wyrok(sim: Sim): Wyrok {
   const nazwa = RACES[sim.domRace]?.name ?? 'Jedna krew';
   return {
     przyczyna: `${nazwa} ${odmien(sim.domRace, 'zjadł', 'zjedli')} resztę. Z jedną krwią w trzewiach nie ma komu się bać.`,
-    rada: 'Gdy wstęga pod płytą robi się jednego koloru, wysłuchaj ich proroka albo skieruj na nich najazd czy powódź — i dokarmiaj pozostałe rasy, zanim wymrą.',
+    rada: 'Gdy wstęga pod płytą robi się jednego koloru, wysłuchaj ich proroka albo skieruj na nich powódź — i dokarmiaj pozostałe rasy, zanim wymrą.',
     etap, statystyki: statystyki(sim),
   };
 }

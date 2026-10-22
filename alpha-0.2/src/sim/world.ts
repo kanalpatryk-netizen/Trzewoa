@@ -129,7 +129,7 @@ export class World {
       this.ellipse(cx, cy, rx, ry, T.AIR);
     }
 
-    // Wejścia z powierzchni — stamtąd przychodzą śmiałkowie.
+    // Wejścia z powierzchni — korytarze schodzące w głąb.
     for (let k = 0; k < S.wejscia.ile; k++) {
       const x = 12 + rng.int(w - 24);
       let y = SURFACE_Y - 4;

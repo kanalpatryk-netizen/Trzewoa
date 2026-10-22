@@ -44,7 +44,7 @@ export const SWIAT = {
   },
 
   wejscia: {
-    /** Ile korytarzy prowadzi z powierzchni w głąb (tędy schodzą ludzie). */
+    /** Ile korytarzy prowadzi z powierzchni w głąb. */
     ile: 5,
     /** Korytarz schodzi najwyżej do tej głębokości (ułamek wysokości góry). */
     doGlebokosci: 0.4,

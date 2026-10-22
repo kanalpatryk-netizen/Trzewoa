@@ -1,6 +1,6 @@
 /**
  * Talia kart ludu (Remake v1, etap 4). Liczby w src/nastawy/karty-ludu.ts.
- * Karty z sim/wydarzenia.ts zostają (najazd, powódź, zaraza, głód, warta…) — te dochodzą:
+ * Karty z sim/wydarzenia.ts zostają (powódź, zaraza, głód, warta…) — te dochodzą:
  * zgniłe jedzenie w wiadrze, woda w obozie, zawał nad drogą wiernych.
  * (Alpha: bez spisku rycerzy i snu o kamiennych rycerzach — rycerz jest jeden, gniazd nie ma.)
  */

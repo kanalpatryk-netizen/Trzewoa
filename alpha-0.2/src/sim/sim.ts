@@ -569,13 +569,6 @@ export class Sim {
     }
   }
 
-  leaveWorld(c: Creature): void {
-    if (c.dead) return;
-    c.dead = true;
-    this.clans[c.clan].pop--;
-    this.log(`Ludzie wynieśli ${c.carry} rudy na powierzchnię.`, 'swiat');
-  }
-
   /** Ktoś zobaczył kawałek ciebie, o którym nikt nie wiedział. Otchłani ubywa sama. */
   onVisit(_freshTiles: number): void { /* liczone w spisie nieznanego */ }
 
@@ -915,7 +908,7 @@ export class Sim {
       if (nowy && !nowy.dead) kartaPlemienia(this, nowy);
       return;
     }
-    // WERSJA ANDROID: najazdy, powodzie, zarazy i żyły szaleństwa przychodzą jako karty
+    // WERSJA ANDROID: powodzie, zarazy i żyły szaleństwa przychodzą jako karty
     // wydarzeń z wyborem (wydarzenia.ts) — zanim uderzą, gracz decyduje, co z nimi zrobić
   }
 
@@ -1132,21 +1125,6 @@ export class Sim {
         c.job = 0; c.jt = 0;
       }
     }
-  }
-
-  /** Najazd z powierzchni; `nadX` — schodzą nad tym miejscem (karta wydarzenia „poprowadź ich”). */
-  humanRaid(nadX?: number): void {
-    const w = this.world;
-    // (Alpha: z powierzchni prowadzi tylko szyb z jedzeniem — ludzie schodzą nim do sali)
-    let x = SWIAT.warstwy.wlaczone ? w.szybWiadraX : nadX ?? 8 + this.rng.int(w.w - 16), y = SURFACE_Y - 2;
-    for (let k = 0; k < 40 && !w.passable(x, y); k++) {
-      x = nadX !== undefined ? Math.max(8, Math.min(w.w - 9, nadX + this.rng.int(21) - 10)) : 8 + this.rng.int(w.w - 16);
-    }
-    const clan = this.newClan(Race.HUMAN, x, y);
-    const n = PP.ludzieIlu + this.rng.int(PP.ludzieRozrzut);
-    for (let i = 0; i < n; i++) { const c = this.spawn(Race.HUMAN, clan.id, x + this.rng.int(6) - 3, y); if (c) c.od = this.tick; }
-    this.lastTide = 'krucjata'; this.tideTick = this.tick;
-    this.gdzie(clan.hx, clan.hy).log(`Z powierzchni zeszli ludzie: ${clan.name}. Szukają rudy i sławy.`, 'swiat');
   }
 
   /** Powódź; `nadX` — woda płynie nad tym miejscem (karta wydarzenia „skieruj ją”). */

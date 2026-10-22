@@ -1,5 +1,6 @@
 import { Sim } from '../sim/sim';
 import type { Creature } from '../sim/creatures';
+import { Race } from '../sim/races';
 import { applyTaintEffect } from '../powers/powers';
 import { SWIAT } from '../nastawy/swiat';
 
@@ -93,7 +94,9 @@ export function restore(json: string): Sim | null {
     ...c, grudge: new Map<number, number>(c.grudge),
     rytual: c.rytual ?? 0, pekniecia: c.pekniecia ?? 0,
   }));
-  sim.creatures = data.creatures as Creature[];
+  // najazd z powierzchni wycięty — ludzie ze starego zapisu nie wracają do góry
+  sim.creatures = (data.creatures as Creature[]).filter((c) => c.race !== Race.HUMAN);
+  for (const k of sim.clans) if (k.race === Race.HUMAN && !k.dead) { k.dead = true; k.pop = 0; }
   sim.byId = new Map(sim.creatures.map((c) => [c.id, c]));
   // numer nie może wrócić do już zajętego — inaczej nowe stworzenie nadpisze stare w byId
   let maxId = 0;

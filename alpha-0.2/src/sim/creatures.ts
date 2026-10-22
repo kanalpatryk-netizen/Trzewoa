@@ -7,7 +7,7 @@ import { STWORZENIA as K } from '../nastawy/stworzenia';
 import { ZABYTKI } from '../nastawy/zabytki';
 import { maZabytek } from './zabytki';
 import { RYTUAL, PIELGRZYMKA as P } from '../nastawy/rytual';
-import { LUDY, PRZYPLYWY as PP } from '../nastawy/gora';
+import { LUDY } from '../nastawy/gora';
 import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchwyt, ludRuch, szukajKopiac, kosztKuciaLudu, glebiaPod, podDroga } from './droga';
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
@@ -33,7 +33,10 @@ import { ZBROJA, type CzescZbroi } from '../nastawy/zbroja';
 import { LUD, REMAKE } from '../nastawy/lud';
 
 export enum Job {
-  WANDER, DIG, EAT, PRAY, BUILD, FIGHT, FLEE, BREED, HAUL, SLAVE, DESCEND, RAID, SACRIFICE,
+  WANDER, DIG, EAT, PRAY, BUILD, FIGHT, FLEE, BREED, HAUL, SLAVE, DESCEND,
+  /** Puste miejsce po najeździe z powierzchni (wycięty) — zostaje, żeby numery zajęć w zapisach się nie przesunęły. */
+  RAID,
+  SACRIFICE,
   /** Trol nie umiera z głodu — zasypia w skale i czeka, aż coś przejdzie obok. */
   SLEEP,
   /** Żużlowiec wraca do ognia; Prządka wysysa wziętego w jarzmo. */
@@ -375,7 +378,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
 
   // --- rozglądanie się: rysunek twojego ciała powstaje tylko z ich oczu
   if ((c.id + sim.tick) % K.rozgladanieCo === 0) {
-    const r = c.race === Race.HUMAN ? K.wzrokLudzi : c.race === Race.TROLL ? K.wzrokTroli : K.wzrok;
+    const r = c.race === Race.TROLL ? K.wzrokTroli : K.wzrok;
     const fresh = w.observe(tx, ty, r, sim.tick);
     if (fresh) sim.onVisit(fresh);
   }
@@ -493,7 +496,6 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     case Job.HAUL: doHaul(sim, c); break;
     case Job.SLAVE: doSlave(sim, c); break;
     case Job.SACRIFICE: doSacrifice(sim, c); break;
-    case Job.RAID: doRaid(sim, c); break;
     case Job.SLEEP: doSleep(sim, c); break;
     case Job.HEAT: doHeat(sim, c); break;
     case Job.DRAIN: doDrain(sim, c); break;
@@ -650,9 +652,7 @@ function pickJob(sim: Sim, c: Creature): void {
   }
 
   // wróg w pobliżu
-  // (Remake v1: najazd, któremu minął czas, już nie walczy — wraca na powierzchnię)
-  const odchodzi = REMAKE && c.race === Race.HUMAN && c.od !== undefined && sim.tick - c.od > PP.ludzieWracajaPo;
-  const foe = odchodzi ? null : sim.nearestCreature(c.x, c.y, c.race === Race.HUMAN ? K.wrogZasiegLudzi : K.wrogZasieg, (o) => sim.hostile(c, o));
+  const foe = sim.nearestCreature(c.x, c.y, K.wrogZasieg, (o) => sim.hostile(c, o));
   if (foe) {
     const scary = RACES[foe.race].strength > d.strength * K.strasznyWrog;
     if (scary && !walczacy(c) && sim.rng.chance(K.strachSzansa * d.fearGain * cechaNacji(sim.clans[c.clan]).strach)) {
@@ -663,8 +663,6 @@ function pickJob(sim: Sim, c: Creature): void {
     }
     c.job = Job.FIGHT; sim.target.set(c.id, foe.id); c.jt = K.walkaTikow; return;
   }
-
-  if (c.race === Race.HUMAN) { c.job = Job.RAID; c.jt = K.najazdTikow; return; }
 
   // Remake v1: lud nie losuje zajęć co chwilę — planer daje każdemu zamiar z celem (sim niżej)
   if (REMAKE && rolaPostaci(c)) { planujLud(sim, c); return; }
@@ -2214,22 +2212,6 @@ function doDrain(sim: Sim, c: Creature): void {
     if (victim.hp <= 0) sim.kill(victim, 'wyssany przez Prządki', 'jarzmo');
     if (c.hunger < K.wysysanieSyta) c.jt = 0;
   } else walkTo(sim, c, victim.x, victim.y);
-}
-
-/** Ludzie nie mieszkają w tobie. Przychodzą po rudę i po sławę. */
-function doRaid(sim: Sim, c: Creature): void {
-  // Remake v1: najazd ma swój czas — potem ludzie wracają na powierzchnię (wpuszczeni dwa razy z rzędu
-  // błąkali się, aż trafili na siedzibę, i wybijali cały lud)
-  const dosc = REMAKE && c.od !== undefined && sim.tick - c.od > PP.ludzieWracajaPo;
-  if (c.carry >= K.ludzieNiosa || c.hp < RACES[c.race].maxHp * K.ludzieRanni || dosc) {
-    // Remake v2: po zawale wychodzą szczeliną w gruzie, tuż pod stropem
-    if (c.y < K.ludzieWychodza) { sim.leaveWorld(c); return; }
-    walkTo(sim, c, c.x + sim.rng.range(-3, 3), 2);
-    return;
-  }
-  const ore = sim.findTile(c.x, c.y, K.ludzieRuda, (t) => t === T.ORE);
-  if (ore) { c.jx = ore[0]; c.jy = ore[1]; doDig(sim, c); return; }
-  walkTo(sim, c, c.x + sim.rng.range(-K.ludzieSzukajX, K.ludzieSzukajX), c.y + sim.rng.range(0, K.ludzieSzukajY));
 }
 
 export { PASSABLE };

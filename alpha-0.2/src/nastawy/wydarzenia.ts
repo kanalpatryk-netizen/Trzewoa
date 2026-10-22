@@ -1,7 +1,7 @@
 /**
  * WYDARZENIA — karty z wyborem, główny sposób grania w wersji na telefon.
  *
- * Co jakiś czas gra staje i pokazuje wydarzenie (najazd, zaraza, powódź, prorok, głód…)
+ * Co jakiś czas gra staje i pokazuje wydarzenie (zaraza, powódź, prorok, głód…)
  * z dwoma–trzema wyborami opisanymi wprost. Tu są odstępy między kartami i ceny wyborów.
  * Tiki przeliczaj przez TIKOW_NA_MINUTE (7200 tików = minuta gry).
  */
@@ -17,10 +17,6 @@ export const WYDARZENIA = {
   bezGraczaPo: 600,
 
   // ----------------------------------------------------------------- ceny
-  /** Najazd: zawalenie wejścia / poprowadzenie ich na najsilniejszych. */
-  najazdZawal: 20, najazdProwadz: 10,
-  /** Remake v1: najazd schodzi co najmniej tyle kafli (w poziomie) od siedziby ludu. */
-  najazdOdSiedziby: 55,
   /** Powódź: zatkanie szczeliny / skierowanie wody na najsilniejszych. */
   powodzZatkaj: 15, powodzKieruj: 10,
   /** Zaraza: uzdrowienie (Wiara) i ile oddania dostaje wtedy każda nacja. */
