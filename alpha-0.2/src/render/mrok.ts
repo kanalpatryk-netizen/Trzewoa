@@ -10,6 +10,9 @@ import { wiadra } from '../sim/wiadro';
 import { rytualOltarza } from '../sim/oltarz';
 import { SURFACE_Y } from '../sim/world';
 import { SWIAT } from '../nastawy/swiat';
+import { ukladKatedry } from './katedra';
+import { latarniaKonwoju } from './konwoj';
+import { wysokoscGrzbietu } from './grzbiet';
 
 /**
  * Ciemność w górze: świat jest widoczny tylko w świetle lampek robotników, aureol
@@ -75,9 +78,16 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   if (w.salaOltarza.x1 >= 0) {
     const o = w.oltarz;
     swiec(o.x + 0.5, o.y - 0.6, (rytualOltarza(sim) ? S.rytual : S.oltarz) * (0.96 + 0.06 * migotLampy(teraz + 3331)));
-    // dzień wpada z powierzchni: szyb nad ołtarzem jasny na całej wysokości, od wylotu do stropu sali…
-    // (od pierwszego rzędu ziemi — plama światła wyżej wisiała nad wylotem na niebie jak księżyc)
-    for (let y = SURFACE_Y + 0.5; y < w.szybDol; y += 1.6) swiec(w.szybX + 0.5, y, S.smugaGora, 0.75);
+    // światło wpada z góry: z rozety katedry (jej łuna, płomienie świec przy otworze) albo, bez katedry, z wylotu
+    // szybu — szyb nad ołtarzem jasny na całej wysokości, do stropu sali… (wycinanie od pierwszego rzędu ziemi:
+    // plama światła wyżej wisiała nad wylotem na niebie jak księżyc)
+    const kat = ukladKatedry(w);
+    if (kat) {
+      swiec(kat.rozeta.x, kat.rozeta.y, S.rozeta, 0.95);
+      for (let y = kat.rozeta.y + 1.2; y < kat.posadzka; y += 1.4) swiec(kat.cx, y, S.smugaGora * 1.15, 0.8);
+      for (const p of kat.plomienie) swiec(p.x, p.y, S.swieca * (0.95 + 0.07 * migotLampy(teraz + p.x * 311)), 0.9);
+    }
+    for (let y = kat ? kat.posadzka : SURFACE_Y + 0.5; y < w.szybDol; y += 1.6) swiec(w.szybX + 0.5, y, S.smugaGora, 0.75);
     // …a z jego wylotu smuga rozchodzi się na ołtarz
     const dy = o.y - w.szybDol;
     for (let k = 0; k <= dy; k += 1.6) {
@@ -88,6 +98,9 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
     const wx = w.szybWiadraX + SWIAT.warstwy.szybWiadra.szer / 2;
     for (let y = SURFACE_Y + 0.5; y <= w.szybWiadraDol; y += 1.4) swiec(wx, y, S.szybWiadra, 0.4);
   }
+  // latarnia konwoju z jedzeniem (render/konwoj.ts) — świeci, gdy wóz jedzie albo stoi przy koźle
+  const lat = latarniaKonwoju(sim, (x) => SURFACE_Y - wysokoscGrzbietu(w, x));
+  if (lat) swiec(lat.x, lat.y, S.latarnia * (0.95 + 0.07 * migotLampy(teraz + 4127)));
   for (const e of sim.efekty) if (e.rodzaj === 'cud') swiec(e.x, e.y, S.cud * (1 - e.t / e.max * 0.5));
   // jasna sala: cała w świetle, nie tylko krąg wokół ołtarza — to tu lud odpoczywa i tu wraca
   const so = w.salaOltarza;

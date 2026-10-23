@@ -14,11 +14,13 @@ import { wysokoscPostaci } from './figury';
 import { kropla, type Urobki } from './kruszce';
 import { LUD } from '../nastawy/lud';
 import { SURFACE_Y } from '../sim/world';
+import { ukladKatedry } from './katedra';
 
 /**
  * OŁTARZ (Alpha, etap 3d) — rysunek ołtarza na środku sali i animacje rytuałów:
- *  - kamienny kopczyk, na nim kamienna mensa z misą i dwiema świecami, za nią drewniany krzyż; z nieba, szybem nad
- *    nim, pada smuga światła dziennego z pyłem, który w niej wiruje (w mroku też ją widać — render/mrok.ts);
+ *  - kamienny kopczyk, na nim kamienna mensa z misą i dwiema świecami, za nią drewniany krzyż; z rozety katedry na
+ *    powierzchni, szybem nad nim, pada promień światła z pyłem, który w nim wiruje (render/promien.ts; w mroku też go
+ *    widać — render/mrok.ts);
  *  - modlitwa: od krzyża biją promienie, złote iskry płyną od klęczącego do krzyża;
  *  - szał krwi: krew spływa po krzyżu do misy, wokół ołtarza zapala się krąg czerwonych znaków (glif z
  *    render/tajemnica.ts), na koniec czerwona smuga leci do rycerza — jego czerwoną poświatę rysuje już strój;
@@ -147,10 +149,11 @@ export class Oltarz {
     const widac = !(u.cx < -z * 8 || u.cx > cam.vw + z * 8 || u.yp < -z * 3 || u.krzyz.gora > cam.vh + z * 6);
     const pr = postep(sim);
     ctx.save();
-    // smuga dnia sięga od nieba do posadzki — widać ją, choćby sam ołtarz był już poza ekranem
+    // światło na ołtarz pada z rozety katedry (render/promien.ts); bez katedry — smuga dnia z wylotu szybu,
+    // widoczna, choćby sam ołtarz był już poza ekranem
     const w = sim.world;
     const gx = cam.toScreenX(w.szybX + 0.5), gora = cam.toScreenY(SURFACE_Y);
-    if (Math.max(gx, u.cx) + z * 3 > 0 && Math.min(gx, u.cx) - z * 3 < cam.vw && u.yp > 0 && gora < cam.vh) {
+    if (!ukladKatedry(w) && Math.max(gx, u.cx) + z * 3 > 0 && Math.min(gx, u.cx) - z * 3 < cam.vw && u.yp > 0 && gora < cam.vh) {
       smugaDnia(ctx, gx, gora, cam.toScreenY(w.szybDol), u, teraz, ruch);
     }
     if (widac) {

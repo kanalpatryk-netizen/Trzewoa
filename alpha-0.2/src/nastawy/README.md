@@ -15,6 +15,8 @@ Wszystkie liczby gry. Każda ma komentarz: co robi i w którą stronę działa.
 | żelazo i złoto: ile daje kafel, lot okrucha do licznika | `kruszce.ts` |
 | pomieszczenia: szablony, warsztat, kuźnia (części zbroi), sypialnia | `pomieszczenia.ts` |
 | ołtarz w sali: rytuały, ich ceny we krwi i czas trwania | `oltarz.ts` |
+| katedra na powierzchni i promień z jej rozety na ołtarz | `katedra.ts` |
+| wiadro z jedzeniem i konwój, który je przywozi i spuszcza na linie | `wiadro.ts` |
 | kamera, tempo, ekran | `sterowanie.ts, ekran.ts` |
 | dźwięk, kolory | `dzwiek.ts, barwy.ts` |
 | wygląd ekranów | `wyglad/` |

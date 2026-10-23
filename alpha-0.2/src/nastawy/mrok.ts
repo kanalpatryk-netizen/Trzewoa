@@ -24,6 +24,10 @@ export const MROK = {
      * od nieba do stropu sali) i u dołu, przy ołtarzu. Węższym szybem, którym zjeżdża wiadro, dnia wpada mniej.
      */
     oltarz: 5.5, rytual: 8, smugaGora: 2.2, smugaDol: 4.2, szybWiadra: 1.4,
+    /** Katedra na powierzchni (nastawy/katedra.ts): łuna wokół rozety i płomienie świec przy otworze w posadzce. */
+    rozeta: 5.2, swieca: 2.6,
+    /** Latarnia na wozie konwoju z jedzeniem (nastawy/wiadro.ts: KONWOJ). */
+    latarnia: 6.5,
     /**
      * Jasna sala cała w świetle (dzień z szybu i świece): plamy o tym promieniu co tyle kafli wzdłuż sali.
      * Gotowe pomieszczenia świecą poza swój obrys o tyle kafli: kuźnia ogniem, warsztat świecą, sypialnia ledwo.
