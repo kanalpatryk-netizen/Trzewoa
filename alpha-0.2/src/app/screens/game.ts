@@ -31,9 +31,10 @@ import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { naWieszaku } from '../../sim/zbroja';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
-import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa } from '../../sim/polecenia';
+import { wydajGrupie, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa, type Polecenie } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
 import { NASTAWY_GLOSU } from '../../core/glos-odmowy';
+import { GLOSY_LUDU } from '../../nastawy/dzwiek';
 import { POMNIK } from '../../nastawy/pomnik';
 import { rysujNadPomnikiem, rysujPomnik } from '../../render/pomnik';
 import { rysujDlonDemona } from '../../render/dlon-demona';
@@ -126,6 +127,25 @@ export type ZdarzenieGry =
   | { typ: 'wydarzenie'; rodzaj: string; wybor: string }
   | { typ: 'koniec'; opis: string };
 
+/** Głos jednej postaci z ludu (EkranGry.glosyLudu): co już było słychać i kiedy ostatnio mówiła (ms, jak `teraz` w krok). */
+interface GlosPostaci {
+  c: Creature;
+  /** Rozkaz i cios, które już było słychać. */
+  polecenie: Polecenie | undefined;
+  oberwal: Creature['oberwal'];
+  /** Z kim walczy (id Strażnika albo demona; −1 — z nikim) i kiedy ostatnio walczyła. */
+  wrog: number;
+  walkaT: number;
+  /** Kiedy ostatnio krzyknęła do walki, jęknęła z bólu i marudziła z głodu. */
+  atakT: number;
+  bolT: number;
+  glodT: number;
+  /** Krzyknęła już na demona. */
+  naDemona: boolean;
+  /** Głodna: od GLOSY_LUDU.glod.od, aż zje (poniżej `syty`). */
+  glodna: boolean;
+}
+
 /** Ekran rozgrywki: świat, płyta, organy i ryty. Samouczek nakłada się na niego z góry. */
 export class EkranGry implements Ekran {
   nazwa = 'gra';
@@ -185,6 +205,9 @@ export class EkranGry implements Ekran {
   private slyszaneWiadro: number | undefined;
   /** Odmowy, które już usłyszano (rycerz mówi każdą najwyżej raz). */
   private slyszaneOdmowy = new WeakSet<Odmowa>();
+  /** Głosy ludu: postacie z kwestiami z gra222/dzwieki/jednostki/ (id → co już słychać) i góra, na której je zebrano. */
+  private glosyPostaci = new Map<number, GlosPostaci>();
+  private glosyGory: Sim | null = null;
   /** Etap 5: co z pomnika już słychać i widać (stan pękania, faza) — dźwięk i kamera przy zmianie. */
   private slyszanyPomnik: { stan: number; faza: string } | null = null;
   /** Etap 5b: co z dłoni w walce z demonem już słychać (akcja i faza, ostatnie odbicie, ściana gruzu, kto leciał). */
@@ -729,8 +752,70 @@ export class EkranGry implements Ekran {
       const kto = rolaPostaci(c);
       if (mowil || sim.tick - o.od > POLECENIA.odmowaTikow || (kto !== 'rycerz' && kto !== 'pobozny')) continue;
       if (!NASTAWY_GLOSU[kto].odmowy.some((p) => o.tekst.startsWith(p))) continue;
-      const pan = Math.max(-1, Math.min(1, (this.cam.toScreenX(c.x) / Math.max(1, this.cam.vw)) * 2 - 1)) * 0.6;
-      if (this.app.gesty.glosOdmowy(kto, pan)) mowil = true;
+      if (this.app.gesty.glosOdmowy(kto, this.panPostaci(c))) mowil = true;
+    }
+  }
+
+  /** Gdzie postać stoi na ekranie — panorama jej głosu (−0,6 lewo … 0,6 prawo). */
+  private panPostaci(c: Creature): number {
+    return Math.max(-1, Math.min(1, (this.cam.toScreenX(c.x) / Math.max(1, this.cam.vw)) * 2 - 1)) * 0.6;
+  }
+
+  /**
+   * Głosy ludu (gra222/dzwieki/jednostki/; liczby — nastawy/dzwiek.ts: GLOSY_LUDU), z różnicy stanu między klatkami,
+   * jak odmowy — rozkaz z myszy, klawisza, samouczka i bota brzmi tak samo. Postać z kwestiami (dziś rycerz — foldery z R):
+   *  - potwierdza nowy rozkaz, który przyjęła,
+   *  - krzyczy, gdy rusza na Strażnika albo demona (nie przy każdym ciosie; na demona zawsze, pierwszy raz),
+   *  - jęczy, gdy oberwie — mocny cios i ten, od którego ginie, zawsze, słaby czasem; głód nie boli,
+   *  - marudzi z głodu od progu, w którym sama idzie jeść, co jakiś czas, aż zje.
+   */
+  private glosyLudu(teraz: number): void {
+    const sim = this.sim, g = this.app.gesty, L = GLOSY_LUDU;
+    if (this.glosyGory !== sim) { this.glosyGory = sim; this.glosyPostaci.clear(); }
+    // nowi w ludzie (i wskrzeszeni) — słychać ich od tej chwili; rozkaz i cios sprzed niej nie są nowe
+    for (const c of sim.creatures) {
+      const rola = rolaPostaci(c);
+      if (c.dead || !rola || this.glosyPostaci.has(c.id) || !g.maGlos(rola)) continue;
+      this.glosyPostaci.set(c.id, {
+        c, polecenie: c.polecenie, oberwal: c.oberwal, wrog: -1, walkaT: -1e9,
+        atakT: -1e9, bolT: -1e9, glodT: -1e9, naDemona: false, glodna: false,
+      });
+    }
+    const stoi = this.zamrozone();
+    for (const [id, s] of this.glosyPostaci) {
+      const c = s.c, rola = rolaPostaci(c);
+      if (!rola) { this.glosyPostaci.delete(id); continue; }
+      const pan = this.panPostaci(c);
+      if (c.oberwal !== s.oberwal) {
+        s.oberwal = c.oberwal;
+        // jęk przy śmierci ucina poprzedni i nie czeka na przerwę
+        const mocno = !!c.oberwal?.mocno;
+        if (c.oberwal && (c.dead || (teraz - s.bolT >= (mocno ? L.bol.mocnyCo : L.bol.slabyCo) * 1000 && (mocno || Math.random() < L.bol.slabySzansa)))
+          && g.glosLudu(rola, 'bol', pan, c.dead)) s.bolT = teraz;
+      }
+      if (c.dead) { this.glosyPostaci.delete(id); continue; }
+      // świeży rozkaz (wczytany zapis nie odpowiada na dawne)
+      if (c.polecenie !== s.polecenie) {
+        s.polecenie = c.polecenie;
+        if (c.polecenie && sim.tick - c.polecenie.od <= POLECENIA.odmowaTikow) g.glosLudu(rola, 'potwierdzenie', pan);
+      }
+      const cel = c.job === Job.FIGHT ? sim.creatureById(sim.target.get(c.id) ?? -1) : undefined;
+      const wrog = cel && !cel.dead && cel.straznik ? cel : null;
+      if (wrog?.boss && !s.naDemona) {
+        // na demona krzyczy zawsze — gdy akurat jęczy z bólu, krzyknie, jak skończy
+        if (g.glosLudu(rola, 'atak', pan)) { s.naDemona = true; s.atakT = teraz; }
+      } else if (wrog && wrog.id !== s.wrog && teraz - s.atakT >= L.atak.przerwa * 1000) {
+        // nowa walka — zawsze; następny Strażnik w tej samej walce — czasem
+        const nowaWalka = teraz - s.walkaT > L.atak.walkaTrwa * 1000;
+        if ((nowaWalka || Math.random() < L.atak.nastepnySzansa) && g.glosLudu(rola, 'atak', pan)) s.atakT = teraz;
+      }
+      s.wrog = wrog?.id ?? -1;
+      if (wrog) s.walkaT = teraz;
+      if (c.hunger < L.glod.syty) s.glodna = false;
+      else if (c.hunger >= L.glod.od && !s.glodna) { s.glodna = true; s.glodT = -1e9; }
+      const przymiera = c.hunger >= L.glod.przymiera;
+      if (s.glodna && !stoi && (!wrog || przymiera) && teraz - s.glodT >= (przymiera ? L.glod.coPrzymiera : L.glod.co) * 1000
+        && g.glosLudu(rola, 'glod', pan)) s.glodT = teraz;
     }
   }
 
@@ -840,6 +925,7 @@ export class EkranGry implements Ekran {
     if (!this.pauza && this.rozkazy.ile) this.wykonajPlan();
     this.sluchaj();
     this.glosOdmowy();
+    this.glosyLudu(teraz);
     this.patrzNaPomnik();
     this.sluchajDloniDemona();
     if (!this.zamrozone()) {

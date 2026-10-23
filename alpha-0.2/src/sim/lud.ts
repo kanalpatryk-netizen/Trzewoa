@@ -160,6 +160,15 @@ export function rolaPostaci(c: Creature): Rola | null {
   return c.race === Race.GOBLIN ? (c.rola ?? 'pobozny') : null;
 }
 
+/**
+ * Alpha: postać z ludu oberwała — znacznik dla głosu bólu (app/screens/game.ts: glosyLudu), symulacji to nie zmienia.
+ * Mocny cios: demon, rzut dłonią z otchłani, bolesny upadek; w jednym tiku mocny wygrywa ze słabym.
+ */
+export function oznaczCios(sim: Sim, c: Creature, mocno: boolean): void {
+  if (!rolaPostaci(c)) return;
+  c.oberwal = { t: sim.tick, mocno: mocno || (c.oberwal?.t === sim.tick && c.oberwal.mocno) };
+}
+
 /** Mnożnik statystyki: rola × okaleczenie × weteran × zatrucie × hełm × szał × zabytki × zbroja z kuźni. */
 export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   const r = rolaPostaci(c);
