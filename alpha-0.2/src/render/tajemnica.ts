@@ -2,6 +2,7 @@ import type { Plate } from './plate';
 import type { Camera } from './camera';
 import type { Sim } from '../sim/sim';
 import { MEM_SPAN } from '../sim/world';
+import { odWidoku } from './shafts';
 
 /**
  * Warstwa, która robi z płyty starą, zakazaną rycinę: rytowana ciemność na brzegach
@@ -272,6 +273,8 @@ export class Tajemnica {
     const KX = 17, KY = 15;
     const nieznane = (x: number, y: number) => {
       if (!w.inb(x, y)) return true;
+      // sala i szyby nad nią są zawsze na widoku — znak obok szybu wiadra świecił w odsłoniętej skale
+      if (odWidoku(w, x, y) === 0) return false;
       const i = w.idx(x, y);
       return !w.ever[i] || sim.tick - w.lastSeen[i] > MEM_SPAN;
     };

@@ -43,3 +43,23 @@ export const WIADRO = {
    */
   naprawa: { koniecNadDnem: 2.2, wspinaczka: 1.2, wspinaczkaV: 1.6 / 120, sklejanie: 420, napinanie: 150, zjazdV: 3 / 120 },
 };
+
+/**
+ * KONWÓJ Z JEDZENIEM (Alpha 0.2, użytkownik 23.10: „przyjeżdża jakiś konwój z końmi z przyczepą na te konie i zarzuca
+ * nam te jedzenie po linie”) — tylko rysunek (src/render/konwoj.ts), symulacja wiadra się nie zmienia. Nad szybem wiadra
+ * stoi drewniany kozioł z bloczkiem. Przed każdą dostawą (sim.lud.wiadra.nastepne) z prawej przyjeżdża wóz z parą koni,
+ * zawraca przy koźle, pomocnik zeskakuje z wozu i spuszcza wiadro na linie (albo, gdy wiadro jeszcze stoi na dnie,
+ * zsyła po linie worek), potem wskakuje z powrotem i wóz odjeżdża. Tiki: 120 = sekunda.
+ */
+export const KONWOJ = {
+  /** Wyłącznik (typ boolean — żeby kompilator nie uznał kodu za martwy). */
+  wlaczony: true as boolean,
+  /** Kozioł: nogi tyle kafli w każdą stronę od liny, bloczek tyle nad ziemią. */
+  koziol: { rozstaw: 1.25, wys: 3.9 },
+  /** Wóz przyjeżdża zza prawego brzegu góry (x kafli) i staje tyłem tyle kafli od liny. */
+  start: 198, postoj: 2.1,
+  /** Zawracanie przy koźle i zeskok pomocnika z wozu (tiki). */
+  zawracanie: 120, zeskok: 54,
+  /** Worek zsyłany po linie do wiadra, które jeszcze stoi na dnie: od którego tiku postoju i jak długo jedzie. */
+  worek: { od: 150, trwa: 420 },
+};

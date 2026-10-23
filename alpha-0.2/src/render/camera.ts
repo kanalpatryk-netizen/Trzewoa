@@ -16,7 +16,7 @@ export class Camera {
     this.zoom = Math.min(this.maxZoom, Math.max(this.minZoom, this.zoom));
     const halfW = this.vw / this.zoom / 2, halfH = this.vh / this.zoom / 2;
     this.x = Math.min(Math.max(this.x, halfW), Math.max(halfW, worldW - halfW));
-    const minY = halfH - 6;
+    const minY = halfH - KAMERA.niebo;
     this.y = Math.min(Math.max(this.y, minY), Math.max(minY, worldH - halfH));
   }
 
