@@ -5,6 +5,8 @@ import { ustawienia, skalaRenderu } from '../core/settings-store';
 import { Camera } from './camera';
 import { rolaPostaci, klanLudu } from '../sim/lud';
 import { SWIAT, RDZEN } from '../nastawy/swiat';
+import { odWidoku } from './shafts';
+import { wysokoscGrzbietu } from './grzbiet';
 
 import { TON_MAX, MATERIALY, MASA, RYCINA_SWIATA as RS, SWIATLO_RYCINY as SR, type Kreskowanie } from '../nastawy/wyglad/rycina';
 import { FRESK_SWIATA as FS } from '../nastawy/wyglad/fresk-swiata';
@@ -367,7 +369,6 @@ export class Engraver {
     this.lx0 = x0; this.ly0 = y0;
     const L = this.light, F = this.fresh;
     L.fill(0);
-    const so = w.salaOltarza;
     const gr = graniceWarstw(w);
 
     for (let y = 0; y < tilesY; y++) {
@@ -379,15 +380,14 @@ export class Engraver {
         const i = w.idx(wx, wy);
         const age = sim.tick - w.lastSeen[i];
         // to, co zrobiła twoja ręka, nie blaknie do zera
-        // jasna sala jest zawsze na widoku — dzień z szybu nie pozwala jej zapomnieć
-        let podstawa = wy <= w.surface[wx] + 1 || (wx >= so.x0 - 1 && wx <= so.x1 + 1 && wy >= so.y0 - 1 && wy <= so.y1 + 2) ? 1
+        // jasna sala i oba szyby nad nią są zawsze na widoku — dzień z powierzchni nie pozwala ich zapomnieć
+        const dW = odWidoku(w, wx, wy);
+        let podstawa = wy <= w.surface[wx] + 1 || dW === 0 ? 1
           : (w.ever[i] ? Math.max(0, 1 - age / MEM_SPAN) : 0);
-        // wokół sali pamięć gaśnie łagodnie przez kilka kafli (bez prostego brzegu z kafli); poniżej 0,82,
+        // wokół nich pamięć gaśnie łagodnie przez kilka kafli (bez prostego brzegu z kafli); poniżej 0,82,
         // więc nigdy niewidziany kafel rysuje się tam jako lita skała warstwy, nie zdradza jaskiń
-        if (podstawa < 0.8 && so.x1 >= 0) {
-          const ddx = wx < so.x0 - 1 ? so.x0 - 1 - wx : wx > so.x1 + 1 ? wx - so.x1 - 1 : 0;
-          const ddy = wy < so.y0 - 1 ? so.y0 - 1 - wy : wy > so.y1 + 2 ? wy - so.y1 - 2 : 0;
-          const ws = 0.8 - Math.sqrt(ddx * ddx + ddy * ddy) * 0.16;
+        if (podstawa < 0.8) {
+          const ws = 0.8 - dW * 0.16;
           if (ws > podstawa) podstawa = ws;
         }
         F[k] = w.slad[i] ? Math.max(0.42, podstawa) : podstawa;
@@ -661,7 +661,9 @@ export class Engraver {
     const so = w.salaOltarza;
     if (so.x1 >= 0) {
       prostokat(so.x0 + 1, so.y0, so.x1, so.y1 + 1, SR.sala.brzeg, SR.sala.moc);
-      prostokat(w.szybX - 1, SURFACE_Y - 2, w.szybX + 2, so.y0, 2.5, SR.sala.moc * 0.8);
+      prostokat(w.szybX - 1, SURFACE_Y - 2, w.szybX + 2, so.y0, 2.5, SR.sala.moc * 0.55);
+      // węższym szybem, którym zjeżdża wiadro, dnia wpada mniej
+      prostokat(w.szybWiadraX, SURFACE_Y - 2, w.szybWiadraX + SWIAT.warstwy.szybWiadra.szer, w.szybWiadraDol + 1, 1.5, SR.sala.moc * 0.5);
       plama(w.oltarz.x + 0.5, w.oltarz.y - 1, SR.oltarz.r, SR.oltarz.moc);
     }
     for (const p of sim.pomieszczenia) {
@@ -759,9 +761,6 @@ export class Engraver {
 
     // ---- kolumny ekranu: x świata, granice warstw i falowanie spoin
     const kolX = this.kolX, kolG1 = this.kolG1, kolG2 = this.kolG2, kolFala = this.kolFala, kolGrzbiet = this.kolGrzbiet;
-    // wyloty szybów: tam grzbiet schodzi do powierzchni, żeby otwór był w zboczu, a nie pod garbem
-    const szybL = w.szybX - (SWIAT.warstwy.szyb >> 1), szybP = w.szybX + (SWIAT.warstwy.szyb >> 1) + 1;
-    const wiadL = w.szybWiadraX, wiadP = w.szybWiadraX + SWIAT.warstwy.szybWiadra.szer;
     const gr = graniceWarstw(w);
     for (let px = 0; px < aw; px++) {
       const wx = left + (px + 0.5) * izoom;
@@ -772,13 +771,9 @@ export class Engraver {
       const f2 = wx * 7, i2 = Math.floor(f2), t2 = f2 - i2;
       const s3 = smooth[(91 << 8) | (i2 & 255)], s4 = smooth[(91 << 8) | ((i2 + 1) & 255)];
       kolFala[px] = (s1 + (s2 - s1) * t1 - 0.5) * 0.9 + (s3 + (s4 - s3) * t2 - 0.5) * 0.12;
-      // grzbiet: łagodne garby ziemi ponad płaską powierzchnią świata (rysunek — gra zaczyna się pod nimi)
-      const f3 = wx * 0.12, i3 = Math.floor(f3), t3 = f3 - i3;
-      const s5 = smooth[(151 << 8) | (i3 & 255)], s6 = smooth[(151 << 8) | ((i3 + 1) & 255)];
-      let grz = 0.4 + (s5 + (s6 - s5) * (t3 * t3 * (3 - 2 * t3))) * RS.grzbiet + (s1 + (s2 - s1) * t1 - 0.5) * 0.8;
-      const dS = Math.min(wx < szybL ? szybL - wx : wx > szybP ? wx - szybP : 0, wx < wiadL ? wiadL - wx : wx > wiadP ? wx - wiadP : 0);
-      grz *= dS >= 3 ? 1 : dS / 3;
-      kolGrzbiet[px] = gr ? (grz < 0 ? 0 : grz) : 0;
+      // grzbiet: łagodne garby ziemi ponad płaską powierzchnią świata (render/grzbiet.ts — równo przy wylotach szybów,
+      // pod katedrą i na placu konwoju)
+      kolGrzbiet[px] = gr ? wysokoscGrzbietu(w, wx) : 0;
       if (gr) {
         const xf = wx - 0.5, xi = Math.floor(xf), xt = xf - xi;
         const a = xi < 0 ? 0 : xi >= w.w ? w.w - 1 : xi, b = xi + 1 < 0 ? 0 : xi + 1 >= w.w ? w.w - 1 : xi + 1;

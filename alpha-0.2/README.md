@@ -65,6 +65,13 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
   dzienne na ołtarz, i węższy obok, którym zjeżdża jedzenie (pod nim siedziba); niżej trzy warstwy — płytka (miękka skała, żelazo), środkowa (małe jaskinie, pod nimi złoto), głęboka
   (twarda skała); dookoła rama nie do ruszenia; na dole, na środku, Wielki Pomnik pod szeroką kryptą. Drogę w dół trzeba
   wykuć, a kucie trwa (skała pęka pod kilofem coraz mocniej).
+- **Katedra i konwój na powierzchni:** nad szybem ze światłem stoi katedra w przekroju — wieża z iglicą, nawa, wysokie
+  skrzyżowanie z sygnaturką — a z rozety na jej tylnej ścianie pada promień: przez otwór w posadzce (balustrada, dwa
+  kandelabry), szybem do sali i na ołtarz, miękki, ze smugami od maswerku, mgłą i pyłem. Nad szybem wiadra stoi kozioł
+  z bloczkiem: przed każdą dostawą z prawej przyjeżdża wóz z parą koni i latarnią, zawraca przy koźle, a pomocnik
+  spuszcza wiadro na linie (albo zsyła worek do wiadra, które jeszcze stoi na dnie) i konwój odjeżdża. To tylko rysunek
+  — symulacja wiadra się nie zmienia. Kod: `src/render/katedra.ts`, `promien.ts`, `konwoj.ts`, liczby: `KATEDRA`,
+  `PROMIEN` w `src/nastawy/katedra.ts`, `KONWOJ` w `src/nastawy/wiadro.ts`.
 - **Jedno wiadro:** jedzenie zjeżdża tylko węższym otworem, do sali — nigdzie indziej. Kopiąc pod wiadrem, sprowadzasz
   je niżej; Nakarm dosypuje do tego samego wiadra. Z głębi wraca się po jedzenie drogą wiernych: na jej zakrętach
   lina spada sama, a podłogi pod nią nikt nie kuje; warcie jedzenie donoszą robotnicy.

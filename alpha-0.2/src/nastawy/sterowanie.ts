@@ -12,6 +12,8 @@ export const KAMERA = {
   min: 2.5, max: 26,
   /** Najmniejsze przybliżenie nie spada poniżej tego, nawet na wielkim ekranie. */
   minNaDuzymEkranie: 3,
+  /** Ponad górny brzeg świata kamera sięga tyle kafli nieba — iglica katedry na powierzchni sięga 7 kafli ponad niego. */
+  niebo: 9,
   /** Krok przybliżania kółkiem myszy i klawiszami +/−. */
   krokKolka: 1.25, krokKlawisza: 1.15,
   /** „Wróć do swoich”: największe przybliżenie i zapas wokół skupiska (kafle). */
