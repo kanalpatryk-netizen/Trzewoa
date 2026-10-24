@@ -6,6 +6,11 @@ export class Poswiata {
   private buf = document.createElement('canvas');
   private ctx = this.buf.getContext('2d')!;
   private w = 1; private h = 1;
+  /**
+   * Odbitka źródła, z której jest rozmycie w `buf` (-1: żadna). Gra nakłada poświatę dwa razy na klatkę,
+   * a źródło zmienia się tylko z nową odbitką ryciny — rozmywa się więc raz na odbitkę, nie dwa razy na klatkę.
+   */
+  private wersja = -1;
   dostepna = true;
 
   constructor(private podzial = 4) {
@@ -17,15 +22,22 @@ export class Poswiata {
     this.h = Math.max(1, Math.round(h / this.podzial));
     this.buf.width = this.w;
     this.buf.height = this.h;
+    this.wersja = -1;
   }
 
-  /** Rysuje rozmyty, rozjaśniony obraz źródła na wierzchu — tylko jasne miejsca zostają. */
-  nalozy(cel: CanvasRenderingContext2D, zrodlo: CanvasImageSource, x: number, y: number, w: number, h: number, moc = 0.55): void {
+  /**
+   * Rysuje rozmyty, rozjaśniony obraz źródła na wierzchu — tylko jasne miejsca zostają.
+   * `wersja` — numer odbitki źródła (Engraver.wersja); bez niego źródło rozmywa się przy każdym wywołaniu.
+   */
+  nalozy(cel: CanvasRenderingContext2D, zrodlo: CanvasImageSource, x: number, y: number, w: number, h: number, moc = 0.55, wersja = -1): void {
     if (!this.dostepna || moc <= 0) return;
-    this.ctx.clearRect(0, 0, this.w, this.h);
-    this.ctx.filter = 'blur(2px) brightness(1.65) contrast(1.5)';
-    this.ctx.drawImage(zrodlo, 0, 0, this.w, this.h);
-    this.ctx.filter = 'none';
+    if (wersja < 0 || wersja !== this.wersja) {
+      this.ctx.clearRect(0, 0, this.w, this.h);
+      this.ctx.filter = 'blur(2px) brightness(1.65) contrast(1.5)';
+      this.ctx.drawImage(zrodlo, 0, 0, this.w, this.h);
+      this.ctx.filter = 'none';
+      this.wersja = wersja;
+    }
     cel.save();
     cel.globalCompositeOperation = 'lighter';
     cel.globalAlpha = moc;

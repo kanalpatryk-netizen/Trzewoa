@@ -136,6 +136,19 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
 
 Grafika (menu, boss i Strażnicy, ikonki) i muzyka adaptacyjna — zadania zespołu (Paweł, Milan).
 
+## Program na Windows (`Trzewia-alpha-0.2.exe`)
+<img src="electron/zasoby/ikona.png" width="96" align="right" alt="Ikona programu: przekrój góry z krzyżem, złota droga wiernych i rozżarzony rdzeń">
+
+Ta sama gra jako jeden plik .exe (Electron, 352 MB, bez instalacji): dwuklik i gra rusza w pełnym ekranie — bez ramki
+i paska zadań, od pierwszej klatki intra. **F11** albo **Alt+Enter** przełącza pełny ekran i okno; na stałe decyduje
+„Pełny ekran” w Ustawieniach. **Esc** działa w grze (menu, odznaczanie) i nie wyrzuca z pełnego ekranu. W menu jest
+„Wyjdź z gry”; wyjście (także Alt+F4) zapisuje trwającą partię. Zapisy i ustawienia programu leżą w `%APPDATA%\Trzewia`,
+osobno od przeglądarki. Rysuje karta graficzna (na laptopie z dwiema kartami — mocniejsza). Plik nie jest podpisany,
+więc przy pierwszym uruchomieniu Windows może pokazać „System Windows ochronił ten komputer” → „Więcej informacji” →
+„Uruchom mimo to”. Budowa: `npm run pack` tutaj, potem w `electron/`: `npm install && npm run exe` →
+`electron/dist/Trzewia-alpha-0.2.exe`. Kod: `electron/main.js` (okno), `electron/preload.js` i `src/core/program.ts`
+(most gry z oknem). Ikona: `electron/zasoby/ikona.svg` (`node zasoby/ikona.mjs` robi z niej `ikona.ico`).
+
 ## Obserwatorium (`trzewia-alpha-0.2-obserwatorium.html`)
 Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo. Każde okno osobno: tempo (×¼ … ×20),
 pauza, styl bota (*rozsądny*, *budowniczy*, *speedrun*, *bierny*), ziarno świata, „nowa partia”, „sama następna partia”

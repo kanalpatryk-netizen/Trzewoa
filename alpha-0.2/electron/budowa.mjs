@@ -1,5 +1,5 @@
 // Trzewia.exe (Windows, Electron): kopiuje gotową grę (../trzewia.html po `npm run pack` w alpha-0.2) i buduje
-// dist/Trzewia-alpha-0.2.exe — przenośny plik, bez instalacji. Ikona: zasoby/ikona.ico (rękawica z obrazy/kursor1.png).
+// dist/Trzewia-alpha-0.2.exe — przenośny plik, bez instalacji. Ikona: zasoby/ikona.ico (z zasoby/ikona.svg — node zasoby/ikona.mjs).
 //
 //   cd alpha-0.2 && npm run pack && cd electron && npm install && npm run exe
 import { copyFileSync, existsSync, mkdirSync } from 'node:fs';

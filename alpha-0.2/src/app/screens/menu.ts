@@ -9,6 +9,7 @@ import { BARWA, rgba } from '../../render/palette';
 import { SERIF, SERIF_TYTUL, kreska } from '../../render/ink';
 import { hasSave } from '../../core/save';
 import { ustawienia } from '../../core/settings-store';
+import { oknoProgramu } from '../../core/program';
 import { TELEFON } from '../../nastawy/ekran';
 import { MENU as M } from '../../nastawy/wyglad/menu';
 import { RAMA } from '../../nastawy/wyglad/ozdoby';
@@ -57,6 +58,8 @@ export class EkranMenu implements Ekran {
     { id: 'bestiariusz', ...M.pozycje.bestiariusz, aktywna: () => true },
     { id: 'osiagniecia', ...M.pozycje.osiagniecia, aktywna: () => true },
     { id: 'ustawienia', ...M.pozycje.ustawienia, aktywna: () => true },
+    // program na Windows gra w pełnym ekranie, bez krzyżyka okna — wyjście jest w spisie
+    ...(oknoProgramu() ? [{ id: 'wyjdz', ...M.pozycje.wyjdz, aktywna: () => true }] : []),
   ];
 
   constructor(private app: Kontekst) {}
@@ -340,6 +343,10 @@ export class EkranMenu implements Ekran {
     else if (p.id === 'samouczek') this.app.idz('samouczek');
     else if (p.id === 'bestiariusz') this.app.idz('bestiariusz');
     else if (p.id === 'ustawienia') this.app.idz('ustawienia');
+    else if (p.id === 'wyjdz') {
+      (this.app.ekran('gra') as { zapiszPrzedWyjsciem?: () => void } | undefined)?.zapiszPrzedWyjsciem?.();
+      oknoProgramu()?.zamknij();
+    }
   }
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {

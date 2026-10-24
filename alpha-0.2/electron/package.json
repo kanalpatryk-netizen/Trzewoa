@@ -1,7 +1,7 @@
 {
   "name": "trzewia",
   "productName": "Trzewia",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Trzewia — Alpha 0.2",
   "author": "kanalpatryk-netizen",
   "private": true,
@@ -18,7 +18,9 @@
     "appId": "pl.trzewia.alpha02",
     "productName": "Trzewia",
     "copyright": "Trzewia",
-    "files": ["main.js", "gra/**"],
+    "files": ["main.js", "preload.js", "gra/**"],
+    "electronLanguages": ["pl", "en-US"],
+    "compression": "store",
     "directories": { "output": "dist", "buildResources": "zasoby" },
     "afterPack": "./po-spakowaniu.cjs",
     "win": {
@@ -26,6 +28,6 @@
       "icon": "zasoby/ikona.ico",
       "signAndEditExecutable": false
     },
-    "portable": { "artifactName": "Trzewia-alpha-0.2.exe" }
+    "portable": { "artifactName": "Trzewia-alpha-0.2.exe", "unpackDirName": true }
   }
 }

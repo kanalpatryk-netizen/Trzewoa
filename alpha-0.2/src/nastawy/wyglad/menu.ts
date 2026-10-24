@@ -28,6 +28,8 @@ export const MENU = {
     bestiariusz: { etykieta: 'Atlas', opis: 'tablice ludu, rytów i praw góry — odkrywasz je, grając' },
     osiagniecia: { etykieta: 'Osiągnięcia', opis: 'cele dodatkowe — zdobywasz je, grając' },
     ustawienia: { etykieta: 'Ustawienia', opis: 'dźwięk, obraz i świat' },
+    /** Tylko w programie na Windows (w pełnym ekranie nie ma krzyżyka okna). */
+    wyjdz: { etykieta: 'Wyjdź z gry', opis: 'trwająca rozgrywka zapisze się, a program się zamknie' },
   },
 
   // ----------------------------------------------------------------- układ

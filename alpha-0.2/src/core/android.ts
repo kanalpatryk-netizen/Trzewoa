@@ -1,4 +1,5 @@
 import { ustawienia } from './settings-store';
+import { oknoProgramu } from './program';
 
 /**
  * WERSJA ANDROID: to, czego telefon potrzebuje od strony, a komputer nie —
@@ -9,6 +10,9 @@ import { ustawienia } from './settings-store';
 /** Pełny ekran — tylko po dotknięciu (przeglądarka pozwala na to wyłącznie w odpowiedzi na gest). */
 export function pelnyEkran(): void {
   if (!ustawienia.pelnyEkran) return;
+  // program na Windows: pełny ekran okna — Esc zostaje w grze
+  const okno = oknoProgramu();
+  if (okno) { okno.pelnyEkran(true); return; }
   const el = document.documentElement as HTMLElement & { requestFullscreen?: (o?: FullscreenOptions) => Promise<void> };
   if (document.fullscreenElement || !el.requestFullscreen) return;
   el.requestFullscreen({ navigationUI: 'hide' })
@@ -26,6 +30,8 @@ function zablokujPoziom(): void {
 }
 
 export function wyjdzZPelnegoEkranu(): void {
+  const okno = oknoProgramu();
+  if (okno) { okno.pelnyEkran(false); return; }
   if (document.fullscreenElement) document.exitFullscreen?.().catch(() => { /* nic */ });
 }
 

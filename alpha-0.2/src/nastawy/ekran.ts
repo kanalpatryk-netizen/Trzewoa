@@ -61,6 +61,11 @@ export const JAKOSC = {
   oknoMs: 4000,
   /** Przerwa między klatkami dłuższa niż to (karta w tle, zamrożenie) zaczyna pomiar od nowa. */
   przerwaMs: 250,
+  /**
+   * Po zmianie przybliżenia rycina idzie najpierw zgrubnie, a potem dopracowuje się kafel po kaflu — najwyżej
+   * tyle ms na klatkę. Było 12: razem z resztą klatki wychodziło ponad 16,7 ms i kółko myszy gubiło klatki.
+   */
+  dopracowanieMs: 6,
 };
 
 /** EKRAN ŁADOWANIA — napisy i czasy. */

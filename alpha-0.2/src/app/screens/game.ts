@@ -84,6 +84,7 @@ import { SERIF } from '../../render/ink';
 import { tablica } from '../../atlas/tablice';
 import { Job, type Creature } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
+import { oknoProgramu } from '../../core/program';
 import { ustawienia, jakoscAuto } from '../../core/settings-store';
 import { StrazKlatek } from '../../render/straz-klatek';
 import { mikser } from '../../core/mikser';
@@ -276,6 +277,16 @@ export class EkranGry implements Ekran {
     this.urobki.onDolot = (rodzaj) => { if (rodzaj === 'krew') this.app.dzwiek.kropla(); else this.app.dzwiek.kruszec(rodzaj !== 'zelazo'); };
     // etap 4: „napraw linę” z karty postaci
     this.ui.naprawa = (id) => this.naprawLine([id]);
+    // program na Windows: zamknięcie okna (Alt+F4) też zapisuje partię
+    if (oknoProgramu()) addEventListener('pagehide', () => this.zapiszPrzedWyjsciem());
+  }
+
+  /**
+   * Program na Windows: zamknięcie programu („Wyjdź z gry” w menu, Alt+F4) zapisuje trwającą partię tak jak
+   * autozapis — inaczej przepadałoby do minuty gry od ostatniego zapisu.
+   */
+  zapiszPrzedWyjsciem(): void {
+    if (this.zapisujAuto && ustawienia.autozapis && this.sim.tick > 0 && !this.sim.ending) saveToStorage(this.sim);
   }
 
   /** Mnożnik czasu: w grze zawsze 1 (zwykły czas), w trybie deweloperskim z przycisków i okienka. */
@@ -1082,7 +1093,11 @@ export class EkranGry implements Ekran {
     // odjeżdżałby spod postaci), a zmiany samego świata wystarczą trzydzieści razy na sekundę.
     const kameraRuszona = cam.x !== this.rysKam[0] || cam.y !== this.rysKam[1] || cam.zoom !== this.rysKam[2];
     // (eng.niedokonczona: po zmianie przybliżenia rycina dopracowuje zgrubną odbitkę przez kilka klatek)
-    if (kameraRuszona || eng.niedokonczona || (this.dirty && teraz - this.lastInk > 30) || teraz - this.lastInk > 150) {
+    const odswiez = eng.niedokonczona || (this.dirty && teraz - this.lastInk > 30) || teraz - this.lastInk > 150;
+    // kamera drgnęła o ułamek piksela, a świat nie czeka na odświeżenie: gotowa odbitka tylko jedzie za kamerą
+    if (kameraRuszona && !odswiez && eng.przesun(sim, cam)) {
+      this.rysKam[0] = cam.x; this.rysKam[1] = cam.y; this.rysKam[2] = cam.zoom;
+    } else if (kameraRuszona || odswiez) {
       eng.fresk = ustawienia.swiat !== 'rycina';
       eng.rebuild(sim, cam, teraz);
       this.lastInk = teraz; this.dirty = false;
@@ -1122,7 +1137,7 @@ export class EkranGry implements Ekran {
     // fresk: faktura tynku przyklejona do świata — jedzie razem ze skałą, gdy przesuwasz kamerę
     // (rycina ma barwy warstw wpisane w kreskę — dawny ochrowy filtr „multiply” gasił chłodny łupek głębi)
     if (eng.fresk) tynkSwiata(ctx, cam);
-    this.poswiata.nalozy(ctx, eng.emis, eng.dx, eng.dy, bw, bh, 0.5);
+    this.poswiata.nalozy(ctx, eng.emis, eng.dx, eng.dy, bw, bh, 0.5, eng.wersja);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     rysujRdzen(ctx, sim, cam, teraz);
     // kruszec w skale: bryłki żelaza i żyłki złota (pod rysami kucia i pod mrokiem)
@@ -1147,7 +1162,7 @@ export class EkranGry implements Ekran {
     rysujWiadra(ctx, sim, cam, teraz);
     // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
     rysujMrok(ctx, sim, cam, teraz, this.pauza);
-    if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3);
+    if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3, eng.wersja);
     // katedra: witraże rozety i okien, płomienie świec — świecą przez mrok; z rozety pada promień na ołtarz
     rysujKatedreNad(ctx, sim, cam, teraz);
     rysujPromien(ctx, sim, cam, teraz);

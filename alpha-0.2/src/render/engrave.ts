@@ -10,6 +10,7 @@ import { wysokoscGrzbietu } from './grzbiet';
 
 import { TON_MAX, MATERIALY, MASA, RYCINA_SWIATA as RS, SWIATLO_RYCINY as SR, type Kreskowanie } from '../nastawy/wyglad/rycina';
 import { FRESK_SWIATA as FS } from '../nastawy/wyglad/fresk-swiata';
+import { JAKOSC } from '../nastawy/ekran';
 
 // materiały ryciny (ton, kąt, odstęp, krzyż, kropki, barwa) — nastawy/wyglad/rycina.ts
 type Hatch = Kreskowanie;
@@ -687,7 +688,31 @@ export class Engraver {
 
   // ------------------------------------------------------------------ kreska
 
+  /** Rośnie przy każdej nowej odbitce — poświata rozmywa `emis` tylko wtedy, gdy się zmienił. */
+  wersja = 0;
+
+  /**
+   * Kamera drgnęła, a świat czeka jeszcze na odświeżenie: gdy siatka pikseli odbitki się nie przesunęła
+   * (ten sam cały piksel i to samo przybliżenie), gotowa rycina jedzie tylko o ułamek piksela — bez rytowania.
+   * Kamera płynąca za ludem rusza się w każdej klatce, a dawniej każda taka klatka rytowała całą rycinę od nowa.
+   * Zwraca false, gdy trzeba `rebuild`.
+   */
+  przesun(sim: Sim, cam: Camera): boolean {
+    if (this.fresk || !this.odbitkaWazna || this.niedokonczona) return false;
+    if (sim.world !== this.pSwiat || ustawienia.kontrast !== this.pKontrast) return false;
+    const zoom = cam.zoom / this.scale;
+    if (zoom !== this.pZoom) return false;
+    // te same wzory co na początku rytujRycine
+    const leftC = cam.x - cam.vw / this.scale / 2 / zoom, topC = cam.y - cam.vh / this.scale / 2 / zoom;
+    const ox = Math.floor(leftC * zoom), oy = Math.floor(topC * zoom);
+    if (ox !== this.pOx || oy !== this.pOy) return false;
+    this.dx = (ox / zoom - leftC) * zoom * this.scale;
+    this.dy = (oy / zoom - topC) * zoom * this.scale;
+    return true;
+  }
+
   rebuild(sim: Sim, cam: Camera, time: number): void {
+    this.wersja++;
     this.computeLight(sim, cam);
     if (this.fresk) {
       this.edata.fill(0);
@@ -899,7 +924,7 @@ export class Engraver {
     // pełna odbitka dużej płyty idzie najpierw zgrubnie; dopracowanie dostaje tyle czasu na przerysowanie
     const zgrubnie = pelna && aw * ah > 250000;
     const ZG = this.zgrubne;
-    const koniec = performance.now() + 12;
+    const koniec = performance.now() + JAKOSC.dopracowanieMs;
     this.niedokonczona = false;
     /** Zgrubny kafel: policzony co drugi piksel — skopiuj każdy na sąsiadów w kwadracie 2×2. */
     const powiel = (px0: number, px1: number, py0: number, py1: number): void => {

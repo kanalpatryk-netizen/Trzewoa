@@ -1,5 +1,5 @@
 // electron-builder (afterPack): ikona i opis w Trzewia.exe. Na Linuksie electron-builder robi to przez Wine (rcedit) —
-// tu robi to resedit (czysty JS), więc plik .exe buduje się bez Wine. Ikona: zasoby/ikona.ico (rękawica z obrazy/kursor1.png).
+// tu robi to resedit (czysty JS), więc plik .exe buduje się bez Wine. Ikona: zasoby/ikona.ico (z zasoby/ikona.svg — node zasoby/ikona.mjs).
 const fs = require('fs');
 const path = require('path');
 
