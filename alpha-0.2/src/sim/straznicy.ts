@@ -10,7 +10,7 @@ import { Job } from './creatures';
 import { Race, RACES } from './races';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { procentSkorupy } from './rytual';
-import { rolaPostaci, mnoznik, maxHp, walczacy } from './lud';
+import { rolaPostaci, mnoznik, maxHp, walczacy, oznaczCios } from './lud';
 import { aktywnyBoss } from './boss';
 import { zapisz } from './dziennik';
 import { ranyZbroi } from './zbroja';
@@ -362,6 +362,7 @@ export function ciosStraznika(sim: Sim, c: Creature, cel: Creature, sila: number
   if (sim.lud.straznicy) sim.lud.straznicy.cios = sim.tick;
   // (etap 3f: tarcza rycerza zmniejsza ranę)
   cel.hp -= sila * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel);
+  oznaczCios(sim, cel, !!c.boss);
   sim.spark(cel.x, cel.y - 0.5, 'hit');
   if (cel.hp <= 0) { sim.kill(cel, c.boss ? `zmiażdżony przez: ${aktywnyBoss().nazwa}` : 'z ręki Strażnika Snu', 'straznik'); return; }
   if (!walczacy(cel)) ranStraznika(sim, c, cel, RACES[cel.race].strength * mnoznik(sim, cel, 'sila') * S.oddajeCios);

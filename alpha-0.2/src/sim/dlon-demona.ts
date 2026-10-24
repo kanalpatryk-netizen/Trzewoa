@@ -1,7 +1,7 @@
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { DLON } from '../nastawy/dlon';
-import { walczacy, maxHp, rolaPostaci } from './lud';
+import { walczacy, maxHp, rolaPostaci, oznaczCios } from './lud';
 import { kto, zapisz } from './dziennik';
 import { T } from './tiles';
 
@@ -325,6 +325,7 @@ export function krokLotu(sim: Sim, c: Creature): boolean {
     L.vy = Math.abs(L.vy) * 0.15; ny = c.y; L.stropT = sim.tick;
     for (let k = 0; k < 6; k++) sim.spark(nx + sim.rng.range(-0.6, 0.6), ny - 1.4, 'dust');
     c.hp -= maxHp(sim, c) * R.rana * 0.3;
+    oznaczCios(sim, c, true);
   }
   // ziemia — ląduje, ranny i ogłuszony
   if (L.vy > 0 && lity(nx, Math.floor(ny) + 1)) {
@@ -334,6 +335,7 @@ export function krokLotu(sim: Sim, c: Creature): boolean {
     c.vy = 0;
     if (L.vy > 0.05 || L.vx !== 0) {
       c.hp -= maxHp(sim, c) * R.rana;
+      oznaczCios(sim, c, true);
       c.ogluszonyDo = sim.tick + R.ogluszenie;
       c.zamiar = 'leży ogłuszony po upadku'; c.zamiarDo = c.ogluszonyDo;
       for (let k = 0; k < 8; k++) sim.spark(c.x + sim.rng.range(-0.8, 0.8), c.y + 0.9, 'dust');

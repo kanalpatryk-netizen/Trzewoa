@@ -140,7 +140,7 @@ export const GLOS_RYCERZA: NastawyGlosu = {
   poglos: 0.16,
   /** Głos wchodzi tyle sekund po głuchym stuku odmowy (żeby się nie zlały). */
   opoznienie: 0.12,
-  /** Najmniej tyle ms między dwiema odmowami na głos; póki rycerz mówi, następny nie zaczyna. */
+  /** Najmniej tyle ms między dwiema odmowami na głos; póki ktoś mówi coś nie mniej ważnego (GLOSY_LUDU.waga), odmowa nie zaczyna. */
   odstepMs: 500,
   /** Nagrania wyrównuje się do jednej głośności: średnia z głośnych fragmentów (dBFS), szczyt najwyżej −1 dBFS. */
   wyrownajDo: -20,
@@ -195,6 +195,59 @@ export const GLOS_POBOZNEGO: NastawyGlosu = {
     pospolite: { szansa: 9.09, pliki: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11'] },
   },
 };
+
+/**
+ * GŁOSY LUDU (Alpha) — kwestie z gra222/dzwieki/jednostki/. Każdy folder to jedna kwestia, a wielka litera na końcu
+ * nazwy mówi, czyja (R — rycerz; folder bez litery mówi każdy z ludu, a folder z literą ma pierwszeństwo):
+ *  - potwierdzenie — postać przyjęła rozkaz („Ruszamy!”, „No to w drogę!”),
+ *  - atak — rusza do walki ze Strażnikami Snu albo z demonem („Do boju!”),
+ *  - bol — oberwała („Argh!”, „Ała!”),
+ *  - glod — jest głodna.
+ * Nowy plik .mp3 w folderze trafia do gry sam i dzieli szanse z resztą po równo, a ta sama kwestia nie pada dwa razy
+ * z rzędu. Plik, którego nazwa zaczyna się od „rzadkie”, gra w tych samych chwilach co reszta folderu, ale ze stałą
+ * szansą (`rzadkie`). Naraz mówi jeden: kwestia o większej wadze ucina tę, która jeszcze trwa, mniejsza i równa
+ * przepadają. Kiedy która kwestia pada — app/screens/game.ts (glosyLudu). Przerwy w sekundach, głód w skali 0..1.
+ */
+export const GLOSY_LUDU = {
+  /** Czyje nagrania: wielka litera na końcu nazwy folderu → rola (nowa rola — nowa litera, np. P: 'pobozny'). */
+  koncowki: { R: 'rycerz' } as Record<string, 'pobozny' | 'robotnik' | 'rycerz'>,
+  /** Plik o nazwie zaczynającej się od `nazwa` gra z szansą `szansa` (%) za każdym razem, gdy pada kwestia z jego folderu. */
+  rzadkie: { nazwa: 'rzadkie', szansa: 0.5 },
+  /** Waga kwestii: ważniejsza (więcej) ucina mniej ważną; odmowa to głos z gra222/dzwieki/odmowy/ (GLOS_RYCERZA…). */
+  waga: { bol: 4, atak: 3, potwierdzenie: 2, odmowa: 2, glod: 1 },
+  /** Głośność głosu (mnożnik; razem z suwakiem głośności i przełącznikiem efektów) i ile idzie w pogłos jaskini. */
+  glosnosc: 0.7, poglos: 0.16,
+  /** Potwierdzenie wchodzi tyle sekund po kliknięciu; nowy rozkaz ucina poprzednie potwierdzenie, ale najwyżej co `odstep` s. */
+  potwierdzenie: { opoznienie: 0.06, odstep: 1.5 },
+  /**
+   * Atak: okrzyk, gdy postać rusza do walki — najwyżej co `przerwa` s; nowy przeciwnik w tej samej walce (walczyła
+   * najwyżej `walkaTrwa` s temu) — tylko z szansą `nastepnySzansa`. Na demona krzyczy zawsze, gdy pierwszy raz na niego rusza.
+   */
+  atak: { przerwa: 15, walkaTrwa: 3, nastepnySzansa: 1 / 3 },
+  /**
+   * Ból: mocny cios (demon, rzut dłonią z otchłani — strop i ziemia, bolesny upadek, cios, od którego ginie) — zawsze,
+   * najwyżej co `mocnyCo` s; słaby (Strażnik Snu) — najwyżej co `slabyCo` s i z szansą `slabySzansa`. Głód nie boli
+   * (od tego jest głód).
+   */
+  bol: { mocnyCo: 1, slabyCo: 3, slabySzansa: 0.5 },
+  /**
+   * Głód: pierwszy raz, gdy dojdzie do `od` (tyle, że rycerz i pobożni sami idą jeść — LUD.glodSam), potem co `co` s;
+   * od `przymiera` (biegnie do liny wiadra, zaraz zacznie tracić życie) co `coPrzymiera` s. Cichnie, gdy zje (głód
+   * poniżej `syty`). W walce nie marudzi, chyba że przymiera; gdy czas stoi (pauza, otwarta karta) — wcale.
+   */
+  glod: { od: 0.6, przymiera: 0.85, syty: 0.35, co: 25, coPrzymiera: 10 },
+  /** Nagrania wyrównuje się i przycina jak odmowy (opis przy GLOS_RYCERZA)… */
+  wyrownajDo: -20, mowaOd: -30, ciszaPonizej: -45, pustePonizej: -50,
+  /**
+   * …a do tego mowa kończy się najpóźniej na pierwszej ciszy dłuższej niż `przerwaKonczy` s (cichszej niż `przerwaPonizej`
+   * dB pod najgłośniejszym miejscem nagrania): stuk albo urwany kawałek następnej kwestii na końcu pliku odpada, zamiast
+   * trzymać postać przy słowie przez sekundę ciszy. Krótsze przerwy w środku kwestii zostają (w bolR/rzadkie.mp3 jest 0,6 s).
+   */
+  przerwaKonczy: 1, przerwaPonizej: -35,
+};
+
+/** Kwestie ludu — foldery w gra222/dzwieki/jednostki/ (bez litery roli). */
+export type KwestiaLudu = 'potwierdzenie' | 'atak' | 'bol' | 'glod';
 
 /** Nastawy głosu jednej roli (GLOS_RYCERZA, GLOS_POBOZNEGO) — core/glos-odmowy.ts. */
 export interface NastawyGlosu {
