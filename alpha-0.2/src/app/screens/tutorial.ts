@@ -173,7 +173,7 @@ export class EkranSamouczka implements Ekran {
 
   wejdz(): void {
     this.gra.nowaGra(ZIARNO_SAMOUCZKA);
-    this.gra.sim.spokojnySwiat = true;      // stały świat: żadnych zaraz i najazdów w trakcie nauki
+    this.gra.sim.spokojnySwiat = true;      // stały świat: żadnych zaraz ani klęsk w trakcie nauki
     this.gra.sim.nakarmSwiat();             // i wiadro z jedzeniem od razu, żeby nauka nie była patrzeniem na głód
     this.gra.wejdz({ tryb: 'samouczek' });
     this.app.muzyka.ustawScene('samouczek');

@@ -1026,7 +1026,7 @@ export const TABLICE: Tablica[] = [
   // zasoby
   {
     id: 'krew', grupa: 'zasoby', nazwa: 'Krew', lacina: 'Sanguis',
-    opis: `Liczba nad płytą i relikwiarz pod nią: krew stoi w szklanej ampułce, a granaty w złotej oprawie żarzą się, gdy jej przybywa; pełna ampułka pulsuje, a nadmiar przepada. Na Koszmarze zaczynasz z ${Math.max(0, LUD.krewStart - GORA.koszmarKrew)}, mieści się jej najwyżej ${GORA.krewMax}. Płaci ci ją każda śmierć — także Strażników Snu i ludzi z powierzchni — i ofiary przy ołtarzu: krwi pobożnego (+${LUD.okaleczenieKrew}) i jego życia (+${LUD.ofiaraKrew}).`,
+    opis: `Liczba nad płytą i relikwiarz pod nią: krew stoi w szklanej ampułce, a granaty w złotej oprawie żarzą się, gdy jej przybywa; pełna ampułka pulsuje, a nadmiar przepada. Na Koszmarze zaczynasz z ${Math.max(0, LUD.krewStart - GORA.koszmarKrew)}, mieści się jej najwyżej ${GORA.krewMax}. Płaci ci ją każda śmierć — także Strażników Snu — i ofiary przy ołtarzu: krwi pobożnego (+${LUD.okaleczenieKrew}) i jego życia (+${LUD.ofiaraKrew}).`,
     kiedy: 'Wydajesz ją na rytuały przy ołtarzu, na liny, na dodatkowe jedzenie rytem Nakarm i na wybory na kartach wydarzeń.',
     rycina: rysujKrew,
   },
@@ -1117,7 +1117,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'wydarzenia', grupa: 'prawa', nazwa: 'Wydarzenia', lacina: 'Aestus',
-    opis: `Co ${Math.round(WYDARZENIA.odstep / 120)}–${Math.round((WYDARZENIA.odstep + WYDARZENIA.rozrzut) / 120)} sekund coś się dzieje: ludzie schodzą z powierzchni, nadchodzi zaraza, lud głoduje albo prosi o znak, pobożni chcą zejść do krypty, głębia proponuje układ, jedzenie w wiadrze gnije, strop nad drogą wiernych pęka. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku.`,
+    opis: `Co ${Math.round(WYDARZENIA.odstep / 120)}–${Math.round((WYDARZENIA.odstep + WYDARZENIA.rozrzut) / 120)} sekund coś się dzieje: nadchodzi zaraza, lud głoduje albo prosi o znak, pobożni chcą zejść do krypty, głębia proponuje układ, jedzenie w wiadrze gnije, strop nad drogą wiernych pęka. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku.`,
     kiedy: 'Zgniłe jedzenie lepiej oczyścić albo wylać, niż zjeść. Podparty strop oszczędza robotnikom kopania.',
     rycina: cala(rysujPrzyplyw),
   },

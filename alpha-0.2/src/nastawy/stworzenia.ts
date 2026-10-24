@@ -122,8 +122,8 @@ export const STWORZENIA = {
   // ---------------------------------------------------------------- zmysły
   /** Co ile tików stworzenie się rozgląda (odkrywa mapę). */
   rozgladanieCo: 7,
-  /** Promień wzroku: ludzie, trole, reszta. */
-  wzrokLudzi: 8, wzrokTroli: 8, wzrok: 6,
+  /** Promień wzroku: trole, reszta. */
+  wzrokTroli: 8, wzrok: 6,
 
   // ----------------------------------------------------------- zakleszczenie
   /** Co ile tików sprawdza, czy stoi w miejscu. */
@@ -192,16 +192,16 @@ export const STWORZENIA = {
   przadkaTikow: 90,
 
   // --------------------------------------------------------------- wrogowie
-  /** Wroga wypatruje w tym promieniu: ludzie / reszta. */
-  wrogZasiegLudzi: 16, wrogZasieg: 11,
+  /** Wroga wypatruje w tym promieniu. */
+  wrogZasieg: 11,
   /** Wróg jest „straszny”, gdy jest silniejszy o tyle razy… */
   strasznyWrog: 2.2,
   /** …wtedy ucieka z szansą to × podatność rasy na strach. */
   strachSzansa: 0.6,
   /** Prządka bierze w jarzmo zamiast walczyć, z taką szansą. */
   przadkaJarzmoSzansa: 0.75,
-  /** Tiki: branie w jarzmo, walka, najazd ludzi. */
-  jarzmoTikow: 70, walkaTikow: 60, najazdTikow: 90,
+  /** Tiki: branie w jarzmo, walka. */
+  jarzmoTikow: 70, walkaTikow: 60,
 
   // ---------------------------------------------------------------- jedzenie
   /** Od takiego głodu idzie jeść. */
@@ -339,12 +339,4 @@ export const STWORZENIA = {
   cieploOddajeLup: 4, cieploBlisko: 3.6,
   /** …i ubywa mu tyle głodu na tik, aż spadnie poniżej `cieploSyty`. */
   cieploJe: 0.005, cieploSyty: 0.12,
-
-  // ------------------------------------------------------------------ ludzie
-  /** Człowiek wraca na powierzchnię z tyloma rudy albo ranny poniżej tego ułamka zdrowia. */
-  ludzieNiosa: 4, ludzieRanni: 0.35,
-  /** Wychodzi, gdy jest wyżej niż ta linia. */
-  ludzieWychodza: 12,
-  /** Szuka rudy w tym promieniu; bez niej idzie ± tyle w bok i do tylu w dół. */
-  ludzieRuda: 18, ludzieSzukajX: 14, ludzieSzukajY: 10,
 };

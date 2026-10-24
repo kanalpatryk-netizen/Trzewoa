@@ -34,6 +34,7 @@ const KUCANIE_MS = 170;
  */
 function przykucniecie(sim: Sim, c: Creature, czas: number): number {
   const w = sim.world;
+  if (!w) return 0;     // tablice atlasu rysują postać bez świata — nie ma nad nią skały
   const x = Math.floor(c.x), y = Math.floor(c.y);
   const naZiemi = c.vy <= 0.3 && !c.lot && w.solid(x, y + 1);
   const cel = naZiemi && w.solid(x, y - 1) ? 1 : 0;

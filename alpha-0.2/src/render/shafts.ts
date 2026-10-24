@@ -31,7 +31,7 @@ export function odWidoku(w: World, x: number, y: number): number {
 
 /**
  * Smugi światła z powierzchni. Wpadają tylko tam, gdzie ktoś przebił się do nieba —
- * więc pokazują graczowi, którędy przyjdą ludzie.
+ * więc pokazują graczowi, gdzie góra jest otwarta.
  */
 export function smugiSwiatla(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, czas: number): void {
   const w = sim.world;

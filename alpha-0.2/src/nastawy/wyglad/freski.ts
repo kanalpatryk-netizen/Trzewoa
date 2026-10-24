@@ -11,7 +11,7 @@ export const FRESKI = {
   // ------------------------------------------------------------ karta wydarzenia
   /** Ilustracja po lewej stronie karty, według rodzaju wydarzenia. */
   wydarzenia: {
-    najazd: 'wielblad', plemie: 'wielblad',
+    plemie: 'wielblad',
     zawal: 'smok',
     zaraza: 'diabel-2', spisek: 'diabel-2',
     zyla: 'diabel-3', wojna: 'diabel-3', plony: 'diabel-3',

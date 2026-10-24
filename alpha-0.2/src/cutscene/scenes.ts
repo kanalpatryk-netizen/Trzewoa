@@ -81,13 +81,13 @@ export const SCENY: Record<string, Scena> = {
   },
 
   rasy: {
-    id: 'rasy', tytul: 'Sześć sposobów istnienia',
+    id: 'rasy', tytul: 'Pięć sposobów istnienia',
     rysunek: rysujRasy,
     linie: [
       'Nie ma tu ras lepszych i gorszych. Każda istnieje inaczej i inaczej rośnie.',
       'Ślepy Lud rodzi dzieci i modli się najgorliwiej. Żużlowcy nie rodzą — wykuwają nowych kowali z rudy i żyją z ciepła kuźni.',
       'Prządki nie podbijają, tylko biorą w jarzmo i przerabiają cudze dzieci na swoje. Trolem nikt się nie rodzi: trolem się zostaje, gdy kopie się za głęboko.',
-      'Grzybnia nie ma jednostek — rośnie ze zwłok i nie czci cię wcale. Ludzie nie mieszkają w tobie: schodzą z powierzchni po rudę i wracają.',
+      'Grzybnia nie ma jednostek — rośnie ze zwłok i nie czci cię wcale.',
     ],
   },
 
@@ -97,7 +97,7 @@ export const SCENY: Record<string, Scena> = {
     linie: [
       'Co kilka tysięcy tików coś wchodzi z zewnątrz i tasuje planszę.',
       'Woda znajduje szczelinę i zalewa górne korytarze. Zaraza zabiera połowę sił każdemu. Żyła szaleństwa otwiera kryształ w głębi.',
-      'Z powierzchni schodzą ludzie po rudę i sławę — a gdy góra pustoszeje, nowe plemię przychodzi samo, bo pustka przyciąga.',
+      'Gdy góra pustoszeje, nowe plemię przychodzi samo, bo pustka przyciąga.',
       'Przypływu nie da się zatrzymać. Można tylko zdecydować, kto po nim zostanie.',
     ],
   },

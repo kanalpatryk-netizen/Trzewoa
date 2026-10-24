@@ -24,7 +24,7 @@ export interface Cecha {
 
 const ZWYKLA = { wiara: 1, rozrod: 1, glod: 1, sila: 1, kopanie: 1, zycie: 1, strach: 1 };
 
-/** Nacja bez cechy (ludzie z powierzchni, stare zapisy). */
+/** Nacja bez cechy (stare zapisy). */
 export const BEZ_CECHY: Cecha = { id: '', nazwa: '', opis: '', ...ZWYKLA };
 
 export const CECHY: Cecha[] = [
@@ -39,7 +39,7 @@ export const CECHY: Cecha[] = [
 /**
  * Jakie cechy może wylosować dana rasa (numery jak w enum Race: 0 Ślepy Lud, 1 Żużlowcy,
  * 2 trole, 3 Prządki). Trole się nie modlą, a same się nie rozmnażają — pobożność
- * i płodność nic by im nie dały. Ludzie z powierzchni cech nie mają.
+ * i płodność nic by im nie dały.
  */
 export const CECHY_RASY: Record<number, string[]> = {
   0: ['pobozni', 'plodni', 'wojowniczy', 'kopacze', 'dlugowieczni', 'skromni'],

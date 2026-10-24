@@ -1,5 +1,5 @@
 import { BARWA, rgba } from '../../render/palette';
-import { kreskuj, sylwetka, pseudo, blask, type Plotno } from './common';
+import { kreskuj, pseudo, type Plotno } from './common';
 
 /** Przypływ: coś wchodzi z zewnątrz i tasuje planszę, zanim gracz się znudzi. */
 export function rysujPrzyplyw({ ctx, w, h, t, p }: Plotno): void {
@@ -31,15 +31,6 @@ export function rysujPrzyplyw({ ctx, w, h, t, p }: Plotno): void {
   ctx.fillStyle = rgba('#31424d', 0.55);
   ctx.fill(struga);
   kreskuj(ctx, struga, 0.05, 4, rgba(BARWA.papier, 0.5), 1);
-
-  // ludzie schodzą z powierzchni po sławę
-  const ile = Math.floor(p * 4);
-  for (let i = 0; i < ile; i++) {
-    const x = cx - s * 0.9 + i * s * 0.45;
-    const y = powierzchnia + s * (0.3 + i * 0.28);
-    sylwetka(ctx, x, y, s * 0.3, 'kowal', 0.95);
-    blask(ctx, x + s * 0.12, y - s * 0.2, s * 0.22, BARWA.zar, 0.3);
-  }
   void t;
   ctx.restore();
 }

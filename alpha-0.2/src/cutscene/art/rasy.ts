@@ -1,12 +1,12 @@
 import { BARWA, rgba } from '../../render/palette';
 import { sylwetka, kreskuj, type Plotno } from './common';
 
-/** Sześć sposobów istnienia w jednym szeregu — każdy inny, żaden nie „lepszy". */
+/** Pięć sposobów istnienia w jednym szeregu — każdy inny, żaden nie „lepszy". */
 export function rysujRasy({ ctx, w, h, t, takt, taktP }: Plotno): void {
   const etap = takt + taktP;
   const s = Math.min(w * 0.062, h * 0.26);
   const typy: Array<'goblin' | 'kowal' | 'trol' | 'przadka'> = ['goblin', 'kowal', 'trol', 'przadka'];
-  const nazwy = ['Ślepy Lud', 'Żużlowcy', 'Trole', 'Prządki', 'Ludzie', 'Grzybnia'];
+  const nazwy = ['Ślepy Lud', 'Żużlowcy', 'Trole', 'Prządki', 'Grzybnia'];
   const ile = nazwy.length;
   const rozstaw = Math.min((w * 0.82) / ile, s * 2.6);
   const x0 = w / 2 - (rozstaw * (ile - 1)) / 2;
@@ -35,12 +35,6 @@ export function rysujRasy({ ctx, w, h, t, takt, taktP }: Plotno): void {
         : (Math.floor(t / 900) % 2) * s * 0.06;
       const wejscieX = (1 - widoczny) * -s * 1.5;
       sylwetka(ctx, x + chod + wejscieX, podloga, s * (i === 2 ? 1.05 : 0.8), typy[i], 1);
-    } else if (i === 4) {
-      sylwetka(ctx, x + (1 - widoczny) * -s * 1.5, podloga, s * 0.95, 'kowal', 1);
-      ctx.fillStyle = rgba(BARWA.zar, 0.6 + 0.3 * Math.sin(t * 0.008));
-      ctx.beginPath();
-      ctx.arc(x + s * 0.3 + (1 - widoczny) * -s * 1.5, podloga - s * 0.62, s * 0.12 * (0.9 + 0.2 * Math.sin(t * 0.01)), 0, Math.PI * 2);
-      ctx.fill();
     } else {
       const grzyb = new Path2D();
       for (let k = 0; k < 9; k++) {

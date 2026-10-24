@@ -155,7 +155,7 @@ export function nowyStanLudu(): StanLudu {
   return { siedzibaT: 0, sklad: null, obozy: [], spizarnie: [] };
 }
 
-/** Rola postaci ludu — albo null dla obcych (ludzie z powierzchni). */
+/** Rola postaci ludu — albo null dla obcych nacji. */
 export function rolaPostaci(c: Creature): Rola | null {
   return c.race === Race.GOBLIN ? (c.rola ?? 'pobozny') : null;
 }
