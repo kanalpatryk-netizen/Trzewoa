@@ -178,6 +178,8 @@ export class Sim {
   tideTick = -1;
 
   private hash: Creature[][] = [];
+  /** Komórki `hash`, w których po ostatnim przeliczeniu ktoś jest — tylko je trzeba opróżnić (reszta już jest pusta). */
+  private zajete: number[] = [];
   private hashW = 0; private hashH = 0;
   private readonly CELL = 8;
 
@@ -346,11 +348,16 @@ export class Sim {
   }
 
   private rehash(): void {
-    for (const cell of this.hash) cell.length = 0;
+    // co tik: dawniej opróżniało wszystkie komórki siatki (720) dla kilkunastu stworzeń — teraz tylko zajęte
+    for (const k of this.zajete) this.hash[k].length = 0;
+    this.zajete.length = 0;
     for (const c of this.creatures) {
       const cx = Math.min(this.hashW - 1, Math.max(0, (c.x / this.CELL) | 0));
       const cy = Math.min(this.hashH - 1, Math.max(0, (c.y / this.CELL) | 0));
-      this.hash[cy * this.hashW + cx].push(c);
+      const k = cy * this.hashW + cx;
+      const komorka = this.hash[k];
+      if (!komorka.length) this.zajete.push(k);
+      komorka.push(c);
     }
   }
 

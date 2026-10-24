@@ -3,7 +3,7 @@ import { zapisz, NAZWY_KAFLI } from './dziennik';
 import { RACES, Race } from './races';
 import { PASSABLE, T } from './tiles';
 import { WORLD_W, WORLD_H } from './world';
-import { wolny, stoi, uchwyt, nadOgniem, przepasc, szukajKopiac, szukajDrogi, budzetDrog, nowyTik } from './droga';
+import { wolny, stoi, uchwyt, nadOgniem, przepasc, szukajKopiac, szukajDrogi, budzetDrog, nowyTik, maCos } from './droga';
 import { zdarzenie, kotwicaLiny } from './pomieszczenia';
 import { Job } from './creatures';
 import { PLAN_DROGI, PIELGRZYMKA } from '../nastawy/rytual';
@@ -35,8 +35,6 @@ export interface PlanDrogi {
   dwukierunkowa?: boolean;
   /** Alpha (jedno wiadro): kafle drogi, przez które sama spada lina — na zakrętach, żeby dało się wrócić. */
   liny?: number[];
-  /** (kafle `sciezka` jako zbiór — liczony raz, przy pierwszym pytaniu; sim/droga.ts: podDroga) */
-  zbior?: Set<number>;
 }
 
 const KOSZT_SKALY = PLAN_DROGI.kosztSkaly;
@@ -91,7 +89,10 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0, dwukierunkowa =
   if (proba === 0) osiagalneZBazy(sim, klan.hx, klan.hy);
   const plywa = RACES[klan.race].swims;
   // skały przy ogniu i przy wodzie nie ruszamy: przebity strop zalałby drogę i gniazdo
+  // (bez płynów w świecie każda skała jest bezpieczna — nie trzeba oglądać sąsiadów każdego kafla)
+  const plyny = maCos(w.magma) || maCos(w.water);
   const bezpieczna = (i: number) => {
+    if (!plyny) return true;
     const x = i % W;
     for (const j of [i - W, i + W, x > 0 ? i - 1 : -1, x < W - 1 ? i + 1 : -1]) {
       if (j < 0 || j >= N) continue;

@@ -48,6 +48,12 @@ export const LUD = {
   plon: 2, posilek: 0.45,
   /** Szukając drogi do spiżarni, przeszukuje się najwyżej tyle kafli (to nie długość drogi, tylko zasięg szukania). */
   doSpizarni: 9000,
+  /**
+   * Odcięty w kieszeni wkopuje się do spiżarni drogą z kopaniem przeglądającą najwyżej tyle kafli. Udaje się to tylko
+   * tuż przy wiadrze (w 30 partiach bota: 11 udanych, najwięcej 64 przejrzane kafle); nieudane szukanie przeglądało
+   * dawniej prawie całą górę (limit rozkazu, 40 000 kafli) i wracało co pół sekundy głodnego spaceru — zgrzyt klatki.
+   */
+  wkopDoSpizarni: 8000,
   /** Kto nie zdołał dojść do spiżarni, przez tyle tików szuka grzyba sam (10 s). */
   spizarniaPrzerwa: 1200,
 

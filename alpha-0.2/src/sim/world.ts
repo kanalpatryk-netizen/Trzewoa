@@ -10,6 +10,8 @@ export const WORLD_H = SWIAT.wysokosc;
 export const SURFACE_Y = SWIAT.powierzchnia;
 /** Po tylu tikach bez niczyjego spojrzenia rysunek rozpada się w pusty papier. */
 export const MEM_SPAN = SWIAT.pamiecTikow;
+/** Bajt ziemi powtórzony w czterech bajtach słowa (World.tickSoil). */
+const ZIEMIA_X4 = T.SOIL * 0x01010101;
 
 /** Góra: kafle, woda, magma i pamięć o tym, gdzie ktokolwiek dotarł. */
 export class World {
@@ -68,6 +70,8 @@ export class World {
   ruiny: Ruina[] = [];
   private ziarno = 0;
   private flip = false;
+  /** `tile` po cztery kafle (tickSoil) — ten sam bufor, tworzony raz. */
+  private slowaKafli: Uint32Array | null = null;
 
   constructor(seed: number) {
     this.ziarno = seed;
@@ -549,9 +553,19 @@ export class World {
   tickSoil(tick: number): void {
     const { w, h, tile } = this;
     const right = tick % 2 === 0;
+    // co trzeci tik cała góra: po cztery kafle naraz (słowo 32-bitowe), a kafel po kaflu tylko tam, gdzie w słowie
+    // jest ziemia. Kolejność kafli ziemi się nie zmienia — ziemia z wiersza spada tylko do wiersza niżej, już
+    // przejrzanego, więc w słowach dalej w tym samym wierszu ziemi nie przybywa
+    const slowa = w % 4 === 0 && tile.byteOffset % 4 === 0 ? (this.slowaKafli ??= new Uint32Array(tile.buffer, tile.byteOffset, tile.length >> 2)) : null;
+    const naWiersz = w >> 2;
     for (let y = h - 2; y >= 1; y--) {
       for (let k = 0; k < w; k++) {
         const x = right ? k : w - 1 - k;
+        if (slowa && (right ? (x & 3) === 0 : (x & 3) === 3)) {
+          // bajt równy SOIL po XOR to zero — „czy w słowie jest zerowy bajt” (bez fałszywych przeczeń)
+          const v = slowa[y * naWiersz + (x >> 2)] ^ ZIEMIA_X4;
+          if (((v - 0x01010101) & ~v & 0x80808080) === 0) { k += 3; continue; }
+        }
         const i = y * w + x;
         if (tile[i] !== T.SOIL) continue;
         const below = i + w;
