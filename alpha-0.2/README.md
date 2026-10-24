@@ -50,6 +50,10 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
   wszystko, okrzyk ucina potwierdzenie, odmowę i głód, potwierdzenie i odmowa ucinają głód. Ta sama kwestia nie pada dwa razy
   z rzędu, a nowy plik .mp3 w folderze trafia do gry sam. Kod: `src/core/glosy-ludu.ts` (nagrania), `glosyLudu` w
   `src/app/screens/game.ts` (kiedy), liczby: `GLOSY_LUDU` w `src/nastawy/dzwiek.ts`.
+- **Głos pobożnego:** te same chwile co u rycerza, z folderów z literą P — `potwierdzenieP` (przyjęty rozkaz), `bolP` (cios),
+  `glodP` (głód); `atakP` czeka, aż pobożny dostanie własną walkę (`GLOSY_LUDU.pomin`). Głos pobożnego — także w odmowach —
+  jest o półtora półtonu niższy (`GLOSY_LUDU.wysokosc`, −150 centów: wolniejsze odtwarzanie, kwestia trwa ok. 9% dłużej).
+  Na rozkaz dla grupy odpowiada jeden głos (potwierdzenie najwyżej co 1,5 s, wspólnie dla wszystkich).
 - **Bez napisów na mapie:** świat nie ma podpisów — ani „siedziba · w wiadrze…”, ani „przedsionek”, „żelazo” przy kółkach
   podpowiedzi, ani podpisu Wielkiego Pomnika, obozów, zabytków i końców drogi wiernych, ani liczb porcji przy wiadrach
   (jedzenie jest na liczniku nad płytą). Kółka i strzałki podpowiedzi zostają, bez słów.

@@ -198,7 +198,7 @@ export const GLOS_POBOZNEGO: NastawyGlosu = {
 
 /**
  * GŁOSY LUDU (Alpha) — kwestie z gra222/dzwieki/jednostki/. Każdy folder to jedna kwestia, a wielka litera na końcu
- * nazwy mówi, czyja (R — rycerz; folder bez litery mówi każdy z ludu, a folder z literą ma pierwszeństwo):
+ * nazwy mówi, czyja (R — rycerz, P — pobożny; folder bez litery mówi każdy z ludu, a folder z literą ma pierwszeństwo):
  *  - potwierdzenie — postać przyjęła rozkaz („Ruszamy!”, „No to w drogę!”),
  *  - atak — rusza do walki ze Strażnikami Snu albo z demonem („Do boju!”),
  *  - bol — oberwała („Argh!”, „Ała!”),
@@ -209,15 +209,25 @@ export const GLOS_POBOZNEGO: NastawyGlosu = {
  * przepadają. Kiedy która kwestia pada — app/screens/game.ts (glosyLudu). Przerwy w sekundach, głód w skali 0..1.
  */
 export const GLOSY_LUDU = {
-  /** Czyje nagrania: wielka litera na końcu nazwy folderu → rola (nowa rola — nowa litera, np. P: 'pobozny'). */
-  koncowki: { R: 'rycerz' } as Record<string, 'pobozny' | 'robotnik' | 'rycerz'>,
+  /** Czyje nagrania: wielka litera na końcu nazwy folderu → rola (nowa rola — nowa litera). */
+  koncowki: { R: 'rycerz', P: 'pobozny' } as Record<string, 'pobozny' | 'robotnik' | 'rycerz'>,
+  /** Foldery, których gra (jeszcze) nie używa: pobożny nie ma jeszcze ataku — atakP czeka na mechanikę walki pobożnego. */
+  pomin: ['atakP'],
+  /**
+   * Wysokość głosu roli w centach (100 = półton; mniej = niżej) — także w odmowach z gra222/dzwieki/odmowy/. Głos
+   * schodzi niżej przez wolniejsze odtwarzanie, więc kwestia trwa odrobinę dłużej (−150 — o ok. 9%).
+   */
+  wysokosc: { pobozny: -150, robotnik: 0, rycerz: 0 } as Record<'pobozny' | 'robotnik' | 'rycerz', number>,
   /** Plik o nazwie zaczynającej się od `nazwa` gra z szansą `szansa` (%) za każdym razem, gdy pada kwestia z jego folderu. */
   rzadkie: { nazwa: 'rzadkie', szansa: 0.5 },
   /** Waga kwestii: ważniejsza (więcej) ucina mniej ważną; odmowa to głos z gra222/dzwieki/odmowy/ (GLOS_RYCERZA…). */
   waga: { bol: 4, atak: 3, potwierdzenie: 2, odmowa: 2, glod: 1 },
   /** Głośność głosu (mnożnik; razem z suwakiem głośności i przełącznikiem efektów) i ile idzie w pogłos jaskini. */
   glosnosc: 0.7, poglos: 0.16,
-  /** Potwierdzenie wchodzi tyle sekund po kliknięciu; nowy rozkaz ucina poprzednie potwierdzenie, ale najwyżej co `odstep` s. */
+  /**
+   * Potwierdzenie wchodzi tyle sekund po kliknięciu; nowy rozkaz ucina poprzednie potwierdzenie, ale najwyżej co `odstep` s
+   * (wspólnie dla wszystkich — na rozkaz dla grupy odpowiada jeden głos).
+   */
   potwierdzenie: { opoznienie: 0.06, odstep: 1.5 },
   /**
    * Atak: okrzyk, gdy postać rusza do walki — najwyżej co `przerwa` s; nowy przeciwnik w tej samej walce (walczyła

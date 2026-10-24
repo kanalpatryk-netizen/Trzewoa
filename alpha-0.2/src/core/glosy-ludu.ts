@@ -35,6 +35,7 @@ export class GlosyLudu {
     for (const folder of [...foldery.keys()].sort((a, b) => zLitera(a) - zLitera(b))) {
       const [, kwestia, litera] = /^(.*?)([A-Z]*)$/.exec(folder)!;
       const rola = litera ? GLOSY_LUDU.koncowki[litera] : undefined;
+      if (GLOSY_LUDU.pomin.includes(folder)) continue;
       if (!KWESTIE.includes(kwestia as KwestiaLudu)) { console.warn(`Głos ludu: nie wiem, kiedy mówić „${folder}” — pomijam.`); continue; }
       if (litera && !rola) { console.warn(`Głos ludu: nie wiem, czyj jest „${folder}” (litera ${litera}) — pomijam.`); continue; }
       const zestaw = new ZestawNagran(`Głos ludu: ${folder}`, foldery.get(folder)!, GLOSY_LUDU, szansaPliku);

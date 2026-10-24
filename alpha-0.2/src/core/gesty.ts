@@ -177,7 +177,7 @@ export class Gesty {
     if (!this.gotowe || !this.wolnoMowic('odmowa', waga) || !this.wolno(`glos:${kto}`, G.odstepMs)) return false;
     const n = glos.losuj();
     if (!n) return false;
-    this.powiedz(n, 'odmowa', waga, G.glosnosc, G.poglos, G.opoznienie, pan);
+    this.powiedz(n, 'odmowa', waga, G.glosnosc, G.poglos, G.opoznienie, pan, GLOSY_LUDU.wysokosc[kto]);
     return true;
   }
 
@@ -191,10 +191,10 @@ export class Gesty {
   glosLudu(rola: Rola, kwestia: KwestiaLudu, pan = 0, ucinaSiebie = false): boolean {
     const L = GLOSY_LUDU, waga = L.waga[kwestia], potw = kwestia === 'potwierdzenie';
     if (!this.gotowe || !this.glosyLudu.ma(rola, kwestia) || !this.wolnoMowic(kwestia, waga, potw || ucinaSiebie)) return false;
-    if (potw && !this.wolno(`ludu:${rola}:potwierdzenie`, L.potwierdzenie.odstep * 1000)) return false;
+    if (potw && !this.wolno('ludu:potwierdzenie', L.potwierdzenie.odstep * 1000)) return false;
     const n = this.glosyLudu.losuj(rola, kwestia);
     if (!n) return false;
-    this.powiedz(n, kwestia, waga, L.glosnosc, L.poglos, potw ? L.potwierdzenie.opoznienie : 0, pan);
+    this.powiedz(n, kwestia, waga, L.glosnosc, L.poglos, potw ? L.potwierdzenie.opoznienie : 0, pan, L.wysokosc[rola]);
     return true;
   }
 
@@ -207,8 +207,11 @@ export class Gesty {
     return !m || this.ctx!.currentTime >= m.do || waga > m.waga || (ucinaSiebie && m.kwestia === kwestia);
   }
 
-  /** Nagranie mowy wchodzi po `opoznienie` s; to, co jeszcze trwało, gaśnie w kilka setnych sekundy (bez trzasku). */
-  private powiedz(n: Nagranie, kwestia: string, waga: number, glosnosc: number, poglos: number, opoznienie: number, pan: number): void {
+  /**
+   * Nagranie mowy wchodzi po `opoznienie` s; to, co jeszcze trwało, gaśnie w kilka setnych sekundy (bez trzasku).
+   * `wysokosc` (centy, GLOSY_LUDU.wysokosc) obniża albo podnosi głos — wolniejszym albo szybszym odtwarzaniem.
+   */
+  private powiedz(n: Nagranie, kwestia: string, waga: number, glosnosc: number, poglos: number, opoznienie: number, pan: number, wysokosc = 0): void {
     const ctx = this.ctx!, teraz = ctx.currentTime;
     const m = this.mowa;
     if (m && teraz < m.do) {
@@ -218,11 +221,13 @@ export class Gesty {
     const t = teraz + opoznienie;
     const src = ctx.createBufferSource();
     src.buffer = n.bufor;
+    const tempo = 2 ** (wysokosc / 1200);
+    src.playbackRate.value = tempo;
     const g = ctx.createGain();
     g.gain.value = n.wzm * glosnosc;
     src.connect(g); g.connect(this.wyjscie(pan, poglos));
     src.start(t, n.od, n.dl);
-    this.mowa = { do: t + n.dl, waga, kwestia, g, src };
+    this.mowa = { do: t + n.dl / tempo, waga, kwestia, g, src };
   }
 
   /**
