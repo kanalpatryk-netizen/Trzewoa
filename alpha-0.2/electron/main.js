@@ -34,6 +34,8 @@ function otworz() {
     width: 1280, height: 800, minWidth: 640, minHeight: 400,
     fullscreen: wczytajStan().pelny !== false,
     show: false, backgroundColor: '#000000',
+    // Linux: ikona okna (na Windowsie okno bierze ją z pliku .exe)
+    icon: process.platform === 'linux' ? path.join(__dirname, 'gra', 'ikona.png') : undefined,
     webPreferences: { preload: path.join(__dirname, 'preload.js'), contextIsolation: true, sandbox: true, spellcheck: false },
   }));
   w.once('ready-to-show', () => { if (!w.isFullScreen()) w.maximize(); w.show(); w.focus(); });

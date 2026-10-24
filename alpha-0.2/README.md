@@ -149,6 +149,16 @@ więc przy pierwszym uruchomieniu Windows może pokazać „System Windows ochro
 `electron/dist/Trzewia-alpha-0.2.exe`. Kod: `electron/main.js` (okno), `electron/preload.js` i `src/core/program.ts`
 (most gry z oknem). Ikona: `electron/zasoby/ikona.svg` (`node zasoby/ikona.mjs` robi z niej `ikona.ico`).
 
+## Program na Linuksa (`Trzewia-alpha-0.2.AppImage`)
+Na Linuksie graj w tę wersję, nie w .exe przez Protona. Proton tłumaczy grafikę gry dwa razy (OpenGL ES → Direct3D 11
+w Chromium, potem Direct3D 11 → Vulkan w DXVK), więc klatek jest mniej, a przy pierwszym pojawieniu się nowych rzeczy
+(katedra, konwój) gra przycina się na kompilowaniu shaderów. AppImage (125 MB) rysuje wprost przez sterownik karty.
+Uruchomienie: Właściwości → „Plik wykonywalny” (albo `chmod +x Trzewia-alpha-0.2.AppImage`) i dwuklik. W Steamie:
+„Dodaj grę spoza Steam” → plik AppImage, a we Właściwościach → Zgodność nie wymuszaj Protona. Pełny ekran, F11,
+Esc i „Wyjdź z gry” działają jak w .exe. Zapisy leżą w `~/.config/Trzewia` — osobno od .exe w Protonie. Gdyby na
+Waylandzie z kartą NVIDIA obraz migał: `./Trzewia-alpha-0.2.AppImage --ozone-platform=x11`. Budowa: `npm run linux`
+w `electron/` → `electron/dist/Trzewia-alpha-0.2.AppImage`.
+
 ## Obserwatorium (`trzewia-alpha-0.2-obserwatorium.html`)
 Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo. Każde okno osobno: tempo (×¼ … ×20),
 pauza, styl bota (*rozsądny*, *budowniczy*, *speedrun*, *bierny*), ziarno świata, „nowa partia”, „sama następna partia”
