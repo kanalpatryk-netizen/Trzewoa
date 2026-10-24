@@ -65,6 +65,7 @@ export class EkranUstawien implements Ekran {
       { typ: 'przelacznik', etykieta: 'Oddech kamienia', opis: 'powolne falowanie całego rysunku', czytaj: () => ustawienia.oddech, zmien: (v) => ustaw('oddech', v) },
       { typ: 'przelacznik', etykieta: 'Nowe postacie', opis: 'cieniowane postacie ludu z płynnym ruchem; wyłączone — dawny rysunek z ryciny', czytaj: () => ustawienia.nowePostacie !== false, zmien: (v) => ustaw('nowePostacie', v) },
       { typ: 'przelacznik', etykieta: 'Ogranicz ruch', opis: 'wycisza drgania obrazu, dym i wiercenie się sylwetek', czytaj: () => ustawienia.ograniczRuch, zmien: (v) => ustaw('ograniczRuch', v) },
+      { typ: 'przelacznik', etykieta: 'Licznik klatek', opis: 'F3 — klatki na sekundę i ile z każdej klatki zajmuje sama gra, a ile reszta (przeglądarka, karta)', czytaj: () => ustawienia.licznikKlatek, zmien: (v) => ustaw('licznikKlatek', v) },
       // (bez przełącznika kroniki — na telefonie kronika jest tylko w zapiskach)
       { typ: 'przelacznik', etykieta: 'Spis ras', opis: 'wstęga warstw — najważniejszy wskaźnik w grze', czytaj: () => ustawienia.spisRas, zmien: (v) => ustaw('spisRas', v) },
       { typ: 'przelacznik', etykieta: 'Skala głębokości', opis: 'karby na prawym marginesie', czytaj: () => ustawienia.skalaGlebokosci, zmien: (v) => ustaw('skalaGlebokosci', v) },

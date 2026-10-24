@@ -5,4 +5,6 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('trzewiaOkno', {
   pelnyEkran: (tak) => ipcRenderer.send('trzewia:pelny-ekran', tak === true),
   zamknij: () => ipcRenderer.send('trzewia:zamknij'),
+  // licznik klatek (F3): odświeżanie monitora, płótno na karcie, Wine (Proton)
+  info: () => ipcRenderer.invoke('trzewia:info'),
 });

@@ -142,7 +142,9 @@ Grafika (menu, boss i Strażnicy, ikonki) i muzyka adaptacyjna — zadania zespo
 Ta sama gra jako jeden plik .exe (Electron, 352 MB, bez instalacji): dwuklik i gra rusza w pełnym ekranie — bez ramki
 i paska zadań, od pierwszej klatki intra. **F11** albo **Alt+Enter** przełącza pełny ekran i okno; na stałe decyduje
 „Pełny ekran” w Ustawieniach. **Esc** działa w grze (menu, odznaczanie) i nie wyrzuca z pełnego ekranu. W menu jest
-„Wyjdź z gry”; wyjście (także Alt+F4) zapisuje trwającą partię. Zapisy i ustawienia programu leżą w `%APPDATA%\Trzewia`,
+„Wyjdź z gry”; wyjście (także Alt+F4) zapisuje trwającą partię. **F3** (albo Ustawienia → Obraz → „Licznik klatek”)
+pokazuje klatki na sekundę i ile z każdej klatki zajmuje sama gra, a ile reszta — Chromium, sterownik karty, a pod
+Protonem także Wine i DXVK (licznik pisze wtedy „Wine/Proton”). Zapisy i ustawienia programu leżą w `%APPDATA%\Trzewia`,
 osobno od przeglądarki. Rysuje karta graficzna (na laptopie z dwiema kartami — mocniejsza). Plik nie jest podpisany,
 więc przy pierwszym uruchomieniu Windows może pokazać „System Windows ochronił ten komputer” → „Więcej informacji” →
 „Uruchom mimo to”. Budowa: `npm run pack` tutaj, potem w `electron/`: `npm install && npm run exe` →
@@ -158,6 +160,10 @@ Uruchomienie: Właściwości → „Plik wykonywalny” (albo `chmod +x Trzewia-
 Esc i „Wyjdź z gry” działają jak w .exe. Zapisy leżą w `~/.config/Trzewia` — osobno od .exe w Protonie. Gdyby na
 Waylandzie z kartą NVIDIA obraz migał: `./Trzewia-alpha-0.2.AppImage --ozone-platform=x11`. Budowa: `npm run linux`
 w `electron/` → `electron/dist/Trzewia-alpha-0.2.AppImage`.
+
+Test .exe w Protonie: klatek jest tam mniej niż na Windowsie, bo Proton dokłada tłumaczenie grafiki, a nowe rzeczy na
+ekranie (pierwszy raz) przycinają się na kompilowaniu shaderów. Licznik (F3) pokazuje, ile z tego to gra: gdy „gra” ma
+kilka ms, a klatka kilkadziesiąt, resztę zabiera Proton. Dla porównania ta sama gra w AppImage — tam bez Wine i DXVK.
 
 ## Obserwatorium (`trzewia-alpha-0.2-obserwatorium.html`)
 Cztery okna gry na jednej stronie. W każdym gra bot, a ty patrzysz na żywo. Każde okno osobno: tempo (×¼ … ×20),

@@ -5,7 +5,8 @@ import { Muzyka } from '../core/music';
 import { Gesty } from '../core/gesty';
 import { mikser } from '../core/mikser';
 import { akcjaDlaKlawisza } from '../core/keybinds';
-import { ustawienia, ekran } from '../core/settings-store';
+import { ustawienia, ekran, ustaw } from '../core/settings-store';
+import { LicznikKlatek } from '../render/licznik';
 import { EKRAN } from '../nastawy/ekran';
 import { Wstecz, NieGasnij, pelnyEkran } from '../core/android';
 
@@ -28,6 +29,8 @@ export class App implements Kontekst {
   /** Android: systemowy „wstecz” trafia do gry, a ekran nie gaśnie w trakcie partii. */
   private wstecz = new Wstecz(() => this.naWstecz());
   private nieGasnij = new NieGasnij();
+  /** F3: klatki na sekundę i ile z każdej klatki zajmuje sama gra. */
+  private licznik = new LicznikKlatek();
 
   constructor(public canvas: HTMLCanvasElement) {
     this.ctx = canvas.getContext('2d', { alpha: false })!;
@@ -142,6 +145,8 @@ export class App implements Kontekst {
     addEventListener('keydown', (e) => {
       this.obudzDzwiek();
       if (e.key === 'Tab') e.preventDefault();          // Tab pokazuje liczby, nie przeskakuje po stronie
+      // F3 — licznik klatek, na każdym ekranie (chyba że gracz dał F3 jakiejś akcji)
+      if (e.key === 'F3' && !akcjaDlaKlawisza('F3')) { e.preventDefault(); ustaw('licznikKlatek', !ustawienia.licznikKlatek); return; }
       this.aktywny?.klawisz?.(akcjaDlaKlawisza(e.key), e);
     });
     addEventListener('keyup', (e) => {
@@ -162,13 +167,18 @@ export class App implements Kontekst {
   start(pierwszy: string): void {
     this.idz(pierwszy);
     const klatka = (teraz: number) => {
-      const dt = Math.min(100, teraz - this.ostatnia);
+      const odstep = teraz - this.ostatnia;
+      const dt = Math.min(100, odstep);
       this.ostatnia = teraz;
       if (this.zmienilSieEkran()) this.przelicz();
       const e = this.aktywny;
       if (e) {
+        const t0 = performance.now();
         e.krok(dt, teraz);
+        const t1 = performance.now();
         e.rysuj(this.ctx, this.w, this.h, teraz);
+        this.licznik.klatka(teraz, odstep, t1 - t0, performance.now() - t1);
+        if (ustawienia.licznikKlatek) this.licznik.rysuj(this.ctx, this.w, teraz);
       }
       requestAnimationFrame(klatka);
     };

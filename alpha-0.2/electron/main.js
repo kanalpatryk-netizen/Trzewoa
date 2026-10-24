@@ -1,7 +1,7 @@
 // Trzewia — Alpha 0.2 jako program na Windows (Electron): jedno okno z grą (gra/trzewia.html z `npm run pack`).
 // Budowa: npm run exe (budowa.mjs) → dist/Trzewia-alpha-0.2.exe — jeden plik, bez instalacji.
 // Gra startuje w pełnym ekranie (bez ramki i paska zadań); F11 albo Alt+Enter przełącza pełny ekran i okno.
-const { app, BrowserWindow, Menu, ipcMain, session, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, screen, session, shell } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
@@ -77,6 +77,23 @@ ipcMain.on('trzewia:pelny-ekran', (e, chce) => {
   zapiszStan({ ...wczytajStan(), pelny: tak });
 });
 ipcMain.on('trzewia:zamknij', (e) => BrowserWindow.fromWebContents(e.sender)?.close());
+// licznik klatek (F3): czego strona sama nie wie
+ipcMain.handle('trzewia:info', (e) => {
+  const w = BrowserWindow.fromWebContents(e.sender);
+  const ekran = w ? screen.getDisplayMatching(w.getBounds()) : screen.getPrimaryDisplay();
+  return {
+    hz: Math.round(ekran.displayFrequency || 0),
+    wine: podWine(),
+    plotnoNaKarcie: String(app.getGPUFeatureStatus()['2d_canvas'] ?? '').startsWith('enabled'),
+  };
+});
+
+/** Wine (np. Proton na Linuksie) zamiast Windowsa: zmienne środowiska Wine albo jego programy w system32. */
+function podWine() {
+  if (process.platform !== 'win32') return false;
+  if (Object.keys(process.env).some((k) => /^(WINE|STEAM_COMPAT_|PROTON_)/i.test(k))) return true;
+  try { return fs.existsSync(path.join(process.env.SystemRoot || 'C:\\windows', 'system32', 'winecfg.exe')); } catch { return false; }
+}
 
 // jeden program naraz: drugie uruchomienie tylko przywołuje okno, które już jest
 if (!app.requestSingleInstanceLock()) app.quit();

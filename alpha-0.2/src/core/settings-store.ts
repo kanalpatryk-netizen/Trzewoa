@@ -33,6 +33,8 @@ export interface Settings {
   nowePostacie: boolean;
   /** Rysunek świata na płycie: malowany jak fresk z ikony albo kreskowany jak dawna rycina. */
   swiat: 'fresk' | 'rycina';
+  /** Licznik klatek w rogu ekranu (F3): klatki na sekundę i ile z klatki zajmuje sama gra. */
+  licznikKlatek: boolean;
 }
 
 export const DOMYSLNE: Settings = {
@@ -61,6 +63,7 @@ export const DOMYSLNE: Settings = {
   pelnyEkran: true,
   nowePostacie: true,
   swiat: 'rycina',
+  licznikKlatek: false,
 };
 
 /**
