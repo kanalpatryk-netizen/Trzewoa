@@ -51,6 +51,11 @@ import { rysujDrogePielgrzymow } from '../../render/pielgrzymka';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
+import { rysujKatedre, rysujKatedreNad } from '../../render/katedra';
+import { rysujPromien } from '../../render/promien';
+import { rysujKonwoj, rysujKonwojNad } from '../../render/konwoj';
+import { wysokoscGrzbietu } from '../../render/grzbiet';
+import { SURFACE_Y } from '../../sim/world';
 import { podswietlCel, strzalkaCelu, type Cel } from '../../render/znaczniki';
 import { podpowiedz, type Podpowiedz } from '../../sim/podpowiedzi';
 import { computePlate, drawFrame, drawKrew, drawSmoke, drawEyelid, drawChronicle, drawOddanie, type Plate } from '../../render/plate';
@@ -1037,14 +1042,23 @@ export class EkranGry implements Ekran {
     this.oltarz.rysuj(ctx, sim, cam);
     // etap 3e: ruiny — mury, łuki, belki, zabytek na posadzce (światło zabytku — nad mrokiem)
     this.ruiny.rysuj(ctx, sim, cam);
+    // katedra na powierzchni nad szybem ze światłem — kamień (szkło rozety i płomienie świec — nad mrokiem)
+    rysujKatedre(ctx, sim, cam);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
     // Remake v2: trupy leżą tam, gdzie padli; wiadra z jedzeniem zjeżdżają na linach
     rysujTrupy(ctx, sim, cam, teraz);
+    // Alpha: kozioł nad szybem wiadra i konwój z jedzeniem, który przyjeżdża przed każdą dostawą
+    const grunt = (x: number) => SURFACE_Y - wysokoscGrzbietu(sim.world, x);
+    rysujKonwoj(ctx, sim, cam, teraz, grunt);
     rysujWiadra(ctx, sim, cam, teraz);
     // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
     rysujMrok(ctx, sim, cam, teraz, this.pauza);
     if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3);
+    // katedra: witraże rozety i okien, płomienie świec — świecą przez mrok; z rozety pada promień na ołtarz
+    rysujKatedreNad(ctx, sim, cam, teraz);
+    rysujPromien(ctx, sim, cam, teraz);
+    rysujKonwojNad(ctx, sim, cam, teraz, grunt);
     // etap 5: Wielki Pomnik demona — nad mrokiem (żarzy się sam i trzeba go widzieć z krypty)
     if (POMNIK.wlaczony) rysujPomnik(ctx, sim, cam, teraz);
     // etap 3b: rozbity kafel rudy błyska (złoto) albo sypie iskry (żelazo) — to światło, więc nad mrokiem —

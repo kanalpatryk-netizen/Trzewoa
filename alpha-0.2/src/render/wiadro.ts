@@ -15,6 +15,7 @@ import { wiadra, type Wiadro, type LinaPrzecieta } from '../sim/wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { SURFACE_Y } from '../sim/world';
 import { wysokoscPostaci } from './figury';
+import { bloczekWiadra } from './konwoj';
 
 /** Tani skrót liczby — stałe kształty strzępów i klepek (rysunek nie sięga po los gry). */
 function los(n: number): number {
@@ -29,13 +30,18 @@ const LINA_CIEN = 'rgba(20,12,8,0.85)';
 /** Wiadro jest większe od kafla (postać ma prawie dwa) — wysokie na tyle, żeby ktoś się w nim zmieścił. */
 const WIELKOSC = 1.6;
 
-/** Gdzie na ekranie: kolumna liny, strop, wiadro (górny lewy róg układu — środek brzegu), jego wielkość i przechył. */
-function uklad(wd: Wiadro, cam: Camera, teraz: number): { sx: number; gora: number; bx: number; top: number; Z: number; kat: number } {
+/**
+ * Gdzie na ekranie: kolumna liny, strop (Alpha: bloczek na koźle nad szybem), wiadro (górny lewy róg układu — środek
+ * brzegu), jego wielkość i przechył. `b` — bloczek kozła (render/konwoj.ts): lina wiadra w szybie biegnie z niego,
+ * a wiadro, zanim zjedzie i gdy wróci na górę, wisi pod nim nad wylotem szybu.
+ */
+function uklad(wd: Wiadro, cam: Camera, teraz: number, b: { x: number; y: number } | null): { sx: number; gora: number; bx: number; top: number; Z: number; kat: number } {
   const z = cam.zoom;
-  const sx = cam.toScreenX(wd.x + 0.5), gora = cam.toScreenY(wd.sufit);
+  const zKozla = !!b && !!wd.szyb;
+  const sx = cam.toScreenX(wd.x + 0.5), gora = cam.toScreenY(zKozla ? b!.y : wd.sufit);
   const Z = Math.max(10, z * WIELKOSC);
-  // dno wiadra na dole kafla, w którym jest — stojące stoi na podłodze
-  const top = cam.toScreenY(wd.y + 1) - Z;
+  // dno wiadra na dole kafla, w którym jest — stojące stoi na podłodze; pod kozłem wyżej niż pod bloczek nie wjedzie
+  const top = cam.toScreenY((zKozla ? Math.max(wd.y, wd.sufit - 1) : wd.y) + 1) - Z;
   // kołysanie w czasie jazdy (wiadro stoi — wisi prosto); etap 4: spadające koziołkuje
   const jedzie = wd.faza === 'zjezdza' || wd.faza === 'odjezdza';
   const kat = wd.faza === 'spada' ? (wd.id % 2 ? 1 : -1) * Math.min(1.2, wd.v * 2.4) : jedzie ? Math.sin(teraz * 0.0021 + wd.id * 1.7) * 0.045 : 0;
@@ -48,19 +54,22 @@ export function rysujWiadra(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
   const st = sim.lud.wiadra;
   const lp = st?.przecieta;
   const z = cam.zoom;
+  const b = bloczekWiadra(sim.world);
   ctx.save();
   ctx.lineCap = 'round';
   // etap 4: przecięta lina — kikut ze strzępami, dolny kawałek, cięcie
   if (lp) rysujPrzecieta(ctx, sim, cam, teraz, lp);
   for (const wd of lista) {
-    if (wd.faza === 'zapowiedz') continue;
+    // zapowiedź: wiadro jeszcze w skale nad stropem — w Alphie już wisi pod bloczkiem kozła, gotowe do zjazdu
+    if (wd.faza === 'zapowiedz' && !(b && wd.szyb)) continue;
     // etap 4: roztrzaskane — klepki, obręcze i rozsypane jedzenie na dnie
     if (wd.faza === 'rozbite') { rozbite(ctx, sim, wd, cam); continue; }
-    const { sx, gora, bx, top, Z, kat } = uklad(wd, cam, teraz);
+    const { sx, gora, bx, top, Z, kat } = uklad(wd, cam, teraz, b);
     const dolJamy = cam.toScreenY(wd.cel + 1);
+    const odBloczka = b && wd.szyb ? 0 : z * 0.2;
     if (sx < -60 || sx > cam.vw + 60 || dolJamy < -60 || gora > cam.vh + 60) continue;
     ctx.save();
-    // nad stropem jamy jest skała — wiadro wjeżdżające w górę znika w niej
+    // nad stropem jamy jest skała — wiadro wjeżdżające w górę znika w niej (w Alphie lina biegnie z bloczka na koźle)
     ctx.beginPath(); ctx.rect(-100, gora, cam.vw + 200, cam.vh + 200 - gora); ctx.clip();
     // lina od stropu do kabłąka (etap 4: przecięta — kikut rysuje rysujPrzecieta, a spadające ciągnie urwany kawałek)
     const kablakY = top + Z * 0.05;
@@ -76,10 +85,10 @@ export function rysujWiadra(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
       if (napina < WIADRO.naprawa.napinanie) {
         const k = napina / WIADRO.naprawa.napinanie;
         const drgnij = Math.sin(napina * 0.45) * (1 - k) * (1 - k) * z * 0.55;
-        linaLuk(ctx, sx, gora - z * 0.2, bx, kablakY, gr, drgnij);
+        linaLuk(ctx, sx, gora - odBloczka, bx, kablakY, gr, drgnij);
         const wy = Math.min(kablakY - z * 0.3, cam.toScreenY(wd.cel + 1 - WIADRO.naprawa.koniecNadDnem));
         supel(ctx, sx + (bx - sx) * 0.9 + drgnij * 0.3, wy, z, 1);
-      } else lina(ctx, sx, gora - z * 0.2, bx, kablakY, gr);
+      } else lina(ctx, sx, gora - odBloczka, bx, kablakY, gr);
     }
     // luźny koniec liny pod zjeżdżającym wiadrem — aż do ziemi, lekko wygięty
     if (wd.faza === 'zjezdza') {
@@ -111,6 +120,19 @@ export function rysujWiadra(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
     kubel(ctx, wd, Z);
     ctx.restore();
   }
+  // Alpha: między dostawami puste wiadro wisi pod bloczkiem kozła — konwój napełni je i spuści (render/konwoj.ts)
+  if (b && !lp && !lista.some((wd) => wd.szyb)) {
+    const sx = cam.toScreenX(b.x), gora = cam.toScreenY(b.y);
+    const Z = Math.max(10, z * WIELKOSC), top = cam.toScreenY(SURFACE_Y - 1) - Z;
+    if (sx > -60 && sx < cam.vw + 60 && top < cam.vh + 60 && gora > -60) {
+      const kol = Math.sin(teraz * 0.0011) * 0.025;
+      lina(ctx, sx, gora, sx + Math.sin(kol) * (top - gora), top + Z * 0.05, Math.max(1, z * 0.09));
+      ctx.save();
+      ctx.translate(sx + Math.sin(kol) * (top - gora), top); ctx.rotate(kol);
+      kubel(ctx, { porcje: 0, pelne: 0 } as Wiadro, Z);
+      ctx.restore();
+    }
+  }
   ctx.restore();
 }
 
@@ -124,7 +146,7 @@ export function rysujPrzodWiader(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
   if (!zajete.size) return;
   for (const wd of wiadra(sim)) {
     if (!zajete.has(wd.id) || wd.faza === 'zapowiedz') continue;
-    const { bx, top, Z, kat } = uklad(wd, cam, teraz);
+    const { bx, top, Z, kat } = uklad(wd, cam, teraz, bloczekWiadra(sim.world));
     ctx.save();
     ctx.translate(bx, top); ctx.rotate(kat);
     kubel(ctx, wd, Z, true);
@@ -187,7 +209,8 @@ function zwojNaDnie(ctx: CanvasRenderingContext2D, x: number, y: number, z: numb
 function rysujPrzecieta(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number, lp: LinaPrzecieta): void {
   const z = cam.zoom;
   const t = sim.tick - lp.od;
-  const sx = cam.toScreenX(lp.x + 0.5), gora = cam.toScreenY(SURFACE_Y - 1);
+  // kikut zwisa z bloczka na koźle (Alpha) albo spod stropu
+  const sx = cam.toScreenX(lp.x + 0.5), gora = cam.toScreenY(bloczekWiadra(sim.world)?.y ?? SURFACE_Y - 1);
   const dno = cam.toScreenY(lp.dno + 1);
   if (sx < -80 || sx > cam.vw + 80 || dno < -80 || gora > cam.vh + 80) return;
   const gr = Math.max(1, z * 0.09);
