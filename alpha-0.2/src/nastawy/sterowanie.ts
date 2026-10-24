@@ -44,6 +44,13 @@ export const TEMPO = {
   mnozniki: [0.25, 0.5, 1, 2, 3, 5, 10, 20],
   /** Najwięcej tików w jednej klatce — wolny komputer zwalnia świat zamiast się dusić. */
   maxNaKlatke: 60,
+  /**
+   * Najwięcej milisekund symulacji w jednej klatce (co najmniej jeden tik i tak się liczy). Gdy świat nie nadąża,
+   * zwalnia, a obraz dalej płynie — bez tego zaległe tiki przechodziły na następną klatkę, która przez to była
+   * jeszcze wolniejsza, i gra stawała. Zwykle tik to ułamek milisekundy, więc budżetu nie widać. Przy przyspieszonym
+   * czasie budżet rośnie razem z mnożnikiem.
+   */
+  budzetKlatkiMs: 8,
 };
 
 /** STEROWANIE PALCEM — tylko wersja Android (na telefonie nie ma klawiatury ani myszy). */

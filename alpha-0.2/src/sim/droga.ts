@@ -193,6 +193,25 @@ function naLancuchu(i: number, j: number, ile: number): boolean {
   return false;
 }
 
+/** Widok po cztery bajty na tablicę kafli (długość świata dzieli się przez 4) — do szybkiego „czy jest tu cokolwiek”. */
+const slowa = new WeakMap<Uint8Array, Uint32Array>();
+
+/**
+ * Czy w tablicy kafli (woda, magma) jest choć jedna niezerowa wartość. Pełny przegląd — kilka mikrosekund, liczony
+ * raz na szukanie, nie raz na kafel: w Alphie płynów nie ma wcale (SWIAT.plyny), a sprawdzanie ich wokół każdego
+ * kafla (5×5 magmy, 3×3 wody, kolumna „nad ogniem”) było połową czasu szukania z kopaniem.
+ */
+export function maCos(a: Uint8Array): boolean {
+  let s = slowa.get(a);
+  if (!s) {
+    if (a.byteOffset % 4 !== 0 || a.length % 4 !== 0) { for (let i = 0; i < a.length; i++) if (a[i] !== 0) return true; return false; }
+    s = new Uint32Array(a.buffer, a.byteOffset, a.length >> 2);
+    slowa.set(a, s);
+  }
+  for (let i = 0; i < s.length; i++) if (s[i] !== 0) return true;
+  return false;
+}
+
 /**
  * Remake v2: droga, na której wolno kuć skałę — gdy zwykłej nie ma, lud wykuwa sobie przejście sam.
  * Ruch jak w `szukajDrogi` dla ludu: w górę tylko z podłogi, o jeden kafel, a stamtąd już tylko w bok
@@ -233,19 +252,24 @@ export function szukajKopiac(
   if (zBudzetu) { if (budzet < 2) return null; budzet -= 2; }
   pokolenieK++;
   if (pokolenieK > 2_000_000_000) { znakK.fill(0); pokolenieK = 1; }
+  const pk = pokolenieK;
+  const tile = w.tile;
+  // bez magmy w świecie nikt nie stanie „nad ogniem” — nie trzeba patrzeć w głąb kolumny pod każdym krokiem w bok
+  const ogien = maCos(w.magma);
   // kubełki kosztów (koszty są małymi liczbami całkowitymi)
   const KUBLY = 32;
   const kubly: number[][] = Array.from({ length: KUBLY }, () => []);
   let zostalo = 0;
   const wstaw = (j: number, d: number, od: number): void => {
-    if (znakK[j] === pokolenieK && d >= odlK[j]) return;
-    znakK[j] = pokolenieK; odlK[j] = d; skadK[j] = od;
+    if (znakK[j] === pk && d >= odlK[j]) return;
+    znakK[j] = pk; odlK[j] = d; skadK[j] = od;
     kubly[d % KUBLY].push(j); zostalo++;
   };
   for (const s of starty) wstaw(s, 0, -1);
-  const lity = (j: number) => PASSABLE[w.tile[j]] !== 1;
-  // pustka po drodze: wolny kafel albo lity, który ta droga przed chwilą wykuła
-  const kuty = (i: number, j: number) => lity(j) && naLancuchu(i, j, 8);
+  const lity = (j: number) => PASSABLE[tile[j]] !== 1;
+  // pustka po drodze: wolny kafel albo lity, który ta droga przed chwilą wykuła (kafla, do którego szukanie jeszcze
+  // nie doszło, na łańcuchu poprzedników być nie może — wtedy łańcucha nie trzeba przechodzić)
+  const kuty = (i: number, j: number) => lity(j) && znakK[j] === pk && naLancuchu(i, j, 8);
   const podloga = (i: number, j: number) => {
     // czy pod kaflem `j` jest na czym stanąć, gdy idzie się z `i`
     const b = j + W;
@@ -254,13 +278,30 @@ export function szukajKopiac(
     return lity(b) && !kuty(i, b);
   };
   const sciana = (x: number, y: number) => w.solid(x - 1, y) || w.solid(x + 1, y) || w.solid(x - 1, y + 1) || w.solid(x + 1, y + 1);
+  // Alpha (droga w obie strony): zszedł do `i` o kafel — dalej w dół już nie (dwa kroki w dół pod rząd to szyb,
+  // którego podłogi następny krok wykuwa: po wykopaniu zostaje zeskok, którym się nie wróci) — w dół schodami
+  const wDolWolno = (i: number, j: number) => !dwukierunkowa || (skadK[i] !== i - W && podloga(i, j));
+  // wejście z `i` (odległość `d`) na kafel `j` (wolny albo do wykucia) za `krok` + koszt kucia
+  const wejdz = (i: number, d: number, j: number, nx: number, ny: number, mozeKuc: boolean): void => {
+    if (j < 0 || j >= N || nx < 0 || nx >= W) return;
+    if (dozwolony && !dozwolony(j, nx, ny)) return;
+    if (lity(j) && !kuty(i, j)) {
+      if (!mozeKuc) return;
+      const k = koszt(j, nx, ny);
+      if (k < 0) return;
+      wstaw(j, d + 1 + Math.min(KUBLY - 2, k), i);
+      return;
+    }
+    if (!wolny(sim, j, plywa) && !kuty(i, j)) return;
+    wstaw(j, d + 1, i);
+  };
   let obejrzane = 0;
   for (let d = 0; zostalo > 0; d++) {
     const kubel = kubly[d % KUBLY];
     while (kubel.length) {
       const i = kubel.pop()!;
       zostalo--;
-      if (odlK[i] !== d || znakK[i] !== pokolenieK) continue;
+      if (odlK[i] !== d || znakK[i] !== pk) continue;
       const x = i % W, y = (i / W) | 0;
       if (cel(i, x, y)) {
         const droga: number[] = [];
@@ -274,56 +315,42 @@ export function szukajKopiac(
       const wisiTu = !stoiTu && sciana(x, y);
       // wszedł tu na stopień, prosto z podłogi pod spodem — kafel przed sobą wykuł, zanim się podciągnął
       const zeStopnia = skadK[i] === i + W;
-      // Alpha (droga w obie strony): zszedł tu o kafel — dalej w dół już nie (dwa kroki w dół pod rząd to szyb,
-      // którego podłogi następny krok wykuwa: po wykopaniu zostaje zeskok, którym się nie wróci) — w dół schodami
-      const wDolWolno = (j: number) => !dwukierunkowa || (skadK[i] !== i - W && podloga(i, j));
-      // wejście na kafel `j` (wolny albo do wykucia) za `krok` + koszt kucia
-      const wejdz = (j: number, nx: number, ny: number, mozeKuc: boolean): void => {
-        if (j < 0 || j >= N || nx < 0 || nx >= W) return;
-        if (dozwolony && !dozwolony(j, nx, ny)) return;
-        if (lity(j) && !kuty(i, j)) {
-          if (!mozeKuc) return;
-          const k = koszt(j, nx, ny);
-          if (k < 0) return;
-          wstaw(j, d + 1 + Math.min(KUBLY - 2, k), i);
-          return;
-        }
-        if (!wolny(sim, j, plywa) && !kuty(i, j)) return;
-        wstaw(j, d + 1, i);
-      };
       if (!stoiTu) {
         // w locie albo na ścianie: w dół (byle nie puścić się nad przepaścią) albo z wiszenia na półkę
         if (y + 1 < WORLD_H && (wolny(sim, i + W, plywa) || kuty(i, i + W)) && !(wisiTu && przepasc(sim, x, y + 1))
-            && wDolWolno(i + W) && (!dozwolony || dozwolony(i + W, x, y + 1))) wstaw(i + W, d + 1, i);
+            && wDolWolno(i, i + W) && (!dozwolony || dozwolony(i + W, x, y + 1))) wstaw(i + W, d + 1, i);
         if (wisiTu) {
-          for (const dx of [-1, 1]) {
+          for (let dx = -1; dx <= 1; dx += 2) {
             const j = i + dx;
             if (x + dx < 0 || x + dx >= W) continue;
             // na półkę: kafel z podłogą (do wykucia tylko zaraz po wejściu na stopień — kuje się go, stojąc niżej)
-            if (podloga(i, j)) wejdz(j, x + dx, y, zeStopnia);
+            if (podloga(i, j)) wejdz(i, d, j, x + dx, y, zeStopnia);
           }
         }
         continue;
       }
       // z podłogi: w bok (skrajem półki — byle nie w przepaść ani nad ogień), na stopień w górę, kucie w dół
-      for (const dx of [-1, 1]) {
+      for (let dx = -1; dx <= 1; dx += 2) {
         const nx = x + dx;
         if (nx < 0 || nx >= W) continue;
         const j = i + dx;
         if (!lity(j) || kuty(i, j)) {
-          if (!podloga(i, j) && (przepasc(sim, nx, y) || nadOgniem(sim, nx, y))) continue;
+          if (!podloga(i, j) && (przepasc(sim, nx, y) || (ogien && nadOgniem(sim, nx, y)))) continue;
         } else if (!podloga(i, j) && glebiaPod(sim, nx, y, LUD.spadekMaks) > LUD.spadekMaks && !sciana(nx, y)) continue;
-        wejdz(j, nx, y, true);
+        wejdz(i, d, j, nx, y, true);
       }
-      if (y > 0) wejdz(i - W, x, y - 1, true);
+      if (y > 0) wejdz(i, d, i - W, x, y - 1, true);
       const b = i + W;
       if (b < N && lity(b) && !kuty(i, b) && (b + W >= N || !(glebiaPod(sim, x, y + 1, LUD.spadekMaks) > LUD.spadekMaks && !sciana(x, y + 1)))
-          && wDolWolno(b)) wejdz(b, x, y + 1, true);
+          && wDolWolno(i, b)) wejdz(i, d, b, x, y + 1, true);
     }
     if (d > N * 4) break;
   }
   return null;
 }
+
+/** Kafle `sciezka` planu drogi wiernych jako maska świata — liczona raz, przy pierwszym pytaniu (plan się nie zmienia). */
+const maskiDrogi = new WeakMap<NonNullable<Sim['planDrogi']>, Uint8Array>();
 
 /** Koszt kucia dla ludu: ziemia tanio, skała drożej; nie przy ogniu, wodzie, rdzeniu ani w skorupie. */
 /**
@@ -334,19 +361,26 @@ export function szukajKopiac(
 export function podDroga(sim: Sim, i: number): boolean {
   const p = sim.planDrogi;
   if (!p || i < WORLD_W) return false;
-  const zbior = p.zbior ??= new Set(p.sciezka);
-  return zbior.has(i - WORLD_W) && !zbior.has(i);
+  let m = maskiDrogi.get(p);
+  if (!m) {
+    m = new Uint8Array(N);
+    for (const k of p.sciezka) m[k] = 1;
+    maskiDrogi.set(p, m);
+  }
+  return m[i - WORLD_W] === 1 && m[i] === 0;
 }
 
 export function kosztKuciaLudu(sim: Sim, mozeDoRdzenia = false): KosztKucia {
   const w = sim.world;
+  // płynów szuka się wokół kafla tylko wtedy, gdy w świecie w ogóle są (maCos) — szukanie się nie zmienia
+  const magma = maCos(w.magma), woda = maCos(w.water);
   return (i, x, y) => {
     const t = w.tile[i];
     const tw = HARDNESS[t];
     if (tw <= 0 || t === T.CORE) return -1;
     if (podDroga(sim, i)) return -1;
-    if (sim.przyMagmie(x, y, 2) || nadOgniem(sim, x, y)) return -1;
-    for (let k = -1; k <= 1; k++) for (let j = -1; j <= 1; j++) if (w.inb(x + k, y + j) && w.water[w.idx(x + k, y + j)] > 2) return -1;
+    if (magma && (sim.przyMagmie(x, y, 2) || nadOgniem(sim, x, y))) return -1;
+    if (woda) for (let k = -1; k <= 1; k++) for (let j = -1; j <= 1; j++) if (w.inb(x + k, y + j) && w.water[w.idx(x + k, y + j)] > 2) return -1;
     if (!mozeDoRdzenia && Math.hypot(x - w.coreX, y - w.coreY) < LUD.strefaRdzenia) return -1;
     return 1 + Math.round(tw * 2);
   };

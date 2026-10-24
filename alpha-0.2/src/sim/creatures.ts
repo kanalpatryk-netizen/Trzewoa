@@ -1075,7 +1075,7 @@ function wkopSieDoSpizarni(sim: Sim, c: Creature, zamiar: (opis: string, job: Jo
   const d = szukajDrogi(sim, c, (_i, x, y) => sps.some((o) => Math.abs(o.x - x) <= 1 && Math.abs(o.y - y) <= 1), LUD.doSpizarni);
   if (d || budzetDrog() < 1) return false;
   c.jx = sp.x; c.jy = sp.y; c.droga = undefined;
-  const dk = wkopDroga(sim, c, (x, y) => sps.some((o) => Math.abs(o.x - x) <= 2 && Math.abs(o.y - y) <= 1) && stoi(sim, x, y), POLECENIA.szukanieKopania);
+  const dk = wkopDroga(sim, c, (x, y) => sps.some((o) => Math.abs(o.x - x) <= 2 && Math.abs(o.y - y) <= 1) && stoi(sim, x, y), LUD.wkopDoSpizarni);
   zamiar('wkopuje się z odciętej kieszeni do swoich', Job.WANDER, dk ? K.noszenieTikow + dk.length * K.tikowNaKafelKopania * 2 : LUD.zamiarTikow);
   return true;
 }

@@ -946,15 +946,22 @@ export class EkranGry implements Ekran {
         kroki = Math.min(Math.max(TEMPO.maxNaKlatke, Math.ceil(naSekunde / 20)), cale);
       }
       const t0 = performance.now();
-      for (let i = 0; i < kroki; i++) {
+      // (przyspieszony czas — tryb deweloperski, obserwatorium — dostaje budżet razy mnożnik: tam liczy się tempo, nie płynność)
+      const budzet = TEMPO.budzetKlatkiMs * Math.max(1, this.tempoTeraz());
+      let zrobione = 0;
+      while (zrobione < kroki) {
         this.sim.step();
+        zrobione++;
         // okno obserwatorium: gra bot — karty rozstrzyga od razu, resztę co pół sekundy gry
         if (BOT.wlaczony && !this.sim.ending) {
           if (this.sim.wydarzenia.biezace) kartaBota(this.sim, BOT.styl);
           if (this.sim.tick % BOT_CO === 0) ruchBota(this.sim, BOT.styl);
         }
+        // budżet klatki: gdy świat nie nadąża, zwalnia, a obraz nie staje — reszta tików tej klatki przepada.
+        // Dawniej klatka liczyła wszystkie zaległe tiki: wolna klatka → więcej tików w następnej → jeszcze wolniejsza
+        if (performance.now() - t0 > budzet && !(dev && DEV.pauza)) break;
       }
-      if (dev && kroki > 0) DEV.msKroku = DEV.msKroku * 0.9 + ((performance.now() - t0) / kroki) * 0.1;
+      if (dev && zrobione > 0) DEV.msKroku = DEV.msKroku * 0.9 + ((performance.now() - t0) / zrobione) * 0.1;
       const wiadroT = this.sim.lud.wiadra?.zjazdT;
       if (wiadroT !== undefined && wiadroT !== this.slyszaneWiadro) { this.slyszaneWiadro = wiadroT; this.app.dzwiek.wiadro(); }
       // kamera za śledzoną postacią (okienko dewelopera)

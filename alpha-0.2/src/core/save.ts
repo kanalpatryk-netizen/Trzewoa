@@ -13,12 +13,31 @@ const KEY = 'trzewia-alpha-0.2:zapis';
 // (etap 3d: drugi otwór z wiadrem, ołtarz i kamienna podłoga sali — znów nowa góra; etap 3e: ruiny z zabytkami)
 const VERSION = 4;
 
+/** Znaki base64 (jak btoa) jako kody ASCII. */
+const ZNAKI_B64 = Uint8Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', (z) => z.charCodeAt(0));
+const ROWNA_SIE = 61;
+
+/**
+ * Base64 bajtów — to samo co btoa, znak w znak, ale wprost do bajtów ASCII: dawne btoa z napisu sklejanego
+ * po 32 tysiące argumentów `String.fromCharCode` brało prawie cały czas autozapisu (~30 ms co minutę gry).
+ */
 function toB64(buf: ArrayBufferView): string {
-  const bytes = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
-  let s = '';
-  const CH = 0x8000;
-  for (let i = 0; i < bytes.length; i += CH) s += String.fromCharCode(...bytes.subarray(i, i + CH));
-  return btoa(s);
+  const b = new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
+  const n = b.length;
+  const out = new Uint8Array(Math.ceil(n / 3) * 4);
+  let o = 0, i = 0;
+  for (; i + 2 < n; i += 3) {
+    const v = (b[i] << 16) | (b[i + 1] << 8) | b[i + 2];
+    out[o++] = ZNAKI_B64[v >> 18]; out[o++] = ZNAKI_B64[(v >> 12) & 63];
+    out[o++] = ZNAKI_B64[(v >> 6) & 63]; out[o++] = ZNAKI_B64[v & 63];
+  }
+  if (i < n) {
+    const dwa = i + 1 < n;
+    const v = (b[i] << 16) | (dwa ? b[i + 1] << 8 : 0);
+    out[o++] = ZNAKI_B64[v >> 18]; out[o++] = ZNAKI_B64[(v >> 12) & 63];
+    out[o++] = dwa ? ZNAKI_B64[(v >> 6) & 63] : ROWNA_SIE; out[o++] = ROWNA_SIE;
+  }
+  return new TextDecoder().decode(out);
 }
 
 function fromB64(b64: string, out: ArrayBufferView): void {
