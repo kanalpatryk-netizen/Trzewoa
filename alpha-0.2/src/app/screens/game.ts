@@ -768,7 +768,7 @@ export class EkranGry implements Ekran {
 
   /**
    * Głosy ludu (gra222/dzwieki/jednostki/; liczby — nastawy/dzwiek.ts: GLOSY_LUDU), z różnicy stanu między klatkami,
-   * jak odmowy — rozkaz z myszy, klawisza, samouczka i bota brzmi tak samo. Postać z kwestiami (dziś rycerz — foldery z R):
+   * jak odmowy — rozkaz z myszy, klawisza, samouczka i bota brzmi tak samo. Postać z kwestiami (rycerz — R, pobożny — P):
    *  - potwierdza nowy rozkaz, który przyjęła,
    *  - krzyczy, gdy rusza na Strażnika albo demona (nie przy każdym ciosie; na demona zawsze, pierwszy raz),
    *  - jęczy, gdy oberwie — mocny cios i ten, od którego ginie, zawsze, słaby czasem; głód nie boli,
