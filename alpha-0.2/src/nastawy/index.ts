@@ -18,7 +18,7 @@ export { STWORZENIA } from './stworzenia';
 export { KOSZTY, MOCE, SKAZY } from './moce';
 export { KAMERA, TEMPO, STEROWANIE } from './sterowanie';
 export { EKRAN, INTRO, JAKOSC, KURSOR, LADOWANIE, TELEFON } from './ekran';
-export { MUZYKA, REZONANS, MIKSER, GESTY } from './dzwiek';
+export { MUZYKA, REZONANS, MIKSER, GESTY, GLOS_RYCERZA, GLOS_POBOZNEGO, GLOSY_LUDU } from './dzwiek';
 export { BARWA, ATRAMENT_GLEBI } from './barwy';
 export { RAMA, KARTUSZ, PRZERYWNIK, NAGLOWEK_DZIALU } from './wyglad/ozdoby';
 export { MENU } from './wyglad/menu';

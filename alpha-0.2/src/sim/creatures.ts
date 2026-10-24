@@ -15,7 +15,7 @@ import { czoloDrogi, nieWykopane } from './pielgrzymka';
 import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy, trybWiernych, rycerzeCzekaja, iluRycerzy, walczKsiega } from './straznicy';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { obozFrontowy, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
-import { obozyLudu, obozyWgOdleglosci, najblizszyOboz, walczacy, type MiejsceJedzenia } from './lud';
+import { obozyLudu, obozyWgOdleglosci, najblizszyOboz, walczacy, oznaczCios, type MiejsceJedzenia } from './lud';
 import { wykutyKafel } from './kruszce';
 import { pomieszczenieId, kafleDoKucia, siegaPlanu, miejsceWPom, ktoryWPom } from './pomieszczenia';
 import { NAZWA_POMIESZCZENIA } from '../nastawy/pomieszczenia';
@@ -152,6 +152,8 @@ ksiegaT?: number;
   snu?: number;
   /** Alpha: odmowa wykonania rozkazu — dymek nad głową i kręcenie głową. */
   odmowa?: Odmowa;
+  /** Alpha: ostatni cios, który przyjął (tik; mocny — demon, rzut dłonią, bolesny upadek) — dla głosu bólu, symulacji to nie zmienia. */
+  oberwal?: { t: number; mocno: boolean };
   /** Alpha: od kiedy przytrzymuje się ściany szybu, szukając zgubionej drogi (krótko — potem się zsuwa). */
   chwytOd?: number;
   /** Alpha: x z poprzedniego tiku — ile przeszedł (odstępy w tłumie). */
@@ -370,7 +372,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   }
   // Upadek boli, ale nie zabija na miejscu: raz, przy lądowaniu, i dopiero z wysokości
   // kilku kafli (wcześniej liczył się dwa razy — w locie i po lądowaniu).
-  if (c.vy > K.bolesnyUpadek) { c.hp -= RACES[c.race].maxHp * K.upadekObrazenia * Math.min(1, (c.vy - K.bolesnyUpadek) / K.upadekPelny); c.rana = 'upadek'; }
+  if (c.vy > K.bolesnyUpadek) { c.hp -= RACES[c.race].maxHp * K.upadekObrazenia * Math.min(1, (c.vy - K.bolesnyUpadek) / K.upadekPelny); c.rana = 'upadek'; oznaczCios(sim, c, true); }
   c.vy = 0;
 
   // --- rozglądanie się: rysunek twojego ciała powstaje tylko z ich oczu

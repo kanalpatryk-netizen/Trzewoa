@@ -39,6 +39,17 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
   i mówi to na głos — losowe nagranie z `gra222/dzwieki/odmowy/rycerz/` albo `gra222/dzwieki/odmowy/pobozny/`; w miejscu
   kliknięcia na chwilę wskakuje czerwony krzyżyk (bez dymka i bez napisu z powodem). Naraz mówi jeden. Nowy plik .mp3 w folderze
   trafia do gry sam. Kod: `src/core/glos-odmowy.ts`, liczby i szanse: `GLOS_RYCERZA` i `GLOS_POBOZNEGO` w `src/nastawy/dzwiek.ts`.
+- **Głos rycerza:** kwestie z `gra222/dzwieki/jednostki/` — każdy folder to jedna kwestia, litera R na końcu nazwy znaczy
+  „tylko rycerz” (folder bez litery mówiłby każdy z ludu). `potwierdzenieR` — gdy przyjmie rozkaz (idź tam, kuźnia, ołtarz,
+  sypialnia, naprawa liny; przy szybkim klikaniu najwyżej co 1,5 s). `atakR` — gdy rusza do walki ze Strażnikami Snu (najwyżej
+  co 15 s, przy kolejnym Strażniku w tej samej walce co trzeci raz); na demona krzyczy zawsze, gdy pierwszy raz na niego rusza.
+  `bolR` — gdy oberwie: mocny cios (demon, rzut dłonią z otchłani, bolesny upadek) i cios, od którego ginie, zawsze; cios Strażnika
+  najwyżej co 3 s i co drugi raz; głód nie boli. `bolR/rzadkie.mp3` gra w tych samych chwilach z szansą 0,5% (plik, którego nazwa
+  zaczyna się od „rzadkie”, w każdym folderze). `glodR` — gdy głód dojdzie do 60% (wtedy rycerz sam idzie jeść), potem co 25 s,
+  a gdy przymiera głodem (od 85%) co 10 s, aż zje; w walce i przy zatrzymanym czasie nie marudzi. Naraz mówi jeden: ból ucina
+  wszystko, okrzyk ucina potwierdzenie, odmowę i głód, potwierdzenie i odmowa ucinają głód. Ta sama kwestia nie pada dwa razy
+  z rzędu, a nowy plik .mp3 w folderze trafia do gry sam. Kod: `src/core/glosy-ludu.ts` (nagrania), `glosyLudu` w
+  `src/app/screens/game.ts` (kiedy), liczby: `GLOSY_LUDU` w `src/nastawy/dzwiek.ts`.
 - **Bez napisów na mapie:** świat nie ma podpisów — ani „siedziba · w wiadrze…”, ani „przedsionek”, „żelazo” przy kółkach
   podpowiedzi, ani podpisu Wielkiego Pomnika, obozów, zabytków i końców drogi wiernych, ani liczb porcji przy wiadrach
   (jedzenie jest na liczniku nad płytą). Kółka i strzałki podpowiedzi zostają, bez słów.

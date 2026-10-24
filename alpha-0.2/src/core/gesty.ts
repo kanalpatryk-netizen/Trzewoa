@@ -1,7 +1,10 @@
 import { mikser } from './mikser';
 import { ustawienia } from './settings-store';
-import { GESTY } from '../nastawy/dzwiek';
+import { GESTY, GLOSY_LUDU, type KwestiaLudu } from '../nastawy/dzwiek';
+import type { Rola } from '../nastawy/lud';
 import { GlosOdmowy, type KtoMowi } from './glos-odmowy';
+import { GlosyLudu } from './glosy-ludu';
+import type { Nagranie } from './nagrania';
 
 /** Pentatonika od D — kaskada wykonanego planu wspina się po niej, nigdy nie fałszuje. */
 const KASKADA = GESTY.kaskada;
@@ -19,8 +22,12 @@ export class Gesty {
   private ostatnie = new Map<string, number>();
   private ton: { g: GainNode; zrodla: AudioScheduledSourceNode[] } | null = null;
   private glosy: Record<KtoMowi, GlosOdmowy> = { rycerz: new GlosOdmowy('rycerz'), pobozny: new GlosOdmowy('pobozny') };
-  /** Ktoś jeszcze mówi (do tej chwili, zegar kontekstu) — następna odmowa nie wchodzi mu w słowo. */
-  private mowiDo = 0;
+  private glosyLudu = new GlosyLudu();
+  /**
+   * Kto teraz mówi: do kiedy (zegar kontekstu), jak ważna jest kwestia (GLOSY_LUDU.waga) i czym ją uciszyć. Naraz mówi
+   * jeden — ważniejsza kwestia ucina tę, która trwa, a mniej ważna nie wchodzi nikomu w słowo.
+   */
+  private mowa: { do: number; waga: number; kwestia: string; g: GainNode; src: AudioBufferSourceNode } | null = null;
 
   start(): void {
     if (this.ctx) return;
@@ -32,6 +39,7 @@ export class Gesty {
     for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
     this.szum = buf;
     for (const g of Object.values(this.glosy)) g.wczytaj(ctx);
+    this.glosyLudu.wczytaj(ctx);
     this.odswiezGlosnosc();
   }
 
@@ -161,24 +169,60 @@ export class Gesty {
   /**
    * Rycerz albo pobożny odmawia na głos: jedno z jego nagrań (nastawy/dzwiek.ts — GLOS_RYCERZA, GLOS_POBOZNEGO,
    * szanse rzadkości), tuż po głuchym stuku odmowy. `pan` — gdzie stoi na ekranie (−1 lewo … 1 prawo). Zwraca, czy
-   * powiedział — false, gdy dźwięk wyłączony, nagrania jeszcze się nie wczytały albo poprzednia odmowa (czyjakolwiek)
-   * jeszcze trwa.
+   * powiedział — false, gdy dźwięk wyłączony, nagrania jeszcze się nie wczytały albo ktoś jeszcze mówi coś nie mniej
+   * ważnego (poprzednia odmowa, potwierdzenie, okrzyk, ból).
    */
   glosOdmowy(kto: KtoMowi, pan = 0): boolean {
-    const glos = this.glosy[kto], G = glos.G;
-    if (!this.gotowe || this.ctx!.currentTime < this.mowiDo || !this.wolno(`glos:${kto}`, G.odstepMs)) return false;
+    const glos = this.glosy[kto], G = glos.G, waga = GLOSY_LUDU.waga.odmowa;
+    if (!this.gotowe || !this.wolnoMowic('odmowa', waga) || !this.wolno(`glos:${kto}`, G.odstepMs)) return false;
     const n = glos.losuj();
     if (!n) return false;
-    const ctx = this.ctx!;
-    const t = ctx.currentTime + G.opoznienie;
+    this.powiedz(n, 'odmowa', waga, G.glosnosc, G.poglos, G.opoznienie, pan);
+    return true;
+  }
+
+  /**
+   * Postać z ludu mówi kwestię z gra222/dzwieki/jednostki/ (nastawy/dzwiek.ts — GLOSY_LUDU): potwierdza rozkaz, krzyczy
+   * do walki, jęczy z bólu albo marudzi z głodu — kiedy, decyduje ekran gry. Ważniejsza kwestia ucina tę, która trwa;
+   * nowe potwierdzenie ucina poprzednie (najwyżej co `potwierdzenie.odstep` s), a z `ucinaSiebie` każda kwestia ucina
+   * taką samą (jęk przy śmierci). Zwraca, czy powiedziała — false, gdy dźwięk wyłączony, rola nie ma tej kwestii,
+   * nagrania jeszcze się nie wczytały albo ktoś mówi coś nie mniej ważnego.
+   */
+  glosLudu(rola: Rola, kwestia: KwestiaLudu, pan = 0, ucinaSiebie = false): boolean {
+    const L = GLOSY_LUDU, waga = L.waga[kwestia], potw = kwestia === 'potwierdzenie';
+    if (!this.gotowe || !this.glosyLudu.ma(rola, kwestia) || !this.wolnoMowic(kwestia, waga, potw || ucinaSiebie)) return false;
+    if (potw && !this.wolno(`ludu:${rola}:potwierdzenie`, L.potwierdzenie.odstep * 1000)) return false;
+    const n = this.glosyLudu.losuj(rola, kwestia);
+    if (!n) return false;
+    this.powiedz(n, kwestia, waga, L.glosnosc, L.poglos, potw ? L.potwierdzenie.opoznienie : 0, pan);
+    return true;
+  }
+
+  /** Czy ta rola ma jakąkolwiek kwestię z gra222/dzwieki/jednostki/ (ekran gry śledzi tylko te postacie). */
+  maGlos(rola: Rola): boolean { return this.glosyLudu.ma(rola); }
+
+  /** Czy kwestia o tej wadze może teraz zabrzmieć: nikt nie mówi, mówi się coś mniej ważnego albo (`ucinaSiebie`) to samo. */
+  private wolnoMowic(kwestia: string, waga: number, ucinaSiebie = false): boolean {
+    const m = this.mowa;
+    return !m || this.ctx!.currentTime >= m.do || waga > m.waga || (ucinaSiebie && m.kwestia === kwestia);
+  }
+
+  /** Nagranie mowy wchodzi po `opoznienie` s; to, co jeszcze trwało, gaśnie w kilka setnych sekundy (bez trzasku). */
+  private powiedz(n: Nagranie, kwestia: string, waga: number, glosnosc: number, poglos: number, opoznienie: number, pan: number): void {
+    const ctx = this.ctx!, teraz = ctx.currentTime;
+    const m = this.mowa;
+    if (m && teraz < m.do) {
+      m.g.gain.setTargetAtTime(0, teraz, 0.015);
+      m.src.stop(teraz + 0.08);
+    }
+    const t = teraz + opoznienie;
     const src = ctx.createBufferSource();
     src.buffer = n.bufor;
     const g = ctx.createGain();
-    g.gain.value = n.wzm * G.glosnosc;
-    src.connect(g); g.connect(this.wyjscie(pan, G.poglos));
+    g.gain.value = n.wzm * glosnosc;
+    src.connect(g); g.connect(this.wyjscie(pan, poglos));
     src.start(t, n.od, n.dl);
-    this.mowiDo = t + n.dl;
-    return true;
+    this.mowa = { do: t + n.dl, waga, kwestia, g, src };
   }
 
   /**
