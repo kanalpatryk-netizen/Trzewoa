@@ -164,10 +164,10 @@ export function wydajPolecenie(sim: Sim, c: Creature, typ: 'idz' | 'droga', x: n
       const cel = w.idx(x, y);
       // (Alpha, jedno wiadro: podłoga drogi wiernych — wykuta urwałaby drogę do wiadra)
       if (podDroga(sim, cel)) return odmow(sim, c, 'to podłoga drogi wiernych');
-      // rozkaz wprost na blok pod wiadrem odblokowuje kolumnę szybu (do końca partii) — inaczej nikt jej nie ruszy
+      // rozkaz wprost na blok pod wiadrem odblokowuje ten jeden blok — inaczej nikt go nie ruszy
       if (cel === blokWiadra(sim)) {
-        sim.wiadroOdblokowane = true;
-        zapisz(sim, 'praca', 'blok pod wiadrem odblokowany — kolumnę szybu wolno kuć', x, y);
+        sim.odblokowaneWiadra.push(cel);
+        zapisz(sim, 'praca', 'blok pod wiadrem odblokowany — wolno go wykuć', x, y);
       }
       // stoi obok albo dojdzie obok — kuje stamtąd; inaczej przekopuje się przez skałę
       const obok = (xx: number, yy: number) => Math.abs(xx - x) <= 1 && Math.abs(yy - y) <= 1 && stoi(sim, xx, yy);
@@ -264,14 +264,15 @@ function doWykuciaRamka(sim: Sim, i: number): boolean {
 /**
  * Ramka „do wykopania” (propozycja Pawła, 25.10): zaznaczeni robotnicy kują litą skałę z prostokąta — każdy zaczyna
  * od kafla, do którego dojdzie najbliżej, i bierze dalej następne odsłonięte. Ramka obejmująca blok pod wiadrem
- * liczy się jak rozkaz wprost na niego (odblokowuje kolumnę szybu wiadra). Zwraca, ilu przyjęło rozkaz, i odmowy.
+ * liczy się jak rozkaz wprost na niego — odblokowuje go, a z nim kafle kolumny szybu wiadra niżej w ramce (wiadro
+ * stanie na nich po kolei). Zwraca, ilu przyjęło rozkaz, i odmowy.
  */
 export function wydajObszar(sim: Sim, ids: readonly number[], kafle: readonly number[]): { przyjeli: number; odmowy: string[]; kafli: number } {
   const w = sim.world;
   const wiadro = blokWiadra(sim);
   if (wiadro >= 0 && kafle.includes(wiadro)) {
-    sim.wiadroOdblokowane = true;
-    zapisz(sim, 'praca', 'blok pod wiadrem odblokowany ramką — kolumnę szybu wolno kuć', wiadro % w.w, (wiadro / w.w) | 0);
+    for (const i of kafle) if (i % w.w === w.szybWiadraX && i >= wiadro) sim.odblokowaneWiadra.push(i);
+    zapisz(sim, 'praca', 'blok pod wiadrem odblokowany ramką — wolno go wykuć', wiadro % w.w, (wiadro / w.w) | 0);
   }
   const obszar = kafle.filter((i) => doWykuciaRamka(sim, i));
   let przyjeli = 0;

@@ -10,6 +10,10 @@ Z użytkownikiem rozmawia się po polsku.
 - **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e, 3f i etap 4 zrobione na polecenie użytkownika. Etap 5 ruszył na polecenie użytkownika; 5a zrobione — **przed 5b powiedz użytkownikowi, co w nim będzie, i czekaj na polecenie.** Stanem wizualnym rycerza „zajmiemy się kiedy indziej” — użytkownik 18.10.)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 - **Zadanie bieżące (od 25.10): propozycje Pawła dla Alphy 0.2 — patrz sekcja 0 niżej. Zrobione jako osobna wersja `propozycja-1/` (na `main`); `alpha-0.2/` bez zmian.**
+- **PILNE DO USTALENIA (użytkownik, 25.10): czerwona linia ze znakiem zapytania na zrzucie Pawła „moje propozycje”**
+  (od krwi w pasku zasobów do relikwiarza). Przyjęta interpretacja (krew pokazana dwa razy → zostaje tylko w ramce
+  zasobów, relikwiarz pod płytą usunięty — 0.5, D1) to według użytkownika „prawdopodobnie nie” to. **Na razie zostaje,
+  jak jest** — trzeba ustalić z Pawłem, o co chodziło, i dopiero wtedy przerobić. Patrz 0.9.
 
 ---
 
@@ -42,11 +46,15 @@ Z użytkownikiem rozmawia się po polsku.
   - `blokWiadra(sim)` w `src/sim/droga.ts`: kafel pod dnem kolumny szybu wiadra (`szybWiadraX`), albo -1, gdy
     `sim.wiadroOdblokowane`. Zablokowany w `kosztKuciaLudu` (szukanie drogi z kopaniem), w `digTile` (creatures.ts —
     straż: nikt z ludu go nie ruszy) i w `kafleDoKucia` (plany pomieszczeń).
-  - Odblokowanie: rozkaz „kop tam” wskazany wprost na ten kafel (`wydajPolecenie` w `polecenia.ts`) ustawia
-    `sim.wiadroOdblokowane = true` — do końca partii (przyjęte za użytkownika: nowy blok pod wiadrem po zjechaniu niżej
-    już się nie blokuje). Prostokąt „do wykopania” (A3) obejmujący ten kafel też ma odblokowywać.
+  - Odblokowanie: rozkaz „kop tam” wskazany wprost na ten kafel (`wydajPolecenie` w `polecenia.ts`) dopisuje go do
+    `sim.odblokowaneWiadra` — odblokowany jest **tylko ten jeden kafel**. Decyzja użytkownika (25.10): „jedyny blok,
+    który ma być domyślnie zablokowany i odblokowany tylko przez rozkaz wykopania konkretnie tego bloku, to ten jeden
+    blok, na którym stoi wiadro; cała reszta ma być odblokowana”. Gdy go wykują i wiadro stanie niżej, blok pod nim
+    znów jest zablokowany (dawniej po pierwszym rozkazie cała kolumna była wolna do końca partii). Ramka „do wykopania”
+    (A3) obejmująca ten kafel też odblokowuje — jego i kafle kolumny szybu wiadra niżej w tej samej ramce (gracz
+    wskazał je wprost).
   - Gdy innej drogi nie ma — zwykła odmowa (czerwony krzyżyk przy kursorze).
-  - Stan w zapisie: `wiadroOdblokowane` w `src/core/save.ts`.
+  - Stan w zapisie: `odblokowaneWiadra` (lista indeksów kafli) w `src/core/save.ts`; stare `wiadroOdblokowane` się pomija.
 - **A2. Pobożny i rycerz nie kopią, idąc na przełaj — ZROBIONE (folder `propozycja-1/`).** `walkToLud` (creatures.ts): `kopie` tylko
   dla roli `robotnik`. Ratunkowe wkopywanie się (z odciętej kieszeni do spiżarni, z dołka z powrotem na drogę) zostaje
   dla wszystkich — bez niego umierali z głodu.
@@ -137,7 +145,8 @@ bardziej odróżniona, gdyż są najbardziej podstawowymi zasobami, a żelazo i 
 się opiera na tamtych trzech… wgl potrzeba o wiele więcej tła tam”) i jego zrzutu „moje propozycje” z dopiskami:
 - **D1. Zasoby.** Lewy górny róg: dwie ramki. Pierwsza, duża: **wiara, krew, jedzenie** — większe liczby z ikonami.
   Druga, mniejsza, obok: **żelazo, złoto**.
-  **Interpretacja czerwonej linii z „?” (krew w pasku → relikwiarz):** krew jest pokazana dwa razy — liczba w pasku
+  **Interpretacja czerwonej linii z „?” (krew w pasku → relikwiarz)** — **PILNE DO USTALENIA:** użytkownik (25.10):
+  „prawdopodobnie nie [o to chodziło], ale póki co zostaw to tak, jak jest”. Przyjęta interpretacja: krew jest pokazana dwa razy — liczba w pasku
   i relikwiarz na dole. Krew ma być w jednym miejscu: w dużej ramce, z miniaturą ampułki relikwiarza jako ikoną (żarzy się
   i pulsuje tak jak relikwiarz); duży relikwiarz na dole znika, a jego podpisy („płynie z każdej śmierci”, „za mało na
   rytuał (15)”, „pełna — nadmiar przepada”) idą pod liczbę krwi albo do dymka po najechaniu.
@@ -190,16 +199,20 @@ się opiera na tamtych trzech… wgl potrzeba o wiele więcej tła tam”) i jeg
 5. Atlas: tablica „Schody” opisuje już szyb; przydałaby się osobna tablica „Droga wiernych” z ryciną szybu.
 6. Bot nie używa ramki ani pomieszczeń „gdziekolwiek” — stawia pokoje po staremu (to działa, ale nie testuje nowości).
 
-### 0.9 Pytania do użytkownika / Pawła
-- Czerwona linia z „?” na zrzucie „moje propozycje” — przyjęta interpretacja: krew pokazana dwa razy → zostaje tylko
-  w ramce zasobów (ampułka + dymek), relikwiarz pod płytą usunięty. Czy o to chodziło?
-- Szerokość szybu (5 kafli) i jego miejsce (lewa ściana sali) — tak ma być?
-- Lewy przycisk myszy rysuje teraz ramkę, a widok przesuwa prawy/środkowy — czy to pasuje (w Twierdzy tak jest)?
-  Alternatywa: ramka z klawiszem (np. Ctrl), a przeciąganie lewym jak dawniej.
-- Pomieszczenie nad pustką: podłogę lud układa sam po wykuciu — czy ma to kosztować (np. kamień, czas pracy)?
-- Blok pod wiadrem po odblokowaniu zostaje odblokowany do końca partii — czy kolejny blok (po zjechaniu wiadra niżej)
-  ma się znów blokować?
-- Krew: czy dymek po najechaniu wystarczy, czy stan („za mało na rytuał”) ma być stale widoczny?
+### 0.9 Pytania do użytkownika / Pawła (odpowiedzi użytkownika z 25.10)
+- **PILNE, otwarte:** czerwona linia z „?” na zrzucie „moje propozycje”. Przyjęta interpretacja (krew pokazana dwa
+  razy → tylko w ramce zasobów, relikwiarz pod płytą usunięty) to „prawdopodobnie nie”. Zostaje, jak jest, dopóki
+  Paweł nie powie, o co chodziło.
+- ~~Szerokość szybu (5 kafli) i miejsce (lewa ściana sali)?~~ Tak.
+- **Otwarte:** ramka a przesuwanie widoku — użytkownik nie zrozumiał pytania (25.10); zadane jeszcze raz prościej:
+  dziś przeciągnięcie **lewym** przyciskiem myszy po mapie rysuje ramkę (zaznacza postacie / skałę), a żeby przesunąć
+  widok, przeciąga się **prawym** (albo kółkiem wciśniętym). Dawniej lewy przesuwał widok. Zostawić tak, czy ramka
+  ma być lewym z wciśniętym klawiszem (np. Ctrl), a sam lewy ma dalej przesuwać widok?
+- ~~Blok pod wiadrem — czy kolejny ma się znów blokować?~~ Tak: zablokowany jest zawsze tylko blok, na którym stoi
+  wiadro; odblokowuje go rozkaz wskazany wprost na niego. Zrobione (A1).
+- ~~Podłoga pod pomieszczeniem nad pustką — koszt?~~ i ~~krew: dymek czy stały napis?~~ — „jak uważasz”. Decyzja:
+  podłoga zostaje darmowa (kosztem jest czas pracy robotników; nowy zasób na podłogę to dodatkowa reguła bez wyraźnej
+  potrzeby); wygląd krwi zostaje bez zmian, bo i tak może się zmienić po ustaleniu czerwonej linii (pierwszy punkt).
 
 
 ---

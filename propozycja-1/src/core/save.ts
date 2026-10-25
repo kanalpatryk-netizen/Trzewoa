@@ -55,7 +55,7 @@ export function serialize(sim: Sim): string {
     seed: sim.seed,
     tick: sim.tick,
     wiara: sim.wiara, krew: sim.krew, zelazo: sim.zelazo, zloto: sim.zloto, sen: sim.sen,
-    pomieszczenia: sim.pomieszczenia, nrPomieszczenia: sim.nrPomieszczenia, zbroja: sim.zbroja, wiadroOdblokowane: sim.wiadroOdblokowane, rytual: sim.rytual, koszmar: sim.koszmar, stat: sim.stat, dug: sim.dug,
+    pomieszczenia: sim.pomieszczenia, nrPomieszczenia: sim.nrPomieszczenia, zbroja: sim.zbroja, odblokowaneWiadra: sim.odblokowaneWiadra, rytual: sim.rytual, koszmar: sim.koszmar, stat: sim.stat, dug: sim.dug,
     // v4.1 beta: skutki odroczone i karty z łańcuchów przeżywają zapis (inaczej dług znikał po wczytaniu)
     odroczone: sim.wydarzenia.odroczone, czekajace: sim.wydarzenia.czekajace, lud: sim.lud, kupione: sim.wydarzenia.kupione,
     fungusBudget: sim.fungusBudget, nextTide: sim.nextTide, ending: sim.ending, przybyszow: sim.przybyszow,
@@ -97,7 +97,7 @@ export function restore(json: string): Sim | null {
   if (Array.isArray(data.pomieszczenia)) sim.pomieszczenia = data.pomieszczenia;
   if (typeof data.nrPomieszczenia === 'number') sim.nrPomieszczenia = data.nrPomieszczenia;
   if (Array.isArray(data.zbroja)) sim.zbroja = data.zbroja;
-  sim.wiadroOdblokowane = data.wiadroOdblokowane === true;
+  sim.odblokowaneWiadra = Array.isArray(data.odblokowaneWiadra) ? data.odblokowaneWiadra.filter((i: unknown) => typeof i === 'number') : [];
   sim.koszmar = true;     // Remake v2: tylko Koszmar — także stare zapisy z łaskawej i surowej góry
   if (data.stat) sim.stat = { ...sim.stat, ...data.stat };
   if (data.dug) sim.dug = data.dug;

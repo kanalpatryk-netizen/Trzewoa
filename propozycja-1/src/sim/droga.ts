@@ -380,19 +380,23 @@ export function podDroga(sim: Sim, i: number): boolean {
 }
 
 /**
- * Blok, na którym stoi wiadro z jedzeniem (kafel pod dnem jego szybu) — indeks kafla albo -1, gdy już wolno go kuć.
+ * Blok, na którym stoi wiadro z jedzeniem (kafel pod dnem jego szybu) — indeks kafla albo -1, gdy wolno go kuć.
  * Decyzja użytkownika (25.10): robotnicy go nie ruszają, dokąd by ich nie posłać — szukają drogi obok, a gdy jej nie
- * ma, odmawiają. Dopiero rozkaz „kop” wskazany wprost na ten blok odblokowuje całą kolumnę pod szybem, do końca
- * partii (`sim.wiadroOdblokowane`). Wcześniej najkrótsza droga w dół wiodła przez szyb: kopali pod wiadrem i ściągali je na dno dołu.
+ * ma, odmawiają. Odblokowuje go tylko rozkaz „kop” wskazany wprost na niego (albo ramka, która go obejmuje) —
+ * `sim.odblokowaneWiadra`. Zablokowany jest zawsze tylko ten jeden blok: gdy go wykują i wiadro stanie niżej, blok pod
+ * nim znów jest zablokowany; reszta kolumny jest wolna. Wcześniej najkrótsza droga w dół wiodła przez szyb: kopali pod
+ * wiadrem i ściągali je na dno dołu.
  */
 export function blokWiadra(sim: Sim): number {
-  if (sim.wiadroOdblokowane || !SWIAT.warstwy.wlaczone) return -1;
+  if (!SWIAT.warstwy.wlaczone) return -1;
   const w = sim.world;
   const x = w.szybWiadraX;
   let y = w.szybWiadraDol;
   if (!w.inb(x, y) || !w.passable(x, y)) return -1;
   while (y + 1 < w.h && w.passable(x, y + 1)) y++;
-  return y + 1 < w.h ? w.idx(x, y + 1) : -1;
+  if (y + 1 >= w.h) return -1;
+  const i = w.idx(x, y + 1);
+  return sim.odblokowaneWiadra.includes(i) ? -1 : i;
 }
 
 export function kosztKuciaLudu(sim: Sim, mozeDoRdzenia = false): KosztKucia {

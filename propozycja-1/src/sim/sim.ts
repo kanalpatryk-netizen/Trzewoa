@@ -173,8 +173,8 @@ export class Sim {
   lud: StanLudu = nowyStanLudu();
   /** Plan drogi pielgrzymów (patrz pielgrzymka.ts) — pamięć podręczna, nie stan gry. */
   planDrogi: PlanDrogi | null = null;
-  /** Gracz kazał wykuć blok pod wiadrem — od tej chwili kolumnę pod szybem wiadra wolno kuć (droga.ts: blokWiadra). */
-  wiadroOdblokowane = false;
+  /** Bloki pod wiadrem, które gracz kazał wykuć wprost (indeksy kafli) — tylko te wolno kuć (droga.ts: blokWiadra). */
+  odblokowaneWiadra: number[] = [];
   lastTide = '';
   /** Tik ostatniego przypływu — po nim strażnik pauzy poznaje, że coś weszło z zewnątrz. */
   tideTick = -1;

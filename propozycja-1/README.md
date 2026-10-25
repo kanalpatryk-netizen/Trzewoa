@@ -8,8 +8,9 @@ Gra: [`trzewia.html`](trzewia.html) — pobierz i otwórz w przeglądarce (jeden
 
 ## Co nowego względem Alphy 0.2
 - **Blok pod wiadrem:** robotnicy nie kopią przez blok, na którym stoi wiadro. Szukają drogi obok, a gdy jej
-  nie ma, odmawiają. Rozkaz „kop” wskazany wprost na ten blok (albo ramka, która go obejmuje) odblokowuje kolumnę
-  szybu wiadra do końca partii. Pobożny i rycerz nie kopią, idąc na przełaj.
+  nie ma, odmawiają. Rozkaz „kop” wskazany wprost na ten blok (albo ramka, która go obejmuje) odblokowuje tylko
+  ten blok — gdy wiadro zjedzie niżej, blok, na którym stanie, znów jest zablokowany. Pobożny i rycerz nie kopią,
+  idąc na przełaj.
 - **Droga wiernych jako szyb ze schodami:**
   - szyb szeroki na 5 kafli przy lewej ścianie sali, prosto w dół do krypty;
   - we wnęce na start stoi rama z lampką, kilof i strzałka;

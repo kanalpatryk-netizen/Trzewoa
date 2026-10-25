@@ -4,7 +4,7 @@
 Folder `propozycja-1/`: kopia Alphy 0.2 z `main` (po PR #30) z propozycjami Pawła z 24.10 — `alpha-0.2/` bez zmian.
 Osobne zapisy (klucze `trzewia-propozycja-1:`), gra w `propozycja-1/trzewia.html`. Opis, decyzje, dalsze kroki
 i pytania: `handoff.md`, sekcja 0.
-- **Blok pod wiadrem** (`blokWiadra` w `src/sim/droga.ts`): robotnicy go nie kują, dopóki rozkaz „kop” (albo ramka) nie wskaże go wprost — wtedy kolumna szybu wiadra jest wolna do końca partii. Pobożny i rycerz nie kują, idąc na przełaj.
+- **Blok pod wiadrem** (`blokWiadra` w `src/sim/droga.ts`): robotnicy go nie kują, dopóki rozkaz „kop” (albo ramka) nie wskaże go wprost. Odblokowany jest tylko ten jeden blok — gdy go wykują i wiadro stanie niżej, blok pod nim znów jest zablokowany (decyzja użytkownika 25.10; reszta kolumny jest wolna). Pobożny i rycerz nie kują, idąc na przełaj.
 - **Droga wiernych jako szyb ze schodami** (`planSzybu`, `schodyDrogi` w `src/sim/pielgrzymka.ts`, `world.szybDrogi`, `world.schody`, `src/render/pielgrzymka.ts`): szyb 5 kafli przy lewej ścianie sali do krypty, wnęka „tu zacznij”, schody w każdym wykutym kaflu (w obie strony), plan zawsze widoczny, kucie 2,5× szybsze; pomnik pęka dopiero przy wykopanej drodze. Zapis `VERSION` 5.
 - **Zaznaczanie ramką** (`zaznaczRamka` w `game.ts`, `wydajObszar` w `src/sim/polecenia.ts`): lewy przycisk myszy — postacie albo skała do wykucia; widok myszą — prawy/środkowy przycisk.
 - **Pomieszczenia gdziekolwiek** (`probaPlanu`): także w litej skale i nad pustką; podłogę lud układa po wykuciu.
