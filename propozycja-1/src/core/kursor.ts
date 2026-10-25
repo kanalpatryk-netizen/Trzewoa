@@ -49,6 +49,18 @@ export function zalozKursor(): void {
   }).catch(() => { /* bez obrazka zostaje zwykła strzałka */ });
 }
 
+/** Rękawica przycięta i zmniejszona do rysowania na płótnie: wymiary i czubek palca w pikselach ekranu. */
+export interface RekawicaRys { plotno: HTMLCanvasElement; w: number; h: number; czubekX: number; czubekY: number }
+
+/**
+ * Obie rękawice (zwykła i wciskająca) do rysowania na płótnie — tak samo przycięte jak kursor, tylko w rozmiarze
+ * `rozmiar` px (dłuższy bok). Samouczek pokazuje nimi, co zrobić.
+ */
+export function rekawiceDoRysunku(rozmiar: number): Promise<{ zwykla: RekawicaRys; klik: RekawicaRys }> {
+  return Promise.all([wczytaj(zwyklyUrl), wczytaj(klikUrl)])
+    .then(([o1, o2]) => ({ zwykla: przytnij(o1, K.czubek, rozmiar), klik: przytnij(o2, K.czubekKlik, rozmiar) }));
+}
+
 function wczytaj(url: string): Promise<HTMLImageElement> {
   return new Promise((gotowe, blad) => {
     const o = new Image();
@@ -64,6 +76,17 @@ function wczytaj(url: string): Promise<HTMLImageElement> {
  * tak, żeby czubek palca wypadał w punkcie (0, 0) warstwy — czyli pod myszką.
  */
 function rekawica(o: HTMLImageElement, czubek: { x: number; y: number }): { el: HTMLImageElement } {
+  const r = przytnij(o, czubek, K.rozmiar);
+  const el = new Image();
+  el.src = r.plotno.toDataURL('image/png');
+  el.draggable = false;
+  el.style.cssText = `position:absolute;display:block;max-width:none;width:${r.w}px;height:${r.h}px;` +
+    `left:${-r.czubekX}px;top:${-r.czubekY}px`;
+  return { el };
+}
+
+/** Obrazek przycięty do nieprzezroczystych pikseli i zmniejszony tak, żeby dłuższy bok miał `rozmiar` px ekranu. */
+function przytnij(o: HTMLImageElement, czubek: { x: number; y: number }, rozmiar: number): RekawicaRys {
   const W = o.naturalWidth, H = o.naturalHeight;
   const c = plotno(W, H);
   const ctx = c.getContext('2d')!;
@@ -82,21 +105,17 @@ function rekawica(o: HTMLImageElement, czubek: { x: number; y: number }): { el: 
   }
   if (x1 < 0) { x0 = 0; y0 = 0; x1 = W - 1; y1 = H - 1; }
   const w = x1 - x0 + 1, h = y1 - y0 + 1;
-  const s = K.rozmiar / Math.max(w, h);
+  const s = rozmiar / Math.max(w, h);
   const gestosc = Math.min(4, Math.max(1, Math.ceil(window.devicePixelRatio || 1)));
-  const el = new Image();
-  el.src = pomniejsz(c, x0, y0, w, h, Math.round(w * s * gestosc), Math.round(h * s * gestosc));
-  el.draggable = false;
-  el.style.cssText = `position:absolute;display:block;max-width:none;width:${w * s}px;height:${h * s}px;` +
-    `left:${-(czubek.x - x0) * s}px;top:${-(czubek.y - y0) * s}px`;
-  return { el };
+  const obraz = pomniejsz(c, x0, y0, w, h, Math.round(w * s * gestosc), Math.round(h * s * gestosc));
+  return { plotno: obraz, w: w * s, h: h * s, czubekX: (czubek.x - x0) * s, czubekY: (czubek.y - y0) * s };
 }
 
 /**
- * Wycinek (sx, sy, sw, sh) płótna w rozmiarze W×H jako data:. Duży obrazek zmniejszany od razu do
+ * Wycinek (sx, sy, sw, sh) płótna w rozmiarze W×H. Duży obrazek zmniejszany od razu do
  * kilkudziesięciu pikseli gubi kontury, więc schodzimy po połowie, a dopiero ostatni krok trafia w rozmiar.
  */
-function pomniejsz(zrodlo: HTMLCanvasElement, sx: number, sy: number, sw: number, sh: number, W: number, H: number): string {
+function pomniejsz(zrodlo: HTMLCanvasElement, sx: number, sy: number, sw: number, sh: number, W: number, H: number): HTMLCanvasElement {
   let c = plotno(sw, sh);
   c.getContext('2d')!.drawImage(zrodlo, sx, sy, sw, sh, 0, 0, sw, sh);
   while (c.width / 2 >= W && c.height / 2 >= H) {
@@ -106,7 +125,7 @@ function pomniejsz(zrodlo: HTMLCanvasElement, sx: number, sy: number, sw: number
   }
   const k = plotno(W, H);
   k.getContext('2d')!.drawImage(c, 0, 0, W, H);
-  return k.toDataURL('image/png');
+  return k;
 }
 
 function plotno(w: number, h: number): HTMLCanvasElement {

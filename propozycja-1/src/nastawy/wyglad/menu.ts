@@ -24,7 +24,7 @@ export const MENU = {
     wroc: { etykieta: 'Graj dalej', opis: 'trwająca rozgrywka czeka tam, gdzie ją zostawiłeś' },
     nowa: { etykieta: 'Nowa gra', opis: 'nowa góra i nowi mieszkańcy — zawsze Koszmar: twarda skorupa, mało krwi i dłoń z otchłani' },
     wczytaj: { etykieta: 'Wczytaj zapis', opis: 'ostatni zapis stanu góry' },
-    samouczek: { etykieta: 'Samouczek', opis: 'dwie plansze wstępu i czternaście krótkich lekcji — palec pokazuje, gdzie dotknąć' },
+    samouczek: { etykieta: 'Samouczek', opis: 'cztery krótkie lekcje — rękawica pokazuje, co zrobić' },
     bestiariusz: { etykieta: 'Atlas', opis: 'tablice ludu, rytów i praw góry — odkrywasz je, grając' },
     osiagniecia: { etykieta: 'Osiągnięcia', opis: 'cele dodatkowe — zdobywasz je, grając' },
     ustawienia: { etykieta: 'Ustawienia', opis: 'dźwięk, obraz i świat' },

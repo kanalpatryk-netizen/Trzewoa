@@ -1436,6 +1436,9 @@ export class EkranGry implements Ekran {
     return this.zaznaczeniZywi().filter((c) => rolaPostaci(c) === rola).length;
   }
 
+  /** Czy okno rytuałów ołtarza jest otwarte (samouczek). */
+  get oknoOltarzaOtwarte(): boolean { return this.oknoOltarza; }
+
   /** Etap 3d: gdzie w otwartym oknie ołtarza leży pole rytuału — samouczek je wskazuje (albo null, gdy okno zamknięte). */
   poleOltarza(rodzaj: string): PoleOltarza | null {
     return this.polaOltarza.find((p) => p.akcja === 'rytual' && p.rodzaj === rodzaj) ?? null;

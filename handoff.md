@@ -8,6 +8,10 @@ Z użytkownikiem rozmawia się po polsku.
 - **Czym jest Alpha 0.1.** Folder `alpha-0.1/` to przebudowa Remake v2 według wspólnego planu użytkownika, Pawła i Milana. Plan ma 5 etapów: zrobione są etapy 1–4 i 5a; z etapu 5 zostały 5b–5e.
 - **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
 - **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e, 3f i etap 4 zrobione na polecenie użytkownika. Etap 5 ruszył na polecenie użytkownika; 5a zrobione — **przed 5b powiedz użytkownikowi, co w nim będzie, i czekaj na polecenie.** Stanem wizualnym rycerza „zajmiemy się kiedy indziej” — użytkownik 18.10.)
+- **WERSJA NA TELEFON JEST ZAWIESZONA (użytkownik, 25.10):** „nie twórz wersji na telefon ani nie balansuj nic pod
+  telefon”; „żadna wersja ani żaden update nie ma się skupiać na balansie na telefon”. Nie dodawać gestów dotykowych,
+  układów pod telefon ani poprawek pod małe ekrany; prób na rozmiarach telefonu nie robić (`scripts/test-nakladania.mjs`
+  sprawdza głównie telefony — nie jest już wymagany). Zapisane też w `README.md` i `propozycja-1/README.md`.
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 - **Zadanie bieżące (od 25.10): propozycje Pawła dla Alphy 0.2 — patrz sekcja 0 niżej. Zrobione jako osobna wersja `propozycja-1/` (na `main`); `alpha-0.2/` bez zmian.**
 - **PILNE DO USTALENIA (użytkownik, 25.10): czerwona linia ze znakiem zapytania na zrzucie Pawła „moje propozycje”**
@@ -159,6 +163,34 @@ ciągle w dół i kopią (niech na drodze tego szybu nie generuje się żaden za
 
 **Do zrobienia:** nic z listy; dalsze kroki w 0.8.
 
+### 0.3a Samouczek od nowa — ZROBIONE (folder `propozycja-1/`) (25.10)
+Polecenie użytkownika: „usuń samouczek i zbuduj go od nowa, jak najbardziej minimalistyczny, i dużo dopracowanych
+animacji”. Stary samouczek (14 rozdziałów z listami czynności i dwie plansze-filmy na wstęp) usunięty w całości
+(`samouczek/rozdzialy.ts`); nowy to trzy pliki:
+- `src/app/screens/samouczek/lekcje.ts` — treść: **4 lekcje + finał**, każda faza to jedno zdanie i jeden ruch gracza:
+  1) przesuń widok, przybliż; 2) zaznacz robotników (ramka albo medalion), wskaż szyb; 3) zaznacz pobożnych, wskaż
+  ołtarz, wybierz modlitwę; 4) wybierz „Nakarm”, dotknij płyty. Finał: „Na dnie śpi demon. Modlitwa skruszy pomnik —
+  rycerz go pokona.” Faza „zrobiona” to stan gry albo zdarzenie z `EkranGry.nasluch`; bieżąca jest tuż za najdalszą
+  zrobioną (kto zrobi coś wcześniej, nie powtarza). Zrobiona lekcja czeka na „dalej” (Enter/spacja) — kroki przewija
+  gracz (skarga Pawła z planu 5d: „napisy się zbyt szybko zmieniają”).
+- `src/app/screens/samouczek/animacje.ts` — rysunki: **rękawica-duch** (ta sama rękawica co kursor gry, `kursor1/2.png`,
+  przez nowe `rekawiceDoRysunku` w `core/kursor.ts`) pokazuje w pętli klik (nadlot łukiem, wciśnięcie, fala),
+  ramkę (rośnie za rękawicą, zaznaczeni dostają obręcze), przesunięcie (ślad, szewrony, mysz z prawym przyciskiem)
+  i kółko (mysz z kręcącym się kółkiem, pierścienie +/−); przygasa, gdy gracz sam działa. Tylko mysz — gestów
+  dotykowych nie ma (wersja na telefon zawieszona).
+  **Reflektor** (przyciemnienie z miękkim otworem, krąg albo prostokąt, płynie i zaciska się na celu, iskierki po
+  obwodzie, puls), **iskry** po zrobionej fazie, litery wypisywane jedna po drugiej, ptaszek, paciorki postępu,
+  połysk karty, pasy kinowe, winieta, żarzewie nad demonem, pył mijany w locie.
+- `src/app/screens/tutorial.ts` — przebieg: wejście (z czerni, kamera zjeżdża od katedry do sali, napis „Samouczek”),
+  lekcje (mała karta u góry płyty — zjeżdża na dół, gdy zasłania cel; ✕ i Esc wychodzą), finał (kamera płynie szybem
+  drogi wiernych na dno, do pomnika; „Zagraj” / „menu”). Kamera między lekcjami płynie sama (`lec`), gracz może ją
+  przejąć. Świat samouczka jak dawniej: stałe ziarno, `spokojnySwiat`, `nakarmSwiat`, bez autozapisu.
+- `EkranGry.oknoOltarzaOtwarte` (getter) dla lekcji ołtarza. Opis w menu: „cztery krótkie lekcje — rękawica pokazuje,
+  co zrobić”. Przejście całości w przeglądarce (komputer, 1280×800) bez błędów; zrzuty każdego kroku obejrzane.
+- Nie ma już w samouczku: pomieszczeń, Cudu, szeptów, pauzy, wydarzeń, Strażników, dłoni — są w atlasie. Do rozważenia
+  z użytkownikiem, czy któraś z tych rzeczy ma wrócić jako lekcja. Plansze `SCENY.kimJestes` i `SCENY.narzedzia`
+  (`cutscene/scenes.ts`) nie są już nigdzie używane.
+
 ### 0.4 C. Pomieszczenia gdziekolwiek — ZROBIONE (folder `propozycja-1/`) (25.10)
 - Paweł: „rób tak, aby pomieszczenia się dało stawiać gdziekolwiek, a nie tylko tam, gdzie jest podłoga… bo jest to
   denerwujące… jeśli będzie w miejscu, gdzie robotnicy nie dojdą, to jest to wina gracza i będzie musiał zwyczajnie
@@ -223,8 +255,7 @@ się opiera na tamtych trzech… wgl potrzeba o wiele więcej tła tam”) i jeg
    utyka po trzeciej fali Strażników — demon zasypuje drogę (`zasypDroge` w `sim/boss.ts`), bot posyła głodnych
    robotników na dół i umierają z głodu; walka się nie kończy. Do zbadania: rytm `zasypDroge`, priorytet jedzenia nad
    rozkazem „kop drogę” w bocie (`app/bot.ts`), dostawy jedzenia w głąb.
-4. Samouczek: lekcja „przeciągnij płytę” ma nowy tekst (prawy przycisk myszy); warto dodać lekcję ramki i lekcję
-   drogi wiernych jako szybu (wnęka „tu zacznij”).
+4. ~~Samouczek: lekcja ramki i drogi wiernych~~ — samouczek zbudowany od nowa (0.3a), ma obie.
 5. Atlas: tablica „Schody” opisuje już szyb; przydałaby się osobna tablica „Droga wiernych” z ryciną szybu.
    Przycisk „kop drogę wiernych” z paska usunięty na prośbę użytkownika; klawisz G został — zapytać, czy też usunąć.
 6. Bot nie używa ramki ani pomieszczeń „gdziekolwiek” — stawia pokoje po staremu (to działa, ale nie testuje nowości).
@@ -600,7 +631,8 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
   idzie prosto na pobożnych, a rycerz bije najbliższego Strażnika, także tego w skale, i odchodzi w bok krypty. Próba
   naprawy (rycerz bierze najpierw Strażnika przy bezbronnych i czeka pod tym w skale) pogorszyła wyniki do 6/8 i 8/16 —
   wycofana. Do etapu 5 (bot) albo osobnej poprawki walki: rycerz musi osłaniać modlących się przed bossem.
-- **Tylko komputer.** Alpha nie jest zrobiona pod telefon. Paweł: „na telefonie mało co działa”.
+- **Tylko komputer.** Alpha nie jest zrobiona pod telefon. Paweł: „na telefonie mało co działa”. Od 25.10 wersja na
+  telefon jest zawieszona — nic nie robić ani nie stroić pod telefon (patrz „Najważniejsze”).
 - **Zadania zespołu, nie dla Claude:**
   - grafika:
     - menu główne (pilne);

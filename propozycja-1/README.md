@@ -6,6 +6,9 @@ Wersja próbna z propozycjami Pawła z 24.10.2026. Zbudowana na Alphie 0.2 z `ma
 
 Gra: [`trzewia.html`](trzewia.html) — pobierz i otwórz w przeglądarce (jeden plik, działa bez internetu).
 
+**Tylko komputer.** Wersja na telefon jest zawieszona — ani ta wersja, ani żaden update nie skupia się na balansie
+pod telefon.
+
 ## Co nowego względem Alphy 0.2
 - **Blok pod wiadrem:** robotnicy nie kopią przez blok, na którym stoi wiadro. Szukają drogi obok, a gdy jej
   nie ma, odmawiają. Rozkaz „kop” wskazany wprost na ten blok (albo ramka, która go obejmuje) odblokowuje tylko
@@ -24,6 +27,8 @@ Gra: [`trzewia.html`](trzewia.html) — pobierz i otwórz w przeglądarce (jeden
   ma, a zaznaczeni są robotnicy, oznacza skałę do wykucia. Widok myszą przesuwa się prawym albo środkowym przyciskiem.
 - **Pomieszczenia gdziekolwiek:** także w litej skale i nad pustką. Robotnicy się do nich przekopują, a brakującą
   podłogę lud układa sam.
+- **Samouczek od nowa:** cztery krótkie lekcje i finał; ruch pokazuje rękawica-duch, cel oświetla reflektor,
+  jedno zdanie naraz, dalej przechodzisz sam.
 - **Interfejs** (rysowany w kodzie jako placeholdery do podmiany na grafiki):
   - zasoby w dwóch ramkach: duża na wiarę, krew z ampułką i jedzenie, mniejsza na żelazo i złoto;
   - kamienne tła pod mocami, oddaniem i przyciskami (każdy przycisk we własnej przegródce);
