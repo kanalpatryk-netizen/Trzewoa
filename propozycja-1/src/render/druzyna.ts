@@ -1,7 +1,7 @@
 /**
  * DRUŻYNA I ROZKAZY (Alpha, etap 2) — wszystko, co gracz widzi przy sterowaniu ludem:
  *  - pod płytą trzy medaliony z miniaturami robotnika, pobożnego i rycerza (z liczbą) — dotknięcie
- *    zaznacza wszystkich tej roli, a obok nich rozkazy dla zaznaczonych („kop drogę wiernych”, „odwołaj”, „odznacz”);
+ *    zaznacza wszystkich tej roli, a obok nich rozkazy dla zaznaczonych („odwołaj”, „odznacz”);
  *  - na mapie: złoty pierścień pod stopami zaznaczonych, znaczniki celów rozkazów (proporczyk „idź tam”,
  *    kilof „kop tam”, strzałki nad czołem drogi wiernych), fala w miejscu wydania rozkazu
  *    (odmowa bez słów — kręcenie głową to poza w render/lud/ruch.ts, a w miejscu rozkazu czerwony krzyżyk).
@@ -32,7 +32,7 @@ export const ROLE_DRUZYNY: Rola[] = ['robotnik', 'pobozny', 'rycerz'];
 /** Barwy ról (te same co dawna wstęga ludu): biel wapienna pobożnych, ugier robotników, błękit rycerzy. */
 export const BARWA_ROLI: Record<Rola, [number, number, number]> = { pobozny: [246, 228, 176], robotnik: [214, 166, 104], rycerz: [168, 190, 226] };
 
-export type AkcjaDruzyny = 'rola' | 'droga' | 'odwolaj' | 'odznacz' | 'pomieszczenia' | 'szablon' | 'koniecSzablonu' | 'naprawa';
+export type AkcjaDruzyny = 'rola' | 'odwolaj' | 'odznacz' | 'pomieszczenia' | 'szablon' | 'koniecSzablonu' | 'naprawa';
 export interface PoleDruzyny { akcja: AkcjaDruzyny; rola?: Rola; szablon?: RodzajPomieszczenia; x: number; y: number; w: number; h: number }
 
 /** Co mówi listwa szablonów pod każdym z nich. */
@@ -188,7 +188,7 @@ export function rysujDruzyne(
       opcje.push(wisi ? { akcja: 'naprawa', tekst: 'skleja linę…', wlaczony: true }
         : { akcja: 'naprawa', tekst: idzie ? 'napraw linę (idzie)' : 'napraw linę wiadra', pilne: !idzie });
     }
-    if (robotnicy && czoloDrogi(sim) >= 0) opcje.push({ akcja: 'droga', tekst: 'kop drogę wiernych' });
+    // (25.10, decyzja użytkownika: bez przycisku „kop drogę wiernych” — robotnikom wskazuje się szyb na mapie)
     if (zaznaczone.some((c) => c.polecenie)) opcje.push({ akcja: 'odwolaj', tekst: 'odwołaj rozkaz' });
     if (zaznaczone.length) opcje.push({ akcja: 'odznacz', tekst: 'odznacz' });
     // etap 3c: plany pomieszczeń — zawsze pod ręką (klawisz B)
@@ -202,7 +202,7 @@ export function rysujDruzyne(
       if (zaznaczone.length) {
         ctx.fillStyle = 'rgba(246,216,142,0.92)';
         const ile = zaznaczone.length === 1 ? 'zaznaczony 1' : `zaznaczonych ${zaznaczone.length}`;
-        ctx.fillText(`${ile} — dotknij mapy: idź tam${robotnicy ? ' (w skałę: kop; w plan: kuj)' : ''}`, x0, yP - 6, x1 - x0);
+        ctx.fillText(`${ile} — dotknij mapy: idź tam${robotnicy ? ` (w skałę: kop; w plan: kuj${czoloDrogi(sim) >= 0 ? '; w szyb: droga wiernych' : ''})` : ''}`, x0, yP - 6, x1 - x0);
       } else {
         ctx.fillStyle = 'rgba(214,198,166,0.62)';
         ctx.fillText('dotknij postaci albo medalionu — wydasz rozkaz', x0, yP - 6, x1 - x0);

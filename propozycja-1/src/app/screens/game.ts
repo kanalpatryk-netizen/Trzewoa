@@ -1512,7 +1512,6 @@ export class EkranGry implements Ekran {
   /** Dotknięcie medalionu albo rozkazu na pasku drużyny. */
   private akcjaDruzyny(p: PoleDruzyny, dokladaj: boolean): void {
     if (p.akcja === 'rola' && p.rola) this.zaznaczRole(p.rola, dokladaj);
-    else if (p.akcja === 'droga') this.kopDroge();
     else if (p.akcja === 'odwolaj') this.odwolajRozkazy();
     else if (p.akcja === 'pomieszczenia') this.przelaczSzablon(!!this.szablon);
     else if (p.akcja === 'naprawa') this.naprawLine();
@@ -1539,7 +1538,7 @@ export class EkranGry implements Ekran {
     ui.say(lud.length === 1 ? `${NAZWA_ROLI[rola]} — dotknij mapy, dokąd ma iść.` : `${NAZWA_ROLI_MNOGA[rola]} (${lud.length}) — dotknij mapy, dokąd mają iść.`, sim.tick);
   }
 
-  /** „Kop drogę wiernych” dla zaznaczonych robotników. */
+  /** „Kop drogę wiernych” dla zaznaczonych robotników (klawisz G; na mapie — wskazany szyb). */
   private kopDroge(): void {
     const { sim, ui } = this;
     const robotnicy = this.zaznaczeniZywi().filter((c) => rolaPostaci(c) === 'robotnik');

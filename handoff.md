@@ -138,7 +138,8 @@ ciągle w dół i kopią (niech na drodze tego szybu nie generuje się żaden za
   (`wydajPolecenie` w polecenia.ts przekierowuje, gdy `czoloDrogi >= 0`; `wydajGrupie` daje robotnikom wskazany kafel
   zamiast miejsca w szeregu). Pobożni i rycerz z tej samej grupy dostają zwykłe „idź tam”. Kują jak dotąd: czoło to
   pierwszy niewykuty kafel szybu od góry, rzędami (środek, potem reszta rzędu) — w dół, aż do krypty. Przycisk
-  „kop drogę wiernych” na pasku drużyny (i klawisz G) zostaje jako skrót. Ramka nie oznacza kafli szybu, rozkaz
+  „kop drogę wiernych” z paska drużyny usunięty (decyzja użytkownika, 25.10); podpis paska przy zaznaczonych
+  robotnikach mówi „w szyb: droga wiernych”. Klawisz G (`kopDroge` w keybinds) został jako skrót klawiaturowy. Ramka nie oznacza kafli szybu, rozkaz
   „kop tam” na skałę szybu poza rozkazem drogi — odmowa „to szyb drogi wiernych”.
 - Animacja: zaznaczony robotnik i kursor nad szybem — szyb jaśnieje, przerywany zarys biegnie (`podKursorem`
   w `rysujPlanDrogi`); po rozkazie złota fala spływa szybem od czoła w dół i czoło rozbłyska (`rozkaz`,
@@ -225,8 +226,7 @@ się opiera na tamtych trzech… wgl potrzeba o wiele więcej tła tam”) i jeg
 4. Samouczek: lekcja „przeciągnij płytę” ma nowy tekst (prawy przycisk myszy); warto dodać lekcję ramki i lekcję
    drogi wiernych jako szybu (wnęka „tu zacznij”).
 5. Atlas: tablica „Schody” opisuje już szyb; przydałaby się osobna tablica „Droga wiernych” z ryciną szybu.
-   Do rozważenia: czy przycisk „kop drogę wiernych” na pasku drużyny w ogóle zostawić, skoro rozkaz wydaje się
-   kliknięciem w szyb (użytkownik o przycisku nic nie mówił — zostawiony jako skrót).
+   Przycisk „kop drogę wiernych” z paska usunięty na prośbę użytkownika; klawisz G został — zapytać, czy też usunąć.
 6. Bot nie używa ramki ani pomieszczeń „gdziekolwiek” — stawia pokoje po staremu (to działa, ale nie testuje nowości).
 
 ### 0.9 Pytania do użytkownika / Pawła (odpowiedzi użytkownika z 25.10)
