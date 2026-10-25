@@ -128,7 +128,35 @@ Poprawka: na początku `podDroga`, po `if (!p || i < WORLD_W) return false;`, do
 `if (p.szyb && sim.world.wSzybie(i % WORLD_W, (i / WORLD_W) | 0)) return false;` (kafle szybu kuje się całe).
 Potem powtórzyć próby bota.
 
-**Do zrobienia:** nic z listy — zrobione (teksty, test świata, zrzuty kontrolne, próby bota); dalsze kroki w 0.8.
+**Zmiana po próbie użytkownika (25.10) — ZROBIONE:** „niech robotnicy nie mogą tam kopać; żeby przydzielić ich do
+kopania tego, trzeba zaznaczyć robotników i kliknąć gdziekolwiek na ten szyb — wtedy oni po kolei od samej góry idą
+ciągle w dół i kopią (niech na drodze tego szybu nie generuje się żaden zabytek ani jaskinia)”.
+- Kafle szybu (poniżej wnęki) kuje tylko robotnik z rozkazem drogi wiernych: `kosztKuciaLudu` (droga.ts) daje -1 dla
+  `w.wSzybie` — nikt nie kopie przez szyb na skróty; `digTile` (creatures.ts) przerywa kucie kafla szybu, jeśli postać
+  nie ma `polecenie.typ === 'droga'` i `kopieDroge`.
+- Rozkaz: zaznaczeni robotnicy + kliknięcie w dowolny kafel szybu (także wnękę i wykutą część) = „kop drogę wiernych”
+  (`wydajPolecenie` w polecenia.ts przekierowuje, gdy `czoloDrogi >= 0`; `wydajGrupie` daje robotnikom wskazany kafel
+  zamiast miejsca w szeregu). Pobożni i rycerz z tej samej grupy dostają zwykłe „idź tam”. Kują jak dotąd: czoło to
+  pierwszy niewykuty kafel szybu od góry, rzędami (środek, potem reszta rzędu) — w dół, aż do krypty. Przycisk
+  „kop drogę wiernych” na pasku drużyny (i klawisz G) zostaje jako skrót. Ramka nie oznacza kafli szybu, rozkaz
+  „kop tam” na skałę szybu poza rozkazem drogi — odmowa „to szyb drogi wiernych”.
+- Animacja: zaznaczony robotnik i kursor nad szybem — szyb jaśnieje, przerywany zarys biegnie (`podKursorem`
+  w `rysujPlanDrogi`); po rozkazie złota fala spływa szybem od czoła w dół i czoło rozbłyska (`rozkaz`,
+  `EkranGry.rozkazSzybu`).
+- **Skutek uboczny:** gdy demon (`zasypDroge` w `sim/boss.ts`) albo karta „Zawał” zasypie kawałek szybu, nikt już
+  nie przekopie go „po drodze” (dawniej robili to robotnicy niosący jedzenie do krypty). Gracz musi znów wskazać szyb
+  robotnikom — napis w kronice o zasypaniu mówi to wprost. Bot (`robotnicy` w `app/bot.ts`) w walce z demonem
+  posyła teraz robotników także do zasypanego **szybu** (wcześniej tylko do gruzu); zasyp na podłodze krypty zostawia
+  jak dawniej noszącym jedzenie — posłani tam w walce ginęli od Strażników.
+- Próby bota (speedrun, 25 min, ziarna 1–10): przed zmianą 6/10 wygranych, po zmianie też 6/10 (średnio ok. 12,6 min, bez wyjątków). Ziarna nie
+  są porównywalne jeden do jednego: jaskinie losują się z dala od szybu, więc to samo ziarno daje inną górę. Przegrane
+  to wciąż znany błąd z 0.8 p. 3 (demon co kilkanaście sekund zasypuje drogę, rycerz nie dobija demona).
+- Świat: kieszenie i jaskinie losują się z dala od szybu (`losuj` w `generujWarstwy`, `przySzybie(x, 1,3·rx + 4)`),
+  a na zapas `wykujWnekeDrogi` zamienia na skałę każdą pustkę w szybie nad kryptą. Ruiny już stały ≥ 4 kafle od szybu.
+  Test świata sprawdza oba (na starym kodzie jaskinia w szybie była w 8 ze 100 światów). Żyły żelaza w szybie zostają.
+- Teksty: atlas („Drużyna i rozkazy”, „Schody”), samouczek (lekcja drogi do wolności), podpowiedź o krypcie.
+
+**Do zrobienia:** nic z listy; dalsze kroki w 0.8.
 
 ### 0.4 C. Pomieszczenia gdziekolwiek — ZROBIONE (folder `propozycja-1/`) (25.10)
 - Paweł: „rób tak, aby pomieszczenia się dało stawiać gdziekolwiek, a nie tylko tam, gdzie jest podłoga… bo jest to
@@ -197,6 +225,8 @@ się opiera na tamtych trzech… wgl potrzeba o wiele więcej tła tam”) i jeg
 4. Samouczek: lekcja „przeciągnij płytę” ma nowy tekst (prawy przycisk myszy); warto dodać lekcję ramki i lekcję
    drogi wiernych jako szybu (wnęka „tu zacznij”).
 5. Atlas: tablica „Schody” opisuje już szyb; przydałaby się osobna tablica „Droga wiernych” z ryciną szybu.
+   Do rozważenia: czy przycisk „kop drogę wiernych” na pasku drużyny w ogóle zostawić, skoro rozkaz wydaje się
+   kliknięciem w szyb (użytkownik o przycisku nic nie mówił — zostawiony jako skrót).
 6. Bot nie używa ramki ani pomieszczeń „gdziekolwiek” — stawia pokoje po staremu (to działa, ale nie testuje nowości).
 
 ### 0.9 Pytania do użytkownika / Pawła (odpowiedzi użytkownika z 25.10)

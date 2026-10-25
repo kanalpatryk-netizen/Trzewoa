@@ -158,12 +158,15 @@ export function wydajPolecenie(sim: Sim, c: Creature, typ: 'idz' | 'droga', x: n
     return null;
   }
   if (!w.inb(x, y)) return odmow(sim, c, 'tam nie sięgnę');
+  // szyb drogi wiernych wskazany robotnikowi (gdziekolwiek) — kuje go od góry w dół (decyzja użytkownika, 25.10)
+  if (rola === 'robotnik' && w.wSzybie(x, y) && czoloDrogi(sim) >= 0) return wydajPolecenie(sim, c, 'droga', 0, 0);
   // lita skała: robotnik się do niej przekopie, reszta stanie najbliżej, jak się da
   if (w.solid(x, y)) {
     if (rola === 'robotnik' && w.hardness(x, y) > 0) {
       const cel = w.idx(x, y);
       // (Alpha, jedno wiadro: podłoga drogi wiernych — wykuta urwałaby drogę do wiadra)
       if (podDroga(sim, cel)) return odmow(sim, c, 'to podłoga drogi wiernych');
+      if (w.wSzybie(x, y)) return odmow(sim, c, 'to szyb drogi wiernych');
       // rozkaz wprost na blok pod wiadrem odblokowuje ten jeden blok — inaczej nikt go nie ruszy
       if (cel === blokWiadra(sim)) {
         sim.odblokowaneWiadra.push(cel);
@@ -246,19 +249,22 @@ export function wydajGrupie(sim: Sim, ids: readonly number[], x: number, y: numb
   }
   let przyjeli = 0;
   const odmowy: string[] = [];
+  // (szyb drogi wiernych pod palcem: robotnicy dostają rozkaz na wskazany kafel — wydajPolecenie zrobi z niego
+  // „kop drogę wiernych”; szereg obok mógłby wypaść poza szyb)
+  const naSzybie = w.inb(x, y) && w.wSzybie(x, y);
   lud.forEach((c, i) => {
-    const [mx, my] = miejsca[i] ?? baza;
+    const [mx, my] = naSzybie && rolaPostaci(c) === 'robotnik' ? [x, y] : miejsca[i] ?? baza;
     const powod = wydajPolecenie(sim, c, 'idz', mx, my);
     if (powod) odmowy.push(powod); else przyjeli++;
   });
   return { przyjeli, odmowy };
 }
 
-/** Czy ten kafel wolno oznaczyć ramką do wykucia (lita skała, którą lud rusza; nie podłoga drogi wiernych). */
+/** Czy ten kafel wolno oznaczyć ramką do wykucia (lita skała, którą lud rusza; nie podłoga ani szyb drogi wiernych). */
 function doWykuciaRamka(sim: Sim, i: number): boolean {
   const w = sim.world;
   const x = i % w.w, y = (i / w.w) | 0;
-  return w.inb(x, y) && w.solid(x, y) && w.hardness(x, y) > 0 && w.get(x, y) !== T.CORE && !podDroga(sim, i);
+  return w.inb(x, y) && w.solid(x, y) && w.hardness(x, y) > 0 && w.get(x, y) !== T.CORE && !podDroga(sim, i) && !w.wSzybie(x, y);
 }
 
 /**

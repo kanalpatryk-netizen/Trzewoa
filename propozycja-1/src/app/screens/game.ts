@@ -50,7 +50,7 @@ import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { scianaKrypty, tynkSwiata } from '../../render/fresk';
 import { rysujDrogePielgrzymow, rysujSchodyDrogi, rysujPlanDrogi } from '../../render/pielgrzymka';
-import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
+import { aktualnyPlan, najwierniejsza, czoloDrogi } from '../../sim/pielgrzymka';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { rysujKatedre, rysujKatedreNad } from '../../render/katedra';
@@ -197,6 +197,8 @@ export class EkranGry implements Ekran {
   private polaDruzyny: PoleDruzyny[] = [];
   /** Fala w miejscu ostatniego rozkazu (render/druzyna.ts). */
   private falaRozkazu: FalaRozkazu | null = null;
+  /** Chwila rozkazu „kop drogę wiernych” (performance.now) — po szybie spływa złota fala (render/pielgrzymka.ts). */
+  private rozkazSzybu = 0;
   /** Samouczek gra na własnej górze i nie ma prawa nadpisać zapisu gracza. */
   zapisujAuto = true;
 
@@ -1247,7 +1249,7 @@ export class EkranGry implements Ekran {
     // droga pielgrzymów: którędy wierni zejdą pod rdzeń (przekopują ją sami — gracz nie drąży)
     // (25.10: droga wiernych jako szyb — plan widać zawsze, z wnęką „tu zacznij”)
     const plan = aktualnyPlan(sim);
-    if (plan?.szyb && !sim.rytual.otwarta) rysujPlanDrogi(ctx, sim, cam, plan, teraz);
+    if (plan?.szyb && !sim.rytual.otwarta) rysujPlanDrogi(ctx, sim, cam, plan, teraz, this.szybPodKursorem(), this.rozkazSzybu);
     else if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
       rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, false);
     }
@@ -1543,6 +1545,7 @@ export class EkranGry implements Ekran {
     const robotnicy = this.zaznaczeniZywi().filter((c) => rolaPostaci(c) === 'robotnik');
     if (!robotnicy.length) { ui.say('Kopią tylko robotnicy — zaznacz robotnika.', sim.tick); this.app.gesty.odmowa(); return; }
     const { przyjeli } = drogaGrupie(sim, robotnicy.map((c) => c.id));
+    if (przyjeli) this.rozkazSzybu = performance.now();
     if (przyjeli) { ui.say(przyjeli === 1 ? 'Idzie kopać drogę wiernych.' : `Idą kopać drogę wiernych (${przyjeli}).`, sim.tick); this.app.gesty.klik(); }
     else { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
     this.nasluch?.({ typ: 'polecenie', rodzaj: 'droga', przyjeli });
@@ -1634,6 +1637,15 @@ export class EkranGry implements Ekran {
   }
 
   /** Etap 3d: podpis nad ołtarzem pod kursorem — co się stanie po dotknięciu (albo null). */
+  /** Szyb drogi wiernych pod kursorem, gdy zaznaczony robotnik może dostać rozkaz jego kucia (podświetlenie szybu). */
+  private szybPodKursorem(): boolean {
+    if (this.szablon || this.ui.verb || this.sim.ending || this.oknoOltarza) return false;
+    const p = this.ui.pointer;
+    if (!this.naPlycie(p.x, p.y)) return false;
+    const [x, y] = this.swiatPod(p.x, p.y);
+    return this.sim.world.wSzybie(x, y) && czoloDrogi(this.sim) >= 0 && this.zaznaczeniZywi().some((c) => rolaPostaci(c) === 'robotnik');
+  }
+
   private oltarzPodKursorem(): string | null {
     if (this.szablon || this.ui.verb || this.sim.ending || this.oknoOltarza) return null;
     const p = this.ui.pointer;
@@ -1767,14 +1779,18 @@ export class EkranGry implements Ekran {
     const pom = pomieszczenieW(sim, Math.floor(fx), Math.floor(fy));
     if (pom && !ids.length) { ui.say(pom.gotowe ? `${NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż.` : 'Plan — zaznacz robotników i wskaż go, a wykują.', sim.tick); return; }
     if (!ids.length) return;
+    // szyb drogi wiernych pod palcem (25.10): zaznaczeni robotnicy kują go od góry w dół
+    const naSzybie = !pom && sim.world.wSzybie(Math.floor(fx), Math.floor(fy)) && czoloDrogi(sim) >= 0
+      && this.zaznaczeniZywi().some((c) => rolaPostaci(c) === 'robotnik');
     const { przyjeli, odmowy } = pom ? wydajNaPomieszczenie(sim, ids, pom) : wydajGrupie(sim, ids, Math.floor(fx), Math.floor(fy));
     this.falaRozkazu = { x: fx, y: fy, t: performance.now(), ok: przyjeli > 0 };
+    if (naSzybie && przyjeli) this.rozkazSzybu = performance.now();
     if (!przyjeli) this.app.gesty.odmowa();
     else {
-      ui.say((przyjeli === 1 ? 'Idzie.' : `Idą: ${przyjeli}.`) + (odmowy.length ? ` Odmawia: ${odmowy.length}.` : ''), sim.tick);
+      ui.say((naSzybie ? 'Kopią drogę wiernych — od góry w dół.' : przyjeli === 1 ? 'Idzie.' : `Idą: ${przyjeli}.`) + (odmowy.length ? ` Odmawia: ${odmowy.length}.` : ''), sim.tick);
       this.app.gesty.klik();
     }
-    this.nasluch?.({ typ: 'polecenie', rodzaj: pom ? 'pomieszczenie' : 'idz', przyjeli });
+    this.nasluch?.({ typ: 'polecenie', rodzaj: pom ? 'pomieszczenie' : naSzybie ? 'droga' : 'idz', przyjeli });
     this.dirty = true;
   }
 

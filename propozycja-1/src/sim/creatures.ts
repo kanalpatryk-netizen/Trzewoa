@@ -1701,6 +1701,11 @@ function digTile(sim: Sim, c: Creature, x: number, y: number): void {
   if (REMAKE && rolaPostaci(c) && podDroga(sim, w.idx(x, y))) { c.dig = 0; c.jt = 0; c.droga = undefined; return; }
   // blok pod wiadrem — tylko na wyraźny rozkaz (droga.ts: blokWiadra); kto szedł przez niego, szuka innej drogi
   if (REMAKE && rolaPostaci(c) && w.idx(x, y) === blokWiadra(sim)) { c.dig = 0; c.jt = 0; c.droga = undefined; return; }
+  // szyb drogi wiernych (25.10, decyzja użytkownika) — kuje go tylko robotnik z rozkazem „kop drogę wiernych”
+  // (zaznacz robotników i wskaż szyb), od góry w dół; nikt inny nie wkopie się w niego z boku
+  if (REMAKE && rolaPostaci(c) && w.wSzybie(x, y) && y > w.salaOltarza.y1 && !(c.polecenie?.typ === 'droga' && c.kopieDroge)) {
+    c.dig = 0; c.jt = 0; c.droga = undefined; return;
+  }
   // rysunek: kuje właśnie ten kafel (animacja kopania nie zależy od tego, czy to cel zajęcia, czy kafel na drodze)
   c.kujeT = sim.tick; c.kujeX = x; c.kujeY = y;
   const sila = RACES[c.race].digPower * mnoznik(sim, c, 'kopanie') * cechaNacji(sim.clans[c.clan]).kopanie * (1 + c.mad * K.kopanieOdSzalenstwa);

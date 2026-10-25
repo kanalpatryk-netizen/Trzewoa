@@ -340,7 +340,7 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g, s) => { const d = s.gniazdoGoblinow(); if (d) g.pokazMiejsce(d.x, d.y, 12, true); },
     etapy: [
       {
-        tekst: 'Najpierw robotnicy kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół, do krypty. Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.',
+        tekst: 'Najpierw robotnicy kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół, do krypty. Zaznacz robotników i wskaż szyb: kują go od góry w dół. Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.',
         rozumiem: true,
       },
       {

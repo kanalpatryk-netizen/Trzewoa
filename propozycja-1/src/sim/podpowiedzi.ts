@@ -107,7 +107,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
       if (plan && plan.kopac.length) {
         const i = plan.kopac[plan.kopac.length - 1];
         kandydaci.push({
-          tekst: `${sim.clans[plan.klan].name} schodzą do krypty. Jeśli chcesz, żeby wracali, zaznacz robotników i każ im kopać drogę wiernych — szyb ze schodami od wnęki przy sali.`,
+          tekst: `${sim.clans[plan.klan].name} schodzą do krypty. Jeśli chcesz, żeby wracali, zaznacz robotników i wskaż szyb drogi wiernych (od wnęki przy sali) — wykują go od góry w dół, a schody pojawią się same.`,
           cel: { x: (i % w.w) + 0.5, y: ((i / w.w) | 0) + 0.5, r: 3, tekst: 'drąż tutaj' },
           waga: 35,
         });

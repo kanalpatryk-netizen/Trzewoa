@@ -266,7 +266,8 @@ export class World {
       for (let p = 0; p < 30; p++) {
         const x = Math.round(S.rama + 3 + rx + rng.next() * (w - 2 * (S.rama + 3 + rx)));
         const y = Math.round(y0 + rng.next() * Math.max(1, y1 - y0));
-        if (wSali(x, y, rx + 4) || zaRdzeniem(x, y, rx + zapas)) continue;
+        // (25.10, decyzja użytkownika: na drodze szybu wiernych żadnej jaskini — brzeg elipsy sięga ok. 1,25 rx + 2)
+        if (wSali(x, y, rx + 4) || zaRdzeniem(x, y, rx + zapas) || przySzybie(x, Math.ceil(rx * 1.3) + 4)) continue;
         return [x, y];
       }
       return null;
@@ -359,7 +360,8 @@ export class World {
 
   /**
    * Droga wiernych (25.10): szyb od lewej krawędzi sali na dno krypty. Wnęka u jego szczytu (przy podłodze sali)
-   * jest pusta od początku; w samym szybie nie zostaje kamień nie do ruszenia — inaczej droga by stanęła.
+   * jest pusta od początku; w samym szybie nie zostaje kamień nie do ruszenia — inaczej droga by stanęła. Między wnęką
+   * a kryptą szyb jest cały z litej skały (decyzja użytkownika: bez jaskiń na jego drodze — kuje się go od góry w dół).
    */
   private wykujWnekeDrogi(podlogaKrypty: number): void {
     const D = SWIAT.warstwy.drogaWiernych;
@@ -371,6 +373,12 @@ export class World {
       const i = this.idx(x, y);
       if (y <= s.y1) this.tile[i] = T.AIR;
       else if (this.tile[i] === T.STONE) this.tile[i] = T.ROCK;
+    }
+    // (zapas, gdyby coś innego wycięło pustkę w szybie: krypta to pusty pas od dna w górę, wszystko nad nim — skała)
+    for (let x = x0; x <= x1; x++) {
+      let y = y1;
+      while (y > s.y1 && PASSABLE[this.tile[this.idx(x, y)]] === 1) y--;
+      for (; y > s.y1; y--) if (PASSABLE[this.tile[this.idx(x, y)]] === 1) this.tile[this.idx(x, y)] = T.ROCK;
     }
   }
 

@@ -408,7 +408,8 @@ export function kosztKuciaLudu(sim: Sim, mozeDoRdzenia = false): KosztKucia {
     const t = w.tile[i];
     const tw = HARDNESS[t];
     if (tw <= 0 || t === T.CORE) return -1;
-    if (podDroga(sim, i) || i === wiadro) return -1;
+    // (szyb drogi wiernych kuje się tylko na rozkaz „kop drogę wiernych”, od góry — nie przez niego na skróty)
+    if (podDroga(sim, i) || i === wiadro || w.wSzybie(x, y)) return -1;
     if (magma && (sim.przyMagmie(x, y, 2) || nadOgniem(sim, x, y))) return -1;
     if (woda) for (let k = -1; k <= 1; k++) for (let j = -1; j <= 1; j++) if (w.inb(x + k, y + j) && w.water[w.idx(x + k, y + j)] > 2) return -1;
     if (!mozeDoRdzenia && Math.hypot(x - w.coreX, y - w.coreY) < LUD.strefaRdzenia) return -1;

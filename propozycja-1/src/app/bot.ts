@@ -350,7 +350,9 @@ function robotnicy(sim: Sim, styl: StylBota): void {
   if (poDrodze && kuz && brakZelaza(sim) > 0) potrzeby.push('zelazo', 'zelazo');
   if (poDrodze && war && styl !== 'speedrun' && sim.zloto < 3) potrzeby.push('zloto');
   // ilu naraz: wszyscy poza jednym (ten nosi jedzenie); gdy pobożni modlą się pod pomnikiem — poza dwoma (jedzenie trzeba
-  // nosić do krypty: bez tego rycerz i pobożni umierali z głodu); w walce z demonem — tylko gruz
+  // nosić do krypty: bez tego rycerz i pobożni umierali z głodu); w walce z demonem — tylko gruz i zasypany szyb drogi
+  // wiernych (25.10: szyb kuje się tylko na rozkaz — noszący jedzenie już go nie przekopią po drodze; zasyp na podłodze
+  // krypty przekopią jak dawniej, a posłani tam w walce ginęli od Strażników)
   const podPomnikiem = zRola(sim, 'pobozny').some((c) => c.job === Job.PIELGRZYM || wStrefieStraznikow(sim, c.x, c.y));
   const limit = Math.max(0, rob.length - (podPomnikiem && czoloDrogi(sim) < 0 ? 2 : 1));
   const ile = new Map<Zadanie, number>();
@@ -363,8 +365,10 @@ function robotnicy(sim: Sim, styl: StylBota): void {
     .sort((a, b) => a.hunger - b.hunger);
   for (const c of wolni) {
     if (zajetych >= limit) break;
-    if (walkaZDemonem(sim) && !(sc && (ile.get('gruz') ?? 0) < 1)) break;
-    const z = [...new Set(potrzeby)].find((q) => (ile.get(q) ?? 0) < (chce.get(q) ?? 0));
+    const czolo = czoloDrogi(sim);
+    const szybZasypany = czolo >= 0 && w.wSzybie(czolo % w.w, (czolo / w.w) | 0);
+    if (walkaZDemonem(sim) && !(sc && (ile.get('gruz') ?? 0) < 1) && !szybZasypany) break;
+    const z = [...new Set(potrzeby)].find((q) => (ile.get(q) ?? 0) < (chce.get(q) ?? 0) && (!walkaZDemonem(sim) || (q === 'droga' && szybZasypany) || q === 'gruz'));
     if (!z) break;
     let ok = false;
     if (z === 'droga') {

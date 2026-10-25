@@ -153,7 +153,7 @@ export function rysujSchodyDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
  * zarys, przekreślone kafle skały; bez napisów — decyzja użytkownika z 22.10), a we wnęce, dopóki nikt nie zaczął, znak „tu zacznij”: rusztowanie z belek,
  * kilof i strzałka w dół kredą. Placeholder do podmiany na grafikę.
  */
-export function rysujPlanDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, plan: PlanDrogi, teraz: number): void {
+export function rysujPlanDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, plan: PlanDrogi, teraz: number, podKursorem = false, rozkaz = 0): void {
   const w = sim.world, s = w.szybDrogi;
   if (!plan.szyb || s.x1 < s.x0) return;
   const z = cam.zoom;
@@ -175,11 +175,25 @@ export function rysujPlanDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: Cam
       }
       ctx.stroke();
     }
+    const lx = cam.toScreenX(s.x0), gy = cam.toScreenY(gora), sw = (s.x1 - s.x0 + 1) * z, sh = (s.y1 - gora + 1) * z;
+    // zaznaczony robotnik i kursor nad szybem: szyb jaśnieje — kliknięcie każe go kuć
+    const puls = 0.5 + 0.5 * Math.sin(teraz * 0.008);
+    if (podKursorem) { ctx.fillStyle = ZLOTO(0.16 + 0.12 * puls); ctx.fillRect(lx, gy, sw, sh); }
     // zarys: od najwyższego niewykutego rzędu do dna krypty
     ctx.setLineDash([Math.max(3, z * 0.4), Math.max(2, z * 0.22)]);
-    ctx.strokeStyle = ZLOTO(0.85); ctx.lineWidth = Math.max(1.4, z * 0.08);
-    ctx.strokeRect(cam.toScreenX(s.x0), cam.toScreenY(gora), (s.x1 - s.x0 + 1) * z, (s.y1 - gora + 1) * z);
-    ctx.setLineDash([]);
+    ctx.lineDashOffset = podKursorem ? -teraz * 0.02 : 0;
+    ctx.strokeStyle = podKursorem ? `rgba(255,226,150,${0.8 + 0.2 * puls})` : ZLOTO(0.85); ctx.lineWidth = Math.max(1.4, z * (podKursorem ? 0.16 : 0.08));
+    ctx.strokeRect(lx, gy, sw, sh);
+    ctx.setLineDash([]); ctx.lineDashOffset = 0;
+    // rozkaz „kop drogę wiernych”: złota fala spływa szybem od czoła w dół (ok. 30 kafli — tyle widać), a czoło rozbłyska
+    const t = (teraz - rozkaz) / 1600;
+    if (rozkaz > 0 && t >= 0 && t < 1) {
+      const fy = gy + Math.min(sh, z * 30) * (1 - (1 - t) * (1 - t)), pas = z * 4;
+      const g = ctx.createLinearGradient(0, fy - pas, 0, fy + pas * 0.3);
+      g.addColorStop(0, ZLOTO(0)); g.addColorStop(0.8, ZLOTO(0.6 * (1 - t))); g.addColorStop(1, ZLOTO(0));
+      ctx.fillStyle = g; ctx.fillRect(lx, Math.max(gy, fy - pas), sw, Math.min(fy + pas * 0.3, gy + sh) - Math.max(gy, fy - pas));
+      ctx.fillStyle = ZLOTO(0.7 * (1 - t)); ctx.fillRect(lx, gy, sw, z);
+    }
   }
   // wnęka „tu zacznij”: dopóki pierwszy rząd szybu pod nią stoi cały
   let nikt = true;

@@ -148,7 +148,7 @@ function zasypDroge(sim: Sim, c: Creature): void {
   if (!ile) return;
   const i = kandydaci[start];
   sim.efekt(c.x, c.y, 'cud');
-  sim.gdzie(i % w.w, (i / w.w) | 0).log(`${K.nazwa} uderza w ziemię — zasypał kawałek drogi wiernych. Robotnicy muszą ją odkopać.`, 'swiat', 'boss-zasyp');
+  sim.gdzie(i % w.w, (i / w.w) | 0).log(`${K.nazwa} uderza w ziemię — zasypał kawałek drogi wiernych. Robotnicy muszą ją odkopać — zaznacz ich i wskaż szyb.`, 'swiat', 'boss-zasyp');
 }
 
 export const BOSSOWIE: Record<IdBossa, Boss> = { sniacyKamien, demon };

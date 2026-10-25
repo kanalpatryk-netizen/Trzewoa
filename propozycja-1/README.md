@@ -14,6 +14,9 @@ Gra: [`trzewia.html`](trzewia.html) — pobierz i otwórz w przeglądarce (jeden
 - **Droga wiernych jako szyb ze schodami:**
   - szyb szeroki na 5 kafli przy lewej ścianie sali, prosto w dół do krypty;
   - we wnęce na start stoi rama z lampką, kilof i strzałka;
+  - kuje się go tylko na rozkaz: zaznacz robotników i kliknij gdziekolwiek na szyb — kują od góry w dół;
+    poza tym rozkazem nikt go nie rusza;
+  - na drodze szybu nie ma jaskiń ani ruin;
   - w każdym wykutym kaflu same pojawiają się schody, którymi chodzi się w obie strony;
   - plan widać zawsze;
   - pomnik pęka dopiero przy wykopanej drodze.

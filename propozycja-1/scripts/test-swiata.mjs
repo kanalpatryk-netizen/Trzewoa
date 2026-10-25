@@ -69,6 +69,14 @@ function bledyOltarza(w) {
       if (t === T.STONE || t === T.CORE) { bledy.push('w szybie drogi wiernych kamień nie do ruszenia (' + x + ', ' + y + ')'); y = 1e9; break; }
     }
     for (let x = s.x0; x <= s.x1; x++) if (!wolny(x, s.y1) || wolny(x, s.y1 + 1)) { bledy.push('szyb drogi wiernych nie trafia w podłogę krypty (' + x + ')'); break; }
+    // (25.10, decyzja użytkownika) bez jaskiń na drodze szybu: od wnęki w dół lita skała aż do krypty (pustka tylko
+    // ciągłym pasem od dna), a ruiny z dala od niego
+    for (let x = s.x0; x <= s.x1; x++) {
+      let y = s.y1;
+      while (y > w.salaOltarza.y1 && wolny(x, y)) y--;
+      for (; y > w.salaOltarza.y1; y--) if (wolny(x, y)) { bledy.push('jaskinia w szybie drogi wiernych (' + x + ', ' + y + ')'); x = 1e9; break; }
+    }
+    for (const r of w.ruiny) if (r.x1 >= s.x0 - 3 && r.x0 <= s.x1 + 3) bledy.push('ruina przy szybie drogi wiernych');
   }
   return bledy;
 }
