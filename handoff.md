@@ -9,6 +9,165 @@ Z użytkownikiem rozmawia się po polsku.
 - **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
 - **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e, 3f i etap 4 zrobione na polecenie użytkownika. Etap 5 ruszył na polecenie użytkownika; 5a zrobione — **przed 5b powiedz użytkownikowi, co w nim będzie, i czekaj na polecenie.** Stanem wizualnym rycerza „zajmiemy się kiedy indziej” — użytkownik 18.10.)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
+- **Zadanie bieżące (od 25.10): propozycje Pawła dla Alphy 0.2 — patrz sekcja 0 niżej.**
+
+---
+
+## 0. Zadanie bieżące (25.10) — propozycje Pawła dla Alphy 0.2
+
+### 0.1 Skąd i na jakich zasadach
+- **Źródło.** Nagranie ekranu z Messengera (rozmowa użytkownika z Pawłem, sob. 24.10, 17:18–17:31) i transkrypcja
+  wiadomości głosowej użytkownika (pomysł na wiadro, 0.2 niżej). Podsumowanie zatwierdzone przez użytkownika 25.10.
+- **Decyzje użytkownika (25.10):**
+  - kod bierze się z **aktualnej Alphy 0.2 z `main`** (`c2d4d3d`, po PR #30);
+  - **nie dawać tego na GitHuba** — po skończeniu wysłać użytkownikowi w czacie **build HTML** (`alpha-0.2/trzewia.html`
+    z `npm run pack`). Pracuje się lokalnie, na gałęzi `lokalnie/propozycje-pawla` (bez pushowania i bez PR);
+  - wszystko, co „miał zrobić grafik”, robi się samemu jako **placeholder** (rysunek w kodzie, do podmiany później);
+  - kolejność: najpierw blokada wiadra i droga wiernych (Paweł czeka na betę drogi), potem reszta;
+  - czerwoną linię ze znakiem zapytania na zrzucie „moje propozycje” (od krwi w pasku zasobów do relikwiarza)
+    „musisz sam zinterpretować” — interpretacja w 0.5 (D1).
+- **Uwaga o kontenerze.** Kod gry z tej pracy jest tylko lokalny (polecenie użytkownika), więc gdy sesja się skończy,
+  przepada. Na GitHub trafił (25.10, na prośbę użytkownika) **tylko ten plik** — gałąź `claude/exciting-newton-l5soua`.
+  Kto przejmuje w nowej sesji, zaczyna od `main` i odtwarza zmiany według opisu niżej (nazwy funkcji, pliki, liczby).
+
+### 0.2 A. Kopanie i ścieżki robotników
+- **A1. Blokada bloku pod wiadrem — ZROBIONE lokalnie (do sprawdzenia w próbach).** Problem (zrzut Pawła „START / DROGA /
+  CHCIANA DROGA”): robotnicy posłani z lewej strony sali ukośnie w dół szli przez całą salę do szybu wiadra i kopali
+  pionowo wzdłuż liny, ściągając wiadro na dno dołu; pobożny poszedł za nimi i też kopał. Pomysł użytkownika (głosówka):
+  „robotnicy mają kompletnie zablokowaną możliwość kopania przez [blok, na którym trzyma się wiadro], jeśli nie ma rozkazu
+  wykopania go konkretnie… zawsze będą zmuszeni znaleźć inną drogę… nawet jeśli innej drogi nie ma… jak damy im rozkaz
+  wykopania tego konkretnego bloku… to całe to pole się odblokowuje i potem mogą kopać w dół”.
+  - `blokWiadra(sim)` w `src/sim/droga.ts`: kafel pod dnem kolumny szybu wiadra (`szybWiadraX`), albo -1, gdy
+    `sim.wiadroOdblokowane`. Zablokowany w `kosztKuciaLudu` (szukanie drogi z kopaniem), w `digTile` (creatures.ts —
+    straż: nikt z ludu go nie ruszy) i w `kafleDoKucia` (plany pomieszczeń).
+  - Odblokowanie: rozkaz „kop tam” wskazany wprost na ten kafel (`wydajPolecenie` w `polecenia.ts`) ustawia
+    `sim.wiadroOdblokowane = true` — do końca partii (przyjęte za użytkownika: nowy blok pod wiadrem po zjechaniu niżej
+    już się nie blokuje). Prostokąt „do wykopania” (A3) obejmujący ten kafel też ma odblokowywać.
+  - Gdy innej drogi nie ma — zwykła odmowa (czerwony krzyżyk przy kursorze).
+  - Stan w zapisie: `wiadroOdblokowane` w `src/core/save.ts`.
+- **A2. Pobożny i rycerz nie kopią, idąc na przełaj — ZROBIONE lokalnie.** `walkToLud` (creatures.ts): `kopie` tylko
+  dla roli `robotnik`. Ratunkowe wkopywanie się (z odciętej kieszeni do spiżarni, z dołka z powrotem na drogę) zostaje
+  dla wszystkich — bez niego umierali z głodu.
+- **A3. Zaznaczanie prostokątem jak w Twierdzy — DO ZROBIENIA.** Paweł: „jak się przytrzyma przycisk myszy, to tworzy się
+  kwadrat i wszystko w środku kwadratu zostaje oznaczone (do wykopania, zaznaczenie jednostek itp.)”.
+  - Przeciągnięcie lewym przyciskiem po mapie rysuje prostokąt (złota przerywana ramka, placeholder).
+  - Po puszczeniu: są w nim postacie ludu → **zaznacza je** (zastępuje zaznaczenie; z Shift — dodaje).
+    Nie ma postaci, a zaznaczeni są robotnicy → **lita skała w środku oznaczona do wykopania** (znaczek kilofa na
+    kaflach), a zaznaczeni robotnicy kują oznaczone kafle, najbliższe najpierw (nowy rodzaj rozkazu albo kolejka
+    kafli w `Polecenie`; te same zakazy co „kop tam”: podłoga drogi wiernych, blok pod wiadrem — chyba że w prostokącie).
+  - Najpierw sprawdzić, co dziś robi przeciąganie w `game.ts` (`ciagniecie` — przeciąganie szablonów pomieszczeń i liny,
+    obsługa wskaźników ok. linii 1900, dotyk/kamera) i tego nie zepsuć: z wybranym szablonem przeciąganie dalej rysuje plan.
+  - Animacja (wymóg): ramka rośnie za kursorem, zaznaczeni błyskają, oznaczone kafle dostają znaczki z krótkim „wbiciem”.
+
+### 0.3 B. Droga wiernych jako szyb ze schodami — W TOKU (większość zrobiona lokalnie)
+Paweł: „zrób może, aby plan drogi wiernych był zawsze widoczny… i aby ona nie była malutkim korytarzykiem, tylko żeby
+działała jak pokój… i będzie się w środku pojawiać grafika schodów… tam, gdzie jest czerwone [wnęka przy krawędzi sali],
+będzie puste miejsce, ewentualnie z grafiką, aby pokazać, że tam trzeba zacząć budować… przy rozkazie »kop drogę
+wiernych« oni kopią dziurę, a schody się pojawiają tam naturalnie, aby robotnicy mogli iść z powrotem do góry, a pobożni
+mogli zejść do rdzenia… tylko trzeba zrobić, aby nie opłacało się ludziom po prostu zrobić dziurę w dół… będą musieli
+kopać razem z drogą wiernych”. Na jego zrzucie: czerwony prostokąt przy lewej górnej krawędzi sali (przy podłodze),
+z niego w dół niebieski szyb z zygzakiem schodów.
+
+**Projekt (przyjęty):**
+- Szyb **3 kafle szeroki** (`SWIAT.warstwy.drogaWiernych.szer`), tuż przy lewej ścianie sali: kolumny
+  `salaOltarza.x0 − 2 … salaOltarza.x0` (dziś x 76–78), **prosto w dół** od wnęki do dna krypty
+  (`podlogaKrypty − 1`, dziś y 215). Krypta ma rx 44, więc szyb trafia w nią z góry; dalej idzie się podłogą krypty do
+  przedsionka. Dla porównania: dawna droga to ok. 335 kafli do wykucia, szyb 3×~178 ≈ 530, stąd
+  `kucieSzybciej: 1.5` — kafle szybu kuje się 1,5× szybciej (tempo partii zostaje; to też zachęta, by kopać drogą).
+- **Wnęka** (2 rzędy, `wneka: 2`) u szczytu szybu, przy podłodze sali, pusta od początku — tam zaczyna się kopać.
+- **Schody**: nowa warstwa `world.schody` (jak `lina`): stoi się na nich i chodzi nimi w górę i w dół. Pojawiają się
+  same w każdym pustym kaflu szybu połączonym od góry (od wnęki w dół, kolumnami, aż do pierwszej litej skały) — także
+  w jaskiniach, które szyb przecina, i w krypcie pod nim.
+- **„Dziura się nie opłaca”**: Wielki Pomnik pęka od modlitwy tylko wtedy, gdy droga wiernych jest wykopana do końca
+  (`czoloDrogi(sim) < 0`, warunek w `tikRytualu`, `src/sim/rytual.ts`); zwykły dół do krypty nic nie daje (a i tak
+  nie da się nim wrócić — lud wchodzi najwyżej o 1 kafel).
+
+**Zrobione lokalnie (stan 25.10, przed pierwszą udaną próbą bota):**
+- `SWIAT.warstwy.drogaWiernych` (`src/nastawy/swiat.ts`);
+- `world.szybDrogi`, `world.schody`, `world.wSzybie(x, y)`, `wykujWnekeDrogi` (wnęka pusta; kamień nie do ruszenia
+  w szybie zamieniany na zwykłą skałę), `world.set` czyści schody w kaflu, który przestał być pustką
+  (`src/sim/world.ts`); ruiny stają ≥ 4 kafle od szybu;
+- `stoi()` uznaje schody; `szukajDrogi` schodzi ze schodów w dół; `szukajKopiac` traktuje każdy kafel szybu jako
+  miejsce do stania i schodzi po schodach (`src/sim/droga.ts`);
+- grawitacja: na schodach się nie spada (`wisiNaLinie` w creatures.ts uznaje schody);
+- `schodyDrogi(sim)` (pielgrzymka.ts): zeruje schody w szybie i rozprowadza je od wnęki w dół, kolumnami, do pierwszej
+  litej skały; wołane w `drazDrogeWiernym`, w `digTile` po każdym wykutym kaflu szybu i po wczytaniu zapisu (save.ts);
+- `digTile`: kafle szybu kuje się `kucieSzybciej` razy szybciej (dzielnik `tempo`);
+- planer: `planSzybu` w pielgrzymka.ts (woła go `planujDroge`, gdy są warstwy i szyb) — `sciezka` od przedsionka
+  podłogą krypty (`szukajKopiac` bez kucia), środkiem szybu w górę do dolnego rzędu wnęki i dwa kafle w głąb sali;
+  nowe pole `szyb` (wszystkie kafle szybu od góry rzędami: środek, lewy, prawy); `kopac`, `liny: []`,
+  `dwukierunkowa: true`; `czoloDrogi` / `nieWykopane` / `planWciazDobry` biorą `szyb`, gdy jest;
+- rysunek (`src/render/pielgrzymka.ts`): `rysujSchodyDrogi` (przed mrokiem — biegi po 3 stopnie na przemian w prawo
+  i w lewo, kamienne stopnie, drewniany policzek i poręcz; świeży stopień „wyrasta” z pyłem) i `rysujPlanDrogi`
+  (nad mrokiem, zawsze: przerywany złoty zarys niewykutej części, przekreślone kafle skały; we wnęce, dopóki nikt nie
+  zaczął, rusztowanie z belek, kilof i pulsująca strzałka w dół). **Bez napisów na mapie** (decyzja użytkownika
+  z 22.10 — żadnych podpisów typu „droga wiernych 0/530” ani „tu zacznij”). Wołane w `game.ts`; dawny warunek
+  `sim.tick - plan.tick < 3000` został tylko dla starej drogi;
+- `figury.ts`: na schodach w ruchu pionowym bez animacji wspinania (idzie się, nie wspina);
+- karta „Zawał nad drogą wiernych” (`karty-ludu.ts`) zasypuje cały rząd szybu (przez `w.set`);
+- pomieszczenia: plan nie może nachodzić na szyb („na drodze wiernych”) ani stać pod linią drogi;
+- `tikRytualu` (rytual.ts): pomnik nie pęka, dopóki szyb nie jest wykopany (`czoloDrogi(sim) >= 0`);
+- zapis: `VERSION` 4 → 5.
+- `npx tsc --noEmit` czysto, `npm test` 12/12.
+
+**Znaleziony błąd — DO NAPRAWY OD RAZU (poprawka niezapisana):** w pierwszej próbie bota (`proby-graczy.mjs`,
+ziarna 1–3, 25 min) robotnicy przez 20 minut stali przy czole (78, 38) i nic nie kuli („CZOŁO DROGI STOI”). Przyczyna:
+`sciezka` biegnie dolnym rzędem wnęki (y 37), a `podDroga` (droga.ts) chroni kafel pod każdym kaflem `sciezka`, który
+sam do niej nie należy — więc pierwsze kafle szybu (76, 38) i (78, 38) wyglądały jak „podłoga drogi wiernych”.
+Poprawka: na początku `podDroga`, po `if (!p || i < WORLD_W) return false;`, dodać
+`if (p.szyb && sim.world.wSzybie(i % WORLD_W, (i / WORLD_W) | 0)) return false;` (kafle szybu kuje się całe).
+Potem powtórzyć próby bota.
+
+**Do zrobienia:**
+1. Poprawka `podDroga` (wyżej) i próby bota: `node scripts/proby-graczy.mjs $PWD <ziarno> speedrun 25 <plik.log>`
+   (pierwszy argument — **ścieżka bezwzględna** do `alpha-0.2`, inaczej esbuild nie znajdzie `src/…`). Bot ma kopać szyb
+   do dna, schodzić nim pobożnymi, kruszyć pomnik i wygrywać; partia mniej więcej jak dotąd (13–16 min). Jeśli za
+   długo — podnieść `kucieSzybciej` albo zmniejszyć `szer`.
+2. `boss.ts` ok. linii 130 (`zasypDroge`) korzysta z `plan.sciezka` — przy szybie zasypuje kafle podłogi krypty przy
+   przedsionku; sprawdzić, czy da się je odkopać i czy to ma sens.
+3. Teksty: wszędzie „złota kreska” → szyb / schody drogi wiernych (atlas `src/atlas/tablice.ts`, samouczek
+   `src/app/screens/samouczek/rozdzialy.ts`, podpowiedzi, bot — `grep -rn "kresk" src`, ok. 10 miejsc); tablica atlasu
+   „Droga wiernych” z rysunkiem szybu ze schodami.
+4. Test świata (`scripts/test-swiata.mjs`): dopisać sprawdzenie — wnęka pusta, w szybie nic nie do ruszenia, szyb
+   sięga krypty; reszta asercji musi przejść.
+5. Zrzut kontrolny w przeglądarce: wnęka z rusztowaniem, zarys szybu, schody po kilku minutach kopania.
+
+### 0.4 C. Pomieszczenia gdziekolwiek — DO ZROBIENIA
+- Paweł: „rób tak, aby pomieszczenia się dało stawiać gdziekolwiek, a nie tylko tam, gdzie jest podłoga… bo jest to
+  denerwujące… jeśli będzie w miejscu, gdzie robotnicy nie dojdą, to jest to wina gracza i będzie musiał zwyczajnie
+  zburzyć plan i postawić ponownie”.
+- `probaPlanu` (`src/sim/pomieszczenia.ts`, ok. linii 85–160): zdjąć warunek podłogi pod planem; zostają tylko zakazy
+  twarde (poza mapą, sala z ołtarzem, szyb drogi wiernych, kamień nie do ruszenia, nachodzenie na inny plan).
+- Burzenie planu już jest (`skreslPlan`) — upewnić się, że w UI jest pod ręką (np. podpowiedź na planie, do którego nikt
+  nie dojdzie: „nikt tu nie dojdzie — skreśl plan”).
+
+### 0.5 D. Interfejs (placeholdery zamiast grafika) — DO ZROBIENIA
+Wg tekstu Pawła („przydałoby się odróżnić bardziej od siebie różne zasoby, aby jedzenie, krew i wiara była większa lub
+bardziej odróżniona, gdyż są najbardziej podstawowymi zasobami, a żelazo i złoto było obok, aby podkreślić, że większość gry
+się opiera na tamtych trzech… wgl potrzeba o wiele więcej tła tam”) i jego zrzutu „moje propozycje” z dopiskami:
+- **D1. Zasoby.** Lewy górny róg: dwie ramki. Pierwsza, duża: **wiara, krew, jedzenie** — większe liczby z ikonami.
+  Druga, mniejsza, obok: **żelazo, złoto**.
+  **Interpretacja czerwonej linii z „?” (krew w pasku → relikwiarz):** krew jest pokazana dwa razy — liczba w pasku
+  i relikwiarz na dole. Krew ma być w jednym miejscu: w dużej ramce, z miniaturą ampułki relikwiarza jako ikoną (żarzy się
+  i pulsuje tak jak relikwiarz); duży relikwiarz na dole znika, a jego podpisy („płynie z każdej śmierci”, „za mało na
+  rytuał (15)”, „pełna — nadmiar przepada”) idą pod liczbę krwi albo do dymka po najechaniu.
+- **D2. Więcej tła** — każdy element HUD na własnym tle (panele, nie gołe elementy na tle płyty).
+- **D3. Moce po lewej** (nakarm, szepnij, cud) — dopisek „jakiekolwiek tło”: pionowy panel pod medalionami.
+- **D4. Medaliony postaci** (robotnicy, pobożni, rycerze, lewy dół) — dopisek „płutno”: tło z płótna (szorstka tkanina
+  z obszyciem, rysowana w kodzie).
+- **D5. Kronika** (wpisy w lewym dolnym rogu) — dopisek „książka”: wygląd otwartej książki (dwie stronice, grzbiet,
+  wpisy jak pismo w książce).
+- **D6. Przyciski w prawym dolnym rogu** (pauza, oko, …, księga, klucz, …) — nawias ze strzałką do narysowanego
+  prostokąta z przegródkami: jeden panel, każdy przycisk we własnej przegródce.
+- Gdzie: `rysujZasoby` i układ HUD w `src/app/screens/game.ts`, obszary kliknięć w `src/app/obszary-hud.ts`, medaliony
+  w `src/render/druzyna.ts`, relikwiarz `src/render/relikwiarz.ts`, przyciski `src/render/przyciski.ts`. Telefon
+  w pionie i poziomie też ma się mieścić. Zmienione obszary kliknięć muszą zgadzać się z rysunkiem.
+
+### 0.6 E. Na koniec
+- `npx tsc --noEmit`; `npm test` (12/12 + test świata); próby bota (`scripts/proby-graczy.mjs`, kilka ziaren) — bot ma
+  wygrywać, a partia trwać mniej więcej jak dotąd (13–16 min); zrzuty kontrolne (szyb, schody, wnęka, prostokąt, HUD).
+- Wpisy w `CHANGELOG.md` (lokalnie).
+- `npm run pack` i **wysłać `alpha-0.2/trzewia.html` użytkownikowi w czacie**. Nie pushować, nie robić PR.
 
 ---
 
