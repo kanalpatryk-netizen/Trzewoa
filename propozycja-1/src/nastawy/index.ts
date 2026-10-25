@@ -1,0 +1,32 @@
+/**
+ * NASTAWY — wszystkie pokrętła gry w jednym miejscu. Przewodnik: src/nastawy/README.md.
+ *
+ * W trybie deweloperskim (npm run dev) są dostępne w konsoli przeglądarki jako
+ * `__trzewia.nastawy` — np. `__trzewia.nastawy.RYTUAL.tempo = 0.001` działa od razu.
+ */
+export { TIKOW_NA_MINUTE } from './czas';
+export { SWIAT, RDZEN } from './swiat';
+export { GORA, LUDY, ZASIEDLENIE, PRZYPLYWY } from './gora';
+export { RYTUAL, PIELGRZYMKA, PLAN_DROGI } from './rytual';
+export { MROK } from './mrok';
+export { WIADRO, KONWOJ } from './wiadro';
+export { KATEDRA, PROMIEN } from './katedra';
+export { KRUSZCE, OKRUCH } from './kruszce';
+export { POMIESZCZENIA } from './pomieszczenia';
+export { OLTARZ } from './oltarz';
+export { STWORZENIA } from './stworzenia';
+export { KOSZTY, MOCE, SKAZY } from './moce';
+export { KAMERA, TEMPO, STEROWANIE } from './sterowanie';
+export { EKRAN, INTRO, JAKOSC, KURSOR, LADOWANIE, TELEFON } from './ekran';
+export { MUZYKA, REZONANS, MIKSER, GESTY, GLOS_RYCERZA, GLOS_POBOZNEGO, GLOSY_LUDU } from './dzwiek';
+export { BARWA, ATRAMENT_GLEBI } from './barwy';
+export { RAMA, KARTUSZ, PRZERYWNIK, NAGLOWEK_DZIALU } from './wyglad/ozdoby';
+export { MENU } from './wyglad/menu';
+export { FRONTYSPIS } from './wyglad/frontyspis';
+export { EKRAN_USTAWIEN } from './wyglad/ustawienia';
+export { ATLAS, MINIATURA, TABLICA } from './wyglad/atlas';
+export { FRESKI } from './wyglad/freski';
+export { RDZEN_WYGLAD } from './wyglad/rdzen';
+export { TON_MAX, MATERIALY, MASA } from './wyglad/rycina';
+export { BUDOWA, MAKS_KROKOW_NA_SEKUNDE } from './wyglad/postacie';
+export { CECHY, CECHY_RASY } from './cechy';
