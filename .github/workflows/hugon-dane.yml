@@ -1,91 +1,20 @@
-# TYMCZASOWE: pobiera dane mapy okolic Góry Hugona (OSM + zdjęcie satelitarne) do dopasowania granicy.
-name: Góra Hugona — dane mapy (tymczasowe)
+# TYMCZASOWE: sprząta szkic wydania z danymi mapy okolic Góry Hugona (plik do usunięcia zaraz potem).
+name: Góra Hugona — sprzątanie danych mapy (tymczasowe)
 
 on:
   push:
     branches: [ccr-133c3f14-lct7mo]
     paths: ['.github/workflows/hugon-dane.yml']
-  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  dane:
+  sprzatanie:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - run: pip install pillow
-      - name: Pobierz
-        shell: python
-        run: |
-          import json, math, io, time, urllib.request, urllib.parse, sys, os
-          from PIL import Image
-          UA = {'User-Agent': 'gora-hugona-geofence/1.0 (github.com/kanalpatryk-netizen/Trzewoa)'}
-          def get(url, data=None):
-              for i in range(4):
-                  try:
-                      req = urllib.request.Request(url, data=data, headers=UA)
-                      return urllib.request.urlopen(req, timeout=120).read()
-                  except Exception as e:
-                      print('blad', url[:90], e); time.sleep(3 * (i + 1))
-              raise SystemExit('nie pobrano ' + url)
-          os.makedirs('wynik', exist_ok=True)
-          nom = {}
-          for q in ['Góra Hugona, Świętochłowice', 'Góra Hugona', 'Wzgórze Hugona, Świętochłowice', 'Zgoda, Świętochłowice']:
-              r = json.loads(get('https://nominatim.openstreetmap.org/search?' + urllib.parse.urlencode({'q': q, 'format': 'json', 'limit': 5, 'polygon_geojson': 1})))
-              nom[q] = r
-              for x in r: print('NOM', q, '|', x['lat'], x['lon'], x.get('class'), x.get('type'), x['display_name'])
-              time.sleep(1.5)
-          json.dump(nom, open('wynik/nominatim.json', 'w'))
-          lat = lon = None
-          for q in ['Góra Hugona, Świętochłowice', 'Góra Hugona', 'Wzgórze Hugona, Świętochłowice', 'Zgoda, Świętochłowice']:
-              for x in nom[q]:
-                  if 'wi' in x['display_name'] and 'tochłowice' in x['display_name']:
-                      lat, lon = float(x['lat']), float(x['lon']); break
-              if lat: break
-          print('PUNKT', lat, lon)
-          R = 1800
-          q = f'''[out:json][timeout:120];
-          (
-            way(around:{R},{lat},{lon})[highway];
-            way(around:{R},{lat},{lon})[landuse];
-            way(around:{R},{lat},{lon})[natural];
-            way(around:{R},{lat},{lon})[leisure];
-            way(around:{R},{lat},{lon})[building];
-            way(around:{R},{lat},{lon})[boundary];
-            relation(around:{R},{lat},{lon})[boundary=protected_area];
-            relation(around:{R},{lat},{lon})[leisure];
-            node(around:{R},{lat},{lon})[name];
-          );
-          out geom;'''
-          osm = get('https://overpass-api.de/api/interpreter', urllib.parse.urlencode({'data': q}).encode())
-          open('wynik/osm.json', 'wb').write(osm)
-          print('OSM bajtow', len(osm))
-          def tile(la, lo, z):
-              n = 2 ** z
-              x = (lo + 180) / 360 * n
-              y = (1 - math.asinh(math.tan(math.radians(la))) / math.pi) / 2 * n
-              return x, y
-          for z, dla, dlo in [(17, 0.016, 0.022), (18, 0.0095, 0.012)]:
-              x0, y0 = tile(lat + dla, lon - dlo, z)
-              x1, y1 = tile(lat - dla, lon + dlo, z)
-              x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
-              W, H = (x1 - x0 + 1) * 256, (y1 - y0 + 1) * 256
-              im = Image.new('RGB', (W, H))
-              for tx in range(x0, x1 + 1):
-                  for ty in range(y0, y1 + 1):
-                      b = get(f'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{ty}/{tx}')
-                      im.paste(Image.open(io.BytesIO(b)).convert('RGB'), ((tx - x0) * 256, (ty - y0) * 256))
-              im.save(f'wynik/sat_z{z}.jpg', quality=88)
-              json.dump({'z': z, 'x0': x0, 'y0': y0, 'W': W, 'H': H}, open(f'wynik/sat_z{z}.json', 'w'))
-              print('SAT', z, W, H)
-      - name: Do szkicu wydania
+      - name: Usuń szkic wydania
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-        run: |
-          gh release delete hugon-dane-tmp --yes 2>/dev/null || true
-          gh release create hugon-dane-tmp --draft --title "tymczasowe dane mapy" --notes "do usunięcia" wynik/*
+        run: gh release delete hugon-dane-tmp --yes || true
