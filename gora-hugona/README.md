@@ -23,6 +23,21 @@ Każdy loguje się na swoim telefonie i naciska **START** (bez tego telefon nie 
 | przydziela role (szuka / chowa się / nie gra) | ✅ | — | — |
 | ustawia czas gry (5–60 min, odliczanie u wszystkich) | ✅ | ✅ | — |
 | wysyła powiadomienia (do wszystkich, szukających, chowających się albo jednego gracza) | ✅ | ✅ | — |
+| krótkofalówka (mówi i słyszy) | — | ✅ | — |
+
+### 📻 Krótkofalówka szukających
+
+Szukający **przytrzymuje czerwony przycisk MÓW** (lewy dolny róg mapy) i mówi; po puszczeniu przycisku inni szukający
+słyszą „roger beep”. Inni szukający **nie muszą nic dotykać** — głos sam leci z ich telefonów, także przy zgaszonym
+ekranie i z telefonem w kieszeni (głośność multimediów; muzyka na ten czas cichnie). W pasku u góry widać, kto mówi,
+a jego znacznik na mapie pulsuje.
+
+- Przy pierwszym wciśnięciu MÓW aplikacja pyta o mikrofon — zgódź się i wciśnij jeszcze raz.
+- Mówić można tylko z otwartą aplikacją (Android nie daje mikrofonu aplikacjom w tle), najwyżej 60 s naraz.
+  Jak w prawdziwej krótkofalówce: kiedy sam mówisz, nie słyszysz innych (inaczej ich głos wracałby echem).
+- Opóźnienie ok. 1 s, jakość jak w radiu (8 kHz); jedna minuta mówienia to ok. 250 KB danych.
+- Głos słyszą tylko szukający — ani chowający się, ani mistrz gry. Leci przez ten sam szyfrowany serwer co reszta gry,
+  tylko na żywo: nie jest nigdzie zapisywany i nikt, kto dołączy później, go nie usłyszy.
 
 - Znaczniki: 🔴 szukający, 🟣 chowający się, szary — nie gra. Czerwona obwódka = gracz jest poza granicą.
   Wyblakły znacznik = pozycja sprzed ponad minuty (np. brak zasięgu); szary z napisem „wyłączył grę” = gracz nacisnął STOP.
@@ -83,10 +98,12 @@ w kieszeni służy aplikacja na Androida.
   `granica.js` (współrzędne), `leaflet/` (biblioteka mapy Leaflet 1.9.4, licencja BSD-2).
 - `apk/` — aplikacja na Androida: `Mapa.java` (okno z mapą), `Straz.java` (usługa pilnująca granicy w tle:
   GPS, alarm, powiadomienia, udział w grze), `Granica.java` (czy punkt jest w środku, odległość do granicy),
-  `Dzwiek.java` (syrena), `Gra.java` (gra przez serwer MQTT: pozycje, role, czas, powiadomienia; kto kogo widzi),
-  `Szyfr.java` (szyfrowanie). Reguły alarmu są w `app.js` i w `Straz.java` — zmieniając je, zmień oba miejsca.
+  `Dzwiek.java` (syrena), `Gra.java` (gra przez serwer MQTT: pozycje, role, czas, powiadomienia, głos; kto kogo
+  widzi i słyszy), `Szyfr.java` (szyfrowanie), krótkofalówka: `Radio.java` (kodek ADPCM, pakiety po 250 ms),
+  `Nadajnik.java` (mikrofon), `Glosnik.java` (odtwarzanie w tle). Reguły alarmu są w `app.js` i w `Straz.java` —
+  zmieniając je, zmień oba miejsca.
 - `test/TestGry.java` — test sieci gry na prawdziwym serwerze (kilka „telefonów” w jednym procesie, własny losowy
-  temat); uruchamia go GitHub Actions przy każdej zmianie.
+  temat), `test/TestRadio.java` — test kodeka krótkofalówki; oba uruchamia GitHub Actions przy każdej zmianie.
 - APK buduje GitHub Actions (`.github/workflows/gora-hugona-apk.yml`) po każdej zmianie w tym folderze.
 
 Podkład mapy: zdjęcia satelitarne © Esri, Maxar, Earthstar Geographics; mapa © autorzy OpenStreetMap.

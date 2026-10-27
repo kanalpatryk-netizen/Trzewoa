@@ -30,7 +30,7 @@ import java.util.List;
  * Stan wraca na stronę przez {@code hugonStan(…)}.
  */
 public class Mapa extends Activity {
-    private static final int PROSBA_ZGODY = 7;
+    private static final int PROSBA_ZGODY = 7, PROSBA_MIKROFONU = 8;
 
     private WebView widok;
     private Straz.Sluchacz sluchacz;
@@ -129,6 +129,21 @@ public class Mapa extends Activity {
 
         // ---- gra (działa, gdy pilnowanie trwa i gracz jest zalogowany) ----
 
+        /** Krótkofalówka: wciśnięty przycisk MÓW. „zgoda” — właśnie pytamy o mikrofon (trzeba wcisnąć jeszcze raz). */
+        @JavascriptInterface
+        public String mowStart() {
+            if (checkSelfPermission(Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
+                watek.post(() -> requestPermissions(new String[] {Manifest.permission.RECORD_AUDIO}, PROSBA_MIKROFONU));
+                return "zgoda";
+            }
+            return Nadajnik.start();
+        }
+
+        @JavascriptInterface
+        public void mowStop() {
+            Nadajnik.stop();
+        }
+
         @JavascriptInterface
         public boolean ustawRole(String json) {
             Gra g = Straz.gra;
@@ -176,6 +191,11 @@ public class Mapa extends Activity {
     @Override
     public void onRequestPermissionsResult(int nr, String[] zgody, int[] wyniki) {
         super.onRequestPermissionsResult(nr, zgody, wyniki);
+        if (nr == PROSBA_MIKROFONU) {
+            boolean jest = checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
+            blad(jest ? "mikrofon-ok" : "mikrofon-brak");
+            return;
+        }
         if (nr != PROSBA_ZGODY || czekaGranica == null) return;
         boolean dokladna = checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED;
         boolean przyblizona = checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED;
@@ -249,6 +269,7 @@ public class Mapa extends Activity {
     @Override
     protected void onPause() {
         super.onPause();
+        Nadajnik.stop();                                    // krótkofalówka nadaje tylko przy otwartej aplikacji
         if (widok != null) widok.onPause();
     }
 

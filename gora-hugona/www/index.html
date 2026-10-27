@@ -136,6 +136,19 @@
   #logowanie .blad { margin: 4px 0 0; color: #ff8a8d; font-weight: 700; }
   #logowanie button { width: 100%; margin-top: 14px; }
 
+  /* ---- krótkofalówka ---- */
+  #b-radio { position: fixed; z-index: 1000; left: 12px; bottom: calc(86px + env(safe-area-inset-bottom)); width: 88px; height: 88px;
+    display: grid; place-items: center; align-content: center; gap: 1px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, .85);
+    background: var(--czerwony); color: #fff; font-size: 13px; font-weight: 800; letter-spacing: .08em; box-shadow: var(--cien);
+    touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; transition: transform .1s; }
+  #b-radio svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  #b-radio.nadaje { background: #fff; color: var(--czerwony); transform: scale(1.1); animation: nadaje 1s infinite; }
+  @keyframes nadaje { 50% { box-shadow: 0 0 0 16px rgba(229, 72, 77, .35), var(--cien); } }
+  body.edycja #b-radio { display: none; }
+  #pasek .radio-linia { margin: 6px 0 0; font-size: 15px; font-weight: 800; }
+  .gracz.mowi { animation: mowi .8s infinite; }
+  @keyframes mowi { 50% { box-shadow: 0 0 0 10px rgba(255, 255, 255, .6), 0 1px 6px rgba(0, 0, 0, .5); } }
+
   /* ---- edycja granicy ---- */
   #edycja { position: fixed; z-index: 1000; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom));
     background: var(--las); border-radius: 16px; padding: 12px; box-shadow: var(--cien); }
@@ -187,6 +200,7 @@
   <h1 id="s-tytul">Góra Hugona</h1>
   <p id="s-opis">Naciśnij START, żeby pilnować granicy.</p>
   <div class="gps" id="s-gps" hidden></div>
+  <p class="radio-linia" id="s-radio" hidden></p>
 </header>
 
 <div id="bok">
@@ -200,6 +214,11 @@
     <svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="m2 13 10 5 10-5"/></svg>
   </button>
 </div>
+
+<button id="b-radio" hidden aria-label="Krótkofalówka: przytrzymaj i mów">
+  <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>
+  <span id="b-radio-tekst">MÓW</span>
+</button>
 
 <footer id="dol">
   <button class="duzy" id="b-start">START</button>

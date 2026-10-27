@@ -7,6 +7,7 @@
  *
  * Gra w chowanego (tylko w aplikacji): 7 profili — admin1…admin6 to gracze, admin7 to mistrz gry. Siecią zajmuje się
  * Gra.java; tutaj przychodzi gotowy stan (stan.gra): role, pozycje widocznych graczy, czas gry, powiadomienia.
+ * Krótkofalówka szukających: przycisk MÓW (przytrzymaj) → Nadajnik.java; odtwarza Glosnik.java, stan w stan.radio.
  */
 'use strict';
 (() => {
@@ -348,6 +349,8 @@
       'brak-zgody': 'Bez zgody na lokalizację aplikacja nie wie, gdzie jesteś. Zezwól w: Ustawienia → Aplikacje → Góra Hugona → Uprawnienia → Lokalizacja.',
       przyblizona: 'Wybrano przybliżoną lokalizację — do pilnowania granicy potrzebna jest dokładna. Zezwól na „Dokładną lokalizację” i naciśnij START jeszcze raz.',
       usluga: 'Nie udało się uruchomić pilnowania. Spróbuj jeszcze raz.',
+      'mikrofon-ok': 'Mikrofon włączony. Przytrzymaj MÓW i mów.',
+      'mikrofon-brak': 'Bez zgody na mikrofon nie powiesz nic przez krótkofalówkę (słyszeć innych szukających możesz).',
     }[kod];
     dymek(t || 'Coś poszło nie tak.', 8000);
   };
@@ -546,6 +549,7 @@
       $('s-siec').hidden = !(A && s.dziala);
       $('s-siec').className = 'kropka-sieci' + (gra && gra.polaczony ? ' jest' : '');
     }
+    pokazRadio(s);
     rysujZnaczniki();
     licznik();
     nowePowiadomienia();
@@ -558,7 +562,8 @@
     for (const x of (gra && gra.gracze) || []) {
       if (teraz - x.t > 30 * 60000) continue;                 // pozycja z dawnej gry
       sa.add(x.n);
-      const klasa = `gracz ${x.rola || 'brak'}${x.poza ? ' poza' : ''}${x.aktywny === false ? ' wylaczony' : teraz - x.t > 60000 ? ' stary' : ''}`;
+      const klasa = `gracz ${x.rola || 'brak'}${x.poza ? ' poza' : ''}${x.aktywny === false ? ' wylaczony' : teraz - x.t > 60000 ? ' stary' : ''}`
+        + (radio.mowia.includes(x.n) ? ' mowi' : '');
       let z = znaczniki.get(x.n);
       if (!z) {
         const mk = L.marker([x.lat, x.lon], { keyboard: false, zIndexOffset: 500 })
@@ -626,6 +631,10 @@
     else if (!gra.polaczony) info = 'Łączę z serwerem gry… Potrzebny jest internet.';
     else if (!mistrz && !gra.rola) info = 'Mistrz gry nie dał Ci jeszcze roli.';
     else if (gra.rola === 'chowa') info = 'Chowasz się — nie widzisz innych graczy. Powiadomienia przyjdą same.';
+    else if (gra.rola === 'szuka') {
+      info = '📻 Krótkofalówka: przytrzymaj czerwony przycisk MÓW na mapie i mów — inni szukający usłyszą Cię od razu, '
+        + 'bez dotykania telefonu (głośność multimediów).';
+    }
     $('g-info').textContent = info;
     $('g-info').hidden = !info;
 
@@ -806,6 +815,54 @@
       pokazLogowanie();
     });
   };
+
+  // ---------- krótkofalówka (tylko szukający) ----------
+  const radio = { nadaje: false, od: 0, mowia: [] };
+  function pokazRadio(s) {
+    const r = s.radio || {};
+    radio.mowia = (r.mowi || []).filter((n) => n !== profil);
+    const moze = !!(A && s.dziala && gra && gra.polaczony && gra.rola === 'szuka');
+    $('b-radio').hidden = !moze;
+    if (!moze) puscRadio();
+    else if (radio.nadaje && r.nadaje === false && Date.now() - radio.od > 2500) {
+      puscRadio();                                       // usługa skończyła sama (najwyżej 60 s naraz)
+      dymek('Koniec nadawania — puść i wciśnij MÓW jeszcze raz.', 3000);
+    }
+    const t = radio.mowia.length ? `📻 ${radio.mowia.map((n) => nazwa(n)).join(', ')} ${radio.mowia.length > 1 ? 'mówią' : 'mówi'}…` : '';
+    $('s-radio').textContent = t;
+    $('s-radio').hidden = !t;
+  }
+  function wcisnijRadio(e) {
+    e.preventDefault();
+    if (radio.nadaje || !A) return;
+    try { $('b-radio').setPointerCapture(e.pointerId); } catch (x) { /* bez przechwycenia palca */ }
+    const w = A.mowStart();
+    if (w === 'ok') {
+      radio.nadaje = true;
+      radio.od = Date.now();
+      $('b-radio').classList.add('nadaje');
+      $('b-radio-tekst').textContent = 'NADAJESZ';
+      if (navigator.vibrate) navigator.vibrate(40);
+      return;
+    }
+    dymek({
+      zgoda: 'Zezwól aplikacji na mikrofon — potem przytrzymaj MÓW jeszcze raz.',
+      start: 'Brak połączenia z grą — sprawdź internet albo naciśnij START.',
+      rola: 'Krótkofalówka jest tylko dla szukających.',
+      mikrofon: 'Nie mogę włączyć mikrofonu — może używa go inna aplikacja.',
+    }[w] || 'Krótkofalówka nie działa.', 4000);
+  }
+  function puscRadio() {
+    if (!radio.nadaje) return;
+    radio.nadaje = false;
+    if (A) A.mowStop();
+    $('b-radio').classList.remove('nadaje');
+    $('b-radio-tekst').textContent = 'MÓW';
+  }
+  $('b-radio').addEventListener('pointerdown', wcisnijRadio);
+  for (const t of ['pointerup', 'pointercancel', 'lostpointercapture']) $('b-radio').addEventListener(t, puscRadio);
+  $('b-radio').addEventListener('contextmenu', (e) => e.preventDefault());
+  document.addEventListener('visibilitychange', () => { if (document.hidden) puscRadio(); });
 
   // ---------- dymki i pytania ----------
   let dymekCzas = null;

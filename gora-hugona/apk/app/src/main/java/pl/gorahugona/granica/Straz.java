@@ -21,6 +21,7 @@ import android.os.Looper;
 import android.os.PowerManager;
 import android.os.SystemClock;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -32,7 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * gdy z niego wyjdzie. Działa przy zgaszonym ekranie i po zamknięciu okna mapy;
  * kończy ją dopiero „Stop” (w aplikacji albo w powiadomieniu). Gdy gracz jest zalogowany,
  * usługa prowadzi też jego udział w grze w chowanego ({@link Gra}): wysyła pozycję, odbiera
- * stan gry i pokazuje powiadomienia od mistrza gry i szukających.
+ * stan gry i pokazuje powiadomienia od mistrza gry i szukających, a szukającym sama odtwarza
+ * głos innych szukających z krótkofalówki ({@link Glosnik}).
  */
 public class Straz extends Service implements LocationListener {
     static final String START = "start", USTAW = "ustaw", STOP = "stop", WYCISZ = "wycisz";
@@ -74,6 +76,7 @@ public class Straz extends Service implements LocationListener {
     private String ostatniTekst = "";
     private int ja, nrPowiadomienia;
     private final AtomicBoolean zmianaGryCzeka = new AtomicBoolean();
+    private volatile Glosnik glosnik;
 
     /** Zdarzenia gry przychodzą z wątku sieci — przekładamy je na główny wątek. */
     private final Gra.Sluchacz sluchaczGry = new Gra.Sluchacz() {
@@ -97,6 +100,12 @@ public class Straz extends Service implements LocationListener {
         @Override
         public void koniecCzasu() {
             watek.post(() -> powiadomOGrze("⏱ Koniec czasu!", "Czas gry minął."));
+        }
+
+        @Override
+        public void glos(int od, byte[] pakiet) {
+            Glosnik g = glosnik;
+            if (g != null) g.odbierz(od, pakiet);
         }
     };
 
@@ -223,6 +232,7 @@ public class Straz extends Service implements LocationListener {
         blokada.setReferenceCounted(false);
         blokada.acquire();
 
+        glosnik = new Glosnik(this, sluchaczGry::zmiana);
         dziala = true;
         pozaRazy = 0;
         alarm = false;
@@ -246,6 +256,10 @@ public class Straz extends Service implements LocationListener {
         Gra g = gra;
         gra = null;
         if (g != null) g.zamknij();
+        Nadajnik.stop();
+        Glosnik gl = glosnik;
+        glosnik = null;
+        if (gl != null) gl.zamknij();
         if (byla) stopForeground(true);
         alarm = false;
         nadaj();
@@ -394,6 +408,10 @@ public class Straz extends Service implements LocationListener {
             }
             Gra g = gra;
             if (g != null) s.put("gra", g.stan());
+            JSONArray mowia = new JSONArray();
+            Glosnik gl = glosnik;
+            if (gl != null) for (int n : gl.mowia()) mowia.put(n);
+            s.put("radio", new JSONObject().put("mowi", mowia).put("nadaje", Nadajnik.nadaje()));
             ostatniStan = s.toString();
         } catch (JSONException ignored) {
         }

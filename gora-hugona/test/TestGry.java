@@ -9,6 +9,7 @@ import org.json.JSONObject;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -42,7 +43,15 @@ public class TestGry {
 
     private static final class Zapis implements Gra.Sluchacz {
         final List<String> wiadomosci = Collections.synchronizedList(new ArrayList<>());
+        final List<byte[]> glosy = Collections.synchronizedList(new ArrayList<>());
+        final List<Long> kiedy = Collections.synchronizedList(new ArrayList<>());
         final AtomicInteger konce = new AtomicInteger();
+
+        @Override
+        public void glos(int od, byte[] pakiet) {
+            glosy.add(pakiet);
+            kiedy.add(System.currentTimeMillis());
+        }
 
         @Override
         public void zmiana() {
@@ -150,6 +159,32 @@ public class TestGry {
         sprawdz(mistrz.stan().getJSONArray("wiadomosci").length() == 3 && ch.stan().getJSONArray("wiadomosci").length() == 2,
             "historia: mistrz widzi 3 wiadomości, gracz 3 swoje 2");
 
+        // krótkofalówka: szukający 1 mówi przez 1 s (pakiety co 250 ms, jak na żywo)
+        Radio.Nadawanie nad = new Radio.Nadawanie(8000);
+        List<byte[]> nadane = new ArrayList<>();
+        short[] ramka = new short[160];
+        for (int r = 0; r < 50; r++) {
+            for (int i = 0; i < 160; i++) ramka[i] = (short) (8000 * Math.sin(2 * Math.PI * 440 * (r * 160 + i) / 8000.0));
+            nadane.addAll(nad.dodaj(ramka, 160));
+        }
+        nadane.addAll(nad.zakoncz());
+        List<Long> wyslane = new ArrayList<>();
+        for (byte[] p : nadane) {
+            wyslane.add(System.currentTimeMillis());
+            sprawdz(s1.glos(p), "szukający 1 nadaje pakiet " + Radio.odczytaj(p).nr);
+            Thread.sleep(250);
+        }
+        sprawdz(czekaj(() -> z2.glosy.size() == nadane.size(), 10000), "szukający 2 słyszy szukającego 1 (" + z2.glosy.size() + " z " + nadane.size() + " pakietów)");
+        boolean wiernie = z2.glosy.size() == nadane.size();
+        for (int i = 0; wiernie && i < nadane.size(); i++) wiernie = Arrays.equals(nadane.get(i), z2.glosy.get(i));
+        sprawdz(wiernie && Radio.odczytaj(z2.glosy.get(z2.glosy.size() - 1)).ostatni, "pakiety głosu doszły po kolei i bez zmian, ostatni z flagą końca");
+        long opoznienie = 0;
+        for (int i = 0; i < Math.min(wyslane.size(), z2.kiedy.size()); i++) opoznienie = Math.max(opoznienie, z2.kiedy.get(i) - wyslane.get(i));
+        sprawdz(opoznienie < 2000, "opóźnienie głosu w sieci: najwyżej " + opoznienie + " ms");
+        Thread.sleep(1000);
+        sprawdz(z1.glosy.isEmpty() && z3.glosy.isEmpty() && zm.glosy.isEmpty(), "mistrz, chowający się i sam nadawca nic nie słyszą");
+        sprawdz(!ch.glos(nadane.get(0)) && !mistrz.glos(nadane.get(0)), "chowający się i mistrz nie nadają");
+
         // telefon włączony później (drugi telefon mistrza) dostaje zachowany stan
         Zapis zp = new Zapis();
         Gra pozny = new Gra(7, serwery, temat, zp);
@@ -158,7 +193,7 @@ public class TestGry {
             && rolaGracza(pozny, 1).equals("szuka") && rolaGracza(pozny, 3).equals("chowa"), 20000),
             "telefon włączony później dostaje role, czas i pozycje");
         Thread.sleep(1500);
-        sprawdz(zp.wiadomosci.isEmpty(), "…i nie dostaje cudzej zachowanej wiadomości");
+        sprawdz(zp.wiadomosci.isEmpty() && zp.glosy.isEmpty(), "…i nie dostaje cudzej wiadomości ani starego głosu");
 
         // koniec czasu — raz u każdego
         sprawdz(mistrz.ustawKoniec(System.currentTimeMillis() + 1500), "mistrz skraca czas do 1,5 s");

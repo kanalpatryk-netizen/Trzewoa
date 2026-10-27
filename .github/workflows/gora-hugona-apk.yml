@@ -23,7 +23,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Sieć gry (Gra.java + Szyfr.java) na prawdziwym, publicznym serwerze MQTT: kilka „telefonów” w jednym procesie.
+  # Krótkofalówka bez sieci (TestRadio) i sieć gry (Gra.java + Szyfr.java + Radio.java) na prawdziwym, publicznym
+  # serwerze MQTT: kilka „telefonów” w jednym procesie — pozycje, role, czas, powiadomienia, głos między szukającymi.
   # Osobno od budowy — chwilowa awaria publicznego serwera nie blokuje wydania APK.
   siec:
     runs-on: ubuntu-latest
@@ -44,7 +45,9 @@ jobs:
           javac -encoding UTF-8 -cp 'lib/*' -d out \
             apk/app/src/main/java/pl/gorahugona/granica/Gra.java \
             apk/app/src/main/java/pl/gorahugona/granica/Szyfr.java \
-            test/TestGry.java
+            apk/app/src/main/java/pl/gorahugona/granica/Radio.java \
+            test/TestRadio.java test/TestGry.java
+          java -Dstdout.encoding=UTF-8 -cp out pl.gorahugona.granica.TestRadio
           java -Dstdout.encoding=UTF-8 -cp 'out:lib/*' pl.gorahugona.granica.TestGry \
             ssl://broker.hivemq.com:8883,tcp://broker.hivemq.com:1883
 
@@ -88,7 +91,8 @@ jobs:
         run: |
           cat > notatki.md <<NOTATKI
           Gra w chowanego na mapie obszaru przy Górze Hugona (Świętochłowice-Zgoda): Twoja pozycja, alarm dźwiękowy
-          po wyjściu za granicę, mistrz gry widzi wszystkich, szukający widzą siebie nawzajem, czas gry i powiadomienia.
+          po wyjściu za granicę, mistrz gry widzi wszystkich, szukający widzą siebie nawzajem i rozmawiają
+          przez krótkofalówkę (przytrzymaj MÓW), czas gry i powiadomienia.
 
           **Logowanie:** \`admin1\` … \`admin6\` — gracze, \`admin7\` — mistrz gry; hasło takie samo jak login.
           Każdy naciska START; mistrz gry w panelu 👥 przydziela role, ustawia czas gry i wysyła powiadomienia.

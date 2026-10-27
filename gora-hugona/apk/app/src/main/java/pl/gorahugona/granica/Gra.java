@@ -33,6 +33,8 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code czas} — kiedy kończy się gra (ustawia mistrz albo szukający);</li>
  *   <li>{@code wiadomosc} — ostatnie powiadomienie (wysyła mistrz albo szukający).</li>
  * </ul>
+ * Poza tym {@code glos/<n>} — krótkofalówka szukających ({@link Radio}): pakiety głosu na żywo, niezachowywane
+ * na serwerze i niewysyłane później (stary głos jest bez sensu); słyszą je tylko inni szukający.
  * Kto kogo widzi na mapie: mistrz gry — wszystkich; szukający — innych szukających; chowający się — nikogo.
  * Klasa jest w czystej Javie (bez Androida), żeby dało się ją sprawdzić na zwykłej JVM — patrz gora-hugona/test.
  */
@@ -57,6 +59,9 @@ final class Gra implements MqttCallbackExtended {
 
         /** Czas gry właśnie minął. Wołane z wątku, który woła {@link #sprawdzCzas}. */
         void koniecCzasu();
+
+        /** Pakiet krótkofalówki od innego szukającego ({@link Radio}). Wołane z wątku sieci. */
+        void glos(int od, byte[] pakiet);
     }
 
     private static final class Zalegla {
@@ -352,12 +357,53 @@ final class Gra implements MqttCallbackExtended {
         }
     }
 
+    // ---- krótkofalówka ----
+
+    synchronized boolean mozeMowic() {
+        return SZUKA.equals(role[ja]);
+    }
+
+    /** Pakiet głosu do innych szukających: od razu albo wcale (bez kolejki — spóźniony głos nikomu nie pomoże). */
+    boolean glos(byte[] pakiet) {
+        if (!mozeMowic() || !polaczony) return false;
+        byte[] b = Szyfr.zaszyfruj(pakiet);
+        if (b == null) return false;
+        try {
+            MqttMessage m = new MqttMessage(b);
+            m.setQos(0);
+            m.setRetained(false);
+            klient.publish(temat + "glos/" + ja, m);
+            return true;
+        } catch (MqttException | RuntimeException e) {
+            return false;
+        }
+    }
+
+    private void odbierzGlos(String co, MqttMessage m) {
+        int n;
+        try {
+            n = Integer.parseInt(co.substring("glos/".length()));
+        } catch (NumberFormatException e) {
+            return;
+        }
+        synchronized (this) {
+            // tylko szukający słyszą szukających (sprawdzane przed odszyfrowaniem — reszta nie traci na to czasu)
+            if (n == ja || n < 1 || n >= MISTRZ || !SZUKA.equals(role[ja]) || !SZUKA.equals(role[n])) return;
+        }
+        if (m.isRetained()) return;
+        byte[] pakiet = Szyfr.odszyfrujBajty(m.getPayload());
+        if (pakiet != null) sluchacz.glos(n, pakiet);
+    }
+
     // ---- odbieranie ----
 
     @Override
     public void messageArrived(String t, MqttMessage m) {
         try {
-            if (t.startsWith(temat)) odbierz(t.substring(temat.length()), m);
+            if (!t.startsWith(temat)) return;
+            String co = t.substring(temat.length());
+            if (co.startsWith("glos/")) odbierzGlos(co, m);
+            else odbierz(co, m);
         } catch (Exception ignored) {
             // cudza albo uszkodzona wiadomość — wyjątek stąd rozłączyłby klienta
         }
