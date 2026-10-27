@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.application'
+}
+
+// numer wersji: z automatu GitHuba (kolejne budowanie = wyższy numer, instaluje się jako aktualizacja)
+def numer = (System.getenv('NUMER_WERSJI') ?: '1').toInteger()
+
+android {
+    namespace 'pl.gorahugona.granica'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'pl.gorahugona.granica'
+        minSdk 24
+        targetSdk 34
+        versionCode numer
+        versionName "1.0.${numer}"
+    }
+
+    // mapa (index.html, app.js, granica.js, Leaflet) leży w gora-hugona/www — ta sama, co w przeglądarce
+    sourceSets {
+        main {
+            assets.srcDirs = ['../../www']
+        }
+    }
+
+    // Klucz TESTOWY z repozytorium — ten sam przy każdym budowaniu, więc nowa wersja
+    // instaluje się na starą (ustawiona granica zostaje).
+    signingConfigs {
+        testowy {
+            storeFile file('../hugon-test.keystore')
+            storePassword 'hugonhugon'
+            keyAlias 'hugon'
+            keyPassword 'hugonhugon'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.testowy
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

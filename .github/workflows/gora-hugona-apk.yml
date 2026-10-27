@@ -1,0 +1,83 @@
+# Aplikacja „Góra Hugona” na Androida (APK): mapa obszaru, znacznik użytkownika i alarm po wyjściu za granicę.
+#
+# Wkłada stronę z gora-hugona/www (mapa, granica, Leaflet) do aplikacji z gora-hugona/apk (WebView + usługa,
+# która pilnuje granicy także przy zgaszonym ekranie) i wystawia gotowy GoraHugona.apk w wydaniu
+# „Góra Hugona na Androida (APK)”:
+#   https://github.com/<właściciel>/<repozytorium>/releases/download/gora-hugona-apk/GoraHugona.apk
+# Rusza po każdej zmianie w gora-hugona/ (w main i na gałęziach claude/… i ccr-…) albo ręcznie z zakładki Actions.
+name: Góra Hugona — aplikacja na Androida
+
+on:
+  push:
+    branches: [main, 'claude/**', 'ccr-*']
+    paths:
+      - 'gora-hugona/**'
+      - '.github/workflows/gora-hugona-apk.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gora-hugona-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sprawdzenie strony
+        run: |
+          node --check gora-hugona/www/app.js
+          node --check gora-hugona/www/granica.js
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Budowa APK
+        working-directory: gora-hugona/apk
+        env:
+          NUMER_WERSJI: ${{ github.run_number }}
+        run: |
+          gradle --no-daemon assembleRelease
+          cp app/build/outputs/apk/release/app-release.apk ../../GoraHugona.apk
+          ls -la ../../GoraHugona.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GoraHugona-apk
+          path: GoraHugona.apk
+
+      # wydanie oznaczone jako „pre-release”, żeby nie przejęło „latest”, z którego README bierze pliki gry
+      - name: Wydanie „Góra Hugona na Androida (APK)”
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > notatki.md <<NOTATKI
+          Mapa obszaru przy Górze Hugona (Świętochłowice-Zgoda) z Twoją pozycją i alarmem dźwiękowym po wyjściu za granicę.
+
+          **Instalacja:** pobierz \`GoraHugona.apk\` (niżej, w sekcji *Assets*) na telefonie i otwórz.
+          Android zapyta o zgodę na instalację z tego źródła (przeglądarka / Pliki) — zgódź się, potem „Zainstaluj”.
+          Przy pierwszym STARCIE zezwól na **dokładną** lokalizację i powiadomienia, a na pytanie o baterię — „Zezwól”.
+
+          Wersja 1.0.${{ github.run_number }} z gałęzi \`${GITHUB_REF_NAME}\`, commit ${GITHUB_SHA::7}.
+          Podpisana kluczem testowym — kolejne wersje instalują się na poprzednią (poprawiona granica zostaje).
+          NOTATKI
+          if gh release view gora-hugona-apk >/dev/null 2>&1; then
+            gh release upload gora-hugona-apk GoraHugona.apk --clobber
+            gh release edit gora-hugona-apk --notes-file notatki.md
+          else
+            gh release create gora-hugona-apk GoraHugona.apk \
+              --target "$GITHUB_SHA" \
+              --title "Góra Hugona na Androida (APK)" \
+              --notes-file notatki.md \
+              --prerelease
+          fi

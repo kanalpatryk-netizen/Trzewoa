@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#13201a">
+<title>Góra Hugona — granica</title>
+<link rel="stylesheet" href="leaflet/leaflet.css">
+<style>
+  :root {
+    --las: #13201a;
+    --las-2: #1c2e25;
+    --tekst: #f3f1e8;
+    --szary: #a9b4ad;
+    --zielony: #2f9e62;
+    --zolty: #e0a526;
+    --czerwony: #e5484d;
+    --granica: #f2c14e;
+    --cien: 0 6px 24px rgba(0, 0, 0, .35);
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: var(--las); color: var(--tekst);
+    font: 16px/1.35 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  #mapa { position: fixed; inset: 0; background: #26352d; }
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; }
+  [hidden] { display: none !important; }
+
+  /* ---- pasek stanu ---- */
+  #pasek { position: fixed; z-index: 1000; left: 10px; right: 10px; top: calc(10px + env(safe-area-inset-top));
+    padding: 12px 16px 13px; border-radius: 16px; background: #34413a; box-shadow: var(--cien); transition: background .25s; }
+  #pasek h1 { margin: 0; font-size: 21px; font-weight: 800; letter-spacing: .01em; }
+  #pasek p { margin: 2px 0 0; font-size: 15px; opacity: .95; }
+  #pasek .gps { font-size: 13px; opacity: .8; margin-top: 4px; }
+  body[data-stan="wewnatrz"] #pasek { background: var(--zielony); }
+  body[data-stan="blisko"] #pasek { background: var(--zolty); color: #1d1503; }
+  body[data-stan="chyba"] #pasek { background: #c46a1c; }
+  body[data-stan="poza"] #pasek { background: var(--czerwony); animation: miga 1s infinite; }
+  body[data-stan="wyciszony"] #pasek { background: #9b2c2f; }
+  body[data-stan="brak"] #pasek { background: #5b4a6b; }
+  @keyframes miga { 50% { background: #8f1c20; } }
+
+  /* ---- przyciski z boku ---- */
+  #bok { position: fixed; z-index: 1000; right: 10px; top: 50%; transform: translateY(-50%); display: grid; gap: 10px; }
+  .okragly { width: 48px; height: 48px; border-radius: 50%; background: var(--las); box-shadow: var(--cien);
+    display: grid; place-items: center; }
+  .okragly svg { width: 24px; height: 24px; fill: none; stroke: var(--tekst); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .okragly.wl { background: #2563eb; }
+
+  /* ---- dół ---- */
+  #dol { position: fixed; z-index: 1000; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom));
+    display: flex; gap: 10px; }
+  .duzy { flex: 1; min-height: 58px; border-radius: 16px; font-size: 19px; font-weight: 800; letter-spacing: .04em;
+    background: var(--zielony); box-shadow: var(--cien); }
+  .duzy.stop { background: #3a4741; }
+  #b-wycisz { background: #fff; color: #9b1c20; }
+  #b-ustawienia { width: 58px; flex: none; border-radius: 16px; }
+
+  /* ---- panel ustawień ---- */
+  #panel { position: fixed; z-index: 1100; left: 0; right: 0; bottom: 0; max-height: 82vh; overflow: auto;
+    background: var(--las); border-radius: 20px 20px 0 0; box-shadow: 0 -8px 30px rgba(0, 0, 0, .5);
+    padding: 8px 18px calc(22px + env(safe-area-inset-bottom)); }
+  #panel .uchwyt { width: 44px; height: 5px; border-radius: 3px; background: #4b5a52; margin: 4px auto 10px; }
+  #panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--szary); margin: 18px 0 8px; }
+  #panel h2:first-of-type { margin-top: 4px; }
+  .wiersz { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
+  .wiersz small { display: block; color: var(--szary); font-size: 13px; }
+  .wiersz input[type=range] { width: 100%; accent-color: var(--zolty); }
+  .wiersz input[type=checkbox] { width: 24px; height: 24px; accent-color: var(--zielony); }
+  .przycisk { display: block; width: 100%; text-align: left; padding: 13px 14px; margin: 8px 0; border-radius: 12px;
+    background: var(--las-2); }
+  .przycisk small { display: block; color: var(--szary); font-size: 13px; }
+  .przycisk.ostrzezenie { background: #3d2a12; }
+  #panel .info { color: var(--szary); font-size: 14px; }
+  #panel .zamknij { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; background: #2b3a32; font-weight: 700; }
+  #tlo { position: fixed; inset: 0; z-index: 1050; background: rgba(0, 0, 0, .35); }
+
+  /* ---- edycja granicy ---- */
+  #edycja { position: fixed; z-index: 1000; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom));
+    background: var(--las); border-radius: 16px; padding: 12px; box-shadow: var(--cien); }
+  #edycja p { margin: 0 0 10px; font-size: 14px; color: var(--szary); }
+  #edycja .rzad { display: flex; gap: 8px; }
+  #edycja .rzad button { flex: 1; padding: 12px 6px; border-radius: 12px; background: var(--las-2); font-weight: 700; font-size: 15px; }
+  #edycja .rzad button:disabled { opacity: .4; }
+  #edycja #e-zapisz { background: var(--zielony); }
+  body.edycja #dol, body.edycja #pasek { display: none; }
+  .wierzcholek { width: 22px !important; height: 22px !important; margin: -11px 0 0 -11px !important; border-radius: 50%;
+    background: #fff; border: 3px solid var(--granica); box-shadow: 0 1px 4px rgba(0, 0, 0, .5); }
+  .wierzcholek.wybrany { background: var(--czerwony); border-color: #fff; transform: scale(1.25); }
+  .srodek { width: 14px !important; height: 14px !important; margin: -7px 0 0 -7px !important; border-radius: 50%;
+    background: rgba(255, 255, 255, .55); border: 2px solid var(--granica); }
+  .przeciaganie .srodek { display: none; }
+
+  /* ---- ja na mapie ---- */
+  .ja { position: relative; }
+  .ja .kropka { position: absolute; inset: 3px; border-radius: 50%; background: #2f7bf6; border: 3px solid #fff;
+    box-shadow: 0 0 0 0 rgba(47, 123, 246, .6); animation: puls 2s infinite; }
+  .ja .kurs { position: absolute; left: 50%; top: -14px; width: 0; height: 0; margin-left: -8px;
+    border: 8px solid transparent; border-bottom: 14px solid #2f7bf6; border-top: 0; transform-origin: 8px 25px; display: none; }
+  .ja.ma-kurs .kurs { display: block; }
+  .ja.stara .kropka { background: #8a94a6; animation: none; }
+  @keyframes puls { 70% { box-shadow: 0 0 0 16px rgba(47, 123, 246, 0); } 100% { box-shadow: 0 0 0 0 rgba(47, 123, 246, 0); } }
+
+  /* ---- komunikaty i pytania ---- */
+  #dymek { position: fixed; z-index: 1300; left: 16px; right: 16px; top: 50%; transform: translateY(-50%);
+    padding: 16px 18px; border-radius: 14px; background: rgba(12, 20, 16, .96); box-shadow: var(--cien); font-size: 15px; }
+  #pytanie { position: fixed; z-index: 1400; inset: 0; background: rgba(0, 0, 0, .55); display: grid; place-items: center; padding: 20px; }
+  #pytanie > div { width: 100%; max-width: 420px; background: var(--las); border-radius: 18px; padding: 20px; box-shadow: var(--cien); }
+  #pytanie p { margin: 0 0 16px; font-size: 17px; }
+  #pytanie .rzad { display: flex; gap: 10px; }
+  #pytanie button { flex: 1; padding: 14px; border-radius: 12px; background: var(--las-2); font-weight: 700; }
+  #pytanie #p-tak { background: var(--czerwony); }
+
+  .leaflet-control-attribution { font-size: 10px; background: rgba(255, 255, 255, .6) !important; }
+  .leaflet-bottom.leaflet-right { bottom: calc(80px + env(safe-area-inset-bottom)); }
+</style>
+</head>
+<body data-stan="spoczynek">
+<div id="mapa"></div>
+
+<header id="pasek" role="status" aria-live="polite">
+  <h1 id="s-tytul">Góra Hugona</h1>
+  <p id="s-opis">Naciśnij START, żeby pilnować granicy.</p>
+  <div class="gps" id="s-gps" hidden></div>
+</header>
+
+<div id="bok">
+  <button class="okragly" id="b-ja" title="Pokaż mnie" aria-label="Pokaż moją pozycję">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+  </button>
+  <button class="okragly" id="b-caly" title="Cały obszar" aria-label="Pokaż cały obszar">
+    <svg viewBox="0 0 24 24"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+  </button>
+  <button class="okragly" id="b-warstwa" title="Podkład mapy" aria-label="Zmień podkład mapy">
+    <svg viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5-10-5z"/><path d="m2 13 10 5 10-5"/></svg>
+  </button>
+</div>
+
+<footer id="dol">
+  <button class="duzy" id="b-start">START</button>
+  <button class="duzy" id="b-wycisz" hidden>WYCISZ</button>
+  <button class="duzy okragly" id="b-ustawienia" title="Ustawienia" aria-label="Ustawienia">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+  </button>
+</footer>
+
+<div id="tlo" hidden></div>
+<section id="panel" hidden aria-label="Ustawienia">
+  <div class="uchwyt"></div>
+  <h2>Alarm</h2>
+  <div class="wiersz" style="display:block">
+    <div style="display:flex;justify-content:space-between"><span>Ostrzeżenie przy granicy</span><b id="u-strefa-w"></b></div>
+    <small style="color:var(--szary);font-size:13px">Krótki sygnał, gdy podejdziesz tak blisko granicy (od środka). 0 — bez ostrzeżenia, tylko alarm za granicą.</small>
+    <input type="range" id="u-strefa" min="0" max="50" step="5">
+  </div>
+  <label class="wiersz"><span>Wibracje<small>Razem z dźwiękiem</small></span><input type="checkbox" id="u-wibracje"></label>
+  <button class="przycisk" id="u-test">🔊 Próba alarmu<small>3 sekundy syreny — sprawdź głośność</small></button>
+  <button class="przycisk" id="u-test-ostrz">🔔 Próba ostrzeżenia</button>
+
+  <h2>Granica</h2>
+  <button class="przycisk" id="u-edytuj">✏️ Popraw granicę na mapie<small>Przesuwaj punkty palcem, dodawaj i usuwaj</small></button>
+  <button class="przycisk" id="u-przywroc" hidden>↩️ Przywróć granicę z obrazka<small>Cofa Twoje poprawki</small></button>
+  <p class="info" id="u-obszar"></p>
+
+  <div id="u-android" hidden>
+    <h2>Praca w tle</h2>
+    <button class="przycisk ostrzezenie" id="u-bateria">🔋 Oszczędzanie baterii<small id="u-bateria-opis"></small></button>
+  </div>
+
+  <h2>Jak to działa</h2>
+  <p class="info" id="u-jak"></p>
+  <p class="info">Granica jest przerysowana z obrazka obszaru i dopasowana do zdjęć satelitarnych, więc w paru miejscach może
+    się rozjeżdżać o kilka metrów. Jeśli tak jest, popraw ją przyciskiem wyżej — poprawki zostają zapamiętane na tym telefonie.</p>
+  <button class="zamknij" id="u-zamknij">Zamknij</button>
+</section>
+
+<div id="edycja" hidden>
+  <p>Przeciągnij punkt, żeby go przesunąć. Kółko w połowie boku dodaje nowy punkt. Dotknij punktu, żeby go zaznaczyć i usunąć.</p>
+  <div class="rzad">
+    <button id="e-cofnij" disabled>Cofnij</button>
+    <button id="e-usun" disabled>Usuń</button>
+    <button id="e-anuluj">Anuluj</button>
+    <button id="e-zapisz">Zapisz</button>
+  </div>
+</div>
+
+<div id="dymek" hidden></div>
+<div id="pytanie" hidden><div><p id="p-tresc"></p><div class="rzad"><button id="p-nie">Nie</button><button id="p-tak">Tak</button></div></div></div>
+
+<script src="leaflet/leaflet.js"></script>
+<script src="granica.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

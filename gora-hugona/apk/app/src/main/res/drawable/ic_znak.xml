@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- znak aplikacji: wzgórze z obrysem granicy i pinezką -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#13201A" android:pathData="M0,0h108v108h-108z" />
+    <path android:fillColor="#2E7D52" android:pathData="M22,78 Q40,50 54,46 Q70,42 86,78 Z" />
+    <path android:strokeColor="#F2C14E" android:strokeWidth="2.5" android:fillColor="#00000000"
+        android:strokeLineJoin="round"
+        android:pathData="M28,40 L46,32 L66,36 L82,50 L80,70 L60,80 L36,78 L24,60 Z" />
+    <path android:fillColor="#E5484D"
+        android:pathData="M54,26 C47,26 42,31 42,38 C42,47 54,58 54,58 C54,58 66,47 66,38 C66,31 61,26 54,26 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M54,38 m-4.5,0 a4.5,4.5 0 1,0 9,0 a4.5,4.5 0 1,0 -9,0" />
+</vector>

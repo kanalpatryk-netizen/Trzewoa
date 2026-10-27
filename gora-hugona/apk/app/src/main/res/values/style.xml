@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Mapa" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/las</item>
+        <item name="android:statusBarColor">@color/las</item>
+        <item name="android:navigationBarColor">@color/las</item>
+    </style>
+    <color name="las">#13201A</color>
+    <color name="trawa">#3FA36B</color>
+    <color name="alarm">#E5484D</color>
+</resources>
