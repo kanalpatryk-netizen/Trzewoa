@@ -11,11 +11,14 @@ jobs:
   dane:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install pillow
       - name: Pobierz
         shell: python
         run: |
-          import json, math, io, time, urllib.request, urllib.parse, subprocess, sys, os
-          subprocess.run([sys.executable, '-m', 'pip', 'install', '-q', 'pillow'], check=True)
+          import json, math, io, time, urllib.request, urllib.parse, sys, os
           from PIL import Image
           UA = {'User-Agent': 'gora-hugona-geofence/1.0 (github.com/kanalpatryk-netizen/Trzewoa)'}
           def get(url, data=None):
