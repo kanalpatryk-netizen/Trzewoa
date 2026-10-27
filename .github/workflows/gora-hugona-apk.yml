@@ -87,7 +87,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cat > notatki.md <<NOTATKI
-          Mapa obszaru przy Górze Hugona (Świętochłowice-Zgoda) z Twoją pozycją i alarmem dźwiękowym po wyjściu za granicę.
+          Gra w chowanego na mapie obszaru przy Górze Hugona (Świętochłowice-Zgoda): Twoja pozycja, alarm dźwiękowy
+          po wyjściu za granicę, mistrz gry widzi wszystkich, szukający widzą siebie nawzajem, czas gry i powiadomienia.
+
+          **Logowanie:** \`admin1\` … \`admin6\` — gracze, \`admin7\` — mistrz gry; hasło takie samo jak login.
+          Każdy naciska START; mistrz gry w panelu 👥 przydziela role, ustawia czas gry i wysyła powiadomienia.
 
           **Instalacja:** pobierz \`GoraHugona.apk\` (niżej, w sekcji *Assets*) na telefonie i otwórz.
           Android zapyta o zgodę na instalację z tego źródła (przeglądarka / Pliki) — zgódź się, potem „Zainstaluj”.
