@@ -16,6 +16,7 @@
     --zolty: #e0a526;
     --czerwony: #e5484d;
     --granica: #f2c14e;
+    --fiolet: #7c3aed;
     --cien: 0 6px 24px rgba(0, 0, 0, .35);
   }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -53,15 +54,15 @@
     background: var(--zielony); box-shadow: var(--cien); }
   .duzy.stop { background: #3a4741; }
   #b-wycisz { background: #fff; color: #9b1c20; }
-  #b-ustawienia { width: 58px; flex: none; border-radius: 16px; }
+  #b-ustawienia, #b-gra { width: 58px; flex: none; border-radius: 16px; }
 
-  /* ---- panel ustawień ---- */
-  #panel { position: fixed; z-index: 1100; left: 0; right: 0; bottom: 0; max-height: 82vh; overflow: auto;
+  /* ---- panele (ustawienia, gra) ---- */
+  .arkusz { position: fixed; z-index: 1100; left: 0; right: 0; bottom: 0; max-height: 82vh; overflow: auto;
     background: var(--las); border-radius: 20px 20px 0 0; box-shadow: 0 -8px 30px rgba(0, 0, 0, .5);
     padding: 8px 18px calc(22px + env(safe-area-inset-bottom)); }
-  #panel .uchwyt { width: 44px; height: 5px; border-radius: 3px; background: #4b5a52; margin: 4px auto 10px; }
-  #panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--szary); margin: 18px 0 8px; }
-  #panel h2:first-of-type { margin-top: 4px; }
+  .arkusz .uchwyt { width: 44px; height: 5px; border-radius: 3px; background: #4b5a52; margin: 4px auto 10px; }
+  .arkusz h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--szary); margin: 18px 0 8px; }
+  .arkusz h2:first-of-type { margin-top: 4px; }
   .wiersz { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
   .wiersz small { display: block; color: var(--szary); font-size: 13px; }
   .wiersz input[type=range] { width: 100%; accent-color: var(--zolty); }
@@ -70,9 +71,70 @@
     background: var(--las-2); }
   .przycisk small { display: block; color: var(--szary); font-size: 13px; }
   .przycisk.ostrzezenie { background: #3d2a12; }
-  #panel .info { color: var(--szary); font-size: 14px; }
-  #panel .zamknij { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; background: #2b3a32; font-weight: 700; }
+  .arkusz .info { color: var(--szary); font-size: 14px; }
+  .arkusz .zamknij { width: 100%; margin-top: 14px; padding: 13px; border-radius: 12px; background: #2b3a32; font-weight: 700; }
   #tlo { position: fixed; inset: 0; z-index: 1050; background: rgba(0, 0, 0, .35); }
+
+  /* ---- gra ---- */
+  #pasek .gra-linia { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: -3px 0 5px;
+    font-size: 13px; font-weight: 700; opacity: .95; }
+  #pasek .gra-linia .czas { padding: 2px 9px; border-radius: 999px; background: rgba(0, 0, 0, .28); font-variant-numeric: tabular-nums; }
+  #pasek .gra-linia .czas.koniec { background: #fff; color: #9b1c20; }
+  .kropka-sieci { display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 50%; background: #f87171; vertical-align: 1px; }
+  .kropka-sieci.jest { background: #4ade80; }
+  .rola { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; background: #4b5563; vertical-align: 3px; }
+  .rola.szuka { background: var(--czerwony); }
+  .rola.chowa { background: var(--fiolet); }
+  .rola.mistrz { background: var(--zolty); color: #1d1503; }
+  .chipy { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+  .chipy button { padding: 9px 13px; border-radius: 999px; background: var(--las-2); font-weight: 700; font-size: 15px; }
+  .licznik { font-size: 42px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .licznik.koniec { color: #ff8a8d; }
+  #panel-gra select, #panel-gra textarea { display: block; width: 100%; padding: 11px 12px; font: inherit; color: var(--tekst);
+    background: var(--las-2); border: 1px solid #34463c; border-radius: 12px; }
+  #panel-gra textarea { resize: none; margin-top: 8px; }
+  .wyslij { text-align: center !important; font-weight: 800; background: var(--zielony) !important; }
+  .role-wiersz { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+  .role-wiersz > span { width: 72px; flex: none; font-weight: 700; }
+  .role-wiersz .seg { flex: 1; display: flex; overflow: hidden; border-radius: 12px; background: var(--las-2); }
+  .role-wiersz .seg button { flex: 1; padding: 11px 2px; font-size: 14px; font-weight: 700; color: var(--szary); background: transparent; }
+  #g-siec.jest { color: #4ade80; }
+  .role-wiersz .seg button.wl[data-rola="szuka"] { background: var(--czerwony); color: #fff; }
+  .role-wiersz .seg button.wl[data-rola="chowa"] { background: var(--fiolet); color: #fff; }
+  .role-wiersz .seg button.wl[data-rola=""] { background: #4b5563; color: #fff; }
+  .gracz-wiersz { display: flex; align-items: center; gap: 10px; padding: 9px 0; border-bottom: 1px solid #22322a; }
+  .gracz-wiersz .opis { flex: 1; font-size: 14px; color: var(--szary); }
+  .gracz-wiersz .opis b { color: var(--tekst); font-size: 15px; }
+  .gracz-wiersz .alarm { color: #ff8a8d; font-weight: 700; }
+  .gracz-wiersz button { padding: 9px 12px; border-radius: 10px; background: var(--las-2); font-weight: 700; font-size: 14px; }
+  .gracz-wiersz button:disabled { opacity: .35; }
+  .gracz-wiersz .gracz { position: static; flex: none; margin: 0 !important; }
+  .wiad { padding: 8px 0; border-bottom: 1px solid #22322a; font-size: 15px; overflow-wrap: anywhere; }
+  .wiad small { display: block; color: var(--szary); font-size: 12px; }
+
+  /* ---- inni gracze na mapie ---- */
+  .gracz { width: 30px !important; height: 30px !important; margin: -15px 0 0 -15px !important; display: grid; place-items: center;
+    border-radius: 50%; border: 3px solid #fff; background: #6b7280; color: #fff; font: 800 14px/1 system-ui, sans-serif;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, .5); }
+  .gracz.szuka { background: var(--czerwony); }
+  .gracz.chowa { background: var(--fiolet); }
+  .gracz.mistrz { background: var(--zolty); color: #1d1503; }
+  .gracz.poza { box-shadow: 0 0 0 4px rgba(255, 90, 95, .9), 0 1px 6px rgba(0, 0, 0, .5); }
+  .gracz.stary { opacity: .55; }
+  .gracz.wylaczony { opacity: .45; filter: grayscale(1); }
+
+  /* ---- logowanie ---- */
+  #logowanie { position: fixed; inset: 0; z-index: 1500; display: grid; place-items: center; padding: 20px; overflow: auto;
+    background: radial-gradient(circle at 50% 25%, #21392c, var(--las) 70%); }
+  #logowanie form { width: 100%; max-width: 380px; }
+  #logowanie .znak { font-size: 46px; }
+  #logowanie h1 { margin: 4px 0 4px; font-size: 28px; }
+  #logowanie p { margin: 0 0 14px; color: var(--szary); }
+  #logowanie label { display: block; margin: 12px 0; font-size: 14px; font-weight: 700; color: var(--szary); }
+  #logowanie input { display: block; width: 100%; margin-top: 6px; padding: 14px; font: inherit; font-size: 18px; color: var(--tekst);
+    background: var(--las-2); border: 1px solid #34463c; border-radius: 12px; }
+  #logowanie .blad { margin: 4px 0 0; color: #ff8a8d; font-weight: 700; }
+  #logowanie button { width: 100%; margin-top: 14px; }
 
   /* ---- edycja granicy ---- */
   #edycja { position: fixed; z-index: 1000; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom));
@@ -118,6 +180,10 @@
 <div id="mapa"></div>
 
 <header id="pasek" role="status" aria-live="polite">
+  <div class="gra-linia" id="s-gra" hidden>
+    <span><i class="kropka-sieci" id="s-siec" hidden></i><span id="s-kto"></span></span>
+    <span class="czas" id="s-czas" hidden></span>
+  </div>
   <h1 id="s-tytul">Góra Hugona</h1>
   <p id="s-opis">Naciśnij START, żeby pilnować granicy.</p>
   <div class="gps" id="s-gps" hidden></div>
@@ -138,13 +204,16 @@
 <footer id="dol">
   <button class="duzy" id="b-start">START</button>
   <button class="duzy" id="b-wycisz" hidden>WYCISZ</button>
+  <button class="duzy okragly" id="b-gra" title="Gra" aria-label="Gra w chowanego">
+    <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="17" cy="9" r="2.6"/><path d="M15.6 14.3A5 5 0 0 1 21 19"/></svg>
+  </button>
   <button class="duzy okragly" id="b-ustawienia" title="Ustawienia" aria-label="Ustawienia">
     <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
   </button>
 </footer>
 
 <div id="tlo" hidden></div>
-<section id="panel" hidden aria-label="Ustawienia">
+<section id="panel" class="arkusz" hidden aria-label="Ustawienia">
   <div class="uchwyt"></div>
   <h2>Alarm</h2>
   <div class="wiersz" style="display:block">
@@ -172,6 +241,73 @@
     się rozjeżdżać o kilka metrów. Jeśli tak jest, popraw ją przyciskiem wyżej — poprawki zostają zapamiętane na tym telefonie.</p>
   <button class="zamknij" id="u-zamknij">Zamknij</button>
 </section>
+
+<section id="panel-gra" class="arkusz" hidden aria-label="Gra">
+  <div class="uchwyt"></div>
+  <div class="wiersz" style="padding-top:0">
+    <div><b id="g-ja" style="font-size:21px"></b> <span class="rola" id="g-rola"></span></div>
+    <span class="info" id="g-siec"></span>
+  </div>
+  <p class="info" id="g-info" hidden></p>
+
+  <div id="g-czas-blok">
+    <h2>Czas gry</h2>
+    <div class="licznik" id="g-licznik">—</div>
+    <div class="chipy" id="g-czas-ster" hidden>
+      <button data-min="5">5 min</button><button data-min="10">10 min</button><button data-min="15">15 min</button>
+      <button data-min="20">20 min</button><button data-min="30">30 min</button><button data-min="45">45 min</button>
+      <button data-min="60">60 min</button><button data-min="0">Wyłącz</button>
+    </div>
+  </div>
+
+  <div id="g-wiad-blok" hidden>
+    <h2>Powiadomienie do graczy</h2>
+    <select id="g-do" aria-label="Do kogo">
+      <option value="wszyscy">Do wszystkich</option>
+      <option value="szukajacy">Do szukających</option>
+      <option value="chowajacy">Do chowających się</option>
+      <option value="1">Do gracza 1</option><option value="2">Do gracza 2</option><option value="3">Do gracza 3</option>
+      <option value="4">Do gracza 4</option><option value="5">Do gracza 5</option><option value="6">Do gracza 6</option>
+      <option value="7">Do mistrza gry</option>
+    </select>
+    <div class="chipy" id="g-szybkie">
+      <button>Start! Chowajcie się!</button><button>Szukamy!</button><button>Zbiórka na starcie!</button><button>Koniec gry — wracajcie!</button>
+    </div>
+    <textarea id="g-tekst" rows="2" maxlength="300" placeholder="Treść powiadomienia…"></textarea>
+    <button class="przycisk wyslij" id="g-wyslij">📣 Wyślij</button>
+  </div>
+
+  <div id="g-role-blok" hidden>
+    <h2>Kto szuka, kto się chowa</h2>
+    <div id="g-role"></div>
+  </div>
+
+  <div id="g-gracze-blok" hidden>
+    <h2 id="g-gracze-tytul">Gracze</h2>
+    <div id="g-gracze"></div>
+    <button class="przycisk" id="g-wszyscy" style="text-align:center">🗺️ Pokaż wszystkich na mapie</button>
+  </div>
+
+  <div id="g-historia-blok" hidden>
+    <h2>Ostatnie powiadomienia</h2>
+    <div id="g-historia"></div>
+  </div>
+
+  <button class="przycisk" id="g-wyloguj">🚪 Wyloguj<small id="g-wyloguj-opis"></small></button>
+  <button class="zamknij" id="g-zamknij">Zamknij</button>
+</section>
+
+<div id="logowanie" hidden>
+  <form id="l-form" autocomplete="off" novalidate>
+    <div class="znak">📍</div>
+    <h1>Góra Hugona</h1>
+    <p>Gra w chowanego. Zaloguj się na swój profil.</p>
+    <label>Login<input id="l-login" autocapitalize="none" autocorrect="off" spellcheck="false"></label>
+    <label>Hasło<input id="l-haslo" type="password"></label>
+    <p class="blad" id="l-blad" hidden>Zły login albo hasło.</p>
+    <button type="submit" class="duzy">ZALOGUJ</button>
+  </form>
+</div>
 
 <div id="edycja" hidden>
   <p>Przeciągnij punkt, żeby go przesunąć. Kółko w połowie boku dodaje nowy punkt. Dotknij punktu, żeby go zaznaczyć i usunąć.</p>

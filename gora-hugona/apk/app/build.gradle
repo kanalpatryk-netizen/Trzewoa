@@ -52,3 +52,8 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
+
+dependencies {
+    // klient MQTT (czysta Java) — gra w chowanego przez publiczny serwer, patrz Gra.java
+    implementation 'org.eclipse.paho:org.eclipse.paho.client.mqttv3:1.2.5'
+}

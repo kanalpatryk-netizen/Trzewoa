@@ -26,7 +26,8 @@ import java.util.List;
 /**
  * Okno z mapą (assets = gora-hugona/www, ta sama strona co w przeglądarce). Strona rozpoznaje
  * aplikację po obiekcie {@code HugonAndroid} i zamiast GPS przeglądarki używa usługi {@link Straz},
- * która pilnuje granicy także przy zgaszonym ekranie. Stan wraca na stronę przez {@code hugonStan(…)}.
+ * która pilnuje granicy także przy zgaszonym ekranie i prowadzi grę ({@link Gra}).
+ * Stan wraca na stronę przez {@code hugonStan(…)}.
  */
 public class Mapa extends Activity {
     private static final int PROSBA_ZGODY = 7;
@@ -124,6 +125,26 @@ public class Mapa extends Activity {
                 } catch (RuntimeException ignored) {
                 }
             });
+        }
+
+        // ---- gra (działa, gdy pilnowanie trwa i gracz jest zalogowany) ----
+
+        @JavascriptInterface
+        public boolean ustawRole(String json) {
+            Gra g = Straz.gra;
+            return g != null && g.ustawRole(json);
+        }
+
+        @JavascriptInterface
+        public boolean ustawCzas(int minuty) {
+            Gra g = Straz.gra;
+            return g != null && g.ustawCzas(minuty);
+        }
+
+        @JavascriptInterface
+        public boolean wyslij(String doKogo, String tekst) {
+            Gra g = Straz.gra;
+            return g != null && g.wyslijWiadomosc(doKogo, tekst);
         }
 
         @JavascriptInterface

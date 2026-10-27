@@ -1,14 +1,44 @@
-# Góra Hugona — mapa z alarmem granicy
+# Góra Hugona — gra w chowanego z mapą i alarmem granicy
 
 Mapa obszaru przy Górze Hugona (Świętochłowice-Zgoda) ze znacznikiem Twojej pozycji.
 Gdy wyjdziesz poza granicę, telefon wyje syreną i wibruje, aż wrócisz albo wyciszysz alarm.
+Do tego gra w chowanego na 7 profilach: mistrz gry przydziela role, widzi wszystkich i razem z szukającymi
+ustawia czas gry i wysyła powiadomienia.
 
 📱 **Android:** [**GoraHugona.apk**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/gora-hugona-apk/GoraHugona.apk)
 — pobierz na telefonie, otwórz i zainstaluj (Android zapyta o zgodę na instalację z tego źródła).
 
+## Gra w chowanego
+
+| Login | Hasło | Profil |
+|---|---|---|
+| `admin1` … `admin6` | takie samo jak login | Gracz 1 … Gracz 6 |
+| `admin7` | `admin7` | **Mistrz gry** |
+
+Każdy loguje się na swoim telefonie i naciska **START** (bez tego telefon nie dołącza do gry). Potem przycisk 👥:
+
+| | Mistrz gry | Szukający | Chowający się |
+|---|---|---|---|
+| widzi na mapie | **wszystkich** graczy | innych **szukających** | tylko siebie |
+| przydziela role (szuka / chowa się / nie gra) | ✅ | — | — |
+| ustawia czas gry (5–60 min, odliczanie u wszystkich) | ✅ | ✅ | — |
+| wysyła powiadomienia (do wszystkich, szukających, chowających się albo jednego gracza) | ✅ | ✅ | — |
+
+- Znaczniki: 🔴 szukający, 🟣 chowający się, szary — nie gra. Czerwona obwódka = gracz jest poza granicą.
+  Wyblakły znacznik = pozycja sprzed ponad minuty (np. brak zasięgu); szary z napisem „wyłączył grę” = gracz nacisnął STOP.
+- Powiadomienie wyskakuje na telefonie także przy zgaszonym ekranie, z dźwiękiem według ustawień telefonu
+  (w trybie cichym — tylko wibracja). Koniec czasu gry przychodzi jako powiadomienie do wszystkich.
+- Do gry potrzebny jest internet (dane komórkowe). Telefony łączą się przez darmowy, publiczny serwer MQTT
+  (HiveMQ); wszystko, co wysyłają, jest zaszyfrowane (AES-GCM). Po chwilowej utracie zasięgu łączą się same
+  i dosyłają zaległe zmiany.
+- Loginy `adminN` to tylko wybór profilu — nie są prawdziwym zabezpieczeniem, a klucz szyfru jest w aplikacji.
+  To wystarcza na zabawę wśród znajomych, nie na nic poważniejszego.
+- Uwaga dla chowających się: syrena po wyjściu za granicę jest głośna (gra także w trybie cichym), więc zdradza
+  kryjówkę. Taka jest umowa: nie wychodzić za granicę.
+
 ## Jak używać
 
-1. Otwórz aplikację i naciśnij **START**.
+1. Otwórz aplikację, zaloguj się i naciśnij **START**.
 2. Zezwól na **dokładną** lokalizację i na powiadomienia. Na pytanie o oszczędzanie baterii odpowiedz „Zezwól”,
    bo bez tego część telefonów usypia aplikację w tle.
 3. Gotowe: pasek u góry pokazuje, czy jesteś w obszarze i ile masz do granicy. Możesz zgasić ekran i schować
@@ -52,8 +82,11 @@ w kieszeni służy aplikacja na Androida.
 - `www/` — strona: `index.html` (wygląd), `app.js` (mapa, stan, alarm w przeglądarce, edycja granicy),
   `granica.js` (współrzędne), `leaflet/` (biblioteka mapy Leaflet 1.9.4, licencja BSD-2).
 - `apk/` — aplikacja na Androida: `Mapa.java` (okno z mapą), `Straz.java` (usługa pilnująca granicy w tle:
-  GPS, alarm, powiadomienia), `Granica.java` (czy punkt jest w środku, odległość do granicy), `Dzwiek.java` (syrena).
-  Reguły alarmu są w `app.js` i w `Straz.java` — zmieniając je, zmień oba miejsca.
+  GPS, alarm, powiadomienia, udział w grze), `Granica.java` (czy punkt jest w środku, odległość do granicy),
+  `Dzwiek.java` (syrena), `Gra.java` (gra przez serwer MQTT: pozycje, role, czas, powiadomienia; kto kogo widzi),
+  `Szyfr.java` (szyfrowanie). Reguły alarmu są w `app.js` i w `Straz.java` — zmieniając je, zmień oba miejsca.
+- `test/TestGry.java` — test sieci gry na prawdziwym serwerze (kilka „telefonów” w jednym procesie, własny losowy
+  temat); uruchamia go GitHub Actions przy każdej zmianie.
 - APK buduje GitHub Actions (`.github/workflows/gora-hugona-apk.yml`) po każdej zmianie w tym folderze.
 
 Podkład mapy: zdjęcia satelitarne © Esri, Maxar, Earthstar Geographics; mapa © autorzy OpenStreetMap.

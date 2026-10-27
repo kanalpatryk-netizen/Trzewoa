@@ -24,16 +24,20 @@ import android.os.SystemClock;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
 /**
  * Strażnik granicy: usługa na pierwszym planie, która co sekundę bierze pozycję z GPS,
  * sprawdza, czy telefon jest w obszarze, i podnosi alarm (syrena + wibracje + powiadomienie),
  * gdy z niego wyjdzie. Działa przy zgaszonym ekranie i po zamknięciu okna mapy;
- * kończy ją dopiero „Stop” (w aplikacji albo w powiadomieniu).
+ * kończy ją dopiero „Stop” (w aplikacji albo w powiadomieniu). Gdy gracz jest zalogowany,
+ * usługa prowadzi też jego udział w grze w chowanego ({@link Gra}): wysyła pozycję, odbiera
+ * stan gry i pokazuje powiadomienia od mistrza gry i szukających.
  */
 public class Straz extends Service implements LocationListener {
     static final String START = "start", USTAW = "ustaw", STOP = "stop", WYCISZ = "wycisz";
-    private static final String KANAL_STRAZ = "straz", KANAL_ALARM = "alarm";
-    private static final int NR_STRAZ = 1, NR_ALARM = 2;
+    private static final String KANAL_STRAZ = "straz", KANAL_ALARM = "alarm", KANAL_GRA = "gra";
+    private static final int NR_STRAZ = 1, NR_ALARM = 2, NR_GRA = 100;
 
     /** Pomiar gorszy niż tyle metrów rozstrzyga tylko, gdy odległość od granicy jest większa niż jego błąd. */
     private static final float DOKLADNOSC = 35;
@@ -50,6 +54,8 @@ public class Straz extends Service implements LocationListener {
     static Sluchacz sluchacz;
     static volatile boolean dziala;
     static volatile String ostatniStan;
+    /** Gra w chowanego, gdy gracz jest zalogowany i pilnowanie trwa (most strony woła ją bezpośrednio). */
+    static volatile Gra gra;
 
     private final Handler watek = new Handler(Looper.getMainLooper());
     private LocationManager lm;
@@ -66,6 +72,33 @@ public class Straz extends Service implements LocationListener {
     private int pozaRazy;
     private long wyciszonyDo, ostatniGps, ostatniPomiar, ostatnieOdswiezenie;
     private String ostatniTekst = "";
+    private int ja, nrPowiadomienia;
+    private final AtomicBoolean zmianaGryCzeka = new AtomicBoolean();
+
+    /** Zdarzenia gry przychodzą z wątku sieci — przekładamy je na główny wątek. */
+    private final Gra.Sluchacz sluchaczGry = new Gra.Sluchacz() {
+        @Override
+        public void zmiana() {
+            // wiele zmian naraz (np. pozycje kilku graczy) — jedno odświeżenie strony
+            if (zmianaGryCzeka.compareAndSet(false, true)) {
+                watek.postDelayed(() -> {
+                    zmianaGryCzeka.set(false);
+                    nadaj();
+                }, 250);
+            }
+        }
+
+        @Override
+        public void wiadomosc(int od, String tekst) {
+            String kto = od == Gra.MISTRZ ? "Mistrz gry" : "Gracz " + od;
+            watek.post(() -> powiadomOGrze("📣 " + kto, tekst));
+        }
+
+        @Override
+        public void koniecCzasu() {
+            watek.post(() -> powiadomOGrze("⏱ Koniec czasu!", "Czas gry minął."));
+        }
+    };
 
     private final Runnable tik = new Runnable() {
         @Override
@@ -76,6 +109,8 @@ public class Straz extends Service implements LocationListener {
                 Dzwiek.syrena(Straz.this, wibracje);
                 pokazAlarm();
             }
+            Gra g = gra;
+            if (g != null) g.sprawdzCzas(System.currentTimeMillis());
             nadaj();
             watek.postDelayed(this, 2000);
         }
@@ -96,6 +131,10 @@ public class Straz extends Service implements LocationListener {
             a.enableVibration(false);
             a.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
             nm.createNotificationChannel(a);
+            NotificationChannel g = new NotificationChannel(KANAL_GRA, "Gra: wiadomości", NotificationManager.IMPORTANCE_HIGH);
+            g.setDescription("Powiadomienia od mistrza gry i szukających, koniec czasu gry");
+            g.setLockscreenVisibility(Notification.VISIBILITY_PUBLIC);
+            nm.createNotificationChannel(g);
         }
     }
 
@@ -122,6 +161,7 @@ public class Straz extends Service implements LocationListener {
             stopSelf();
             return START_NOT_STICKY;
         }
+        przestawGre();
         if (pozycja != null) ocen(pozycja);
         nadaj();
         return START_STICKY;
@@ -146,6 +186,7 @@ public class Straz extends Service implements LocationListener {
             strefa = u.optDouble("strefa", 15);
             wibracje = u.optBoolean("wibracje", true);
             ostrzegaj = u.optBoolean("ostrzegaj", true);
+            ja = u.optInt("ja", 0);
             return true;
         } catch (JSONException e) {
             return false;
@@ -202,10 +243,29 @@ public class Straz extends Service implements LocationListener {
         Dzwiek.ucisz(this);
         if (blokada != null && blokada.isHeld()) blokada.release();
         nm.cancel(NR_ALARM);
+        Gra g = gra;
+        gra = null;
+        if (g != null) g.zamknij();
         if (byla) stopForeground(true);
         alarm = false;
         nadaj();
         stopSelf();
+    }
+
+    /** Gra zgodna z zalogowanym profilem: nowa po zalogowaniu, zamknięta po wylogowaniu. */
+    private void przestawGre() {
+        Gra g = gra;
+        if (g != null && g.ja() == ja) return;
+        gra = null;
+        if (g != null) g.zamknij();
+        if (ja < 1 || ja > Gra.MISTRZ) return;
+        try {
+            g = new Gra(ja, sluchaczGry);
+            g.polacz();
+            gra = g;
+        } catch (Exception e) {
+            // bez gry — pilnowanie granicy działa dalej
+        }
     }
 
     @Override
@@ -230,6 +290,8 @@ public class Straz extends Service implements LocationListener {
         ostatniPomiar = teraz;
         pozycja = l;
         ocen(l);
+        Gra g = gra;
+        if (g != null) g.pozycja(l.getLatitude(), l.getLongitude(), l.hasAccuracy() ? l.getAccuracy() : 99, alarm);
         nadaj();
     }
 
@@ -330,6 +392,8 @@ public class Straz extends Service implements LocationListener {
                 s.put("wewnatrz", wewnatrz);
                 s.put("odl", odleglosc);
             }
+            Gra g = gra;
+            if (g != null) s.put("gra", g.stan());
             ostatniStan = s.toString();
         } catch (JSONException ignored) {
         }
@@ -377,6 +441,25 @@ public class Straz extends Service implements LocationListener {
         }
         b.addAction(new Notification.Action.Builder(ikona, "Zakończ pilnowanie", akcja(STOP, 11)).build());
         return b.build();
+    }
+
+    /** Wiadomość w grze albo koniec czasu — zwykłe powiadomienie (dźwięk według ustawień telefonu). */
+    @SuppressWarnings("deprecation")
+    private void powiadomOGrze(String tytul, String tekst) {
+        Notification.Builder b = Build.VERSION.SDK_INT >= 26
+            ? new Notification.Builder(this, KANAL_GRA)
+            : new Notification.Builder(this);
+        b.setSmallIcon(R.drawable.ic_powiadomienie)
+            .setContentTitle(tytul)
+            .setContentText(tekst)
+            .setStyle(new Notification.BigTextStyle().bigText(tekst))
+            .setContentIntent(otworz())
+            .setAutoCancel(true)
+            .setCategory(Notification.CATEGORY_MESSAGE)
+            .setColor(0xFFF2C14E)
+            .setVisibility(Notification.VISIBILITY_PUBLIC);
+        if (Build.VERSION.SDK_INT < 26) b.setPriority(Notification.PRIORITY_HIGH).setDefaults(Notification.DEFAULT_ALL);
+        nm.notify(NR_GRA + nrPowiadomienia++ % 50, b.build());
     }
 
     private PendingIntent otworz() {

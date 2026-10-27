@@ -1,9 +1,12 @@
-/* Góra Hugona — mapa obszaru, znacznik użytkownika i alarm po wyjściu za granicę.
+/* Góra Hugona — mapa obszaru, znacznik użytkownika, alarm po wyjściu za granicę i gra w chowanego.
  *
  * W przeglądarce pozycję daje navigator.geolocation, a alarm gra Web Audio — działa tylko przy włączonym ekranie.
  * W aplikacji na Androida (obiekt HugonAndroid) pozycją i alarmem zajmuje się usługa Straz.java, także w tle;
  * strona dostaje od niej stan przez hugonStan(…) i tylko go pokazuje. Reguły alarmu są w obu miejscach te same
  * (DOKLADNOSC, POZA_RAZY, CISZA_GPS, strefa ostrzeżenia z 5 m zapasu) — zmieniając je, zmień też Straz.java.
+ *
+ * Gra w chowanego (tylko w aplikacji): 7 profili — admin1…admin6 to gracze, admin7 to mistrz gry. Siecią zajmuje się
+ * Gra.java; tutaj przychodzi gotowy stan (stan.gra): role, pozycje widocznych graczy, czas gry, powiadomienia.
  */
 'use strict';
 (() => {
@@ -26,7 +29,19 @@
 
   let granica = poprawna(czytaj('granica', null)) ? czytaj('granica') : ORYGINAL.map((p) => p.slice());
   const ust = Object.assign({ strefa: 15, wibracje: true }, czytaj('ustawienia', {}));
-  const ustawieniaNatywne = () => JSON.stringify({ strefa: ust.strefa, wibracje: ust.wibracje, ostrzegaj: ust.strefa > 0 });
+
+  // ---------- profil gracza ----------
+  const MISTRZ = 7;
+  let profil = (() => { const n = +czytaj('profil', 0); return n >= 1 && n <= MISTRZ ? n : 0; })();
+  const nazwa = (n) => (n === MISTRZ ? 'Mistrz gry' : `Gracz ${n}`);
+  const ROLE = { szuka: 'Szukający', chowa: 'Chowa się', mistrz: 'Mistrz gry', '': 'Nie gra' };
+  /** Login i hasło: admin1/admin1 … admin7/admin7 (wielkość liter i spacje bez znaczenia). Zwraca numer profilu albo 0. */
+  function sprawdzLogin(login, haslo) {
+    const l = login.trim().toLowerCase(), h = haslo.trim().toLowerCase();
+    const r = /^admin([1-7])$/.exec(l);
+    return r && h === l ? +r[1] : 0;
+  }
+  const ustawieniaNatywne = () => JSON.stringify({ strefa: ust.strefa, wibracje: ust.wibracje, ostrzegaj: ust.strefa > 0, ja: profil });
 
   // ---------- geometria (płaski rzut wokół środka obszaru — jak Granica.java) ----------
   let P = plaska(granica);
@@ -264,7 +279,8 @@
     const o = maPoz ? ocenPunkt(s.lat, s.lon) : null;
     let rodzaj, tytul, opis;
     if (!s.dziala) {
-      rodzaj = 'spoczynek'; tytul = 'Góra Hugona'; opis = 'Naciśnij START, żeby pilnować granicy.';
+      rodzaj = 'spoczynek'; tytul = 'Góra Hugona';
+      opis = profil ? 'Naciśnij START, żeby dołączyć do gry i pilnować granicy.' : 'Zaloguj się i naciśnij START.';
     } else if (s.gpsWylaczony) {
       rodzaj = 'brak'; tytul = 'Lokalizacja wyłączona'; opis = A ? 'Włącz lokalizację (GPS) — dotknij tutaj.' : 'Włącz lokalizację (GPS) w telefonie.';
     } else if (!maPoz) {
@@ -322,6 +338,7 @@
       if (mapa.hasLayer(doGranicy)) doGranicy.remove();
       bylaPozycja = false;
     }
+    pokazGre(s);
   }
 
   // stan z aplikacji na Androida
@@ -337,14 +354,16 @@
   window.hugonWstecz = () => {
     if (!$('pytanie').hidden) { $('pytanie').hidden = true; return true; }
     if (!$('panel').hidden) { zamknijPanel(); return true; }
+    if (!$('panel-gra').hidden) { zamknijPanelGry(); return true; }
     if (edycja.wl) { koniecEdycji(false); return true; }
     return false;
   };
 
   // ---------- przyciski ----------
   $('b-start').onclick = () => {
+    if (!profil) { pokazLogowanie(); return; }
     if (!dziala()) start();
-    else pytaj('Zakończyć pilnowanie granicy?', stop);
+    else pytaj('Zakończyć pilnowanie granicy i grę na tym telefonie?', stop);
   };
   $('b-wycisz').onclick = wycisz;
   $('b-ja').onclick = () => {
@@ -392,7 +411,7 @@
   }
   $('b-ustawienia').onclick = otworzPanel;
   $('u-zamknij').onclick = zamknijPanel;
-  $('tlo').onclick = zamknijPanel;
+  $('tlo').onclick = () => { zamknijPanel(); zamknijPanelGry(); };
   $('u-strefa').oninput = (e) => {
     ust.strefa = +e.target.value;
     $('u-strefa-w').textContent = ust.strefa > 0 ? ust.strefa + ' m' : 'wyłączone';
@@ -502,6 +521,292 @@
   $('e-anuluj').onclick = () => koniecEdycji(false);
   $('e-zapisz').onclick = () => koniecEdycji(true);
 
+
+  // ---------- gra w chowanego ----------
+  let gra = null;                 // stan.gra z aplikacji (null w przeglądarce i przed STARTEM)
+  const znaczniki = new Map();    // numer gracza → { mk, klasa }
+  let ostatniaWiadomosc = 0;      // czas najnowszego pokazanego powiadomienia
+  const temu = (ms) => (ms < 10000 ? 'przed chwilą' : ms < 60000 ? `${Math.round(ms / 1000)} s temu`
+    : ms < 3600000 ? `${Math.round(ms / 60000)} min temu` : 'ponad godzinę temu');
+  const zegar = (ms) => {
+    const c = Math.ceil(ms / 1000), h = Math.floor(c / 3600), mi = Math.floor((c % 3600) / 60), se = c % 60;
+    return (h ? `${h}:${String(mi).padStart(2, '0')}` : `${mi}`) + ':' + String(se).padStart(2, '0');
+  };
+  const graczPoz = (n) => ((gra && gra.gracze) || []).find((x) => x.n === n);
+  function opisGracza(x) {
+    const gdzie = x.aktywny === false ? 'wyłączył grę' : x.poza ? 'POZA GRANICĄ' : 'w obszarze';
+    return `${nazwa(x.n)} · ${ROLE[x.rola] || ''} · ${gdzie} · ${temu(Date.now() - x.t)}`;
+  }
+
+  function pokazGre(s) {
+    gra = s.gra || null;
+    $('s-gra').hidden = !profil;
+    if (profil) {
+      $('s-kto').textContent = nazwa(profil) + (gra && profil !== MISTRZ ? ` · ${ROLE[gra.rola] || ''}` : '');
+      $('s-siec').hidden = !(A && s.dziala);
+      $('s-siec').className = 'kropka-sieci' + (gra && gra.polaczony ? ' jest' : '');
+    }
+    rysujZnaczniki();
+    licznik();
+    nowePowiadomienia();
+    if (!$('panel-gra').hidden) rysujPanelGry();
+  }
+
+  /** Znaczniki innych graczy — tylko tych, których wolno mi widzieć (filtruje już Gra.java). */
+  function rysujZnaczniki() {
+    const teraz = Date.now(), sa = new Set();
+    for (const x of (gra && gra.gracze) || []) {
+      if (teraz - x.t > 30 * 60000) continue;                 // pozycja z dawnej gry
+      sa.add(x.n);
+      const klasa = `gracz ${x.rola || 'brak'}${x.poza ? ' poza' : ''}${x.aktywny === false ? ' wylaczony' : teraz - x.t > 60000 ? ' stary' : ''}`;
+      let z = znaczniki.get(x.n);
+      if (!z) {
+        const mk = L.marker([x.lat, x.lon], { keyboard: false, zIndexOffset: 500 })
+          .on('click', () => { const y = graczPoz(x.n); if (y) dymek(opisGracza(y), 4000); })
+          .addTo(mapa);
+        z = { mk, klasa: '' };
+        znaczniki.set(x.n, z);
+      }
+      z.mk.setLatLng([x.lat, x.lon]);
+      if (z.klasa !== klasa) {
+        z.mk.setIcon(L.divIcon({ className: klasa, html: String(x.n), iconSize: [30, 30] }));
+        z.klasa = klasa;
+      }
+    }
+    for (const [n, z] of znaczniki) if (!sa.has(n)) { z.mk.remove(); znaczniki.delete(n); }
+  }
+
+  function licznik() {
+    const k = (gra && gra.koniec) || 0, el = $('s-czas'), duzy = $('g-licznik');
+    const reszta = k - Date.now();
+    if (!k || reszta < -3600000) {
+      el.hidden = true;
+      duzy.textContent = '—';
+      duzy.classList.remove('koniec');
+      return;
+    }
+    el.hidden = false;
+    el.textContent = reszta > 0 ? `⏱ ${zegar(reszta)}` : '⏱ koniec czasu';
+    el.classList.toggle('koniec', reszta <= 0);
+    duzy.textContent = reszta > 0 ? zegar(reszta) : 'Koniec czasu!';
+    duzy.classList.toggle('koniec', reszta <= 0);
+  }
+  setInterval(licznik, 1000);
+
+  /** Nowe powiadomienie widać też na mapie (powiadomienie systemowe wysyła usługa). */
+  function nowePowiadomienia() {
+    for (const w of (gra && gra.wiadomosci) || []) {
+      if (w.t > ostatniaWiadomosc && w.od !== profil && Date.now() - w.t < 120000) {
+        dymek(`📣 ${nazwa(w.od)}: ${w.tekst}`, 8000);
+      }
+      ostatniaWiadomosc = Math.max(ostatniaWiadomosc, w.t);
+    }
+  }
+
+  // panel gry
+  function otworzPanelGry() {
+    if (!profil) { pokazLogowanie(); return; }
+    $('panel-gra').hidden = false;
+    $('tlo').hidden = false;
+    $('panel-gra').scrollTop = 0;
+    rysujPanelGry();
+  }
+  function zamknijPanelGry() { $('panel-gra').hidden = true; $('tlo').hidden = true; }
+  function rysujPanelGry() {
+    const mistrz = profil === MISTRZ, rola = gra ? gra.rola : mistrz ? 'mistrz' : '';
+    $('g-ja').textContent = nazwa(profil);
+    $('g-rola').textContent = ROLE[rola] || '';
+    $('g-rola').className = 'rola ' + rola;
+    $('g-rola').hidden = mistrz || !gra;                  // u mistrza nazwa profilu mówi wszystko
+    $('g-siec').textContent = !A || !dziala() ? '' : gra && gra.polaczony ? '● połączono' : '○ łączenie…';
+    $('g-siec').classList.toggle('jest', !!(gra && gra.polaczony));
+    let info = '';
+    if (!A) info = 'Gra (znaczniki innych graczy, czas gry, powiadomienia) działa w aplikacji na Androida.';
+    else if (!dziala() || !gra) info = 'Naciśnij START, żeby dołączyć do gry.';
+    else if (!gra.polaczony) info = 'Łączę z serwerem gry… Potrzebny jest internet.';
+    else if (!mistrz && !gra.rola) info = 'Mistrz gry nie dał Ci jeszcze roli.';
+    else if (gra.rola === 'chowa') info = 'Chowasz się — nie widzisz innych graczy. Powiadomienia przyjdą same.';
+    $('g-info').textContent = info;
+    $('g-info').hidden = !info;
+
+    const steruje = !!(gra && gra.mozeSterowac);
+    $('g-czas-ster').hidden = !steruje;
+    $('g-wiad-blok').hidden = !steruje;
+    $('g-role-blok').hidden = !(mistrz && gra);
+    if (mistrz && gra) rysujRole();
+    const widzi = !!gra && (mistrz || gra.rola === 'szuka');
+    $('g-gracze-blok').hidden = !widzi;
+    if (widzi) rysujListeGraczy();
+    rysujHistorie();
+    $('g-wyloguj-opis').textContent = dziala() ? 'Najpierw zakończ pilnowanie (STOP).' : `Zmień profil na tym telefonie (teraz: admin${profil}).`;
+    licznik();
+  }
+
+  // role (mistrz gry) — przyciski powstają raz, potem zmienia się tylko podświetlenie
+  function rysujRole() {
+    const box = $('g-role');
+    if (!box.childElementCount) {
+      for (let n = 1; n < MISTRZ; n++) {
+        const w = document.createElement('div');
+        w.className = 'role-wiersz';
+        w.innerHTML = `<span>Gracz ${n}</span><div class="seg"><button data-n="${n}" data-rola="szuka">Szuka</button>`
+          + `<button data-n="${n}" data-rola="chowa">Chowa się</button><button data-n="${n}" data-rola="">Nie gra</button></div>`;
+        box.appendChild(w);
+      }
+    }
+    box.querySelectorAll('button').forEach((b) => b.classList.toggle('wl', (gra.role[b.dataset.n] || '') === b.dataset.rola));
+  }
+  $('g-role').onclick = (e) => {
+    const b = e.target.closest('button');
+    if (!b || !gra) return;
+    const role = {};
+    for (let n = 1; n < MISTRZ; n++) role[n] = gra.role[n] || '';
+    role[b.dataset.n] = b.dataset.rola;
+    if (A && A.ustawRole(JSON.stringify(role))) {
+      Object.assign(gra.role, role);                   // od razu na ekranie; reszta przyjdzie z usługi
+      rysujRole();
+    } else dymek('Nie udało się — naciśnij START, żeby połączyć się z grą.', 3500);
+  };
+
+  // lista graczy: mistrz — wszyscy, szukający — inni szukający
+  let skladListy = '';
+  function rysujListeGraczy() {
+    const mistrz = profil === MISTRZ, lista = [];
+    for (let n = 1; n < MISTRZ; n++) if (n !== profil && (mistrz || gra.role[n] === 'szuka')) lista.push(n);
+    $('g-gracze-tytul').textContent = mistrz ? 'Gracze' : 'Inni szukający';
+    const box = $('g-gracze');
+    if (skladListy !== lista.join(',')) {
+      skladListy = lista.join(',');
+      box.innerHTML = '';
+      for (const n of lista) {
+        const w = document.createElement('div');
+        w.className = 'gracz-wiersz';
+        w.dataset.n = n;
+        w.innerHTML = `<i class="gracz">${n}</i><div class="opis"></div><button data-n="${n}">Pokaż</button>`;
+        box.appendChild(w);
+      }
+      if (!lista.length) box.innerHTML = '<p class="info">Nikogo — mistrz gry nie przydzielił jeszcze ról.</p>';
+    }
+    const teraz = Date.now();
+    for (const w of box.querySelectorAll('.gracz-wiersz')) {
+      const n = +w.dataset.n, x = graczPoz(n), rola = gra.role[n] || '';
+      w.querySelector('.gracz').className = `gracz ${rola || 'brak'}`;
+      const opis = w.querySelector('.opis');
+      opis.innerHTML = '';
+      const b = document.createElement('b');
+      b.textContent = `${nazwa(n)} `;
+      opis.append(b, ROLE[rola] || '', document.createElement('br'));
+      if (!x || teraz - x.t > 30 * 60000) opis.append('brak pozycji');
+      else {
+        const st = document.createElement('span');
+        if (x.aktywny === false) st.textContent = 'wyłączył grę';
+        else if (x.poza) { st.textContent = 'POZA GRANICĄ'; st.className = 'alarm'; } else st.textContent = 'w obszarze';
+        opis.append(st, ` · ${temu(teraz - x.t)}`);
+      }
+      w.querySelector('button').disabled = !x || teraz - x.t > 30 * 60000;
+    }
+  }
+  $('g-gracze').onclick = (e) => {
+    const b = e.target.closest('button');
+    const x = b && graczPoz(+b.dataset.n);
+    if (!x) return;
+    sledz = false;
+    $('b-ja').classList.remove('wl');
+    zamknijPanelGry();
+    mapa.setView([x.lat, x.lon], 18);
+    dymek(opisGracza(x), 3500);
+  };
+  $('g-wszyscy').onclick = () => {
+    const pkt = [...znaczniki.values()].map((z) => z.mk.getLatLng());
+    if (stan && stan.lat != null) pkt.push(L.latLng(stan.lat, stan.lon));
+    if (!pkt.length) { dymek('Na mapie nie ma jeszcze nikogo.', 2500); return; }
+    sledz = false;
+    $('b-ja').classList.remove('wl');
+    zamknijPanelGry();
+    mapa.fitBounds(L.latLngBounds(pkt).pad(0.3), { maxZoom: 18 });
+  };
+
+  let skladHistorii = '';
+  function rysujHistorie() {
+    const lista = ((gra && gra.wiadomosci) || []).slice().reverse();
+    $('g-historia-blok').hidden = !lista.length;
+    const sklad = lista.map((w) => w.t).join(',');
+    if (sklad === skladHistorii) return;
+    skladHistorii = sklad;
+    const box = $('g-historia');
+    box.innerHTML = '';
+    const DO = { wszyscy: 'do wszystkich', szukajacy: 'do szukających', chowajacy: 'do chowających się' };
+    for (const w of lista) {
+      const d = document.createElement('div'), m = document.createElement('small');
+      d.className = 'wiad';
+      const godz = new Date(w.t).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+      const doKogo = DO[w.do] || (+w.do === MISTRZ ? 'do mistrza gry' : `do gracza ${w.do}`);
+      m.textContent = `${godz} · ${w.od === profil ? 'Ty' : nazwa(w.od)} ${doKogo}`;
+      d.append(m, w.tekst);
+      box.appendChild(d);
+    }
+  }
+
+  // czas gry i powiadomienia (mistrz gry i szukający)
+  $('g-czas-ster').onclick = (e) => {
+    const b = e.target.closest('button');
+    if (!b) return;
+    const min = +b.dataset.min;
+    const ustaw = () => {
+      if (A && A.ustawCzas(min)) dymek(min ? `⏱ Czas gry: ${min} min — odliczanie u wszystkich graczy.` : 'Odliczanie wyłączone.', 3000);
+      else dymek('Nie udało się — naciśnij START, żeby połączyć się z grą.', 3500);
+    };
+    if (gra && gra.koniec > Date.now()) pytaj(min ? `Ustawić nowy czas gry: ${min} min od teraz?` : 'Wyłączyć odliczanie czasu gry?', ustaw);
+    else ustaw();
+  };
+  $('g-szybkie').onclick = (e) => {
+    const b = e.target.closest('button');
+    if (b) $('g-tekst').value = b.textContent;
+  };
+  $('g-wyslij').onclick = () => {
+    const tekst = $('g-tekst').value.trim();
+    if (!tekst) { dymek('Wpisz treść albo wybierz gotową.', 2500); return; }
+    if (A && A.wyslij($('g-do').value, tekst)) {
+      $('g-tekst').value = '';
+      dymek('📣 Wysłano.', 2000);
+    } else dymek('Nie wysłano — naciśnij START, żeby połączyć się z grą.', 3500);
+  };
+  $('b-gra').onclick = otworzPanelGry;
+  $('g-zamknij').onclick = zamknijPanelGry;
+
+  // logowanie
+  function pokazLogowanie() {
+    $('l-login').value = '';
+    $('l-haslo').value = '';
+    $('l-blad').hidden = true;
+    $('logowanie').hidden = false;
+  }
+  $('l-form').onsubmit = (e) => {
+    e.preventDefault();
+    const n = sprawdzLogin($('l-login').value, $('l-haslo').value);
+    if (!n) {
+      $('l-blad').hidden = false;
+      $('l-haslo').value = '';
+      return;
+    }
+    profil = n;
+    pisz('profil', n);
+    $('logowanie').hidden = true;
+    if (document.activeElement) document.activeElement.blur();
+    pokaz(stan || { dziala: false });
+    dymek(`Zalogowano: ${nazwa(n)}. Naciśnij START, żeby dołączyć do gry.`, 3500);
+  };
+  $('g-wyloguj').onclick = () => {
+    if (dziala()) { dymek('Najpierw zakończ pilnowanie przyciskiem STOP.', 3000); return; }
+    pytaj(`Wylogować z profilu „${nazwa(profil)}”?`, () => {
+      profil = 0;
+      pisz('profil', null);
+      zamknijPanelGry();
+      pokaz(stan || { dziala: false });
+      pokazLogowanie();
+    });
+  };
+
   // ---------- dymki i pytania ----------
   let dymekCzas = null;
   function dymek(tekst, ms = 4000) {
@@ -527,5 +832,6 @@
   } else {
     pokaz({ dziala: false });
   }
+  if (!profil) pokazLogowanie();
   window.addEventListener('resize', () => mapa.invalidateSize());
 })();
