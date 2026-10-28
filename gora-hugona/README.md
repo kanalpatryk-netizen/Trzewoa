@@ -25,6 +25,12 @@ Każdy loguje się na swoim telefonie i naciska **START** (bez tego telefon nie 
 | wysyła powiadomienia (do wszystkich, szukających, chowających się albo jednego gracza) | ✅ | ✅ | — |
 | krótkofalówka (mówi i słyszy) | ✅ | ✅ | — |
 
+**Ekran chowającego się** zawiera tylko mapę obszaru, jego znacznik, pozostały czas i przycisk **Wyloguj** — bez paska
+stanu, przycisków i ustawień. Przełącza się sam, gdy mistrz gry da graczowi rolę „chowa się” (i wraca do pełnego,
+gdy da inną). Powiadomienia przychodzą wtedy jako zwykłe powiadomienia telefonu. Syrena za granicą dalej działa, ale
+nie ma przycisku wyciszenia — milknie dopiero po powrocie do obszaru. Wyloguj od razu kończy udział w grze na tym
+telefonie (zamiast STOP). Przesunięta mapa po 8 sekundach sama wraca na jego znacznik.
+
 ### 📻 Krótkofalówka szukających i mistrza gry
 
 Szukający albo mistrz gry **przytrzymuje czerwony przycisk MÓW** (lewy dolny róg mapy) i mówi; po puszczeniu przycisku

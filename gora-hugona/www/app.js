@@ -120,7 +120,17 @@
 
   let sledz = true;          // mapa jedzie za mną, dopóki ktoś jej nie przesunie
   let bylaPozycja = false;
-  mapa.on('dragstart', () => { sledz = false; $('b-ja').classList.remove('wl'); });
+  let chowa = false;         // tryb chowającego się: tylko mapa, swój znacznik, pozostały czas i wylogowanie
+  let powrotSledzenia = null;
+  mapa.on('dragstart', () => { sledz = false; $('b-ja').classList.remove('wl'); clearTimeout(powrotSledzenia); });
+  // chowający się nie ma przycisku „pokaż mnie” — mapa sama wraca do niego 8 s po przesunięciu
+  mapa.on('dragend', () => {
+    if (!chowa) return;
+    powrotSledzenia = setTimeout(() => {
+      sledz = true;
+      if (chowa && stan && stan.lat != null) mapa.panTo([stan.lat, stan.lon]);
+    }, 8000);
+  });
 
   // ---------- dźwięk w przeglądarce (w aplikacji gra Dzwiek.java) ----------
   const dzwiek = {
@@ -277,6 +287,7 @@
   let stan = null;
   function pokaz(s) {
     stan = s;
+    ustawTrybChowajacego(!!(profil && profil !== MISTRZ && s.gra && s.gra.rola === 'chowa'));
     const maPoz = s.lat != null && s.odl != null && s.odl >= 0;
     const o = maPoz ? ocenPunkt(s.lat, s.lon) : null;
     let rodzaj, tytul, opis;
@@ -326,7 +337,7 @@
         el.classList.toggle('ma-kurs', s.kurs != null);
         if (s.kurs != null) el.querySelector('.kurs').style.transform = `rotate(${s.kurs}deg)`;
       }
-      if (!s.wewnatrz) {
+      if (!s.wewnatrz && !chowa) {
         doGranicy.setLatLngs([ll, o.najblizszy]);
         if (!mapa.hasLayer(doGranicy)) doGranicy.addTo(mapa);
       } else if (mapa.hasLayer(doGranicy)) doGranicy.remove();
@@ -583,26 +594,22 @@
   }
 
   function licznik() {
-    const k = (gra && gra.koniec) || 0, el = $('s-czas'), duzy = $('g-licznik');
-    const reszta = k - Date.now();
-    if (!k || reszta < -3600000) {
-      el.hidden = true;
-      duzy.textContent = '—';
-      duzy.classList.remove('koniec');
-      return;
-    }
-    el.hidden = false;
-    el.textContent = reszta > 0 ? `⏱ ${zegar(reszta)}` : '⏱ koniec czasu';
-    el.classList.toggle('koniec', reszta <= 0);
-    duzy.textContent = reszta > 0 ? zegar(reszta) : 'Koniec czasu!';
-    duzy.classList.toggle('koniec', reszta <= 0);
+    const k = (gra && gra.koniec) || 0, reszta = k - Date.now();
+    const jest = !!k && reszta >= -3600000, koniec = jest && reszta <= 0;
+    const el = $('s-czas');
+    el.hidden = !jest;
+    el.textContent = !jest ? '' : koniec ? '⏱ koniec czasu' : `⏱ ${zegar(reszta)}`;
+    el.classList.toggle('koniec', koniec);
+    for (const id of ['g-licznik', 'ch-czas']) $(id).textContent = !jest ? '—' : koniec ? 'Koniec czasu!' : zegar(reszta);
+    $('g-licznik').classList.toggle('koniec', koniec);
+    $('ch-czas-box').classList.toggle('koniec', koniec);
   }
   setInterval(licznik, 1000);
 
   /** Nowe powiadomienie widać też na mapie (powiadomienie systemowe wysyła usługa). */
   function nowePowiadomienia() {
     for (const w of (gra && gra.wiadomosci) || []) {
-      if (w.t > ostatniaWiadomosc && w.od !== profil && Date.now() - w.t < 120000) {
+      if (!chowa && w.t > ostatniaWiadomosc && w.od !== profil && Date.now() - w.t < 120000) {
         dymek(`📣 ${nazwa(w.od)}: ${w.tekst}`, 8000);
       }
       ostatniaWiadomosc = Math.max(ostatniaWiadomosc, w.t);
@@ -806,16 +813,35 @@
     pokaz(stan || { dziala: false });
     dymek(`Zalogowano: ${nazwa(n)}. Naciśnij START, żeby dołączyć do gry.`, 3500);
   };
+  function wyloguj() {
+    profil = 0;
+    pisz('profil', null);
+    zamknijPanelGry();
+    pokaz(stan || { dziala: false });
+    pokazLogowanie();
+  }
   $('g-wyloguj').onclick = () => {
     if (dziala()) { dymek('Najpierw zakończ pilnowanie przyciskiem STOP.', 3000); return; }
-    pytaj(`Wylogować z profilu „${nazwa(profil)}”?`, () => {
-      profil = 0;
-      pisz('profil', null);
-      zamknijPanelGry();
-      pokaz(stan || { dziala: false });
-      pokazLogowanie();
-    });
+    pytaj(`Wylogować z profilu „${nazwa(profil)}”?`, wyloguj);
   };
+
+  // ---------- chowający się: tylko mapa, swój znacznik, pozostały czas i wylogowanie ----------
+  function ustawTrybChowajacego(tak) {
+    if (chowa === tak) return;
+    chowa = tak;
+    document.body.classList.toggle('chowa', tak);
+    if (!tak) return;
+    zamknijPanel();
+    zamknijPanelGry();
+    if (edycja.wl) koniecEdycji(false);
+    if (mapa.hasLayer(doGranicy)) doGranicy.remove();
+    sledz = true;
+  }
+  // chowający się nie ma przycisku STOP — wylogowanie od razu kończy jego udział w grze
+  $('ch-wyloguj').onclick = () => pytaj('Wylogować? Zakończy to Twój udział w grze na tym telefonie.', () => {
+    if (dziala()) stop();
+    wyloguj();
+  });
 
   // ---------- krótkofalówka (szukający i mistrz gry) ----------
   const radio = { nadaje: false, od: 0, mowia: [] };

@@ -149,6 +149,21 @@
   .gracz.mowi { animation: mowi .8s infinite; }
   @keyframes mowi { 50% { box-shadow: 0 0 0 10px rgba(255, 255, 255, .6), 0 1px 6px rgba(0, 0, 0, .5); } }
 
+  /* ---- chowający się: tylko mapa, swój znacznik, pozostały czas i wylogowanie ---- */
+  #ch-czas-box, #ch-wyloguj { display: none; }
+  body.chowa #ch-czas-box { display: block; position: fixed; z-index: 1000; left: 50%; top: calc(12px + env(safe-area-inset-top));
+    transform: translateX(-50%); min-width: 170px; padding: 8px 22px 10px; border-radius: 18px; text-align: center;
+    background: rgba(12, 20, 16, .88); box-shadow: var(--cien); }
+  body.chowa #ch-czas-box small { display: block; color: var(--szary); font-size: 12px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; }
+  body.chowa #ch-czas-box b { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  body.chowa #ch-czas-box.koniec b { color: #ff8a8d; }
+  body.chowa #ch-wyloguj { display: block; position: fixed; z-index: 1000; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom));
+    transform: translateX(-50%); padding: 12px 26px; border-radius: 999px; background: rgba(12, 20, 16, .88); font-weight: 700;
+    box-shadow: var(--cien); }
+  body.chowa #pasek, body.chowa #bok, body.chowa #dol, body.chowa #b-radio, body.chowa #panel, body.chowa #panel-gra,
+  body.chowa #tlo, body.chowa #edycja, body.chowa #dymek { display: none !important; }
+
   /* ---- edycja granicy ---- */
   #edycja { position: fixed; z-index: 1000; left: 10px; right: 10px; bottom: calc(12px + env(safe-area-inset-bottom));
     background: var(--las); border-radius: 16px; padding: 12px; box-shadow: var(--cien); }
@@ -219,6 +234,9 @@
   <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21M8.5 21h7"/></svg>
   <span id="b-radio-tekst">MÓW</span>
 </button>
+
+<div id="ch-czas-box" aria-live="polite"><small>Pozostały czas</small><b id="ch-czas">—</b></div>
+<button id="ch-wyloguj">🚪 Wyloguj</button>
 
 <footer id="dol">
   <button class="duzy" id="b-start">START</button>
