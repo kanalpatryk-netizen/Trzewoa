@@ -44,11 +44,13 @@ public class TestGry {
     private static final class Zapis implements Gra.Sluchacz {
         final List<String> wiadomosci = Collections.synchronizedList(new ArrayList<>());
         final List<byte[]> glosy = Collections.synchronizedList(new ArrayList<>());
+        final List<Integer> odKogo = Collections.synchronizedList(new ArrayList<>());
         final List<Long> kiedy = Collections.synchronizedList(new ArrayList<>());
         final AtomicInteger konce = new AtomicInteger();
 
         @Override
         public void glos(int od, byte[] pakiet) {
+            odKogo.add(od);
             glosy.add(pakiet);
             kiedy.add(System.currentTimeMillis());
         }
@@ -174,16 +176,33 @@ public class TestGry {
             sprawdz(s1.glos(p), "szukający 1 nadaje pakiet " + Radio.odczytaj(p).nr);
             Thread.sleep(250);
         }
-        sprawdz(czekaj(() -> z2.glosy.size() == nadane.size(), 10000), "szukający 2 słyszy szukającego 1 (" + z2.glosy.size() + " z " + nadane.size() + " pakietów)");
-        boolean wiernie = z2.glosy.size() == nadane.size();
-        for (int i = 0; wiernie && i < nadane.size(); i++) wiernie = Arrays.equals(nadane.get(i), z2.glosy.get(i));
+        sprawdz(czekaj(() -> z2.glosy.size() == nadane.size() && zm.glosy.size() == nadane.size(), 10000),
+            "szukający 2 i mistrz gry słyszą szukającego 1 (" + z2.glosy.size() + " i " + zm.glosy.size() + " z " + nadane.size() + " pakietów)");
+        boolean wiernie = z2.glosy.size() == nadane.size() && zm.glosy.size() == nadane.size();
+        for (int i = 0; wiernie && i < nadane.size(); i++) {
+            wiernie = Arrays.equals(nadane.get(i), z2.glosy.get(i)) && Arrays.equals(nadane.get(i), zm.glosy.get(i));
+        }
         sprawdz(wiernie && Radio.odczytaj(z2.glosy.get(z2.glosy.size() - 1)).ostatni, "pakiety głosu doszły po kolei i bez zmian, ostatni z flagą końca");
         long opoznienie = 0;
         for (int i = 0; i < Math.min(wyslane.size(), z2.kiedy.size()); i++) opoznienie = Math.max(opoznienie, z2.kiedy.get(i) - wyslane.get(i));
         sprawdz(opoznienie < 2000, "opóźnienie głosu w sieci: najwyżej " + opoznienie + " ms");
         Thread.sleep(1000);
-        sprawdz(z1.glosy.isEmpty() && z3.glosy.isEmpty() && zm.glosy.isEmpty(), "mistrz, chowający się i sam nadawca nic nie słyszą");
-        sprawdz(!ch.glos(nadane.get(0)) && !mistrz.glos(nadane.get(0)), "chowający się i mistrz nie nadają");
+        sprawdz(z1.glosy.isEmpty() && z3.glosy.isEmpty(), "chowający się i sam nadawca nic nie słyszą");
+        sprawdz(!ch.glos(nadane.get(0)), "chowający się nie nadaje");
+
+        // mistrz gry mówi do szukających
+        boolean mistrzNadaje = true;
+        for (byte[] p : nadane) {
+            mistrzNadaje &= mistrz.glos(p);
+            Thread.sleep(100);
+        }
+        sprawdz(mistrzNadaje, "mistrz gry nadaje");
+        sprawdz(czekaj(() -> z1.glosy.size() == nadane.size() && z2.glosy.size() == 2 * nadane.size(), 10000),
+            "szukający 1 i 2 słyszą mistrza gry");
+        sprawdz(z1.odKogo.stream().allMatch(n -> n == 7) && z2.odKogo.subList(nadane.size(), 2 * nadane.size()).stream().allMatch(n -> n == 7)
+            && zm.odKogo.stream().allMatch(n -> n == 1), "nadawca rozpoznany: 7 = mistrz gry, 1 = szukający");
+        Thread.sleep(1000);
+        sprawdz(z3.glosy.isEmpty() && zm.glosy.size() == nadane.size(), "chowający się dalej nic; mistrz nie słyszy sam siebie");
 
         // telefon włączony później (drugi telefon mistrza) dostaje zachowany stan
         Zapis zp = new Zapis();

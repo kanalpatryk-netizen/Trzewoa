@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * gdy z niego wyjdzie. Działa przy zgaszonym ekranie i po zamknięciu okna mapy;
  * kończy ją dopiero „Stop” (w aplikacji albo w powiadomieniu). Gdy gracz jest zalogowany,
  * usługa prowadzi też jego udział w grze w chowanego ({@link Gra}): wysyła pozycję, odbiera
- * stan gry i pokazuje powiadomienia od mistrza gry i szukających, a szukającym sama odtwarza
- * głos innych szukających z krótkofalówki ({@link Glosnik}).
+ * stan gry i pokazuje powiadomienia od mistrza gry i szukających, a szukającym i mistrzowi gry
+ * sama odtwarza głos z krótkofalówki ({@link Glosnik}).
  */
 public class Straz extends Service implements LocationListener {
     static final String START = "start", USTAW = "ustaw", STOP = "stop", WYCISZ = "wycisz";

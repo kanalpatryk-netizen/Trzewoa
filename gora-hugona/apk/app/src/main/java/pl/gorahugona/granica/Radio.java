@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Krótkofalówka szukających — część bez Androida (sprawdzana na zwykłej JVM, patrz gora-hugona/test):
+ * Krótkofalówka szukających i mistrza gry — część bez Androida (sprawdzana na zwykłej JVM, patrz gora-hugona/test):
  * kodek IMA ADPCM (8 kHz, 4 bity na próbkę = 4 KB/s), pakiety po 250 ms, przeliczanie dźwięku z mikrofonu
  * na 8 kHz, wzmacnianie cichego głosu i sygnały początku i końca jak w walkie-talkie.
  *

@@ -7,7 +7,8 @@
  *
  * Gra w chowanego (tylko w aplikacji): 7 profili — admin1…admin6 to gracze, admin7 to mistrz gry. Siecią zajmuje się
  * Gra.java; tutaj przychodzi gotowy stan (stan.gra): role, pozycje widocznych graczy, czas gry, powiadomienia.
- * Krótkofalówka szukających: przycisk MÓW (przytrzymaj) → Nadajnik.java; odtwarza Glosnik.java, stan w stan.radio.
+ * Krótkofalówka szukających i mistrza gry: przycisk MÓW (przytrzymaj) → Nadajnik.java; odtwarza Glosnik.java,
+ * stan w stan.radio.
  */
 'use strict';
 (() => {
@@ -350,7 +351,7 @@
       przyblizona: 'Wybrano przybliżoną lokalizację — do pilnowania granicy potrzebna jest dokładna. Zezwól na „Dokładną lokalizację” i naciśnij START jeszcze raz.',
       usluga: 'Nie udało się uruchomić pilnowania. Spróbuj jeszcze raz.',
       'mikrofon-ok': 'Mikrofon włączony. Przytrzymaj MÓW i mów.',
-      'mikrofon-brak': 'Bez zgody na mikrofon nie powiesz nic przez krótkofalówkę (słyszeć innych szukających możesz).',
+      'mikrofon-brak': 'Bez zgody na mikrofon nie powiesz nic przez krótkofalówkę (słyszeć innych możesz).',
     }[kod];
     dymek(t || 'Coś poszło nie tak.', 8000);
   };
@@ -631,9 +632,9 @@
     else if (!gra.polaczony) info = 'Łączę z serwerem gry… Potrzebny jest internet.';
     else if (!mistrz && !gra.rola) info = 'Mistrz gry nie dał Ci jeszcze roli.';
     else if (gra.rola === 'chowa') info = 'Chowasz się — nie widzisz innych graczy. Powiadomienia przyjdą same.';
-    else if (gra.rola === 'szuka') {
-      info = '📻 Krótkofalówka: przytrzymaj czerwony przycisk MÓW na mapie i mów — inni szukający usłyszą Cię od razu, '
-        + 'bez dotykania telefonu (głośność multimediów).';
+    else if (gra.rola === 'szuka' || mistrz) {
+      info = `📻 Krótkofalówka: przytrzymaj czerwony przycisk MÓW na mapie i mów — ${mistrz ? 'szukający' : 'inni szukający i mistrz gry'} `
+        + 'usłyszą Cię od razu, bez dotykania telefonu (głośność multimediów).';
     }
     $('g-info').textContent = info;
     $('g-info').hidden = !info;
@@ -816,12 +817,12 @@
     });
   };
 
-  // ---------- krótkofalówka (tylko szukający) ----------
+  // ---------- krótkofalówka (szukający i mistrz gry) ----------
   const radio = { nadaje: false, od: 0, mowia: [] };
   function pokazRadio(s) {
     const r = s.radio || {};
     radio.mowia = (r.mowi || []).filter((n) => n !== profil);
-    const moze = !!(A && s.dziala && gra && gra.polaczony && gra.rola === 'szuka');
+    const moze = !!(A && s.dziala && gra && gra.polaczony && (gra.rola === 'szuka' || profil === MISTRZ));
     $('b-radio').hidden = !moze;
     if (!moze) puscRadio();
     else if (radio.nadaje && r.nadaje === false && Date.now() - radio.od > 2500) {
@@ -848,7 +849,7 @@
     dymek({
       zgoda: 'Zezwól aplikacji na mikrofon — potem przytrzymaj MÓW jeszcze raz.',
       start: 'Brak połączenia z grą — sprawdź internet albo naciśnij START.',
-      rola: 'Krótkofalówka jest tylko dla szukających.',
+      rola: 'Krótkofalówka jest tylko dla szukających i mistrza gry.',
       mikrofon: 'Nie mogę włączyć mikrofonu — może używa go inna aplikacja.',
     }[w] || 'Krótkofalówka nie działa.', 4000);
   }

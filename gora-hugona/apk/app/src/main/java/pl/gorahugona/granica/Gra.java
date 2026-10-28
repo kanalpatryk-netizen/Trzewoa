@@ -33,8 +33,9 @@ import java.util.concurrent.TimeUnit;
  *   <li>{@code czas} — kiedy kończy się gra (ustawia mistrz albo szukający);</li>
  *   <li>{@code wiadomosc} — ostatnie powiadomienie (wysyła mistrz albo szukający).</li>
  * </ul>
- * Poza tym {@code glos/<n>} — krótkofalówka szukających ({@link Radio}): pakiety głosu na żywo, niezachowywane
- * na serwerze i niewysyłane później (stary głos jest bez sensu); słyszą je tylko inni szukający.
+ * Poza tym {@code glos/<n>} — krótkofalówka ({@link Radio}): pakiety głosu na żywo, niezachowywane na serwerze
+ * i niewysyłane później (stary głos jest bez sensu). Na kanale są szukający i mistrz gry — mówią i słyszą się
+ * nawzajem; chowający się nie słyszą nic.
  * Kto kogo widzi na mapie: mistrz gry — wszystkich; szukający — innych szukających; chowający się — nikogo.
  * Klasa jest w czystej Javie (bez Androida), żeby dało się ją sprawdzić na zwykłej JVM — patrz gora-hugona/test.
  */
@@ -357,13 +358,18 @@ final class Gra implements MqttCallbackExtended {
         }
     }
 
-    // ---- krótkofalówka ----
+    // ---- krótkofalówka (szukający i mistrz gry) ----
 
-    synchronized boolean mozeMowic() {
-        return SZUKA.equals(role[ja]);
+    /** Czy gracz {@code n} jest na kanale krótkofalówki: mistrz gry albo szukający. */
+    private boolean naRadiu(int n) {
+        return n == MISTRZ || SZUKA.equals(role[n]);
     }
 
-    /** Pakiet głosu do innych szukających: od razu albo wcale (bez kolejki — spóźniony głos nikomu nie pomoże). */
+    synchronized boolean mozeMowic() {
+        return naRadiu(ja);
+    }
+
+    /** Pakiet głosu do reszty kanału: od razu albo wcale (bez kolejki — spóźniony głos nikomu nie pomoże). */
     boolean glos(byte[] pakiet) {
         if (!mozeMowic() || !polaczony) return false;
         byte[] b = Szyfr.zaszyfruj(pakiet);
@@ -387,8 +393,8 @@ final class Gra implements MqttCallbackExtended {
             return;
         }
         synchronized (this) {
-            // tylko szukający słyszą szukających (sprawdzane przed odszyfrowaniem — reszta nie traci na to czasu)
-            if (n == ja || n < 1 || n >= MISTRZ || !SZUKA.equals(role[ja]) || !SZUKA.equals(role[n])) return;
+            // kanał: szukający i mistrz gry (sprawdzane przed odszyfrowaniem — reszta nie traci na to czasu)
+            if (n == ja || n < 1 || n > MISTRZ || !naRadiu(ja) || !naRadiu(n)) return;
         }
         if (m.isRetained()) return;
         byte[] pakiet = Szyfr.odszyfrujBajty(m.getPayload());

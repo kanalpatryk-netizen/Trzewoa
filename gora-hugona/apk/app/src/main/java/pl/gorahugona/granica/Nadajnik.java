@@ -18,7 +18,8 @@ final class Nadajnik {
 
     /**
      * Wciśnięcie przycisku. Zwraca „ok”, „start” (gra nie działa — trzeba nacisnąć START), „rola” (mówią tylko
-     * szukający) albo „mikrofon” (nie da się go włączyć). Wołane z wątku strony; zgodę na mikrofon sprawdza okno.
+     * szukający i mistrz gry) albo „mikrofon” (nie da się go włączyć). Wołane z wątku strony; zgodę na mikrofon
+     * sprawdza okno.
      */
     static synchronized String start() {
         Gra g = Straz.gra;

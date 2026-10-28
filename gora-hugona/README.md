@@ -23,20 +23,20 @@ Każdy loguje się na swoim telefonie i naciska **START** (bez tego telefon nie 
 | przydziela role (szuka / chowa się / nie gra) | ✅ | — | — |
 | ustawia czas gry (5–60 min, odliczanie u wszystkich) | ✅ | ✅ | — |
 | wysyła powiadomienia (do wszystkich, szukających, chowających się albo jednego gracza) | ✅ | ✅ | — |
-| krótkofalówka (mówi i słyszy) | — | ✅ | — |
+| krótkofalówka (mówi i słyszy) | ✅ | ✅ | — |
 
-### 📻 Krótkofalówka szukających
+### 📻 Krótkofalówka szukających i mistrza gry
 
-Szukający **przytrzymuje czerwony przycisk MÓW** (lewy dolny róg mapy) i mówi; po puszczeniu przycisku inni szukający
-słyszą „roger beep”. Inni szukający **nie muszą nic dotykać** — głos sam leci z ich telefonów, także przy zgaszonym
-ekranie i z telefonem w kieszeni (głośność multimediów; muzyka na ten czas cichnie). W pasku u góry widać, kto mówi,
-a jego znacznik na mapie pulsuje.
+Szukający albo mistrz gry **przytrzymuje czerwony przycisk MÓW** (lewy dolny róg mapy) i mówi; po puszczeniu przycisku
+reszta kanału słyszy „roger beep”. Pozostali (inni szukający i mistrz gry) **nie muszą nic dotykać** — głos sam leci
+z ich telefonów, także przy zgaszonym ekranie i z telefonem w kieszeni (głośność multimediów; muzyka na ten czas
+cichnie). W pasku u góry widać, kto mówi (np. „📻 Mistrz gry mówi…”), a znacznik mówiącego szukającego pulsuje.
 
 - Przy pierwszym wciśnięciu MÓW aplikacja pyta o mikrofon — zgódź się i wciśnij jeszcze raz.
 - Mówić można tylko z otwartą aplikacją (Android nie daje mikrofonu aplikacjom w tle), najwyżej 60 s naraz.
   Jak w prawdziwej krótkofalówce: kiedy sam mówisz, nie słyszysz innych (inaczej ich głos wracałby echem).
 - Opóźnienie ok. 1 s, jakość jak w radiu (8 kHz); jedna minuta mówienia to ok. 250 KB danych.
-- Głos słyszą tylko szukający — ani chowający się, ani mistrz gry. Leci przez ten sam szyfrowany serwer co reszta gry,
+- Głos słyszą tylko szukający i mistrz gry — chowający się nie. Leci przez ten sam szyfrowany serwer co reszta gry,
   tylko na żywo: nie jest nigdzie zapisywany i nikt, kto dołączy później, go nie usłyszy.
 
 - Znaczniki: 🔴 szukający, 🟣 chowający się, szary — nie gra. Czerwona obwódka = gracz jest poza granicą.

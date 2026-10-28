@@ -16,9 +16,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Głośnik krótkofalówki: sam odtwarza głos innych szukających — bez dotykania czegokolwiek, także przy zgaszonym
- * ekranie (działa w usłudze {@link Straz}). Każdy nadający ma własny strumień; na początku 200 ms zapasu na nierówno
- * przychodzące pakiety i krótki sygnał, na końcu „roger beep”. Głośność — jak multimedia; muzyka na ten czas cichnie.
+ * Głośnik krótkofalówki: sam odtwarza głos innych szukających i mistrza gry — bez dotykania czegokolwiek, także
+ * przy zgaszonym ekranie (działa w usłudze {@link Straz}). Każdy nadający ma własny strumień; na początku 200 ms
+ * zapasu na nierówno przychodzące pakiety i krótki sygnał, na końcu „roger beep”. Głośność — jak multimedia;
+ * muzyka na ten czas cichnie.
  * Wszystko, co dotyczy dźwięku, dzieje się na osobnym wątku, żeby nie blokować sieci.
  */
 final class Glosnik {
