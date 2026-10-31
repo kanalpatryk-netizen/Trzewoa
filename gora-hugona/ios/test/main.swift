@@ -257,7 +257,8 @@ case "mieszany":
     sprawdz(czekaj(30000) { koniec(s1) > Gra.teraz() && koniec(ch) == koniec(s1) }, "[iPhone] czas gry z Androida dotarł")
     sprawdz(czekaj(30000) { z1.wiadomosci.contains("7:Start z Androida!") && z3.wiadomosci.contains("7:Start z Androida!") },
             "[iPhone] powiadomienie z Androida dotarło do obu")
-    sprawdz(czekaj(30000) { z1.glosy.count >= 4 }, "[iPhone] szukający słyszy krótkofalówkę mistrza z Androida (\(z1.glosy.count) pakietów)")
+    sprawdz(czekaj(30000) { z1.glosy.count >= 4 && Radio.odczytaj(z1.glosy.last ?? Data())?.ostatni == true },
+            "[iPhone] szukający słyszy krótkofalówkę mistrza z Androida (\(z1.glosy.count) pakietów, do końca nadania)")
     let pk = z1.glosy.compactMap(Radio.odczytaj)
     sprawdz(pk.count == z1.glosy.count && pk.last?.ostatni == true && z1.odKogo.allSatisfy { $0 == 7 },
             "[iPhone] pakiety z Androida odczytane, od mistrza, ostatni z flagą końca")
