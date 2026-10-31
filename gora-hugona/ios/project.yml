@@ -1,0 +1,55 @@
+# Projekt Xcode dla „Góra Hugona” na iPhone'a — generowany przez XcodeGen (brew install xcodegen; xcodegen generate).
+# Budowę robi GitHub Actions (.github/workflows/gora-hugona-ipa.yml) na Macu w chmurze.
+name: GoraHugona
+options:
+  bundleIdPrefix: pl.gorahugona
+  deploymentTarget:
+    iOS: "15.0"
+  developmentLanguage: pl
+settings:
+  base:
+    MARKETING_VERSION: "1.0.1"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+targets:
+  GoraHugona:
+    type: application
+    platform: iOS
+    sources:
+      - path: GoraHugona
+      # mapa (index.html, app.js, granica.js, Leaflet) — ta sama co na Androidzie i w przeglądarce
+      - path: ../www
+        type: folder
+        buildPhase: resources
+    info:
+      path: GoraHugona/Info.plist
+      properties:
+        CFBundleDisplayName: Góra Hugona
+        CFBundleName: Góra Hugona
+        CFBundleDevelopmentRegion: pl
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UIStatusBarStyle: UIStatusBarStyleLightContent
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        # pilnowanie granicy przy zgaszonym ekranie (GPS) i syrena + krótkofalówka w tle (dźwięk)
+        UIBackgroundModes: [location, audio]
+        NSLocationWhenInUseUsageDescription: "Pozycja jest potrzebna, żeby pokazać Cię na mapie, pilnować granicy obszaru (także przy zgaszonym ekranie) i — w grze — wysyłać ją mistrzowi gry."
+        NSLocationAlwaysAndWhenInUseUsageDescription: "Pozycja jest potrzebna, żeby pilnować granicy obszaru także przy zgaszonym ekranie i w kieszeni."
+        NSLocationTemporaryUsageDescriptionDictionary:
+          granica: "Do pilnowania granicy potrzebna jest dokładna lokalizacja — przybliżona myli się o setki metrów."
+        NSMicrophoneUsageDescription: "Mikrofon działa tylko, gdy trzymasz przycisk MÓW — wtedy inni gracze słyszą Cię przez krótkofalówkę."
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: pl.gorahugona.granica
+        PRODUCT_NAME: GoraHugona
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: true
+        ENABLE_BITCODE: false
+        CODE_SIGNING_ALLOWED: false
+        CODE_SIGNING_REQUIRED: false
+        CODE_SIGN_IDENTITY: ""

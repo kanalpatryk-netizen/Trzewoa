@@ -2,6 +2,7 @@
  *
  * W przeglądarce pozycję daje navigator.geolocation, a alarm gra Web Audio — działa tylko przy włączonym ekranie.
  * W aplikacji na Androida (obiekt HugonAndroid) pozycją i alarmem zajmuje się usługa Straz.java, także w tle;
+ * aplikacja na iPhone'a (gora-hugona/ios) podstawia ten sam obiekt z `ios: true` i robi to samo w Straz.swift;
  * strona dostaje od niej stan przez hugonStan(…) i tylko go pokazuje. Reguły alarmu są w obu miejscach te same
  * (DOKLADNOSC, POZA_RAZY, CISZA_GPS, strefa ostrzeżenia z 5 m zapasu) — zmieniając je, zmień też Straz.java.
  *
@@ -13,6 +14,7 @@
 'use strict';
 (() => {
   const A = window.HugonAndroid || null;
+  const IOS = !!(A && A.ios);
   const ZAPIS = 'goraHugona.';
   const DOKLADNOSC = 35;      // m — gorszy pomiar rozstrzyga tylko, gdy odległość od granicy przekracza jego błąd
   const POZA_RAZY = 2;        // tyle kolejnych pewnych pomiarów za granicą włącza alarm
@@ -184,7 +186,7 @@
     wyciszonyDo: 0, ostatniPomiar: 0, gpsWylaczony: false, obserwator: null, tik: null, blokada: null,
   };
   function startPrzegladarka() {
-    if (!navigator.geolocation) { dymek('Ta przeglądarka nie podaje położenia. Użyj aplikacji na Androida.'); return; }
+    if (!navigator.geolocation) { dymek('Ta przeglądarka nie podaje położenia. Użyj aplikacji (Android albo iPhone).'); return; }
     dzwiek.odblokuj();
     Object.assign(p, { dziala: true, poz: null, wewnatrz: true, odl: -1, pozaRazy: 0, alarm: false, blisko: false, wyciszonyDo: 0, ostatniPomiar: Date.now(), gpsWylaczony: false });
     p.obserwator = navigator.geolocation.watchPosition(naPozycje, naBlad, { enableHighAccuracy: true, maximumAge: 0, timeout: 30000 });
@@ -193,7 +195,7 @@
     nadaj();
     if (!czytaj('powiedzianoOEkranie', false)) {
       pisz('powiedzianoOEkranie', true);
-      dymek('W przeglądarce pilnowanie działa tylko przy włączonym ekranie i otwartej stronie. Żeby alarm działał z telefonem w kieszeni, użyj aplikacji na Androida.', 7000);
+      dymek('W przeglądarce pilnowanie działa tylko przy włączonym ekranie i otwartej stronie. Żeby alarm działał z telefonem w kieszeni, użyj aplikacji (Android albo iPhone).', 7000);
     }
   }
   function stopPrzegladarka() {
@@ -354,15 +356,20 @@
     pokazGre(s);
   }
 
-  // stan z aplikacji na Androida
+  // stan z aplikacji (Android albo iPhone)
   window.hugonStan = (s) => pokaz(s);
   window.hugonBlad = (kod) => {
     const t = {
-      'brak-zgody': 'Bez zgody na lokalizację aplikacja nie wie, gdzie jesteś. Zezwól w: Ustawienia → Aplikacje → Góra Hugona → Uprawnienia → Lokalizacja.',
-      przyblizona: 'Wybrano przybliżoną lokalizację — do pilnowania granicy potrzebna jest dokładna. Zezwól na „Dokładną lokalizację” i naciśnij START jeszcze raz.',
+      'brak-zgody': IOS
+        ? 'Bez zgody na lokalizację aplikacja nie wie, gdzie jesteś. Zezwól w: Ustawienia → Góra Hugona → Lokalizacja → „Podczas używania aplikacji”.'
+        : 'Bez zgody na lokalizację aplikacja nie wie, gdzie jesteś. Zezwól w: Ustawienia → Aplikacje → Góra Hugona → Uprawnienia → Lokalizacja.',
+      przyblizona: IOS
+        ? 'Wybrano przybliżoną lokalizację — do pilnowania granicy potrzebna jest dokładna. Włącz: Ustawienia → Góra Hugona → Lokalizacja → „Dokładna lokalizacja” i naciśnij START jeszcze raz.'
+        : 'Wybrano przybliżoną lokalizację — do pilnowania granicy potrzebna jest dokładna. Zezwól na „Dokładną lokalizację” i naciśnij START jeszcze raz.',
       usluga: 'Nie udało się uruchomić pilnowania. Spróbuj jeszcze raz.',
       'mikrofon-ok': 'Mikrofon włączony. Przytrzymaj MÓW i mów.',
-      'mikrofon-brak': 'Bez zgody na mikrofon nie powiesz nic przez krótkofalówkę (słyszeć innych możesz).',
+      'mikrofon-brak': 'Bez zgody na mikrofon nie powiesz nic przez krótkofalówkę (słyszeć innych możesz).'
+        + (IOS ? ' Zezwól w: Ustawienia → Góra Hugona → Mikrofon.' : ''),
     }[kod];
     dymek(t || 'Coś poszło nie tak.', 8000);
   };
@@ -405,10 +412,12 @@
     const po = poleIObwod();
     $('u-obszar').textContent = `Obszar: ${po.ha.toFixed(1).replace('.', ',')} ha, obwód ${po.km.toFixed(2).replace('.', ',')} km, ${granica.length} punktów.`;
     $('u-przywroc').hidden = czytaj('granica', null) === null;
-    $('u-jak').textContent = A
+    $('u-jak').textContent = IOS
+      ? 'Po STARCIE aplikacja pilnuje granicy także przy zgaszonym ekranie i schowana — widać to po niebieskiej strzałce lokalizacji na pasku u góry. Nie zamykaj jej machnięciem w górę w przełączniku aplikacji: wtedy iOS kończy pilnowanie. Za granicą wyje syrena (także przy wyciszonym telefonie) i telefon wibruje, aż wrócisz albo wyciszysz alarm. Pojedyncze skoki GPS są odsiewane: alarm rusza po 2 pomiarach za granicą.'
+      : A
       ? 'Po STARCIE aplikacja pilnuje granicy także przy zgaszonym ekranie i schowana — widać to po powiadomieniu. Za granicą wyje syrena (także w trybie cichym) i telefon wibruje, aż wrócisz albo wyciszysz alarm. Pojedyncze skoki GPS są odsiewane: alarm rusza po 2 pomiarach za granicą.'
-      : 'Strona pilnuje granicy, dopóki jest otwarta i ekran świeci. Za granicą wyje syrena i telefon wibruje. Pojedyncze skoki GPS są odsiewane: alarm rusza po 2 pomiarach za granicą. Do pilnowania z telefonem w kieszeni użyj aplikacji na Androida.';
-    if (A) {
+      : 'Strona pilnuje granicy, dopóki jest otwarta i ekran świeci. Za granicą wyje syrena i telefon wibruje. Pojedyncze skoki GPS są odsiewane: alarm rusza po 2 pomiarach za granicą. Do pilnowania z telefonem w kieszeni użyj aplikacji (Android albo iPhone).';
+    if (A && !IOS) {                                     // iPhone nie usypia pilnowania — tam nie ma czego wyłączać
       $('u-android').hidden = false;
       const ok = A.bezOszczedzania();
       $('u-bateria').classList.toggle('ostrzezenie', !ok);
@@ -634,7 +643,7 @@
     $('g-siec').textContent = !A || !dziala() ? '' : gra && gra.polaczony ? '● połączono' : '○ łączenie…';
     $('g-siec').classList.toggle('jest', !!(gra && gra.polaczony));
     let info = '';
-    if (!A) info = 'Gra (znaczniki innych graczy, czas gry, powiadomienia) działa w aplikacji na Androida.';
+    if (!A) info = 'Gra (znaczniki innych graczy, czas gry, powiadomienia) działa w aplikacji (Android albo iPhone).';
     else if (!dziala() || !gra) info = 'Naciśnij START, żeby dołączyć do gry.';
     else if (!gra.polaczony) info = 'Łączę z serwerem gry… Potrzebny jest internet.';
     else if (!mistrz && !gra.rola) info = 'Mistrz gry nie dał Ci jeszcze roli.';

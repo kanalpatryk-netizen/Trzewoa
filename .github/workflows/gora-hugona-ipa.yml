@@ -1,0 +1,126 @@
+# Aplikacja „Góra Hugona” na iPhone'a (IPA) — do instalacji spoza App Store (Sideloadly / AltStore).
+#
+# Buduje gora-hugona/ios (Swift + ta sama strona gora-hugona/www co na Androidzie) na Macu w chmurze,
+# bez podpisu (podpisuje go dopiero Sideloadly/AltStore Twoim Apple ID), i dokłada GoraHugona.ipa
+# do tego samego wydania co APK:
+#   https://github.com/<właściciel>/<repozytorium>/releases/download/gora-hugona-apk/GoraHugona.ipa
+# Osobno sprawdza, czy iPhone gra z Androidem: szyfr i kodek krótkofalówki co do bajtu (Java ↔ Swift)
+# i wspólna gra na prawdziwym serwerze (mistrz gry z Androida, gracze z iPhone'a).
+name: Góra Hugona — aplikacja na iPhone'a
+
+on:
+  push:
+    branches: [main, 'claude/**', 'ccr-*']
+    paths:
+      - 'gora-hugona/**'
+      - '.github/workflows/gora-hugona-ipa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gora-hugona-ipa
+  cancel-in-progress: true
+
+jobs:
+  # Zgodność z Androidem. Osobno od budowy — chwilowa awaria publicznego serwera nie blokuje wydania IPA.
+  zgodnosc:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Rdzeń w Swifcie i w Javie
+        working-directory: gora-hugona
+        run: |
+          mkdir -p lib out
+          curl -sSfL -o lib/paho.jar https://repo1.maven.org/maven2/org/eclipse/paho/org.eclipse.paho.client.mqttv3/1.2.5/org.eclipse.paho.client.mqttv3-1.2.5.jar
+          curl -sSfL -o lib/json.jar https://repo1.maven.org/maven2/org/json/json/20240303/json-20240303.jar
+          J=apk/app/src/main/java/pl/gorahugona/granica
+          javac -encoding UTF-8 -cp 'lib/*' -d out $J/Gra.java $J/Szyfr.java $J/Radio.java test/Wektory.java test/TestMieszany.java
+          swiftc -O -target "$(uname -m)-apple-macos13" ios/GoraHugona/Rdzen/*.swift ios/test/main.swift -o ios/test/testy
+
+      - name: Szyfr i krótkofalówka co do bajtu (Java ↔ Swift)
+        working-directory: gora-hugona
+        run: |
+          java -Dstdout.encoding=UTF-8 -cp out pl.gorahugona.granica.Wektory zrob java.txt
+          ios/test/testy wektory-zrob swift.txt
+          ios/test/testy wektory-sprawdz java.txt
+          java -Dstdout.encoding=UTF-8 -cp out pl.gorahugona.granica.Wektory sprawdz swift.txt
+
+      - name: Gra iPhone'ów na prawdziwym serwerze
+        working-directory: gora-hugona
+        run: ios/test/testy siec ssl://broker.hivemq.com:8883,tcp://broker.hivemq.com:1883
+
+      - name: Gra mieszana — mistrz gry z Androida, gracze z iPhone'a
+        working-directory: gora-hugona
+        run: |
+          S=ssl://broker.hivemq.com:8883,tcp://broker.hivemq.com:1883
+          T="gorahugona-test/$(openssl rand -hex 8)/"
+          echo "temat: $T"
+          java -Dstdout.encoding=UTF-8 -cp 'out:lib/*' pl.gorahugona.granica.TestMieszany "$S" "$T" &
+          ANDROID=$!
+          set +e
+          ios/test/testy mieszany "$S" "$T"
+          IPHONE=$?
+          wait $ANDROID
+          ANDROID=$?
+          echo "iPhone: $IPHONE, Android: $ANDROID"
+          test $IPHONE -eq 0 -a $ANDROID -eq 0
+
+  ipa:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Sprawdzenie strony
+        run: |
+          node --check gora-hugona/www/app.js
+          node --check gora-hugona/www/granica.js
+
+      - name: Projekt Xcode
+        working-directory: gora-hugona/ios
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild -version
+
+      - name: Budowa (bez podpisu — podpisuje Sideloadly/AltStore)
+        working-directory: gora-hugona/ios
+        env:
+          NUMER_WERSJI: ${{ github.run_number }}
+        run: |
+          set -o pipefail
+          xcodebuild -project GoraHugona.xcodeproj -target GoraHugona -configuration Release -sdk iphoneos \
+            SYMROOT="$PWD/build" CURRENT_PROJECT_VERSION="$NUMER_WERSJI" MARKETING_VERSION="1.0.$NUMER_WERSJI" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build | tail -n 60
+          APP=build/Release-iphoneos/GoraHugona.app
+          test -f "$APP/www/index.html"
+          test -f "$APP/www/leaflet/leaflet.js"
+          plutil -p "$APP/Info.plist" | grep -E 'CFBundle(Identifier|ShortVersionString|Version)|UIBackgroundModes' -A2
+          rm -rf Payload && mkdir Payload && cp -R "$APP" Payload/
+          zip -qry ../../GoraHugona.ipa Payload
+          ls -la ../../GoraHugona.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GoraHugona-ipa
+          path: GoraHugona.ipa
+
+      # to samo wydanie co APK (pre-release, żeby nie przejęło „latest”, z którego README bierze pliki gry)
+      - name: Wydanie „Góra Hugona (Android i iPhone)”
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view gora-hugona-apk >/dev/null 2>&1; then
+            gh release upload gora-hugona-apk GoraHugona.ipa --clobber
+          else
+            gh release create gora-hugona-apk GoraHugona.ipa \
+              --target "$GITHUB_SHA" --title "Góra Hugona (Android i iPhone)" --notes "Zaraz dojdzie APK." --prerelease
+          fi
+          gh release edit gora-hugona-apk --title "Góra Hugona (Android i iPhone)" --notes-file gora-hugona/WYDANIE.md

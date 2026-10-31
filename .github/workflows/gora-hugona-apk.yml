@@ -85,32 +85,18 @@ jobs:
           path: GoraHugona.apk
 
       # wydanie oznaczone jako „pre-release”, żeby nie przejęło „latest”, z którego README bierze pliki gry
-      - name: Wydanie „Góra Hugona na Androida (APK)”
+      - name: Wydanie „Góra Hugona (Android i iPhone)”
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cat > notatki.md <<NOTATKI
-          Gra w chowanego na mapie obszaru przy Górze Hugona (Świętochłowice-Zgoda): Twoja pozycja, alarm dźwiękowy
-          po wyjściu za granicę, mistrz gry widzi wszystkich, szukający widzą siebie nawzajem i rozmawiają
-          z mistrzem gry przez krótkofalówkę (przytrzymaj MÓW), czas gry i powiadomienia.
-
-          **Logowanie:** \`admin1\` … \`admin6\` — gracze, \`admin7\` — mistrz gry; hasło takie samo jak login.
-          Każdy naciska START; mistrz gry w panelu 👥 przydziela role, ustawia czas gry i wysyła powiadomienia.
-
-          **Instalacja:** pobierz \`GoraHugona.apk\` (niżej, w sekcji *Assets*) na telefonie i otwórz.
-          Android zapyta o zgodę na instalację z tego źródła (przeglądarka / Pliki) — zgódź się, potem „Zainstaluj”.
-          Przy pierwszym STARCIE zezwól na **dokładną** lokalizację i powiadomienia, a na pytanie o baterię — „Zezwól”.
-
-          Wersja 1.0.${{ github.run_number }} z gałęzi \`${GITHUB_REF_NAME}\`, commit ${GITHUB_SHA::7}.
-          Podpisana kluczem testowym — kolejne wersje instalują się na poprzednią (poprawiona granica zostaje).
-          NOTATKI
+          # opis wydania jest wspólny z aplikacją na iPhone'a (gora-hugona-ipa.yml) — w gora-hugona/WYDANIE.md
           if gh release view gora-hugona-apk >/dev/null 2>&1; then
             gh release upload gora-hugona-apk GoraHugona.apk --clobber
-            gh release edit gora-hugona-apk --notes-file notatki.md
           else
             gh release create gora-hugona-apk GoraHugona.apk \
               --target "$GITHUB_SHA" \
-              --title "Góra Hugona na Androida (APK)" \
-              --notes-file notatki.md \
+              --title "Góra Hugona (Android i iPhone)" \
+              --notes-file gora-hugona/WYDANIE.md \
               --prerelease
           fi
+          gh release edit gora-hugona-apk --title "Góra Hugona (Android i iPhone)" --notes-file gora-hugona/WYDANIE.md

@@ -8,6 +8,41 @@ ustawia czas gry i wysyła powiadomienia.
 📱 **Android:** [**GoraHugona.apk**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/gora-hugona-apk/GoraHugona.apk)
 — pobierz na telefonie, otwórz i zainstaluj (Android zapyta o zgodę na instalację z tego źródła).
 
+🍏 **iPhone:** [**GoraHugona.ipa**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/gora-hugona-apk/GoraHugona.ipa)
+— instalacja z komputera, bez App Store (niżej: [iPhone bez App Store](#-iphone-bez-app-store)). Androidy i iPhone'y grają razem.
+
+## 🍏 iPhone bez App Store
+
+Plik `GoraHugona.ipa` nie jest podpisany — podpisuje go dopiero program do instalacji, **Twoim Apple ID**:
+
+1. Zainstaluj na komputerze (Windows albo Mac) [**Sideloadly**](https://sideloadly.io). Na Windows potrzebne są też iTunes
+   i iCloud **ze strony Apple** (nie ze Sklepu Microsoft).
+2. Pobierz [`GoraHugona.ipa`](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/gora-hugona-apk/GoraHugona.ipa),
+   podłącz iPhone'a kablem, odblokuj go i dotknij „Zaufaj temu komputerowi”.
+3. W Sideloadly przeciągnij plik `.ipa`, wpisz Apple ID i naciśnij **Start**. Najlepiej użyć zapasowego Apple ID —
+   hasło trafia do Sideloadly.
+4. Na iPhonie: **Ustawienia → Prywatność i ochrona → Tryb dewelopera → włącz** (iPhone uruchomi się ponownie),
+   potem **Ustawienia → Ogólne → VPN i zarządzanie urządzeniem →** Twoje Apple ID **→ Zaufaj**.
+5. Otwórz Górę Hugona, zaloguj się, naciśnij **START** i zezwól na lokalizację („Podczas używania aplikacji”,
+   z włączoną **Dokładną lokalizacją**) oraz na powiadomienia.
+
+| Konto Apple | Ile działa aplikacja | Uwagi |
+|---|---|---|
+| darmowe Apple ID | **7 dni** | potem wgraj ją Sideloadly jeszcze raz (granica i profil zostają); najwyżej 3 takie aplikacje naraz |
+| płatne Apple Developer (99 USD/rok) | rok | |
+
+Zamiast Sideloadly można użyć [AltStore](https://altstore.io) — sam odnawia aplikację co tydzień, gdy komputer z AltServerem
+jest w tej samej sieci Wi-Fi.
+
+**Czym iPhone różni się od Androida:**
+
+- Pilnowanie w tle trwa, póki aplikacja nie jest **zamknięta machnięciem w górę** w przełączniku aplikacji — wtedy iOS je kończy.
+  Wyjście do ekranu głównego i zgaszenie ekranu niczego nie psują. Niebieska strzałka (albo niebieski pasek) u góry
+  ekranu znaczy, że pilnowanie trwa. Gdy iOS sam zamknie aplikację, po ponownym otwarciu pilnowanie wraca samo.
+- Syrena gra także przy przełączniku wyciszenia; na czas syreny aplikacja podnosi głośność do 80% (jak na Androidzie).
+- Nie ma stałego powiadomienia „Pilnuję granicy” (iOS takich nie ma) ani ustawień oszczędzania baterii — nie są potrzebne.
+- Krótkofalówka: głos innych leci sam, także w tle i przy zgaszonym ekranie; mówić można przy otwartej aplikacji.
+
 ## Gra w chowanego
 
 | Login | Hasło | Profil |
@@ -106,11 +141,18 @@ w kieszeni służy aplikacja na Androida.
   GPS, alarm, powiadomienia, udział w grze), `Granica.java` (czy punkt jest w środku, odległość do granicy),
   `Dzwiek.java` (syrena), `Gra.java` (gra przez serwer MQTT: pozycje, role, czas, powiadomienia, głos; kto kogo
   widzi i słyszy), `Szyfr.java` (szyfrowanie), krótkofalówka: `Radio.java` (kodek ADPCM, pakiety po 250 ms),
-  `Nadajnik.java` (mikrofon), `Glosnik.java` (odtwarzanie w tle). Reguły alarmu są w `app.js` i w `Straz.java` —
-  zmieniając je, zmień oba miejsca.
+  `Nadajnik.java` (mikrofon), `Glosnik.java` (odtwarzanie w tle). Reguły alarmu są w `app.js`, `Straz.java` i `ios/GoraHugona/Straz.swift` —
+  zmieniając je, zmień wszystkie trzy miejsca.
 - `test/TestGry.java` — test sieci gry na prawdziwym serwerze (kilka „telefonów” w jednym procesie, własny losowy
   temat), `test/TestRadio.java` — test kodeka krótkofalówki; oba uruchamia GitHub Actions przy każdej zmianie.
-- APK buduje GitHub Actions (`.github/workflows/gora-hugona-apk.yml`) po każdej zmianie w tym folderze.
+- `ios/` — aplikacja na iPhone'a (Swift, ta sama strona `www/`): `Mapa.swift` (okno z mapą i most `HugonAndroid` dla strony),
+  `Straz.swift` (GPS w tle, alarm, powiadomienia, udział w grze), `Dzwiek.swift` (syrena i piski), `Glosnik.swift`
+  i `Nadajnik.swift` (krótkofalówka); w `ios/GoraHugona/Rdzen/` przeniesione 1:1 z Javy `Gra.swift`, `Szyfr.swift`,
+  `Radio.swift`, `Granica.swift` i własny klient MQTT `Mqtt.swift`. Projekt Xcode powstaje z `ios/project.yml` (XcodeGen).
+- `test/Wektory.java`, `test/TestMieszany.java` i `ios/test/main.swift` — zgodność iPhone'a z Androidem: szyfr i kodek
+  krótkofalówki co do bajtu oraz wspólna gra na prawdziwym serwerze (mistrz gry z Androida, gracze z iPhone'a).
+- APK buduje GitHub Actions (`.github/workflows/gora-hugona-apk.yml`), a IPA — `.github/workflows/gora-hugona-ipa.yml`
+  (na Macu w chmurze), po każdej zmianie w tym folderze; oba pliki trafiają do tego samego wydania. Opis wydania: `WYDANIE.md`.
 
 Podkład mapy: zdjęcia satelitarne © Esri, Maxar, Earthstar Geographics; mapa © autorzy OpenStreetMap.
 Do podkładu potrzebny jest internet, a granica, GPS i alarm działają bez niego.

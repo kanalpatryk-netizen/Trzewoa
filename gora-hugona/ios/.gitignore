@@ -1,0 +1,8 @@
+# generowane przy budowaniu (xcodegen, xcodebuild)
+GoraHugona.xcodeproj/
+GoraHugona/Info.plist
+build/
+Payload/
+*.ipa
+test/testy
+test/*.txt
