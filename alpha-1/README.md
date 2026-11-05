@@ -5,7 +5,9 @@ builda** — propozycje Pawła z 24.10 (wcześniej osobno w `propozycja-1/`) i n
 `trzewia6.html` (5.11, źródło odtworzone z builda). `alpha-0.2/` i `propozycja-1/` zostają bez zmian.
 Zapisy, ustawienia, atlas i osiągnięcia są tu osobne (klucze `trzewia-alpha-1:`). Tylko komputer — bez prac pod telefon.
 
-Gra: [`trzewia.html`](trzewia.html) — pobierz i otwórz w przeglądarce (jeden plik, działa bez internetu).
+**[⬇️ Pobierz trzewia-alpha-1.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-1.html)** — gra ·
+**[⬇️ Pobierz trzewia-alpha-1-obserwatorium.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-1-obserwatorium.html)** — obserwatorium.
+Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Plik jest też w repozytorium: [`trzewia.html`](trzewia.html).
 
 ## Menu i ustawienia — jak w Alphie 0.2
 Czarne menu według szkicu grafika (logo z bijącym sercem, znaki zespołu jako przyciski) i ustawienia w stylu menu
