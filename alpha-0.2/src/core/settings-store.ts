@@ -71,6 +71,15 @@ export const ekran = { skala: 1 };
 
 const KLUCZ = 'trzewia-alpha-0.2:ustawienia';
 
+/**
+ * Alpha 0.2 (5.11): ustawienia wyjęte z ekranu ustawień (zostało najwyżej 5 na kategorię).
+ * Mają zawsze wartość domyślną — także u gracza, który kiedyś je zmienił.
+ */
+const STALE: (keyof Settings)[] = [
+  'jakosc', 'swiat', 'kontrast', 'wielkoscSylwetek', 'oddech', 'nowePostacie',
+  'spisRas', 'skalaGlebokosci', 'autoZoom', 'tablice', 'kronika',
+];
+
 export const ustawienia: Settings = wczytaj();
 
 function wczytaj(): Settings {
@@ -78,6 +87,7 @@ function wczytaj(): Settings {
     const raw = localStorage.getItem(KLUCZ);
     if (!raw) return { ...DOMYSLNE };
     const u: Settings = { ...DOMYSLNE, ...JSON.parse(raw) };
+    for (const k of STALE) (u as unknown as Record<string, unknown>)[k] = DOMYSLNE[k];
     return u;
   } catch {
     return { ...DOMYSLNE };

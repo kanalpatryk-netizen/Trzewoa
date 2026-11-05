@@ -1,53 +1,112 @@
 import type { Ekran } from '../screen';
 import type { Kontekst } from '../context';
 import type { Akcja } from '../../core/keybinds';
-import { Frontyspis } from '../../render/frontyspis';
-import { ramaRyciny, rzymska } from '../../render/ozdoby';
-import { scianaKrypty, tablica, tytulFresku } from '../../render/fresk';
-import { FRESK } from '../../nastawy/barwy';
-import { BARWA, rgba } from '../../render/palette';
-import { SERIF, SERIF_TYTUL, kreska } from '../../render/ink';
+import { rgba } from '../../render/palette';
+import { SERIF } from '../../render/ink';
 import { hasSave } from '../../core/save';
 import { ustawienia } from '../../core/settings-store';
-import { TELEFON } from '../../nastawy/ekran';
 import { MENU as M } from '../../nastawy/wyglad/menu';
-import { RAMA } from '../../nastawy/wyglad/ozdoby';
+import { ozdobnik, wygladz } from '../../render/ozdobnik';
+import logoUrl from '../../../obrazy/menu/logo-trzewia.png?url';
+import dollumUrl from '../../../obrazy/menu/zespol-dollum.png?url';
+import pillowBleachUrl from '../../../obrazy/menu/zespol-pillow-bleach.png?url';
+import podpisBrychUrl from '../../../obrazy/menu/zespol-podpis-brych.png?url';
 
-/** Wewnętrzny odstęp od ramy (piksele). */
-const marginesRamy = (w: number): number => Math.max(RAMA.margines.min, Math.min(RAMA.margines.max, w * RAMA.margines.czesc));
-/** Gdzie kończy się blok tytułu (tytuł i rozstrzelony napis pod nim — jak w tytulFresku). */
-const dolPodtytulu = (yTytul: number, rt: number): number => yTytul + rt * 0.42 + Math.max(10, rt * 0.14) * 0.6;
+const ZESPOL_URL: Record<string, string> = { dollum: dollumUrl, 'pillow-bleach': pillowBleachUrl, 'podpis-brych': podpisBrychUrl };
 
-/** Malowany przerywnik: nitka czerwieni ziemi z krzyżykiem pośrodku. */
-function przerywnik(ctx: CanvasRenderingContext2D, x: number, y: number, szer: number, alfa: number): void {
-  ctx.save();
-  ctx.globalAlpha *= alfa;
-  ctx.strokeStyle = FRESK.czerwien; ctx.lineWidth = 2;
-  ctx.beginPath(); ctx.moveTo(x - szer / 2, y); ctx.lineTo(x - 8, y); ctx.moveTo(x + 8, y); ctx.lineTo(x + szer / 2, y); ctx.stroke();
-  ctx.strokeStyle = FRESK.ugier; ctx.lineWidth = 1.6;
-  ctx.beginPath(); ctx.moveTo(x, y - 5); ctx.lineTo(x, y + 5); ctx.moveTo(x - 5, y); ctx.lineTo(x + 5, y); ctx.stroke();
-  ctx.restore();
+/** Obrazek wczytywany w tle; do czasu wczytania `gotowy` jest fałszywe i nic się nie rysuje. */
+interface Obraz { img: HTMLImageElement; gotowy: boolean; }
+function obraz(url: string, poWczytaniu?: (o: HTMLImageElement) => void): Obraz {
+  const o: Obraz = { img: new Image(), gotowy: false };
+  o.img.onload = () => { o.gotowy = true; poWczytaniu?.(o.img); };
+  o.img.src = url;
+  return o;
 }
 
-interface Pozycja { id: string; etykieta: string; opis: string; aktywna: () => boolean; }
+/** Biały obrazek przemalowany na barwę (raz, do płótna poza ekranem). */
+function zabarw(img: HTMLImageElement, barwa: string): HTMLCanvasElement {
+  const c = document.createElement('canvas');
+  c.width = img.naturalWidth; c.height = img.naturalHeight;
+  const g = c.getContext('2d')!;
+  g.drawImage(img, 0, 0);
+  g.globalCompositeOperation = 'source-in';
+  g.fillStyle = barwa; g.fillRect(0, 0, c.width, c.height);
+  return c;
+}
 
 /**
- * Frontyspis atlasu: rama z podziałką i napisami na marginesie, kartusz z tytułem,
- * anatomiczny przekrój góry z bijącym rdzeniem i spis wejść jak spis tablic w księdze.
- * Wcześniej w tle żyła prawdziwa symulacja — ruchliwa i jaskrawa; rycina mówi
- * od pierwszego spojrzenia, o co w tej grze chodzi: tam, na dnie, jest rdzeń.
+ * Logo rozdzielone na dwie warstwy: tło (logo bez serca) i samo serce — żeby serce mogło bić,
+ * a ornamenty wokół stały. Zwraca też środek serca w pikselach logo.
+ */
+function rozdzielSerce(logo: HTMLCanvasElement): { tlo: HTMLCanvasElement; serce: HTMLCanvasElement; cx: number; cy: number } {
+  const S = M.serce, k = logo.width / S.obrysSzer;
+  const maska = document.createElement('canvas');
+  maska.width = logo.width; maska.height = logo.height;
+  const g = maska.getContext('2d')!;
+  g.filter = `blur(${S.miekkosc * k}px)`;
+  g.beginPath();
+  S.obrys.forEach(([x, y], i) => (i ? g.lineTo(x * k, y * k) : g.moveTo(x * k, y * k)));
+  g.closePath();
+  g.fillStyle = g.strokeStyle = '#fff';
+  g.lineJoin = 'round'; g.lineWidth = S.rozszerz * 2 * k;
+  g.fill(); g.stroke();
+  const warstwa = (tryb: GlobalCompositeOperation) => {
+    const c = document.createElement('canvas');
+    c.width = logo.width; c.height = logo.height;
+    const gg = c.getContext('2d')!;
+    gg.drawImage(logo, 0, 0);
+    gg.globalCompositeOperation = tryb;
+    gg.drawImage(maska, 0, 0);
+    return c;
+  };
+  const xs = S.obrys.map((p) => p[0]), ys = S.obrys.map((p) => p[1]);
+  return {
+    tlo: warstwa('destination-out'), serce: warstwa('destination-in'),
+    cx: ((Math.min(...xs) + Math.max(...xs)) / 2) * k, cy: ((Math.min(...ys) + Math.max(...ys)) / 2) * k,
+  };
+}
+
+/** O ile serce jest teraz powiększone (1 = spoczynek): „lub-dub” i przerwa. */
+function bicie(teraz: number): number {
+  const S = M.serce;
+  const t = teraz % S.okresMs;
+  let s = 1;
+  for (const u of S.uderzenia) {
+    const d = t - u.od * S.okresMs;
+    if (d < 0) continue;
+    // szybki skurcz w górę, wolniejsze rozluźnienie
+    const f = d < S.narastanieMs ? Math.sin((d / S.narastanieMs) * Math.PI / 2)
+      : Math.max(0, 1 - wygladz((d - S.narastanieMs) / S.opadanieMs));
+    s += u.sila * f;
+  }
+  return s;
+}
+
+interface Pozycja { id: string; etykieta: string; aktywna: () => boolean; }
+interface Prostokat { x: number; y: number; w: number; h: number; }
+
+/**
+ * Menu główne według szkicu grafika: czarne tło, logo „Trzewia” pośrodku u góry, pod nim spis
+ * wejść z ozdobnikami po obu stronach, znaki zespołu w lewym dolnym rogu. Prawa strona zostaje
+ * pusta — będzie tam grafika (trójka postaci), którą dorysuje grafik.
  */
 export class EkranMenu implements Ekran {
   nazwa = 'menu';
   private wybrana = 0;
   private komunikat = '';
   private komunikatOd = 0;
-  private trafienia: { x: number; y: number; w: number; h: number; i: number }[] = [];
+  private trafienia: (Prostokat & { i: number })[] = [];
   private wejscieOd = 0;
-  private frontyspis = new Frontyspis();
-  private pylki = Array.from({ length: M.pylkow }, (_, i) => ({
-    x: (i * 137.5) % 1, y: (i * 61.8) % 1, v: 0.2 + ((i * 29) % 10) / 22, r: 0.6 + ((i * 17) % 10) / 9,
-  }));
+  private logoBarwne: HTMLCanvasElement | null = null;
+  private warstwyLogo: ReturnType<typeof rozdzielSerce> | null = null;
+  private logo = obraz(logoUrl, (img) => {
+    this.logoBarwne = zabarw(img, M.logoBarwa);
+    try { this.warstwyLogo = rozdzielSerce(this.logoBarwne); } catch { /* bez bicia — całe logo */ }
+  });
+  /** Znaki zespołu — przyciski; `podsw` to podświetlenie pod myszą (0..1), `traf` — miejsce na ekranie. */
+  private zespol = M.zespol.map((z) => ({ ...z, obraz: obraz(ZESPOL_URL[z.plik]), podsw: 0, traf: null as Prostokat | null }));
+  private najechanyZnak = -1;
+  private ostatniaKlatka = 0;
 
   private pozycje: Pozycja[] = [
     { id: 'wroc', ...M.pozycje.wroc, aktywna: () => this.trwaGra() },
@@ -78,253 +137,154 @@ export class EkranMenu implements Ekran {
     if (!this.pozycje[this.wybrana].aktywna()) this.wybrana = ind('nowa');
   }
 
-  krok(): void { /* rycina żyje własnym zegarem */ }
+  krok(): void { /* menu żyje własnym zegarem */ }
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
-    const wejscie = Math.min(1, (teraz - this.wejscieOd) / M.wejscieMs);
+    const odWejscia = teraz - this.wejscieOd;
     const ruch = ustawienia.oddech && !ustawienia.ograniczRuch;
-    const czas = ruch ? teraz : 0;
-    const oddech = ruch ? 0.5 + 0.5 * Math.sin(teraz * 0.0006) : 0.5;
-    scianaKrypty(ctx, w, h, czas, oddech, { x: 0.62, y: 0.6 });
-    // układ pionowy także na tablecie trzymanym pionowo — szeroki wciskał spis w róg
-    // (telefon trzymany poziomo, np. 640×360, zostaje przy układzie szerokim — pionowy spis
-    // nie mieścił się w 360 px wysokości)
-    const waski = h > w * M.pionowyOd || (w < M.waskiPonizej && h >= w);
-    if (waski) this.ukladWaski(ctx, w, h, czas, wejscie);
-    else this.ukladSzeroki(ctx, w, h, czas, wejscie);
-    this.kurz(ctx, w, h, czas);
-    ramaRyciny(ctx, w, h, wejscie, '', '', czas);
-    this.stopka(ctx, w, h, teraz, wejscie);
-  }
-
-  private kurz(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     ctx.save();
-    for (const p of this.pylki) {
-      const y = ((p.y + (teraz * 0.000012 * p.v)) % 1);
-      const x = ((p.x + Math.sin(teraz * 0.00008 + p.y * 9) * 0.01) % 1 + 1) % 1;
-      ctx.fillStyle = rgba(BARWA.atrament, M.pylekAlfa + M.pylekMigotanie * Math.abs(Math.sin(teraz * 0.001 + p.x * 12)));
-      ctx.beginPath();
-      ctx.arc(x * w, (1 - y) * h, p.r, 0, Math.PI * 2);
-      ctx.fill();
+    ctx.fillStyle = M.tlo;
+    ctx.fillRect(0, 0, w, h);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+
+    const m = Math.max(M.marginesMin, h * M.margines);
+
+    // ---- logo: pośrodku u góry
+    const proporcja = this.logo.gotowy ? this.logo.img.naturalWidth / this.logo.img.naturalHeight : 1.62;
+    let lh = h * M.logoWysokosc;
+    let lw = lh * proporcja;
+    const maxLw = w * M.logoMaxSzer;
+    if (lw > maxLw) { lw = maxLw; lh = lw / proporcja; }
+    const ly = h * M.logoGora;
+    if (this.logoBarwne) {
+      ctx.globalAlpha = wygladz(odWejscia / M.wejscieMs);
+      const lx = w / 2 - lw / 2;
+      const wl = this.warstwyLogo;
+      if (wl && ruch) {
+        // tło stoi, serce bije wokół swojego środka
+        ctx.drawImage(wl.tlo, lx, ly, lw, lh);
+        const k = lw / wl.tlo.width, cx = lx + wl.cx * k, cy = ly + wl.cy * k, s = bicie(teraz);
+        ctx.save();
+        // „lighter”: na miękkiej krawędzi obrysu tło i serce sumują się dokładnie do oryginału
+        // (zwykłe nakładanie zostawiało tam szarą obwódkę); tło menu jest czarne, więc nic się nie przejaśnia
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.translate(cx, cy); ctx.scale(s, s); ctx.translate(-cx, -cy);
+        ctx.drawImage(wl.serce, lx, ly, lw, lh);
+        ctx.restore();
+      } else ctx.drawImage(this.logoBarwne, lx, ly, lw, lh);
+      ctx.globalAlpha = 1;
     }
-    ctx.restore();
-  }
 
-  /** Szeroki ekran: kartusz u góry, spis po lewej, przekrój góry po prawej. */
-  private ukladSzeroki(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, wejscie: number): void {
-    const m = marginesRamy(w) + 14;
-    // telefon poziomo: mniejszy tytuł, żeby spis zmieścił się pod nim w dużym piśmie
-    const rt = h < TELEFON.niskiPonizej ? Math.min(34, h / 10)
-      : Math.max(M.tytulRozmiar.min, Math.min(M.tytulRozmiar.max, Math.min(w / 11, h / 6)));
-    const yTytul = h * M.tytulY + rt * 0.4;
-    const podDol = dolPodtytulu(yTytul, rt);
-    // przekrój góry: prawa część, od podtytułu do dolnej ramy — nigdy pod napisem
-    // telefon poziomo: przekrój zaczyna się dopiero za spisem — przy 640 px wąski spis wchodził na górę
-    const niskiEkran = h < TELEFON.niskiPonizej;
-    let fx = w * M.przekrojX;
-    if (niskiEkran) {
-      ctx.save();
-      ctx.font = `${M.spisRozmiar.min + 2}px ${SERIF}`;
-      const najdluzsza = Math.max(...this.pozycje.map((p) => ctx.measureText(p.etykieta).width));
-      ctx.restore();
-      fx = Math.max(fx, m + (M.spisRozmiar.min + 2) * 2.6 + najdluzsza + 24);
-    }
-    const fy = Math.max(h * M.przekrojY, podDol + 6), fw = w - fx - m - w * 0.01, fh = h - fy - m - 4;
-    this.frontyspis.rysuj(ctx, fx, fy, fw, fh, teraz, M.przekrojAlfa * wejscie, true);
-
-    tytulFresku(ctx, w / 2, yTytul, M.tytul, rt, wejscie, M.podpisTytulu, SERIF_TYTUL, SERIF);
-
-    this.trafienia = [];
-    // (numer rzymski stoi dwa pisma w lewo od tytułu — nie może wyjść poza ramę)
-    let lewy = Math.max(m + w * M.spisOdLewej, m + (M.spisRozmiar.min + 2) * 2.4);
-    // spis, opis i zachęta mieszczą się między podtytułem a podpowiedzią na dole;
-    // na niskim ekranie spis gęstnieje, a potem pismo maleje — nic nie wchodzi na nic
+    // ---- spis: pod logo, pośrodku; na niskim ekranie gęstnieje, potem pismo maleje
     const n = this.pozycje.length;
-    const ro = Math.max(M.opisRozmiar.min, Math.min(M.opisRozmiar.max, w / 72));
-    const dol = h - m - 22;
-    // TELEFON poziomo: bez opisu pod spisem — pozycje dostają całą wysokość i duże pismo,
-    // bo to one są celem dotyku (opis wybranej i tak mówi tablica po wejściu)
-    const niski = h < TELEFON.niskiPonizej;
-    let rozmiar = niski ? M.spisRozmiar.min + 2 : Math.max(M.spisRozmiar.min, Math.min(M.spisRozmiar.max, Math.min(w / 48, h / 28)));
-    let odstep = rozmiar * M.spisOdstep;
-    const opisH = () => niski ? 0 : rozmiar * 0.6 + ro * M.opisInterlinia * 2 + (ustawienia.samouczekZrobiony ? 0 : ro * 1.6);
-    let start = Math.max(h * M.spisOd, podDol + rozmiar * 1.3, Math.min(h * M.spisDo, h * 0.8 - n * odstep));
-    for (let k = 0; k < 12 && start + n * odstep + opisH() > dol; k++) {
-      if (odstep > rozmiar * 1.55) odstep = Math.max(rozmiar * 1.55, (dol - opisH() - start) / n);
-      else { rozmiar *= 0.94; odstep = rozmiar * 1.55; }
-      start = Math.max(podDol + rozmiar * 1.3, Math.min(start, dol - opisH() - n * odstep));
+    let r = Math.max(M.spisRozmiarMin, Math.min(M.spisRozmiarMax, h * M.spisRozmiar));
+    let odstep = r * M.spisOdstep;
+    const podLogo = ly + lh;
+    const start = () => podLogo + r * M.spisPodLogo + r * 0.55;
+    for (let k = 0; k < 16 && start() + (n - 1) * odstep + r * 0.5 > h - m; k++) {
+      if (odstep > r * 1.35) odstep = Math.max(r * 1.35, (h - m - r * 0.5 - start()) / (n - 1));
+      else { r *= 0.94; odstep = r * 1.35; }
     }
-    // v4.1 beta: przy ośmiu pozycjach numer „VIII” jest szeroki — nie może dotknąć ramy
-    ctx.save();
-    ctx.font = `${rozmiar * 0.62}px ${SERIF}`;
-    const szerNumeru = Math.max(...this.pozycje.map((_, i) => ctx.measureText(rzymska(i + 1)).width));
-    ctx.restore();
-    lewy = Math.max(lewy, m + 8 + szerNumeru + rozmiar * 1.85);
-    // spis wejść jak spis tablic: numer, znak, tytuł
-    ctx.save();
-    ctx.textBaseline = 'alphabetic';
-    for (let i = 0; i < this.pozycje.length; i++) {
-      const p = this.pozycje[i];
-      const dostepna = p.aktywna();
-      const wejscieP = Math.max(0.35, Math.min(1, (performance.now() - this.wejscieOd - 120 - i * M.pozycjaOpoznienie) / M.pozycjaCzas));
-      const y = start + i * odstep;
-      const wybrane = i === this.wybrana;
-      const alfa = (dostepna ? 1 : M.alfaNieaktywnej) * wejscieP;
-      // numer rzymski czerwienią, jak inicjał w księdze
-      ctx.font = `${rozmiar * 0.7}px ${SERIF_TYTUL}`;
-      ctx.textAlign = 'right';
-      ctx.fillStyle = rgba(FRESK.napisCzerwony, (wybrane ? 1 : 0.75) * alfa);
-      ctx.fillText(rzymska(i + 1), lewy - rozmiar * 0.5, y - rozmiar * 0.02);
-      // tytuł bielą wapienną
-      ctx.textAlign = 'left';
-      ctx.font = `${rozmiar}px ${SERIF}`;
-      ctx.fillStyle = rgba(FRESK.tekst, alfa * (wybrane ? 1 : 0.78));
-      ctx.fillText(p.etykieta, lewy + rozmiar * 0.2, y);
-      if (wybrane && dostepna) {
-        const szer = ctx.measureText(p.etykieta).width;
-        ctx.strokeStyle = rgba(FRESK.cynober, 0.9 * alfa);
-        ctx.lineWidth = 2;
-        kreska(ctx, lewy + rozmiar * 0.2, y + rozmiar * 0.32, lewy + rozmiar * 0.2 + szer, y + rozmiar * 0.32, 0.7, 18);
-        // płomyk lampki po prawej — drga
-        const fx = lewy + rozmiar * 0.2 + szer + rozmiar * 0.7, fy = y - rozmiar * 0.33;
-        const pl = 0.75 + 0.25 * Math.sin(teraz * 0.013) * Math.sin(teraz * 0.007);
-        const gl = ctx.createRadialGradient(fx, fy, 0, fx, fy, rozmiar * 0.7);
-        gl.addColorStop(0, `rgba(255,170,80,${0.35 * pl * alfa})`); gl.addColorStop(1, 'rgba(255,170,80,0)');
-        ctx.fillStyle = gl; ctx.fillRect(fx - rozmiar, fy - rozmiar, rozmiar * 2, rozmiar * 2);
-        ctx.fillStyle = `rgba(255,232,180,${pl * alfa})`;
-        ctx.beginPath(); ctx.ellipse(fx, fy, 1.8, 3.2 * pl, 0, 0, Math.PI * 2); ctx.fill();
-      }
-      this.trafienia.push({ x: lewy - rozmiar * 2.4, y: y - rozmiar * 1.1, w: Math.max(320, w * 0.32), h: rozmiar * 1.8, i });
-    }
-    // opis wybranej pozycji pod spisem, oddzielony przerywnikiem
-    const wyb = niski ? undefined : this.pozycje[this.wybrana];
-    const yOpis = start + this.pozycje.length * odstep;
-    if (niski) { ctx.restore(); return; }
-    przerywnik(ctx, lewy + w * 0.14, yOpis - rozmiar * 0.5, w * 0.26, wejscie);
-    if (wyb) {
-      ctx.font = `italic ${ro}px ${SERIF}`;
-      ctx.fillStyle = rgba(FRESK.tekst, 0.72 * wejscie);
-      const ostatnia = this.akapit(ctx, wyb.opis, lewy, yOpis + rozmiar * 0.6, w * M.opisSzerokosc, ro * M.opisInterlinia);
-      if (!ustawienia.samouczekZrobiony) {
-        // zachęta na tabliczce jasnego tynku, pisana sinopią
-        const tw = ctx.measureText(M.zachetaSamouczek).width + ro * 1.6;
-        tablica(ctx, lewy - ro * 0.6, ostatnia + ro * 0.55, tw, ro * 1.9, true, wejscie);
-        ctx.fillStyle = rgba(FRESK.sinopia, wejscie);
-        ctx.fillText(M.zachetaSamouczek, lewy + ro * 0.2, ostatnia + ro * 1.75);
-      }
-    }
-    ctx.restore();
-  }
-
-  /** Telefon: kartusz u góry, spis pośrodku, przekrój góry przygaszony u dołu. */
-  private ukladWaski(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, wejscie: number): void {
-    const m = marginesRamy(w) + 12;
-    const rt = Math.max(M.tytulWaskiRozmiar.min, Math.min(M.tytulWaskiRozmiar.max, (w - m * 2) / 9.6));
-    const yTytul = h * M.tytulWaskiY;
-    const podDol = dolPodtytulu(yTytul, rt);
-    // układ liczony z góry na dół: tytuł, spis, opis — przekrój dostaje tylko to, co zostanie
-    const n = this.pozycje.length;
-    const r = Math.max(14, Math.min(20, w / 28));
-    let rozmiar = Math.max(16, Math.min(26, w / 17, h / 32));
-    let odstep = rozmiar * M.spisOdstepWaski;
-    const opisH = r * 1.2 + r * 1.35 * 2;
-    let start = Math.max(h * M.spisWaskiY, podDol + rozmiar * 1.4);
-    const dol = h - m - 16;
-    for (let k = 0; k < 12 && start + n * odstep + opisH > dol; k++) {
-      if (odstep > rozmiar * 1.6) odstep = Math.max(rozmiar * 1.6, (dol - opisH - start) / n);
-      else { rozmiar *= 0.94; odstep = rozmiar * 1.6; }
-      start = Math.max(podDol + rozmiar * 1.4, Math.min(start, dol - opisH - n * odstep));
-    }
-    // przekrój góry pod opisem, jeśli jest na niego miejsce
-    ctx.font = `italic ${r}px ${SERIF}`;
-    const yOpisu = start + n * odstep + r * 1.2;
-    const liniiOpisu = this.linie(ctx, this.pozycje[this.wybrana]?.opis ?? '', w * 0.8);
-    const fy = yOpisu + r * 1.35 * Math.max(0, liniiOpisu - 1) + r * 1.2;
-    if (h - m - fy > 90) this.frontyspis.rysuj(ctx, m, fy, w - m * 2, h - m - fy, teraz, M.przekrojWaskiAlfa * wejscie, false);
-    tytulFresku(ctx, w / 2, yTytul, M.tytul, rt, wejscie, M.podpisTytuluWaski, SERIF_TYTUL, SERIF);
+    const y0 = start();
+    ctx.font = `${r}px ${SERIF}`;
+    const najszersza = Math.max(...this.pozycje.map((p) => ctx.measureText(p.etykieta).width));
+    const oz = r * M.ozdobnikSzer, ozOd = r * M.ozdobnikOdstep;
+    const szerWiersza = najszersza + 2 * (oz + ozOd) + r;
     this.trafienia = [];
-    ctx.save();
-    for (let i = 0; i < this.pozycje.length; i++) {
-      const p = this.pozycje[i];
-      const dostepna = p.aktywna();
-      const y = start + i * odstep;
-      const wybrane = i === this.wybrana;
-      const alfa = (dostepna ? 1 : M.alfaNieaktywnej) * wejscie;
-      ctx.font = `${rozmiar}px ${SERIF}`;
-      ctx.textAlign = 'center';
-      const szer = ctx.measureText(p.etykieta).width;
-      ctx.font = `${rozmiar * 0.62}px ${SERIF_TYTUL}`;
-      ctx.textAlign = 'right';
-      ctx.fillStyle = rgba(FRESK.napisCzerwony, (wybrane ? 1 : 0.7) * alfa);
-      ctx.fillText(rzymska(i + 1), w / 2 - szer / 2 - rozmiar * 0.45, y);
-      ctx.font = `${rozmiar}px ${SERIF}`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = rgba(FRESK.tekst, alfa * (wybrane ? 1 : 0.78));
-      ctx.fillText(p.etykieta, w / 2, y);
-      if (wybrane && dostepna) {
-        ctx.strokeStyle = rgba(FRESK.cynober, 0.9);
-        ctx.lineWidth = 2;
-        kreska(ctx, w / 2 - szer / 2, y + rozmiar * 0.4, w / 2 + szer / 2, y + rozmiar * 0.4, 0.9, 16);
-      }
-      this.trafienia.push({ x: w * 0.08, y: y - rozmiar * 1.1, w: w * 0.84, h: rozmiar * 1.8, i });
-    }
-    const wyb = this.pozycje[this.wybrana];
-    if (wyb) {
-      const yo = start + this.pozycje.length * odstep;
-      przerywnik(ctx, w / 2, yo - rozmiar * 0.4, w * 0.5, wejscie);
-      ctx.font = `italic ${r}px ${SERIF}`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = rgba(FRESK.tekst, 0.72 * wejscie);
-      this.akapit(ctx, wyb.opis, w / 2, yo + r * 1.2, w * 0.8, r * 1.35, 'center');
-    }
-    ctx.restore();
-  }
-
-  /** Akapit łamany do szerokości; zwraca linię bazową ostatniego wiersza. */
-  private akapit(ctx: CanvasRenderingContext2D, tekst: string, x: number, y: number, maxW: number, lh: number, wyr: CanvasTextAlign = 'left'): number {
-    ctx.textAlign = wyr;
-    let linia = '', yy = y;
-    for (const s of tekst.split(' ')) {
-      const test = linia ? `${linia} ${s}` : s;
-      if (ctx.measureText(test).width > maxW && linia) { ctx.fillText(linia, x, yy); linia = s; yy += lh; } else linia = test;
-    }
-    if (linia) ctx.fillText(linia, x, yy);
-    return yy;
-  }
-
-  /** Ile wierszy zajmie akapit przy bieżącym kroju. */
-  private linie(ctx: CanvasRenderingContext2D, tekst: string, maxW: number): number {
-    let linia = '', n = tekst ? 1 : 0;
-    for (const s of tekst.split(' ')) {
-      const test = linia ? `${linia} ${s}` : s;
-      if (ctx.measureText(test).width > maxW && linia) { n++; linia = s; } else linia = test;
-    }
-    return n;
-  }
-
-  private stopka(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, alfa: number): void {
-    ctx.save();
     ctx.textAlign = 'center';
+    ctx.textBaseline = 'alphabetic';
+    for (let i = 0; i < n; i++) {
+      const p = this.pozycje[i];
+      const dostepna = p.aktywna();
+      const wybrane = i === this.wybrana && dostepna;
+      const y = y0 + i * odstep;
+      const wejscieP = wygladz((odWejscia - M.spisOd - i * M.pozycjaOpoznienie) / M.pozycjaCzas);
+      const alfa = (dostepna ? 1 : M.alfaNieaktywnej) * wejscieP;
+      ctx.font = `${r}px ${SERIF}`;
+      const szer = ctx.measureText(p.etykieta).width;
+      ctx.save();
+      if (wybrane) {
+        const puls = ruch ? 0.8 + 0.2 * Math.sin(teraz * 0.003) : 1;
+        ctx.shadowColor = `rgba(${M.poswiata},${0.85 * puls * alfa})`;
+        ctx.shadowBlur = r * M.poswiataRozmycie;
+      }
+      ctx.fillStyle = rgba(wybrane ? M.napisWybrany : M.napis, alfa);
+      ctx.fillText(p.etykieta, w / 2, y);
+      // ozdobniki na wysokości środka małych liter; przy wybranej przysuwają się do napisu
+      const yo = y - r * 0.3;
+      const przysun = wybrane ? -r * 0.06 : 0;
+      const barwaOz = wybrane ? M.ozdobnikWybrany : M.ozdobnik;
+      ozdobnik(ctx, w / 2 - szer / 2 - ozOd - przysun, yo, oz, -1, barwaOz, alfa);
+      ozdobnik(ctx, w / 2 + szer / 2 + ozOd + przysun, yo, oz, 1, barwaOz, alfa);
+      ctx.restore();
+      this.trafienia.push({ x: w / 2 - szerWiersza / 2, y: y - odstep * 0.5 - r * 0.3, w: szerWiersza, h: odstep, i });
+    }
+
+    // ---- znaki zespołu: lewy dolny róg
+    const wejscieZ = wygladz((odWejscia - M.zespolOd) / M.wejscieMs);
+    const gotowe = this.zespol.filter((z) => z.obraz.gotowy);
+    if (gotowe.length && wejscieZ > 0) {
+      const wymiary = gotowe.map((z) => {
+        const zh = h * z.wysokosc;
+        return { z, zh, zw: zh * z.obraz.img.naturalWidth / z.obraz.img.naturalHeight };
+      });
+      const odst = h * M.zespolOdstep;
+      const calosc = wymiary.reduce((s, d) => s + d.zw, 0) + odst * (wymiary.length - 1);
+      const najwyzszy = Math.max(...wymiary.map((d) => d.zh));
+      // rząd kończy się przed spisem (i przed ozdobnikami) z zapasem
+      const k = Math.min(1, (w / 2 - szerWiersza / 2 - r * 1.2 - m) / calosc);
+      let x = m;
+      const dt = Math.min(100, teraz - (this.ostatniaKlatka || teraz));
+      for (const z of this.zespol) z.traf = null;
+      if (k * najwyzszy >= 20) {
+        const srodekY = h - m - (najwyzszy * k) / 2;
+        for (const d of wymiary) {
+          const z = d.z, zw = d.zw * k, zh = d.zh * k, zy = srodekY - zh / 2;
+          const cel = this.zespol.indexOf(z) === this.najechanyZnak ? 1 : 0;
+          z.podsw += Math.sign(cel - z.podsw) * Math.min(Math.abs(cel - z.podsw), dt / M.zespolPodswietlenieMs);
+          const a = wygladz(z.podsw);
+          ctx.save();
+          ctx.globalAlpha = (M.zespolAlfa + (M.zespolAlfaNajechany - M.zespolAlfa) * a) * wejscieZ;
+          if (a > 0) {
+            // cień płótna liczy się z przezroczystości obrazka — świeci tylko wokół kresek, nie prostokąt;
+            // dwa przebiegi: szeroka poświata i ciaśniejsza, jaśniejsza obwódka tuż przy konturach
+            ctx.shadowColor = `rgba(${M.zespolPoswiata},${0.9 * a})`;
+            ctx.shadowBlur = Math.max(M.zespolRozmycieMin, zh * M.zespolRozmycie);
+            ctx.drawImage(z.obraz.img, x, zy, zw, zh);
+            ctx.shadowBlur = Math.max(3, zh * M.zespolRozmycie * 0.35);
+            ctx.drawImage(z.obraz.img, x, zy, zw, zh);
+            ctx.shadowColor = 'transparent';
+          }
+          ctx.drawImage(z.obraz.img, x, zy, zw, zh);
+          ctx.restore();
+          const zapas = Math.max(4, zh * 0.08);
+          z.traf = { x: x - zapas, y: zy - zapas, w: zw + zapas * 2, h: zh + zapas * 2 };
+          x += zw + odst * k;
+        }
+      }
+    }
+    this.ostatniaKlatka = teraz;
+    // Prawa strona (szkic: „tu tę trójkę dam”) zostaje pusta — na przyszłą grafikę.
+
+    this.stopka(ctx, w, h, teraz, m, wygladz(odWejscia / M.wejscieMs));
+    ctx.restore();
+  }
+
+  private stopka(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number, m: number, alfa: number): void {
+    ctx.save();
+    ctx.shadowBlur = 0;
     if (this.komunikat && teraz - this.komunikatOd < M.komunikatMs) {
-      ctx.font = `italic ${Math.max(14, w / 64)}px ${SERIF}`;
-      ctx.fillStyle = rgba(BARWA.zarBlady, 0.9 * Math.min(1, (M.komunikatMs - (teraz - this.komunikatOd)) / 900));
-      ctx.fillText(this.komunikat, w / 2, h * 0.9);
+      ctx.textAlign = 'center';
+      ctx.font = `italic ${Math.max(14, Math.min(22, h / 42))}px ${SERIF}`;
+      ctx.fillStyle = rgba(M.napisWybrany, 0.85 * Math.min(1, (M.komunikatMs - (teraz - this.komunikatOd)) / 900));
+      ctx.fillText(this.komunikat, w / 2, h - Math.max(10, m * 0.35));
     }
-    if (w >= M.waskiPonizej && h <= w * M.pionowyOd) {
-      ctx.font = `italic ${Math.max(12, w / 110)}px ${SERIF}`;
-      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.5 * alfa);
-      ctx.textAlign = 'left';
-      const m = marginesRamy(w) + 22;
-      ctx.fillText(M.podpowiedz, m + w * 0.02, h - m - 4);
-    }
-    // wersja gry — małym drukiem w prawym dolnym rogu, w ramie
-    {
-      ctx.font = `italic ${Math.max(11, w / 130)}px ${SERIF}`;
-      ctx.fillStyle = rgba(BARWA.atramentCichy, 0.55 * alfa);
-      ctx.textAlign = 'right';
-      const m = marginesRamy(w) + 22;
-      ctx.fillText(M.wersja, w - m - w * 0.02, h - m - 4);
-    }
+    // wersja gry — małym drukiem w prawym dolnym rogu
+    ctx.font = `italic ${Math.max(11, Math.min(15, h / 70))}px ${SERIF}`;
+    ctx.fillStyle = rgba(M.napis, 0.4 * alfa);
+    ctx.textAlign = 'right';
+    ctx.fillText(M.wersja, w - Math.max(10, m * 0.5), h - Math.max(10, m * 0.5));
     ctx.restore();
   }
 
@@ -333,7 +293,7 @@ export class EkranMenu implements Ekran {
     if (!p || !p.aktywna()) return;
     this.app.gesty.klik();
     if (p.id === 'wroc') this.app.idz('gra');
-    // Remake v2: jedna trudność — Koszmar; nowa gra zaczyna się od razu
+    // jedna trudność — Koszmar; nowa gra zaczyna się od razu
     else if (p.id === 'nowa') this.app.idz('gra', { tryb: 'nowa' });
     else if (p.id === 'osiagniecia') this.app.idz('osiagniecia');
     else if (p.id === 'wczytaj') this.app.idz('gra', { tryb: 'wczytaj' });
@@ -343,8 +303,17 @@ export class EkranMenu implements Ekran {
   }
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
+    // znaki zespołu: przyciski (na razie bez linków — kliknięcie nic nie robi)
+    const znak = this.zespol.findIndex((z) => z.traf && e.clientX >= z.traf.x && e.clientX <= z.traf.x + z.traf.w && e.clientY >= z.traf.y && e.clientY <= z.traf.y + z.traf.h);
+    if (faza === 'ruch' || faza === 'dol') this.najechanyZnak = znak;
+    if (znak >= 0) {
+      const link = this.zespol[znak].link;
+      if (faza === 'dol' && link) { this.app.gesty.klik(); window.open(link, '_blank', 'noopener'); }
+      return;
+    }
     const traf = this.trafienia.find((t) => e.clientX >= t.x && e.clientX <= t.x + t.w && e.clientY >= t.y && e.clientY <= t.y + t.h);
-    if (!traf) return;
+    // nieaktywna pozycja (np. „Graj dalej” bez gry) nie zabiera wyróżnienia
+    if (!traf || !this.pozycje[traf.i].aktywna()) return;
     if (faza === 'ruch') { this.wybrana = traf.i; return; }
     if (faza === 'dol') { this.wybrana = traf.i; this.uruchom(traf.i); }
   }

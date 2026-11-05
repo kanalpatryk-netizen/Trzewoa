@@ -1,45 +1,53 @@
 /**
- * EKRAN USTAWIEŃ — napisy i układ listy.
+ * EKRAN USTAWIEŃ — napisy, barwy i układ.
  *
- * „Podstawa” to rozmiar liter etykiety wiersza; większość wymiarów wiersza
- * jest jej wielokrotnością (× podstawa), więc całość skaluje się z ekranem.
- * Same pozycje listy (co da się ustawić) są w src/app/screens/settings.ts.
+ * W stylu menu głównego: czarne tło, jasne napisy, ozdobniki przy wybranym wierszu.
+ * Kategorie to ikonki w kolumnie po lewej; po najechaniu
+ * wysuwa się z nich nazwa kategorii. W każdej kategorii najwyżej 5 ustawień.
+ * Same pozycje (co da się ustawić) są w src/app/screens/settings.ts.
+ * „r” to rozmiar liter wiersza; większość wymiarów to jego wielokrotności (× r).
  */
 export const EKRAN_USTAWIEN = {
   // ------------------------------------------------------------------ napisy
-  tytul: 'USTAWIENIA',
-  ramaGora: 'Ustawienia · jak góra ma śnić',
-  ramaDol: 'przeciągnij palcem, żeby przewijać',   // Android (na komputerze: klawisze i kółko)
-  ramaDolWaski: 'przeciągnij, żeby przewijać',
+  tytul: 'Ustawienia',
   /** Przycisk powrotu w lewym górnym rogu. */
   wstecz: '‹ menu',
-  czekamNaKlawisz: 'naciśnij klawisz, który ma to robić · esc anuluje',
   /** Słowa przełącznika. */
   nie: 'nie', tak: 'tak',
+  /** Napis po wykonaniu akcji (np. „Przywróć domyślne”). */
+  gotowe: 'gotowe',
+
+  // ------------------------------------------------------------------ barwy
+  tlo: '#000000',
+  tytulBarwa: '#d9d4cb',
+  napis: '#a9a49c', napisWybrany: '#ffffff',
+  /** Wartość ustawienia (tak / 70% / kryzysy) i wartość nieaktywna (drugie słowo przełącznika). */
+  wartosc: '#e8e3da', wartoscCicha: '#5f5b55',
+  ozdobnik: '#78736c', ozdobnikWybrany: '#f2ede4',
+  /** Ikonki kategorii: zwykła, najechana, wybrana. */
+  ikona: '#6f6a64', ikonaNajechana: '#d6d1c8', ikonaWybrana: '#ffffff',
+  /** Poświata wybranego wiersza (rgb). */
+  poswiata: '255,236,210',
 
   // ----------------------------------------------------------------- układ
-  /** Poniżej tej szerokości ekranu znikają długie napisy na ramie. */
-  waskiPonizej: 700,
-  /** Rozmiar tytułu: ekran / 26 (min–max). */
-  tytulRozmiar: { min: 24, max: 44 },
-  /** Najszersza lista (px). */
-  maxSzerokosc: 880,
-  /** Rozmiar etykiety wiersza: ekran / 62 (min–max). */
-  podstawa: { min: 16, max: 19 },   // Android: min 16 (na komputerze 15)
-  /** Wysokość wiersza i nagłówka działu (× podstawa) i dodatek na każdą kolejną linię opisu. */
-  wysokoscWiersza: 3.05, wysokoscNaglowka: 3.1, nastepnaLinia: 0.85,
-  /** Opis pod etykietą: rozmiar (× podstawa) i krycie. */
-  opisRozmiar: 0.8, opisAlfa: 0.8,   // Android: większe i jaśniejsze (na komputerze 0.72 i 0.75)
+  /** Rozmiar liter wiersza (× h, obcięty do min–max) i odstęp wierszy (× r). */
+  rozmiar: 0.034, rozmiarMin: 15, rozmiarMax: 30, odstep: 2.15,
+  /** Tytuł: rozmiar (× h, min–max) i położenie (× h). */
+  tytulRozmiar: 0.062, tytulMin: 26, tytulMax: 58, tytulY: 0.13,
+  /** Lista: szerokość (× r, najwyżej część ekranu) i górna krawędź (× h). */
+  szerokosc: 21, szerokoscMaxCzesc: 0.62, gora: 0.3,
+  /** Ikonki: rozmiar (× r), odstęp (× rozmiar ikonki), odległość kolumny od listy (× r). */
+  ikonaRozmiar: 1.9, ikonaOdstep: 1.75, ikonaOdListy: 3.2,
+  /** Suwak: długość linijki i miejsce na liczbę (× r). */
+  suwakDl: 6.5, suwakLiczba: 3.2,
+  /** Ozdobnik: szerokość i odstęp od napisu (× r). */
+  ozdobnikSzer: 1.05, ozdobnikOdstep: 0.25,
 
-  // -------------------------------------------------------------- kontrolki
-  /** Długość linijki suwaka (px): wąski ekran (< 480 px listy) / szeroki. */
-  suwakWaski: 58, suwak: 86,
-  /** Przełącznik zajmuje tyle (× podstawa), klawisz tyle. */
-  przelacznikSzer: 4.4, klawiszSzer: 4,
-  /** Krycie zaznaczenia wiersza: lewa i prawa krawędź gradientu. */
-  zaznaczenieOd: 0.55, zaznaczenieDo: 0.08,
-  /** Rozbłysk po zmianie wartości trwa tyle ms. */
-  blyskMs: 500,
-  /** Pasek przewijania: krycie szyny, uchwytu i rombu. */
-  szynaAlfa: 0.15, uchwytAlfa: 0.5, rombAlfa: 0.8,
+  // --------------------------------------------------------------- animacja
+  /** Wysuwanie nazwy kategorii (ms) i jak długo wisi po zmianie kategorii klawiszem (ms). */
+  wysuwMs: 180, nazwaPoKlawiszuMs: 1200,
+  /** Rozbłysk po zmianie wartości i napis „gotowe” po akcji (ms). */
+  blyskMs: 500, gotoweMs: 1400,
+  /** Wejście na ekran (ms). */
+  wejscieMs: 450,
 };
