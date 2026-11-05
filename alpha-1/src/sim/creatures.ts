@@ -2123,12 +2123,20 @@ function doFight(sim: Sim, c: Creature): void {
     // a prosto w dół jest lity strop — rycerz dreptał po sali i walka z demonem nigdy się nie zaczynała
     // demon w zamkniętej komorze pomnika (przenika skałę, lud nie) — idzie się do przedsionka krypty, dokąd prowadzi
     // droga wiernych; stamtąd demon go widzi i sam podchodzi
+    // (szukanie drogi nie sięga tak głęboko — w dół idzie się ścieżką drogi wiernych, jak pielgrzymi)
     const podejdz = (x: number, y: number): void => {
       if (!ludRuch(c) || Math.hypot(x + 0.5 - c.x, y + 0.5 - c.y) <= K.walkaDrogaOd) { walkTo(sim, c, x, y); return; }
-      const w = sim.world;
-      const doPrzedsionka = foe.boss && Math.hypot(w.coreX + 0.5 - c.x, w.przedsionekY + 0.5 - c.y) > K.walkaDrogaOd;
-      if (doPrzedsionka) idz(sim, c, w.coreX, w.przedsionekY, false);
-      else idz(sim, c, x, y, rolaPostaci(c) === 'robotnik');
+      const w = sim.world, plan = sim.planDrogi;
+      const wPrzedsionku = Math.abs(c.x - w.coreX) < P.przedsionekX && Math.abs(c.y - w.przedsionekY) < P.przedsionekY;
+      if (foe.boss && plan?.sciezka.length && !wPrzedsionku) {
+        if (idzPlanem(sim, c, plan.sciezka)) return;
+        // daleko od ścieżki — najpierw do jej końca w sali (krótka droga), potem nią w dół
+        const kon = plan.sciezka[plan.sciezka.length - 1];
+        idz(sim, c, kon % w.w, (kon / w.w) | 0, false);
+        return;
+      }
+      if (foe.boss) { walkTo(sim, c, x, y); return; }
+      idz(sim, c, x, y, rolaPostaci(c) === 'robotnik');
     };
     // ostatnia deska: pobożny razi Strażników (i bossa) księgą z dystansu
     if (foe.straznik && rolaPostaci(c) === 'pobozny' && trybWiernych(sim)) {
