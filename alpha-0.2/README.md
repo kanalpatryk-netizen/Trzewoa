@@ -13,6 +13,7 @@ Alphy 0.2 są osobne — nie mieszają się z Alphą 0.1 ani z Remake v2.
 ## Co jest inaczej niż w Remake v2
 - **Intro:** film `filmy/intro.mp4` rusza od razu po otwarciu gry (bez klikania; góra ładuje się pod nim), po nim menu. Na dole
   przez cały film stoi mały znaczek „spacja – pomiń” — spacja (albo Esc) pomija intro.
+- **Menu główne (5.11, według szkicu grafika):** czarne tło; pośrodku u góry rysowane logo „Trzewia” (`obrazy/menu/logo-trzewia.png`), pod nim spis: Graj dalej, Nowa gra, Wczytaj grę, Samouczek, Atlas, Osiągnięcia, Ustawienia — każda pozycja z ozdobnikami po obu stronach, wybrana jaśnieje. W lewym dolnym rogu znaki zespołu (`obrazy/menu/zespol-dollum.png`, `zespol-znak.png`, `zespol-podpis.png`). Prawa strona celowo pusta — będzie tam grafika (trójka postaci). Inny obrazek = podmieniony plik o tej samej nazwie; barwy, rozmiary i kolejność znaków: `MENU` w `src/nastawy/wyglad/menu.ts`, kod: `src/app/screens/menu.ts`.
 - **Kursor:** stalowa rękawica z `obrazy/kursor1.png` — jedyny kursor gry, na każdym ekranie; póki przycisk myszy jest
   wciśnięty — `obrazy/kursor2.png` (palec wciska). Rękawicę (40 px) rysuje sama gra pod myszką; klika czubek palca. Kod: `src/core/kursor.ts`, liczby: `KURSOR`
   w `src/nastawy/ekran.ts` — inny kursor to podmieniony plik (najwyżej trzeba poprawić `czubek`). Ekran: `src/app/screens/intro.ts`, liczby: `INTRO` w `src/nastawy/ekran.ts`.

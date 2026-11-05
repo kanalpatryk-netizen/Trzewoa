@@ -9,6 +9,7 @@ Z użytkownikiem rozmawia się po polsku.
 - **Gdzie to jest.** Wszystko jest na `main` (scalony [kanalpatryk-netizen/Trzewoa#12](https://github.com/kanalpatryk-netizen/Trzewoa/pull/12), commit `6688432`). Alpha jest w menu (README) i do pobrania z wydania „gra”. Etapy 3b i 3c są na `main` i w wydaniu (PR #13 i #14, na prośbę użytkownika; `main` = `146c82b`). **Etap 3d jest na gałęzi `ccr-91477c56-dh7bgd`**, jeszcze nie na `main` (PR tylko na prośbę użytkownika).
 - **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e, 3f i etap 4 zrobione na polecenie użytkownika. Etap 5 ruszył na polecenie użytkownika; 5a zrobione — **przed 5b powiedz użytkownikowi, co w nim będzie, i czekaj na polecenie.** Stanem wizualnym rycerza „zajmiemy się kiedy indziej” — użytkownik 18.10.)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
+- **Menu główne Alphy 0.2 przebudowane (5.11)** według szkicu grafika: czarne tło, logo „Trzewia” z obrazka, spis z ozdobnikami, znaki zespołu w lewym dolnym rogu, prawa strona pusta na przyszłą grafikę (trójka postaci — „zostaw to na razie”, użytkownik 5.11). Obrazki: `alpha-0.2/obrazy/menu/`, nastawy: `MENU` w `src/nastawy/wyglad/menu.ts`.
 - **Zadanie bieżące (od 25.10): propozycje Pawła dla Alphy 0.2 — patrz sekcja 0 niżej. Zrobione jako osobna wersja `propozycja-1/` (na `main`); `alpha-0.2/` bez zmian.**
 
 ---
