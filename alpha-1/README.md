@@ -9,6 +9,20 @@ Zapisy, ustawienia, atlas i osiągnięcia są tu osobne (klucze `trzewia-alpha-1
 **[⬇️ Pobierz trzewia-alpha-1-obserwatorium.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-1-obserwatorium.html)** — obserwatorium.
 Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Plik jest też w repozytorium: [`trzewia.html`](trzewia.html).
 
+## Obserwatorium — jeden bot
+`trzewia-alpha-1-obserwatorium.html` (`npm run obserwatorium`, szablon `scripts/obserwatorium/szablon.html`): duże okno
+gry, w nim gra bot, a obok panel w stylu menu.
+- **Partia:** czas, ziarno, styl bota, stan (w trakcie, fala, walka z demonem, wynik).
+- **Sterowanie:** pauza, tempo ×¼–×20, styl bota, ziarno, „nowa partia”, „ta sama góra”, dźwięk,
+  sama następna partia, a także **zatrzymaj czas, gdy:** fala Strażników, pomnik pęka, wstaje demon, ktoś ginie, koniec partii.
+- **Postęp:** paski drogi wiernych, pęknięcia Wielkiego Pomnika, oddania, fal Strażników i życia demona.
+- **Lud** (role, zgony), **wykres zasobów** przez całą partię (wiara, krew, jedzenie, oddanie; kreski przy falach i pęknięciach),
+  **dziennik decyzji bota**, **przebieg partii** (oś zdarzeń), **kronika** (6 ostatnich wpisów).
+- **Statystyki** wszystkich partii (wygrane %, średni czas wygranej, tabela — klik w wiersz gra tę górę jeszcze raz,
+  eksport CSV), zapamiętywane w przeglądarce.
+- Klawisze: spacja — pauza, +/− — tempo, N — nowa partia, M — dźwięk, H — schowaj panel.
+Gra dosyła do panelu więcej stanu: `wyslijStan` w `src/app/obserwowany.ts`.
+
 ## Menu i ustawienia — jak w Alphie 0.2
 Czarne menu według szkicu grafika (logo z bijącym sercem, znaki zespołu jako przyciski) i ustawienia w stylu menu
 (4 kategorie-ikonki, najwyżej 5 ustawień w każdej) — opis w [`../alpha-0.2/README.md`](../alpha-0.2/README.md).

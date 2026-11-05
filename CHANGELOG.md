@@ -10,6 +10,7 @@ zminifikowana dopasowana do kodu Propozycji 1). Osobne zapisy (`trzewia-alpha-1:
 - **Płyta prawie do krawędzi** (`computePlate`, `EKRAN.ramaPlyty`, `dolMin/dolMax/dolCzesc`): bez paska zasobów, rad nad płytą, kroniki, przycisku menu i klepsydry na komputerze.
 - **Cud jako objawienie** (`objawienie()` w `src/render/efekty.ts`, `GORA.efektObjawienie` 360 → 540).
 - **Samouczek** pod nowy interfejs (etapy `tylko: 'komputer' | 'telefon'`).
+- **Obserwatorium na jednego bota** (`scripts/obserwatorium/szablon.html`): duże okno gry i panel — postęp (droga, pomnik, fale, demon), wykres zasobów, dziennik bota, oś zdarzeń, kronika, statystyki partii z CSV, zatrzymywanie czasu przy zdarzeniach; `wyslijStan` dosyła postęp, fale, demona i zgony.
 
 ## Propozycja 1 (komputer, próbna — na bazie Alphy 0.2)
 Folder `propozycja-1/`: kopia Alphy 0.2 z `main` (po PR #30) z propozycjami Pawła z 24.10 — `alpha-0.2/` bez zmian.

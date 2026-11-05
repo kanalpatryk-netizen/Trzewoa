@@ -1,5 +1,5 @@
 /**
- * Gra obserwowana — jedno z czterech okien obserwatorium (obserwatorium.html). Włącza ją
+ * Gra obserwowana — okno gry w obserwatorium (obserwatorium.html; Alpha 1: jedno okno, jeden bot). Włącza ją
  * `window.__TRZEWIA_BOT` wpisane w stronę przed skryptem gry (albo `?bot` w adresie).
  * Wtedy gra rusza od razu (bez menu), gra w niej bot (src/app/bot.ts), nic nie trafia do pamięci
  * przeglądarki (zapisy, ustawienia i atlas gracza zostają nietknięte), karty i tablice nie
@@ -12,6 +12,10 @@ import { porcjiWWiadrach } from '../sim/wiadro';
 import { ustawienia } from '../core/settings-store';
 import { mikser } from '../core/mikser';
 import { myslBota, type StylBota } from './bot';
+import { procentSkorupy } from '../sim/rytual';
+import { stanPomnika } from '../sim/pomnik';
+import { nieWykopane, najwierniejsza } from '../sim/pielgrzymka';
+import { STRAZNICY } from '../nastawy/straznicy';
 
 export interface UstawieniaBota {
   /** Numer okna (1–4) — wraca w każdej wiadomości. */
@@ -105,8 +109,13 @@ export function wyslijStan(sim: Sim, ziarno: number, koniecOd: number): void {
     zywych++;
     role[c.rola ?? 'pobozny']++;
   }
-  const k = sim.clans.find((x) => !x.dead && x.race === Race.GOBLIN);
   const ostatni = sim.chronicle.length ? sim.chronicle[sim.chronicle.length - 1].text : '';
+  // Alpha 1: więcej o przebiegu partii — do pasków postępu, osi zdarzeń i wykresów obserwatorium
+  const plan = sim.planDrogi, wszystkie = plan?.szyb?.length ?? 0;
+  const droga = wszystkie ? Math.round(100 * (1 - Math.min(wszystkie, nieWykopane(sim).length) / wszystkie)) : 0;
+  const st = sim.lud.straznicy;
+  const boss = sim.creatures.find((c) => !c.dead && c.boss);
+  const straznikow = st?.klan !== undefined && st.klan >= 0 ? sim.creatures.reduce((n, c) => n + (!c.dead && c.clan === st.klan ? 1 : 0), 0) : 0;
   zastosujDzwiek();
   window.parent.postMessage({
     trzewia: 'stan',
@@ -118,11 +127,19 @@ export function wyslijStan(sim: Sim, ziarno: number, koniecOd: number): void {
     wiara: Math.round(sim.wiara),
     krew: Math.round(sim.krew),
     jedzenie: porcjiWWiadrach(sim),
-    oddanie: k ? Math.round(k.devotion * 100) : 0,
+    // jak w księdze: najwierniejszy lud (pielgrzymka), nie pierwszy z brzegu
+    oddanie: Math.round((najwierniejsza(sim)?.devotion ?? 0) * 100),
     koszmar: !!sim.koszmar,
     koniec: sim.ending ?? null,
     koniecOd,
     kronika: ostatni,
+    kronikaOstatnie: sim.chronicle.slice(-6).map((w) => w.text),
+    droga,
+    pomnik: procentSkorupy(sim),
+    faza: stanPomnika(sim).faza,
+    fala: st ? st.fala : 0, falTrwa: !!st?.trwa, falWszystkich: STRAZNICY.fale.length, straznikow,
+    demon: boss ? { hp: Math.max(0, Math.round(boss.hp)), hpMax: Math.round(boss.hpMax ?? boss.hp) } : null,
+    zgonow: sim.stat.ludZgonow, zGlodu: sim.stat.zGlodu, rytualow: sim.stat.rytualow, nakarm: sim.stat.nakarm,
     mysl: myslBota(sim, BOT.styl),
     ustawienia: { styl: BOT.styl, tempo: BOT.tempo, pauza: BOT.pauza, ziarno: BOT.ziarno, autoRestart: BOT.autoRestart, dzwiek: BOT.dzwiek },
   }, '*');
