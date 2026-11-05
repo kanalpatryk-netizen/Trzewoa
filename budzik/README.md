@@ -8,6 +8,10 @@ Nie wymaga instalowania żadnych bibliotek — wystarczy Python 3.9+ (z python.o
 
 ## Uruchomienie
 
+**Najprościej:** Windows — dwuklik na `Budzik.pyw`; macOS — dwuklik na `Budzik.command`.
+
+Albo z terminala:
+
 ```bash
 cd budzik
 python budzik.py
