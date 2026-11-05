@@ -23,6 +23,8 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Pli
 ## Poprawki walki z demonem (5.11)
 - Rycerz **zawsze widzi demona** (o ile nie jest głodny) — przy drodze wiernych jako głębokim szybie demon wstawał
   ponad 40 kafli pod rycerzem w sali i walka nigdy się nie zaczynała (demon 500/500 bez końca).
+  Do dalekiego wroga (ponad 10 kafli, `STWORZENIA.walkaDrogaOd`) lud idzie **drogą** — schodami szybu i po linach —
+  a nie na przełaj: prosto w dół z sali jest lity strop i rycerz tylko dreptał po sali.
 - Dłoń z otchłani robi **zawał tylko przy demonie** (rycerz najwyżej 4 kafle wyżej/niżej) i nigdy w szybie drogi
   wiernych — wcześniej ściana gruzu stawała w sali i zamurowywała drogę w dół.
 

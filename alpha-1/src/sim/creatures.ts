@@ -2119,12 +2119,18 @@ function doFight(sim: Sim, c: Creature): void {
   if (REMAKE && rolaPostaci(c) && rolaPostaci(foe)) { sim.target.delete(c.id); c.jt = 0; return; }
   // etap 3: ze Strażnikiem Snu walczy się w rytmie ciosów, nie co tik
   if (foe.straznik) {
+    // Alpha 1 (5.11): do dalekiego wroga — drogą (schody szybu, liny), nie na przełaj: demon wstaje ~170 kafli pod salą,
+    // a prosto w dół jest lity strop — rycerz dreptał po sali i walka z demonem nigdy się nie zaczynała
+    const podejdz = (x: number, y: number): void => {
+      if (ludRuch(c) && Math.hypot(x + 0.5 - c.x, y + 0.5 - c.y) > K.walkaDrogaOd) idz(sim, c, x, y, rolaPostaci(c) === 'robotnik');
+      else walkTo(sim, c, x, y);
+    };
     // ostatnia deska: pobożny razi Strażników (i bossa) księgą z dystansu
     if (foe.straznik && rolaPostaci(c) === 'pobozny' && trybWiernych(sim)) {
-      walczKsiega(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); });
+      walczKsiega(sim, c, foe, podejdz);
       return;
     }
-    walczZeStraznikiem(sim, c, foe, (x, y) => { walkTo(sim, c, x, y); });
+    walczZeStraznikiem(sim, c, foe, podejdz);
     return;
   }
   const dist = Math.hypot(foe.x - c.x, foe.y - c.y);
