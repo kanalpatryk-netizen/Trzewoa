@@ -2121,9 +2121,14 @@ function doFight(sim: Sim, c: Creature): void {
   if (foe.straznik) {
     // Alpha 1 (5.11): do dalekiego wroga — drogą (schody szybu, liny), nie na przełaj: demon wstaje ~170 kafli pod salą,
     // a prosto w dół jest lity strop — rycerz dreptał po sali i walka z demonem nigdy się nie zaczynała
+    // demon w zamkniętej komorze pomnika (przenika skałę, lud nie) — idzie się do przedsionka krypty, dokąd prowadzi
+    // droga wiernych; stamtąd demon go widzi i sam podchodzi
     const podejdz = (x: number, y: number): void => {
-      if (ludRuch(c) && Math.hypot(x + 0.5 - c.x, y + 0.5 - c.y) > K.walkaDrogaOd) idz(sim, c, x, y, rolaPostaci(c) === 'robotnik');
-      else walkTo(sim, c, x, y);
+      if (!ludRuch(c) || Math.hypot(x + 0.5 - c.x, y + 0.5 - c.y) <= K.walkaDrogaOd) { walkTo(sim, c, x, y); return; }
+      const w = sim.world;
+      const doPrzedsionka = foe.boss && Math.hypot(w.coreX + 0.5 - c.x, w.przedsionekY + 0.5 - c.y) > K.walkaDrogaOd;
+      if (doPrzedsionka) idz(sim, c, w.coreX, w.przedsionekY, false);
+      else idz(sim, c, x, y, rolaPostaci(c) === 'robotnik');
     };
     // ostatnia deska: pobożny razi Strażników (i bossa) księgą z dystansu
     if (foe.straznik && rolaPostaci(c) === 'pobozny' && trybWiernych(sim)) {
