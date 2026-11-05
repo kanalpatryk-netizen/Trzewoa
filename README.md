@@ -17,6 +17,7 @@ Wygrywasz, gdy wierni dokopią się do twojego rdzenia.
 | 🧪 **v4 beta** (komputer) | [**trzewia-v4-beta.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-v4-beta.html) — nowości + dziennik dewelopera · [więcej](v4-beta) |
 | 🖥️ **v3 remake** (komputer) | [**trzewia-v3-remake.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-v3-remake.html) — gra z telefonu w przeglądarce · [więcej](v3-remake) |
 | 💻 Komputer (stara wersja) | [**trzewia.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia.html) — otwórz w przeglądarce |
+| ⏰ **Budzik z zagadką** (Python) | [**budzik/**](budzik) — budzik, który dzwoni, dopóki nie rozwiążesz zagadki logicznej; baza 79 zagadek · `python budzik/budzik.py` |
 | 🔊 **Audio test** | [**audio test**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/audio-test.html) — pracownia nowego soundtracku: 45 dźwięków, każdy osobnym przyciskiem · [więcej](pracownia-dzwieku) |
 
 **Jak grać:** **Nakarm** (grzyb), **Szepnij „módl się”** (wierny idzie pod rdzeń), **Cud** (więcej wiary),

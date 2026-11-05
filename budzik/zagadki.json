@@ -1,0 +1,977 @@
+{
+  "opis": "Baza zagadek do budzika. Każda zagadka: pytanie, lista dopuszczalnych odpowiedzi (wielkość liter, polskie znaki i interpunkcja nie mają znaczenia; liczby można pisać cyframi albo słowami do dwudziestu), podpowiedź i wyjaśnienie. Trudność: 1 — łatwa, 2 — średnia, 3 — trudniejsza. Możesz dopisywać własne — wystarczy zachować ten sam układ i nadać nowy, niepowtarzalny numer id.",
+  "zagadki": [
+    {
+      "id": 1,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 1,
+      "pytanie": "Ojciec Marka ma trzech synów: Kubę, Antka i… Jak ma na imię trzeci syn?",
+      "odpowiedzi": [
+        "Marek",
+        "Marka"
+      ],
+      "podpowiedz": "Przeczytaj jeszcze raz pierwsze dwa słowa.",
+      "wyjasnienie": "To ojciec Marka — więc trzecim synem jest sam Marek."
+    },
+    {
+      "id": 2,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 1,
+      "pytanie": "Ile miesięcy w roku ma 28 dni?",
+      "odpowiedzi": [
+        "12",
+        "wszystkie",
+        "kazdy",
+        "wszystkie miesiace"
+      ],
+      "podpowiedz": "Nie pytam, ile ma DOKŁADNIE 28 dni.",
+      "wyjasnienie": "Każdy miesiąc ma co najmniej 28 dni — czyli wszystkie dwanaście."
+    },
+    {
+      "id": 3,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 1,
+      "pytanie": "Na stole leży 5 jabłek. Zabierasz 3. Ile jabłek masz?",
+      "odpowiedzi": [
+        "3"
+      ],
+      "podpowiedz": "Pytam, ile masz TY, a nie ile zostało na stole.",
+      "wyjasnienie": "Zabrałeś 3, więc masz 3."
+    },
+    {
+      "id": 4,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 1,
+      "pytanie": "Pasterz miał 17 owiec. Wszystkie oprócz 9 uciekły. Ile owiec mu zostało?",
+      "odpowiedzi": [
+        "9"
+      ],
+      "podpowiedz": "„Wszystkie oprócz…”",
+      "wyjasnienie": "Uciekły wszystkie oprócz dziewięciu — te dziewięć zostało."
+    },
+    {
+      "id": 5,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "3 koty łapią 3 myszy w 3 minuty. Ile minut zajmie 100 kotom złapanie 100 myszy?",
+      "odpowiedzi": [
+        "3"
+      ],
+      "podpowiedz": "Ile czasu potrzebuje jeden kot na jedną mysz?",
+      "wyjasnienie": "Każdy kot łapie jedną mysz w 3 minuty, więc 100 kotów złapie 100 myszy też w 3 minuty."
+    },
+    {
+      "id": 6,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "Kij i piłka kosztują razem 1,10 zł. Kij jest droższy od piłki o 1 zł. Ile GROSZY kosztuje piłka?",
+      "odpowiedzi": [
+        "5"
+      ],
+      "podpowiedz": "To nie 10 groszy — sprawdź: wtedy kij kosztowałby 1,10 zł.",
+      "wyjasnienie": "Piłka 0,05 zł, kij 1,05 zł — razem 1,10 zł, a różnica to dokładnie 1 zł."
+    },
+    {
+      "id": 7,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "Lilie wodne codziennie podwajają powierzchnię, którą zajmują. Cały staw pokrywają po 48 dniach. Po ilu dniach pokrywają połowę stawu?",
+      "odpowiedzi": [
+        "47"
+      ],
+      "podpowiedz": "Pomyśl od końca: co było dzień przed pełnym stawem?",
+      "wyjasnienie": "Dzień przed pokryciem całego stawu lilie zajmowały połowę — czyli 47. dnia."
+    },
+    {
+      "id": 8,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "5 maszyn robi 5 śrubek w 5 minut. Ile minut potrzebuje 100 maszyn, żeby zrobić 100 śrubek?",
+      "odpowiedzi": [
+        "5"
+      ],
+      "podpowiedz": "Ile czasu jedna maszyna robi jedną śrubkę?",
+      "wyjasnienie": "Jedna maszyna robi jedną śrubkę w 5 minut, więc 100 maszyn zrobi 100 śrubek w 5 minut."
+    },
+    {
+      "id": 9,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 1,
+      "pytanie": "W biegu wyprzedzasz zawodnika, który jest na drugim miejscu. Na którym miejscu teraz jesteś?",
+      "odpowiedzi": [
+        "2",
+        "drugim",
+        "drugie",
+        "na drugim",
+        "na drugim miejscu",
+        "2 miejsce",
+        "na 2"
+      ],
+      "podpowiedz": "Zająłeś miejsce osoby, którą wyprzedziłeś.",
+      "wyjasnienie": "Wyprzedzając drugiego, zajmujesz jego miejsce — jesteś drugi."
+    },
+    {
+      "id": 10,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 1,
+      "pytanie": "Co jest cięższe: kilogram pierza czy kilogram żelaza?",
+      "odpowiedzi": [
+        "tyle samo",
+        "rowno",
+        "to samo",
+        "zadne",
+        "waza tyle samo",
+        "takie same",
+        "nic",
+        "oba",
+        "jednakowo"
+      ],
+      "podpowiedz": "Ile waży każde z nich?",
+      "wyjasnienie": "Kilogram to kilogram — ważą tyle samo."
+    },
+    {
+      "id": 11,
+      "kategoria": "ciągi",
+      "trudnosc": 1,
+      "pytanie": "Jaka liczba jest następna?  2, 4, 8, 16, …",
+      "odpowiedzi": [
+        "32"
+      ],
+      "podpowiedz": "Każda liczba to poprzednia razy…",
+      "wyjasnienie": "Każda kolejna to poprzednia razy 2: 16 × 2 = 32."
+    },
+    {
+      "id": 12,
+      "kategoria": "ciągi",
+      "trudnosc": 2,
+      "pytanie": "Jaka liczba jest następna?  1, 1, 2, 3, 5, 8, …",
+      "odpowiedzi": [
+        "13"
+      ],
+      "podpowiedz": "Dodaj dwie poprzednie.",
+      "wyjasnienie": "To ciąg Fibonacciego: 5 + 8 = 13."
+    },
+    {
+      "id": 13,
+      "kategoria": "ciągi",
+      "trudnosc": 1,
+      "pytanie": "Jaka liczba jest następna?  1, 4, 9, 16, 25, …",
+      "odpowiedzi": [
+        "36"
+      ],
+      "podpowiedz": "1×1, 2×2, 3×3…",
+      "wyjasnienie": "To kwadraty kolejnych liczb: 6 × 6 = 36."
+    },
+    {
+      "id": 14,
+      "kategoria": "ciągi",
+      "trudnosc": 1,
+      "pytanie": "Jaka liczba jest następna?  3, 6, 9, 12, …",
+      "odpowiedzi": [
+        "15"
+      ],
+      "podpowiedz": "O ile rośnie każda liczba?",
+      "wyjasnienie": "Co 3: 12 + 3 = 15."
+    },
+    {
+      "id": 15,
+      "kategoria": "ciągi",
+      "trudnosc": 2,
+      "pytanie": "Jaka liczba jest następna?  1, 3, 6, 10, 15, …",
+      "odpowiedzi": [
+        "21"
+      ],
+      "podpowiedz": "Popatrz na różnice: 2, 3, 4, 5…",
+      "wyjasnienie": "Różnice rosną o 1: 15 + 6 = 21."
+    },
+    {
+      "id": 16,
+      "kategoria": "ciągi",
+      "trudnosc": 2,
+      "pytanie": "Jaka liczba jest następna?  2, 3, 5, 7, 11, …",
+      "odpowiedzi": [
+        "13"
+      ],
+      "podpowiedz": "Te liczby dzielą się tylko przez 1 i przez siebie.",
+      "wyjasnienie": "To liczby pierwsze — po 11 jest 13."
+    },
+    {
+      "id": 17,
+      "kategoria": "ciągi",
+      "trudnosc": 2,
+      "pytanie": "Jaka liczba jest następna?  100, 90, 81, 73, …",
+      "odpowiedzi": [
+        "66"
+      ],
+      "podpowiedz": "Odejmujesz 10, potem 9, potem 8…",
+      "wyjasnienie": "Odejmujemy coraz mniej: 73 − 7 = 66."
+    },
+    {
+      "id": 18,
+      "kategoria": "logika",
+      "trudnosc": 1,
+      "pytanie": "Ania jest wyższa od Basi. Basia jest wyższa od Celiny. Kto jest najniższy?",
+      "odpowiedzi": [
+        "Celina",
+        "Celiny"
+      ],
+      "podpowiedz": "Ustaw je w rzędku od najwyższej.",
+      "wyjasnienie": "Kolejność: Ania, Basia, Celina — najniższa jest Celina."
+    },
+    {
+      "id": 19,
+      "kategoria": "logika",
+      "trudnosc": 3,
+      "pytanie": "Tomek ma tyle samo braci, co sióstr. Jego siostra ma dwa razy więcej braci niż sióstr. Ile dzieci jest w tej rodzinie?",
+      "odpowiedzi": [
+        "7"
+      ],
+      "podpowiedz": "Chłopców jest o jednego więcej niż dziewczynek (Tomek nie liczy siebie).",
+      "wyjasnienie": "4 chłopców i 3 dziewczynki: Tomek ma 3 braci i 3 siostry, a siostra ma 4 braci i 2 siostry. Razem 7."
+    },
+    {
+      "id": 20,
+      "kategoria": "kalendarz",
+      "trudnosc": 1,
+      "pytanie": "Jeśli wczoraj był poniedziałek, to jaki dzień będzie pojutrze?",
+      "odpowiedzi": [
+        "czwartek"
+      ],
+      "podpowiedz": "Najpierw ustal, jaki jest dziś dzień.",
+      "wyjasnienie": "Dziś jest wtorek, jutro środa, pojutrze czwartek."
+    },
+    {
+      "id": 21,
+      "kategoria": "kalendarz",
+      "trudnosc": 2,
+      "pytanie": "Jeśli pojutrze będzie sobota, to jaki dzień był wczoraj?",
+      "odpowiedzi": [
+        "sroda"
+      ],
+      "podpowiedz": "Cofnij się od soboty o dwa dni — to dziś.",
+      "wyjasnienie": "Pojutrze sobota, więc dziś czwartek, a wczoraj była środa."
+    },
+    {
+      "id": 22,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 2,
+      "pytanie": "Ile razy można odjąć 5 od 25?",
+      "odpowiedzi": [
+        "1",
+        "raz",
+        "jeden raz",
+        "tylko raz"
+      ],
+      "podpowiedz": "Po pierwszym odejmowaniu to już nie jest 25.",
+      "wyjasnienie": "Tylko raz — potem odejmujesz już od 20, 15 itd."
+    },
+    {
+      "id": 23,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "Lekarz dał ci 3 tabletki i kazał brać jedną co pół godziny. Po ilu minutach od pierwszej tabletki skończą się wszystkie?",
+      "odpowiedzi": [
+        "60"
+      ],
+      "podpowiedz": "Pierwszą bierzesz od razu.",
+      "wyjasnienie": "Pierwsza od razu, druga po 30 minutach, trzecia po 60 minutach."
+    },
+    {
+      "id": 24,
+      "kategoria": "logika",
+      "trudnosc": 3,
+      "pytanie": "Ślimak siedzi na dnie studni głębokiej na 10 m. W dzień wspina się 3 m w górę, w nocy zsuwa się 2 m. Którego dnia wyjdzie ze studni?",
+      "odpowiedzi": [
+        "8",
+        "osmego",
+        "osmy"
+      ],
+      "podpowiedz": "Ostatniego dnia nie zdąży się już zsunąć.",
+      "wyjasnienie": "Po 7 dobach jest na 7 m, a 8. dnia wspina się o 3 m i wychodzi na 10 m."
+    },
+    {
+      "id": 25,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 1,
+      "pytanie": "Pociąg elektryczny jedzie na północ, a wiatr wieje na południe. W którą stronę leci dym z pociągu?",
+      "odpowiedzi": [
+        "zadna",
+        "w zadna",
+        "nie ma dymu",
+        "nie ma",
+        "nigdzie",
+        "brak",
+        "brak dymu",
+        "nie leci",
+        "zaden"
+      ],
+      "podpowiedz": "Jaki to pociąg?",
+      "wyjasnienie": "Pociąg elektryczny nie dymi."
+    },
+    {
+      "id": 26,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 2,
+      "pytanie": "Ile zwierząt każdego gatunku zabrał Mojżesz do arki?",
+      "odpowiedzi": [
+        "0",
+        "zadnych",
+        "zadnego",
+        "nie zabral",
+        "zadne",
+        "nic",
+        "noe",
+        "to byl noe"
+      ],
+      "podpowiedz": "Kto naprawdę budował arkę?",
+      "wyjasnienie": "Żadnych — arkę zbudował Noe, nie Mojżesz."
+    },
+    {
+      "id": 27,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 1,
+      "pytanie": "Mama Kasi ma cztery córki: Wiosnę, Lato, Jesień i… Jak ma na imię czwarta?",
+      "odpowiedzi": [
+        "Kasia",
+        "Kasie",
+        "Kasi"
+      ],
+      "podpowiedz": "Czyja to mama?",
+      "wyjasnienie": "To mama Kasi — czwartą córką jest Kasia, a nie Zima."
+    },
+    {
+      "id": 28,
+      "kategoria": "logika",
+      "trudnosc": 3,
+      "pytanie": "Zegar wybija 6 uderzeń w 5 sekund (od pierwszego do ostatniego). Ile sekund zajmie mu wybicie 12 uderzeń?",
+      "odpowiedzi": [
+        "11"
+      ],
+      "podpowiedz": "Policz przerwy między uderzeniami, nie same uderzenia.",
+      "wyjasnienie": "Między 6 uderzeniami jest 5 przerw po 1 s. Między 12 uderzeniami jest 11 przerw — 11 s."
+    },
+    {
+      "id": 29,
+      "kategoria": "logika",
+      "trudnosc": 3,
+      "pytanie": "Pocięcie kłody na 4 kawałki zajmuje 12 minut. Ile minut zajmie pocięcie takiej samej kłody na 6 kawałków?",
+      "odpowiedzi": [
+        "20"
+      ],
+      "podpowiedz": "Ile cięć trzeba, żeby powstały 4 kawałki?",
+      "wyjasnienie": "4 kawałki to 3 cięcia, czyli 4 minuty na cięcie. 6 kawałków to 5 cięć — 20 minut."
+    },
+    {
+      "id": 30,
+      "kategoria": "logika",
+      "trudnosc": 1,
+      "pytanie": "Pokój ma 4 kąty. W każdym kącie siedzi kot. Naprzeciwko każdego kota siedzą 3 koty. Ile kotów jest w pokoju?",
+      "odpowiedzi": [
+        "4"
+      ],
+      "podpowiedz": "Czy trzeba dodawać nowe koty?",
+      "wyjasnienie": "Są tylko 4 koty — każdy widzi przed sobą pozostałe trzy."
+    },
+    {
+      "id": 31,
+      "kategoria": "matematyka",
+      "trudnosc": 1,
+      "pytanie": "x + x + x = 18. Ile wynosi x?",
+      "odpowiedzi": [
+        "6"
+      ],
+      "podpowiedz": "Trzy takie same liczby dają 18.",
+      "wyjasnienie": "3x = 18, więc x = 6."
+    },
+    {
+      "id": 32,
+      "kategoria": "matematyka",
+      "trudnosc": 3,
+      "pytanie": "Jabłko i gruszka kosztują razem 3 zł. Gruszka i śliwka — 5 zł. Jabłko i śliwka — 4 zł. Ile złotych kosztuje gruszka?",
+      "odpowiedzi": [
+        "2"
+      ],
+      "podpowiedz": "Dodaj wszystkie trzy kwoty — każdy owoc liczysz wtedy dwa razy.",
+      "wyjasnienie": "3 + 5 + 4 = 12, czyli wszystkie trzy owoce to 6 zł. Bez jabłka i śliwki (4 zł) zostaje gruszka: 2 zł."
+    },
+    {
+      "id": 33,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "Gdy miałem 6 lat, moja siostra miała połowę mojego wieku. Teraz mam 70 lat. Ile lat ma siostra?",
+      "odpowiedzi": [
+        "67"
+      ],
+      "podpowiedz": "Ile lat była od ciebie młodsza?",
+      "wyjasnienie": "Siostra miała 3 lata, czyli jest młodsza o 3 lata: 70 − 3 = 67."
+    },
+    {
+      "id": 34,
+      "kategoria": "matematyka",
+      "trudnosc": 1,
+      "pytanie": "Ile wynosi 3 + 3 × 3?",
+      "odpowiedzi": [
+        "12"
+      ],
+      "podpowiedz": "Mnożenie przed dodawaniem.",
+      "wyjasnienie": "Najpierw 3 × 3 = 9, potem 3 + 9 = 12."
+    },
+    {
+      "id": 35,
+      "kategoria": "ciągi",
+      "trudnosc": 1,
+      "pytanie": "Jaka litera jest następna?  A, C, E, G, …",
+      "odpowiedzi": [
+        "I"
+      ],
+      "podpowiedz": "Co drugą literę alfabetu (A, B, C, D… bez polskich znaków).",
+      "wyjasnienie": "Pomijamy co drugą: A (B) C (D) E (F) G (H) I."
+    },
+    {
+      "id": 36,
+      "kategoria": "ciągi",
+      "trudnosc": 2,
+      "pytanie": "Jaka litera jest następna?  P, W, Ś, C, P, S, …",
+      "odpowiedzi": [
+        "N"
+      ],
+      "podpowiedz": "Poniedziałek, wtorek…",
+      "wyjasnienie": "To pierwsze litery dni tygodnia — po sobocie jest Niedziela."
+    },
+    {
+      "id": 37,
+      "kategoria": "ciągi",
+      "trudnosc": 3,
+      "pytanie": "Jaka litera jest następna?  S, L, M, K, M, C, L, …",
+      "odpowiedzi": [
+        "S"
+      ],
+      "podpowiedz": "Styczeń, luty…",
+      "wyjasnienie": "To pierwsze litery miesięcy — po lipcu jest Sierpień."
+    },
+    {
+      "id": 38,
+      "kategoria": "matematyka",
+      "trudnosc": 1,
+      "pytanie": "Na podwórku są 3 kury i 2 psy. Ile nóg mają razem?",
+      "odpowiedzi": [
+        "14"
+      ],
+      "podpowiedz": "Kura ma 2 nogi, pies 4.",
+      "wyjasnienie": "3 × 2 + 2 × 4 = 6 + 8 = 14."
+    },
+    {
+      "id": 39,
+      "kategoria": "matematyka",
+      "trudnosc": 1,
+      "pytanie": "Jestem liczbą. Gdy pomnożysz mnie przez samą siebie, wyjdzie 49. Kim jestem?",
+      "odpowiedzi": [
+        "7"
+      ],
+      "podpowiedz": "Tabliczka mnożenia — coś razy to samo.",
+      "wyjasnienie": "7 × 7 = 49."
+    },
+    {
+      "id": 40,
+      "kategoria": "matematyka",
+      "trudnosc": 3,
+      "pytanie": "Zegar wskazuje 3:15. Ile stopni wynosi kąt między wskazówką godzinową a minutową?",
+      "odpowiedzi": [
+        "7.5",
+        "7 i pol"
+      ],
+      "podpowiedz": "Wskazówka godzinowa nie stoi dokładnie na 3 — przez kwadrans przesunęła się o ćwierć drogi do 4.",
+      "wyjasnienie": "Minutowa stoi na 90°. Godzinowa: 90° + ¼ × 30° = 97,5°. Różnica: 7,5°."
+    },
+    {
+      "id": 41,
+      "kategoria": "matematyka",
+      "trudnosc": 2,
+      "pytanie": "Ile wynosi suma wszystkich liczb od 1 do 10?",
+      "odpowiedzi": [
+        "55"
+      ],
+      "podpowiedz": "Łącz w pary: 1 + 10, 2 + 9…",
+      "wyjasnienie": "5 par po 11 = 55."
+    },
+    {
+      "id": 42,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 1,
+      "pytanie": "Na drzewie siedziało 10 ptaków. Myśliwy strzelił i trafił jednego. Ile ptaków zostało na drzewie?",
+      "odpowiedzi": [
+        "0",
+        "zadnego",
+        "zadnych",
+        "zaden",
+        "nic",
+        "zadne"
+      ],
+      "podpowiedz": "Co robią ptaki, kiedy słyszą huk?",
+      "wyjasnienie": "Żadnego — reszta odleciała, a trafiony spadł."
+    },
+    {
+      "id": 43,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 2,
+      "pytanie": "Samolot rozbił się dokładnie na granicy Polski i Niemiec. Po której stronie granicy pochowano ocalałych?",
+      "odpowiedzi": [
+        "nigdzie",
+        "zadnej",
+        "po zadnej",
+        "nie chowa sie",
+        "ocalalych sie nie chowa",
+        "nie chowa sie ocalalych",
+        "nie pochowano",
+        "nie chowa sie zywych",
+        "zywych sie nie chowa",
+        "zadna"
+      ],
+      "podpowiedz": "Zastanów się nad słowem „ocalałych”.",
+      "wyjasnienie": "Ocalałych się nie chowa — żyją."
+    },
+    {
+      "id": 44,
+      "kategoria": "ciągi",
+      "trudnosc": 2,
+      "pytanie": "Jaka liczba jest następna?  1, 2, 4, 7, 11, …",
+      "odpowiedzi": [
+        "16"
+      ],
+      "podpowiedz": "Dodajesz 1, potem 2, potem 3…",
+      "wyjasnienie": "Różnice rosną o 1: 11 + 5 = 16."
+    },
+    {
+      "id": 45,
+      "kategoria": "ciągi",
+      "trudnosc": 2,
+      "pytanie": "Jaka liczba jest następna?  10, 8, 11, 9, 12, …",
+      "odpowiedzi": [
+        "10"
+      ],
+      "podpowiedz": "Na przemian: odejmij 2, dodaj 3.",
+      "wyjasnienie": "−2, +3, −2, +3, −2: 12 − 2 = 10."
+    },
+    {
+      "id": 46,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 2,
+      "pytanie": "Kto jest synem mojego ojca, ale nie jest moim bratem? (Mówi mężczyzna.)",
+      "odpowiedzi": [
+        "ja",
+        "to ja",
+        "ja sam",
+        "mowiacy",
+        "on sam"
+      ],
+      "podpowiedz": "Spójrz w lustro.",
+      "wyjasnienie": "To sam mówiący — jest synem swojego ojca, ale nie swoim bratem."
+    },
+    {
+      "id": 47,
+      "kategoria": "matematyka",
+      "trudnosc": 1,
+      "pytanie": "Ile wynosi połowa ćwierci z 80?",
+      "odpowiedzi": [
+        "10"
+      ],
+      "podpowiedz": "Najpierw ćwierć z 80.",
+      "wyjasnienie": "Ćwierć z 80 to 20, połowa z 20 to 10."
+    },
+    {
+      "id": 48,
+      "kategoria": "kalendarz",
+      "trudnosc": 2,
+      "pytanie": "Pociąg odjeżdża o 10:40 i jedzie 1 godzinę i 35 minut. O której przyjedzie? (Napisz np. 9:05.)",
+      "odpowiedzi": [
+        "12:15",
+        "12.15",
+        "1215",
+        "12 15"
+      ],
+      "podpowiedz": "10:40 + 20 minut = 11:00.",
+      "wyjasnienie": "10:40 + 1 h = 11:40, + 35 min = 12:15."
+    },
+    {
+      "id": 49,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "2 osoby kopią 2 doły w 2 godziny. Ile godzin zajmie 1 osobie wykopanie 1 dołu?",
+      "odpowiedzi": [
+        "2"
+      ],
+      "podpowiedz": "Każda osoba kopie swój dół w tym samym czasie.",
+      "wyjasnienie": "Każda osoba kopie jeden dół w 2 godziny."
+    },
+    {
+      "id": 50,
+      "kategoria": "logika",
+      "trudnosc": 1,
+      "pytanie": "Kasia jest starsza od Oli. Ola jest starsza od Ewy. Ewa jest starsza od Zosi. Kto jest drugi od najstarszego?",
+      "odpowiedzi": [
+        "Ola"
+      ],
+      "podpowiedz": "Ułóż je od najstarszej.",
+      "wyjasnienie": "Kasia, Ola, Ewa, Zosia — druga jest Ola."
+    },
+    {
+      "id": 51,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "W szufladzie jest 10 czarnych i 10 białych skarpetek. Jest ciemno. Ile skarpetek musisz wyjąć (najmniej), żeby na pewno mieć parę tego samego koloru?",
+      "odpowiedzi": [
+        "3"
+      ],
+      "podpowiedz": "Są tylko dwa kolory.",
+      "wyjasnienie": "Pierwsze dwie mogą być różne, ale trzecia na pewno pasuje do którejś z nich."
+    },
+    {
+      "id": 52,
+      "kategoria": "matematyka",
+      "trudnosc": 1,
+      "pytanie": "Ile zer ma milion zapisany cyframi?",
+      "odpowiedzi": [
+        "6"
+      ],
+      "podpowiedz": "Tysiąc ma trzy zera.",
+      "wyjasnienie": "1 000 000 — sześć zer."
+    },
+    {
+      "id": 53,
+      "kategoria": "matematyka",
+      "trudnosc": 1,
+      "pytanie": "Ile boków mają razem trójkąt, kwadrat i pięciokąt?",
+      "odpowiedzi": [
+        "12"
+      ],
+      "podpowiedz": "3 + 4 + …",
+      "wyjasnienie": "3 + 4 + 5 = 12."
+    },
+    {
+      "id": 54,
+      "kategoria": "podchwytliwe",
+      "trudnosc": 3,
+      "pytanie": "Mam dwie monety, razem 3 zł. Jedna z nich nie jest złotówką. Jakie to monety? (Napisz np. „5 i 1”.)",
+      "odpowiedzi": [
+        "2 i 1",
+        "1 i 2",
+        "2 zl i 1 zl",
+        "1 zl i 2 zl",
+        "2zl i 1zl",
+        "1zl i 2zl",
+        "2 1",
+        "1 2",
+        "dwuzlotowka i zlotowka",
+        "zlotowka i dwuzlotowka",
+        "2 i 1 zl",
+        "1 i 2 zl"
+      ],
+      "podpowiedz": "JEDNA nie jest złotówką. A druga?",
+      "wyjasnienie": "2 zł i 1 zł — to dwuzłotówka nie jest złotówką, ale druga już tak."
+    },
+    {
+      "id": 55,
+      "kategoria": "słowne",
+      "trudnosc": 2,
+      "pytanie": "Jakie słowo w słowniku jest zawsze napisane źle?",
+      "odpowiedzi": [
+        "zle",
+        "slowo zle"
+      ],
+      "podpowiedz": "Odpowiedź jest w pytaniu.",
+      "wyjasnienie": "Słowo „źle” — zawsze jest napisane „źle”."
+    },
+    {
+      "id": 56,
+      "kategoria": "słowne",
+      "trudnosc": 1,
+      "pytanie": "Co robi się tym większe, im więcej z tego zabierasz?",
+      "odpowiedzi": [
+        "dziura",
+        "dol",
+        "dziura w ziemi",
+        "jama"
+      ],
+      "podpowiedz": "Kopiesz łopatą…",
+      "wyjasnienie": "Dziura — im więcej ziemi wybierzesz, tym jest większa."
+    },
+    {
+      "id": 57,
+      "kategoria": "słowne",
+      "trudnosc": 1,
+      "pytanie": "Ma szyjkę, ale nie ma głowy. Co to jest?",
+      "odpowiedzi": [
+        "butelka",
+        "flaszka",
+        "butelke"
+      ],
+      "podpowiedz": "Stoi w lodówce, pije się z niej.",
+      "wyjasnienie": "Butelka — ma szyjkę, a głowy nie."
+    },
+    {
+      "id": 58,
+      "kategoria": "słowne",
+      "trudnosc": 2,
+      "pytanie": "Co należy do ciebie, a inni używają tego częściej niż ty?",
+      "odpowiedzi": [
+        "imie",
+        "moje imie",
+        "twoje imie",
+        "imie i nazwisko",
+        "nazwisko"
+      ],
+      "podpowiedz": "Wołają cię tym.",
+      "wyjasnienie": "Twoje imię — inni wypowiadają je częściej niż ty."
+    },
+    {
+      "id": 59,
+      "kategoria": "słowne",
+      "trudnosc": 1,
+      "pytanie": "Ma zęby, ale nigdy nie gryzie. Co to jest?",
+      "odpowiedzi": [
+        "grzebien",
+        "pila",
+        "zamek",
+        "zamek blyskawiczny",
+        "suwak",
+        "widelec",
+        "grabie",
+        "zebatka",
+        "kolo zebate"
+      ],
+      "podpowiedz": "Leży w łazience, czeszesz nim włosy.",
+      "wyjasnienie": "Grzebień (albo piła, grabie, zamek błyskawiczny…)."
+    },
+    {
+      "id": 60,
+      "kategoria": "ciągi",
+      "trudnosc": 3,
+      "pytanie": "Jaka liczba jest następna?  1, 2, 6, 24, 120, …",
+      "odpowiedzi": [
+        "720"
+      ],
+      "podpowiedz": "Razy 2, razy 3, razy 4…",
+      "wyjasnienie": "Mnożymy przez kolejne liczby: 120 × 6 = 720."
+    },
+    {
+      "id": 61,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "Dwóch ojców i dwóch synów poszło na ryby. Każdy złowił jedną rybę, a razem złowili 3 ryby. Ile osób było na rybach?",
+      "odpowiedzi": [
+        "3"
+      ],
+      "podpowiedz": "Ktoś może być jednocześnie ojcem i synem.",
+      "wyjasnienie": "Dziadek, ojciec i syn — trzy osoby: dwóch ojców i dwóch synów."
+    },
+    {
+      "id": 62,
+      "kategoria": "matematyka",
+      "trudnosc": 1,
+      "pytanie": "Ile wynosi ½ + ¼ + ¼?",
+      "odpowiedzi": [
+        "1",
+        "calosc"
+      ],
+      "podpowiedz": "Dwie ćwiartki to połowa.",
+      "wyjasnienie": "¼ + ¼ = ½, a ½ + ½ = 1."
+    },
+    {
+      "id": 63,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "Pan Nowak ma 3 synów. Każdy z synów ma jedną siostrę. Ile najmniej dzieci ma pan Nowak?",
+      "odpowiedzi": [
+        "4"
+      ],
+      "podpowiedz": "Czy każdy syn musi mieć inną siostrę?",
+      "wyjasnienie": "Wszyscy trzej mają tę samą siostrę: 3 synów + 1 córka = 4."
+    },
+    {
+      "id": 64,
+      "kategoria": "matematyka",
+      "trudnosc": 2,
+      "pytanie": "Liczba dwucyfrowa: suma jej cyfr to 9, a druga cyfra jest o 1 większa od pierwszej. Jaka to liczba?",
+      "odpowiedzi": [
+        "45"
+      ],
+      "podpowiedz": "Dwie sąsiednie liczby, które razem dają 9.",
+      "wyjasnienie": "4 + 5 = 9, a 5 jest o 1 większe od 4 — to 45."
+    },
+    {
+      "id": 65,
+      "kategoria": "matematyka",
+      "trudnosc": 2,
+      "pytanie": "Ile minut ma doba?",
+      "odpowiedzi": [
+        "1440"
+      ],
+      "podpowiedz": "24 godziny po 60 minut.",
+      "wyjasnienie": "24 × 60 = 1440."
+    },
+    {
+      "id": 66,
+      "kategoria": "matematyka",
+      "trudnosc": 1,
+      "pytanie": "Pomyślałem liczbę. Dodałem 5, wynik pomnożyłem przez 2 i wyszło 30. Jaką liczbę pomyślałem?",
+      "odpowiedzi": [
+        "10"
+      ],
+      "podpowiedz": "Cofaj się od końca: 30 podzielić przez 2…",
+      "wyjasnienie": "30 : 2 = 15, 15 − 5 = 10."
+    },
+    {
+      "id": 67,
+      "kategoria": "kalendarz",
+      "trudnosc": 2,
+      "pytanie": "Dziś jest środa. Jaki dzień tygodnia będzie za 10 dni?",
+      "odpowiedzi": [
+        "sobota"
+      ],
+      "podpowiedz": "Za 7 dni znów będzie środa.",
+      "wyjasnienie": "Za 7 dni środa, za kolejne 3 — sobota."
+    },
+    {
+      "id": 68,
+      "kategoria": "logika",
+      "trudnosc": 1,
+      "pytanie": "Wszystkie róże są kwiatami. Ta roślina jest różą. Czy ta roślina jest kwiatem? (tak/nie)",
+      "odpowiedzi": [
+        "tak",
+        "jest"
+      ],
+      "podpowiedz": "Róża należy do kwiatów.",
+      "wyjasnienie": "Skoro każda róża to kwiat, a to jest róża — to jest kwiat."
+    },
+    {
+      "id": 69,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "Każdy kot jest zwierzęciem. Burek jest zwierzęciem. Czy na pewno wiadomo, że Burek jest kotem? (tak/nie)",
+      "odpowiedzi": [
+        "nie",
+        "nie wiadomo",
+        "nie na pewno",
+        "niekoniecznie"
+      ],
+      "podpowiedz": "Czy każde zwierzę to kot?",
+      "wyjasnienie": "Nie — zwierzętami są też psy, konie itd. Burek równie dobrze może być psem."
+    },
+    {
+      "id": 70,
+      "kategoria": "matematyka",
+      "trudnosc": 2,
+      "pytanie": "W klasie jest 30 uczniów. Dziewczynek jest o 4 więcej niż chłopców. Ilu jest chłopców?",
+      "odpowiedzi": [
+        "13"
+      ],
+      "podpowiedz": "Odejmij te 4 dziewczynki i podziel resztę na pół.",
+      "wyjasnienie": "(30 − 4) : 2 = 13 chłopców i 17 dziewczynek."
+    },
+    {
+      "id": 71,
+      "kategoria": "ciągi",
+      "trudnosc": 2,
+      "pytanie": "Jaka liczba jest następna?  1, 3, 7, 15, 31, …",
+      "odpowiedzi": [
+        "63"
+      ],
+      "podpowiedz": "Razy 2 i dodaj 1.",
+      "wyjasnienie": "Każda to poprzednia × 2 + 1: 31 × 2 + 1 = 63."
+    },
+    {
+      "id": 72,
+      "kategoria": "słowne",
+      "trudnosc": 1,
+      "pytanie": "Im go więcej, tym mniej widzisz. Co to jest?",
+      "odpowiedzi": [
+        "ciemnosc",
+        "mrok",
+        "ciemno",
+        "mgla",
+        "dym"
+      ],
+      "podpowiedz": "Przychodzi, kiedy zgasisz światło.",
+      "wyjasnienie": "Ciemność — im jej więcej, tym mniej widać."
+    },
+    {
+      "id": 73,
+      "kategoria": "logika",
+      "trudnosc": 2,
+      "pytanie": "Antek stoi w kolejce. Przed nim stoi 5 osób, a za nim 3. Ile osób stoi w kolejce?",
+      "odpowiedzi": [
+        "9"
+      ],
+      "podpowiedz": "Nie zapomnij o Antku.",
+      "wyjasnienie": "5 + 3 + sam Antek = 9."
+    },
+    {
+      "id": 74,
+      "kategoria": "matematyka",
+      "trudnosc": 2,
+      "pytanie": "Butelka z korkiem kosztuje 11 zł. Butelka jest droższa od korka o 10 zł. Ile złotych kosztuje butelka? (Możesz pisać z przecinkiem.)",
+      "odpowiedzi": [
+        "10.5",
+        "10.50",
+        "10 i pol"
+      ],
+      "podpowiedz": "Korek nie kosztuje 1 zł — sprawdź różnicę.",
+      "wyjasnienie": "Korek 0,50 zł, butelka 10,50 zł — razem 11 zł, różnica 10 zł."
+    },
+    {
+      "id": 75,
+      "kategoria": "kalendarz",
+      "trudnosc": 1,
+      "pytanie": "Ile godzin trwa półtorej doby?",
+      "odpowiedzi": [
+        "36"
+      ],
+      "podpowiedz": "Doba ma 24 godziny.",
+      "wyjasnienie": "24 + 12 = 36."
+    },
+    {
+      "id": 76,
+      "kategoria": "matematyka",
+      "trudnosc": 3,
+      "pytanie": "Ojciec jest 4 razy starszy od syna. Za 20 lat będzie od niego starszy już tylko 2 razy. Ile lat ma teraz syn?",
+      "odpowiedzi": [
+        "10"
+      ],
+      "podpowiedz": "Różnica wieku między nimi nigdy się nie zmienia.",
+      "wyjasnienie": "Syn 10, ojciec 40. Za 20 lat: 30 i 60 — dokładnie 2 razy."
+    },
+    {
+      "id": 77,
+      "kategoria": "logika",
+      "trudnosc": 3,
+      "pytanie": "Masz 9 jednakowych monet, z których jedna jest lżejsza, i wagę szalkową. Ile najmniej ważeń wystarczy, żeby na pewno znaleźć lżejszą monetę?",
+      "odpowiedzi": [
+        "2"
+      ],
+      "podpowiedz": "Podziel monety na trzy kupki po trzy.",
+      "wyjasnienie": "Ważysz 3 na 3: lżejsza kupka (albo ta odłożona) ma fałszywkę. Z niej 1 na 1 — i znowu wiesz. Dwa ważenia."
+    },
+    {
+      "id": 78,
+      "kategoria": "ciągi",
+      "trudnosc": 3,
+      "pytanie": "Jaka liczba jest następna?  2, 6, 12, 20, 30, …",
+      "odpowiedzi": [
+        "42"
+      ],
+      "podpowiedz": "Różnice: 4, 6, 8, 10…",
+      "wyjasnienie": "Różnice rosną o 2: 30 + 12 = 42 (to także 6 × 7)."
+    },
+    {
+      "id": 79,
+      "kategoria": "matematyka",
+      "trudnosc": 3,
+      "pytanie": "Wiadro pełne wody waży 10 kg. To samo wiadro napełnione do połowy waży 6 kg. Ile kilogramów waży puste wiadro?",
+      "odpowiedzi": [
+        "2"
+      ],
+      "podpowiedz": "Ile waży połowa wody?",
+      "wyjasnienie": "Połowa wody waży 10 − 6 = 4 kg, cała woda 8 kg, więc wiadro 2 kg."
+    }
+  ]
+}
