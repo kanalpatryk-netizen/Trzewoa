@@ -11,6 +11,7 @@ Z użytkownikiem rozmawia się po polsku.
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 - **Menu główne Alphy 0.2 przebudowane (5.11)** według szkicu grafika: czarne tło, logo „Trzewia” z obrazka, spis z ozdobnikami, znaki zespołu w lewym dolnym rogu, prawa strona pusta na przyszłą grafikę (trójka postaci — „zostaw to na razie”, użytkownik 5.11). Obrazki: `alpha-0.2/obrazy/menu/`, nastawy: `MENU` w `src/nastawy/wyglad/menu.ts`.
 - **Ustawienia Alphy 0.2 przebudowane (5.11):** czarne tło, styl menu, 4 kategorie-ikonki (nazwa wysuwa się po najechaniu), max 5 ustawień na kategorię; reszta dawnych ustawień na stałe domyślna (`STALE` w `src/core/settings-store.ts`). Szczegóły w `alpha-0.2/README.md`.
+- **Tylko komputer (decyzja użytkownika 5.11):** nic pod telefon — wersja na telefon nie będzie kontynuowana, praca nad nią tylko zużywa zasoby (patrz „Tylko komputer” niżej).
 - **Zadanie bieżące (od 25.10): propozycje Pawła dla Alphy 0.2 — patrz sekcja 0 niżej. Zrobione jako osobna wersja `propozycja-1/` (na `main`); `alpha-0.2/` bez zmian.**
 
 ---
@@ -560,6 +561,7 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
   naprawy (rycerz bierze najpierw Strażnika przy bezbronnych i czeka pod tym w skale) pogorszyła wyniki do 6/8 i 8/16 —
   wycofana. Do etapu 5 (bot) albo osobnej poprawki walki: rycerz musi osłaniać modlących się przed bossem.
 - **Tylko komputer.** Alpha nie jest zrobiona pod telefon. Paweł: „na telefonie mało co działa”.
+  **Decyzja użytkownika (5.11): nie robić niczego pod telefon** — żadnych układów na wąski / pionowy ekran, dotyku ani prób na rozmiarach telefonu. To zbędne: wersja na telefon nie będzie już kontynuowana, a praca nad nią tylko bez sensu zużywa zasoby. (Menu i ustawienia z 5.11 mają jeszcze układ wąski — do usunięcia przy okazji.)
 - **Zadania zespołu, nie dla Claude:**
   - grafika:
     - menu główne (pilne);
