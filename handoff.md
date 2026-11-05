@@ -10,6 +10,7 @@ Z użytkownikiem rozmawia się po polsku.
 - **Ostatnie stałe polecenie użytkownika:** „gdy dokończysz obecne zadanie, zatrzymaj się i czekaj na moje polecenie”. (18.10: 3e, 3f i etap 4 zrobione na polecenie użytkownika. Etap 5 ruszył na polecenie użytkownika; 5a zrobione — **przed 5b powiedz użytkownikowi, co w nim będzie, i czekaj na polecenie.** Stanem wizualnym rycerza „zajmiemy się kiedy indziej” — użytkownik 18.10.)
 - **Wymóg do wszystkiego, co nowe:** „każda, absolutnie każda nowa mechanika ma mieć swoje animacje (mówię tu głównie o ołtarzu i rytuałach tam)”.
 - **Menu główne Alphy 0.2 przebudowane (5.11)** według szkicu grafika: czarne tło, logo „Trzewia” z obrazka, spis z ozdobnikami, znaki zespołu w lewym dolnym rogu, prawa strona pusta na przyszłą grafikę (trójka postaci — „zostaw to na razie”, użytkownik 5.11). Obrazki: `alpha-0.2/obrazy/menu/`, nastawy: `MENU` w `src/nastawy/wyglad/menu.ts`.
+- **Ustawienia Alphy 0.2 przebudowane (5.11):** czarne tło, styl menu, 4 kategorie-ikonki (nazwa wysuwa się po najechaniu), max 5 ustawień na kategorię; reszta dawnych ustawień na stałe domyślna (`STALE` w `src/core/settings-store.ts`). Szczegóły w `alpha-0.2/README.md`.
 - **Zadanie bieżące (od 25.10): propozycje Pawła dla Alphy 0.2 — patrz sekcja 0 niżej. Zrobione jako osobna wersja `propozycja-1/` (na `main`); `alpha-0.2/` bez zmian.**
 
 ---

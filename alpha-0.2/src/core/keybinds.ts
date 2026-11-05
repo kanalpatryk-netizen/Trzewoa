@@ -1,4 +1,4 @@
-/** Wszystkie akcje gry z przypisanymi klawiszami. Gracz może je zmienić w ustawieniach. */
+/** Wszystkie akcje gry z przypisanymi klawiszami. Alpha 0.2: bez zmiany klawiszy w ustawieniach (zostało „Przywróć domyślne”). */
 export type Akcja =
   | 'pauza' | 'szybciej' | 'wolniej' | 'zapis' | 'wczytaj' | 'menu'
   | 'zasiej' | 'szept' | 'znak'

@@ -2,7 +2,7 @@
  * STEROWANIE I KAMERA — jak gracz porusza się po górze.
  *
  * Przybliżenie („zoom”) = ile pikseli ma jeden kafel. Klawisze przypisuje się
- * w grze (Ustawienia → Sterowanie); domyślny układ jest w src/core/keybinds.ts,
+ * w grze (Alpha 0.2: tylko „Przywróć domyślne” w ustawieniach); domyślny układ jest w src/core/keybinds.ts,
  * domyślne ustawienia (głośność, tempo…) w src/core/settings-store.ts.
  */
 export const KAMERA = {
