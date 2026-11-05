@@ -435,7 +435,9 @@
       zn.textContent = d.ustawienia.pauza ? 'pauza' : d.demon ? 'walka z demonem' : d.falTrwa ? 'fala Strażników' : 'w trakcie';
       zn.className = d.falTrwa || d.demon ? 'zle' : 'trwa';
       if (d.ustawienia.pauza && !$('plansza').classList.contains('widac')) plansza('pauza', '');
-      if (!d.ustawienia.pauza && $('plansza').textContent === 'pauza') $('plansza').classList.remove('widac');
+      // po wznowieniu czasu znika i „pauza”, i „czas stoi: …” (z wyzwalacza)
+      const pt = $('plansza').textContent;
+      if (!d.ustawienia.pauza && (pt === 'pauza' || pt.startsWith('czas stoi'))) $('plansza').classList.remove('widac');
     }
     // postęp
     pasek('pDroga', d.droga, `${d.droga}%`);

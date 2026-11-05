@@ -158,7 +158,8 @@ function wybierz(sim: Sim, st: StanDloniDemona, dm: Creature, r: Creature): void
   if (odl <= D.rzut.zasieg && stoiNaZiemi && !st.sciana) mozliwe.push({ a: 'rzut', waga: D.wagi.rzut, ustaw: () => ustawRzut(sim, st, dm, r) });
   if (odl <= D.tarcza.zasieg && !st.sciana) mozliwe.push({ a: 'tarcza', waga: D.wagi.tarcza, ustaw: () => ustawTarcze(sim, st, dm, r) });
   const dx = Math.abs(r.x - dm.x);
-  if (dx >= D.zawal.minOdstep && dx <= D.zawal.maxOdstep && !st.sciana) mozliwe.push({ a: 'zawal', waga: D.wagi.zawal, ustaw: () => ustawZawal(sim, st, dm, r) });
+  // (rycerz musi stać przy demonie, na tej samej wysokości — nie w sali nad nim)
+  if (dx >= D.zawal.minOdstep && dx <= D.zawal.maxOdstep && Math.abs(r.y - dm.y) <= D.zawal.maxRoznicaWys && !st.sciana) mozliwe.push({ a: 'zawal', waga: D.wagi.zawal, ustaw: () => ustawZawal(sim, st, dm, r) });
   const inne = mozliwe.filter((m) => m.a !== st.ostatnia);
   const lista = inne.length ? inne : mozliwe;
   while (lista.length) {
@@ -200,8 +201,13 @@ function ustawZawal(sim: Sim, st: StanDloniDemona, dm: Creature, r: Creature): b
     // nikt nie może stać w kolumnie gruzu
     const zajete = sim.creatures.some((c) => !c.dead && !c.straznik && c.x >= x - 0.6 && c.x <= x + D.zawal.szer + 0.6 && c.y > k.strop - 1 && c.y < k.dno + 1);
     if (zajete) continue;
-    let wolnych = 0;
-    for (let xx = x; xx < x + D.zawal.szer; xx++) for (let yy = k.strop + 1; yy < k.dno; yy++) if (w.inb(xx, yy) && !w.solid(xx, yy)) wolnych++;
+    // nigdy w szybie drogi wiernych — to jedyna droga w dół i z powrotem
+    let wolnych = 0, wSzybie = false;
+    for (let xx = x; xx < x + D.zawal.szer; xx++) for (let yy = k.strop + 1; yy < k.dno; yy++) {
+      if (w.inb(xx, yy) && !w.solid(xx, yy)) wolnych++;
+      if (w.wSzybie(xx, yy)) wSzybie = true;
+    }
+    if (wSzybie) continue;
     if (wolnych < 3) continue;
     st.x = x; st.strop = k.strop; st.dno = k.dno; st.y = k.strop;
     return true;
