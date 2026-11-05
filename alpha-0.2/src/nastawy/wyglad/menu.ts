@@ -39,8 +39,6 @@ export const MENU = {
   alfaNieaktywnej: 0.3,
 
   // ----------------------------------------------------------------- układ
-  /** Poniżej tej szerokości (px) albo przy ekranie wyższym niż szeroki ×`pionowyOd` — układ pionowy (telefon). */
-  waskiPonizej: 700, pionowyOd: 1.15,
   /** Logo: górna krawędź (× h), wysokość (× h), najwyżej taka część szerokości. */
   logoGora: 0.03, logoWysokosc: 0.42, logoMaxSzer: 0.5,
   /** Spis: rozmiar liter (× h, obcięty do min–max), odstęp wierszy (× rozmiar), odstęp od logo (× rozmiar). */

@@ -93,16 +93,15 @@ export class EkranMenu implements Ekran {
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
 
-    const waski = h > w * M.pionowyOd || (w < M.waskiPonizej && h >= w);
     const m = Math.max(M.marginesMin, h * M.margines);
 
     // ---- logo: pośrodku u góry
     const proporcja = this.logo.gotowy ? this.logo.img.naturalWidth / this.logo.img.naturalHeight : 1.62;
-    let lh = h * (waski ? M.logoWysokosc * 0.7 : M.logoWysokosc);
+    let lh = h * M.logoWysokosc;
     let lw = lh * proporcja;
-    const maxLw = w * (waski ? 0.86 : M.logoMaxSzer);
+    const maxLw = w * M.logoMaxSzer;
     if (lw > maxLw) { lw = maxLw; lh = lw / proporcja; }
-    const ly = waski ? Math.max(m, h * 0.06) : h * M.logoGora;
+    const ly = h * M.logoGora;
     if (this.logoBarwne) {
       ctx.globalAlpha = wygladz(odWejscia / M.wejscieMs);
       ctx.drawImage(this.logoBarwne, w / 2 - lw / 2, ly, lw, lh);
@@ -111,13 +110,12 @@ export class EkranMenu implements Ekran {
 
     // ---- spis: pod logo, pośrodku; na niskim ekranie gęstnieje, potem pismo maleje
     const n = this.pozycje.length;
-    let r = Math.max(M.spisRozmiarMin, Math.min(M.spisRozmiarMax, h * M.spisRozmiar * (waski ? 1.05 : 1), waski ? w / 13 : Infinity));
+    let r = Math.max(M.spisRozmiarMin, Math.min(M.spisRozmiarMax, h * M.spisRozmiar));
     let odstep = r * M.spisOdstep;
     const podLogo = ly + lh;
-    const zapasDol = waski ? h * 0.12 : 0;   // telefon: pod spisem rząd znaków zespołu
     const start = () => podLogo + r * M.spisPodLogo + r * 0.55;
-    for (let k = 0; k < 16 && start() + (n - 1) * odstep + r * 0.5 > h - m - zapasDol; k++) {
-      if (odstep > r * 1.35) odstep = Math.max(r * 1.35, (h - m - zapasDol - r * 0.5 - start()) / (n - 1));
+    for (let k = 0; k < 16 && start() + (n - 1) * odstep + r * 0.5 > h - m; k++) {
+      if (odstep > r * 1.35) odstep = Math.max(r * 1.35, (h - m - r * 0.5 - start()) / (n - 1));
       else { r *= 0.94; odstep = r * 1.35; }
     }
     const y0 = start();
@@ -154,9 +152,8 @@ export class EkranMenu implements Ekran {
       ctx.restore();
       this.trafienia.push({ x: w / 2 - szerWiersza / 2, y: y - odstep * 0.5 - r * 0.3, w: szerWiersza, h: odstep, i });
     }
-    const dolSpisu = y0 + (n - 1) * odstep + r * 0.5;
 
-    // ---- znaki zespołu: lewy dolny róg (telefon: pośrodku pod spisem)
+    // ---- znaki zespołu: lewy dolny róg
     const wejscieZ = wygladz((odWejscia - M.zespolOd) / M.wejscieMs);
     const gotowe = this.zespol.filter((z) => z.obraz.gotowy);
     if (gotowe.length && wejscieZ > 0) {
@@ -167,16 +164,9 @@ export class EkranMenu implements Ekran {
       const odst = h * M.zespolOdstep;
       const calosc = wymiary.reduce((s, d) => s + d.zw, 0) + odst * (wymiary.length - 1);
       const najwyzszy = Math.max(...wymiary.map((d) => d.zh));
-      let k: number;
-      let x: number;
-      if (waski) {
-        k = Math.min(1, (w - 2 * m) / calosc, (h - m - dolSpisu - r * 0.6) / najwyzszy);
-        x = w / 2 - (calosc * k) / 2;
-      } else {
-        // rząd kończy się przed spisem (i przed ozdobnikami) z zapasem
-        k = Math.min(1, (w / 2 - szerWiersza / 2 - r * 1.2 - m) / calosc);
-        x = m;
-      }
+      // rząd kończy się przed spisem (i przed ozdobnikami) z zapasem
+      const k = Math.min(1, (w / 2 - szerWiersza / 2 - r * 1.2 - m) / calosc);
+      let x = m;
       if (k * najwyzszy >= 20) {
         const srodekY = h - m - (najwyzszy * k) / 2;
         ctx.globalAlpha = M.zespolAlfa * wejscieZ;

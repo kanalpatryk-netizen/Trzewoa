@@ -561,7 +561,7 @@ To nowa, jasna dłoń, która schodzi z górnej krawędzi ekranu. Model jest w t
   naprawy (rycerz bierze najpierw Strażnika przy bezbronnych i czeka pod tym w skale) pogorszyła wyniki do 6/8 i 8/16 —
   wycofana. Do etapu 5 (bot) albo osobnej poprawki walki: rycerz musi osłaniać modlących się przed bossem.
 - **Tylko komputer.** Alpha nie jest zrobiona pod telefon. Paweł: „na telefonie mało co działa”.
-  **Decyzja użytkownika (5.11): nie robić niczego pod telefon** — żadnych układów na wąski / pionowy ekran, dotyku ani prób na rozmiarach telefonu. To zbędne: wersja na telefon nie będzie już kontynuowana, a praca nad nią tylko bez sensu zużywa zasoby. (Menu i ustawienia z 5.11 mają jeszcze układ wąski — do usunięcia przy okazji.)
+  **Decyzja użytkownika (5.11): nie robić niczego pod telefon** — żadnych układów na wąski / pionowy ekran, dotyku ani prób na rozmiarach telefonu. To zbędne: wersja na telefon nie będzie już kontynuowana, a praca nad nią tylko bez sensu zużywa zasoby. Układy wąskie usunięte z menu i ustawień (5.11); inne ekrany Alphy mają jeszcze stare układy telefonu — nie rozwijać ich.
 - **Zadania zespołu, nie dla Claude:**
   - grafika:
     - menu główne (pilne);

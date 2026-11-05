@@ -2,7 +2,7 @@
  * EKRAN USTAWIEŃ — napisy, barwy i układ.
  *
  * W stylu menu głównego: czarne tło, jasne napisy, ozdobniki przy wybranym wierszu.
- * Kategorie to ikonki w kolumnie po lewej (na telefonie — w rzędzie u góry); po najechaniu
+ * Kategorie to ikonki w kolumnie po lewej; po najechaniu
  * wysuwa się z nich nazwa kategorii. W każdej kategorii najwyżej 5 ustawień.
  * Same pozycje (co da się ustawić) są w src/app/screens/settings.ts.
  * „r” to rozmiar liter wiersza; większość wymiarów to jego wielokrotności (× r).
@@ -30,8 +30,6 @@ export const EKRAN_USTAWIEN = {
   poswiata: '255,236,210',
 
   // ----------------------------------------------------------------- układ
-  /** Poniżej tej szerokości (px) albo na ekranie w pionie — ikonki w rzędzie u góry. */
-  waskiPonizej: 760,
   /** Rozmiar liter wiersza (× h, obcięty do min–max) i odstęp wierszy (× r). */
   rozmiar: 0.034, rozmiarMin: 15, rozmiarMax: 30, odstep: 2.15,
   /** Tytuł: rozmiar (× h, min–max) i położenie (× h). */

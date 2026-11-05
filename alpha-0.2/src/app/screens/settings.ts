@@ -66,7 +66,7 @@ function rysujIkone(ctx: CanvasRenderingContext2D, ikona: Ikona, cx: number, cy:
 }
 
 /**
- * Ustawienia w stylu menu: czarne tło, kategorie jako ikonki (po najechaniu wysuwa się nazwa),
+ * Ustawienia w stylu menu (tylko komputer — bez układu pod telefon): czarne tło, kategorie jako ikonki (po najechaniu wysuwa się nazwa),
  * w każdej kategorii najwyżej 5 ustawień. Reszta dawnych ustawień ma stałe wartości domyślne
  * (settings-store.ts — STALE).
  */
@@ -166,8 +166,7 @@ export class EkranUstawien implements Ekran {
     ctx.globalAlpha = wejscie;
     ctx.textBaseline = 'alphabetic';
 
-    const waski = sz < U.waskiPonizej || h > sz * 1.15;
-    const r = Math.max(U.rozmiarMin, Math.min(U.rozmiarMax, h * U.rozmiar, waski ? sz / 20 : Infinity));
+    const r = Math.max(U.rozmiarMin, Math.min(U.rozmiarMax, h * U.rozmiar));
     const m = Math.max(14, h * 0.04);
 
     // ---- tytuł z ozdobnikami, jak pozycja menu
@@ -190,25 +189,11 @@ export class EkranUstawien implements Ekran {
     this.wstecz = { x: m - 10, y: m - 8, w: wsW + 20, h: r * 1.6 + 8 };
 
     // ---- lista
-    // miejsce po lewej na ozdobnik wybranego wiersza — nie może wyjść poza ekran
-    const cw = Math.min(r * U.szerokosc, waski ? sz - 2 * (m + r * (U.ozdobnikSzer + U.ozdobnikOdstep)) : sz * U.szerokoscMaxCzesc);
+    const cw = Math.min(r * U.szerokosc, sz * U.szerokoscMaxCzesc);
     const x0 = sz / 2 - cw / 2;
     const ikS = r * U.ikonaRozmiar;
     const n = this.kategorie.length;
-    let yNaglowka: number;
-    this.trafIkon = [];
-    if (waski) {
-      // ikonki w rzędzie pod tytułem; nazwa wysuwa się pod ikonką
-      const krok = ikS * U.ikonaOdstep;
-      const yi = yt + rt * 0.6 + ikS * 0.8;
-      for (let i = 0; i < n; i++) {
-        const cx = sz / 2 + (i - (n - 1) / 2) * krok;
-        this.trafIkon.push({ x: cx - krok / 2, y: yi - ikS * 0.75, w: krok, h: ikS * 1.5 });
-      }
-      yNaglowka = yi + ikS * 0.6 + r * 2.4;
-    } else {
-      yNaglowka = Math.max(h * U.gora, yt + rt * 1.2);
-    }
+    const yNaglowka = Math.max(h * U.gora, yt + rt * 1.2);
     // nagłówek kategorii
     const kat = this.kategorie[this.kat];
     ctx.font = `${r * 1.15}px ${SERIF_TYTUL}`;
@@ -233,7 +218,8 @@ export class EkranUstawien implements Ekran {
     }
 
     // ikonki w kolumnie po lewej, na wysokości listy; nazwa wysuwa się w lewo
-    if (!waski) {
+    this.trafIkon = [];
+    {
       const krok = ikS * U.ikonaOdstep;
       const xi = x0 - r * U.ikonaOdListy - ikS / 2;
       const srodek = yNaglowka + (y0 + (this.wiersze.length - 1) * krokW - yNaglowka) / 2;
@@ -256,11 +242,9 @@ export class EkranUstawien implements Ekran {
         ctx.shadowColor = `rgba(${U.poswiata},0.6)`; ctx.shadowBlur = r * 0.6;
         rysujIkone(ctx, this.kategorie[i].ikona, cx, cy, ikS / 2, barwa);
         ctx.restore();
-        // kreska pod / obok wybranej
+        // kreska obok wybranej
         ctx.strokeStyle = rgba(U.ozdobnikWybrany, 0.8); ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        if (waski) { ctx.moveTo(cx - ikS * 0.35, cy + ikS * 0.72); ctx.lineTo(cx + ikS * 0.35, cy + ikS * 0.72); }
-        else { ctx.moveTo(cx + ikS * 0.78, cy - ikS * 0.35); ctx.lineTo(cx + ikS * 0.78, cy + ikS * 0.35); }
+        ctx.beginPath(); ctx.moveTo(cx + ikS * 0.78, cy - ikS * 0.35); ctx.lineTo(cx + ikS * 0.78, cy + ikS * 0.35);
         ctx.stroke();
       } else rysujIkone(ctx, this.kategorie[i].ikona, cx, cy, ikS / 2, barwa);
       // wysuwana nazwa kategorii
@@ -270,13 +254,8 @@ export class EkranUstawien implements Ekran {
         ctx.globalAlpha *= a * 0.85;
         ctx.font = `italic ${r * 0.8}px ${SERIF}`;
         ctx.fillStyle = U.napisWybrany;
-        if (waski) {
-          ctx.textAlign = 'center';
-          ctx.fillText(this.kategorie[i].nazwa, cx, cy + ikS * 0.75 + r * (0.5 + 0.6 * a));
-        } else {
-          ctx.textAlign = 'right';
-          ctx.fillText(this.kategorie[i].nazwa, cx - ikS * 0.7 - r * (0.1 + 0.6 * a), cy + r * 0.28);
-        }
+        ctx.textAlign = 'right';
+        ctx.fillText(this.kategorie[i].nazwa, cx - ikS * 0.7 - r * (0.1 + 0.6 * a), cy + r * 0.28);
         ctx.restore();
       }
     }
