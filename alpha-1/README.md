@@ -15,10 +15,44 @@ Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Pli
   powstały trzy warstwy w `obrazy/pomnik/`: sylwetka, kontur i same rysy.
 - Stany: 1 — rysy na twarzy i barku, 2 — rysy do pasa i odłupane czubki aureoli, palce i stopa, 3 — rysy żarzą się,
   oczy się tlą. Rozpad w gruz jak dawniej.
-- **Boss** to ta sama postać ożywiona: ciemna, rozżarzona skóra, płonące oczy, ogień w aureoli, żar w piersi; oddycha,
-  wstaje z gruzu, zamachuje się, przy konaniu świeci złotem i rozsypuje się w popiół. Ryciny w atlasie też.
 - Inny wzór = podmienione pliki w `obrazy/pomnik/` (punkty: `WZOR` w `src/render/demon-wzor.ts`). Dawna rycina
   (`rysujDemonaRycina` w `src/render/demon.ts`) rysuje tylko, póki obrazki się wczytują.
+
+## Boss — kukiełka z rysunku pomnika (5.11)
+Użytkownik: „popraw drastycznie wygląd i wszelkie animacje bossa… animacji ma być dużo i mają być kompletne, sam
+wygląd bossa ma być choć podobny do pomnika”. Boss to teraz **ten sam rysunek co posąg**, pocięty na ruchome części.
+- **Cięcie i tekstury** (`scripts/pomnik/czesci.py`, z folderu `alpha-1`: `python3 scripts/pomnik/czesci.py [podgląd.png]`):
+  rysunek dzieli się po narysowanych liniach na 18 części — aureola, łydki, stopy, uda, ramiona, przedramiona, dłonie,
+  tułów, przepaska, naszyjnik z czaszek, głowa, szczęka (bez cokołu i płyt pod stopami). Każda część dostaje schowane
+  zakładki pod sąsiadem z przodu (ruch nie odsłania dziur) i dwie skóry wypieczone z rysunku: **żywą** (ciemny bazalt
+  z płaskorzeźbą kreski, kontra z płonącej aureoli zza pleców, żar w zagłębieniach) i **kamienną** (posąg). Do tego
+  mapa świecenia: żyły żaru w kresce, **pęknięcia ran w 4 stopniach** (rysy wzoru + losowe pęknięcia) i oczy.
+  Wynik: `obrazy/pomnik/kukla-zywy.webp`, `kukla-kamien.webp`, `kukla-zar.png` i `src/render/demon-czesci.ts`.
+- **Szkielet** (`src/render/demon-kukla.ts`): miednica → tułów → głowa → szczęka, aureola, naszyjnik, ręce; ręce
+  i nogi z IK (cel nadgarstka i kostki, łokcie i kolana na zewnątrz — przysiad to opuszczona miednica, stopy zostają
+  na ziemi); przepaska marszczy się w przysiadzie. Ogień na brzegu aureoli (44 języki), oczy, wnętrze ust przy
+  opadającej szczęce, żar w dłoniach, kajdany na nadgarstkach i kostkach, zerwane łańcuchy kołyszą się (fizyka).
+- **Zachowanie** (`src/render/demon-boss.ts`, wg stanu gry — bez zmian w symulacji):
+  - oddech (szybszy u rannego i w szale), mrugnięcia, warczenie, głowa śledzi cel albo się rozgląda;
+  - ciężki chód z tupnięciami (pył, fala), lot w pionie i w skale (nogi zwisają; w skale prześwituje i sypie żwirem),
+    postawa do walki przy celu;
+  - **3 ciosy** (z góry; zamach pazurami ze smugą ognia; podcięcie od dołu) — zamach zaczyna się przed uderzeniem,
+    uderzenie trafia w tik ciosu (`ciosT`), iskry i krąg w miejscu trafienia;
+  - **uderzenie w ziemię** (zasypanie drogi, `zasypT`): ręce w górę z rykiem, przysiad, pięści w ziemię — fala,
+    pył, gruz ze stropu, żarzące się pęknięcia podłogi;
+  - **ryk** (po wstaniu, przy wejściu w szał, po zabiciu celu, co jakiś czas w ciszy): głowa w tył, szczęka
+    otwarta, ręce szeroko, kręgi z ust, iskry;
+  - **rozkazy dla dłoni z otchłani**: wskazuje rycerza, zaciska dłoń, unosi i ciska (rzut); krzyżuje ręce
+    i się śmieje (tarcza); drze strop pazurami i ściąga go w dół (zawał); za ścianą gruzu wali się w pierś;
+  - **modlitwa**: kuli się, zasłania twarz, drży, żyły złote, złoty pył i para; **zrastanie**: iskry wpływają
+    w pierś, żar pulsuje jak serce; **rany**: pęknięcia w 4 stopniach, garbi się, kuleje, dymi; **szał** (< ¼ życia):
+    drży, oczy ze smugą, aureola bucha; **oberwanie**: wstrząs, błysk, odpryski.
+  - **Wstawanie z gruzu**: żar spod gruzu, przebija się prawa ręka, lewa, kamienna głowa z zapalającymi się oczami,
+    wspiera się o podłogę i wstaje, kamień ożywa od piersi (odpryski), aureola bucha ogniem, ryk.
+  - **Konanie**: odrzut i złote światło z piersi, zatacza się z dłonią na piersi, złote pęknięcia, gaśnie aureola,
+    pada na kolana, kamienieje od stóp, rozpada się na kawałki → pył, popiół, kupka kamieni.
+- Podgląd wszystkich ruchów (narzędzie dewelopera): `podgladRuchu(ctx, h, ruch, u, czas)` w `demon-boss.ts`.
+  Póki obrazki kukły się wczytują, boss rysuje się po staremu (`demon-wzor.ts`).
 
 ## Poprawki walki z demonem (5.11)
 - Rycerz **zawsze widzi demona** (o ile nie jest głodny) — przy drodze wiernych jako głębokim szybie demon wstawał

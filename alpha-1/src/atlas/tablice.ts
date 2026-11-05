@@ -305,7 +305,7 @@ function pomnikRycina({ ctx, w, h, t }: Plotno): void {
   rysujPosag(ctx, w / 2, h * 0.86, H, H / POMNIK.wysokosc, stan, t, stan ? swieze : 0);
 }
 
-/** Demon z pomnika: wstaje z gruzu, otwiera oczy, aureola bucha ogniem (w kółko). */
+/** Demon z pomnika: przebija się z gruzu, kamień ożywa, aureola bucha ogniem i ryk (w kółko). */
 function demonRycina({ ctx, w, h, t }: Plotno): void {
   sklepienie(ctx, w, h, 22);
   const H = h * 0.95, y = h * 0.86;
@@ -1093,7 +1093,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'rdzen', grupa: 'prawa', nazwa: 'Ostatnie uderzenie', lacina: 'Ictus ultimus',
-    opis: 'Gdy rycerz zada demonowi ostatnie uderzenie, czas na chwilę zwalnia, a kamera jedzie do demona. Cios odrzuca go w tył; po ciele rozchodzą się rysy złotego światła, demon pada na kolana — i rozsadza go od środka: rozbłysk, fala światła po krypcie, a z niego zostaje popiół i gasnące iskry. Jesteś wolny — to koniec gry.',
+    opis: 'Gdy rycerz zada demonowi ostatnie uderzenie, czas na chwilę zwalnia, a kamera jedzie do demona. Cios odrzuca go w tył, złote światło rozsadza mu pierś; zatacza się z dłonią na piersi, po całym ciele biegną złote pęknięcia, a ogień aureoli gaśnie. Pada na kolana, kamienieje od stóp w górę — i rozpada się na kawałki, które obracają się w pył i popiół: fala światła po krypcie, gasnące iskry i kupka kamieni. Jesteś wolny — to koniec gry.',
     kiedy: 'Ostatni cios zadaje rycerz (albo robotnik w hełmie, albo pobożny księgą, gdy walczących brak). W przyszłości będzie tu przerywnik filmowy.',
     rycina: uderzenieRycina,
   },
@@ -1141,7 +1141,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'boss', grupa: 'prawa', nazwa: DEMON.nazwa, lacina: 'Daemon lapidis',
-    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: prostuje się w rozżarzonej skórze, otwiera płonące oczy, aureola za jego głową bucha ogniem — i ryczy — a z nim wychodzą ostatni Strażnicy. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Co jakiś czas uderza w ziemię i zasypuje kawałek drogi wiernych. Gdy w krypcie modlą się pobożni, słabnie — bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
+    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: przebija się ręka, druga, kamienna głowa z zapalającymi się oczami; wstaje, kamień ożywa na nim od piersi w ciemną, żarzącą się skórę, aureola za jego głową bucha ogniem — i ryczy — a z nim wychodzą ostatni Strażnicy. To ten sam posąg, tylko żywy: wciąż ma na nadgarstkach i kostkach kajdany z zerwanymi łańcuchami. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Bije trzema ciosami — z góry, zamachem pazurów i podcięciem od dołu; co jakiś czas wznosi ręce z rykiem, wali pięściami w ziemię i zasypuje kawałek drogi wiernych. Dłoni z otchłani rozkazuje gestem. Ranny pęka i dymi, w szale drży i płonie. Gdy w krypcie modlą się pobożni, kuli się i zasłania twarz, a złoty pył parzy go do żywego — słabnie; bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
     kiedy: 'Rycerz na demona, pobożni do modlitwy, robotnicy przy drodze. Życie demona widać na pasku nad płytą.',
     rycina: demonRycina,
   },
