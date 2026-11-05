@@ -281,9 +281,13 @@ function rycerzeDoWalki(sim: Sim): void {
     // goniąc Strażnika w skale: co pół sekundy ten przydział odbierał im drogę do spiżarni)
     const glodny = c.hunger > LUD.glodSam;
     if (c.job === Job.FIGHT && obecny && !obecny.dead && obecny.straznik && !(glodny && Math.hypot(obecny.x - c.x, obecny.y - c.y) > S.rycerzGlodnyWalczyOd)) continue;
-    let best: Creature | null = null, bd = glodny ? S.rycerzGlodnyWalczyOd : S.rycerzWidzi;
+    // Alpha 1 (5.11): demona rycerz widzi zawsze (o ile nie jest głodny) — z drogą wiernych jako głębokim szybem
+    // demon wstawał ponad 40 kafli pod rycerzem stojącym w sali i walka nigdy się nie zaczynała (demon 500/500)
+    const widzi = glodny ? S.rycerzGlodnyWalczyOd : S.rycerzWidzi;
+    let best: Creature | null = null, bd = Infinity;
     for (const s of wrogowie) {
       const d = Math.hypot(s.x - c.x, s.y - c.y);
+      if (d >= (s.boss && !glodny ? Infinity : widzi)) continue;
       if (d < bd) { bd = d; best = s; }
     }
     if (!best) {

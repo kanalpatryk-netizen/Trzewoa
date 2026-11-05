@@ -8,6 +8,7 @@ import { POMNIK } from '../nastawy/pomnik';
 import { RACES, Race } from '../sim/races';
 import { ustawienia } from '../core/settings-store';
 import { rysujDemona, type PozaDemona, type PunktyDemona } from './demon';
+import { wzorGotowy } from './demon-wzor';
 import { tetnoRdzenia } from './rdzen';
 import { glif } from './tajemnica';
 import { wolnoRuszac } from './nastroj';
@@ -96,7 +97,8 @@ interface WarstwaPosagu { c: HTMLCanvasElement; cw: number; ch: number; W: numbe
  */
 function warstwaPosagu(ctx: CanvasRenderingContext2D, H: number, poza: PozaDemona): WarstwaPosagu {
   const m = ctx.getTransform(), dpr = Math.max(1, Math.hypot(m.a, m.b));
-  const W = Math.ceil(H * 1.5), Hh = Math.ceil(H * 1.35), ox = W / 2, oy = H * 1.15;
+  // (wzór grafika z aureolą jest wyższy od dawnej ryciny — warstwa z zapasem w górę)
+  const W = Math.ceil(H * 1.5), Hh = Math.ceil(H * 1.55), ox = W / 2, oy = H * 1.35;
   warstwa ??= document.createElement('canvas');
   const cw = Math.ceil(W * dpr), ch = Math.ceil(Hh * dpr);
   if (warstwa.width < cw || warstwa.height < ch) { warstwa.width = cw; warstwa.height = ch; }
@@ -118,7 +120,8 @@ function warstwaPosagu(ctx: CanvasRenderingContext2D, H: number, poza: PozaDemon
     }
     wyrwa.closePath();
   });
-  g.globalAlpha = Math.min(1, poza.ubytki * 1.5);
+  // wzór grafika ma własne ubytki na brzegu swojej sylwetki (render/demon-wzor.ts) — tu tylko dawna rycina
+  g.globalAlpha = wzorGotowy() ? 0 : Math.min(1, poza.ubytki * 1.5);
   g.globalCompositeOperation = 'destination-out';
   g.fill(wyrwa);
   // przełom: jasna krawędź świeżego kamienia i cień pod nią — tylko tam, gdzie kamień został
@@ -136,7 +139,7 @@ let warstwa: HTMLCanvasElement | null = null;
 
 /** Posąg (stopy w x, top): z ubytkami — z warstwy, bez nich — wprost. */
 function posagZUbytkami(ctx: CanvasRenderingContext2D, x: number, top: number, H: number, poza: PozaDemona): PunktyDemona {
-  if (poza.ubytki <= 0.01 || typeof document === 'undefined') {
+  if (poza.ubytki <= 0.01 || typeof document === 'undefined' || wzorGotowy()) {
     ctx.save(); ctx.translate(x, top);
     const p = rysujDemona(ctx, H, poza);
     ctx.restore();

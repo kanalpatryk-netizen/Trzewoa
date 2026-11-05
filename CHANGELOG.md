@@ -10,6 +10,8 @@ zminifikowana dopasowana do kodu Propozycji 1). Osobne zapisy (`trzewia-alpha-1:
 - **Płyta prawie do krawędzi** (`computePlate`, `EKRAN.ramaPlyty`, `dolMin/dolMax/dolCzesc`): bez paska zasobów, rad nad płytą, kroniki, przycisku menu i klepsydry na komputerze.
 - **Cud jako objawienie** (`objawienie()` w `src/render/efekty.ts`, `GORA.efektObjawienie` 360 → 540).
 - **Samouczek** pod nowy interfejs (etapy `tylko: 'komputer' | 'telefon'`).
+- **Nowy Wielki Pomnik i boss według wzoru grafika** (`src/render/demon-wzor.ts`, `obrazy/pomnik/`): stojący demon z wzniesionymi rękami i płomienną aureolą; rysy z rysunku pękniętego, żar w stanie 3; boss — ta sama postać ożywiona.
+- **Walka z demonem nie utyka:** rycerz zawsze widzi demona (`straznicy.ts`); zawał dłoni tylko przy demonie i nigdy w szybie drogi wiernych (`dlon-demona.ts`, `DLON_DEMONA.zawal.maxRoznicaWys`).
 - **Obserwatorium na jednego bota** (`scripts/obserwatorium/szablon.html`): duże okno gry i panel — postęp (droga, pomnik, fale, demon), wykres zasobów, dziennik bota, oś zdarzeń, kronika, statystyki partii z CSV, zatrzymywanie czasu przy zdarzeniach; `wyslijStan` dosyła postęp, fale, demona i zgony.
 
 ## Propozycja 1 (komputer, próbna — na bazie Alphy 0.2)

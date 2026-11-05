@@ -9,6 +9,23 @@ Zapisy, ustawienia, atlas i osiągnięcia są tu osobne (klucze `trzewia-alpha-1
 **[⬇️ Pobierz trzewia-alpha-1-obserwatorium.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-1-obserwatorium.html)** — obserwatorium.
 Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Plik jest też w repozytorium: [`trzewia.html`](trzewia.html).
 
+## Nowy Wielki Pomnik i boss (5.11, wzór grafika)
+- Pomnik według wzoru grafika (`render/demon-wzor.ts`): kamienny demon **stojący z rękami wzniesionymi**, z płomienną
+  aureolą, naszyjnikiem z czaszek i twarzą na przepasce, zakuty w łańcuchy. Z dwóch rysunków (cały i pęknięty)
+  powstały trzy warstwy w `obrazy/pomnik/`: sylwetka, kontur i same rysy.
+- Stany: 1 — rysy na twarzy i barku, 2 — rysy do pasa i odłupane czubki aureoli, palce i stopa, 3 — rysy żarzą się,
+  oczy się tlą. Rozpad w gruz jak dawniej.
+- **Boss** to ta sama postać ożywiona: ciemna, rozżarzona skóra, płonące oczy, ogień w aureoli, żar w piersi; oddycha,
+  wstaje z gruzu, zamachuje się, przy konaniu świeci złotem i rozsypuje się w popiół. Ryciny w atlasie też.
+- Inny wzór = podmienione pliki w `obrazy/pomnik/` (punkty: `WZOR` w `src/render/demon-wzor.ts`). Dawna rycina
+  (`rysujDemonaRycina` w `src/render/demon.ts`) rysuje tylko, póki obrazki się wczytują.
+
+## Poprawki walki z demonem (5.11)
+- Rycerz **zawsze widzi demona** (o ile nie jest głodny) — przy drodze wiernych jako głębokim szybie demon wstawał
+  ponad 40 kafli pod rycerzem w sali i walka nigdy się nie zaczynała (demon 500/500 bez końca).
+- Dłoń z otchłani robi **zawał tylko przy demonie** (rycerz najwyżej 4 kafle wyżej/niżej) i nigdy w szybie drogi
+  wiernych — wcześniej ściana gruzu stawała w sali i zamurowywała drogę w dół.
+
 ## Obserwatorium — jeden bot
 `trzewia-alpha-1-obserwatorium.html` (`npm run obserwatorium`, szablon `scripts/obserwatorium/szablon.html`): duże okno
 gry, w nim gra bot, a obok panel w stylu menu.

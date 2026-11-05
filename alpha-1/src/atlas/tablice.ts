@@ -305,7 +305,7 @@ function pomnikRycina({ ctx, w, h, t }: Plotno): void {
   rysujPosag(ctx, w / 2, h * 0.86, H, H / POMNIK.wysokosc, stan, t, stan ? swieze : 0);
 }
 
-/** Demon z pomnika: wstaje z gruzu, otwiera oczy, rozpościera skrzydła (w kółko). */
+/** Demon z pomnika: wstaje z gruzu, otwiera oczy, aureola bucha ogniem (w kółko). */
 function demonRycina({ ctx, w, h, t }: Plotno): void {
   sklepienie(ctx, w, h, 22);
   const H = h * 0.95, y = h * 0.86;
@@ -1087,7 +1087,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'skorupa', grupa: 'prawa', nazwa: 'Wielki Pomnik', lacina: 'Monumentum daemonis',
-    opis: `Na dnie góry, w komorze pod kryptą, na cokole z wyrytymi znakami kuca olbrzymi kamienny demon zakuty w łańcuchy — w środku śpi żywy. Kilof go nie ruszy; kruszy go tylko modlitwa: gdy w krypcie modli się co najmniej ${RYTUAL.potrzebaWiernych} pobożny z oddaniem od ${proc(RYTUAL.minOddanie)}. Pęka w trzech stanach: przy ${POMNIK.stany[0]}% biegną po nim rysy, przy ${POMNIK.stany[1]}% odpadają kawałki (róg, skrzydło, bark), przy ${POMNIK.stany[2]}% rysy żarzą się czerwono od środka. Każde pęknięcie idzie wolniej od poprzedniego, a na Koszmarze pomnik jest twardszy (${proc(RYTUAL.koszmarMnoznik)} tempa). Przy 100% rozpada się w gruz, a z gruzu wstaje demon.`,
+    opis: `Na dnie góry, w komorze pod kryptą, na cokole z wyrytymi znakami stoi olbrzymi kamienny demon z rękami wzniesionymi, z płomienną aureolą za głową i naszyjnikiem z czaszek, zakuty w łańcuchy — w środku śpi żywy. Kilof go nie ruszy; kruszy go tylko modlitwa: gdy w krypcie modli się co najmniej ${RYTUAL.potrzebaWiernych} pobożny z oddaniem od ${proc(RYTUAL.minOddanie)}. Pęka w trzech stanach: przy ${POMNIK.stany[0]}% biegną po nim rysy, przy ${POMNIK.stany[1]}% odpadają kawałki (czubki aureoli, palce, stopa), przy ${POMNIK.stany[2]}% rysy żarzą się czerwono od środka. Każde pęknięcie idzie wolniej od poprzedniego, a na Koszmarze pomnik jest twardszy (${proc(RYTUAL.koszmarMnoznik)} tempa). Przy 100% rozpada się w gruz, a z gruzu wstaje demon.`,
     kiedy: `Trzymaj w krypcie pobożnych, najedzonych i wierzących. Przy ${STRAZNICY.fale.filter((f) => !f.boss).map((f) => `${f.prog}`).join(', ')}% wychodzą Strażnicy Snu — dopóki żyją, pomnik nie pęka.`,
     rycina: pomnikRycina,
   },
@@ -1141,7 +1141,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'boss', grupa: 'prawa', nazwa: DEMON.nazwa, lacina: 'Daemon lapidis',
-    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: prostuje się, otwiera płonące oczy, rozpościera skrzydła i ryczy — a z nim wychodzą ostatni Strażnicy. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Co jakiś czas uderza w ziemię i zasypuje kawałek drogi wiernych. Gdy w krypcie modlą się pobożni, słabnie — bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
+    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: prostuje się w rozżarzonej skórze, otwiera płonące oczy, aureola za jego głową bucha ogniem — i ryczy — a z nim wychodzą ostatni Strażnicy. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Co jakiś czas uderza w ziemię i zasypuje kawałek drogi wiernych. Gdy w krypcie modlą się pobożni, słabnie — bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
     kiedy: 'Rycerz na demona, pobożni do modlitwy, robotnicy przy drodze. Życie demona widać na pasku nad płytą.',
     rycina: demonRycina,
   },
