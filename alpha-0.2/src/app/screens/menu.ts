@@ -9,10 +9,10 @@ import { MENU as M } from '../../nastawy/wyglad/menu';
 import { ozdobnik, wygladz } from '../../render/ozdobnik';
 import logoUrl from '../../../obrazy/menu/logo-trzewia.png?url';
 import dollumUrl from '../../../obrazy/menu/zespol-dollum.png?url';
-import znakUrl from '../../../obrazy/menu/zespol-znak.png?url';
-import podpisUrl from '../../../obrazy/menu/zespol-podpis.png?url';
+import pillowBleachUrl from '../../../obrazy/menu/zespol-pillow-bleach.png?url';
+import podpisBrychUrl from '../../../obrazy/menu/zespol-podpis-brych.png?url';
 
-const ZESPOL_URL: Record<string, string> = { dollum: dollumUrl, znak: znakUrl, podpis: podpisUrl };
+const ZESPOL_URL: Record<string, string> = { dollum: dollumUrl, 'pillow-bleach': pillowBleachUrl, 'podpis-brych': podpisBrychUrl };
 
 /** Obrazek wczytywany w tle; do czasu wczytania `gotowy` jest fałszywe i nic się nie rysuje. */
 interface Obraz { img: HTMLImageElement; gotowy: boolean; }
@@ -34,6 +34,54 @@ function zabarw(img: HTMLImageElement, barwa: string): HTMLCanvasElement {
   return c;
 }
 
+/**
+ * Logo rozdzielone na dwie warstwy: tło (logo bez serca) i samo serce — żeby serce mogło bić,
+ * a ornamenty wokół stały. Zwraca też środek serca w pikselach logo.
+ */
+function rozdzielSerce(logo: HTMLCanvasElement): { tlo: HTMLCanvasElement; serce: HTMLCanvasElement; cx: number; cy: number } {
+  const S = M.serce, k = logo.width / S.obrysSzer;
+  const maska = document.createElement('canvas');
+  maska.width = logo.width; maska.height = logo.height;
+  const g = maska.getContext('2d')!;
+  g.filter = `blur(${S.miekkosc * k}px)`;
+  g.beginPath();
+  S.obrys.forEach(([x, y], i) => (i ? g.lineTo(x * k, y * k) : g.moveTo(x * k, y * k)));
+  g.closePath();
+  g.fillStyle = g.strokeStyle = '#fff';
+  g.lineJoin = 'round'; g.lineWidth = S.rozszerz * 2 * k;
+  g.fill(); g.stroke();
+  const warstwa = (tryb: GlobalCompositeOperation) => {
+    const c = document.createElement('canvas');
+    c.width = logo.width; c.height = logo.height;
+    const gg = c.getContext('2d')!;
+    gg.drawImage(logo, 0, 0);
+    gg.globalCompositeOperation = tryb;
+    gg.drawImage(maska, 0, 0);
+    return c;
+  };
+  const xs = S.obrys.map((p) => p[0]), ys = S.obrys.map((p) => p[1]);
+  return {
+    tlo: warstwa('destination-out'), serce: warstwa('destination-in'),
+    cx: ((Math.min(...xs) + Math.max(...xs)) / 2) * k, cy: ((Math.min(...ys) + Math.max(...ys)) / 2) * k,
+  };
+}
+
+/** O ile serce jest teraz powiększone (1 = spoczynek): „lub-dub” i przerwa. */
+function bicie(teraz: number): number {
+  const S = M.serce;
+  const t = teraz % S.okresMs;
+  let s = 1;
+  for (const u of S.uderzenia) {
+    const d = t - u.od * S.okresMs;
+    if (d < 0) continue;
+    // szybki skurcz w górę, wolniejsze rozluźnienie
+    const f = d < S.narastanieMs ? Math.sin((d / S.narastanieMs) * Math.PI / 2)
+      : Math.max(0, 1 - wygladz((d - S.narastanieMs) / S.opadanieMs));
+    s += u.sila * f;
+  }
+  return s;
+}
+
 interface Pozycja { id: string; etykieta: string; aktywna: () => boolean; }
 interface Prostokat { x: number; y: number; w: number; h: number; }
 
@@ -50,8 +98,15 @@ export class EkranMenu implements Ekran {
   private trafienia: (Prostokat & { i: number })[] = [];
   private wejscieOd = 0;
   private logoBarwne: HTMLCanvasElement | null = null;
-  private logo = obraz(logoUrl, (img) => { this.logoBarwne = zabarw(img, M.logoBarwa); });
-  private zespol = M.zespol.map((z) => ({ ...z, obraz: obraz(ZESPOL_URL[z.plik]) }));
+  private warstwyLogo: ReturnType<typeof rozdzielSerce> | null = null;
+  private logo = obraz(logoUrl, (img) => {
+    this.logoBarwne = zabarw(img, M.logoBarwa);
+    try { this.warstwyLogo = rozdzielSerce(this.logoBarwne); } catch { /* bez bicia — całe logo */ }
+  });
+  /** Znaki zespołu — przyciski; `podsw` to podświetlenie pod myszą (0..1), `traf` — miejsce na ekranie. */
+  private zespol = M.zespol.map((z) => ({ ...z, obraz: obraz(ZESPOL_URL[z.plik]), podsw: 0, traf: null as Prostokat | null }));
+  private najechanyZnak = -1;
+  private ostatniaKlatka = 0;
 
   private pozycje: Pozycja[] = [
     { id: 'wroc', ...M.pozycje.wroc, aktywna: () => this.trwaGra() },
@@ -104,7 +159,20 @@ export class EkranMenu implements Ekran {
     const ly = h * M.logoGora;
     if (this.logoBarwne) {
       ctx.globalAlpha = wygladz(odWejscia / M.wejscieMs);
-      ctx.drawImage(this.logoBarwne, w / 2 - lw / 2, ly, lw, lh);
+      const lx = w / 2 - lw / 2;
+      const wl = this.warstwyLogo;
+      if (wl && ruch) {
+        // tło stoi, serce bije wokół swojego środka
+        ctx.drawImage(wl.tlo, lx, ly, lw, lh);
+        const k = lw / wl.tlo.width, cx = lx + wl.cx * k, cy = ly + wl.cy * k, s = bicie(teraz);
+        ctx.save();
+        // „lighter”: na miękkiej krawędzi obrysu tło i serce sumują się dokładnie do oryginału
+        // (zwykłe nakładanie zostawiało tam szarą obwódkę); tło menu jest czarne, więc nic się nie przejaśnia
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.translate(cx, cy); ctx.scale(s, s); ctx.translate(-cx, -cy);
+        ctx.drawImage(wl.serce, lx, ly, lw, lh);
+        ctx.restore();
+      } else ctx.drawImage(this.logoBarwne, lx, ly, lw, lh);
       ctx.globalAlpha = 1;
     }
 
@@ -167,17 +235,36 @@ export class EkranMenu implements Ekran {
       // rząd kończy się przed spisem (i przed ozdobnikami) z zapasem
       const k = Math.min(1, (w / 2 - szerWiersza / 2 - r * 1.2 - m) / calosc);
       let x = m;
+      const dt = Math.min(100, teraz - (this.ostatniaKlatka || teraz));
+      for (const z of this.zespol) z.traf = null;
       if (k * najwyzszy >= 20) {
         const srodekY = h - m - (najwyzszy * k) / 2;
-        ctx.globalAlpha = M.zespolAlfa * wejscieZ;
         for (const d of wymiary) {
-          const zw = d.zw * k, zh = d.zh * k;
-          ctx.drawImage(d.z.obraz.img, x, srodekY - zh / 2, zw, zh);
+          const z = d.z, zw = d.zw * k, zh = d.zh * k, zy = srodekY - zh / 2;
+          const cel = this.zespol.indexOf(z) === this.najechanyZnak ? 1 : 0;
+          z.podsw += Math.sign(cel - z.podsw) * Math.min(Math.abs(cel - z.podsw), dt / M.zespolPodswietlenieMs);
+          const a = wygladz(z.podsw);
+          ctx.save();
+          ctx.globalAlpha = (M.zespolAlfa + (M.zespolAlfaNajechany - M.zespolAlfa) * a) * wejscieZ;
+          if (a > 0) {
+            // cień płótna liczy się z przezroczystości obrazka — świeci tylko wokół kresek, nie prostokąt;
+            // dwa przebiegi: szeroka poświata i ciaśniejsza, jaśniejsza obwódka tuż przy konturach
+            ctx.shadowColor = `rgba(${M.zespolPoswiata},${0.9 * a})`;
+            ctx.shadowBlur = Math.max(M.zespolRozmycieMin, zh * M.zespolRozmycie);
+            ctx.drawImage(z.obraz.img, x, zy, zw, zh);
+            ctx.shadowBlur = Math.max(3, zh * M.zespolRozmycie * 0.35);
+            ctx.drawImage(z.obraz.img, x, zy, zw, zh);
+            ctx.shadowColor = 'transparent';
+          }
+          ctx.drawImage(z.obraz.img, x, zy, zw, zh);
+          ctx.restore();
+          const zapas = Math.max(4, zh * 0.08);
+          z.traf = { x: x - zapas, y: zy - zapas, w: zw + zapas * 2, h: zh + zapas * 2 };
           x += zw + odst * k;
         }
-        ctx.globalAlpha = 1;
       }
     }
+    this.ostatniaKlatka = teraz;
     // Prawa strona (szkic: „tu tę trójkę dam”) zostaje pusta — na przyszłą grafikę.
 
     this.stopka(ctx, w, h, teraz, m, wygladz(odWejscia / M.wejscieMs));
@@ -216,6 +303,14 @@ export class EkranMenu implements Ekran {
   }
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
+    // znaki zespołu: przyciski (na razie bez linków — kliknięcie nic nie robi)
+    const znak = this.zespol.findIndex((z) => z.traf && e.clientX >= z.traf.x && e.clientX <= z.traf.x + z.traf.w && e.clientY >= z.traf.y && e.clientY <= z.traf.y + z.traf.h);
+    if (faza === 'ruch' || faza === 'dol') this.najechanyZnak = znak;
+    if (znak >= 0) {
+      const link = this.zespol[znak].link;
+      if (faza === 'dol' && link) { this.app.gesty.klik(); window.open(link, '_blank', 'noopener'); }
+      return;
+    }
     const traf = this.trafienia.find((t) => e.clientX >= t.x && e.clientX <= t.x + t.w && e.clientY >= t.y && e.clientY <= t.y + t.h);
     // nieaktywna pozycja (np. „Graj dalej” bez gry) nie zabiera wyróżnienia
     if (!traf || !this.pozycje[traf.i].aktywna()) return;
