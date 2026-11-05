@@ -1,5 +1,16 @@
 # Zmiany
 
+## TRZEWIA Alpha 1 (komputer) — 5.11
+Folder `alpha-1/`: Propozycja 1 (wszystkie propozycje Pawła z 24.10) + nowe menu i ustawienia z Alphy 0.2 + funkcje
+z pliku `trzewia6.html` (build „Propozycji 1” z nowym dołem ekranu; źródło odtworzone z builda — każda nazwa
+zminifikowana dopasowana do kodu Propozycji 1). Osobne zapisy (`trzewia-alpha-1:`). `alpha-0.2/` i `propozycja-1/` bez zmian.
+- **Księga pod płytą** (`src/render/ksiega.ts`, krój „Trzewia Pismo” w `fonts.ts`): „Twój lud” (medaliony ról) i „Zasoby” (wiara, krew, jedzenie, żelazo, złoto, oddanie), pieczęć „+” — Nakarm.
+- **Okno postaci** (`src/render/okno-postaci.ts`): portret, paski, zamiar, stany i możliwości (Cud, Módl się, Do ołtarza, Kop drogę, warsztat, kuźnia, zbroja, sen, naprawa liny) — zamiast rytów po lewej.
+- **„Budowa”** (`src/render/budowa.ts`, ikony `src/render/ikony-hud.ts`): menu kafli pomieszczeń z opisami, „odwołaj rozkaz”; atlas jako osobny przycisk przy księdze.
+- **Płyta prawie do krawędzi** (`computePlate`, `EKRAN.ramaPlyty`, `dolMin/dolMax/dolCzesc`): bez paska zasobów, rad nad płytą, kroniki, przycisku menu i klepsydry na komputerze.
+- **Cud jako objawienie** (`objawienie()` w `src/render/efekty.ts`, `GORA.efektObjawienie` 360 → 540).
+- **Samouczek** pod nowy interfejs (etapy `tylko: 'komputer' | 'telefon'`).
+
 ## Propozycja 1 (komputer, próbna — na bazie Alphy 0.2)
 Folder `propozycja-1/`: kopia Alphy 0.2 z `main` (po PR #30) z propozycjami Pawła z 24.10 — `alpha-0.2/` bez zmian.
 Osobne zapisy (klucze `trzewia-propozycja-1:`), gra w `propozycja-1/trzewia.html`. Opis, decyzje, dalsze kroki
