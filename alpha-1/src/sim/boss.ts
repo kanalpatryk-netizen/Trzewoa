@@ -112,7 +112,7 @@ const demon: Boss = {
   tik(sim, c) {
     if (demonKona(sim)) return;
     // etap 5b: za tarczą z dłoni i pod zawalanym stropem — czeka (tylko się zrasta, jak zwykle bez modlitwy)
-    // Alpha 1 (6.11): walczy ruchami (sim/walka.ts) — 13 ataków, uderzenie w ziemię, ryk, rozkazy, blok, zachwianie;
+    // Alpha 1 (6.11): walczy ruchami (sim/walka.ts) — 12 ataków, uderzenie w ziemię, ryk, rozkazy, blok, zachwianie;
     // za tarczą z dłoni i pod zawalanym stropem czeka (tikDemona) i tylko się zrasta
     tikDemona(sim, c, zasypDroge);
     // etap 5b: za ścianą gruzu po zawale — nie przechodzi na drugą stronę i zrasta się szybciej

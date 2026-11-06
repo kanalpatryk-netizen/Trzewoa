@@ -8,7 +8,7 @@
  * weteranAktywny), a ataki z tarczą, naramiennikami, nakolannikami, hełmem i napierśnikiem tylko w tych częściach zbroi
  * (sim/zbroja.ts). Przyjmując cios, broni się: blok tarczą, parowanie (weteran), unik (nakolanniki), kontra na
  * napierśniku; bez obrony — lekkie trafienie (walczy dalej), mocne (przerywa atak, zatacza się) albo powalenie.
- * Demon: 13 ataków (zwarcie, obszar, dystans) wybieranych wg odległości, liczby ludu wokół i życia (część dopiero,
+ * Demon: 12 ataków (zwarcie, obszar, dystans) wybieranych wg odległości, liczby ludu wokół i życia (część dopiero,
  * gdy słabnie), uderzenie w ziemię co jakiś czas, ryk, rozkazy dla dłoni z otchłani; zasłania się przedramieniem przed
  * zamachem rycerza, chwieje się po ciężkim ciosie, a przy połowie i ćwierci życia pada na kolano.
  */
@@ -39,7 +39,7 @@ export interface RuchTrwa {
   traf: number; zadane: number[];
   /** reakcja: skąd przyszedł cios (−1/1) i jak mocny (ułamek życia); wariant (zachwianie: 2 — klęka) */
   kier?: number; sila?: number; wariant?: number;
-  /** przemieszczenie: skąd i dokąd (skok demona) */
+  /** przemieszczenie: skąd (szarża) i dokąd */
   x0?: number; y0?: number; cx?: number; cy?: number;
 }
 
@@ -378,10 +378,6 @@ function krokRuchuBossa(sim: Sim, b: Creature, R: RuchTrwa, t: number, zasyp: (s
         b.x = Math.max(1, Math.min(sim.world.w - 2, b.x + kier * (maks / (t1 - t0))));
         b.y += Math.max(-0.05, Math.min(0.05, cel.y - b.y));
         if (Math.hypot(cel.x - b.x, cel.y - b.y) <= 1.9) { R.traf = 1; ciosBossa(sim, b, cel, def.traf![0][1], def); R.zadane.push(1); }
-      } else if (R.id === 'skok' && R.cx !== undefined && R.cy !== undefined) {
-        const u = Math.min(1, (t - t0 + 1) / (t1 - t0));
-        b.x = (R.x0 ?? b.x) + (R.cx - (R.x0 ?? b.x)) * u;
-        b.y = (R.y0 ?? b.y) + (R.cy - (R.y0 ?? b.y)) * u;
       }
     }
   }
@@ -416,7 +412,7 @@ function wybierzAtakBossa(sim: Sim, b: Creature, cel: Creature, d: number): IdRu
     if (def.od !== undefined && d < def.od) continue;
     const zasieg = def.zasieg ?? def.promien ?? DEMON.zasieg;
     if (d > zasieg) continue;
-    if (Math.abs(cel.y - b.y) > 2.5 && id !== 'skok' && id !== 'biczLancucha') continue;
+    if (Math.abs(cel.y - b.y) > 2.5 && id !== 'biczLancucha') continue;
     let w = def.waga ?? 1;
     if (id === 'odepchniecie' && d > 1.4) continue;
     if (id === 'przygniecenie' && (!czyRycerz(cel) || (cel.ogluszonyDo ?? -1) > sim.tick)) continue;
@@ -480,8 +476,7 @@ export function tikDemona(sim: Sim, c: Creature, zasyp: (sim: Sim, c: Creature) 
   if (gotow) {
     const id = wybierzAtakBossa(sim, c, cel, d);
     if (id) {
-      const extra: Partial<RuchTrwa> = id === 'skok' ? { cx: cel.x - Math.sign(cel.x - c.x) * 1.2, cy: cel.y } : {};
-      zacznijRuchBossa(sim, c, id, cel, undefined, extra);
+      zacznijRuchBossa(sim, c, id, cel);
       return;
     }
   }

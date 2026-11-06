@@ -322,18 +322,6 @@ function ruchWalkiBossa(id: string, t: number, dl: number, wariant: number, celN
         [dl, {}],
       ], t), bieg, 1) };
     }
-    case 'skok': {
-      const lot = t >= 58 && t < 112 ? Math.sin(Math.PI * (t - 58) / 54) : 0;
-      return { r: mieszaj(klatki([
-        [0, {}],
-        [50, { my: 120, tsy: -0.06, rL: [60, 170], rP: [-60, 170], gr: 0.16, szczeka: 0.4, nL: [-24, 0], nP: [24, 0] }],
-        [60, { my: -24, rL: [80, -246], rP: [-80, -246], szczeka: 0.95, gr: -0.12, dL: -0.3, dP: 0.3 }],
-        [86, { nL: [24, -70], nP: [-24, -70], sL: -0.3, sP: 0.3, rL: [96, -262], rP: [-96, -262], szczeka: 1.0, gr: -0.1 }],
-        [112, { my: 150, rL: naZiemie('L', 200, 150), rP: naZiemie('P', 430, 150), dL: 0.6, dP: -0.6, szczeka: 1.2, tsy: -0.1, gy: 16, gr: 0.2, nL: [-34, 0], nP: [34, 0], aureola: 0.12 }],
-        [146, { my: 128, rL: naZiemie('L', 200, 128), rP: naZiemie('P', 430, 128), dL: 0.6, dP: -0.6, szczeka: 0.6, tsy: -0.09, gy: 14, gr: 0.16, nL: [-34, 0], nP: [34, 0] }],
-        [dl, {}],
-      ], t), { y: -420 * lot }, 1) };
-    }
     case 'uderzenieWZiemie': return { r: ruchZasypu(t - 110) };
     case 'blok': return { r: klatki([
       [0, {}],
@@ -615,7 +603,7 @@ function aktualizuj(p: Pamiec, sim: Sim, c: Creature, czas: number): number {
     p.zdarzenia.push('trafienie');
   }
   p.hp = c.hp;
-  // ruch walki z symulacji (sim/walka.ts): chwile trafień, wybicie skoku, przyklęk — zdarzenia dla cząstek
+  // ruch walki z symulacji (sim/walka.ts): chwile trafień, rozbieg szarży, przyklęk — zdarzenia dla cząstek
   const R = c.ruch;
   if (R && sim.tick - R.od < R.dl) {
     const tau = tF - R.od;
@@ -625,7 +613,6 @@ function aktualizuj(p: Pamiec, sim: Sim, c: Creature, czas: number): number {
     if (R.id === 'szarza' && R.zadane.length > p.zadaneN) p.zdarzenia.push('traf:szarza:0');
     p.zadaneN = R.zadane.length;
     const chwila = (tik: number, e: string): void => { if (p.ruchTau < tik && tau >= tik) p.zdarzenia.push(e); };
-    if (R.id === 'skok') chwila(58, 'wybicie');
     if (R.id === 'szarza') chwila(44, 'rozbieg');
     if (R.id === 'zachwianie') chwila(R.wariant === 2 ? 52 : 10, R.wariant === 2 ? 'klek' : 'chwiej');
     p.ruchTau = tau;
@@ -780,7 +767,6 @@ function zdarzeniaBossa(p: Pamiec, sim: Sim, c: Creature, k: KosciKukly, kl: Kla
       if (szansa(10)) dodajCzastke(p, { typ: 'dym', x: c.x + zwrot * (1.5 + Math.random() * 3.5), y: ziemia - 0.6, vx: 0, vy: -0.8, r: 0.6, dl: 1.6 });
     }
     if (R.id === 'szarza' && tau > 44 && tau < 108 && szansa(36)) dodajCzastke(p, { typ: 'pyl', x: c.x - zwrot * (Math.random() * 1.5), y: ziemia - 0.1, vx: -zwrot * (1 + Math.random() * 2), vy: -0.3 - Math.random() * 0.3, r: 0.45 + Math.random() * 0.3, dl: 1 });
-    if (R.id === 'skok' && tau > 58 && tau < 112 && szansa(25)) dodajCzastke(p, { typ: 'zar', x: c.x + (Math.random() - 0.5) * 2, y: c.y + 1 - 2 - Math.random() * 4, vx: (Math.random() - 0.5), vy: 1.5, r: 0.04, dl: 0.8 });
   }
   const iskry = (x: number, y: number, n: number, v: number): void => {
     for (let i = 0; i < ile(n); i++) { const a = Math.random() * Math.PI * 2, w = v * (0.5 + Math.random()); dodajCzastke(p, { typ: 'iskra', x, y, vx: Math.cos(a) * w + zwrot * 2, vy: Math.sin(a) * w - 2, r: 0.07, dl: 0.35 + Math.random() * 0.3, ziemia }); }
@@ -810,11 +796,6 @@ function zdarzeniaBossa(p: Pamiec, sim: Sim, c: Creature, k: KosciKukly, kl: Kla
         dodajCzastke(p, { typ: 'fala', x: sp[0], y: ziemia, r: 3.5, dl: 0.5 });
         dodajCzastke(p, { typ: 'szczelina', x: sp[0], y: ziemia, r: 3, dl: 2.6 });
         pyl(sp[0], 14, 6, 0.55); gruz(sp[0], 10, 1);
-      } else if (id === 'skok') {
-        dodajCzastke(p, { typ: 'fala', x: c.x, y: ziemia, r: 6.5, dl: 0.85 });
-        dodajCzastke(p, { typ: 'fala', x: c.x, y: ziemia, r: 3.6, dl: 0.55 });
-        for (const d of [dlonL, dlonP]) dodajCzastke(p, { typ: 'szczelina', x: d[0], y: ziemia, r: 2.8, dl: 2.6 });
-        pyl(c.x, 18, 7, 0.6); gruz(c.x, 14, 1.2);
       } else if (id === 'wybuchAureoli') {
         const a = doSwiata(c, z, k.gdzie('aureola', [314, 160]));
         dodajCzastke(p, { typ: 'ognistaFala', x: c.x, y: ziemia - 2.4, r: 5.6, dl: 0.9 });
@@ -857,8 +838,6 @@ function zdarzeniaBossa(p: Pamiec, sim: Sim, c: Creature, k: KosciKukly, kl: Kla
       if (sila > 0.8 && !blok) dodajCzastke(p, { typ: 'krag', x: tr[0], y: tr[1], r: 1.6, dl: 0.35 });
     } else if (e === 'ryk') {
       for (let j = 0; j < ile(16); j++) { const a = -Math.PI / 2 + (Math.random() - 0.5) * 2.8; dodajCzastke(p, { typ: 'zar', x: c.x + (Math.random() - 0.5) * 3, y: ziemia - 5.5 - Math.random() * 1.5, vx: Math.cos(a) * 2.5, vy: Math.sin(a) * 2.5, r: 0.05, dl: 1.4 + Math.random() }); }
-    } else if (e === 'wybicie') {
-      pyl(c.x, 12, 3.5, 0.55); dodajCzastke(p, { typ: 'fala', x: c.x, y: ziemia, r: 3, dl: 0.5 });
     } else if (e === 'rozbieg') {
       pyl(c.x, 6, 2, 0.45);
     } else if (e === 'klek') {

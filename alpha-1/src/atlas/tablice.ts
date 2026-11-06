@@ -560,7 +560,7 @@ function walkaRycerzaRycina(p: Plotno): void {
   ctx.restore();
 }
 
-const POKAZ_DEMONA: IdRuchuBossa[] = ['zGory', 'zamach', 'podwojnyZamach', 'zgniecenie', 'przygniecenie', 'tupniecie', 'tchnienie', 'wybuchAureoli', 'biczLancucha', 'skok', 'uderzenieWZiemie', 'ryk', 'blok', 'zachwianie'];
+const POKAZ_DEMONA: IdRuchuBossa[] = ['zGory', 'zamach', 'podwojnyZamach', 'zgniecenie', 'przygniecenie', 'tupniecie', 'tchnienie', 'wybuchAureoli', 'biczLancucha', 'szarza', 'uderzenieWZiemie', 'ryk', 'blok', 'zachwianie'];
 
 /** Walka demona: ruch za ruchem kukły z pomnika. */
 function walkaDemonaRycina(p: Plotno): void {
@@ -1211,7 +1211,7 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'boss', grupa: 'prawa', nazwa: DEMON.nazwa, lacina: 'Daemon lapidis',
-    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: przebija się ręka, druga, kamienna głowa z zapalającymi się oczami; wstaje, kamień ożywa na nim od piersi w ciemną, żarzącą się skórę, aureola za jego głową bucha ogniem — i ryczy — a z nim wychodzą ostatni Strażnicy. To ten sam posąg, tylko żywy: wciąż ma na nadgarstkach i kostkach kajdany z zerwanymi łańcuchami. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Walczy dwudziestoma ruchami (patrz „Walka demona”); co jakiś czas wznosi ręce z rykiem, wali pięściami w ziemię i zasypuje kawałek drogi wiernych. Dłoni z otchłani rozkazuje gestem. Ranny pęka i dymi, w szale drży i płonie. Gdy w krypcie modlą się pobożni, kuli się i zasłania twarz, a złoty pył parzy go do żywego — słabnie; bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
+    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: przebija się ręka, druga, kamienna głowa z zapalającymi się oczami; wstaje, kamień ożywa na nim od piersi w ciemną, żarzącą się skórę, aureola za jego głową bucha ogniem — i ryczy — a z nim wychodzą ostatni Strażnicy. To ten sam posąg, tylko żywy: wciąż ma na nadgarstkach i kostkach kajdany z zerwanymi łańcuchami. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Walczy dziewiętnastoma ruchami (patrz „Walka demona”); co jakiś czas wznosi ręce z rykiem, wali pięściami w ziemię i zasypuje kawałek drogi wiernych. Dłoni z otchłani rozkazuje gestem. Ranny pęka i dymi, w szale drży i płonie. Gdy w krypcie modlą się pobożni, kuli się i zasłania twarz, a złoty pył parzy go do żywego — słabnie; bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
     kiedy: 'Rycerz na demona, pobożni do modlitwy, robotnicy przy drodze. Życie demona widać na pasku nad płytą.',
     rycina: demonRycina,
   },
@@ -1219,7 +1219,7 @@ export const TABLICE: Tablica[] = [
     id: 'walkaDemona', grupa: 'prawa', nazwa: 'Walka demona', lacina: 'Furor daemonis',
     opis: (() => {
       const z = (r: string): string => (Object.values(RUCHY_BOSSA)).filter((d) => d.rodzaj === r).map((d) => d.nazwa.toLowerCase() + (d.zycieDo ? ` (gdy życia mniej niż ${Math.round(d.zycieDo * 100)}%)` : '')).join(', ');
-      return `Demon walczy dwudziestoma ruchami, każdy z długim zamachem — widać, co nadchodzi. W zwarciu: ${z('atak')}. Na obszar: ${z('obszar')}. Z dystansu: ${z('dystans')}. Do tego ${z('zdolnosc')}. Gdy rycerz bierze zamach, czasem zasłania się przedramieniem (zostaje połowa rany — fintę przepuszcza); po ciężkim ciosie się chwieje i nie bije, a przy połowie i ćwierci życia pada na kolano, a potem ryczy. Ciosy z góry, podcięcie, szarża, skok i wybuch aureoli mogą powalić rycerza, przygniecenie trzyma go pod dłonią.`;
+      return `Demon walczy dziewiętnastoma ruchami, każdy z długim zamachem — widać, co nadchodzi. W zwarciu: ${z('atak')}. Na obszar: ${z('obszar')}. Z dystansu: ${z('dystans')}. Do tego ${z('zdolnosc')}. Gdy rycerz bierze zamach, czasem zasłania się przedramieniem (zostaje połowa rany — fintę przepuszcza); po ciężkim ciosie się chwieje i nie bije, a przy połowie i ćwierci życia pada na kolano, a potem ryczy. Ciosy z góry, podcięcie, szarża i wybuch aureoli mogą powalić rycerza, przygniecenie trzyma go pod dłonią.`;
     })(),
     kiedy: 'Nie stój z rycerzem przed demonem, gdy ten wciąga powietrze (ogień) albo kuli się z rękami na piersi (wybuch aureoli) — a gdy klęknie, to twoja chwila.',
     rycina: walkaDemonaRycina,

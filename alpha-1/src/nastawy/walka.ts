@@ -4,6 +4,8 @@
  * zaawansowanych animacji walk), a boss 20; animacje mają być długie i dobrze oddawać zadane obrażenia; niech niektóre
  * ataki będą możliwe tylko, gdy rycerz jest weteranem, a niektóre tylko, gdy ma konkretne części zbroi”.
  *
+ * Potem (6.11): „usuń animację skoku dla bossa” — skok z uderzeniem usunięty, demon ma 19 ruchów.
+ *
  * Każdy ruch to coś, co dzieje się w symulacji: ma długość, chwile trafień i mnożniki siły — rysunek tylko go odgrywa,
  * więc cios trafia dokładnie wtedy, gdy na ekranie spada ostrze. Mnożniki dobrane tak, żeby rycerz zadawał średnio tyle,
  * co dawniej (cios co 60 tików): suma mnożników ≈ (długość + przerwa) / 60; ataki weterana × 1,2, ze zbroją × 1,1
@@ -187,8 +189,8 @@ export type IdRuchuBossa =
   | 'zGory' | 'zamach' | 'podciecie' | 'podwojnyZamach' | 'zgniecenie' | 'przygniecenie' | 'odepchniecie'
   // na obszar (3)
   | 'tupniecie' | 'tchnienie' | 'wybuchAureoli'
-  // z dystansu (3)
-  | 'biczLancucha' | 'szarza' | 'skok'
+  // z dystansu (2) — skok z uderzeniem usunięty na polecenie użytkownika (6.11)
+  | 'biczLancucha' | 'szarza'
   // zdolności (5)
   | 'uderzenieWZiemie' | 'ryk' | 'rozkazRzut' | 'rozkazTarcza' | 'rozkazZawal'
   // obrona i reakcja (2)
@@ -214,7 +216,7 @@ export interface RuchBossa {
   przygniata?: number;
   /** tchnienie: [od tiku, do tiku, co ile tików], mnożnik siły na jeden podmuch */
   oddech?: [number, number, number]; podmuch?: number;
-  /** przemieszczenie: [od tiku, do tiku, najwyżej kafli] (szarża — do zderzenia, skok — na cel) */
+  /** przemieszczenie: [od tiku, do tiku, najwyżej kafli] (szarża — do zderzenia) */
   przemieszcza?: [number, number, number];
   /** waga w losowaniu; dostępny dopiero, gdy demonowi zostało mniej życia niż ten ułamek */
   waga?: number; zycieDo?: number;
@@ -268,11 +270,6 @@ export const RUCHY_BOSSA: Record<IdRuchuBossa, RuchBossa> = {
   szarza: {
     nazwa: 'Szarża', rodzaj: 'dystans', dl: 170, przemieszcza: [48, 104, 5], traf: [[0, 1.3]], zasieg: 7, od: 3, powala: 0.8, odrzut: 1.6, waga: 0.8,
     opis: 'Pochyla głowę i rusza na rycerza z kilku kafli — przy zderzeniu go powala i odrzuca.',
-  },
-  skok: {
-    nazwa: 'Skok z uderzeniem', rodzaj: 'dystans', dl: 200, przemieszcza: [58, 112, 7], traf: [[112, 1.4]], promien: 2.8, powalaDo: 1.6,
-    zasieg: 8, od: 3, zycieDo: 0.75, waga: 0.7,
-    opis: 'Od trzech czwartych życia: przysiad, skok na rycerza i lądowanie z pięściami — fala wokół.',
   },
   uderzenieWZiemie: {
     nazwa: 'Uderzenie w ziemię', rodzaj: 'zdolnosc', dl: 220, traf: [[110, 0]], promien: 3, ogluszenie: 30,
