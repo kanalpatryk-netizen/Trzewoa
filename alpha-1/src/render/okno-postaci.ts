@@ -22,10 +22,13 @@ import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
 import { cost, affordable, modliSie } from '../powers/powers';
 import { czoloDrogi } from '../sim/pielgrzymka';
 import { naWieszaku } from '../sim/zbroja';
+import { stanBramy } from '../sim/brama';
+import { pomnikRozbity } from '../sim/pomnik';
+import { BRAMA, BLOGOSLAWIENSTWO } from '../nastawy/loch';
 import { Job, type Creature } from '../sim/creatures';
 import type { Sim } from '../sim/sim';
 
-export type AkcjaMozliwosci = 'naprawa' | 'cud' | 'modl' | 'przerwij' | 'oltarz' | 'droga' | 'warsztat' | 'kuznia' | 'zbroja' | 'sen';
+export type AkcjaMozliwosci = 'naprawa' | 'cud' | 'modl' | 'przerwij' | 'oltarz' | 'kociol' | 'zaInnych' | 'droga' | 'warsztat' | 'kuznia' | 'zbroja' | 'sen';
 /** Jedna możliwość w oknie: kto (`ids`), czy teraz da się (`ok`, inaczej `powod`), koszt, czy pilne (miga czerwienią). */
 export interface Mozliwosc { akcja: AkcjaMozliwosci; nazwa: string; opis: string; ids: number[]; ok: boolean; powod?: string; koszt?: string; pilne?: boolean; }
 export interface PoleOkna extends Prostokat { akcja: AkcjaMozliwosci | 'tlo' | 'zamknij'; }
@@ -50,16 +53,50 @@ export function mozliwosciPostaci(A: Sim, M: Creature[]): Mozliwosc[] {
     i.length && Q.push({ akcja: "modl", nazwa: "M\xF3dl si\u0119", opis: "szept: idzie do krypty i modli si\u0119 pod pomnikiem \u2014 kruszy go", ids: E(i), ok: affordable(A, "szept", "modl"), powod: `trzeba ${w.wiara} wiary`, koszt: `${w.wiara} wiary` });
     const G = C.filter((h) => modliSie(h));
     G.length && Q.push({ akcja: "przerwij", nazwa: "Przerwij modlitw\u0119", opis: "wraca do swoich i przez minut\u0119 nie idzie si\u0119 modli\u0107", ids: E(G), ok: true }), Q.push({ akcja: "oltarz", nazwa: "Do o\u0142tarza", opis: "idzie do o\u0142tarza w sali i otwiera okno rytua\u0142\xF3w (p\u0142acisz krwi\u0105)", ids: E(C), ok: true });
+    Q.push(...mozliwosciPoboznych6_11(A, C));
   }
   if (B.length) {
     const Y = czoloDrogi(A), i = A.rytual.otwarta ? "pomnik ju\u017C otwarty" : A.planDrogi ? "droga wiernych jest ju\u017C wykopana" : "droga jeszcze si\u0119 wyznacza \u2014 chwila";
-    Q.push({ akcja: "droga", nazwa: "Kop drog\u0119 wiernych", opis: "kopi\u0105 szyb drogi wiernych od wn\u0119ki przy sali w d\xF3\u0142, do krypty", ids: E(B), ok: Y >= 0, powod: i }), I("warsztat") && Q.push({ akcja: "warsztat", nazwa: "Pracuj w warsztacie", opis: "ze z\u0142ota robi\u0105 krzy\u017Ce \u2014 ka\u017Cdy staje si\u0119 wiar\u0105", ids: E(B), ok: A.zloto > 0, powod: "nie ma z\u0142ota" }), I("kuznia") && Q.push({ akcja: "kuznia", nazwa: "Pracuj w ku\u017Ani", opis: "z \u017Celaza wykuwaj\u0105 cz\u0119\u015Bci zbroi rycerza", ids: E(B), ok: A.zelazo > 0, powod: "nie ma \u017Celaza" });
+    Q.push({ akcja: "droga", nazwa: "Kop drog\u0119 wiernych", opis: "kopią drogę wiernych: szyb od wnęki przy sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu", ids: E(B), ok: Y >= 0, powod: i }), I("warsztat") && Q.push({ akcja: "warsztat", nazwa: "Pracuj w warsztacie", opis: "ze z\u0142ota robi\u0105 krzy\u017Ce \u2014 ka\u017Cdy staje si\u0119 wiar\u0105", ids: E(B), ok: A.zloto > 0, powod: "nie ma z\u0142ota" }), I("kuznia") && Q.push({ akcja: "kuznia", nazwa: "Pracuj w ku\u017Ani", opis: "z \u017Celaza wykuwaj\u0105 cz\u0119\u015Bci zbroi rycerza", ids: E(B), ok: A.zelazo > 0, powod: "nie ma \u017Celaza" });
   }
   if (o.length && I("kuznia")) {
     const Y = naWieszaku(A).length;
     Q.push({ akcja: "zbroja", nazwa: "Za\u0142\xF3\u017C zbroj\u0119", opis: "idzie do ku\u017Ani, zdejmuje cz\u0119\u015B\u0107 z wieszaka i j\u0105 zak\u0142ada", ids: E(o), ok: Y > 0, powod: "na wieszaku nic nie wisi", koszt: Y ? `${Y} na wieszaku` : undefined });
   }
   return I("sypialnia") && Q.push({ akcja: "sen", nazwa: "Id\u017A spa\u0107", opis: "sen w sypialni zdejmuje os\u0142abienia (ok. minuty)", ids: E(M), ok: true }), Q;
+}
+/**
+ * 6.11: „Do kotła — podnieś bramę” (zaklinanie przy kotle w starej komnacie; dwóch naraz podnosi stalową bramę lochu)
+ * i „Módl się za innych” (zostaje i modli się za tych wokół — leczy ich i błogosławi).
+ */
+function mozliwosciPoboznych6_11(sim: Sim, pobozni: Creature[]): Mozliwosc[] {
+  const out: Mozliwosc[] = [];
+  const w = sim.world;
+  if (w.komnata.x1 >= w.komnata.x0 && !pomnikRozbity(sim)) {
+    const s1 = w.odcinkiDrogi[0];
+    // komnata z kotłem dostępna, gdy pierwszy odcinek drogi wiernych jest wykuty do jej sklepienia
+    let wykuty = !!s1;
+    if (s1) for (let y = w.salaOltarza.y1 + 1; y < w.komnata.y0 && wykuty; y++) if (w.solid((s1.x0 + s1.x1) >> 1, y)) wykuty = false;
+    const zaklina = pobozni.filter((c) => c.polecenie?.zaklinaj);
+    const b = stanBramy(sim);
+    const ile = Math.round(b.otwarcie * 100);
+    if (!zaklina.length || zaklina.length < pobozni.length) {
+      const reszta = pobozni.filter((c) => !c.polecenie?.zaklinaj);
+      out.push({
+        akcja: 'kociol', nazwa: 'Do kotła — podnieś bramę',
+        opis: `idą do kotła w starej komnacie i rzucają zaklęcia; dwóch naraz podnosi stalową bramę lochu (40 s do pełna), a gdy przestaną — brama powoli opada${ile ? ` (teraz otwarta w ${ile}%)` : ''}`,
+        ids: reszta.map((c) => c.id), ok: wykuty, powod: 'droga wiernych nie sięga jeszcze komnaty z kotłem',
+        koszt: reszta.length + b.zaklina < BRAMA.potrzeba ? `potrzeba ${BRAMA.potrzeba}` : undefined,
+      });
+    }
+  }
+  const nieModla = pobozni.filter((c) => !c.polecenie?.zaInnych);
+  if (nieModla.length) out.push({
+    akcja: 'zaInnych', nazwa: 'Módl się za innych',
+    opis: `zostaje, gdzie stoi, i modli się za tych wokół (${BLOGOSLAWIENSTWO.promien} kafli): rany się goją, rycerz bije mocniej i szybciej chodzi, robotnik szybciej kopie, pobożny mocniej się modli`,
+    ids: nieModla.map((c) => c.id), ok: true,
+  });
+  return out;
 }
 /** Kopie postaci do portretu (stoją, patrzą w bok, bez ładunku) — żeby nie ruszać tych na mapie. */
 const kopie = new Map<number, Creature>();

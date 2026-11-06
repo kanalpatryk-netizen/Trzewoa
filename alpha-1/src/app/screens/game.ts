@@ -32,6 +32,9 @@ import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { naWieszaku } from '../../sim/zbroja';
 import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, rysujRamke, kafleRamki, ludRoli, type PoleDruzyny, type FalaRozkazu, type PodgladRamki } from '../../render/druzyna';
+import { wydajDoKotla, wydajModlitweZaInnych } from '../../sim/polecenia';
+import { BRAMA } from '../../nastawy/loch';
+import { rysujLoch, rysujLochNad } from '../../render/loch';
 import { wydajGrupie, wydajObszar, doWykuciaRamka, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa, type Polecenie } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
 import { NASTAWY_GLOSU } from '../../core/glos-odmowy';
@@ -504,6 +507,25 @@ export class EkranGry implements Ekran {
         this.nasluch?.({ typ: 'oltarz', rodzaj: 'okno' });
         break;
       }
+      case 'kociol': {
+        // 6.11: zaklinanie przy kotle podnosi stalową bramę lochu (dwóch naraz)
+        const { przyjeli, odmowy } = wydajDoKotla(sim, m.ids), k = sim.world.kociol;
+        this.falaRozkazu = { x: k.x + 0.5, y: k.y + 0.5, t: performance.now(), ok: przyjeli > 0 };
+        const zaklina = sim.creatures.filter((c) => !c.dead && c.polecenie?.zaklinaj).length;
+        if (przyjeli) {
+          ui.say((przyjeli === 1 ? 'Idzie do kotła.' : `Idą do kotła: ${przyjeli}.`) + (zaklina < BRAMA.potrzeba ? ` Bramę podniosą dopiero ${BRAMA.potrzeba} naraz.` : ' Brama ruszy, gdy zaczną zaklinać.'), sim.tick);
+          this.app.gesty.klik();
+        } else { ui.say(`Nie pójdą: ${odmowy[0] ?? 'nie ma drogi'}.`, sim.tick); this.app.gesty.odmowa(); }
+        this.nasluch?.({ typ: 'polecenie', rodzaj: 'idz', przyjeli });
+        break;
+      }
+      case 'zaInnych': {
+        const { przyjeli, odmowy } = wydajModlitweZaInnych(sim, m.ids);
+        if (przyjeli) { ui.say(przyjeli === 1 ? 'Modli się za tych, którzy stoją wokół.' : `Modlą się za innych: ${przyjeli}.`, sim.tick); this.app.gesty.klik(); }
+        else { ui.say(`Teraz nie: ${odmowy[0] ?? 'nie może'}.`, sim.tick); this.app.gesty.odmowa(); }
+        this.nasluch?.({ typ: 'polecenie', rodzaj: 'idz', przyjeli });
+        break;
+      }
       case 'zbroja': case 'warsztat': case 'kuznia': case 'sen': {
         const rodzaj = akcja === 'zbroja' ? 'kuznia' : akcja === 'sen' ? 'sypialnia' : akcja;
         const pom = sim.pomieszczenia.find((q) => q.gotowe && q.rodzaj === rodzaj);
@@ -698,6 +720,9 @@ export class EkranGry implements Ekran {
     if (sim.world.ever[sim.world.idx(sim.world.coreX, sim.world.coreY)]) odkrycia.odkryj('skorupa');
     // skorupę odkrywa się, gdy ktoś zacznie się przy niej modlić albo gdy pęknie
     if (sim.rytual.wierni >= 1 || sim.rytual.pekniecia > 0) odkrycia.odkryj('skorupa');
+    // 6.11: kocioł i brama — gdy lud zobaczy komnatę z kotłem; modlitwa za innych — przy pierwszym błogosławieństwie
+    { const w = sim.world; if (w.komnata.x1 >= w.komnata.x0 && w.ever[w.idx(w.kociol.x, w.kociol.y)]) odkrycia.odkryj('brama'); }
+    if (sim.creatures.some((c) => !c.dead && c.blogDo !== undefined)) cicho('modlitwaZaInnych');
     if (sim.tick > 1500) cicho('krew');
     if (sim.wiara > 15) cicho('wiara');
     // wiara to serce drogi do wygranej — jej tablica wyskakuje sama przy pierwszej modlitwie
@@ -1362,6 +1387,8 @@ export class EkranGry implements Ekran {
     this.oltarz.rysuj(ctx, sim, cam);
     // etap 3e: ruiny — mury, łuki, belki, zabytek na posadzce (światło zabytku — nad mrokiem)
     this.ruiny.rysuj(ctx, sim, cam);
+    // 6.11: loch za stalową bramą, przedproże i stara komnata z kotłem — mury, filary, pajęczyny, kocioł, krata
+    rysujLoch(ctx, sim, cam, teraz);
     // katedra na powierzchni nad szybem ze światłem — kamień (szkło rozety i płomienie świec — nad mrokiem)
     rysujKatedre(ctx, sim, cam);
     smugiSwiatla(ctx, sim, cam, teraz);
@@ -1393,6 +1420,8 @@ export class EkranGry implements Ekran {
     this.oltarz.rysujNad(ctx, sim, cam, teraz, this.oltarzPodKursorem());
     // etap 3e: odkrycie zabytku (kurz, światło, wzlot), wzięcie (do rąk, fala do ludu), zostawienie (gaśnie)
     this.ruiny.rysujNad(ctx, sim, cam, teraz);
+    // 6.11: wywar w kotle i zaklinanie, płomienie, runy bramy, krąg modlitwy za innych — nad mrokiem
+    rysujLochNad(ctx, sim, cam, teraz);
     const proba = this.probaPodKursorem();
     if (proba) this.pokoje.podglad(ctx, sim, cam, proba, teraz, this.szablon === 'lina' ? this.cenaLinyPodpis(!this.ciagniecie)
       : this.ciagniecie ? undefined : this.szablon && !czyPokoj(this.szablon) ? `${NAZWA_POMIESZCZENIA[this.szablon]} — przeciągnij` : undefined);

@@ -15,6 +15,7 @@ import { stroj } from './lud/stroj';
 import { szkielet } from './lud/szkielet';
 import { swiatloOtoczenia } from './lud/oswietlenie';
 import type { Poza, Tryb } from './lud/poza';
+import { czolgaSie } from '../sim/brama';
 
 /** Gdzie wypadła głowa w ostatnim rysunku: środek i promień jako części wysokości postaci, od środka stóp (twarzą w prawo). */
 const glowy = new WeakMap<Creature, { x: number; y: number; r: number }>();
@@ -91,6 +92,13 @@ export function rysujLud(
   // niski korytarz: kuca (nie dotyczy wspinaczki, zwisu i leżenia)
   const kuc = tryb.lezy ? 0 : przykucniecie(sim, c, czas) * (1 - p.wis);
   if (kuc > 0.005) p = kucnij(p, kuc, tryb);
+  // 6.11: pod nisko zawieszoną kratą bramy lochu — czołga się na czworakach, ciało prawie poziomo, nisko nad posadzką
+  if (czolgaSie(sim, c) && !tryb.cialo) {
+    const f = faza * Math.PI * 2;
+    p = { ...p, uA: 1.5 + 0.28 * sin(f), kA: 1.55, uB: 1.5 - 0.28 * sin(f), kB: 1.55, rA: 1.85 + 0.35 * sin(f + Math.PI), eA: -0.35, rB: 1.85 + 0.35 * sin(f), eB: -0.35, tulow: 0, glowa: -0.55, wis: 0, lot: 0 };
+    tryb.cialo = { x: -0.42, y: -0.2 + 0.02 * sin(f * 2), kat: 1.28, sx: 1 };
+    tryb.narzedzie = null;
+  }
   const t = ctx.getTransform();
   // gdy gra tnie jakość (ustawienie „szybka” albo auto przy małej liczbie klatek) — bez najdrobniejszych szczegółów
   const taniej = ustawienia.jakosc === 'szybka' || (ustawienia.jakosc === 'auto' && jakoscAuto.taniej);

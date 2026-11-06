@@ -3,6 +3,8 @@
  * Alpha: stała drużyna — nikt nie wychodzi ze skały, nie ma gniazd kamiennych rycerzy.
  * Liczby są w src/nastawy/lud.ts.
  */
+import type { StanBramy } from './brama';
+import { BRAMA, BLOGOSLAWIENSTWO } from '../nastawy/loch';
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { Race, RACES } from './races';
@@ -70,6 +72,8 @@ export interface StanLudu {
   /** Remake v2: robotnicy w hełmach (brak rycerzy) i następny ołtarz nie wcześniej niż. */
   helmy?: boolean;
   oltarzPo?: number;
+  /** 6.11: stalowa brama lochu — otwarcie, ilu zaklina przy kotle (sim/brama.ts). */
+  brama?: StanBramy;
 }
 
 export interface Spizarnia { x: number; y: number; ilosc: number; /** tik założenia */ od?: number }
@@ -191,6 +195,17 @@ export function mnoznik(sim: Sim, c: Creature, co: keyof MnoznikiRoli): number {
   }
   // etap 3f: zbroja z kuźni — każda noszona część dokłada swoje (tylko rycerz ją nosi)
   if (r === 'rycerz' && c.zbroja?.length) v *= mnoznikZbroi(c, co);
+  // 6.11: błogosławieństwo pobożnego, który modli się za innych — dar roli i wolniejszy głód
+  if (c.blogDo !== undefined && sim.tick < c.blogDo) {
+    const dar = BLOGOSLAWIENSTWO.dary[r]?.[co as 'sila'];
+    if (dar) v *= dar;
+    if (co === 'glod') v *= BLOGOSLAWIENSTWO.glod;
+  }
+  // 6.11: pod kratą stalowej bramy lochu, gdy wisi nisko — czołga się, wolniej
+  if (co === 'szybkosc') {
+    const b = sim.world.brama, tx = Math.floor(c.x), ty = Math.floor(c.y);
+    if (tx >= b.x0 && tx <= b.x1 && ty >= b.y0 && ty <= b.y1 && (sim.lud.brama?.otwarcie ?? 0) < BRAMA.idzieOd) v *= BRAMA.czolganie;
+  }
   return v;
 }
 
@@ -294,6 +309,16 @@ export function stanyPostaci(sim: Sim, c: Creature): StanPostaci[] {
   }
   if (c.okaleczony) {
     out.push({ nazwa: 'okaleczony', skutek: `−${Math.round((1 - LUD.okaleczenie) * 100)}% życia, siły i szybkości`, dobry: false, kiedy: 'póki nie wyśpi się w sypialni' });
+  }
+  // 6.11: błogosławieństwo z modlitwy pobożnego za innych
+  if (c.blogDo !== undefined && sim.tick < c.blogDo && rolaPostaci(c)) {
+    const dar = BLOGOSLAWIENSTWO.dary[rolaPostaci(c)!] ?? {};
+    const NAZWY: Record<string, string> = { sila: 'siły', szybkosc: 'szybkości', kopanie: 'kopania', modlitwa: 'modlitwy' };
+    const czesci = Object.entries(dar).map(([k, m]) => `+${Math.round(((m ?? 1) - 1) * 100)}% ${NAZWY[k] ?? k}`);
+    czesci.push(`głód o ${Math.round((1 - BLOGOSLAWIENSTWO.glod) * 100)}% wolniej`);
+    const zKim = c.blogOd !== undefined ? sim.creatureById(c.blogOd) : null;
+    const leczy = !!zKim && !zKim.dead && sim.tick - (c.blogT ?? -1e9) <= BLOGOSLAWIENSTWO.co * 2;
+    out.push({ nazwa: 'błogosławiony', skutek: czesci.join(', ') + (leczy ? '; w kręgu modlitwy rany się goją' : ''), dobry: true, do: c.blogDo });
   }
   // etap 3f: zbroja z kuźni — tylko wiersz na karcie (zbroję widać na rycerzu)
   const zb = rolaPostaci(c) === 'rycerz' ? opisZbroi(c) : null;

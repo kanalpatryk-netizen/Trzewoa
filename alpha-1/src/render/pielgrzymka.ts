@@ -1,4 +1,5 @@
 import type { Sim } from '../sim/sim';
+import type { Prost } from '../sim/world';
 import type { Camera } from './camera';
 import { doKopania, type PlanDrogi } from '../sim/pielgrzymka';
 
@@ -77,9 +78,8 @@ const pojawienie = new Map<number, number>();
 let pierwszaKlatka = true;
 const WYRASTA_MS = 420;
 
-/** Widoczne rzędy i kolumny szybu (kafle) — reszty nie rysuje się wcale. */
-function widoczne(sim: Sim, cam: Camera): { x0: number; x1: number; y0: number; y1: number } | null {
-  const s = sim.world.szybDrogi;
+/** Widoczne rzędy i kolumny odcinka szybu (kafle) — reszty nie rysuje się wcale. */
+function widoczne(s: Prost, cam: Camera): { x0: number; x1: number; y0: number; y1: number } | null {
   if (s.x1 < s.x0) return null;
   const z = cam.zoom;
   const lewa = cam.x - cam.vw / 2 / z, gora = cam.y - cam.vh / 2 / z;
@@ -94,15 +94,20 @@ function widoczne(sim: Sim, cam: Camera): { x0: number; x1: number; y0: number; 
  * Placeholder do podmiany na grafikę. Świeżo wykuty stopień wyrasta z pyłem.
  */
 export function rysujSchodyDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
-  const w = sim.world, s = w.szybDrogi;
-  const v = widoczne(sim, cam);
-  const z = cam.zoom;
-  const start = w.salaOltarza.y1 + 1;               // pierwszy rząd pod wnęką
-  const szer = s.x1 - s.x0 + 1;
+  const w = sim.world;
   if (pierwszaKlatka) {
     pierwszaKlatka = false;
-    for (let y = s.y0; y <= s.y1; y++) for (let x = s.x0; x <= s.x1; x++) if (w.schody[w.idx(x, y)]) pojawienie.set(w.idx(x, y), -1e9);
+    for (const s of w.odcinkiDrogi) for (let y = s.y0; y <= s.y1; y++) for (let x = s.x0; x <= s.x1; x++) if (w.schody[w.idx(x, y)]) pojawienie.set(w.idx(x, y), -1e9);
   }
+  // 6.11: każdy odcinek drogi (z zakrętem przez komnatę z kotłem) ma swoje biegi — od własnego szczytu
+  for (const s of w.odcinkiDrogi) rysujSchodyOdcinka(ctx, sim, cam, teraz, s, Math.max(s.y0, w.salaOltarza.y1 + 1));
+}
+
+function rysujSchodyOdcinka(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number, s: Prost, start: number): void {
+  const w = sim.world;
+  const v = widoczne(s, cam);
+  const z = cam.zoom;
+  const szer = s.x1 - s.x0 + 1;
   if (!v) return;
   ctx.save();
   ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -154,16 +159,17 @@ export function rysujSchodyDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
  * kilof i strzałka w dół kredą. Placeholder do podmiany na grafikę.
  */
 export function rysujPlanDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, plan: PlanDrogi, teraz: number): void {
-  const w = sim.world, s = w.szybDrogi;
-  if (!plan.szyb || s.x1 < s.x0) return;
+  const w = sim.world, s = w.odcinkiDrogi[0];
+  if (!plan.szyb || !s) return;
   const z = cam.zoom;
   const start = w.salaOltarza.y1 + 1;
-  // najwyższy rząd, w którym jeszcze stoi skała szybu
-  let gora = -1;
-  for (const i of plan.szyb) if (doKopania(w.tile[i])) { gora = (i / w.w) | 0; break; }
   ctx.save();
-  if (gora >= 0) {
-    const v = widoczne(sim, cam);
+  // każdy odcinek osobno (6.11: zakręt przez komnatę z kotłem): najwyższy rząd, w którym jeszcze stoi jego skała
+  for (const o of w.odcinkiDrogi) {
+    let gora = -1;
+    for (let y = Math.max(o.y0, start); y <= o.y1 && gora < 0; y++) for (let x = o.x0; x <= o.x1; x++) if (doKopania(w.tile[w.idx(x, y)])) { gora = y; break; }
+    if (gora < 0) continue;
+    const v = widoczne(o, cam);
     if (v) {
       ctx.strokeStyle = ZLOTO(0.32); ctx.lineWidth = Math.max(1, z * 0.04);
       ctx.beginPath();
@@ -175,10 +181,10 @@ export function rysujPlanDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: Cam
       }
       ctx.stroke();
     }
-    // zarys: od najwyższego niewykutego rzędu do dna krypty
+    // zarys: od najwyższego niewykutego rzędu do dna odcinka
     ctx.setLineDash([Math.max(3, z * 0.4), Math.max(2, z * 0.22)]);
     ctx.strokeStyle = ZLOTO(0.85); ctx.lineWidth = Math.max(1.4, z * 0.08);
-    ctx.strokeRect(cam.toScreenX(s.x0), cam.toScreenY(gora), (s.x1 - s.x0 + 1) * z, (s.y1 - gora + 1) * z);
+    ctx.strokeRect(cam.toScreenX(o.x0), cam.toScreenY(gora), (o.x1 - o.x0 + 1) * z, (o.y1 - gora + 1) * z);
     ctx.setLineDash([]);
   }
   // wnęka „tu zacznij”: dopóki pierwszy rząd szybu pod nią stoi cały

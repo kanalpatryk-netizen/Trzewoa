@@ -89,42 +89,58 @@ function osiagalneZBazy(sim: Sim, hx: number, hy: number): void {
 }
 
 /**
- * Droga wiernych jako szyb (propozycja Pawła, 25.10): szeroki szyb przy lewej ścianie sali, prosto w dół na dno krypty,
- * a stamtąd podłogą krypty do przedsionka. Kuje się go od wnęki w dół, rzędami; w wykutych kaflach same pojawiają się
- * schody (schodyDrogi), więc chodzi się nim w obie strony. Geometria szybu — world.szybDrogi (wykujWnekeDrogi).
+ * Droga wiernych jako szyb (propozycja Pawła, 25.10): szeroki szyb przy lewej ścianie sali — od 6.11 z zakrętem:
+ * pierwszy odcinek w dół do starej komnaty z kotłem, komnatą w bok, drugi odcinek w dół na przedproże, a stamtąd
+ * przez stalową bramę posadzką lochu do przedsionka. Kuje się go od wnęki w dół, rzędami (najpierw cały pierwszy
+ * odcinek, potem drugi); w wykutych kaflach same pojawiają się schody (schodyDrogi), więc chodzi się nim w obie
+ * strony. Geometria — world.odcinkiDrogi, komnata, przedproże i brama (world.ts: ukladDrogi).
  */
 function planSzybu(sim: Sim, klanId: number): PlanDrogi | null {
-  const w = sim.world, s = w.szybDrogi;
-  const sx = (s.x0 + s.x1) >> 1;
+  const w = sim.world;
+  const [s1, s2] = w.odcinkiDrogi;
+  if (!s1 || !s2) return null;
+  const srodek = (o: { x0: number; x1: number }) => (o.x0 + o.x1) >> 1;
   const szyb: number[] = [];
-  for (let y = s.y0; y <= s.y1; y++) for (const x of [sx, ...Array.from({ length: s.x1 - s.x0 + 1 }, (_, k) => s.x0 + k).filter((x) => x !== sx)]) szyb.push(w.idx(x, y));
-  // dno szybu → przedsionek: podłogą krypty, bez kucia
+  for (const o of w.odcinkiDrogi) {
+    const sx = srodek(o);
+    const kolumny = [sx, ...Array.from({ length: o.x1 - o.x0 + 1 }, (_, k) => o.x0 + k).filter((x) => x !== sx)];
+    for (let y = o.y0; y <= o.y1; y++) for (const x of kolumny) szyb.push(w.idx(x, y));
+  }
+  const sx1 = srodek(s1), sx2 = srodek(s2);
+  // dno drugiego odcinka → przedsionek: posadzką przedproża, przez bramę (zamkniętą też — to droga, nie przejście)
+  // i posadzką lochu, bez kucia
   const wPrzedsionku = (x: number, y: number) => Math.abs(x - w.coreX) <= 4 && y >= w.przedsionekY && y - w.przedsionekY < PIELGRZYMKA.przedsionekY && stoi(sim, x, y);
-  const dno = w.idx(sx, s.y1);
-  const r = szukajKopiac(sim, [dno], (_i, x, y) => wPrzedsionku(x, y), { koszt: () => -1, limit: 6000, zBudzetu: false });
-  const krypta = r ? r.droga : [];
-  // od przedsionka do sali: podłoga krypty wstecz, środek szybu w górę do dolnego rzędu wnęki, i pierwszy kafel sali
-  const sciezka: number[] = [...krypta].reverse();
+  const dno = w.idx(sx2, s2.y1);
+  const r = szukajKopiac(sim, [dno], (_i, x, y) => wPrzedsionku(x, y), { koszt: (_j, x, y) => (w.wBramie(x, y) ? 0 : -1), limit: 8000, zBudzetu: false });
+  const loch = r ? r.droga : [];
+  // od przedsionka do sali: posadzka lochu wstecz, drugi odcinek w górę, posadzka komnaty, pierwszy odcinek w górę
+  // do dolnego rzędu wnęki i pierwszy kafel sali
+  const sciezka: number[] = [...loch].reverse();
+  for (let y = s2.y1; y >= s2.y0; y--) sciezka.push(w.idx(sx2, y));
+  const dnoKomnaty = w.komnata.y1;
+  const krok = sx1 > sx2 ? 1 : -1;
+  for (let x = sx2; x !== sx1; x += krok) sciezka.push(w.idx(x, dnoKomnaty));
   const dolWneki = w.salaOltarza.y1;
-  for (let y = s.y1; y >= dolWneki; y--) sciezka.push(w.idx(sx, y));
-  for (let x = sx + 1; x <= s.x1 + 1; x++) sciezka.push(w.idx(x, dolWneki));
+  for (let y = dnoKomnaty; y >= dolWneki; y--) sciezka.push(w.idx(sx1, y));
+  for (let x = sx1 + 1; x <= s1.x1 + 1; x++) sciezka.push(w.idx(x, dolWneki));
   return { klan: klanId, tick: sim.tick, sciezka, kopac: szyb.filter((i) => doKopania(w.tile[i])), dwukierunkowa: true, liny: [], szyb };
 }
 
 /**
- * Schody drogi wiernych: w każdym pustym kaflu szybu połączonym od góry (od wnęki w dół, kolumnami, do pierwszej litej
- * skały) — także w jaskiniach, które szyb przecina, i w krypcie pod nim. Liczone z mapy: zawał zasypuje schody, wykuty
- * kafel od razu je dostaje (digTile woła to po każdym kaflu szybu).
+ * Schody drogi wiernych: w każdym pustym kaflu odcinka szybu połączonym od góry (od szczytu odcinka w dół, kolumnami,
+ * do pierwszej litej skały) — także w jaskiniach, które szyb przecina, w komnacie z kotłem i na przedprożu. Liczone
+ * z mapy: zawał zasypuje schody, wykuty kafel od razu je dostaje (digTile woła to po każdym kaflu szybu).
  */
 export function schodyDrogi(sim: Sim): void {
-  const w = sim.world, s = w.szybDrogi;
-  if (s.x1 < s.x0) return;
-  for (let x = s.x0; x <= s.x1; x++) {
-    let polaczony = true;
-    for (let y = s.y0; y <= s.y1; y++) {
-      const i = w.idx(x, y);
-      polaczony = polaczony && PASSABLE[w.tile[i]] === 1;
-      w.schody[i] = polaczony && y > w.salaOltarza.y1 ? 1 : 0;
+  const w = sim.world;
+  for (const s of w.odcinkiDrogi) {
+    for (let x = s.x0; x <= s.x1; x++) {
+      let polaczony = true;
+      for (let y = s.y0; y <= s.y1; y++) {
+        const i = w.idx(x, y);
+        polaczony = polaczony && PASSABLE[w.tile[i]] === 1;
+        w.schody[i] = polaczony && y > w.salaOltarza.y1 ? 1 : 0;
+      }
     }
   }
 }
@@ -133,7 +149,7 @@ export function planujDroge(sim: Sim, klanId: number, proba = 0, dwukierunkowa =
   const w = sim.world, W = w.w;
   const klan = sim.clans[klanId];
   if (!klan) return null;
-  if (SWIAT.warstwy.wlaczone && w.szybDrogi.x1 >= w.szybDrogi.x0) return planSzybu(sim, klanId);
+  if (SWIAT.warstwy.wlaczone && w.odcinkiDrogi.length) return planSzybu(sim, klanId);
   if (proba === 0) osiagalneZBazy(sim, klan.hx, klan.hy);
   const plywa = RACES[klan.race].swims;
   // skały przy ogniu i przy wodzie nie ruszamy: przebity strop zalałby drogę i gniazdo

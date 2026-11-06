@@ -26,6 +26,7 @@ import { NAZWA_RYTUALU } from '../nastawy/oltarz';
 import { wiadroDoWspinaczki, wiadroId, krokNaLinie, wiadra } from './wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
+import { przyKotle, bramaOtwarta } from './brama';
 import { odmow, nastepnyKafelZyly, nastepnyWObszarze, kafleObszaru, pominKafelObszaru, type Polecenie, type Odmowa } from './polecenia';
 import { SWIAT } from '../nastawy/swiat';
 import { idziePoZbroje, planZbroi, ranyZbroi } from './zbroja';
@@ -126,6 +127,10 @@ export interface Creature {
   rana?: 'magma' | 'woda' | 'glod' | 'starosc' | 'przysypany' | 'upadek' | 'grzybnia';
   /** Remake v1: stojąc przy obozie, modli się (pobożny). */
   modliPrzyObozie?: boolean;
+  /** 6.11: błogosławieństwo pobożnego (modlitwa za innych) — do kiedy, od kogo i kiedy ostatnio odnowione (sim/blogoslawienstwo.ts). */
+  blogDo?: number;
+  blogOd?: number;
+  blogT?: number;
   /** Remake v1: wysłany pod rdzeń — wraca do pielgrzymki po każdym przerwaniu (ogień, ucieczka, posiłek). */
   wyprawa?: boolean;
   /** Remake v1: tik ostatniej ucieczki od ognia — przez chwilę nie wraca tą samą drogą. */
@@ -1044,6 +1049,12 @@ function planujLud(sim: Sim, c: Creature): void {
     }
     // pobożni modlą się pod rdzeniem — rycerze idą z nimi na wartę (jedzenie donoszą robotnicy,
     // a przy warcie powstaje obóz, który zaopatrują)
+    if (wartaPotrzebna(sim) && !rycerzeCzekaja(sim) && w.brama.x1 >= w.brama.x0 && !bramaOtwarta(sim) && !w.wLochu(c.x, c.y) && czoloDrogi(sim) < 0) {
+      // 6.11: warta jest w lochu, a brama zamknięta — rycerz czeka pod nią na przedprożu, aż pobożni ją podniosą
+      const pp = w.przedproze;
+      const d = droga((x, y) => x >= pp.x0 && x <= pp.x1 && y >= pp.y0 && y <= pp.y1 && stoi(sim, x, y), LUD.dostawaLimit);
+      if (d) { naDroge(d); zamiar('czeka pod stalową bramą lochu — warta modli się w środku', Job.WARTA, podroz(d) + Z); return; }
+    }
     if (wartaPotrzebna(sim) && !rycerzeCzekaja(sim)) {
       const strona = c.id % 2 ? -1 : 1;
       const naPoscie = (x: number, y: number, s: number) => {
@@ -1354,8 +1365,12 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
     if (!p.na) { p.na = true; sim.efekt(c.x, c.y, 'mysl', 'na miejscu'); }
     p.prob = 0;
     c.jx = naMiejscu ? cx : p.x; c.jy = naMiejscu ? cy : p.y; c.droga = undefined;
-    c.modliPrzyObozie = rola === 'pobozny' && sim.tick >= (c.bezModlitwyDo ?? 0);
-    zamiar(rola === 'pobozny' ? 'modli się tam, gdzie kazałeś' : rola === 'rycerz' ? 'pilnuje miejsca, które wskazałeś' : 'czeka tam, gdzie kazałeś', Job.STOI, Z);
+    // 6.11: przy kotle rzuca zaklęcia (to nie modlitwa — nie błogosławi); „za innych” modli się zawsze
+    c.modliPrzyObozie = rola === 'pobozny' && !p.zaklinaj && (!!p.zaInnych || sim.tick >= (c.bezModlitwyDo ?? 0));
+    const opis = p.zaklinaj && rola === 'pobozny' ? (przyKotle(sim, c) ? 'rzuca zaklęcia nad kotłem — w dole podnosi się stalowa brama lochu' : 'idzie do kotła w starej komnacie')
+      : p.zaInnych && rola === 'pobozny' ? 'modli się za tych, którzy stoją wokół — leczy ich i błogosławi'
+      : rola === 'pobozny' ? 'modli się tam, gdzie kazałeś' : rola === 'rycerz' ? 'pilnuje miejsca, które wskazałeś' : 'czeka tam, gdzie kazałeś';
+    zamiar(opis, Job.STOI, Z);
     return true;
   }
   // w drodze — drogą, a robotnik, gdy jej nie ma, przekopuje się
@@ -2030,6 +2045,14 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   const wPrzedsionku = Math.abs(c.x - w.coreX) < P.przedsionekX && Math.abs(c.y - w.przedsionekY) < P.przedsionekY;
   // Remake v1: drogi jeszcze nie ma — wraca czekać przy obozie (planer), zamiast iść za kopaczami
   if (REMAKE && sim.tick % 120 === c.id % 120 && ((!wPrzedsionku && drogaNiegotowa(sim, c)) || falaZwykla(sim))) { c.wyprawa = true; c.jt = 0; return; }
+  // 6.11: stalowa brama lochu zamknięta — pielgrzym, który doszedł na przedproże, czeka pod nią (otworzą ją pobożni
+  // zaklęciami przy kotle); kto jest w drodze, idzie dalej — stanie tu samo
+  if (!wPrzedsionku && REMAKE && w.brama.x1 >= w.brama.x0 && !w.wLochu(c.x, c.y) && w.wPrzedprozu(Math.floor(c.x), Math.floor(c.y)) && !bramaOtwarta(sim)) {
+    c.droga = undefined;
+    c.zamiar = 'czeka pod stalową bramą lochu — podniosą ją pobożni zaklęciami przy kotle';
+    c.zamiarDo = sim.tick + 120;
+    return;
+  }
   if (!wPrzedsionku) {
     // swoja nacja ma plan drogi — idzie nim i sama przekopuje skałę po drodze; na przełaj
     // pielgrzymi szli prosto w dół i stawali na pierwszym jeziorze nad rdzeniem

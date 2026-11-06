@@ -205,7 +205,7 @@ function ustawZawal(sim: Sim, st: StanDloniDemona, dm: Creature, r: Creature): b
     let wolnych = 0, wSzybie = false;
     for (let xx = x; xx < x + D.zawal.szer; xx++) for (let yy = k.strop + 1; yy < k.dno; yy++) {
       if (w.inb(xx, yy) && !w.solid(xx, yy)) wolnych++;
-      if (w.wSzybie(xx, yy)) wSzybie = true;
+      if (w.wSzybie(xx, yy) || w.wBramie(xx, yy) || w.wPrzedprozu(xx, yy)) wSzybie = true;
     }
     if (wSzybie) continue;
     if (wolnych < 3) continue;

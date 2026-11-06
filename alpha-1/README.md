@@ -54,6 +54,63 @@ wygląd bossa ma być choć podobny do pomnika”. Boss to teraz **ten sam rysun
 - Podgląd wszystkich ruchów (narzędzie dewelopera): `podgladRuchu(ctx, h, ruch, u, czas)` w `demon-boss.ts`.
   Póki obrazki kukły się wczytują, boss rysuje się po staremu (`demon-wzor.ts`).
 
+## Droga wiernych z zakrętem, komnata z kotłem, loch za stalową bramą, modlitwa za innych (6.11)
+Użytkownik: droga wiernych „ma być zakręcona” — w dół, w bok przez „stare pomieszczenie z pajęczynami” z kotłem, znowu
+w dół; na dole „inny” loch z bossem, do którego wchodzi się przez stalową bramę. Bramę podnoszą zaklęcia dwóch pobożnych
+przy kotle (pełne otwarcie po 40 s), potem krata powoli opada; przy połowie da się tylko przeczołgać. Pobożni mają się
+modlić za innych w swoim kręgu — leczyć i dawać dary. Styl: „ekstremalnie mroczny, ale przyjazny dla oka”.
+- **Układ** (`ukladDrogi`, `wykujLoch`, `wykujDroge` w `src/sim/world.ts`; liczby — `src/nastawy/loch.ts`, `LOCH`):
+  - pierwszy odcinek szybu: od wnęki przy sali 46 rzędów w dół, do dna starej komnaty;
+  - komnata z kotłem (41 × 7, mur nie do ruszenia): idzie się nią 30 kafli w bok;
+  - drugi odcinek: z posadzki komnaty w dół na przedproże;
+  - z przedproża przez bramę do lochu.
+  Do wykucia jest razem ok. 835 kafli (dawny prosty szyb miał ok. 890). `world.odcinkiDrogi`, `komnata`, `kociol`,
+  `przedproze`, `brama`, `loch`; `szybDrogi` to prostokąt, który obejmuje oba odcinki.
+- **Loch** zamiast niskiej krypty: wnętrze 85 kafli szerokie, sklepione łukami co 12 kafli (9–12 kafli wysokości),
+  nad przedsionkiem wysoka nawa (15). Mur i posadzka są nie do ruszenia, więc do środka wchodzi się tylko przez bramę.
+  Pomnik, przedsionek, strefa Strażników i miejsca ucieczki przed falą zostały tam, gdzie były.
+- **Brama** (`src/sim/brama.ts`, `BRAMA`):
+  - podnosi się, póki przy kotle zaklina co najmniej 2 pobożnych z rozkazu „Do kotła”: pełne otwarcie po 40 s;
+  - bez zaklinania opada przez 110 s;
+  - od 20% otwarcia przejście jest pustką i da się przeczołgać (szybkość ×0,35, poza na czworakach);
+  - od 60% przechodzi się wyprostowanym: 40 s zaklinania wpuszcza każdego, 20 s (połowa) — tylko na czworakach;
+  - kto leży w przejściu, gdy krata opada, zostaje wypchnięty na stronę, w którą szedł; nikogo nie miażdży;
+  - pielgrzymi i rycerze na warcie czekają pod zamkniętą bramą na przedprożu;
+  - kronika notuje drgnięcie, czołganie, przejście wyprostowanym, pełne otwarcie i zamknięcie;
+  - podpowiedź przy czekających pod bramą: wyślij dwóch pobożnych do kotła;
+  - bot obserwatorium (`brama` w `src/app/bot.ts`) wysyła dwóch pobożnych do kotła, a rycerzy pod bramę. Przy pełnym
+    otwarciu pobożni schodzą pod pomnik, a rycerze wchodzą do lochu.
+- **Modlitwa za innych** (`src/sim/blogoslawienstwo.ts`, `BLOGOSLAWIENSTWO`):
+  - w oknie pobożnego nowa możliwość „Módl się za innych”: pobożny zostaje, gdzie stoi, i modli się;
+  - błogosławi też pobożny, który modli się przy obozie, przy ołtarzu albo w krypcie (nie ten, który zaklina przy kotle);
+  - każdy z ludu w promieniu 8 kafli leczy się (1,1 życia/s) i dostaje dar swojej roli na 20 s po wyjściu z kręgu:
+    - rycerz: +15% siły, +10% szybkości;
+    - robotnik: +25% kopania, +10% szybkości;
+    - pobożny: +25% modlitwy;
+    - każdy głodnieje o 15% wolniej;
+  - na karcie postaci widać stan „błogosławiony”.
+- **Okno pobożnego**: „Do kotła — podnieś bramę” (z ikoną kotła; aktywne, gdy pierwszy odcinek dosięga komnaty)
+  i „Módl się za innych”.
+- **Rysunek** (`src/render/loch.ts`):
+  - mury z ciosów i tylne ściany w ciepłych, ciemnych barwach kamienia (bez czystej czerni), filary i łuki sklepienia,
+    łańcuchy z kajdanami, karmazynowe chorągwie, kosze ognia, mgła przy posadzce;
+  - w komnacie: nisze z półkami (słoje, czaszki, księgi), ogarki świec, złamane filary, pajęczyny w rogach (z pająkiem),
+    kocioł na trójnogu nad paleniskiem i pulpit z księgą zaklęć;
+  - nad mrokiem: turkusowy wywar z bańkami i parą; przy zaklinaniu runy krążą nad kotłem, a nici światła biegną od rąk
+    pobożnych do wywaru;
+  - na przedprożu pochodnie i krata ze stali, uniesiona o tyle, ile brama otwarta (pod nią widać szparę). Na nadprożu
+    pięć run zapala się kolejno z otwarciem: turkusowo przy zaklinaniu, gasnące, gdy krata opada;
+  - krąg modlitwy za innych (ciepła elipsa na posadzce, słup światła) i nici do błogosławionych, złote drobiny nad
+    leczonymi;
+  - w lochu, komnacie i na przedprożu mrok jest gęstszy (`MROK.gesty`, rozmyta krawędź w kształcie sklepienia). Światło
+    daje tylko ogień: kocioł, świece, pochodnie, kosze ognia.
+- **Atlas**: tablice „Kocioł i stalowa brama” (rycina: zaklinanie, krata rośnie i opada, progi „przejdzie” i „przeczołga
+  się”) oraz „Modlitwa za innych”. Samouczek („Droga do wolności”) ma etap o bramie i kotle.
+- **Testy**: `test-swiata` sprawdza w 100 światach dwa odcinki drogi, puste wnętrze komnaty za szczelnym murem, kocioł
+  na posadzce i zamkniętą bramę na starcie. Sprawdza też, że do przedsionka nie da się dojść z przedproża obok bramy,
+  a przez bramę — tak. Pełne partie bota (seed 3 i 4) kończą się Uwolnieniem po 14 minutach gry: bot podnosi bramę,
+  pobożni i rycerze wchodzą do lochu, zanim krata opadnie.
+
 ## Ramka do wykucia bez limitu, w kaflach (6.11)
 Użytkownik: „zaznaczanie terenu do kopania przez robotników nie ma mieć limitu […] teren do wykopania nie ma tworzyć losowego
 kwadratu, tylko ma się zaznaczać według wielkości bloków, żeby było wiadomo, co konkretnie będziemy kopać”.

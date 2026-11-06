@@ -23,6 +23,7 @@
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
 import { Job, Thought } from './creatures';
+import { BRAMA } from '../nastawy/loch';
 import { POLECENIA as P } from '../nastawy/polecenia';
 import { T } from './tiles';
 import { rolaPostaci } from './lud';
@@ -56,6 +57,10 @@ export interface Polecenie {
   obszar?: number[];
   /** Ramka: ile kafli z rzędu pominął jako nieosiągalne (zeruje się przy każdym wykutym). */
   pomin?: number;
+  /** 6.11: pobożny idzie do kotła w starej komnacie i tam rzuca zaklęcia (podnoszą bramę lochu — sim/brama.ts). */
+  zaklinaj?: boolean;
+  /** 6.11: pobożny zostaje, gdzie stoi, i modli się za innych — leczy i błogosławi tych wokół (sim/blogoslawienstwo.ts). */
+  zaInnych?: boolean;
   /**
    * Alpha, etap 3c: pomieszczenie (sim/pomieszczenia.ts) — plan do wykucia („kop”), warsztat albo kuźnia („praca”),
    * sypialnia („sen”); etap 3f: kuźnia, do której poszedł rycerz po zbroję z wieszaka („zbroja”)
@@ -501,6 +506,46 @@ export function wydajDoOltarza(sim: Sim, ids: readonly number[]): { przyjeli: nu
     zajete.add(dx);
     const powod = wydajPolecenie(sim, c, 'idz', o.x + dx, o.y);
     if (powod) odmowy.push(powod); else przyjeli++;
+  }
+  return { przyjeli, odmowy };
+}
+
+/**
+ * 6.11: „Do kotła” — pobożni idą do kotła w starej komnacie (zakręt drogi wiernych) i tam rzucają zaklęcia. Dwóch naraz
+ * podnosi stalową bramę lochu (sim/brama.ts); każdy staje na swoim miejscu przy kotle, na zmianę po obu stronach.
+ */
+export function wydajDoKotla(sim: Sim, ids: readonly number[]): { przyjeli: number; odmowy: string[] } {
+  const w = sim.world, k = w.kociol;
+  if (w.komnata.x1 < w.komnata.x0) return { przyjeli: 0, odmowy: ['w tej górze nie ma kotła'] };
+  const pobozni = ids.map((id) => sim.creatureById(id)).filter((c): c is Creature => !!c && !c.dead && rolaPostaci(c) === 'pobozny');
+  // miejsca zajęte przez tych, którzy już zaklinają (albo do kotła idą)
+  const zajete = new Set<number>();
+  for (const c of sim.creatures) if (!c.dead && c.polecenie?.zaklinaj && !pobozni.includes(c)) zajete.add(c.polecenie.x - k.x);
+  let przyjeli = 0;
+  const odmowy: string[] = [];
+  for (const c of pobozni) {
+    const dx = BRAMA.miejscaPrzyKotle.find((d) => !zajete.has(d)) ?? BRAMA.miejscaPrzyKotle[0];
+    zajete.add(dx);
+    const powod = wydajPolecenie(sim, c, 'idz', k.x + dx, k.y);
+    if (powod || !c.polecenie) { odmowy.push(powod ?? 'nie dojdę do kotła'); continue; }
+    c.polecenie.zaklinaj = true;
+    zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — do kotła, rzucać zaklęcia (brama lochu)`, k.x, k.y);
+    przyjeli++;
+  }
+  return { przyjeli, odmowy };
+}
+
+/** 6.11: „Módl się za innych” — pobożny zostaje, gdzie stoi, i modli się za tych wokół (leczy ich i błogosławi). */
+export function wydajModlitweZaInnych(sim: Sim, ids: readonly number[]): { przyjeli: number; odmowy: string[] } {
+  let przyjeli = 0;
+  const odmowy: string[] = [];
+  for (const id of ids) {
+    const c = sim.creatureById(id);
+    if (!c || c.dead || rolaPostaci(c) !== 'pobozny') continue;
+    const powod = wydajPolecenie(sim, c, 'idz', Math.floor(c.x), Math.floor(c.y));
+    if (powod || !c.polecenie) { odmowy.push(powod ?? 'tu nie stanie'); continue; }
+    c.polecenie.zaInnych = true;
+    przyjeli++;
   }
   return { przyjeli, odmowy };
 }

@@ -173,6 +173,23 @@ export function ikonaMozliwosci(ctx: CanvasRenderingContext2D, M: string, g: num
       ctx.beginPath(), ctx.moveTo(-C * 0.04, -C * 0.42), ctx.lineTo(-C * 0.03, -C * 0.08), ctx.moveTo(C * 0.04, C * 0.08), ctx.lineTo(C * 0.03, C * 0.42), ctx.stroke(), ctx.beginPath(), ctx.ellipse(0, 0, C * 0.14, C * 0.09, 0.6, 0, Math.PI * 2), ctx.stroke(), ctx.strokeStyle = `rgba(210,80,60,${0.85 * E})`, ctx.beginPath(), ctx.arc(0, 0, C * 0.3, 0.3, Math.PI * 1.7), ctx.stroke();
       break;
     }
+    case "kociol": {
+      // 6.11: kocioł na trójnogu, nad nim dwie smugi zaklęcia i krata bramy
+      ctx.beginPath(), ctx.moveTo(-C * 0.3, -C * 0.02), ctx.quadraticCurveTo(-C * 0.32, C * 0.3, 0, C * 0.3), ctx.quadraticCurveTo(C * 0.32, C * 0.3, C * 0.3, -C * 0.02), ctx.closePath(), ctx.stroke();
+      ctx.beginPath(), ctx.moveTo(-C * 0.34, -C * 0.02), ctx.lineTo(C * 0.34, -C * 0.02), ctx.moveTo(-C * 0.2, C * 0.26), ctx.lineTo(-C * 0.28, C * 0.42), ctx.moveTo(C * 0.2, C * 0.26), ctx.lineTo(C * 0.28, C * 0.42), ctx.stroke();
+      ctx.save(), ctx.strokeStyle = `rgba(150,220,210,${0.85 * E})`;
+      const fal = wolnoRuszac() ? Math.sin(o * 3e-3) * C * 0.04 : 0;
+      for (const I of [-1, 1]) ctx.beginPath(), ctx.moveTo(I * C * 0.1, -C * 0.06), ctx.quadraticCurveTo(I * C * 0.22 + fal, -C * 0.24, I * C * 0.06, -C * 0.42), ctx.stroke();
+      ctx.restore();
+      break;
+    }
+    case "zaInnych": {
+      // 6.11: modlący się w środku, krąg światła wokół i dwie postaci, za które się modli
+      ctx.save(), ctx.globalAlpha = 0.6, ctx.beginPath(), ctx.ellipse(0, C * 0.36, C * 0.42, C * 0.09, 0, 0, Math.PI * 2), ctx.stroke(), ctx.restore();
+      ctx.beginPath(), ctx.arc(0, -C * 0.26, C * 0.07, 0, Math.PI * 2), ctx.moveTo(0, -C * 0.19), ctx.lineTo(0, C * 0.12), ctx.lineTo(-C * 0.08, C * 0.32), ctx.moveTo(0, C * 0.12), ctx.lineTo(C * 0.08, C * 0.32), ctx.moveTo(-C * 0.1, -C * 0.06), ctx.lineTo(0, -C * 0.14), ctx.lineTo(C * 0.1, -C * 0.06), ctx.stroke();
+      for (const I of [-1, 1]) ctx.save(), ctx.globalAlpha = 0.75, ctx.beginPath(), ctx.arc(I * C * 0.34, -C * 0.02, C * 0.05, 0, Math.PI * 2), ctx.moveTo(I * C * 0.34, C * 0.03), ctx.lineTo(I * C * 0.34, C * 0.26), ctx.stroke(), ctx.strokeStyle = `rgba(255,226,150,${0.8 * E})`, ctx.beginPath(), ctx.moveTo(I * C * 0.06, -C * 0.2), ctx.quadraticCurveTo(I * C * 0.22, -C * 0.3, I * C * 0.32, -C * 0.1), ctx.stroke(), ctx.restore();
+      break;
+    }
     case "zbroja": {
       const I = new Path2D();
       I.moveTo(-C * 0.26, C * 0.34), I.lineTo(-C * 0.26, -C * 0.1), I.quadraticCurveTo(0, -C * 0.46, C * 0.26, -C * 0.1), I.lineTo(C * 0.26, C * 0.34), I.closePath(), ctx.stroke(I), kreskuj(ctx, I, C, Math.max(2, C * 0.06), 0.8, 0.35 * E), ctx.fillStyle = "rgba(0,0,0,0.9)", ctx.fillRect(-C * 0.2, -C * 0.04, C * 0.4, C * 0.06), ctx.beginPath(), ctx.moveTo(0, -C * 0.36), ctx.lineTo(0, C * 0.34), ctx.stroke();

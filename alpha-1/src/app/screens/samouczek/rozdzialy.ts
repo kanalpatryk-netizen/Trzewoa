@@ -373,8 +373,14 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g, s) => { const d = s.gniazdoGoblinow(); if (d) g.pokazMiejsce(d.x, d.y, 12, true); },
     etapy: [
       {
-        tekst: 'Najpierw robotnicy kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół, do krypty. Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.',
+        tekst: 'Najpierw robotnicy kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu. Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.',
         rozumiem: true,
+      },
+      {
+        tekst: 'Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch pobożnych przy kotle („Do kotła” w oknie pobożnego) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać.',
+        rozumiem: true,
+        wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.kociol.x, w.kociol.y, 10, true); },
+        wskaz: (s) => { const w = s.gra.sim.world; return { typ: 'swiat', cel: { x: w.kociol.x + 0.5, y: w.kociol.y, r: 5, tekst: 'kocioł' } }; },
       },
       {
         tekst: `Przy ${PROG} oddania pobożni sami pójdą pod rdzeń. Karta „chcą zejść pod twój rdzeń” albo szept „módl się” zrobią to od razu.`,

@@ -38,6 +38,7 @@ import { ZBROJA, CZESC, type CzescZbroi } from '../nastawy/zbroja';
 import { SWIAT } from '../nastawy/swiat';
 import { POMNIK, DEMON } from '../nastawy/pomnik';
 import { RUCHY_RYCERZA, RUCHY_BOSSA, type IdRuchuRycerza, type IdRuchuBossa } from '../nastawy/walka';
+import { BRAMA, BLOGOSLAWIENSTWO } from '../nastawy/loch';
 import { podgladWalkiDemona } from '../render/demon-boss';
 import { rysujPosag, rysujWstajacego, rysujKonajacego, cokol, gruz } from '../render/pomnik';
 import { rycinaDloniDemona } from '../render/dlon-demona';
@@ -561,6 +562,101 @@ function walkaRycerzaRycina(p: Plotno): void {
 }
 
 const POKAZ_DEMONA: IdRuchuBossa[] = ['zGory', 'zamach', 'podwojnyZamach', 'zgniecenie', 'przygniecenie', 'tupniecie', 'tchnienie', 'wybuchAureoli', 'biczLancucha', 'szarza', 'uderzenieWZiemie', 'ryk', 'blok', 'zachwianie'];
+
+/**
+ * 6.11 — Kocioł i stalowa brama: po lewej dwóch zakapturzonych rzuca zaklęcia nad kotłem (nici światła, runy), po prawej
+ * krata bramy w murze lochu podnosi się, póki zaklinają, i powoli opada, gdy przestaną; z boku progi „przejdzie”
+ * i „przeczołga się”. Czas ściśnięty: 40 s zaklinania to 4 s ryciny.
+ */
+function bramaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 31);
+  const okres = 4000 + 11000 + 2000;
+  const f = t % okres;
+  const otw = f < 4000 ? f / 4000 : f < 15000 ? Math.max(0, 1 - (f - 4000) / 11000) : 0;
+  const zaklina = f < 4000;
+  const y = h * 0.84;
+  // kocioł
+  const kx = w * 0.3, kr = h * 0.13;
+  const zg = ctx.createRadialGradient(kx, y - kr * 0.3, 0, kx, y - kr * 0.3, kr * 2.4);
+  zg.addColorStop(0, `rgba(110,220,196,${zaklina ? 0.4 : 0.18})`); zg.addColorStop(1, 'rgba(40,120,110,0)');
+  ctx.fillStyle = zg; ctx.fillRect(kx - kr * 3, y - kr * 4, kr * 6, kr * 5);
+  ctx.fillStyle = 'rgb(30,31,35)';
+  ctx.beginPath(); ctx.moveTo(kx - kr, y - kr * 1.1); ctx.quadraticCurveTo(kx - kr * 1.1, y - kr * 0.1, kx, y - kr * 0.05); ctx.quadraticCurveTo(kx + kr * 1.1, y - kr * 0.1, kx + kr, y - kr * 1.1); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = `rgba(120,224,200,${zaklina ? 0.85 : 0.5})`; ctx.beginPath(); ctx.ellipse(kx, y - kr * 1.1, kr * 0.92, kr * 0.13, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgb(30,31,35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(kx - kr * 1.1, y); ctx.lineTo(kx - kr * 0.7, y - kr * 0.6); ctx.moveTo(kx + kr * 1.1, y); ctx.lineTo(kx + kr * 0.7, y - kr * 0.6); ctx.stroke();
+  // dwóch zaklinających: zakapturzone sylwetki z uniesionymi dłońmi
+  for (const s of [-1, 1]) {
+    const px = kx + s * kr * 2.1, ph = h * 0.3;
+    ctx.fillStyle = 'rgb(208,198,176)';
+    ctx.beginPath(); ctx.moveTo(px - ph * 0.16, y); ctx.lineTo(px - ph * 0.1, y - ph * 0.72); ctx.quadraticCurveTo(px, y - ph * 1.02, px + ph * 0.1, y - ph * 0.72); ctx.lineTo(px + ph * 0.16, y); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = 1.4; ctx.stroke();
+    const hx = px - s * ph * 0.2, hy = y - ph * (zaklina ? 0.78 : 0.55);
+    ctx.strokeStyle = 'rgb(208,198,176)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px - s * ph * 0.05, y - ph * 0.6); ctx.lineTo(hx, hy); ctx.stroke();
+    if (zaklina) {
+      ctx.strokeStyle = 'rgba(150,236,214,0.75)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + kx) / 2, hy - kr * 1.2 + Math.sin(t * 0.006 + s) * kr * 0.3, kx, y - kr * 1.1); ctx.stroke();
+    }
+  }
+  // brama: ościeże, nadproże z runami, krata uniesiona o otwarcie
+  const bx = w * 0.72, bw = w * 0.13, bh = h * 0.42, by = y - bh;
+  ctx.fillStyle = 'rgb(84,74,64)'; ctx.fillRect(bx - bw * 0.35, by - h * 0.14, bw * 1.7, bh + h * 0.14);
+  ctx.fillStyle = 'rgb(40,33,28)'; ctx.fillRect(bx, by, bw, bh);
+  ctx.save(); ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.clip();
+  const gora = by - otw * bh;
+  for (let k = 0; k < 6; k++) { const xx = bx + bw * ((k + 0.5) / 6); ctx.fillStyle = 'rgb(120,132,146)'; ctx.fillRect(xx - 1.6, gora - bh, 3.2, bh * 2 - 4); ctx.beginPath(); ctx.moveTo(xx - 2.6, gora + bh - 6); ctx.lineTo(xx + 2.6, gora + bh - 6); ctx.lineTo(xx, gora + bh); ctx.closePath(); ctx.fill(); }
+  for (let k = 0; k < 4; k++) { ctx.fillStyle = 'rgb(70,78,88)'; ctx.fillRect(bx, gora + bh * ((k + 0.5) / 4) - 1.5, bw, 3); }
+  ctx.restore();
+  for (let n = 0; n < 5; n++) {
+    const a = Math.max(0, Math.min(1, otw * 5 - n));
+    ctx.fillStyle = a > 0 ? (zaklina ? `rgba(150,236,214,${0.4 + 0.6 * a})` : `rgba(236,210,160,${0.3 + 0.5 * a})`) : 'rgba(0,0,0,0.5)';
+    ctx.beginPath(); ctx.arc(bx + bw * ((n + 0.5) / 5), by - h * 0.07, 2.6, 0, Math.PI * 2); ctx.fill();
+  }
+  // progi przejścia: wyprostowany i na czworakach
+  ctx.font = `${Math.round(h * 0.045)}px Georgia, serif`; ctx.textAlign = 'right';
+  for (const [prog, napis] of [[BRAMA.idzieOd, 'przejdzie'], [BRAMA.czolgaOd, 'przeczołga się']] as [number, string][]) {
+    const yy = y - prog * bh;
+    ctx.strokeStyle = 'rgba(240,228,204,0.5)'; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(bx - bw * 0.35 - 4, yy); ctx.lineTo(bx - bw * 0.35 - 14, yy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = otw >= prog ? 'rgba(240,228,204,0.95)' : 'rgba(240,228,204,0.4)'; ctx.fillText(napis, bx - bw * 0.35 - 17, yy + 4);
+  }
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4;
+  ctx.fillStyle = 'rgba(240,228,204,0.95)'; ctx.font = `${Math.round(h * 0.055)}px Georgia, serif`; ctx.textAlign = 'center';
+  ctx.fillText(zaklina ? 'zaklinają — krata się unosi' : otw > 0 ? 'cisza — krata powoli opada' : 'brama zamknięta', w / 2, h * 0.1);
+  ctx.restore();
+}
+
+/** 6.11 — Modlitwa za innych: modlący się w środku kręgu, wokół trzej z ludu, nici światła i złote drobiny. */
+function modlitwaZaInnychRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 37);
+  const y = h * 0.84, cx = w / 2, R = w * 0.4;
+  const puls = 0.5 + 0.5 * Math.sin(t * 0.002);
+  ctx.save(); ctx.translate(cx, y); ctx.scale(1, 0.2);
+  const g = ctx.createRadialGradient(0, 0, R * 0.2, 0, 0, R);
+  g.addColorStop(0, `rgba(255,226,150,${0.25 + 0.08 * puls})`); g.addColorStop(1, 'rgba(255,214,130,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  const postac = (x: number, ph: number, kolor: string) => {
+    ctx.fillStyle = kolor; ctx.beginPath(); ctx.moveTo(x - ph * 0.15, y); ctx.lineTo(x - ph * 0.1, y - ph * 0.72); ctx.quadraticCurveTo(x, y - ph * 1.02, x + ph * 0.1, y - ph * 0.72); ctx.lineTo(x + ph * 0.15, y); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = 1.4; ctx.stroke();
+  };
+  const sg = ctx.createLinearGradient(0, y - h * 0.6, 0, y);
+  sg.addColorStop(0, 'rgba(255,230,170,0)'); sg.addColorStop(0.5, `rgba(255,230,170,${0.2 + 0.08 * puls})`); sg.addColorStop(1, 'rgba(255,230,170,0.04)');
+  ctx.fillStyle = sg; ctx.fillRect(cx - w * 0.05, y - h * 0.6, w * 0.1, h * 0.6);
+  postac(cx, h * 0.34, 'rgb(214,204,182)');
+  for (const [dx, kolor] of [[-0.3, 'rgb(70,74,84)'], [0.22, 'rgb(150,110,70)'], [0.34, 'rgb(120,96,70)']] as [number, string][]) {
+    const x = cx + w * dx;
+    ctx.strokeStyle = 'rgba(255,236,180,0.5)'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(cx, y - h * 0.3); ctx.quadraticCurveTo((cx + x) / 2, y - h * 0.5, x, y - h * 0.24); ctx.stroke();
+    postac(x, h * 0.28, kolor);
+    for (let n = 0; n < 3; n++) {
+      const f = (t * 0.0007 + n / 3 + dx) % 1;
+      ctx.fillStyle = `rgba(255,230,160,${0.7 * (1 - f)})`;
+      ctx.beginPath(); ctx.arc(x + Math.sin(f * 9 + n) * 6, y - h * 0.1 - f * h * 0.25, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
 
 /** Walka demona: ruch za ruchem kukły z pomnika. */
 function walkaDemonaRycina(p: Plotno): void {
@@ -1170,7 +1266,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'warstwy', grupa: 'prawa', nazwa: 'Warstwy góry', lacina: 'Strata montis',
     opis: 'Góra ma piętra. Z powierzchni prowadzą dwa otwory: szerszy szyb pod katedrą, którym z jej rozety pada światło na ołtarz, i węższy, nad którym stoi kozioł — tędy konwój spuszcza wiadro z jedzeniem — oba do sali z siedzibą. Nad salą leży czapa skały nie do ruszenia, a całą górę otacza gruba rama, której nikt nie przekuje. Niżej trzy warstwy: płytka — miękka skała i kępy rdzawego żelaza; środkowa — zwykła skała, małe jaskinie ze złotem pod dnem i ruiny; głęboka — twarda skała, kuje się najwolniej. Na samym dole szeroka, niska krypta z płaską podłogą, a pod jej środkiem, w komorze, Wielki Pomnik demona — zawsze w tym samym miejscu.',
-    kiedy: 'Każda warstwa w dół to dłuższa droga z powrotem do wiadra. Żelazo leży tuż pod salą, po złoto trzeba zejść do środkowej, a droga wiernych prowadzi przez wszystkie trzy aż do krypty.',
+    kiedy: 'Każda warstwa w dół to dłuższa droga z powrotem do wiadra. Żelazo leży tuż pod salą, po złoto trzeba zejść do środkowej, a droga wiernych prowadzi przez wszystkie trzy — z zakrętem przez starą komnatę z kotłem — aż do stalowej bramy lochu.',
     rycina: warstwyRycina,
   },
   {
@@ -1223,6 +1319,18 @@ export const TABLICE: Tablica[] = [
     })(),
     kiedy: 'Nie stój z rycerzem przed demonem, gdy ten wciąga powietrze (ogień) albo kuli się z rękami na piersi (wybuch aureoli) — a gdy klęknie, to twoja chwila.',
     rycina: walkaDemonaRycina,
+  },
+  {
+    id: 'brama', grupa: 'prawa', nazwa: 'Kocioł i stalowa brama', lacina: 'Porta ferrea',
+    opis: `Droga wiernych skręca: pierwszy szyb schodzi do starej komnaty z pajęczynami, w której stoi kocioł, komnatą idzie się w bok, a drugi szyb schodzi na przedproże lochu z Wielkim Pomnikiem. Do lochu wchodzi się tylko przez stalową bramę. Krata podnosi się, póki przy kotle rzuca zaklęcia co najmniej ${BRAMA.potrzeba} pobożnych (rozkaz „Do kotła”) — pełne otwarcie po ${Math.round(BRAMA.otwieranie / 120)} s; gdy przestaną, krata powoli opada (${Math.round(BRAMA.opadanie / 120)} s). Wyprostowanym przejdzie się od ${Math.round(BRAMA.idzieOd * 100)}% otwarcia, niżej trzeba się przeczołgać — do ${Math.round(BRAMA.czolgaOd * 100)}%. Na nadprożu bramy pięć run zapala się kolejno, ile otwarta.`,
+    kiedy: `Najpierw postaw pod bramą tych, którzy mają wejść, potem poślij dwóch pobożnych do kotła. Po ${Math.round(BRAMA.otwieranie / 120)} s zaklinania pobożni zdążą zejść z komnaty i przejść, zanim krata opadnie. Wejście w mur lochu jest nie do przekucia — tylko brama.`,
+    rycina: bramaRycina,
+  },
+  {
+    id: 'modlitwaZaInnych', grupa: 'prawa', nazwa: 'Modlitwa za innych', lacina: 'Oratio pro aliis',
+    opis: `Pobożny, który się modli — na rozkaz „Módl się za innych”, przy obozie, przy ołtarzu albo w krypcie — błogosławi swoich w promieniu ${BLOGOSLAWIENSTWO.promien} kafli: rany się goją (${String(BLOGOSLAWIENSTWO.leczenie).replace('.', ',')} życia na sekundę), a każdy dostaje dar swojej roli na ${Math.round(BLOGOSLAWIENSTWO.trwa / 120)} s po wyjściu z kręgu — rycerz bije mocniej i szybciej chodzi, robotnik szybciej kopie, pobożny mocniej się modli, a każdy wolniej głodnieje. Siebie nie błogosławi. Rzucający zaklęcia przy kotle się nie modlą.`,
+    kiedy: 'Postaw modlącego się za innych za rycerzem w walce albo przy kopaczach drogi.',
+    rycina: modlitwaZaInnychRycina,
   },
   {
     id: 'helmy', grupa: 'prawa', nazwa: 'Hełmy robotników', lacina: 'Fossores armati',
