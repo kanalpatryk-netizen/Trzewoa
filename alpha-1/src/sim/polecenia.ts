@@ -54,6 +54,8 @@ export interface Polecenie {
    * następny odsłonięty z tej listy (najbliższy), aż wszystkie będą pustką.
    */
   obszar?: number[];
+  /** Ramka: ile kafli z rzędu pominął jako nieosiągalne (zeruje się przy każdym wykutym). */
+  pomin?: number;
   /**
    * Alpha, etap 3c: pomieszczenie (sim/pomieszczenia.ts) — plan do wykucia („kop”), warsztat albo kuźnia („praca”),
    * sypialnia („sen”); etap 3f: kuźnia, do której poszedł rycerz po zbroję z wieszaka („zbroja”)
@@ -255,7 +257,7 @@ export function wydajGrupie(sim: Sim, ids: readonly number[], x: number, y: numb
 }
 
 /** Czy ten kafel wolno oznaczyć ramką do wykucia (lita skała, którą lud rusza; nie podłoga drogi wiernych). */
-function doWykuciaRamka(sim: Sim, i: number): boolean {
+export function doWykuciaRamka(sim: Sim, i: number): boolean {
   const w = sim.world;
   const x = i % w.w, y = (i / w.w) | 0;
   return w.inb(x, y) && w.solid(x, y) && w.hardness(x, y) > 0 && w.get(x, y) !== T.CORE && !podDroga(sim, i);
@@ -280,14 +282,11 @@ export function wydajObszar(sim: Sim, ids: readonly number[], kafle: readonly nu
   for (const id of ids) {
     const c = sim.creatureById(id);
     if (!c || c.dead || rolaPostaci(c) !== 'robotnik') continue;
-    // najpierw odsłonięte kafle (od tych zaczyna się kuć), najbliżej robotnika
-    const cx = Math.floor(c.x), cy = Math.floor(c.y);
-    const kolejnosc = [...obszar].sort((a, b) => {
-      const oa = odsloniety(sim, a) ? 0 : 1000, ob = odsloniety(sim, b) ? 0 : 1000;
-      return oa + Math.abs((a % w.w) - cx) + Math.abs(((a / w.w) | 0) - cy) - ob - Math.abs((b % w.w) - cx) - Math.abs(((b / w.w) | 0) - cy);
-    });
+    // najpierw odsłonięte kafle (od tych zaczyna się kuć), najbliżej robotnika, i nie te, w które biją już inni
+    // (ramka nie ma limitu, 6.11: cztery najlepsze w jednym przejściu — sortowanie całego obszaru przycinało grę)
+    const kolejnosc = kafleObszaru(sim, c, { typ: 'kop', x: 0, y: 0, od: sim.tick, obszar }, 4).map(([x, y]) => w.idx(x, y));
     let powod: string | null = 'tam się nie dokopię';
-    for (const i of kolejnosc.slice(0, 4)) {
+    for (const i of kolejnosc) {
       powod = wydajPolecenie(sim, c, 'idz', i % w.w, (i / w.w) | 0);
       if (!powod) break;
     }
@@ -306,18 +305,52 @@ function odsloniety(sim: Sim, i: number): boolean {
   return w.passable(x - 1, y) || w.passable(x + 1, y) || w.passable(x, y - 1) || w.passable(x, y + 1);
 }
 
-/** Ramka: następny kafel do wykucia — odsłonięty, najbliżej robotnika (albo null, gdy cały obszar jest już pustką). */
-export function nastepnyWObszarze(sim: Sim, c: Creature, p: Polecenie): [number, number] | null {
+/**
+ * Ramka: do `n` następnych kafli do wykucia — odsłonięte, najbliżej robotnika. Kafel, w który już bije inny robotnik
+ * z ramki, liczy się jak o `P.ramkaZajety` kafli dalej (6.11: każdy bierze swój — wcześniej cała trójka stała nad
+ * jednym kaflem, a gdy ten był nieosiągalny, wszyscy porzucali ramkę).
+ */
+export function kafleObszaru(sim: Sim, c: Creature, p: Polecenie, n: number): [number, number][] {
   const w = sim.world;
-  if (!p.obszar) return null;
+  if (!p.obszar) return [];
   p.obszar = p.obszar.filter((i) => doWykuciaRamka(sim, i));
-  const cx = Math.floor(c.x), cy = Math.floor(c.y);
-  let best = -1, bd = Infinity;
-  for (const i of p.obszar) {
-    const d = Math.abs((i % w.w) - cx) + Math.abs(((i / w.w) | 0) - cy) + (odsloniety(sim, i) ? 0 : 1000);
-    if (d < bd) { bd = d; best = i; }
+  const zajete = new Set<number>();
+  for (const o of sim.creatures) {
+    const q = o.polecenie;
+    if (o !== c && !o.dead && q?.typ === 'kop' && q.obszar) zajete.add(w.idx(q.x, q.y));
   }
-  return best < 0 ? null : [best % w.w, (best / w.w) | 0];
+  const cx = Math.floor(c.x), cy = Math.floor(c.y);
+  const wynik: number[] = [], klucze: number[] = [];
+  for (const i of p.obszar) {
+    const k = Math.abs((i % w.w) - cx) + Math.abs(((i / w.w) | 0) - cy) + (odsloniety(sim, i) ? 0 : 1000) + (zajete.has(i) ? P.ramkaZajety : 0);
+    if (wynik.length === n && k >= klucze[n - 1]) continue;
+    let j = Math.min(wynik.length, n - 1);
+    while (j > 0 && klucze[j - 1] > k) j--;
+    wynik.splice(j, 0, i); klucze.splice(j, 0, k);
+    if (wynik.length > n) { wynik.pop(); klucze.pop(); }
+  }
+  return wynik.map((i) => [i % w.w, (i / w.w) | 0]);
+}
+
+/** Ramka: następny kafel do wykucia (albo null, gdy cały obszar jest już pustką). */
+export function nastepnyWObszarze(sim: Sim, c: Creature, p: Polecenie): [number, number] | null {
+  return kafleObszaru(sim, c, p, 1)[0] ?? null;
+}
+
+/**
+ * Ramka: do wskazanego kafla nie da się dojść ani dokopać — robotnik go pomija i bierze następny z ramki
+ * (6.11: ramka bez limitu bywa duża; jeden nieosiągalny kafel nie może kasować całego rozkazu). Po
+ * `P.ramkaPomin` pominiętych z rzędu (bez wykutego między nimi) — false: ramkę porzuca.
+ */
+export function pominKafelObszaru(sim: Sim, c: Creature, p: Polecenie): boolean {
+  if (!p.obszar || (p.pomin ?? 0) >= P.ramkaPomin) return false;
+  const cel = sim.world.idx(p.x, p.y);
+  p.obszar = p.obszar.filter((i) => i !== cel);
+  const nast = nastepnyWObszarze(sim, c, p);
+  if (!nast) return false;
+  p.x = nast[0]; p.y = nast[1]; p.na = false; p.prob = 0;
+  p.pomin = (p.pomin ?? 0) + 1;
+  return true;
 }
 
 /** Robotnik idzie kuć plan: pierwszy kafel, do którego dojdzie (inaczej przekopie się do najbliższego). */

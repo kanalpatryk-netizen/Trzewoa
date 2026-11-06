@@ -26,7 +26,7 @@ import { NAZWA_RYTUALU } from '../nastawy/oltarz';
 import { wiadroDoWspinaczki, wiadroId, krokNaLinie, wiadra } from './wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
-import { odmow, nastepnyKafelZyly, nastepnyWObszarze, type Polecenie, type Odmowa } from './polecenia';
+import { odmow, nastepnyKafelZyly, nastepnyWObszarze, kafleObszaru, pominKafelObszaru, type Polecenie, type Odmowa } from './polecenia';
 import { SWIAT } from '../nastawy/swiat';
 import { idziePoZbroje, planZbroi, ranyZbroi } from './zbroja';
 import { linaPrzecieta, krokNaprawy, zacznijNaprawe, sklejajacy } from './lina-wiadra';
@@ -1300,7 +1300,7 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
   // ramka „do wykopania” (25.10): wskazany kafel wykuty — następny odsłonięty z oznaczonych, a gdy wszystko wykute, koniec
   if (p.typ === 'kop' && p.obszar && !w.solid(p.x, p.y)) {
     const nast = nastepnyWObszarze(sim, c, p);
-    if (nast) { p.x = nast[0]; p.y = nast[1]; p.na = false; p.prob = 0; }
+    if (nast) { p.x = nast[0]; p.y = nast[1]; p.na = false; p.prob = 0; p.pomin = 0; }
     else { c.polecenie = undefined; sim.efekt(c.x, c.y, 'mysl', 'wykute'); return false; }
   }
   // „kop tam”: lity kafel jeszcze stoi — stojąc obok, kuje go
@@ -1328,9 +1328,23 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
         if (d2) { p.x = x; p.y = y; naDroge(d2); zamiar(`idzie kuć plan: ${NAZWA_POMIESZCZENIA[plan.rodzaj]}`, Job.WANDER, podroz(d2)); p.prob = 0; return true; }
       }
     }
+    // ramka (6.11): do tego kafla nie dojdzie — może do innego z oznaczonych (zanim zacznie się przekopywać)
+    if (p.obszar) {
+      for (const [x, y] of kafleObszaru(sim, c, p, 4)) {
+        if (x === p.x && y === p.y) continue;
+        if (budzetDrog() <= 0) return brakCzasu();
+        const d2 = droga((sx, sy) => siega(sx, sy, x, y) && stoi(sim, sx, sy), POLECENIA.szukanieDrogi);
+        if (d2) { p.x = x; p.y = y; naDroge(d2); zamiar('idzie kuć tam, gdzie kazałeś', Job.WANDER, podroz(d2)); p.prob = 0; return true; }
+      }
+    }
     if (budzetDrog() <= 1) return brakCzasu();
     const dk = wkopDroga(sim, c, (x, y) => x === p.x && y === p.y, POLECENIA.szukanieKopania);
     if (dk) { zamiar('przekopuje się tam, gdzie kazałeś', Job.WANDER, przekop(dk)); p.prob = 0; return true; }
+    // ramka: ostatnia próba do tego kafla — pomija go i bierze następny (cały rozkaz przepada dopiero po kilku takich)
+    if (p.obszar && (p.prob ?? 0) + 1 >= POLECENIA.prob && pominKafelObszaru(sim, c, p)) {
+      zamiar('szuka innego kafla z ramki', Job.STOI, 30);
+      return true;
+    }
     return poddajSie('tam się nie dokopię');
   }
 

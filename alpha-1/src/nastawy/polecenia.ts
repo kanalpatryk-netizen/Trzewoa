@@ -14,6 +14,10 @@ export const POLECENIA = {
   szukanieKopania: 40000,
   /** W drodze: gdy przejście zniknie (zawał, odkopana podłoga), tyle razy szuka nowego, zanim się podda. */
   prob: 3,
+  /** Ramka do wykucia (6.11): kafel, w który już bije inny robotnik, liczy się jak o tyle kafli dalej — rozchodzą się. */
+  ramkaZajety: 12,
+  /** Ramka: tyle nieosiągalnych kafli z rzędu robotnik pominie (bierze następny), zanim porzuci ramkę. */
+  ramkaPomin: 6,
   /** Odmowa wisi nad głową tyle tików (2,5 s) — napis w dymku i kręcenie głową. */
   odmowaTikow: 300,
   /** Znacznik celu rozkazu świeci na płycie tyle tików po wydaniu. */

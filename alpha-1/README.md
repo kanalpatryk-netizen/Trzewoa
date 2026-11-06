@@ -54,6 +54,22 @@ wygląd bossa ma być choć podobny do pomnika”. Boss to teraz **ten sam rysun
 - Podgląd wszystkich ruchów (narzędzie dewelopera): `podgladRuchu(ctx, h, ruch, u, czas)` w `demon-boss.ts`.
   Póki obrazki kukły się wczytują, boss rysuje się po staremu (`demon-wzor.ts`).
 
+## Ramka do wykucia bez limitu, w kaflach (6.11)
+Użytkownik: „zaznaczanie terenu do kopania przez robotników nie ma mieć limitu […] teren do wykopania nie ma tworzyć losowego
+kwadratu, tylko ma się zaznaczać według wielkości bloków, żeby było wiadomo, co konkretnie będziemy kopać”.
+- Bez limitu kafli (`STEROWANIE.ramkaMaks` usunięte).
+- Ramka trzyma się siatki: rogi na krawędziach bloków (`kafleRamki` w `src/render/druzyna.ts`). Przy ciągnięciu widać
+  siatkę bloków i każdy kafel, który pójdzie do wykucia (ciepłe wypełnienie, obrys bloku). Przy rogu jest podpis:
+  wymiary w blokach i „do wykucia: N” (albo „zaznaczy: N”, gdy ramka zaznaczy postacie). Podgląd i puszczenie liczą
+  to samo (`wynikRamki` w `game.ts`).
+- Ramka, w której stoją tylko ci sami zaznaczeni robotnicy, oznacza skałę (zaznaczenie ich na nowo nic by nie zmieniło).
+  Inne postacie w ramce dalej się zaznaczają.
+- Robotnicy rozchodzą się po różnych kaflach (`kafleObszaru`, `POLECENIA.ramkaZajety`). Nieosiągalny kafel pomijają
+  i biorą następny (`pominKafelObszaru`). Ramkę porzucają dopiero po `POLECENIA.ramkaPomin` takich kaflach z rzędu.
+  Wcześniej cała trójka stała nad jednym kaflem, a gdy był nieosiągalny, porzucali całą ramkę.
+- Wydajność: wybór kafli bez sortowania całego obszaru; kreda na tysiącach kafli rysuje się jedną ścieżką i tylko
+  w widoku.
+
 ## Walka: 25 ruchów rycerza i 19 ruchów demona (6.11)
 Użytkownik: „każdy atak, każdy ruch w walce ma być konkretną animacją (rycerz ma mieć łącznie 25 zaawansowanych animacji
 walk), a boss 20; animacje mają być długie i dobrze oddawać zadane obrażenia; niech niektóre ataki będą możliwe tylko, gdy
