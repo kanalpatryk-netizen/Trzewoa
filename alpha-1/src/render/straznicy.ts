@@ -13,6 +13,17 @@ import { ustawienia } from '../core/settings-store';
 import { rysujDemonaBossa } from './pomnik';
 import { POMNIK } from '../nastawy/pomnik';
 
+/** Alpha 1 (6.11): Strażnik oberwał — odrzut w tył, przechył i odpryski kamienia, tym mocniej, im większa rana. */
+const trafieniaStraznikow = new WeakMap<Creature, { hp: number; t: number; sila: number }>();
+function oberwanieStraznika(c: Creature, czas: number): { k: number; sila: number; t: number } {
+  let m = trafieniaStraznikow.get(c);
+  if (!m) { m = { hp: c.hp, t: -1e9, sila: 0 }; trafieniaStraznikow.set(c, m); }
+  if (c.hp < m.hp - 0.5) { m.t = czas; m.sila = Math.max(0.35, Math.min(1.6, ((m.hp - c.hp) / Math.max(1, c.hpMax ?? 40)) * 3.5)); }
+  m.hp = c.hp;
+  const t = (czas - m.t) / 1000;
+  return { k: t >= 0 && t < 0.42 ? Math.sin(Math.PI * Math.min(1, t / 0.42)) * (t < 0.06 ? t / 0.06 : 1) : 0, sila: m.sila, t };
+}
+
 /** Rysuje Strażnika stopami w (0, 0); zwrot (kier) ustawia wołający przez ctx.scale. */
 export function rysujStraznika(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h0: number, czas: number): void {
   const boss = !!c.boss;
@@ -29,6 +40,8 @@ export function rysujStraznika(ctx: CanvasRenderingContext2D, sim: Sim, c: Creat
   ctx.save();
   ctx.globalAlpha = wSkale ? 0.5 : 0.86;
   ctx.translate(0, unos);
+  const ob = oberwanieStraznika(c, czas);
+  if (ob.k > 0) { ctx.translate(-h * 0.1 * ob.k * ob.sila, 0); ctx.rotate(-0.16 * ob.k * ob.sila); }
   ctx.lineJoin = 'round';
   // pył spod stóp
   ctx.fillStyle = 'rgba(120,108,94,0.22)';
@@ -109,6 +122,18 @@ export function rysujStraznika(ctx: CanvasRenderingContext2D, sim: Sim, c: Creat
     k.lineTo(h * 0.17, -h * 1.07); k.lineTo(h * 0.24, -h * 0.82);
     k.closePath();
     obrys(k);
+  }
+  // odpryski kamienia przy trafieniu
+  if (ob.t >= 0 && ob.t < 0.5) {
+    const z = 1 - ob.t / 0.5;
+    ctx.fillStyle = `rgba(160,148,130,${z})`;
+    const n = Math.round(5 + 7 * ob.sila);
+    for (let i = 0; i < n; i++) {
+      const a = -Math.PI * 0.4 + (i / n) * Math.PI * 0.9 + Math.sin(c.id + i * 2.1) * 0.3;
+      const v = h * (0.8 + (i % 4) * 0.25) * ob.sila;
+      const r = Math.max(0.8, h * (0.02 + (i % 3) * 0.01));
+      ctx.fillRect(h * 0.15 + Math.cos(a) * v * ob.t - r / 2, -h * 0.55 + Math.sin(a) * v * ob.t + 2.2 * h * ob.t * ob.t, r, r);
+    }
   }
   ctx.restore();
 }

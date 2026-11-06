@@ -18,6 +18,7 @@ import { LUD } from '../nastawy/lud';
 import { POMNIK } from '../nastawy/pomnik';
 import { demonKona, ostatnieUderzenie, miejscePomnika } from './pomnik';
 import { tarczaChroni, odbijOdTarczy } from './dlon-demona';
+import { walkaRycerza, przyjmijCios, bossPrzyjmuje } from './walka';
 
 export interface StanStraznikow {
   /** numer następnej (albo trwającej) fali w STRAZNICY.fale */
@@ -303,7 +304,7 @@ function rycerzeDoWalki(sim: Sim): void {
 }
 
 /** Rana zadana Strażnikowi (boss może ją zmienić — np. przyjmuje tylko od rycerzy). */
-export function ranStraznika(sim: Sim, s: Creature, od: Creature, dmg: number): void {
+export function ranStraznika(sim: Sim, s: Creature, od: Creature, dmg: number, chwieje = false): void {
   if (s.dead) return;
   // (Alpha, etap 5: demon po ostatnim uderzeniu kona — więcej ran nie przyjmuje)
   if (s.boss && demonKona(sim)) return;
@@ -311,8 +312,11 @@ export function ranStraznika(sim: Sim, s: Creature, od: Creature, dmg: number): 
   if (s.boss && tarczaChroni(sim)) { odbijOdTarczy(sim, od); return; }
   const d = s.boss ? aktywnyBoss().przyjmij(sim, s, od, dmg) : dmg;
   if (d <= 0) return;
+  const hp0 = s.hp;
   s.hp -= d;
   sim.spark(s.x, s.y - 0.5, 'hit');
+  // Alpha 1 (6.11): demon chwieje się po ciężkim ciosie, przy połowie i ćwierci życia pada na kolano (sim/walka.ts)
+  if (s.boss && s.hp > 0) bossPrzyjmuje(sim, s, hp0, d, chwieje);
   if (s.hp <= 0 && s.boss && ostatnieUderzenie(sim, s, od)) return;
   if (s.hp <= 0) {
     sim.kill(s, `z ręki ludu (${rolaPostaci(od) ?? 'ktoś'})`, 'walka');
@@ -322,6 +326,8 @@ export function ranStraznika(sim: Sim, s: Creature, od: Creature, dmg: number): 
 
 /** Rycerz walczy ze Strażnikiem: podchodzi i uderza w swoim rytmie (wołane z doFight). */
 export function walczZeStraznikiem(sim: Sim, c: Creature, s: Creature, podejdz: (x: number, y: number) => void): void {
+  // Alpha 1 (6.11): rycerz walczy ruchami (sim/walka.ts) — robotnik w hełmie po staremu, cios co rycerzCiosCo
+  if (rolaPostaci(c) === 'rycerz') { walkaRycerza(sim, c, s, podejdz); return; }
   const zasieg = S.rycerzZasieg + (s.boss ? 0.8 : 0);
   if (Math.hypot(s.x - c.x, s.y - c.y) > zasieg) { podejdz(Math.floor(s.x), Math.floor(s.y)); return; }
   c.face = s.x > c.x ? 1 : -1;
@@ -364,8 +370,10 @@ export function celStraznika(sim: Sim, c: Creature, limit: number): Creature | n
 /** Cios Strażnika w kogoś z ludu; kto nie jest rycerzem, oddaje słabszy. */
 export function ciosStraznika(sim: Sim, c: Creature, cel: Creature, sila: number): void {
   if (sim.lud.straznicy) sim.lud.straznicy.cios = sim.tick;
-  // (etap 3f: tarcza rycerza zmniejsza ranę)
-  cel.hp -= sila * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel);
+  // (etap 3f: tarcza rycerza zmniejsza ranę; Alpha 1: rycerz się broni — blok, parowanie, unik, kontra — sim/walka.ts)
+  const rana = przyjmijCios(sim, cel, sila * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel), { kier: Math.sign(c.x - cel.x) || 1 });
+  if (rana <= 0) return;
+  cel.hp -= rana;
   oznaczCios(sim, cel, !!c.boss);
   sim.spark(cel.x, cel.y - 0.5, 'hit');
   if (cel.hp <= 0) { sim.kill(cel, c.boss ? `zmiażdżony przez: ${aktywnyBoss().nazwa}` : 'z ręki Strażnika Snu', 'straznik'); return; }
@@ -389,7 +397,7 @@ export function krokStraznika(sim: Sim, c: Creature): void {
   if (!cel) { ruchStraznika(sim, c, w.coreX + 0.5 + Math.sin(sim.tick * 0.01 + c.id) * 6, w.przedsionekY - 3, S.szybkosc * 0.5, S.limitOdRdzenia); return; }
   if (Math.hypot(cel.x - c.x, cel.y - c.y) > S.zasieg) { ruchStraznika(sim, c, cel.x, cel.y - 0.3, S.szybkosc, S.limitOdRdzenia); return; }
   c.face = cel.x > c.x ? 1 : -1;
-  if (sim.tick - (c.ciosT ?? -1e9) < S.ciosCo) return;
+  if (sim.tick - (c.ciosT ?? -1e9) < S.ciosCo || (c.ogluszonyAtakDo ?? -1) > sim.tick) return;
   c.ciosT = sim.tick;
   ciosStraznika(sim, c, cel, S.sila * wzrost);
 }

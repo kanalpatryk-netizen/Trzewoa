@@ -117,6 +117,8 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   if (c.naLinie !== undefined) return 'wspina';
   // Alpha, etap 5b: w dłoni z otchłani i w locie po rzucie — wymachuje rękami; po upadku leży ogłuszony
   if (c.wDloni || c.lot) return 'spada';
+  // Alpha 1 (6.11): rycerz w ruchu walki (cios, obrona, powalony — sim/walka.ts) — rysunek walki, nie sen ani chód
+  if (c.ruch && c.rola === 'rycerz' && sim.tick - c.ruch.od < c.ruch.dl) return 'walczy';
   if ((c.ogluszonyDo ?? -1) > sim.tick) return 'spi';
   if (c.vy > 0.3) return 'spada';
   // Alpha: odmówił rozkazu — stojąc, kręci głową i rozkłada ręce (render/lud/odmowa.ts)
@@ -1178,7 +1180,7 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
 
     let cz: Czynnosc;
     // cudze światło z otoczenia kładzie ciepłą krawędź po swojej stronie sylwetki (render/lud/oswietlenie.ts)
-    const szkic = tlum && wybrany !== c.id && !c.straznik && !c.odmowa;
+    const szkic = tlum && wybrany !== c.id && !c.straznik && !c.odmowa && !(c.ruch && c.rola === 'rycerz');
     ustawSwiatlo(!szkic && rolaPostaci(c) ? swiatloDla(sim, c, h / z) : null);
     if (szkic) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
     else if (tlo > 0.02 && !c.lot) cz = postacWTle(ctx, sim, c, h, czas, kier, sx, sy, 0.42 * tlo);

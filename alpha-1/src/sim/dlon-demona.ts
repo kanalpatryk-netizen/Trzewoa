@@ -221,7 +221,7 @@ function zacznij(sim: Sim, st: StanDloniDemona, a: AkcjaDloni, r: Creature): voi
   st.ile[a]++;
   const kogo = kto(sim, r).split(' (')[0];
   if (a === 'rzut') {
-    r.wDloni = true; r.droga = undefined; r.vy = 0;
+    r.wDloni = true; r.droga = undefined; r.vy = 0; r.ruch = undefined;
     r.zamiar = 'spod podłogi wyrasta dłoń z otchłani i go obejmuje'; r.zamiarDo = sim.tick + 400;
     sim.gdzie(st.x, st.y).log(`Spod podłogi krypty wyrasta dłoń z otchłani — obejmuje palcami: ${kogo}.`, 'otchlan', 'dlon-rzut');
   } else if (a === 'tarcza') {

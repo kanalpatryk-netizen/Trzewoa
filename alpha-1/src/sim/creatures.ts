@@ -1,3 +1,4 @@
+import type { RuchTrwa } from './walka';
 import type { Sim } from './sim';
 import { DZIENNIK, zapisz, kto, OPIS_PRACY, NAZWY_KAFLI } from './dziennik';
 import { T, PASSABLE } from './tiles';
@@ -12,6 +13,7 @@ import { szukajDrogi, nastepnyKafel, nadOgniem, budzetDrog, przepasc, stoi, uchw
 import { zglosWojne } from './wydarzenia';
 import { cechaNacji } from './cechy';
 import { czoloDrogi, nieWykopane, schodyDrogi } from './pielgrzymka';
+import { krokRuchuRycerza } from './walka';
 import { krokStraznika, walczZeStraznikiem, falaZwykla, falaTrwa, wStrefieStraznikow, zywiStraznicy, trybWiernych, rycerzeCzekaja, iluRycerzy, walczKsiega } from './straznicy';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { obozFrontowy, mnoznik, maxHp, rolaPostaci, liczRole, najblizszaSpizarnia, spizarnieWgOdleglosci, spizarniaW, stacjonuje, type Rola } from './lud';
@@ -177,6 +179,21 @@ ksiegaT?: number;
   ogluszonyDo?: number;
   /** Alpha, etap 5b: staje jak wryty, bo przed nim pęka strop (zawał) — do tiku. */
   przystanDo?: number;
+  /** Alpha 1 (6.11): ruch walki w toku (sim/walka.ts) — cios, obrona albo reakcja; rysunek odgrywa go od tego samego tiku. */
+  ruch?: RuchTrwa;
+  /** Alpha 1: lekkie trafienie (wzdryga się, walczy dalej) — tik, siła (ułamek życia), skąd przyszło. */
+  drgniecie?: { t: number; sila: number; kier: number };
+  /** Alpha 1: następny ruch w kombinacji (waży więcej), ogłuszony cios — następny atak dopiero po tym tiku. */
+  kombo?: string;
+  ogluszonyAtakDo?: number;
+  /** Alpha 1: płonie po ogniu demona (do tiku — rysunek), demon: poprzedni ruch, po zabiciu ryczy, ostatni ryk, rozkaz dla dłoni. */
+  pali?: number;
+  ruchPoprz?: string;
+  rykPo?: boolean;
+  rykT?: number;
+  rozkazOd?: number;
+  /** Alpha 1: demon — tik ostatniego zachwiania (potem chwilę się nie chwieje). */
+  chwiejT?: number;
   /** Remake v2: skrajnie głodny biegnie pod linę tego wiadra (id), wspina się po niej (naLinie) i wsiada do niego (naWiadrze). */
   linaDo?: number;
   naLinie?: number;
@@ -314,6 +331,8 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     if (sim.tick < c.przystanDo) { c.vy = 0; c.droga = undefined; return; }
     c.przystanDo = undefined;
   }
+  // Alpha 1 (6.11): rycerz w trakcie ruchu walki (sim/walka.ts) — cios, obrona czy wstawanie idzie do końca
+  if (c.ruch && !c.straznik && krokRuchuRycerza(sim, c)) return;
 
   // --- przysypanie: kiedy strop się osunie, stworzenie zostaje w litej skale.
   // Bez tego stało nieruchomo do śmierci i wyglądało to jak zawieszona gra.

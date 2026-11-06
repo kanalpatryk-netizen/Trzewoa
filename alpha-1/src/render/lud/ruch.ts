@@ -8,6 +8,7 @@ import type { Pamiec } from './pamiec';
 import { postepOdmowy } from './odmowa';
 import { naWieszaku } from '../../sim/zbroja';
 import { ZBROJA } from '../../nastawy/zbroja';
+import { pozaWalkiRycerza } from './walka-rycerza';
 
 /**
  * Animacje ludu. Każda czynność daje pozę z klatek kluczowych albo z cyklu (chód, bieg, wspinaczka).
@@ -148,7 +149,9 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
   else if (rola === 'pobozny') tryb.narzedzie = cz === 'stoi' || cz === 'idzie' || cz === 'biegnie' || cz === 'walczy' ? 'laska' : cz === 'buduje' ? 'mlot' : null;
   else tryb.narzedzie = cz === 'kopie' || cz === 'walczy' ? 'kilof' : cz === 'buduje' ? 'mlot' : null;
 
-  switch (cz) {
+  // Alpha 1 (6.11): rycerz w walce — ruchy z symulacji (render/lud/walka-rycerza.ts) zamiast zwykłej czynności
+  const walka = rola === 'rycerz' && pozaWalkiRycerza(sim, c, cz, czas, p, tryb);
+  if (!walka) switch (cz) {
     case 'stoi': {
       const wg = szum(czas * 0.00042, id);
       p.uA = 0.04 + 0.03 * wg; p.kA = 0.06 + 0.07 * Math.max(0, wg);

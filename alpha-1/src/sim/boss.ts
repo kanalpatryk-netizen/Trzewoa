@@ -13,11 +13,12 @@ import { T } from './tiles';
 import { AKTYWNY_BOSS, SNIACY_KAMIEN as K, type IdBossa } from '../nastawy/boss';
 import { DEMON } from '../nastawy/pomnik';
 import { demonKona, miejscePomnika } from './pomnik';
-import { scianaGruzu, demonCzeka } from './dlon-demona';
+import { scianaGruzu } from './dlon-demona';
 import { DLON } from '../nastawy/dlon';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { nowyStraznik, ruchStraznika, celStraznika, ciosStraznika, trybWiernych } from './straznicy';
 import { rolaPostaci, walczacy } from './lud';
+import { tikDemona } from './walka';
 
 export interface Boss {
   id: IdBossa;
@@ -111,8 +112,9 @@ const demon: Boss = {
   tik(sim, c) {
     if (demonKona(sim)) return;
     // etap 5b: za tarczą z dłoni i pod zawalanym stropem — czeka (tylko się zrasta, jak zwykle bez modlitwy)
-    if (demonCzeka(sim)) { if (sim.rytual.wierni < K.modlitwaWiernych) c.hp = Math.min(c.hpMax ?? DEMON.hp, c.hp + K.zrastanie); }
-    else tikKamienny(sim, c, DEMON);
+    // Alpha 1 (6.11): walczy ruchami (sim/walka.ts) — 13 ataków, uderzenie w ziemię, ryk, rozkazy, blok, zachwianie;
+    // za tarczą z dłoni i pod zawalanym stropem czeka (tikDemona) i tylko się zrasta
+    tikDemona(sim, c, zasypDroge);
     // etap 5b: za ścianą gruzu po zawale — nie przechodzi na drugą stronę i zrasta się szybciej
     const sc = scianaGruzu(sim);
     if (sc) {
@@ -126,7 +128,7 @@ const demon: Boss = {
 };
 
 /** Uderzenie w ziemię: kawałek drogi wiernych znów jest skałą (bez zamurowania kogokolwiek). */
-function zasypDroge(sim: Sim, c: Creature): void {
+export function zasypDroge(sim: Sim, c: Creature): void {
   const plan = sim.planDrogi;
   const w = sim.world;
   if (!plan || sim.rytual.otwarta) return;
