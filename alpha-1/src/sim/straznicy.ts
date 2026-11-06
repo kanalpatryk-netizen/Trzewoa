@@ -275,13 +275,18 @@ function rycerzeDoWalki(sim: Sim): void {
     }
     return;
   }
+  // Alpha 1 (6.11): przy demonie Strażników bierze się tylko z bliska — rycerz gonił ich w skale nad przedsionkiem
+  // (krążą przy krypcie, a on stał poza jej strefą, więc nie podchodzili), a demon czekał na dnie nietknięty
+  const jestBoss = wrogowie.some((s) => s.boss);
   for (const c of sim.creatures) {
     if (c.dead || !walczacy(c)) continue;
     const obecny = sim.creatureById(sim.target.get(c.id) ?? -1);
     // głodny rycerz najpierw je — walczy tylko z tym, co stoi tuż obok (dziesięciu rycerzy umarło z głodu,
     // goniąc Strażnika w skale: co pół sekundy ten przydział odbierał im drogę do spiżarni)
     const glodny = c.hunger > LUD.glodSam;
-    if (c.job === Job.FIGHT && obecny && !obecny.dead && obecny.straznik && !(glodny && Math.hypot(obecny.x - c.x, obecny.y - c.y) > S.rycerzGlodnyWalczyOd)) continue;
+    const dObecny = obecny ? Math.hypot(obecny.x - c.x, obecny.y - c.y) : Infinity;
+    const dalekiStraznik = jestBoss && !glodny && !!obecny && !obecny.boss && dObecny > S.rycerzBroniSieOd;
+    if (c.job === Job.FIGHT && obecny && !obecny.dead && obecny.straznik && !dalekiStraznik && !(glodny && dObecny > S.rycerzGlodnyWalczyOd)) continue;
     // Alpha 1 (5.11): demona rycerz widzi zawsze (o ile nie jest głodny) — z drogą wiernych jako głębokim szybem
     // demon wstawał ponad 40 kafli pod rycerzem stojącym w sali i walka nigdy się nie zaczynała (demon 500/500)
     const widzi = glodny ? S.rycerzGlodnyWalczyOd : S.rycerzWidzi;
@@ -289,7 +294,8 @@ function rycerzeDoWalki(sim: Sim): void {
     for (const s of wrogowie) {
       const d = Math.hypot(s.x - c.x, s.y - c.y);
       if (d >= (s.boss && !glodny ? Infinity : widzi)) continue;
-      if (d < bd) { bd = d; best = s; }
+      const kara = jestBoss && !glodny && !s.boss && d > S.rycerzBroniSieOd ? 1e6 : 0;
+      if (d + kara < bd) { bd = d + kara; best = s; }
     }
     if (!best) {
       if (glodny && c.job === Job.FIGHT && obecny?.straznik) { sim.target.delete(c.id); c.jt = 0; c.zamiarDo = sim.tick; }

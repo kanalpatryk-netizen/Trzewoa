@@ -37,6 +37,8 @@ import { kropla } from '../render/kruszce';
 import { ZBROJA, CZESC, type CzescZbroi } from '../nastawy/zbroja';
 import { SWIAT } from '../nastawy/swiat';
 import { POMNIK, DEMON } from '../nastawy/pomnik';
+import { RUCHY_RYCERZA, RUCHY_BOSSA, type IdRuchuRycerza, type IdRuchuBossa } from '../nastawy/walka';
+import { podgladWalkiDemona } from '../render/demon-boss';
 import { rysujPosag, rysujWstajacego, rysujKonajacego, cokol, gruz } from '../render/pomnik';
 import { rycinaDloniDemona } from '../render/dlon-demona';
 import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from '../render/relikwiarz';
@@ -518,6 +520,64 @@ function kuzniaRycina(p: Plotno): void {
   rysujCzesc(ctx, 'helm', ax, ay - h * 0.04, h * 0.1, 'rgba(255,150,70,0.95)', 'rgba(60,20,8,0.9)');
   ctx.restore();
   robotnikNaRycinie(ctx, w * 0.47, y, h * 0.42, t, 'buduje');
+}
+
+/** Rycerz z ryciny „Walka rycerza” — w pełnej zbroi, ruchy jeden po drugim. */
+let rycerzWalki: { sim: Sim & { tick: number }; c: Creature } | null = null;
+const POKAZ_RYCERZA: IdRuchuRycerza[] = ['ciecieZGory', 'pchniecie', 'seriaTrzech', 'piruet', 'ciosZWyskoku', 'mlynek', 'egzekucja', 'uderzenieTarcza', 'szarzaZTarcza', 'kolano', 'kontraNapiersnika', 'blokTarcza', 'parowanie', 'powalony'];
+const NAZWY_CZESCI: Record<string, string> = { helm: 'hełm', napiersnik: 'napierśnik', naramienniki: 'naramienniki', nakolanniki: 'nakolanniki', tarcza: 'tarcza' };
+const wymagania = (d: { weteran?: boolean; zbroja?: string[] }): string => [d.weteran ? 'weteran' : '', ...(d.zbroja ?? []).map((z) => NAZWY_CZESCI[z] ?? z)].filter(Boolean).join(' + ');
+
+/** Walka rycerza: ruch za ruchem (podpis i wymaganie u góry), z iskrami w chwili trafienia. */
+function walkaRycerzaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 9);
+  rycerzWalki ??= (() => {
+    const sim = { clans: [{ race: Race.GOBLIN, tint: 0 }], tick: 0 } as unknown as Sim & { tick: number };
+    const c = makeCreature(Race.GOBLIN, 0, 0, 0, 908);
+    c.rola = 'rycerz';
+    c.zbroja = ['helm', 'naramienniki', 'napiersnik', 'nakolanniki', 'tarcza'];
+    return { sim, c };
+  })();
+  const { sim, c } = rycerzWalki;
+  const tik = Math.floor(t * 0.12);
+  // ruchy po kolei, każdy w swojej długości i z chwilą gardy po nim
+  const dl = (id: IdRuchuRycerza): number => RUCHY_RYCERZA[id].dl + 40;
+  const suma = POKAZ_RYCERZA.reduce((s, id) => s + dl(id), 0);
+  let k = tik % suma, i = 0;
+  while (k >= dl(POKAZ_RYCERZA[i])) { k -= dl(POKAZ_RYCERZA[i]); i++; }
+  const id = POKAZ_RYCERZA[i], def = RUCHY_RYCERZA[id];
+  sim.tick = tik;
+  c.ruch = k < def.dl ? { id, od: tik - k, dl: def.dl, cel: -1, traf: 0, zadane: (def.traf ?? []).map(() => 30), kier: 1, sila: 0.3 } : undefined;
+  const y = h * 0.84;
+  ctx.save(); ctx.translate(w * 0.42, y); rysujPostac(ctx, sim, c, h * 0.5, t, 'walczy'); ctx.restore();
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4;
+  ctx.fillStyle = 'rgba(240,228,204,0.95)'; ctx.font = `${Math.round(h * 0.06)}px Georgia, serif`; ctx.textAlign = 'center';
+  ctx.fillText(def.nazwa, w / 2, h * 0.12);
+  const wym = wymagania(def);
+  if (wym) { ctx.fillStyle = 'rgba(236,166,110,0.95)'; ctx.font = `italic ${Math.round(h * 0.045)}px Georgia, serif`; ctx.fillText(wym, w / 2, h * 0.19); }
+  ctx.restore();
+}
+
+const POKAZ_DEMONA: IdRuchuBossa[] = ['zGory', 'zamach', 'podwojnyZamach', 'zgniecenie', 'przygniecenie', 'tupniecie', 'tchnienie', 'wybuchAureoli', 'biczLancucha', 'skok', 'uderzenieWZiemie', 'ryk', 'blok', 'zachwianie'];
+
+/** Walka demona: ruch za ruchem kukły z pomnika. */
+function walkaDemonaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 24);
+  const tik = Math.floor(t * 0.12);
+  const dl = (id: IdRuchuBossa): number => (RUCHY_BOSSA[id].dl || 120) + 30;
+  const suma = POKAZ_DEMONA.reduce((s, id) => s + dl(id), 0);
+  let k = tik % suma, i = 0;
+  while (k >= dl(POKAZ_DEMONA[i])) { k -= dl(POKAZ_DEMONA[i]); i++; }
+  const id = POKAZ_DEMONA[i], def = RUCHY_BOSSA[id];
+  ctx.save(); ctx.translate(w * 0.5, h * 0.9); podgladWalkiDemona(ctx, h * 0.6, id, Math.min(k, (def.dl || 120) - 1), t, 1); ctx.restore();
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4;
+  ctx.fillStyle = 'rgba(240,228,204,0.95)'; ctx.font = `${Math.round(h * 0.06)}px Georgia, serif`; ctx.textAlign = 'center';
+  ctx.fillText(def.nazwa, w / 2, h * 0.1);
+  ctx.restore();
 }
 
 /** Rycerz z ryciny „Zbroja rycerza” — własna atrapa, bo zbroja na niej się zmienia (inne ryciny jej nie dzielą). */
@@ -1066,6 +1126,16 @@ export const TABLICE: Tablica[] = [
     kiedy: 'Nie chcesz czekać? Zaznacz rycerza i wskaż kuźnię — pójdzie od razu (gdy nic nie wisi, odmówi). Co nosi, widać na karcie postaci.',
     rycina: zbrojaRycina,
   },
+  {
+    id: 'walkaRycerza', grupa: 'zasoby', nazwa: 'Walka rycerza', lacina: 'Ars pugnandi',
+    opis: (() => {
+      const grupa = (f: (d: (typeof RUCHY_RYCERZA)[IdRuchuRycerza]) => boolean): string => (Object.values(RUCHY_RYCERZA)).filter((d) => d.rodzaj === 'atak' && f(d)).map((d) => d.nazwa.toLowerCase()).join(', ');
+      const zbr = (Object.values(RUCHY_RYCERZA)).filter((d) => d.rodzaj === 'atak' && d.zbroja && !d.weteran).map((d) => `${d.nazwa.toLowerCase()} (${wymagania(d)})`).join(', ');
+      return `Rycerz walczy ruchami — każdy to osobna, długa animacja z zamachem, uderzeniem i powrotem do gardy, a rana pada dokładnie wtedy, gdy spada ostrze. Zawsze: ${grupa((d) => !d.weteran && !d.zbroja)}. Tylko weteran: ${grupa((d) => !!d.weteran)}. Tylko w zbroi z kuźni: ${zbr}. Broni się sam: z tarczą zasłania się blokiem (zostaje ułamek rany), weteran paruje ostrzem i od razu kontruje, w nakolannikach robi unik, w napierśniku przyjmuje cios na blachę i tnie. Mała rana tylko go wzdryga, duża przerywa atak, a najcięższe ciosy demona zwalają go z nóg — wstaje, podpierając się mieczem. Iskry, odpryski i odrzut są tym większe, im mocniejszy cios.`;
+    })(),
+    kiedy: `Weteranem zostaje po ${Math.round(LUD.weteranPo / 7200)} minutach w ludzie — póki syty, a lud wierny. Kuj mu zbroję: każda część odblokowuje nowe ruchy.`,
+    rycina: walkaRycerzaRycina,
+  },
   // prawa góry
   {
     id: 'pamiec', grupa: 'prawa', nazwa: 'Pamięć', lacina: 'Memoria',
@@ -1141,9 +1211,18 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'boss', grupa: 'prawa', nazwa: DEMON.nazwa, lacina: 'Daemon lapidis',
-    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: przebija się ręka, druga, kamienna głowa z zapalającymi się oczami; wstaje, kamień ożywa na nim od piersi w ciemną, żarzącą się skórę, aureola za jego głową bucha ogniem — i ryczy — a z nim wychodzą ostatni Strażnicy. To ten sam posąg, tylko żywy: wciąż ma na nadgarstkach i kostkach kajdany z zerwanymi łańcuchami. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Bije trzema ciosami — z góry, zamachem pazurów i podcięciem od dołu; co jakiś czas wznosi ręce z rykiem, wali pięściami w ziemię i zasypuje kawałek drogi wiernych. Dłoni z otchłani rozkazuje gestem. Ranny pęka i dymi, w szale drży i płonie. Gdy w krypcie modlą się pobożni, kuli się i zasłania twarz, a złoty pył parzy go do żywego — słabnie; bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
+    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: przebija się ręka, druga, kamienna głowa z zapalającymi się oczami; wstaje, kamień ożywa na nim od piersi w ciemną, żarzącą się skórę, aureola za jego głową bucha ogniem — i ryczy — a z nim wychodzą ostatni Strażnicy. To ten sam posąg, tylko żywy: wciąż ma na nadgarstkach i kostkach kajdany z zerwanymi łańcuchami. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Walczy dwudziestoma ruchami (patrz „Walka demona”); co jakiś czas wznosi ręce z rykiem, wali pięściami w ziemię i zasypuje kawałek drogi wiernych. Dłoni z otchłani rozkazuje gestem. Ranny pęka i dymi, w szale drży i płonie. Gdy w krypcie modlą się pobożni, kuli się i zasłania twarz, a złoty pył parzy go do żywego — słabnie; bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
     kiedy: 'Rycerz na demona, pobożni do modlitwy, robotnicy przy drodze. Życie demona widać na pasku nad płytą.',
     rycina: demonRycina,
+  },
+  {
+    id: 'walkaDemona', grupa: 'prawa', nazwa: 'Walka demona', lacina: 'Furor daemonis',
+    opis: (() => {
+      const z = (r: string): string => (Object.values(RUCHY_BOSSA)).filter((d) => d.rodzaj === r).map((d) => d.nazwa.toLowerCase() + (d.zycieDo ? ` (gdy życia mniej niż ${Math.round(d.zycieDo * 100)}%)` : '')).join(', ');
+      return `Demon walczy dwudziestoma ruchami, każdy z długim zamachem — widać, co nadchodzi. W zwarciu: ${z('atak')}. Na obszar: ${z('obszar')}. Z dystansu: ${z('dystans')}. Do tego ${z('zdolnosc')}. Gdy rycerz bierze zamach, czasem zasłania się przedramieniem (zostaje połowa rany — fintę przepuszcza); po ciężkim ciosie się chwieje i nie bije, a przy połowie i ćwierci życia pada na kolano, a potem ryczy. Ciosy z góry, podcięcie, szarża, skok i wybuch aureoli mogą powalić rycerza, przygniecenie trzyma go pod dłonią.`;
+    })(),
+    kiedy: 'Nie stój z rycerzem przed demonem, gdy ten wciąga powietrze (ogień) albo kuli się z rękami na piersi (wybuch aureoli) — a gdy klęknie, to twoja chwila.',
+    rycina: walkaDemonaRycina,
   },
   {
     id: 'helmy', grupa: 'prawa', nazwa: 'Hełmy robotników', lacina: 'Fossores armati',

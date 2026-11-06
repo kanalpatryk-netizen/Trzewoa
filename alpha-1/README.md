@@ -54,6 +54,41 @@ wygląd bossa ma być choć podobny do pomnika”. Boss to teraz **ten sam rysun
 - Podgląd wszystkich ruchów (narzędzie dewelopera): `podgladRuchu(ctx, h, ruch, u, czas)` w `demon-boss.ts`.
   Póki obrazki kukły się wczytują, boss rysuje się po staremu (`demon-wzor.ts`).
 
+## Walka: 25 ruchów rycerza i 20 ruchów demona (6.11)
+Użytkownik: „każdy atak, każdy ruch w walce ma być konkretną animacją (rycerz ma mieć łącznie 25 zaawansowanych animacji
+walk), a boss 20; animacje mają być długie i dobrze oddawać zadane obrażenia; niech niektóre ataki będą możliwe tylko, gdy
+rycerz jest weteranem, a niektóre tylko, gdy ma konkretne części zbroi”. Animacje wysłane do zatwierdzenia jako GIF-y.
+- **Ruchy są w symulacji** (`src/nastawy/walka.ts`, `src/sim/walka.ts`): każdy ma długość, chwile trafień i mnożniki siły,
+  a w trakcie ruchu postać nic innego nie robi (cios idzie do końca). Rysunek odgrywa ten sam ruch od tego samego tiku
+  (`c.ruch`), więc rana pada wtedy, gdy na ekranie spada ostrze. Siła średnio jak dawniej (rycerz ≈ cios co 60 tików,
+  demon ≈ co 160): zwykły rycerz zadaje demonowi 0,32 rany na tik (dawniej 0,37), weteran w pełnej zbroi 0,52, a dostaje
+  0,05 i 0,02 na tik (dawniej 0,0625).
+- **Rycerz (25)** — `src/render/lud/walka-rycerza.ts`:
+  - zawsze: cięcie z góry, pchnięcie, cięcie z boku, cięcie odwrotne, seria trzech cięć, cięcie od dołu;
+  - tylko weteran: cięcie z obrotu (piruet), cios z wyskoku (z dwóch kafli), młynek (4 cięcia), finta i pchnięcie
+    (demon nie zasłoni się ręką), cios dobijający (oburącz, na wroga poniżej 35% życia, klęka);
+  - tylko w zbroi: uderzenie tarczą (tarcza; ogłusza), szarża z tarczą (tarcza + nakolanniki; z prawie 4 kafli), taran
+    barkiem (naramienniki), cios kolanem (nakolanniki), uderzenie hełmem (hełm), kontra na napierśniku (napierśnik:
+    przyjmuje cios na blachę i od razu tnie);
+  - obrona i reakcje: blok tarczą (zostaje 30% rany), parowanie (weteran, bez rany, kontra), unik (nakolanniki), lekkie
+    trafienie (walczy dalej), mocne trafienie (przerywa atak, zatacza się), powalenie (pada na plecy i wstaje, podpierając
+    się mieczem);
+  - garda między ciosami i podejście w gardzie.
+  Efekty (iskry, odpryski, krąg, krew, pył) rosną z raną, którą cios naprawdę zadał (`c.ruch.zadane`); Strażnik odskakuje
+  i sypie odpryskami tym mocniej, im większą ranę dostał. Kombinacje: po cięciu z boku częściej idzie odwrotne itd.
+- **Demon (20)** — `src/render/demon-boss.ts`: cios z góry, zamach pazurami, podcięcie od dołu, podwójny zamach, zgniecenie
+  oburącz (ogłusza), przygniecenie dłonią (rycerz leży pod dłonią), odepchnięcie (odrzuca), tupnięcie (obszar), ogniste
+  tchnienie (stożek ognia, poniżej 65% życia), wybuch aureoli (pierścień ognia, poniżej 50%), bicz z łańcucha (5 kafli),
+  szarża, skok z uderzeniem (poniżej 75%), uderzenie w ziemię, ryk, rozkazy dla dłoni (rzut, tarcza, zawał), blok
+  przedramieniem i zachwianie / klęknięcie (po ciężkim ciosie; przy 50% i 25% życia pada na kolano, potem ryczy).
+  Ciosy z góry, podcięcie, szarża, skok i wybuch aureoli mogą powalić rycerza.
+- Atlas: „Walka rycerza” (ruchy i wymagania, rycina z ruchami po kolei) i „Walka demona”.
+- Przy demonie rycerz bierze Strażnika na cel tylko z bliska (do `rycerzBroniSieOd` kafli) — gonił Strażników krążących
+  w skale nad przedsionkiem, a demon czekał na dnie nietknięty (ziarno 3: walka bez końca). Bot wygrywa na ziarnach 3, 4
+  i 5 w 13–14 minut; rycerzowi zostaje 109–118 życia.
+- Podgląd ruchów do GIF-ów i arkuszy: generatory w scratchpadzie sesji (rycerz: klony rycerza i Strażnika, demon: klony
+  demona z rycerzem; czas gry przesuwany tik po tiku) — `podgladWalkiDemona` w `demon-boss.ts` rysuje pozę ruchu.
+
 ## Poprawki walki z demonem (5.11)
 - Rycerz **zawsze widzi demona** (o ile nie jest głodny) — przy drodze wiernych jako głębokim szybie demon wstawał
   ponad 40 kafli pod rycerzem w sali i walka nigdy się nie zaczynała (demon 500/500 bez końca).
