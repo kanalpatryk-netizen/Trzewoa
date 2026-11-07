@@ -4,9 +4,10 @@ import type { Prost } from '../sim/world';
 import type { Creature } from '../sim/creatures';
 import { SURFACE_Y } from '../sim/world';
 import { SWIAT } from '../nastawy/swiat';
-import { SCHODY as S } from '../nastawy/loch';
+import { SCHODY as S, BUDOWA_SCHODOW } from '../nastawy/loch';
 import { wolnoRuszac } from './nastroj';
 import { warstwaMroku } from './mrok';
+import { spirala, wysokoscStopnia, katSpirali, liczbaStopni, szczytSchodow, wysokoscSzczytu, pozycjaDrabiny, dolDrabiny, type Spirala } from '../sim/budowa-schodow';
 
 /**
  * SCHODY DROGI WIERNYCH (6.11, decyzja użytkownika: dawne schody — zygzak biegów z poręczą na słupkach — „były
@@ -17,9 +18,10 @@ import { warstwaMroku } from './mrok';
  *    i bębny słupa; malarsko — od stopni z tyłu, przez słup, do stopni z przodu.
  *  - Kamień ma barwę warstwy, w której wykuto szyb (płytka — ciepła, głęboka — chłodna), stopnie z tyłu są w cieniu,
  *    na ścianie szybu wisi lina na żelaznych pierścieniach, środek stopni jest wytarty stopami.
- *  - Schody widać tylko w kaflach, które robotnicy już wykuli: wykuty kafel odsłania kawałek stopni i słupa, z kafla
- *    sypią się okruchy i pył, a świeżo ciosany kamień jest przez chwilę jaśniejszy — schody powstają z rozkuwanej
- *    skały, nie wyrastają z pustki.
+ *  - Schody się stawia (6.11, sim/budowa-schodow.ts): rysuje się tylko to, co już zbudowano — od dołu odcinka do
+ *    najwyższego osadzonego stopnia (mur klatki rząd ciosów wyżej, słup do jego bębna); wyżej jest surowa studnia,
+ *    drabina i rusztowanie (render/budowa-schodow.ts). Z wykuwanego kafla szybu sypią się okruchy i pył, a świeżo
+ *    ciosana skała jest przez chwilę jaśniejsza.
  *  - Postacie idą po spirali (render/lud/rozstep.ts: naSchodach), stopa po stopniu: na niższy (wyższy) stopień
  *    przechodzą przy jego nosie. Pod stopami cień na stopnicy (stopniePodStopami), a to, co leży bliżej widza
  *    (słup, gdy postać jest za nim, i stopnie po drugiej stronie spirali), rysuje się na niej (zaslonNaSchodach) —
@@ -38,22 +40,8 @@ function los(n: number): number {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 }
 
-/** Spirala jednego odcinka szybu: środek, promień (do ściany) i słupa, pierwszy rząd stopni, posadzka pod nimi, faza. */
-export interface Spirala { c: number; R: number; rn: number; ys: number; ye: number; th0: number }
-
-export function spirala(sim: Sim, o: Prost): Spirala {
-  return {
-    c: (o.x0 + o.x1 + 1) / 2, R: (o.x1 - o.x0 + 1) / 2 - 0.05, rn: S.slup,
-    ys: Math.max(o.y0, sim.world.salaOltarza.y1 + 1), ye: o.y1 + 1,
-    // na szczycie spirala zaczyna się z prawej — od strony, z której się na nią wchodzi (sala, posadzka komnaty)
-    th0: Math.PI / 2,
-  };
-}
-
 /** Wysokość stopnia (kafle). */
-const WYS = (): number => S.obrot / S.stopni;
-/** Kąt na spirali na danej wysokości (0 — tył szybu, π/2 — prawa ściana, π — przód). */
-export function katSpirali(sp: Spirala, y: number): number { return sp.th0 + ((y - sp.ys) / S.obrot) * TAU; }
+const WYS = wysokoscStopnia;
 
 /** Barwa ciosanego kamienia: płytka warstwa (miękka, ciepła), środkowa, głęboka (twarda, chłodna) — płynnie. */
 const KAMIEN: RGB[] = [[150, 134, 112], [138, 128, 116], [118, 113, 108]];
@@ -226,13 +214,18 @@ const pojawienie = new Map<number, number>();
 let pierwszaKlatka = true;
 
 /**
- * Narysowany odcinek (ściana, lina, stopnie, słup — to, co stoi): płótno z całym odcinkiem przy danym przybliżeniu,
- * rysowane na nowo dopiero, gdy wykuto kolejny kafel albo zmieniło się przybliżenie — w klatce idzie tylko jego
- * kawałek w kadrze (setki wielokątów stopni co klatkę ważyły kilkanaście ms).
+ * Narysowany kawałek odcinka (ściana, lina, stopnie, słup — to, co stoi): płótno z `KAWALEK` rzędami odcinka przy
+ * danym przybliżeniu, rysowane na nowo dopiero, gdy w jego pobliżu wykuto kafel, osadzono stopień albo zmieniło się
+ * przybliżenie — w klatce idzie tylko to, co w kadrze (setki wielokątów stopni co klatkę ważyły kilkanaście ms).
+ * 6.11, budowa schodów: kawałkami, bo stopień przybywa co ułamek sekundy — całe płótno odcinka (ponad 3000 px
+ * wysokości) rysowane od nowa przy każdym stopniu kosztowało kilkadziesiąt ms.
  */
 interface Rysunek { z: number; podpis: number; plotno: HTMLCanvasElement; ox: number; oy: number; szer: number; wys: number }
-const rysunki = new WeakMap<Sim['world'], Rysunek[]>();
-const podpisy: number[] = [];
+const rysunki = new WeakMap<Sim['world'], Map<string, Rysunek>>();
+/** Rzędy w jednym kawałku płótna. */
+const KAWALEK = 12;
+/** Podpis rzędów odcinka (które kafle wykute) — z każdej klatki; kawałek łączy podpisy swoich rzędów (z zakładką). */
+const podpisyRzedow: number[][] = [];
 
 /**
  * Schody we wszystkich odcinkach szybu drogi wiernych (przed mrokiem). Wołane co klatkę — rysuje kawałek w kadrze.
@@ -243,14 +236,17 @@ export function rysujSchodyDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
   // okruchami, gdy kamera na niego najedzie); to, co już stało przy pierwszej klatce, jest stare; przy okazji podpis
   // odcinka (które kafle wykute) — zmiana rysuje go na nowo
   w.odcinkiDrogi.forEach((o, n) => {
-    let h = 0x811c9dc5;
-    for (let y = o.y0; y <= o.y1; y++) for (let x = o.x0; x <= o.x1; x++) {
-      const i = w.idx(x, y);
-      if (!w.schody[i]) { if (pojawienie.size) pojawienie.delete(i); continue; }
-      h = Math.imul(h ^ i, 16777619);
-      if (!pojawienie.has(i)) pojawienie.set(i, pierwszaKlatka ? -1e9 : teraz);
+    const rzedy = podpisyRzedow[n] ??= [];
+    for (let y = o.y0; y <= o.y1; y++) {
+      let h = 0x811c9dc5;
+      for (let x = o.x0; x <= o.x1; x++) {
+        const i = w.idx(x, y);
+        if (!w.schody[i]) { if (pojawienie.size) pojawienie.delete(i); continue; }
+        h = Math.imul(h ^ i, 16777619);
+        if (!pojawienie.has(i)) pojawienie.set(i, pierwszaKlatka ? -1e9 : teraz);
+      }
+      rzedy[y - o.y0] = h >>> 0;
     }
-    podpisy[n] = h >>> 0;
   });
   pierwszaKlatka = false;
   w.odcinkiDrogi.forEach((o, n) => rysujOdcinek(ctx, sim, cam, teraz, o, n));
@@ -265,13 +261,18 @@ function kameraPlotna(ox: number, oy: number, z: number, szer: number, wys: numb
   } as unknown as Camera;
 }
 
-/** Cały odcinek (to, co stoi) na płótnie — przycięty do wykutych kafli. */
-function narysujOdcinek(sim: Sim, o: Prost, z: number, podpis: number): Rysunek | null {
+/**
+ * Cały odcinek (to, co stoi) na płótnie — przycięty do wykutych kafli. 6.11: tylko to, co już zbudowano (od stopnia
+ * `kTop` w dół — sim/budowa-schodow.ts): mur klatki sięga rząd ciosów nad najwyższy stopień, słup kończy się bębnem
+ * na wysokości jego stopnicy; wyżej szyb jest jeszcze surową studnią w skale (rusztowanie i drabinę rysuje
+ * render/budowa-schodow.ts).
+ */
+function narysujOdcinek(sim: Sim, o: Prost, z: number, podpis: number, kTop: number, yA: number, yB: number): Rysunek | null {
   if (typeof document === 'undefined') return null;
   const w = sim.world;
   const sp = spirala(sim, o);
-  const ox = o.x0 - 0.5, oy = sp.ys - 1.5;
-  const szer = Math.ceil((o.x1 - o.x0 + 2) * z), wys = Math.ceil((o.y1 + 2 - oy) * z);
+  const ox = o.x0 - 0.5, oy = yA;
+  const szer = Math.ceil((o.x1 - o.x0 + 2) * z), wys = Math.ceil((yB - yA) * z);
   if (szer <= 0 || wys <= 0 || wys > 16000) return null;
   const plotno = document.createElement('canvas');
   plotno.width = szer; plotno.height = wys;
@@ -279,7 +280,7 @@ function narysujOdcinek(sim: Sim, o: Prost, z: number, podpis: number): Rysunek 
   const cam = kameraPlotna(ox, oy, z, szer, wys);
   const okno = new Path2D();
   let ile = 0;
-  for (let y = sp.ys; y <= o.y1; y++) {
+  for (let y = Math.max(sp.ys, Math.floor(yA)); y <= Math.min(o.y1, Math.ceil(yB)); y++) {
     let x = o.x0;
     while (x <= o.x1) {
       if (!w.schody[w.idx(x, y)]) { x++; continue; }
@@ -291,39 +292,78 @@ function narysujOdcinek(sim: Sim, o: Prost, z: number, podpis: number): Rysunek 
     }
   }
   const rys: Rysunek = { z, podpis, plotno, ox, oy, szer, wys };
-  if (!ile) return rys;
+  const N = liczbaStopni(sp);
+  if (!ile || kTop >= N) return rys;
   const szczegoly = z >= 9;
   const kol = (y: number) => kamien(sim, y);
+  const h = WYS(), D = TAU / S.stopni;
+  const yTop = sp.ys + kTop * h;
   ctx.save();
   ctx.clip(okno);
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  // ściana klatki schodowej (w komnacie i na przedprożu tło jest ich, nie szybu)
+  // ściana klatki schodowej (w komnacie i na przedprożu tło jest ich, nie szybu) — rząd ciosów nad najwyższy stopień
   const pomin = (y: number) => w.wKomnacie(o.x0, y) || w.wPrzedprozu(o.x0 + 1, y);
-  rysujSciane(ctx, cam, sp, sp.ys, o.y1, kol, z, szczegoly, pomin);
-  const h = WYS(), D = TAU / S.stopni;
-  const kMax = Math.floor((sp.ye - sp.ys) / h) + 1;
-  if (szczegoly) rysujLine(ctx, cam, sp, 0, kMax, z);
+  const yMuru = kTop > 0 ? Math.max(sp.ys, yTop - 0.62) : sp.ys;
+  ctx.save();
+  // (od wierzchu muru do dołu płótna — wierzch bywa daleko nad kawałkiem, wtedy prostokąt sięga poza płótno)
+  const tM = cam.toScreenY(yMuru);
+  ctx.beginPath(); ctx.rect(0, tM, szer, wys - tM); ctx.clip();
+  rysujSciane(ctx, cam, sp, Math.max(Math.floor(yMuru), Math.floor(yA) - 1), Math.min(o.y1, Math.ceil(yB)), kol, z, szczegoly, pomin);
+  if (kTop > 0) rysujWienczenieMuru(ctx, cam, sp, yMuru, kol, z);
+  ctx.restore();
+  // stopnie (i pierścienie liny) w zasięgu kawałka — płyta sięga pod stopnicę na `grubosc` stopni, rzut z góry ±0,5
+  const kA = Math.max(kTop, Math.floor((yA - 1.6 - sp.ys) / h)), kB = Math.min(N - 1, Math.ceil((yB + 1.2 - sp.ys) / h));
+  if (szczegoly) rysujLine(ctx, cam, sp, kA, kB, z);
   const stopnie: Stopien[] = [];
-  for (let k = 0; k <= kMax; k++) {
+  for (let k = kA; k <= kB; k++) {
     const y = sp.ys + k * h;
-    if (y >= sp.ye - 0.02) break;
     const a = sp.th0 + k * D, b = a + D;
     stopnie.push({ k, y, a, b, glebia: Math.cos((a + b) / 2) });
   }
   stopnie.sort((p, q) => q.glebia - p.glebia);
+  // słup: od bębna najwyższego stopnia do posadzki (barwa jak całego — nie skacze, gdy schody rosną)
+  const slupem = () => {
+    ctx.save();
+    const tS = cam.toScreenY(yTop);
+    ctx.beginPath(); ctx.rect(0, tS, szer, wys - tS); ctx.clip();
+    rysujSlup(ctx, cam, sp, sp.ys, sp.ye, kol, z, szczegoly);
+    ctx.restore();
+    if (kTop > 0) rysujWierzchSlupa(ctx, cam, sp, yTop, kol, z);
+  };
   let slup = false;
   for (const st of stopnie) {
-    if (!slup && st.glebia < 0) { rysujSlup(ctx, cam, sp, sp.ys, sp.ye, kol, z, szczegoly); slup = true; }
+    if (!slup && st.glebia < 0) { slupem(); slup = true; }
     rysujStopien(ctx, cam, sp, st, kol(st.y), z, szczegoly);
   }
-  if (!slup) rysujSlup(ctx, cam, sp, sp.ys, sp.ye, kol, z, szczegoly);
-  rysujCokol(ctx, cam, sp, kol, z);
+  if (!slup) slupem();
+  rysujCokol(ctx, cam, sp, kol, z, kTop === 0);
   ctx.restore();
   return rys;
 }
 
-/** Cokół słupa na posadzce i głowica u góry odcinka. */
-function rysujCokol(ctx: CanvasRenderingContext2D, cam: Camera, sp: Spirala, kol: (y: number) => RGB, z: number): void {
+/** Wierzch muru w budowie: ostatni rząd ciosów nierówny — część kamieni już leży, części jeszcze brak. */
+function rysujWienczenieMuru(ctx: CanvasRenderingContext2D, cam: Camera, sp: Spirala, y: number, kol: (y: number) => RGB, z: number): void {
+  const k = kol(y);
+  for (let j = 0; j < 9; j++) {
+    if (los(j * 31 + Math.round(y * 7)) < 0.45) continue;
+    const f0 = -Math.PI / 2 + Math.PI * (j / 9), f1 = f0 + Math.PI / 9;
+    const a = rzut(cam, sp, f0, sp.R, y - 0.3), b = rzut(cam, sp, f1, sp.R, y - 0.3), c = rzut(cam, sp, f1, sp.R, y), d = rzut(cam, sp, f0, sp.R, y);
+    ctx.fillStyle = barwa(k, 0.5 + 0.12 * los(j * 7 + 3)); wielokat(ctx, [a, b, c, d]); ctx.fill();
+    ctx.strokeStyle = 'rgba(24,16,12,0.4)'; ctx.lineWidth = Math.max(0.6, z * 0.025); ctx.stroke();
+  }
+}
+
+/** Wierzch słupa w budowie: górny bęben widać z wierzchu (płaska elipsa) — na nim stanie bęben następnego stopnia. */
+function rysujWierzchSlupa(ctx: CanvasRenderingContext2D, cam: Camera, sp: Spirala, y: number, kol: (y: number) => RGB, z: number): void {
+  const k = kol(y);
+  const cx = cam.toScreenX(sp.c), cy = cam.toScreenY(y);
+  ctx.fillStyle = barwa(k, 1.12);
+  ctx.beginPath(); ctx.ellipse(cx, cy, sp.rn * z, Math.max(1, sp.rn * S.ukos * z), 0, 0, TAU); ctx.fill();
+  ctx.strokeStyle = 'rgba(30,20,14,0.35)'; ctx.lineWidth = Math.max(0.6, z * 0.025); ctx.stroke();
+}
+
+/** Cokół słupa na posadzce i (gdy schody stoją całe) głowica u góry odcinka. */
+function rysujCokol(ctx: CanvasRenderingContext2D, cam: Camera, sp: Spirala, kol: (y: number) => RGB, z: number, zGlowica = true): void {
   const baza = (yy: number, wys2: number, szer2: number) => {
     const k = kol(yy);
     const x0 = cam.toScreenX(sp.c - sp.rn - szer2), x1 = cam.toScreenX(sp.c + sp.rn + szer2);
@@ -331,7 +371,7 @@ function rysujCokol(ctx: CanvasRenderingContext2D, cam: Camera, sp: Spirala, kol
     ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.8, z * 0.04); ctx.strokeRect(x0, cam.toScreenY(yy), x1 - x0, wys2 * z);
   };
   baza(sp.ye - 0.35, 0.35, 0.16);
-  baza(sp.ys, 0.22, 0.1);
+  if (zGlowica) baza(sp.ys, 0.22, 0.1);
 }
 
 /** Przybliżenie płótna odcinka — co ~19% (kamera, która płynnie zmienia przybliżenie, nie rysuje odcinka co klatkę). */
@@ -347,16 +387,28 @@ function rysujOdcinek(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, tera
   const sp = spirala(sim, o);
   const y0 = Math.max(sp.ys, gora), y1 = Math.min(o.y1, dol);
   if (y0 > y1) return;
-  // to, co stoi — z płótna odcinka (na nowo, gdy wykuto kafel albo zmieniło się przybliżenie)
-  let lista = rysunki.get(w);
-  if (!lista) { lista = []; rysunki.set(w, lista); }
+  // to, co stoi — z płócien kawałków odcinka (każdy na nowo, gdy w jego pobliżu wykuto kafel albo osadzono stopień,
+  // albo gdy zmieniło się przybliżenie)
+  let mapa = rysunki.get(w);
+  if (!mapa) { mapa = new Map(); rysunki.set(w, mapa); }
   const zp = zoomPlotna(z);
-  let rys = lista[n];
-  if (!rys || rys.z !== zp || rys.podpis !== podpisy[n]) {
-    const nowy = narysujOdcinek(sim, o, zp, podpisy[n]);
-    if (nowy) { lista[n] = nowy; rys = nowy; }
-  }
-  if (rys) {
+  const oy = sp.ys - 1.5, koniec = o.y1 + 2;
+  const kTop = szczytSchodow(sim, n), N = liczbaStopni(sp), h = WYS();
+  const rzedy = podpisyRzedow[n] ?? [];
+  for (let j = Math.max(0, Math.floor((y0 - 1 - oy) / KAWALEK)); oy + j * KAWALEK < Math.min(koniec, y1 + 2); j++) {
+    const yA = oy + j * KAWALEK, yB = Math.min(koniec, yA + KAWALEK);
+    // podpis kawałka: wykute kafle jego rzędów (z zakładką) i ile z jego stopni już stoi
+    let pod = 0x9e3779b9;
+    for (let y = Math.floor(yA) - 2; y <= Math.ceil(yB) + 2; y++) pod = Math.imul(pod ^ (rzedy[y - o.y0] ?? 0), 16777619);
+    const kA = Math.floor((yA - 1.6 - sp.ys) / h), kB = Math.ceil((yB + 1.2 - sp.ys) / h);
+    pod = Math.imul(pod ^ Math.max(kA, Math.min(kB + 1, kTop, N)), 2654435761) >>> 0;
+    const klucz = `${n}:${j}`;
+    let rys = mapa.get(klucz);
+    if (!rys || rys.z !== zp || rys.podpis !== pod) {
+      const nowy = narysujOdcinek(sim, o, zp, pod, kTop, yA, yB);
+      if (nowy) { mapa.set(klucz, nowy); rys = nowy; }
+    }
+    if (!rys) continue;
     const k = z / rys.z;
     const sy0 = Math.max(0, Math.floor((y0 - 1 - rys.oy) * rys.z)), sy1 = Math.min(rys.wys, Math.ceil((y1 + 2 - rys.oy) * rys.z));
     if (sy1 > sy0) ctx.drawImage(rys.plotno, 0, sy0, rys.szer, sy1 - sy0, cam.toScreenX(rys.ox), cam.toScreenY(rys.oy) + sy0 * k, rys.szer * k, (sy1 - sy0) * k);
@@ -408,8 +460,45 @@ function rysujOdcinek(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, tera
   }
 }
 
+/**
+ * 6.11, budowa schodów: ciosany stopień k odcinka `o` w drodze na swoje miejsce — ten sam kamień co osadzony (z bębnem
+ * słupa pod wewnętrznym końcem), przesunięty o `dx`, `dy` (kafle). Render/budowa-schodow.ts: zjeżdża na linie kołowrotu
+ * i siada na poprzednim stopniu.
+ */
+export function rysujKamienStopnia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, o: Prost, k: number, dx: number, dy: number): void {
+  const sp0 = spirala(sim, o);
+  const sp: Spirala = { ...sp0, c: sp0.c + dx };
+  const h = WYS(), D = TAU / S.stopni, z = cam.zoom;
+  const y = sp0.ys + k * h + dy;
+  const a = sp.th0 + k * D, b = a + D;
+  const kol = kamien(sim, sp0.ys + k * h);
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  // bęben słupa (część stopnia — jak w prawdziwych schodach kręconych, każdy stopień niesie kawałek słupa)
+  const xl = cam.toScreenX(sp.c - sp.rn), xr = cam.toScreenX(sp.c + sp.rn);
+  const g = ctx.createLinearGradient(xl, 0, xr, 0);
+  g.addColorStop(0, barwa(kol, 0.86)); g.addColorStop(0.28, barwa(kol, 1.04)); g.addColorStop(0.62, barwa(kol, 0.8)); g.addColorStop(1, barwa(kol, 0.5));
+  ctx.fillStyle = g; ctx.fillRect(xl, cam.toScreenY(y), xr - xl, h * z);
+  rysujStopien(ctx, cam, sp, { k, y, a, b, glebia: Math.cos((a + b) / 2) }, kol, z, z >= 9);
+  rysujWierzchSlupa(ctx, cam, sp, y, () => kol, z);
+  ctx.restore();
+}
+
+/** Punkt zaczepienia liny na kamieniu stopnia k (środek ciężaru płyty — w połowie między słupem a ścianą). */
+export function zaczepStopnia(sim: Sim, o: Prost, k: number): { x: number; y: number } {
+  const sp = spirala(sim, o);
+  const D = TAU / S.stopni;
+  const th = sp.th0 + (k + 0.5) * D, r = (sp.rn + sp.R) / 2;
+  return { x: sp.c + r * Math.sin(th), y: sp.ys + k * WYS() - S.ukos * r * Math.cos(th) };
+}
+
 /** Postać na spirali: gdzie ją rysować i jak idzie (render/lud/rozstep.ts, figury.ts, lud/ruch.ts). */
 export interface NaSchodach {
+  /**
+   * 6.11, budowa schodów: 'schody' — na osadzonych stopniach; 'drabina' — wyżej, w surowym szybie: wisi na drabinie
+   * opartej o tylną ścianę (przy pomoście nad najwyższym stopniem przechodzi z drabiny na stopnie)
+   */
+  tryb: 'schody' | 'drabina';
   /** przesunięcie od miejsca w symulacji: w poziomie, w pionie (stopnie i rzut z góry) — kafle */
   dx: number; dy: number;
   /** 0..1 — o ile jest „w tle”: z tyłu spirali, w cieniu słupa i ścian (zasłania ją zaslonNaSchodach) */
@@ -418,8 +507,8 @@ export interface NaSchodach {
   stopien: number;
   /** kąt na spirali (0 — tył szybu, π/2 — prawa ściana, π — przód) */
   kat: number;
-  /** odcinek drogi i jego spirala */
-  odcinek: Prost; sp: Spirala;
+  /** odcinek drogi i jego spirala, numer odcinka i najwyższy osadzony stopień (sim/budowa-schodow.ts) */
+  odcinek: Prost; sp: Spirala; n: number; kTop: number;
 }
 
 /**
@@ -452,20 +541,40 @@ export function naSchodach(sim: Sim, c: Creature): NaSchodach | null {
   const tx = Math.floor(c.x), ty = Math.floor(c.y);
   if (!w.inb(tx, ty) || w.schody[w.idx(tx, ty)] !== 1 || w.solid(tx, ty + 1)) return null;
   if (c.kujeT !== undefined && sim.tick - c.kujeT >= 0 && sim.tick - c.kujeT < 24) return null;
-  const o = w.odcinekDrogi(tx, ty);
-  if (!o) return null;
+  const n = w.odcinkiDrogi.findIndex((q) => tx >= q.x0 && tx <= q.x1 && ty >= q.y0 && ty <= q.y1);
+  if (n < 0) return null;
+  const o = w.odcinkiDrogi[n];
   const sp = spirala(sim, o);
   const h = WYS();
   const stopy = c.y + 1;
   const st = (stopy - sp.ys) / h;
-  const yStopien = sp.ys + stopyNaStopniu(st) * h;
-  const th = katSpirali(sp, stopy);
+  const kTop = szczytSchodow(sim, n), N = liczbaStopni(sp);
+  // 6.11, budowa schodów: nad osadzonymi stopniami (i w szybie bez schodów) — na drabinie; od pomostu nad najwyższym
+  // stopniem do jego stopnicy przechodzi z drabiny na schody (płynnie — nie skacze przez szyb)
+  const dr = pozycjaDrabiny(sp);
+  const drabina = { dx: dr.x - c.x, dy: -S.ukos * dr.glebia, tlo: 0.16 };
+  let f = 1;
+  if (kTop >= N) f = 0;
+  else if (kTop > 0) {
+    const yLad = dolDrabiny(sim, n), yTop = wysokoscSzczytu(sim, n);
+    f = Math.max(0, Math.min(1, (stopy - yLad) / Math.max(0.4, yTop - yLad)));
+  }
+  if (f <= 0) return { tryb: 'drabina', ...drabina, stopien: st, kat: BUDOWA_SCHODOW.drabinaKat, odcinek: o, sp, n, kTop };
+  const s2 = Math.max(st, kTop);
+  const yStopien = sp.ys + stopyNaStopniu(s2) * h;
+  const th = katSpirali(sp, sp.ys + s2 * h);
   const x = sp.c + S.linia * Math.sin(th), glebia = S.linia * Math.cos(th);
-  return {
+  const schody = {
     dx: x - c.x, dy: (yStopien - stopy) - S.ukos * glebia,
     // z tyłu spirali — w cieniu słupa i ścian, odrobinę ciemniej (sam słup zasłania ją naprawdę: zaslonNaSchodach)
     tlo: glebia > 0 ? 0.1 + 0.2 * glebia / S.linia : 0,
-    stopien: st, kat: th, odcinek: o, sp,
+  };
+  if (f >= 1) return { tryb: 'schody', ...schody, stopien: s2, kat: th, odcinek: o, sp, n, kTop };
+  const g = f * f * (3 - 2 * f);
+  return {
+    tryb: g < 0.5 ? 'drabina' : 'schody',
+    dx: drabina.dx + (schody.dx - drabina.dx) * g, dy: drabina.dy + (schody.dy - drabina.dy) * g, tlo: drabina.tlo + (schody.tlo - drabina.tlo) * g,
+    stopien: s2, kat: g < 0.5 ? BUDOWA_SCHODOW.drabinaKat : th, odcinek: o, sp, n, kTop,
   };
 }
 
@@ -476,7 +585,7 @@ export function naSchodach(sim: Sim, c: Creature): NaSchodach | null {
  */
 export function stopniePodStopami(sim: Sim, cam: Camera, c: Creature, fx: number): { tr: [number, number][]; cx: number; cy: number; sila: number }[] {
   const ns = naSchodach(sim, c);
-  if (!ns) return [];
+  if (!ns || ns.tryb !== 'schody') return [];
   const { sp } = ns;
   const h = WYS(), D = TAU / S.stopni;
   const glebia = S.linia * Math.cos(ns.kat);
@@ -484,7 +593,7 @@ export function stopniePodStopami(sim: Sim, cam: Camera, c: Creature, fx: number
   const out: { tr: [number, number][]; cx: number; cy: number; sila: number }[] = [];
   for (const [k, sila] of [[k0, 1], [k0 + 1, 0.5]]) {
     const y = sp.ys + k * h;
-    if (k < 0 || y >= sp.ye - 0.02) continue;
+    if (k < ns.kTop || y >= sp.ye - 0.02) continue;
     const a = sp.th0 + k * D, b = a + D;
     const tr: Pkt[] = [];
     for (let i = 0; i <= 4; i++) tr.push(rzut(cam, sp, a + (b - a) * (i / 4), sp.R, y));
@@ -506,8 +615,8 @@ let buforZaslony: HTMLCanvasElement | null = null;
 export function zaslonNaSchodach(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, c: Creature, fx: number, fy: number, hPx: number, teraz: number): void {
   if (typeof document === 'undefined') return;
   const ns = naSchodach(sim, c);
-  if (!ns) return;
-  const w = sim.world, { sp, odcinek: o } = ns;
+  if (!ns || ns.tryb !== 'schody') return;
+  const w = sim.world, { sp, odcinek: o, kTop } = ns;
   const z = cam.zoom, zp = zoomPlotna(z);
   const hw = hPx / z;
   // obrys postaci (z bronią i kijem) — w siatce pikseli płótna odcinka
@@ -523,7 +632,7 @@ export function zaslonNaSchodach(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
   // stopy aż po kolana: postać brnęła w kamieniu, zamiast stać na stopnicy)
   const k0 = Math.floor(ns.stopien);
   const wlasne = new Set([k0 - 1, k0, k0 + 1]);
-  const kOd = Math.max(0, Math.floor((Y0 - 1.2 - sp.ys) / h)), kDo = Math.ceil((Y1 + 0.7 - sp.ys) / h);
+  const kOd = Math.max(kTop, Math.floor((Y0 - 1.2 - sp.ys) / h)), kDo = Math.ceil((Y1 + 0.7 - sp.ys) / h);
   const stopnie: Stopien[] = [];
   for (let k = kOd; k <= kDo; k++) {
     const y = sp.ys + k * h;
@@ -552,12 +661,22 @@ export function zaslonNaSchodach(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
   g.lineJoin = 'round'; g.lineCap = 'round';
   const szczegoly = zp >= 9;
   const kol = (y: number) => kamien(sim, y);
+  // słup (jak na płótnie odcinka: od bębna najwyższego osadzonego stopnia w dół)
+  const yTop = sp.ys + kTop * h;
+  const slupem = () => {
+    const tS = camB.toScreenY(yTop);
+    g.save(); g.beginPath(); g.rect(0, tS, bw, bh - tS); g.clip();
+    rysujSlup(g, camB, sp, sp.ys, sp.ye, kol, zp, szczegoly);
+    g.restore();
+    if (kTop > 0) rysujWierzchSlupa(g, camB, sp, yTop, kol, zp);
+    rysujCokol(g, camB, sp, kol, zp, kTop === 0);
+  };
   let slupJest = !slup;
   for (const st of stopnie) {
-    if (!slupJest && st.glebia < 0) { rysujSlup(g, camB, sp, sp.ys, sp.ye, kol, zp, szczegoly); rysujCokol(g, camB, sp, kol, zp); slupJest = true; }
+    if (!slupJest && st.glebia < 0) { slupem(); slupJest = true; }
     rysujStopien(g, camB, sp, st, kol(st.y), zp, szczegoly);
   }
-  if (!slupJest) { rysujSlup(g, camB, sp, sp.ys, sp.ye, kol, zp, szczegoly); rysujCokol(g, camB, sp, kol, zp); }
+  if (!slupJest) slupem();
   g.restore();
   // mrok tej klatki — tylko na tym, co narysowano
   const sx = cam.toScreenX(X0), sy = cam.toScreenY(Y0), sw = bw * (z / zp), sh = bh * (z / zp);

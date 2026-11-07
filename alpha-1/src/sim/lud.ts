@@ -4,6 +4,7 @@
  * Liczby są w src/nastawy/lud.ts.
  */
 import type { StanBramy } from './brama';
+import type { StanBudowySchodow } from './budowa-schodow';
 import { BRAMA, BLOGOSLAWIENSTWO } from '../nastawy/loch';
 import type { Sim } from './sim';
 import type { Creature } from './creatures';
@@ -74,6 +75,8 @@ export interface StanLudu {
   oltarzPo?: number;
   /** 6.11: stalowa brama lochu — otwarcie, ilu zaklina przy kotle (sim/brama.ts). */
   brama?: StanBramy;
+  /** 6.11: budowa schodów drogi wiernych — po odcinku szybu: ile stopni stoi, postęp, kubeł urobku (sim/budowa-schodow.ts). */
+  schody?: StanBudowySchodow;
 }
 
 export interface Spizarnia { x: number; y: number; ilosc: number; /** tik założenia */ od?: number }

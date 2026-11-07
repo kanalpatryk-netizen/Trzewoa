@@ -21,6 +21,7 @@ import { rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, maxHp, stanyPostaci, type Ro
 import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
 import { cost, affordable, modliSie } from '../powers/powers';
 import { czoloDrogi } from '../sim/pielgrzymka';
+import { trwaBudowaSchodow } from '../sim/budowa-schodow';
 import { naWieszaku } from '../sim/zbroja';
 import { stanBramy } from '../sim/brama';
 import { pomnikRozbity } from '../sim/pomnik';
@@ -57,7 +58,10 @@ export function mozliwosciPostaci(A: Sim, M: Creature[]): Mozliwosc[] {
   }
   if (B.length) {
     const Y = czoloDrogi(A), i = A.rytual.otwarta ? "pomnik ju\u017C otwarty" : A.planDrogi ? "droga wiernych jest ju\u017C wykopana" : "droga jeszcze si\u0119 wyznacza \u2014 chwila";
-    Q.push({ akcja: "droga", nazwa: "Kop drog\u0119 wiernych", opis: "kopią drogę wiernych: szyb od wnęki przy sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu", ids: E(B), ok: Y >= 0, powod: i }), I("warsztat") && Q.push({ akcja: "warsztat", nazwa: "Pracuj w warsztacie", opis: "ze z\u0142ota robi\u0105 krzy\u017Ce \u2014 ka\u017Cdy staje si\u0119 wiar\u0105", ids: E(B), ok: A.zloto > 0, powod: "nie ma z\u0142ota" }), I("kuznia") && Q.push({ akcja: "kuznia", nazwa: "Pracuj w ku\u017Ani", opis: "z \u017Celaza wykuwaj\u0105 cz\u0119\u015Bci zbroi rycerza", ids: E(B), ok: A.zelazo > 0, powod: "nie ma \u017Celaza" });
+    // 6.11: szyb wykopany, schody w budowie (sim/budowa-schodow.ts) — ten sam rozkaz posyła do budowy schodów
+    const bud = Y < 0 && !A.rytual.otwarta && trwaBudowaSchodow(A);
+    Q.push(bud ? { akcja: "droga", nazwa: "Buduj schody drogi wiernych", opis: "szyb jest wykopany — od dołu osadzają w nim kamienne stopnie: dwóch murarzy na rusztowaniu, jeden kręci kołowrotem, który opuszcza im stopnie", ids: E(B), ok: true }
+      : { akcja: "droga", nazwa: "Kop drog\u0119 wiernych", opis: "kopią drogę wiernych: szyb od wnęki przy sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu; schody stawia się w wykopanym szybie, od dołu", ids: E(B), ok: Y >= 0, powod: i }), I("warsztat") && Q.push({ akcja: "warsztat", nazwa: "Pracuj w warsztacie", opis: "ze z\u0142ota robi\u0105 krzy\u017Ce \u2014 ka\u017Cdy staje si\u0119 wiar\u0105", ids: E(B), ok: A.zloto > 0, powod: "nie ma z\u0142ota" }), I("kuznia") && Q.push({ akcja: "kuznia", nazwa: "Pracuj w ku\u017Ani", opis: "z \u017Celaza wykuwaj\u0105 cz\u0119\u015Bci zbroi rycerza", ids: E(B), ok: A.zelazo > 0, powod: "nie ma \u017Celaza" });
   }
   if (o.length && I("kuznia")) {
     const Y = naWieszaku(A).length;

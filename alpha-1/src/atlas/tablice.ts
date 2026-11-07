@@ -1419,7 +1419,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',
     opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie: musi wykuć sobie w skale schody albo wejść po linie, którą powiesisz. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy.',
-    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych to szeroki szyb od lewej krawędzi sali do krypty: w każdym wykutym kaflu szybu same pojawiają się schody, więc kto nim zejdzie, wróci nim do sali, do wiadra. Kafle szybu kuje się szybciej niż zwykłą skałę.',
+    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych to szyb od wnęki przy sali do lochu: kopacze schodzą w głąb po drabinie, którą przedłużają za sobą, a przy wylocie kołowrót wyciąga kubłem urobek. Gdy odcinek jest wykopany do dna, robotnicy stawiają w nim od dołu schody kręcone: kołowrotem opuszczają ciosane stopnie, a murarze z rusztowania osadzają je jeden po drugim (rozkaz „Buduj schody drogi wiernych” — robotnicy, którzy długo nie mają co robić, idą pomóc sami). Do tego czasu szybem chodzi się po drabinie, w obie strony. Kafle szybu kuje się szybciej niż zwykłą skałę.',
     rycina: postac(Race.GOBLIN, 'wspina'),
   },
   {

@@ -27,6 +27,8 @@ import { wiadroDoWspinaczki, wiadroId, krokNaLinie, wiadra } from './wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
 import { przyKotle, bramaOtwarta, zaKrata, podKrata, podajPrzezKrate } from './brama';
+import { zadanieBudowy, posterunek, naPosterunku as naPosterunkuBudowy, etapOdcinka, trwaBudowaSchodow, ustawJobSchody, type RolaBudowy } from './budowa-schodow';
+import { BUDOWA_SCHODOW } from '../nastawy/loch';
 import { SCHODY } from '../nastawy/loch';
 import { odmow, nastepnyKafelZyly, nastepnyWObszarze, kafleObszaru, pominKafelObszaru, type Polecenie, type Odmowa } from './polecenia';
 import { SWIAT } from '../nastawy/swiat';
@@ -59,7 +61,11 @@ export enum Job {
   STOI,
   /** Remake v2: skrajnie głodny biegnie pod linę zjeżdżającego wiadra (potem wspina się po niej — sim/wiadro.ts). */
   LINA,
+  /** 6.11: robotnik buduje schody drogi wiernych — osadza stopnie przy czole budowy albo kręci kołowrotem (sim/budowa-schodow.ts). */
+  SCHODY,
 }
+
+ustawJobSchody(Job.SCHODY);
 
 /** Myśl, którą wkładasz stworzeniu do głowy. Znika, gdy zostanie wykonana. */
 export enum Thought {
@@ -119,6 +125,10 @@ export interface Creature {
   dostawaDla?: number;
   /** 6.11: przechodzi po garbie gruzu na kresce drogi w lochu — do tego kafla, najpóźniej do tego tiku (poGruzie). */
   poGruzie?: { x: number; y: number; do: number };
+  /** 6.11: przy budowie schodów drogi wiernych — który odcinek szybu, rola (murarz, kołowrót) i miejsce murarza (sim/budowa-schodow.ts). */
+  budowa?: { odcinek: number; rola: RolaBudowy; ktory?: number };
+  /** 6.11: od kiedy robotnik nie ma co robić (odpoczywa przy obozie) — po chwili idzie pomóc przy schodach. */
+  bezczynnyOd?: number;
   /** Remake v1: robotnik niesie zapas do spiżarni tego obozu (zaopatrzenie obozu frontowego). */
   doObozu?: { x: number; y: number };
   /** Remake v1: zamiar — co teraz robi i do kiedy się tego trzyma (widać go na karcie postaci). */
@@ -160,7 +170,7 @@ ksiegaT?: number;
   /** Alpha: rozkaz gracza (sim/polecenia.ts) — trzyma się go, aż go odwołasz. */
   polecenie?: Polecenie;
   /** Alpha, etap 3c: co robi w pomieszczeniu — przy kowadle albo stole („buduje”), na posłaniu („spi”). Rysunek bierze z tego pozę. */
-  czynnosc?: 'buduje' | 'spi' | 'modli' | 'czyta' | 'zaklada' | 'skleja';
+  czynnosc?: 'buduje' | 'spi' | 'modli' | 'czyta' | 'zaklada' | 'skleja' | 'kreci';
   /** Ile tików już przespał w sypialni (sen zdejmuje osłabienia — sim/pomieszczenia.ts). */
   snu?: number;
   /** Alpha: odmowa wykonania rozkazu — dymek nad głową i kręcenie głową. */
@@ -420,7 +430,9 @@ function krokStworzenia(sim: Sim, c: Creature): void {
   const modliSiePodRdzeniem = c.job === Job.PIELGRZYM
     && Math.abs(c.x - w.coreX) < P.przedsionekX && Math.abs(c.y - w.przedsionekY) < P.przedsionekY;
   // Remake v1: kto stoi tam, gdzie miał stać (warta, modlitwa przy obozie), nie jest zakleszczony
-  const naPosterunku = (c.job === Job.STOI || c.job === Job.WARTA) && Math.abs(c.jx - Math.floor(c.x)) <= 1 && Math.abs(c.jy - Math.floor(c.y)) <= 4;
+  // (6.11: także przy budowie schodów — kręcący kołowrotem i murarz stoją w miejscu, pracując)
+  const naPosterunku = ((c.job === Job.STOI || c.job === Job.WARTA) && Math.abs(c.jx - Math.floor(c.x)) <= 1 && Math.abs(c.jy - Math.floor(c.y)) <= 4)
+    || (c.job === Job.SCHODY && naPosterunkuBudowy(sim, c));
   if (!modliSiePodRdzeniem && !naPosterunku && (c.id + sim.tick) % K.zakleszczenieCo === 0) {
     if (Math.abs(c.x - c.lx) < K.zakleszczenieRuch && Math.abs(c.y - c.ly) < K.zakleszczenieRuch) c.stall++;
     else c.stall = 0;
@@ -519,6 +531,7 @@ function krokStworzenia(sim: Sim, c: Creature): void {
     case Job.DIG: case Job.DESCEND: doDig(sim, c); break;
     case Job.PRAY: doPray(sim, c); break;
     case Job.BUILD: doBuild(sim, c); break;
+    case Job.SCHODY: doSchody(sim, c); break;
     case Job.FIGHT: doFight(sim, c); break;
     case Job.FLEE: doFlee(sim, c); break;
     case Job.BREED: doBreed(sim, c); break;
@@ -871,6 +884,8 @@ function planujLud(sim: Sim, c: Creature): void {
   c.kopieDroge = false;
   c.modliPrzyObozie = false;
   c.czynnosc = undefined;
+  // (6.11: przydział do budowy schodów wybiera się od nowa — budujSchody ustawi go, jeśli robotnik wraca do schodów)
+  c.budowa = undefined;
   const naDroge = (droga: number[], cx?: number, cy?: number): void => {
     c.droga = droga; c.drogaI = 0; c.drogaKopie = false;
     if (cx !== undefined && cy !== undefined) { c.jx = cx; c.jy = cy; return; }
@@ -1176,7 +1191,7 @@ function planRobotnika(sim: Sim, c: Creature,
     for (const sp of spizarnieWgOdleglosci(sim, c.x, c.y, true).slice(0, 3)) {
       const d = droga((x, y) => Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1, LUD.dostawaLimit);
       if (d) {
-        naDroge(d, sp.x, sp.y); c.dostawaDla = komu.id;
+        naDroge(d, sp.x, sp.y); c.dostawaDla = komu.id; c.bezczynnyOd = undefined;
         zamiar(`bierze jedzenie z wiadra dla: ${komu.rola === 'rycerz' ? 'rycerz' : 'pobożny'} #${komu.id}`, Job.ZBIERA, podroz(d));
         return;
       }
@@ -1189,8 +1204,17 @@ function planRobotnika(sim: Sim, c: Creature,
     zamiar('czeka z dala od ognia', Job.STOI, Z);
     return;
   }
-  // 3. odpoczywa przy obozie — czeka na rozkaz
-  if (stanPrzyObozie(sim, c, naDroge, droga)) { zamiar('odpoczywa przy obozie — czeka na rozkaz', Job.STOI, Z); return; }
+  // 3. 6.11: pomaga przy budowie schodów drogi wiernych (osadza stopnie, kręci kołowrotem; przy kopaniu wyciąga kubłem
+  // urobek) — robotnik, który od dawna nie ma co robić (świeżo zwolnionego zaraz bierze kolejny rozkaz, a zejście na dno
+  // szybu i powrót to stracona minuta — w partiach bota dostawy jedzenia tak się spóźniały, że pielgrzymka się sypała)
+  if (c.bezczynnyOd !== undefined && sim.tick - c.bezczynnyOd >= BUDOWA_SCHODOW.bezczynnyPo
+      && budujSchody(sim, c, naDroge, zamiar, droga, podroz, true)) return;
+  // 4. odpoczywa przy obozie — czeka na rozkaz
+  if (stanPrzyObozie(sim, c, naDroge, droga)) {
+    c.bezczynnyOd ??= sim.tick;
+    zamiar('odpoczywa przy obozie — czeka na rozkaz', Job.STOI, Z);
+    return;
+  }
   if (wkopSieDoSpizarni(sim, c, zamiar)) return;
   c.jx = Math.floor(c.x); c.jy = Math.floor(c.y);
   zamiar('czeka na rozkaz', Job.STOI, Z);
@@ -1225,8 +1249,11 @@ function planPolecenia(sim: Sim, c: Creature, rola: Rola,
   if (p.typ === 'droga') {
     const cz = czoloDrogi(sim);
     if (cz < 0) {
+      // 6.11: rozkaz wydany już po wykopie (sim/polecenia.ts) to rozkaz budowy schodów — trwa, póki trwa budowa;
+      // rozkaz kopania kończy się z ostatnim wykutym kaflem (schody budują potem wolni robotnicy — planRobotnika)
+      if (p.budowa && budujSchody(sim, c, naDroge, zamiar, droga, podroz, false)) { p.x = c.jx; p.y = c.jy; p.prob = 0; return true; }
       c.polecenie = undefined; c.kopieDroge = false;
-      sim.efekt(c.x, c.y, 'mysl', 'droga gotowa');
+      sim.efekt(c.x, c.y, 'mysl', p.budowa && trwaBudowaSchodow(sim) ? 'przy schodach komplet' : 'droga gotowa');
       return false;
     }
     p.x = cz % w.w; p.y = (cz / w.w) | 0;
@@ -2228,6 +2255,73 @@ function doPray(sim: Sim, c: Creature): void {
     sim.pray(c, t);
     c.devotion = Math.min(1, c.devotion + K.modlitwaOddanie);
   } else idz(sim, c, c.jx, c.jy);
+}
+
+/**
+ * 6.11: robotnik idzie do budowy schodów drogi wiernych (sim/budowa-schodow.ts): murarz — na najwyższe stopnie, przy
+ * czole budowy; kołowrót — na posadzkę przy wylocie szybu. `zKublem` — także do kołowrotu przy kopaniu (wolni robotnicy).
+ */
+function budujSchody(sim: Sim, c: Creature,
+  naDroge: (d: number[], x?: number, y?: number) => void,
+  zamiar: (opis: string, job: Job, jt: number) => void,
+  droga: (cel: (x: number, y: number) => boolean, limit: number) => number[] | null,
+  podroz: (d: number[]) => number, zKublem: boolean): boolean {
+  if (rolaPostaci(c) !== 'robotnik') return false;
+  // wolny robotnik idzie do schodów tylko wtedy, gdy przy obozie zostaje inny wolny — ten nosi jedzenie (dawniej
+  // ostatni wolny schodził budować na dno szybu, dostawy szły kilkadziesiąt sekund dłużej, a rycerz zawracał głodny
+  // spod bramy lochu i zostawał za opadłą kratą)
+  if (zKublem && !sim.creatures.some((q) => q !== c && !q.dead && rolaPostaci(q) === 'robotnik' && !q.polecenie && q.job !== Job.SCHODY)) return false;
+  const zad = zadanieBudowy(sim, c, zKublem);
+  if (!zad) return false;
+  const d = droga((x, y) => x === zad.x && y === zad.y, LUD.dostawaLimit);
+  if (!d) return false;
+  naDroge(d, zad.x, zad.y);
+  c.budowa = { odcinek: zad.odcinek, rola: zad.rola, ktory: zad.ktory };
+  const opis = zad.rola === 'murarz' ? 'buduje schody drogi wiernych — osadza kamienne stopnie'
+    : etapOdcinka(sim, zad.odcinek) === 'budowa' ? 'kręci kołowrotem — opuszcza stopnie do budowy schodów'
+    : 'kręci kołowrotem — wyciąga kubłem urobek z szybu';
+  zamiar(opis, Job.SCHODY, podroz(d) + BUDOWA_SCHODOW.zmiana);
+  return true;
+}
+
+/**
+ * 6.11: przy budowie schodów — idzie na posterunek (murarza przesuwa się w górę razem ze schodami) i tam pracuje:
+ * murarz osadza stopnie (młotek), kręcący — kręci kołowrotem; postęp liczy tikBudowySchodow. Wolny robotnik (bez rozkazu)
+ * co chwilę sprawdza, czy ktoś nie głoduje — jedzenie ma pierwszeństwo przed schodami.
+ */
+function doSchody(sim: Sim, c: Creature): void {
+  const b = c.budowa;
+  const p = posterunek(sim, c);
+  const etap = b ? etapOdcinka(sim, b.odcinek) : 'gotowe';
+  if (!b || !p || etap === 'gotowe' || (b.rola === 'murarz' && etap !== 'budowa')) {
+    c.budowa = undefined; c.czynnosc = undefined; c.jt = 0;
+    return;
+  }
+  // wolny robotnik (bez rozkazu): jedzenie ma pierwszeństwo, a gdy przy obozie nie został już żaden inny wolny (resztę
+  // zabrały rozkazy), wraca być tym, który nosi jedzenie — z dna szybu dostawy szły kilkadziesiąt sekund
+  if (!c.polecenie && sim.tick % 120 === c.id % 120
+      && (glodnyDoNakarmienia(sim, c) || !sim.creatures.some((q) => q !== c && !q.dead && rolaPostaci(q) === 'robotnik' && !q.polecenie && q.job !== Job.SCHODY))) {
+    c.czynnosc = undefined; c.jt = 0; c.budowa = undefined; c.bezczynnyOd = undefined;
+    return;
+  }
+  if (naPosterunkuBudowy(sim, c)) {
+    c.czynnosc = b.rola === 'murarz' ? 'buduje' : 'kreci';
+    c.droga = undefined; c.jx = p.x; c.jy = p.y;
+    // kręcący stoi twarzą do kołowrotu (w lewo, nad szybem); murarz — do środka szybu, gdzie staje kamień
+    c.face = b.rola === 'kolowrot' ? -1 : (c.x < sim.world.odcinkiDrogi[b.odcinek].x0 + 2.5 ? 1 : -1);
+    // na schodach i drabinie trzyma się (nie spada); na posadzce po prostu stoi
+    if (!stoi(sim, Math.floor(c.x), Math.floor(c.y))) { c.vy = 0; c.wspina = sim.tick; }
+    return;
+  }
+  c.czynnosc = undefined;
+  if (c.jx !== p.x || c.jy !== p.y) {
+    // schody urosły — posterunek murarza przesunął się w górę: droga od nowa
+    c.jx = p.x; c.jy = p.y; c.droga = undefined;
+    const d = szukajDrogi(sim, c, (_i, x, y) => x === p.x && y === p.y, LUD.dostawaLimit);
+    if (d) { c.droga = d; c.drogaI = 0; c.drogaKopie = false; }
+  }
+  if (c.droga) { const n = nastepnyKafel(sim, c); if (n >= 0) { krok(sim, c, n); return; } c.droga = undefined; }
+  idz(sim, c, p.x, p.y, false);
 }
 
 function doBuild(sim: Sim, c: Creature): void {

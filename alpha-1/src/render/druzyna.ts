@@ -16,6 +16,7 @@ import type { Plate, Obszar } from './plate';
 import { obszarSpisu } from './plate';
 import { rolaPostaci, NAZWA_ROLI_MNOGA, type Rola } from '../sim/lud';
 import { czoloDrogi } from '../sim/pielgrzymka';
+import { trwaBudowaSchodow } from '../sim/budowa-schodow';
 import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
 import { rysujPostac, wysokoscPostaci } from './figury';
 import { przesuniecieX, rozstawTlum } from './lud/rozstep';
@@ -189,6 +190,8 @@ export function rysujDruzyne(
         : { akcja: 'naprawa', tekst: idzie ? 'napraw linę (idzie)' : 'napraw linę wiadra', pilne: !idzie });
     }
     if (robotnicy && czoloDrogi(sim) >= 0) opcje.push({ akcja: 'droga', tekst: 'kop drogę wiernych' });
+    // 6.11: szyb wykopany, schody w budowie — ten sam rozkaz posyła do budowy (sim/budowa-schodow.ts)
+    else if (robotnicy && !sim.rytual.otwarta && trwaBudowaSchodow(sim)) opcje.push({ akcja: 'droga', tekst: 'buduj schody drogi wiernych' });
     if (zaznaczone.some((c) => c.polecenie)) opcje.push({ akcja: 'odwolaj', tekst: 'odwołaj rozkaz' });
     if (zaznaczone.length) opcje.push({ akcja: 'odznacz', tekst: 'odznacz' });
     // etap 3c: plany pomieszczeń — zawsze pod ręką (klawisz B)

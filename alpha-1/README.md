@@ -67,10 +67,9 @@ schody są kręcone, ma się również normalnie obracać”.
     spodem, wytarty środek stopni;
   - barwa kamienia idzie za warstwą skały (płytka cieplejsza, głęboka chłodniejsza); z tyłu spirali ciemniej;
   - przód ściany szybu jest ścięty (przekrój), jak wszędzie w grze.
-- **Budowa:** schody widać tylko w wykutych kaflach (rysunek przycięty do kafli ze schodami). Wykuty kafel odsłania
-  kawałek stopni, słupa i ściany: sypią się z niego okruchy skały, unosi się pył, a świeżo ciosany kamień przez kilka
-  sekund jest jaśniejszy. Schody powstają z rozkuwanej skały, nie wyrastają z pustki. Kafel wykuty poza kadrem nie
-  sypie okruchami, gdy kamera na niego najedzie.
+- **Budowa:** schody się stawia — patrz „Budowa schodów: wykop, drabina, rusztowanie, kołowrót” niżej. Dawniej
+  wykuty kafel odsłaniał kawałek gotowych stopni. Użytkownik: „to mało realistyczne”. Przy kopaniu zostały okruchy
+  i pył z wykutego kafla.
 - **Chód po schodach:**
   - postać idzie po spirali (`naSchodach` w `schody.ts` → `rozstep.ts`): w poziomie po linii stopni, w pionie stopień po
     stopniu;
@@ -111,6 +110,58 @@ schody są kręcone, ma się również normalnie obracać”.
     gruz w lochu i bot przy kotle.
 - **Wydajność:** cały odcinek rysuje się raz na płótno (na nowo po wykuciu kafla albo zmianie przybliżenia o ~19%).
   W klatce idzie tylko jego kawałek w kadrze, plus okruchy i świeży kamień.
+
+## Budowa schodów: wykop, drabina, rusztowanie, kołowrót (6.11)
+Użytkownik: „Stwórz pełny system tworzenia tych schodów, czyli rusztowania, liny, drabiny itp., nie kopanie blok po
+bloku — to mało realistyczne”. Każdy odcinek szybu drogi wiernych powstaje teraz w dwóch etapach
+(`src/sim/budowa-schodow.ts`; liczby — `BUDOWA_SCHODOW` w `src/nastawy/loch.ts`; rysunek —
+`src/render/budowa-schodow.ts` i `src/render/schody.ts`).
+- **Wykop:**
+  - robotnicy kują szyb od góry, jak dotąd (rozkaz „Kop drogę wiernych”);
+  - w wykutym szybie nie ma jeszcze stopni — to surowa studnia;
+  - do dna schodzi się po drabinie opartej o tylną ścianę. Drabina ma dwie żerdzie i szczeble, a jej odcinki co
+    ~6 kafli są nadstawiane i wiązane liną. Rośnie za kopaczami i wystaje nad posadzkę przy wylocie;
+  - przy wylocie stoi kołowrót: słup na posadzce, wysięgnik z blokiem nad środkiem szybu i wał z korbą;
+  - jeśli ktoś przy nim kręci, kubeł jeździ: w dół pusty, w górę pełny urobku, a u góry wysypuje się na hałdę, która
+    rośnie z wykopem.
+- **Budowa** (gdy odcinek jest wykopany do dna; kronika to notuje):
+  - schody stawia się od dołu, stopień po stopniu, każdy na poprzednim. Każdy ciosany stopień niesie kawałek słupa,
+    jak w prawdziwych schodach kręconych;
+  - kołowrót opuszcza paletę z 4 stopniami powoli, przez drugą połowę osadzania poprzedniej, i stawia ją na pomoście
+    rusztowania;
+  - murarze biorą z palety kamienie po kolei, przenoszą na miejsce i osadzają na zaprawie (młotki). W tym czasie pusty
+    hak wraca w górę;
+  - rusztowanie stoi nad najwyższym stopniem: stojaki przy ścianie, rygle, zastrzały na krzyż i pomost z desek.
+    Przestawia się je w górę co 2 kafle, a drabina sięga do pomostu;
+  - mur klatki rośnie rząd ciosów nad najwyższy stopień (wierzch nierówny). Słup kończy się bębnem widzianym z wierzchu;
+  - po ostatnim stopniu rusztowanie, drabina i kołowrót znikają (kronika), a na górze staje głowica słupa.
+- **Kto i jak szybko:**
+  - przy czole budowy mieści się 2 murarzy, przy kołowrocie 1;
+  - stopień to 140 tików pracy jednego murarza, czyli przy pełnej obsadzie ~0,6 s. Pierwszy odcinek trwa ok. 1 min,
+    drugi ok. 3 min;
+  - bez nikogo przy kołowrocie murarze sami opuszczają kamienie: ×0,6.
+- **Kto buduje:**
+  - rozkaz „Buduj schody drogi wiernych” (ten sam przycisk co „Kop drogę wiernych”, gdy kopać już nie ma czego) posyła
+    zaznaczonych do budowy: najpierw murarze, potem kołowrót;
+  - robotnik, który od 30 s nie ma co robić, idzie pomóc sam — ale tylko wtedy, gdy przy obozie zostaje inny wolny,
+    który nosi jedzenie (także w trakcie pracy). Jedzenie ma pierwszeństwo: co sekundę sprawdza, czy ktoś nie głoduje;
+  - przy kopaniu taki robotnik staje przy kołowrocie i wyciąga kubłem urobek;
+  - rozkaz kopania kończy się z ostatnim wykutym kaflem, jak dawniej.
+- **Przejście:**
+  - szybem chodzi się od razu po wykopaniu: po drabinie, w obie strony, w tym samym tempie co po schodach. Budowa nie
+    wstrzymuje więc pielgrzymki;
+  - na drabinie postać wisi na rękach i wspina się szczebel po szczeblu, twarzą do ściany;
+  - przy pomoście nad najwyższym stopniem płynnie przechodzi z drabiny na stopnie.
+- **Poprawki przy okazji:**
+  - wykrywanie zakleszczeń kasowało zajęcie każdemu, kto stał w miejscu. Kręcący kołowrotem tracił robotę po ~2 s;
+    teraz praca na posterunku się nie liczy;
+  - dół schodów pierwszego odcinka stoi w komnacie z kotłem. Komnata rysowała się po schodach i zasłaniała je, więc
+    teraz schody i budowa rysują się po lochu;
+  - płótno schodów rysuje się kawałkami po 12 rzędów. Nowy stopień przerysowuje tylko swój kawałek, a całe płótno
+    drugiego odcinka (ponad 3000 px) kosztowało kilkadziesiąt ms.
+- **Balans** (bot, styl „rozsądny”, 96 partii): z budową 92 wygrane, bez niej 90; partia trwa tyle samo (~15 min).
+  W partiach bota schody rosną w tle — pierwszy odcinek zwykle staje cały.
+- **Atlas:** tablica „Schody” opisuje drabinę, kołowrót i budowę od dołu.
 
 ## Droga wiernych z zakrętem, komnata z kotłem, loch za stalową bramą, modlitwa za innych (6.11)
 Użytkownik: droga wiernych „ma być zakręcona” — w dół, w bok przez „stare pomieszczenie z pajęczynami” z kotłem, znowu

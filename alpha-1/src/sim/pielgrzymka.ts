@@ -92,8 +92,9 @@ function osiagalneZBazy(sim: Sim, hx: number, hy: number): void {
  * Droga wiernych jako szyb (propozycja Pawła, 25.10): szeroki szyb przy lewej ścianie sali — od 6.11 z zakrętem:
  * pierwszy odcinek w dół do starej komnaty z kotłem, komnatą w bok, drugi odcinek w dół na przedproże, a stamtąd
  * przez stalową bramę posadzką lochu do przedsionka. Kuje się go od wnęki w dół, rzędami (najpierw cały pierwszy
- * odcinek, potem drugi); w wykutych kaflach same pojawiają się schody (schodyDrogi), więc chodzi się nim w obie
- * strony. Geometria — world.odcinkiDrogi, komnata, przedproże i brama (world.ts: ukladDrogi).
+ * odcinek, potem drugi); wykutym szybem chodzi się w obie strony (schodyDrogi — drabiną, póki nie stoją schody, które
+ * stawia się od dołu po wykopaniu odcinka: sim/budowa-schodow.ts). Geometria — world.odcinkiDrogi, komnata, przedproże
+ * i brama (world.ts: ukladDrogi).
  */
 function planSzybu(sim: Sim, klanId: number): PlanDrogi | null {
   const w = sim.world;
@@ -127,9 +128,11 @@ function planSzybu(sim: Sim, klanId: number): PlanDrogi | null {
 }
 
 /**
- * Schody drogi wiernych: w każdym pustym kaflu odcinka szybu połączonym od góry (od szczytu odcinka w dół, kolumnami,
- * do pierwszej litej skały) — także w jaskiniach, które szyb przecina, w komnacie z kotłem i na przedprożu. Liczone
- * z mapy: zawał zasypuje schody, wykuty kafel od razu je dostaje (digTile woła to po każdym kaflu szybu).
+ * Przejście szybem drogi wiernych (`world.schody` — chodzi się nim w górę i w dół, jak po linie): w każdym pustym
+ * kaflu odcinka szybu połączonym od góry (od szczytu odcinka w dół, kolumnami, do pierwszej litej skały) — także
+ * w jaskiniach, które szyb przecina, w komnacie z kotłem i na przedprożu. Liczone z mapy: zawał je zasypuje, wykuty
+ * kafel od razu je dostaje (digTile woła to po każdym kaflu szybu). 6.11: to tylko przejście — po drabinie albo po
+ * stopniach; same schody stawia się od dołu po wykopaniu odcinka (sim/budowa-schodow.ts, render/schody.ts).
  */
 export function schodyDrogi(sim: Sim): void {
   const w = sim.world;

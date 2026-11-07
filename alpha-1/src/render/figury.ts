@@ -10,7 +10,8 @@ import type { Camera } from './camera';
 import { ustawienia } from '../core/settings-store';
 import { BUDOWA, MAKS_KROKOW_NA_SEKUNDE, type Budowa } from '../nastawy/wyglad/postacie';
 import { postepOdmowy } from './lud/odmowa';
-import { przesuniecieX, przesuniecieY, zwrotNaRysunku, szerokoscNaRysunku, chodNaSchodach, rozstawTlum, wTle, zTyluSchodow } from './lud/rozstep';
+import { przesuniecieX, przesuniecieY, zwrotNaRysunku, szerokoscNaRysunku, chodNaSchodach, rozstawTlum, wTle, zTyluSchodow, naDrabinie } from './lud/rozstep';
+import { BUDOWA_SCHODOW } from '../nastawy/loch';
 import { stopniePodStopami, zaslonNaSchodach } from './schody';
 import { swiatloDla, ustawSwiatlo } from './lud/oswietlenie';
 import { kropla } from './kruszce';
@@ -74,6 +75,8 @@ function ruch(c: Creature, czas: number): Ruch {
   // następny (render/schody.ts: stopyNaStopniu); pod górę faza też rośnie — dawniej szła wstecz i nogi wchodziły tyłem
   const sch = chodNaSchodach(c);
   if (sch) { const f = (sch.kier < 0 ? -1 : 1) * sch.stopien / 2 + 0.25; r.faza = ((f % 1) + 1) % 1; }
+  // 6.11: na drabinie ręce i nogi idą ze szczeblami — pełny cykl na dwa szczeble
+  else if (naDrabinie(c)) { const f = (c.y + 1) / (2 * BUDOWA_SCHODOW.szczebel); r.fazaPion = ((f % 1) + 1) % 1; }
   return r;
 }
 
@@ -104,7 +107,7 @@ function krokPostaci(c: Creature): number {
 
 export type Czynnosc =
   | 'stoi' | 'idzie' | 'biegnie' | 'wspina' | 'spada'
-  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia' | 'zaklada' | 'skleja';
+  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia' | 'zaklada' | 'skleja' | 'kreci';
 
 /** Co widać: czynność wynika z zajęcia, ale i z tego, czy stworzenie w ogóle się rusza. */
 /** Kuje kafel w tej chwili (ostatnie uderzenie najwyżej 0,2 s temu). */
@@ -131,6 +134,8 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   if (c.vy > 0.3) return 'spada';
   // Alpha: odmówił rozkazu — stojąc, kręci głową i rozkłada ręce (render/lud/odmowa.ts)
   if (r.v < 0.6 && postepOdmowy(sim, c, czas) !== null) return 'odmawia';
+  // 6.11, budowa schodów: na drabinie w surowym szybie — wspina się (stoi przy pracy: kręci, osadza — niżej)
+  if (naDrabinie(c) && !c.czynnosc) return 'wspina';
   const lx = Math.floor(c.x), ly = Math.floor(c.y);
   // droga wiernych: po schodach szyb się idzie, nie wspina
   const naSchodach = sim.world.inb(lx, ly) && sim.world.schody[sim.world.idx(lx, ly)] === 1;

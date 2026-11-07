@@ -30,6 +30,8 @@ interface Rozstep {
    * i zejściu), gdzie na niej jest (przesunięcie w poziomie i pionie, „w tle” za słupem) i w którą stronę idzie.
    */
   sch: number; schCel: number; hx: number; hy: number; hTlo: number; zw: number; px: number;
+  /** 6.11, budowa schodów: na stopniach czy na drabinie w surowym szybie (render/schody.ts: naSchodach) */
+  tryb: 'schody' | 'drabina';
   /**
    * Na spirali: numer stopnia pod stopami (ciągły) i z poprzedniej klatki, kąt na spirali, kierunek (1 — schodzi,
    * −1 — wchodzi, 0 — stoi; od kiedy stoi), szerokość sylwetki (1 — bokiem do widza, mniej — gdy obraca się w głąb).
@@ -94,13 +96,19 @@ export function szerokoscNaRysunku(c: Creature): number {
 /** 6.11: na schodach kręconych — czy postać jest z tyłu spirali (za płaszczyzną słupa); rysuje się ją przed innymi. */
 export function zTyluSchodow(c: Creature): boolean {
   const s = stan.get(c);
-  return !!s && s.sch > 0.5 && Math.cos(s.kat) > 0;
+  return !!s && s.sch > 0.5 && s.tryb === 'schody' && Math.cos(s.kat) > 0;
 }
 
 /** 6.11: chód po schodach kręconych — numer stopnia pod stopami (ciągły) i kierunek (1 — w dół, −1 — w górę, 0 — stoi). */
 export function chodNaSchodach(c: Creature): { stopien: number; kier: number } | null {
   const s = stan.get(c);
-  return s && s.sch > 0.5 ? { stopien: s.stopien, kier: s.kier } : null;
+  return s && s.sch > 0.5 && s.tryb === 'schody' ? { stopien: s.stopien, kier: s.kier } : null;
+}
+
+/** 6.11, budowa schodów: czy postać wisi na drabinie w surowym szybie (wspina się — render/figury.ts). */
+export function naDrabinie(c: Creature): boolean {
+  const s = stan.get(c);
+  return !!s && s.sch > 0.5 && s.tryb === 'drabina';
 }
 
 /** Czy postać może zejść z miejsca na rysunku — nie w locie, nie na linie, nie leżąc. */
@@ -145,7 +153,7 @@ export function rozstawTlum(sim: Sim, cam: Camera, czas: number, wysokosc: (c: C
     if (c.x < left || c.x > right || c.y < top || c.y > bottom) { stan.delete(c); continue; }
     let s = stan.get(c);
     if (!s) {
-      s = { dx: 0, cel: 0, tlo: 0, celTlo: 0, lo: c.x, hi: c.x, t: czas, nowy: true, sch: 0, schCel: 0, hx: 0, hy: 0, hTlo: 0, zw: c.face >= 0 ? 1 : -1, px: c.x,
+      s = { dx: 0, cel: 0, tlo: 0, celTlo: 0, lo: c.x, hi: c.x, t: czas, nowy: true, sch: 0, schCel: 0, hx: 0, hy: 0, hTlo: 0, zw: c.face >= 0 ? 1 : -1, px: c.x, tryb: 'schody',
         stopien: 0, pStopien: NaN, kat: 0, kier: 0, ruchT: -1e9, szer: 1 };
       stan.set(c, s);
     }
@@ -156,6 +164,7 @@ export function rozstawTlum(sim: Sim, cam: Camera, czas: number, wysokosc: (c: C
     if (ns) {
       s.hx = ns.dx; s.hy = ns.dy; s.hTlo = ns.tlo; s.lo = c.x; s.hi = c.x;
       s.stopien = ns.stopien; s.kat = ns.kat;
+      if (ns.tryb !== s.tryb) { s.tryb = ns.tryb; s.pStopien = NaN; }
       continue;
     }
     s.pStopien = NaN;
@@ -190,7 +199,10 @@ export function rozstawTlum(sim: Sim, cam: Camera, czas: number, wysokosc: (c: C
     if (s.sch < 1e-3) s.sch = 0;
     // na spirali: kierunek (schodzi czy wchodzi), zwrot i szerokość sylwetki z kierunku marszu po stopniach —
     // schodzący idzie w stronę rosnącego kąta (cos — składowa marszu w poziomie ekranu), wchodzący odwrotnie
-    if (s.schCel > 0) {
+    if (s.schCel > 0 && s.tryb === 'drabina') {
+      // na drabinie: twarzą do ściany szybu (drabina stoi z tyłu, odrobinę w lewo) — lekko bokiem
+      s.zw = -1; s.szer = 0.82; s.kier = 0;
+    } else if (s.schCel > 0) {
       if (!Number.isNaN(s.pStopien)) {
         const ds = s.stopien - s.pStopien;
         if (Math.abs(ds) > 0.003) { s.kier = ds > 0 ? 1 : -1; s.ruchT = czas; }

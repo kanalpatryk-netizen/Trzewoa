@@ -54,6 +54,7 @@ import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { scianaKrypty, tynkSwiata } from '../../render/fresk';
 import { rysujDrogePielgrzymow, rysujPlanDrogi } from '../../render/pielgrzymka';
 import { rysujSchodyDrogi } from '../../render/schody';
+import { rysujBudoweSchodow } from '../../render/budowa-schodow';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
@@ -1382,14 +1383,17 @@ export class EkranGry implements Ekran {
     rysujKucie(ctx, sim, cam, teraz);
     // etap 3c: wyposażenie gotowych pomieszczeń (stół, kowadło, posłania) — w mroku ginie jak skała
     this.pokoje.rysujWnetrza(ctx, sim, cam, teraz);
-    // droga wiernych: schody kręcone wykute w skale — tylko w wykutych kaflach (ciemność je zakrywa)
-    rysujSchodyDrogi(ctx, sim, cam, teraz);
     // etap 3d: ołtarz na środku sali — kamień i drewno (świece i smuga dnia — nad mrokiem)
     this.oltarz.rysuj(ctx, sim, cam);
     // etap 3e: ruiny — mury, łuki, belki, zabytek na posadzce (światło zabytku — nad mrokiem)
     this.ruiny.rysuj(ctx, sim, cam);
     // 6.11: loch za stalową bramą, przedproże i stara komnata z kotłem — mury, filary, pajęczyny, kocioł, krata
     rysujLoch(ctx, sim, cam, teraz);
+    // droga wiernych: schody kręcone — tylko to, co już zbudowano, w wykutych kaflach (ciemność je zakrywa); po lochu,
+    // bo dół schodów stoi w komnacie z kotłem i na przedprożu, a ich tylna ściana ma być za schodami, nie na nich
+    rysujSchodyDrogi(ctx, sim, cam, teraz);
+    // 6.11: budowa schodów — drabina, rusztowanie, kołowrót z kubłem urobku albo opuszczanym stopniem, hałda
+    rysujBudoweSchodow(ctx, sim, cam, teraz);
     // katedra na powierzchni nad szybem ze światłem — kamień (szkło rozety i płomienie świec — nad mrokiem)
     rysujKatedre(ctx, sim, cam);
     smugiSwiatla(ctx, sim, cam, teraz);

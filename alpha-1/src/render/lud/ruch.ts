@@ -323,6 +323,19 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
       p.wysilek = 0.45 + szarp * 0.4;
       break;
     }
+    case 'kreci': {
+      // 6.11: kręci korbą kołowrotu nad szybem drogi wiernych (render/budowa-schodow.ts) — obie dłonie na rączce korby,
+      // która chodzi w kółko przed nim na wysokości pasa; nogi w rozkroku, tułów pracuje z korbą (w dół — z wysiłkiem)
+      const q = (czas * 0.0042 + id * 0.7) % TAU;
+      const kx = 0.3, ky = 0.2, r = 0.075;
+      siegnij(p, 'A', kx + r * cos(q), ky + r * sin(q));
+      siegnij(p, 'B', kx - 0.02 + r * cos(q), ky + 0.01 + r * sin(q));
+      p.uA = 0.32; p.kA = 0.34; p.sA = 0.05; p.uB = -0.16; p.kB = 0.18; p.sB = -0.1;
+      p.tulow = 0.2 + 0.07 * sin(q); p.glowa = 0.14 + 0.04 * sin(q);
+      p.wysilek = 0.35 + 0.3 * Math.max(0, sin(q));
+      tryb.narzedzie = null;
+      break;
+    }
     case 'je': {
       p.uA = 1.45; p.kA = 2.35; p.sA = 0; p.uB = 1.2; p.kB = 2.25; p.sB = -0.3; p.tulow = 0.26; p.glowa = 0.12;
       const gryz = frac(czas * 0.0011 + id * 0.21);

@@ -98,3 +98,29 @@ export const SCHODY = {
   /** Świeżo wykuty kafel: ile ms sypią się okruchy i pył, ile ms kamień jest jaśniejszy (świeży). */
   okruchyMs: 950, swiezyMs: 7000,
 };
+
+/**
+ * Budowa schodów drogi wiernych (sim/budowa-schodow.ts, decyzja użytkownika: schody powstają z rusztowaniem, liną
+ * i drabiną, nie wyłaniają się kafel po kaflu przy kopaniu). Czas w tikach (120 = sekunda).
+ */
+export const BUDOWA_SCHODOW = {
+  /**
+   * Tików pracy jednego murarza na stopień (kołowrót z obsługą opuszcza kamienie) — dwóch murarzy: ~0,6 s na stopień
+   * (pierwszy odcinek ~1 min, drugi ~3 min przy pełnej obsadzie). Kołowrót opuszcza naraz paletę z 4 stopniami.
+   */
+  tikowNaStopien: 140,
+  /** Ilu murarzy mieści się przy czole budowy (na najwyższych stopniach). */
+  murarzy: 2,
+  /** Bez nikogo przy kołowrocie murarze sami opuszczają kamień — tyle razy wolniej idzie. */
+  bezKolowrotu: 0.6,
+  /** Kurs kubła z urobkiem przy kopaniu (w dół i w górę) — tików. */
+  kubelTikow: 420,
+  /** Zmiana przy budowie (tików pracy, zanim robotnik znów rozejrzy się, co robić — jedzenie ma pierwszeństwo). */
+  zmiana: 1800,
+  /** Wolny robotnik idzie pomóc przy schodach dopiero po tylu tikach bez zajęcia (i gdy przy obozie zostaje inny wolny). */
+  bezczynnyPo: 30 * 120,
+  /** Rysunek: drabina — kąt na ścianie szybu (0 — tył, ujemny — w lewo) i odstęp szczebli (kafle). */
+  drabinaKat: -0.5, szczebel: 0.42,
+  /** Rysunek: rusztowanie — wysokość nad czołem budowy, odstęp pomostów, co ile kafli się je przestawia (kafle). */
+  rusztowanie: 5, pomost: 2.2, przestawianie: 2,
+};

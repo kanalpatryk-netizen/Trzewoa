@@ -29,6 +29,7 @@ import { T } from './tiles';
 import { rolaPostaci } from './lud';
 import { szukajDrogi, szukajKopiac, kosztKuciaLudu, budzetDrog, nowyTik, stoi, podDroga, blokWiadra } from './droga';
 import { czoloDrogi, nieWykopane } from './pielgrzymka';
+import { zadanieBudowy, trwaBudowaSchodow } from './budowa-schodow';
 import { zapisz, kto } from './dziennik';
 import { kruszecKafla, type RodzajKruszcu } from './kruszce';
 import { kafleDoKucia, siegaPlanu, miejsceWPom, type Pomieszczenie } from './pomieszczenia';
@@ -61,6 +62,8 @@ export interface Polecenie {
   zaklinaj?: boolean;
   /** 6.11: pobożny zostaje, gdzie stoi, i modli się za innych — leczy i błogosławi tych wokół (sim/blogoslawienstwo.ts). */
   zaInnych?: boolean;
+  /** 6.11: „kop drogę wiernych” wydane po wykopie — robotnik buduje schody (sim/budowa-schodow.ts), póki trwa budowa. */
+  budowa?: boolean;
   /**
    * Alpha, etap 3c: pomieszczenie (sim/pomieszczenia.ts) — plan do wykucia („kop”), warsztat albo kuźnia („praca”),
    * sypialnia („sen”); etap 3f: kuźnia, do której poszedł rycerz po zbroję z wieszaka („zbroja”)
@@ -131,6 +134,7 @@ function przerwij(sim: Sim, c: Creature): void {
   c.kopieDroge = false;
   c.modliPrzyObozie = false;
   c.posterunek = undefined;
+  c.budowa = undefined; c.bezczynnyOd = undefined;
   c.droga = undefined; c.drogaKopie = false;
   c.jt = 0; c.zamiarDo = sim.tick;
 }
@@ -146,7 +150,21 @@ export function wydajPolecenie(sim: Sim, c: Creature, typ: 'idz' | 'droga', x: n
   if (typ === 'droga') {
     if (rola !== 'robotnik') return odmow(sim, c, 'kopią tylko robotnicy');
     const cz = czoloDrogi(sim);
-    if (cz < 0) return odmow(sim, c, sim.rytual.otwarta ? 'skorupa już otwarta' : sim.planDrogi ? 'droga wiernych już wykopana' : 'nie wiem, którędy kopać');
+    if (cz < 0) {
+      // 6.11: wykopana — rozkaz przechodzi w budowę schodów (sim/budowa-schodow.ts), póki trwa
+      const zad = sim.planDrogi && !sim.rytual.otwarta ? zadanieBudowy(sim, c, false) : null;
+      if (!zad) {
+        return odmow(sim, c, sim.rytual.otwarta ? 'skorupa już otwarta' : !sim.planDrogi ? 'nie wiem, którędy kopać'
+          : trwaBudowaSchodow(sim) ? 'przy schodach nie ma już miejsca' : 'droga wiernych już gotowa');
+      }
+      const przyBudowie = (xx: number, yy: number) => Math.abs(xx - zad.x) <= 1 && Math.abs(yy - zad.y) <= 1;
+      if (!drogaTeraz(sim, c, przyBudowie, P.szukanieDrogi)) return odmow(sim, c, 'nie dojdę do schodów');
+      przerwij(sim, c);
+      c.polecenie = { typ: 'droga', x: zad.x, y: zad.y, od: sim.tick, budowa: true };
+      c.odmowa = undefined;
+      zapisz(sim, 'praca', `${kto(sim, c)}: rozkaz — buduj schody drogi wiernych`, c.x, c.y);
+      return null;
+    }
     // dojdzie na miejsce tuż przy czole albo przekopie się do niego — inaczej odmawia od razu
     // (z dna jaskini pod czołem, kilkadziesiąt kafli niżej, nie wejdzie: lud nie wspina się po ścianach)
     // (na drodze w dół dalszy kawałek kreski też się liczy — kto zszedł niżej, kuje to, do czego dojdzie;

@@ -153,8 +153,9 @@ export const SWIAT = {
     /**
      * Droga wiernych (propozycja Pawła, 25.10): nie wąski korytarz, tylko szyb jak pomieszczenie — tylu kafli szeroki,
      * od lewej krawędzi sali w dół (6.11: z zakrętem przez komnatę z kotłem — nastawy/loch.ts, LOCH.zakret). U jego szczytu, przy podłodze sali, od początku jest pusta
-     * wnęka (tyle rzędów) — tam zaczyna się kopać. W każdym wykutym kaflu szybu same pojawiają się schody (chodzi się
-     * nimi w górę i w dół), a kafle szybu kuje się `kucieSzybciej` razy szybciej niż zwykłą skałę — szyb jest szerszy
+     * wnęka (tyle rzędów) — tam zaczyna się kopać. Wykutym szybem chodzi się w górę i w dół po drabinie, a schody
+     * stawia się w nim od dołu, gdy odcinek jest wykopany (6.11: sim/budowa-schodow.ts); kafle szybu kuje się
+     * `kucieSzybciej` razy szybciej niż zwykłą skałę — szyb jest szerszy
      * od dawnej drogi (ok. 335 kafli; szyb 5 × 178 ≈ 890), a zejście ma trwać tyle co przedtem.
      */
     drogaWiernych: { szer: 5, wneka: 2, kucieSzybciej: 2.5 },
