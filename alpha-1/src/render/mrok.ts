@@ -22,6 +22,17 @@ import { swiatlaLochu, gestyMrok } from './loch';
  */
 let warstwa: HTMLCanvasElement | null = null;
 let plamka: HTMLCanvasElement | null = null;
+/** Kiedy (czas klatki) mrok narysowano ostatnio — warstwę z innej klatki pomija się (render/schody.ts). */
+let narysowanyT = NaN;
+
+/**
+ * 6.11: warstwa mroku tej klatki (płótno w skali `k` ekranu) — to, co po mroku rysuje się z powrotem na świat
+ * (słup i stopnie schodów kręconych przed postacią: render/schody.ts), ciemnieje nią tak samo jak reszta.
+ * Null — w tej klatce mroku nie ma (wyłączony, tryb „bez ciemności”).
+ */
+export function warstwaMroku(teraz: number): { plotno: HTMLCanvasElement; k: number } | null {
+  return warstwa && narysowanyT === teraz ? { plotno: warstwa, k: MROK.skala } : null;
+}
 
 /** Miękka plama światła: biała w środku, wygasa ku brzegom. Rysowana „destination-out” wycina ciemność. */
 function plamaSwiatla(): HTMLCanvasElement {
@@ -147,6 +158,7 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   g.globalAlpha = 1;
   g.globalCompositeOperation = 'source-over';
   ctx.drawImage(warstwa, 0, 0, cam.vw, cam.vh);
+  narysowanyT = teraz;
   // żar kuźni na ścianach: ciepła, pomarańczowa poświata nad mrokiem (drga razem z ogniem)
   for (const p of sim.pomieszczenia) {
     if (!p.gotowe || p.rodzaj !== 'kuznia') continue;

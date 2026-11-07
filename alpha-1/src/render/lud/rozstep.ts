@@ -91,6 +91,12 @@ export function szerokoscNaRysunku(c: Creature): number {
   return s ? 1 + (s.szer - 1) * s.sch : 1;
 }
 
+/** 6.11: na schodach kręconych — czy postać jest z tyłu spirali (za płaszczyzną słupa); rysuje się ją przed innymi. */
+export function zTyluSchodow(c: Creature): boolean {
+  const s = stan.get(c);
+  return !!s && s.sch > 0.5 && Math.cos(s.kat) > 0;
+}
+
 /** 6.11: chód po schodach kręconych — numer stopnia pod stopami (ciągły) i kierunek (1 — w dół, −1 — w górę, 0 — stoi). */
 export function chodNaSchodach(c: Creature): { stopien: number; kier: number } | null {
   const s = stan.get(c);

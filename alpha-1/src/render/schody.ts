@@ -6,6 +6,7 @@ import { SURFACE_Y } from '../sim/world';
 import { SWIAT } from '../nastawy/swiat';
 import { SCHODY as S } from '../nastawy/loch';
 import { wolnoRuszac } from './nastroj';
+import { warstwaMroku } from './mrok';
 
 /**
  * SCHODY DROGI WIERNYCH (6.11, decyzja użytkownika: dawne schody — zygzak biegów z poręczą na słupkach — „były
@@ -19,7 +20,10 @@ import { wolnoRuszac } from './nastroj';
  *  - Schody widać tylko w kaflach, które robotnicy już wykuli: wykuty kafel odsłania kawałek stopni i słupa, z kafla
  *    sypią się okruchy i pył, a świeżo ciosany kamień jest przez chwilę jaśniejszy — schody powstają z rozkuwanej
  *    skały, nie wyrastają z pustki.
- *  - Postacie idą po spirali (render/lud/rozstep.ts: naSchodach), za słupem — przygaszone.
+ *  - Postacie idą po spirali (render/lud/rozstep.ts: naSchodach), stopa po stopniu: na niższy (wyższy) stopień
+ *    przechodzą przy jego nosie. Pod stopami cień na stopnicy (stopniePodStopami), a to, co leży bliżej widza
+ *    (słup, gdy postać jest za nim, i stopnie po drugiej stronie spirali), rysuje się na niej (zaslonNaSchodach) —
+ *    postać znika za słupem, zamiast sunąć po wierzchu rysunku.
  * Rysunek przed mrokiem — ciemność zakrywa schody jak skałę. Placeholder do podmiany na grafikę.
  */
 
@@ -313,7 +317,13 @@ function narysujOdcinek(sim: Sim, o: Prost, z: number, podpis: number): Rysunek 
     rysujStopien(ctx, cam, sp, st, kol(st.y), z, szczegoly);
   }
   if (!slup) rysujSlup(ctx, cam, sp, sp.ys, sp.ye, kol, z, szczegoly);
-  // cokół słupa na posadzce i głowica u góry odcinka
+  rysujCokol(ctx, cam, sp, kol, z);
+  ctx.restore();
+  return rys;
+}
+
+/** Cokół słupa na posadzce i głowica u góry odcinka. */
+function rysujCokol(ctx: CanvasRenderingContext2D, cam: Camera, sp: Spirala, kol: (y: number) => RGB, z: number): void {
   const baza = (yy: number, wys2: number, szer2: number) => {
     const k = kol(yy);
     const x0 = cam.toScreenX(sp.c - sp.rn - szer2), x1 = cam.toScreenX(sp.c + sp.rn + szer2);
@@ -322,8 +332,11 @@ function narysujOdcinek(sim: Sim, o: Prost, z: number, podpis: number): Rysunek 
   };
   baza(sp.ye - 0.35, 0.35, 0.16);
   baza(sp.ys, 0.22, 0.1);
-  ctx.restore();
-  return rys;
+}
+
+/** Przybliżenie płótna odcinka — co ~19% (kamera, która płynnie zmienia przybliżenie, nie rysuje odcinka co klatkę). */
+function zoomPlotna(z: number): number {
+  return Math.pow(2, Math.round(Math.log2(z) * 4) / 4);
 }
 
 function rysujOdcinek(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number, o: Prost, n: number): void {
@@ -337,8 +350,7 @@ function rysujOdcinek(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, tera
   // to, co stoi — z płótna odcinka (na nowo, gdy wykuto kafel albo zmieniło się przybliżenie)
   let lista = rysunki.get(w);
   if (!lista) { lista = []; rysunki.set(w, lista); }
-  // (przybliżenie płótna co ~19% — kamera, która płynnie zmienia przybliżenie, nie rysuje odcinka co klatkę)
-  const zp = Math.pow(2, Math.round(Math.log2(z) * 4) / 4);
+  const zp = zoomPlotna(z);
   let rys = lista[n];
   if (!rys || rys.z !== zp || rys.podpis !== podpisy[n]) {
     const nowy = narysujOdcinek(sim, o, zp, podpisy[n]);
@@ -400,19 +412,33 @@ function rysujOdcinek(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, tera
 export interface NaSchodach {
   /** przesunięcie od miejsca w symulacji: w poziomie, w pionie (stopnie i rzut z góry) — kafle */
   dx: number; dy: number;
-  /** 0..1 — o ile jest „w tle”: z tyłu spirali, najmocniej za słupem */
+  /** 0..1 — o ile jest „w tle”: z tyłu spirali, w cieniu słupa i ścian (zasłania ją zaslonNaSchodach) */
   tlo: number;
   /** numer stopnia pod stopami (ciągły — ułamek to droga do następnego) */
   stopien: number;
   /** kąt na spirali (0 — tył szybu, π/2 — prawa ściana, π — przód) */
   kat: number;
+  /** odcinek drogi i jego spirala */
+  odcinek: Prost; sp: Spirala;
 }
 
-/** Wysokość stóp na rysunku: stoi na stopniu, a gdy stopa sięga następnego, ciało przenosi się na niego (wygładzone). */
+/**
+ * Pół okna przejścia na sąsiedni stopień (w stopniach): ciało przenosi się przy nosie stopnia, od `PRZEJSCIE` przed
+ * nim do `PRZEJSCIE` za nim.
+ */
+const PRZEJSCIE = 0.2;
+
+/**
+ * Wysokość stóp na rysunku (w stopniach): postać stoi na stopnicy, nad którą jest — stopień n leży między kątami
+ * n i n+1 — a na niższy (idąc w dół) albo wyższy (w górę) przenosi się przy nosie stopnia, gdy stopa staje na
+ * następnym (render/figury.ts: uderzenie pięty w takt nosów). Dawniej ciało opadało w połowie stopnicy: stopy
+ * zapadały się w płytę, na której stała postać, i wyglądała, jakby lewitowała obok stopni (uwaga użytkownika).
+ */
 function stopyNaStopniu(s: number): number {
-  const n = Math.floor(s), f = s - n;
-  const t = Math.max(0, Math.min(1, (f - 0.3) / 0.4));
-  return n + t * t * (3 - 2 * t);
+  const q = s + PRZEJSCIE, n = Math.floor(q), f = q - n;
+  if (f >= 2 * PRZEJSCIE) return n;
+  const t = f / (2 * PRZEJSCIE);
+  return n - 1 + t * t * (3 - 2 * t);
 }
 
 /**
@@ -435,10 +461,115 @@ export function naSchodach(sim: Sim, c: Creature): NaSchodach | null {
   const yStopien = sp.ys + stopyNaStopniu(st) * h;
   const th = katSpirali(sp, stopy);
   const x = sp.c + S.linia * Math.sin(th), glebia = S.linia * Math.cos(th);
-  const zaSlupem = glebia > 0 && Math.abs(x - sp.c) < sp.rn + 0.32;
   return {
     dx: x - c.x, dy: (yStopien - stopy) - S.ukos * glebia,
-    tlo: glebia > 0 ? (zaSlupem ? 0.85 : 0.12 + 0.3 * glebia / S.linia) : 0,
-    stopien: st, kat: th,
+    // z tyłu spirali — w cieniu słupa i ścian, odrobinę ciemniej (sam słup zasłania ją naprawdę: zaslonNaSchodach)
+    tlo: glebia > 0 ? 0.1 + 0.2 * glebia / S.linia : 0,
+    stopien: st, kat: th, odcinek: o, sp,
   };
+}
+
+/**
+ * Stopnice pod stopami postaci na schodach — na nich leży jej cień (render/figury.ts): stopień pod nią i następny
+ * niższy (stopa przy nosie stopnia rzuca cień także na niego, słabiej). Wielokąt stopnicy na ekranie, środek cienia
+ * (pod stopami, na wysokości tej stopnicy) i siła. `fx` — gdzie postać stoi na rysunku (kafle).
+ */
+export function stopniePodStopami(sim: Sim, cam: Camera, c: Creature, fx: number): { tr: [number, number][]; cx: number; cy: number; sila: number }[] {
+  const ns = naSchodach(sim, c);
+  if (!ns) return [];
+  const { sp } = ns;
+  const h = WYS(), D = TAU / S.stopni;
+  const glebia = S.linia * Math.cos(ns.kat);
+  const k0 = Math.floor(ns.stopien);
+  const out: { tr: [number, number][]; cx: number; cy: number; sila: number }[] = [];
+  for (const [k, sila] of [[k0, 1], [k0 + 1, 0.5]]) {
+    const y = sp.ys + k * h;
+    if (k < 0 || y >= sp.ye - 0.02) continue;
+    const a = sp.th0 + k * D, b = a + D;
+    const tr: Pkt[] = [];
+    for (let i = 0; i <= 4; i++) tr.push(rzut(cam, sp, a + (b - a) * (i / 4), sp.R, y));
+    tr.push(rzut(cam, sp, b, sp.rn - 0.03, y), rzut(cam, sp, a, sp.rn - 0.03, y));
+    out.push({ tr, cx: cam.toScreenX(fx), cy: cam.toScreenY(y - S.ukos * glebia), sila });
+  }
+  return out;
+}
+
+let buforZaslony: HTMLCanvasElement | null = null;
+
+/**
+ * Po narysowaniu postaci na schodach: to, co na spirali leży bliżej widza niż ona, rysuje się na niej — słup, gdy jest
+ * za nim, i stopnie bliżej widza (po drugiej stronie słupa). Stopień pod stopami i oba sąsiednie — nie (na nich stoi). Rysunek jak płótno odcinka (to samo przybliżenie i ta sama siatka pikseli),
+ * przycięty do obrysu postaci i do wykutych kafli, przyciemniony warstwą mroku tej klatki jak reszta schodów.
+ * Dawniej postać sunęła po wierzchu całych schodów, a za słupem była tylko przygaszona (uwaga użytkownika: ma znikać
+ * za filarem). `fx, fy` — stopy na rysunku (kafle), `hPx` — wysokość sylwetki w pikselach.
+ */
+export function zaslonNaSchodach(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, c: Creature, fx: number, fy: number, hPx: number, teraz: number): void {
+  if (typeof document === 'undefined') return;
+  const ns = naSchodach(sim, c);
+  if (!ns) return;
+  const w = sim.world, { sp, odcinek: o } = ns;
+  const z = cam.zoom, zp = zoomPlotna(z);
+  const hw = hPx / z;
+  // obrys postaci (z bronią i kijem) — w siatce pikseli płótna odcinka
+  const ox = o.x0 - 0.5, oy = sp.ys - 1.5;
+  const X0 = ox + Math.floor((fx - 0.95 * hw - ox) * zp) / zp, Y0 = oy + Math.floor((fy - 1.5 * hw - oy) * zp) / zp;
+  const X1 = fx + 0.95 * hw, Y1 = fy + 0.2 * hw;
+  const bw = Math.ceil((X1 - X0) * zp), bh = Math.ceil((Y1 - Y0) * zp);
+  if (bw <= 0 || bh <= 0 || bw > 4096 || bh > 4096) return;
+  // co zasłania: stopnie bliżej widza niż postać (bez tych pod stopami) i słup, gdy postać jest za nim
+  const glebia = Math.cos(ns.kat);
+  const h = WYS(), D = TAU / S.stopni;
+  // (pod stopami i tuż obok — przy ścianach szybu płyta sąsiedniego stopnia leży odrobinę bliżej widza i zakrywała
+  // stopy aż po kolana: postać brnęła w kamieniu, zamiast stać na stopnicy)
+  const k0 = Math.floor(ns.stopien);
+  const wlasne = new Set([k0 - 1, k0, k0 + 1]);
+  const kOd = Math.max(0, Math.floor((Y0 - 1.2 - sp.ys) / h)), kDo = Math.ceil((Y1 + 0.7 - sp.ys) / h);
+  const stopnie: Stopien[] = [];
+  for (let k = kOd; k <= kDo; k++) {
+    const y = sp.ys + k * h;
+    if (y >= sp.ye - 0.02) break;
+    if (wlasne.has(k)) continue;
+    const a = sp.th0 + k * D, b = a + D, g = Math.cos((a + b) / 2);
+    if (g < glebia - 0.02) stopnie.push({ k, y, a, b, glebia: g });
+  }
+  const slup = glebia > 0;
+  if (!stopnie.length && !slup) return;
+  stopnie.sort((p, q) => q.glebia - p.glebia);
+  // bufor: rysunek w przybliżeniu płótna odcinka, potem — jak płótno — skalowany do ekranu
+  const buf = buforZaslony ??= document.createElement('canvas');
+  if (buf.width < bw || buf.height < bh) { buf.width = Math.max(buf.width, bw); buf.height = Math.max(buf.height, bh); }
+  const g = buf.getContext('2d')!;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.globalCompositeOperation = 'source-over'; g.globalAlpha = 1;
+  g.clearRect(0, 0, bw, bh);
+  const camB = kameraPlotna(X0, Y0, zp, bw, bh);
+  g.save();
+  const okno = new Path2D();
+  for (let y = Math.floor(Y0); y <= Math.floor(Y1); y++) for (let x = o.x0; x <= o.x1; x++) {
+    if (w.inb(x, y) && w.schody[w.idx(x, y)]) okno.rect(camB.toScreenX(x), camB.toScreenY(y), zp + 0.5, zp + 0.5);
+  }
+  g.clip(okno);
+  g.lineJoin = 'round'; g.lineCap = 'round';
+  const szczegoly = zp >= 9;
+  const kol = (y: number) => kamien(sim, y);
+  let slupJest = !slup;
+  for (const st of stopnie) {
+    if (!slupJest && st.glebia < 0) { rysujSlup(g, camB, sp, sp.ys, sp.ye, kol, zp, szczegoly); rysujCokol(g, camB, sp, kol, zp); slupJest = true; }
+    rysujStopien(g, camB, sp, st, kol(st.y), zp, szczegoly);
+  }
+  if (!slupJest) { rysujSlup(g, camB, sp, sp.ys, sp.ye, kol, zp, szczegoly); rysujCokol(g, camB, sp, kol, zp); }
+  g.restore();
+  // mrok tej klatki — tylko na tym, co narysowano
+  const sx = cam.toScreenX(X0), sy = cam.toScreenY(Y0), sw = bw * (z / zp), sh = bh * (z / zp);
+  const m = warstwaMroku(teraz);
+  if (m) {
+    g.globalCompositeOperation = 'source-atop';
+    g.drawImage(m.plotno, sx * m.k, sy * m.k, sw * m.k, sh * m.k, 0, 0, bw, bh);
+    g.globalCompositeOperation = 'source-over';
+  }
+  // tylko obrys postaci (bufor bywa większy niż ten obrys)
+  ctx.save();
+  ctx.beginPath(); ctx.rect(cam.toScreenX(fx - 0.95 * hw), cam.toScreenY(fy - 1.5 * hw), 1.9 * hw * z, 1.7 * hw * z); ctx.clip();
+  ctx.drawImage(buf, 0, 0, bw, bh, sx, sy, sw, sh);
+  ctx.restore();
 }

@@ -74,12 +74,31 @@ schody są kręcone, ma się również normalnie obracać”.
 - **Chód po schodach:**
   - postać idzie po spirali (`naSchodach` w `schody.ts` → `rozstep.ts`): w poziomie po linii stopni, w pionie stopień po
     stopniu;
-  - krok jest w takt stopni: jedna stopa na jeden stopień (`figury.ts`: faza z numeru stopnia);
+  - stoi na stopnicy, nad którą jest, a na następny stopień przenosi się przy jego nosie (`stopyNaStopniu`);
+  - krok jest w takt stopni: jedna stopa na jeden stopień, pięta uderza przy nosie stopnia, gdy ciało przenosi się
+    na następny (`figury.ts`: faza z numeru stopnia, pod górę też do przodu);
   - pod górę kolano unosi się wysoko nad krawędź stopnia, a tułów pochyla. W dół noga z przodu sięga niżej, ta,
     na której stoi, ugina się pod ciężarem, a głowa patrzy pod nogi (`chodPoSchodach` w `src/render/lud/ruch.ts`);
-  - postać obraca się z biegiem spirali: zwrot w stronę marszu, przy ścianach szybu (gdzie idzie w głąb albo ku widzowi)
-    sylwetka się zwęża jak obracająca się postać, a z tyłu, za słupem, jest przygaszona;
+  - pod stopami leży cień na stopnicy, przycięty do niej, a słabszy na następnej niższej (`stopniePodStopami`);
+  - postać obraca się z biegiem spirali: zwrot w stronę marszu, a przy ścianach szybu (gdzie idzie w głąb albo ku
+    widzowi) sylwetka się zwęża jak obracająca się postać;
+  - **zasłanianie** (`zaslonNaSchodach`): po narysowaniu postaci to, co na spirali leży bliżej widza, rysuje się na
+    niej z powrotem:
+    - słup, gdy postać jest za nim — znika za nim;
+    - stopnie po drugiej stronie spirali;
+    - nie zasłania stopień pod stopami ani oba sąsiednie.
+
+    Ten rysunek jest w przybliżeniu i siatce pikseli płótna odcinka, przycięty do obrysu postaci i do wykutych kafli,
+    przyciemniony warstwą mroku tej klatki (`warstwaMroku` w `src/render/mrok.ts`). Postacie z tyłu spirali rysują się
+    przed innymi. Z tyłu spirali postać jest tylko lekko ciemniejsza (cień słupa i ścian);
   - kopacze przy czole szybu i stojący na posadzce rysują się po staremu.
+  - Wcześniej, z uwagi użytkownika („on nie schodzi, tylko lewituje”):
+    - ciało opadało na niższy stopień w połowie stopnicy, więc stopy zapadały się w płytę, na której stała postać;
+    - cienia na schodach nie było;
+    - postać sunęła po wierzchu całych schodów, a za słupem była tylko przygaszona;
+    - pod górę faza kroku szła wstecz (nogi „wchodziły tyłem”).
+- **Cienie postaci** (uwaga użytkownika „dodaj cienie do postaci”): cień kontaktowy pod stopami wszystkich postaci
+  (`cienKontaktowy` w `figury.ts`) jest ciemniejszy i szerszy. Dawny ginął na jasnej posadzce sali.
 - **Symulacja:** po schodach ruch w pionie jest wolniejszy niż dawniej szybem (`SCHODY.wGore` 0,5, `wDol` 0,55
   prędkości chodu; dawniej 0,6 w górę i 1,2 w dół). Przy dawnych liczbach postać zrobiłaby na spirali ponad 3 obroty
   i 40 stopni na sekundę, więc nogi migałyby, zamiast stawać na stopniach. Teraz to ok. 1,4 obrotu i 17 stopni na
