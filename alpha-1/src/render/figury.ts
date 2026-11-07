@@ -10,7 +10,7 @@ import type { Camera } from './camera';
 import { ustawienia } from '../core/settings-store';
 import { BUDOWA, MAKS_KROKOW_NA_SEKUNDE, type Budowa } from '../nastawy/wyglad/postacie';
 import { postepOdmowy } from './lud/odmowa';
-import { przesuniecieX, rozstawTlum, wTle } from './lud/rozstep';
+import { przesuniecieX, przesuniecieY, zwrotNaRysunku, szerokoscNaRysunku, chodNaSchodach, rozstawTlum, wTle } from './lud/rozstep';
 import { swiatloDla, ustawSwiatlo } from './lud/oswietlenie';
 import { kropla } from './kruszce';
 
@@ -51,21 +51,26 @@ const pamiec = new WeakMap<Creature, Ruch>();
 function ruch(c: Creature, czas: number): Ruch {
   let r = pamiec.get(c);
   if (!r) {
-    r = { x: c.x, y: c.y, faza: (c.id * 0.37) % 1, fazaPion: (c.id * 0.61) % 1, v: 0, t: czas, zegar: (c.id * 0.29) % 1, uderzenie: -1e9 };
+    r = { x: c.x + przesuniecieX(c), y: c.y, faza: (c.id * 0.37) % 1, fazaPion: (c.id * 0.61) % 1, v: 0, t: czas, zegar: (c.id * 0.29) % 1, uderzenie: -1e9 };
     pamiec.set(c, r);
     return r;
   }
   const dt = Math.max(1, Math.min(250, czas - r.t)) / 1000;
-  const dx = c.x - r.x, dy = c.y - r.y;
+  // (6.11: krok liczy się z miejsca na rysunku — na schodach kręconych postać idzie po spirali w bok)
+  const xr = c.x + przesuniecieX(c);
+  const dx = xr - r.x, dy = c.y - r.y;
   const droga = Math.hypot(dx, dy);
-  if (droga > 4) { r.x = c.x; r.y = c.y; r.t = czas; return r; }          // skok (wczytanie, teleport)
+  if (droga > 4) { r.x = xr; r.y = c.y; r.t = czas; return r; }          // skok (wczytanie, teleport)
   const krok = krokPostaci(c);
   const przyrost = Math.min(Math.abs(dx) / krok, MAKS_KROKOW_NA_SEKUNDE * dt);
   r.faza = (r.faza + przyrost) % 1;
   r.fazaPion = (r.fazaPion + Math.min(Math.abs(dy) / 0.9, 2.4 * dt)) % 1;
   r.v += (droga / dt - r.v) * Math.min(1, dt * 8);
   r.zegar = (r.zegar + dt) % 1000;
-  r.x = c.x; r.y = c.y; r.t = czas;
+  r.x = xr; r.y = c.y; r.t = czas;
+  // 6.11: na schodach kręconych krok idzie ze stopniami — jedna stopa na jeden stopień (pełny cykl to dwa stopnie)
+  const sch = chodNaSchodach(c);
+  if (sch) r.faza = (((sch.stopien / 2) % 1) + 1) % 1;
   return r;
 }
 
@@ -1161,8 +1166,10 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     const h = wysokoscPostaci(c, z);
     const dx = n > 1 ? 0 : przesuniecieX(c);
     const sx = (c.x + dx - left) * z;
-    const sy = (c.y + 1 - top) * z;
-    const kier = c.face >= 0 ? 1 : -1;
+    // (6.11: na schodach kręconych dalsza strona spirali leży wyżej — render/schody.ts)
+    const sy = (c.y + 1 + (n > 1 ? 0 : przesuniecieY(c)) - top) * z;
+    const zw = n > 1 ? 0 : zwrotNaRysunku(c);
+    const kier = zw || (c.face >= 0 ? 1 : -1);
     const tlo = n > 1 ? 0 : wTle(c);
 
     // cień kontaktowy — tylko na ziemi: miękka plama, najciemniejsza tuż pod stopami
@@ -1190,7 +1197,8 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       // etap 5b: ciśnięty przez dłoń z otchłani koziołkuje w locie (wokół środka ciała)
       if (c.lot) { ctx.translate(0, -h * 0.5); ctx.rotate((sim.tick - c.lot.od) * 0.16 * (Math.sign(c.lot.vx) || 1)); ctx.translate(0, h * 0.5); }
       // (niski korytarz: lud kuca — poza w render/postacie.ts; dawne zgniatanie rysunku w pionie zniekształcało postać)
-      ctx.scale(zwrotKucia(sim, c, kier), 1);
+      // (6.11: na schodach kręconych obraca się z nimi — przy ścianach szybu idzie w głąb, sylwetka się zwęża)
+      ctx.scale(zwrotKucia(sim, c, kier) * szerokoscNaRysunku(c), 1);
       cz = rysujPostac(ctx, sim, c, h, czas);
       ctx.restore();
     }

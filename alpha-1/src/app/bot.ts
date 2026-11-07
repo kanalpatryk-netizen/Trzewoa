@@ -430,6 +430,16 @@ function brama(sim: Sim): void {
       }
       for (const c of zRola(sim, 'rycerz')) if (!wLochu(c)) wPosterunku(c);
       mysl(sim, 'brama lochu podniesiona — pobożni z kotła schodzą pod pomnik, rycerze wchodzą do lochu');
+      return;
+    }
+    // przy kotle za mało rąk (drugiego zabrał np. rytuał przy ołtarzu) — krata stoi w miejscu: dosyła wolnego pobożnego
+    // (bez tego jeden zaklinał sam do końca gry, a drugi czekał pod bramą, aż ktoś ją podniesie)
+    if (zaklinaja.length < BRAMA.potrzeba) {
+      const k = w.kociol;
+      const wolni = pobozni.filter((c) => !c.polecenie && !wLochu(c) && c.hunger < 0.6)
+        .sort((a, b) => Math.hypot(a.x - k.x, a.y - k.y) - Math.hypot(b.x - k.x, b.y - k.y))
+        .slice(0, BRAMA.potrzeba - zaklinaja.length);
+      if (wolni.length && wydajDoKotla(sim, wolni.map((c) => c.id)).przyjeli) mysl(sim, 'przy kotle zaklina za mało pobożnych — dosyłam drugiego');
     }
     return;
   }
@@ -512,6 +522,17 @@ function walka(sim: Sim): void {
     if (wydajPolecenie(sim, c, 'idz', salaX + (c.id % 2 ? -8 : 8), salaY) === null) {
       p.odeslani.add(c.id);
       mysl(sim, `${imie(c)} odchodzi od demona — nie ma czym walczyć`);
+      continue;
+    }
+    // 6.11: za opadłą kratą do sali nie dojdzie — w lochu odchodzi na koniec dalszy od demona (rozkaz w górę był
+    // odrzucany, a pobożni modlili się dalej pod pomnikiem, z którego właśnie wyszedł demon)
+    if (w.brama.x1 >= w.brama.x0 && w.wLochu(c.x, c.y)) {
+      const L = w.loch;
+      const kx = dx < (L.x0 + L.x1) / 2 ? L.x1 - 2 - (c.id % 3) : L.x0 + 2 + (c.id % 3);
+      if (wydajPolecenie(sim, c, 'idz', kx, L.y1) === null) {
+        p.odeslani.add(c.id);
+        mysl(sim, `${imie(c)} odchodzi od demona na drugi koniec lochu — krata opadła`);
+      }
     }
   }
   // rycerz: bez rozkazów — sam idzie na demona i bije go najszybciej (posterunek z rozkazu wydłużał walkę);

@@ -71,13 +71,8 @@ export function rysujDrogePielgrzymow(ctx: CanvasRenderingContext2D, sim: Sim, c
 // ---------------------------------------------------------------- droga wiernych jako szyb ze schodami (25.10)
 
 const ZLOTO = (a: number) => `rgba(232,196,130,${a})`;
-const KAMIEN = 'rgba(132,118,98,0.97)', KAMIEN_JASNY = 'rgba(176,160,132,0.95)', TUSZ = 'rgba(20,12,8,0.95)';
+const TUSZ = 'rgba(20,12,8,0.95)';
 const DREWNO = 'rgba(112,74,42,0.95)';
-/** Kiedy stopień pojawił się na ekranie (do animacji „wyrasta”) — stan rysunku, nie gry. */
-const pojawienie = new Map<number, number>();
-let pierwszaKlatka = true;
-const WYRASTA_MS = 420;
-
 /** Widoczne rzędy i kolumny odcinka szybu (kafle) — reszty nie rysuje się wcale. */
 function widoczne(s: Prost, cam: Camera): { x0: number; x1: number; y0: number; y1: number } | null {
   if (s.x1 < s.x0) return null;
@@ -88,70 +83,7 @@ function widoczne(s: Prost, cam: Camera): { x0: number; x1: number; y0: number; 
   return x0 > x1 || y0 > y1 ? null : { x0, x1, y0, y1 };
 }
 
-/**
- * Schody w szybie drogi wiernych (przed mrokiem — ciemność je zakrywa jak skałę): biegi na całą szerokość szybu,
- * na przemian w prawo i w lewo — stopnie z ciosanego kamienia na ukośnej płycie biegu, drewniana poręcz na słupkach.
- * Placeholder do podmiany na grafikę. Świeżo wykuty stopień wyrasta z pyłem.
- */
-export function rysujSchodyDrogi(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
-  const w = sim.world;
-  if (pierwszaKlatka) {
-    pierwszaKlatka = false;
-    for (const s of w.odcinkiDrogi) for (let y = s.y0; y <= s.y1; y++) for (let x = s.x0; x <= s.x1; x++) if (w.schody[w.idx(x, y)]) pojawienie.set(w.idx(x, y), -1e9);
-  }
-  // 6.11: każdy odcinek drogi (z zakrętem przez komnatę z kotłem) ma swoje biegi — od własnego szczytu
-  for (const s of w.odcinkiDrogi) rysujSchodyOdcinka(ctx, sim, cam, teraz, s, Math.max(s.y0, w.salaOltarza.y1 + 1));
-}
-
-function rysujSchodyOdcinka(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number, s: Prost, start: number): void {
-  const w = sim.world;
-  const v = widoczne(s, cam);
-  const z = cam.zoom;
-  const szer = s.x1 - s.x0 + 1;
-  if (!v) return;
-  ctx.save();
-  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-  const gr = Math.max(0.8, z * 0.045);
-  for (let y = Math.max(v.y0 - 1, start); y <= v.y1; y++) {
-    const k = (y - start) % szer, bieg = Math.floor((y - start) / szer);
-    const dir = bieg % 2 === 0 ? 1 : -1;
-    const x = dir > 0 ? s.x0 + k : s.x1 - k;
-    const i = w.idx(x, y);
-    if (!w.schody[i]) { pojawienie.delete(i); continue; }
-    if (!pojawienie.has(i)) pojawienie.set(i, teraz);
-    const t = Math.min(1, (teraz - (pojawienie.get(i) ?? -1e9)) / WYRASTA_MS);
-    const sx = cam.toScreenX(x), sy = cam.toScreenY(y);
-    const top = sy + z * (1 - 0.42 * (0.25 + 0.75 * t));    // wierzch stopnia — rośnie od dołu przy wykuciu
-    // płyta biegu pod stopniem: trójkąt w dół, ku następnemu stopniowi (ostatni w biegu — podest na całą szerokość)
-    const ostatni = k === szer - 1;
-    ctx.fillStyle = 'rgba(70,60,50,0.96)';
-    ctx.beginPath();
-    if (ostatni) ctx.rect(cam.toScreenX(s.x0), sy + z, szer * z, z * 0.22);
-    else if (dir > 0) { ctx.moveTo(sx, sy + z); ctx.lineTo(sx + z, sy + z); ctx.lineTo(sx + z, sy + z * 1.75); ctx.closePath(); }
-    else { ctx.moveTo(sx + z, sy + z); ctx.lineTo(sx, sy + z); ctx.lineTo(sx, sy + z * 1.75); ctx.closePath(); }
-    ctx.globalAlpha = t; ctx.fill(); ctx.strokeStyle = TUSZ; ctx.lineWidth = gr; ctx.stroke(); ctx.globalAlpha = 1;
-    // stopień: bryła z ciosanego kamienia, jasna krawędź, spoina
-    ctx.fillStyle = KAMIEN; ctx.fillRect(sx, top, z, sy + z - top);
-    ctx.fillStyle = KAMIEN_JASNY; ctx.fillRect(sx, top, z, Math.max(1, z * 0.08));
-    ctx.strokeStyle = TUSZ; ctx.lineWidth = gr; ctx.strokeRect(sx, top, z, sy + z - top);
-    // poręcz: słupek przy stopniu i drąg do następnego (po skosie biegu)
-    ctx.globalAlpha = t;
-    const px = sx + z * 0.5, py = top - z * 0.95;
-    ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(1.6, z * 0.11);
-    ctx.beginPath(); ctx.moveTo(px, top); ctx.lineTo(px, py); if (!ostatni) ctx.lineTo(px + dir * z, py + z); ctx.stroke();
-    ctx.strokeStyle = DREWNO; ctx.lineWidth = Math.max(0.9, z * 0.06); ctx.stroke();
-    ctx.globalAlpha = 1;
-    // pył przy wykuciu
-    if (t < 1) {
-      ctx.fillStyle = `rgba(190,170,140,${0.5 * (1 - t)})`;
-      for (let n = 0; n < 5; n++) {
-        const a = (n / 5) * Math.PI * 2 + i, r = z * (0.3 + 0.6 * t);
-        ctx.beginPath(); ctx.arc(sx + z / 2 + Math.cos(a) * r, sy + z * 0.75 - Math.abs(Math.sin(a)) * r * 0.6, Math.max(1, z * 0.09), 0, Math.PI * 2); ctx.fill();
-      }
-    }
-  }
-  ctx.restore();
-}
+// (schody drogi wiernych — od 6.11 kręcone, wykute w skale: render/schody.ts)
 
 /**
  * Plan szybu drogi wiernych — zawsze widoczny (nad mrokiem): niewykuta część jako plan pomieszczenia (przerywany złoty

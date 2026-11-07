@@ -26,7 +26,8 @@ import { NAZWA_RYTUALU } from '../nastawy/oltarz';
 import { wiadroDoWspinaczki, wiadroId, krokNaLinie, wiadra } from './wiadro';
 import { WIADRO } from '../nastawy/wiadro';
 import { POLECENIA, ODSTEPY } from '../nastawy/polecenia';
-import { przyKotle, bramaOtwarta } from './brama';
+import { przyKotle, bramaOtwarta, zaKrata, podKrata, podajPrzezKrate } from './brama';
+import { SCHODY } from '../nastawy/loch';
 import { odmow, nastepnyKafelZyly, nastepnyWObszarze, kafleObszaru, pominKafelObszaru, type Polecenie, type Odmowa } from './polecenia';
 import { SWIAT } from '../nastawy/swiat';
 import { idziePoZbroje, planZbroi, ranyZbroi } from './zbroja';
@@ -116,6 +117,8 @@ export interface Creature {
   bezModlitwyDo?: number;
   /** Remake v1: robotnik niesie jedzenie tej postaci (id). */
   dostawaDla?: number;
+  /** 6.11: przechodzi po garbie gruzu na kresce drogi w lochu — do tego kafla, najpóźniej do tego tiku (poGruzie). */
+  poGruzie?: { x: number; y: number; do: number };
   /** Remake v1: robotnik niesie zapas do spiżarni tego obozu (zaopatrzenie obozu frontowego). */
   doObozu?: { x: number; y: number };
   /** Remake v1: zamiar — co teraz robi i do kiedy się tego trzyma (widać go na karcie postaci). */
@@ -968,8 +971,13 @@ function planujLud(sim: Sim, c: Creature): void {
   if (c.carry > 0) {
     const komu = c.dostawaDla !== undefined ? sim.creatureById(c.dostawaDla) : null;
     if (komu && !komu.dead && komu.hunger > 0.1) {
-      const kx = Math.floor(komu.x), ky = Math.floor(komu.y);
-      const d = droga((x, y) => Math.abs(x - kx) <= 1 && Math.abs(y - ky) <= 1, LUD.dostawaLimit);
+      // 6.11: za zamkniętą kratą lochu niesie się pod kratę (do samego głodnego drogi nie ma — dawniej robotnik brał
+      // porcje dla zamkniętego w lochu, nie znajdował do niego drogi, odnosił je do wiadra i tak w kółko, a rycerz padał)
+      const krata = zaKrata(sim, komu);
+      const kx = krata ? podKrata(sim).x : Math.floor(komu.x), ky = krata ? podKrata(sim).y : Math.floor(komu.y);
+      const d = krata
+        ? droga((x, y) => x === kx && y === ky, LUD.dostawaLimit)
+        : droga((x, y) => Math.abs(x - kx) <= 1 && Math.abs(y - ky) <= 1, LUD.dostawaLimit);
       // (Alpha: nie dojdzie do niego — nie idzie na przełaj: schodził z półek na dno jaskini i już nie wracał)
       if (d || (!REMAKE && budzetDrog() > 0)) {
         c.jx = kx; c.jy = ky;
@@ -1156,8 +1164,15 @@ function planRobotnika(sim: Sim, c: Creature,
   // 1. dostawa: z najbliższego wiadra z jedzeniem (jak tam nie dojdzie — z następnego) do głodnego
   const komu = glodnyDoNakarmienia(sim, c);
   // (Alpha: tylko komuś, do kogo dojdzie — inaczej brał porcję i szedł z nią na przełaj w przepaść)
-  const dojdzie = (o: Creature) => !!droga((x, y) => Math.abs(x - Math.floor(o.x)) <= 1 && Math.abs(y - Math.floor(o.y)) <= 1, LUD.dostawaLimit);
-  if (komu && !strefa(komu.x, komu.y) && dojdzie(komu)) {
+  // (6.11: za zamkniętą kratą lochu — wystarczy dojść pod kratę: jedzenie poda się przez pręty)
+  const dojdzie = (o: Creature) => {
+    if (zaKrata(sim, o)) { const pk = podKrata(sim); return !!droga((x, y) => x === pk.x && y === pk.y, LUD.dostawaLimit); }
+    return !!droga((x, y) => Math.abs(x - Math.floor(o.x)) <= 1 && Math.abs(y - Math.floor(o.y)) <= 1, LUD.dostawaLimit);
+  };
+  // (6.11: za kratą liczy się miejsce pod kratą — leży poza strefą Strażników, więc w czasie fali też się tam niesie;
+  // dawniej zamknięci w lochu pobożni padali z głodu, a robotnicy odpoczywali przy obozie, bo głodny stał „w strefie”)
+  const dokad = komu && zaKrata(sim, komu) ? podKrata(sim) : komu;
+  if (komu && dokad && !strefa(dokad.x, dokad.y) && dojdzie(komu)) {
     for (const sp of spizarnieWgOdleglosci(sim, c.x, c.y, true).slice(0, 3)) {
       const d = droga((x, y) => Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1, LUD.dostawaLimit);
       if (d) {
@@ -1492,16 +1507,18 @@ function krok(sim: Sim, c: Creature, cel: number): void {
     * (w.water[w.idx(cx, cy)] > K.wodaSpowalniaOd ? K.wodaSpowalnia : 1)
     * (w.tile[w.idx(cx, cy)] === T.WEB && c.race !== Race.SPINNER ? K.siecSpowalnia : 1);
   const doSrodka = (v: number) => Math.max(-speed, Math.min(speed, nx + 0.5 - v));
+  // 6.11: po schodach kręconych drogi wiernych idzie się po spirali — w pionie wolniej niż szybem (nastawy/loch.ts)
+  const naSchodach = w.schody[w.idx(cx, cy)] === 1 || w.schody[cel] === 1;
   if (ny < cy) {
     // Remake v2: lud wchodzi w górę tylko z podłogi, na stopień — z wiszenia już nie (to straż na nieaktualną drogę)
     if (ludRuch(c) && !stoi(sim, cx, cy)) { c.droga = undefined; return; }
     c.wspina = sim.tick;
     c.x += doSrodka(c.x);
-    c.y -= speed * K.wspinanie;
+    c.y -= speed * (naSchodach ? SCHODY.wGore : K.wspinanie);
   } else if (ny > cy) {
     c.wspina = sim.tick;                        // schodzi, trzymając się ściany
     c.x += doSrodka(c.x);
-    c.y += speed * K.schodzenie;
+    c.y += speed * (naSchodach ? SCHODY.wDol : K.schodzenie);
   } else {
     const dir = nx > cx ? 1 : -1;
     c.face = dir;
@@ -1827,6 +1844,8 @@ function glodnyDoNakarmienia(sim: Sim, c: Creature): Creature | null {
     // stacjonujący — i kopacze drogi daleko od spiżarni (wracając po jedzenie, umierali po drodze)
     const kopaczDaleko = !!o.kopieDroge && (najblizszaSpizarnia(sim, o.x, o.y, false) ? Math.hypot(najblizszaSpizarnia(sim, o.x, o.y, false)!.x - o.x, najblizszaSpizarnia(sim, o.x, o.y, false)!.y - o.y) > LUD.daleko : false);
     if (o.dead || o.clan !== c.clan || !(stacjonuje(o) || kopaczDaleko) || obslugiwani.has(o.id)) continue;
+    // 6.11: za zamkniętą kratą — póki w koszu przy kracie leży jedzenie, nikt nie niesie więcej
+    if (zaKrata(sim, o) && (sim.lud.brama?.kosz ?? 0) >= 2) continue;
     // daleko od jedzenia dostawa rusza wcześniej — droga w obie strony trwa
     const spO = najblizszaSpizarnia(sim, o.x, o.y, true);
     const prog = !spO || Math.hypot(spO.x - o.x, spO.y - o.y) > LUD.daleko ? LUD.glodDostawyDaleko : LUD.glodDostawy;
@@ -1847,6 +1866,23 @@ function pilnieGlodny(sim: Sim, c: Creature): boolean {
 function doDostawa(sim: Sim, c: Creature): void {
   const komu = c.dostawaDla !== undefined ? sim.creatureById(c.dostawaDla) : null;
   if (!komu || komu.dead || c.carry <= 0) { c.jt = 0; return; }
+  // 6.11: głodny jest za zamkniętą kratą lochu — porcje idą pod kratę i przez pręty do kosza (stamtąd je sam)
+  if (zaKrata(sim, komu)) {
+    const pk = podKrata(sim);
+    if (Math.floor(c.x) === pk.x && Math.floor(c.y) === pk.y) {
+      podajPrzezKrate(sim, c);
+      c.dostawaDla = undefined; c.jt = 0;
+      return;
+    }
+    if (c.jx !== pk.x || c.jy !== pk.y || !c.droga) {
+      c.jx = pk.x; c.jy = pk.y; c.droga = undefined;
+      const d = szukajDrogi(sim, c, (_i, x, y) => x === pk.x && y === pk.y, LUD.dostawaLimit);
+      if (d) { c.droga = d; c.drogaI = 0; c.drogaKopie = false; }
+    }
+    if (c.droga) { const n = nastepnyKafel(sim, c); if (n >= 0) { krok(sim, c, n); return; } c.droga = undefined; }
+    idz(sim, c, pk.x, pk.y);
+    return;
+  }
   if (Math.hypot(komu.x - c.x, komu.y - c.y) < 1.8) {
     while (c.carry > 0 && komu.hunger > 0.1) {
       c.carry--; sim.meals++;
@@ -1973,6 +2009,35 @@ function doEat(sim: Sim, c: Creature): void {
 }
 
 /**
+ * 6.11: w lochu kreska drogi biegnie po posadzce, a gruz po uderzeniu demona w ziemię (boss.ts: zasypDroge) to garb
+ * na jeden kafel — przechodzi się po nim jak po stopniu, do pierwszego wolnego kafla kreski za nim. Za zamkniętą kratą
+ * robotnicy go nie odkopią: rycerz wracający od kosza stał przed garbem do końca gry, a demon czekał nietknięty.
+ * False — to nie garb w lochu (wyżej niż kafel albo poza lochem): wtedy czeka się na robotników jak dotąd.
+ */
+function poGruzie(sim: Sim, c: Creature, sciezka: number[], j: number): boolean {
+  const w = sim.world;
+  const wolny = (k: number) => {
+    const x = sciezka[k] % w.w, y = (sciezka[k] / w.w) | 0;
+    return w.wLochu(x, y) && !w.solid(x, y);
+  };
+  for (let k = j; k >= 0; k--) {
+    const x = sciezka[k] % w.w, y = (sciezka[k] / w.w) | 0;
+    if (!w.wLochu(x, y) || w.solid(x, y - 1)) return false;
+    if (w.solid(x, y)) continue;
+    // cel o dwa kafle za garbem: tuż za nim leży po skosie w dół, a z tak bliska walkTo uznaje, że już doszedł
+    let t = k;
+    for (let n = 0; n < 2 && t > 0 && wolny(t - 1); n++) t--;
+    const gx = sciezka[t] % w.w, gy = (sciezka[t] / w.w) | 0;
+    // cel trzymany do końca przejścia: na garbie postać schodzi z kreski, a najbliższy jej kafel bywa ten, z którego
+    // weszła — dawniej co tik podciągała się na garb i schodziła z powrotem
+    c.poGruzie = { x: gx, y: gy, do: sim.tick + Math.ceil((Math.abs(gx + 0.5 - c.x) + Math.abs(gy + 0.5 - c.y) + 2) * 30) };
+    walkTo(sim, c, gx, gy, false);
+    return true;
+  }
+  return false;
+}
+
+/**
  * Krok pielgrzyma po planie drogi (plan idzie od przedsionka do gniazda, więc pielgrzym
  * idzie nim od końca). Skałę na drodze kuje. Zwraca false, gdy plan mu nie pomoże —
  * jest za daleko od kreski albo kreska prowadzi przez coś nie do ruszenia.
@@ -1980,6 +2045,13 @@ function doEat(sim: Sim, c: Creature): void {
 function idzPlanem(sim: Sim, c: Creature, sciezka: number[]): boolean {
   const w = sim.world;
   const tx = Math.floor(c.x), ty = Math.floor(c.y);
+  if (c.poGruzie) {
+    const g = c.poGruzie;
+    // (tylko w trakcie przejścia: w lochu, blisko celu — kto w międzyczasie odszedł, np. jeść, zaczyna od nowa)
+    const wTrakcie = sim.tick < g.do && w.wLochu(c.x, c.y) && Math.abs(g.x - tx) <= 24 && (tx !== g.x || ty !== g.y) && !w.solid(g.x, g.y);
+    if (wTrakcie && !walkTo(sim, c, g.x, g.y, false)) return true;
+    c.poGruzie = undefined;
+  }
   const k = sciezka.lastIndexOf(w.idx(tx, ty));
   if (k < 0) {
     // zszedł z kreski (spadł, ominął wodę) — wraca do najbliższego jej kafla, jeśli jest blisko
@@ -1995,6 +2067,7 @@ function idzPlanem(sim: Sim, c: Creature, sciezka: number[]): boolean {
     // „do niej” krokiem, stał pod ścianą, aż zakleszczenie zabierało mu wyprawę
     if (bd <= 1 && w.solid(bx, by)) {
       if (w.hardness(bx, by) <= 0) return false;
+      if (REMAKE && poGruzie(sim, c, sciezka, best)) return true;
       // Alpha: pobożny nie kuje — czeka, aż robotnicy wykują kreskę
       if (REMAKE) return true;
       digTile(sim, c, bx, by);
@@ -2015,6 +2088,7 @@ function idzPlanem(sim: Sim, c: Creature, sciezka: number[]): boolean {
   const nx = nast % w.w, ny = (nast / w.w) | 0;
   if (w.solid(nx, ny)) {
     if (w.hardness(nx, ny) <= 0) return false;
+    if (REMAKE && poGruzie(sim, c, sciezka, k - 1)) return true;
     // Remake v1: drogę kopią robotnicy (albo, gdy nikt nie kopie, powoli góra) — pobożny czeka na czole
     if (REMAKE) return true;
     digTile(sim, c, nx, ny);

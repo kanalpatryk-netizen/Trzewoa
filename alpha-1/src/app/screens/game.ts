@@ -52,7 +52,8 @@ import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { scianaKrypty, tynkSwiata } from '../../render/fresk';
-import { rysujDrogePielgrzymow, rysujSchodyDrogi, rysujPlanDrogi } from '../../render/pielgrzymka';
+import { rysujDrogePielgrzymow, rysujPlanDrogi } from '../../render/pielgrzymka';
+import { rysujSchodyDrogi } from '../../render/schody';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
@@ -1381,7 +1382,7 @@ export class EkranGry implements Ekran {
     rysujKucie(ctx, sim, cam, teraz);
     // etap 3c: wyposażenie gotowych pomieszczeń (stół, kowadło, posłania) — w mroku ginie jak skała
     this.pokoje.rysujWnetrza(ctx, sim, cam, teraz);
-    // droga wiernych: schody w wykutym szybie (ciemność je zakrywa)
+    // droga wiernych: schody kręcone wykute w skale — tylko w wykutych kaflach (ciemność je zakrywa)
     rysujSchodyDrogi(ctx, sim, cam, teraz);
     // etap 3d: ołtarz na środku sali — kamień i drewno (świece i smuga dnia — nad mrokiem)
     this.oltarz.rysuj(ctx, sim, cam);

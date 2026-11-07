@@ -113,11 +113,21 @@ export function porcjiWWiadrach(sim: Sim): number {
 /** Wiadra, które stoją na ziemi i mają jedzenie — z nich lud je i robotnicy biorą porcje. */
 export function zrodlaJedzenia(sim: Sim): MiejsceJedzenia[] {
   // (etap 4: z roztrzaskanego wiadra je się to, co się rozsypało)
-  return wiadra(sim).filter((wd) => (wd.faza === 'stoi' || wd.faza === 'rozbite') && wd.porcje > 0).map((wd) => ({
+  const out: MiejsceJedzenia[] = wiadra(sim).filter((wd) => (wd.faza === 'stoi' || wd.faza === 'rozbite') && wd.porcje > 0).map((wd) => ({
     x: wd.x, y: wd.cel, ilosc: wd.porcje, baza: false,
     wez: (n: number) => { const k = Math.min(n, wd.porcje); wd.porcje -= k; return k; },
     odloz: (n: number) => { wd.porcje += n; },
   }));
+  // 6.11: kosz przy kracie bramy lochu (od środka) — porcje podane przez pręty (sim/brama.ts: podajPrzezKrate)
+  const b = sim.lud.brama, br = sim.world.brama;
+  if (b && (b.kosz ?? 0) > 0 && br.x1 >= br.x0) {
+    out.push({
+      x: br.x1 + 1, y: br.y1, ilosc: b.kosz!, baza: false,
+      wez: (n: number) => { const k = Math.min(n, b.kosz ?? 0); b.kosz = (b.kosz ?? 0) - k; return k; },
+      odloz: (n: number) => { b.kosz = (b.kosz ?? 0) + n; },
+    });
+  }
+  return out;
 }
 
 /** Ile porcji wiezie wiadro: tyle na głowę (jedna porcja = jeden posiłek), w granicach. */

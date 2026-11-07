@@ -68,3 +68,33 @@ export const BLOGOSLAWIENSTWO = {
   } as Record<string, Partial<Record<'sila' | 'szybkosc' | 'kopanie' | 'modlitwa', number>>>,
   glod: 0.85,
 };
+
+/**
+ * Schody drogi wiernych (6.11, decyzja użytkownika: dawne „były obrzydliwe i wyglądały nowocześnie” i „budowały się
+ * nierealistycznie”): w każdym odcinku szybu schody kręcone wykute w skale — stopnie wokół kamiennego słupa, jak
+ * w wieży zamku. Widać je tylko tam, gdzie robotnicy wykuli już skałę (render/schody.ts), a postacie idą po spirali
+ * (render/lud/rozstep.ts). Odległości w kaflach.
+ */
+export const SCHODY = {
+  /** Jeden pełny obrót spirali (kafle wysokości) i ile stopni na obrót. */
+  obrot: 5, stopni: 12,
+  /** Promień kamiennego słupa i linii, którą się chodzi (od środka szybu). */
+  slup: 0.5, linia: 1.58,
+  /** Rysunek odrobinę z góry: o tyle kafli wyżej na ekranie leży punkt kafel dalej w głąb (widać stopnice i bębny słupa). */
+  ukos: 0.2,
+  /** Grubość bloku stopnia (wysokości stopnia) — bloki zachodzą na siebie, spód spirali jest ciągły. */
+  grubosc: 2,
+  /** Lina na żelaznych pierścieniach w ścianie: wysokość nad stopniami i pierścień co tyle stopni. */
+  lina: 0.8, pierscienCo: 3,
+  /**
+   * Ruch w pionie po schodach (mnożnik prędkości chodu): w górę, w dół. Po spirali idzie się dalej niż w pionie —
+   * przy tych liczbach postać idzie po stopniach żwawo, trochę szybciej niż po płaskim (ok. 1,4 obrotu i 17 stopni
+   * na sekundę gry). Dawniej zjeżdżała szybem dwa razy szybciej, niż chodzi (0,6 w górę, 1,2 w dół) — na spirali
+   * byłoby to ponad 3 obroty i 40 stopni na sekundę, nogi migałyby zamiast stawać na stopniach. Zupełnie „po płaskiemu”
+   * (0,42 / 0,46) wydłużało każdą drogę z jedzeniem do lochu: bot wygrywał 26 partii z 32, przy tych liczbach 63 z 64
+   * (przy dawnych 64 z 64; partia dłuższa średnio o minutę).
+   */
+  wGore: 0.5, wDol: 0.55,
+  /** Świeżo wykuty kafel: ile ms sypią się okruchy i pył, ile ms kamień jest jaśniejszy (świeży). */
+  okruchyMs: 950, swiezyMs: 7000,
+};

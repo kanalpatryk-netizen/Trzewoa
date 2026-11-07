@@ -54,6 +54,45 @@ wygląd bossa ma być choć podobny do pomnika”. Boss to teraz **ten sam rysun
 - Podgląd wszystkich ruchów (narzędzie dewelopera): `podgladRuchu(ctx, h, ruch, u, czas)` w `demon-boss.ts`.
   Póki obrazki kukły się wczytują, boss rysuje się po staremu (`demon-wzor.ts`).
 
+## Schody kręcone w szybie drogi wiernych (6.11)
+Użytkownik o dawnych schodach (zygzak biegów z poręczą na słupkach): „po pierwsze budują się nierealistycznie, a po
+drugie (właściwie to najważniejsze) są obrzydliwe i wyglądają nowocześnie”. Potem: „każda postać, która będzie schodzić
+i wchodzić po schodach, ma również mieć odpowiednią animację stawiania nóg na kolejnych schodkach i […] z racji, że
+schody są kręcone, ma się również normalnie obracać”.
+- **Wygląd** (`src/render/schody.ts`; liczby — `SCHODY` w `src/nastawy/loch.ts`):
+  - w każdym odcinku szybu są schody kręcone jak w wieży zamku: kamienne stopnie wokół słupa z bębnów, 12 stopni na
+    obrót co 5 kafli (stopień ok. 0,4 kafla wysoki);
+  - w okrągłej klatce z ciosów; lina na żelaznych pierścieniach w ścianie;
+  - ujęcie odrobinę z góry, malowane od tyłu do przodu: stopnice jasne, boki w półcieniu, nos stopnia z cieniem pod
+    spodem, wytarty środek stopni;
+  - barwa kamienia idzie za warstwą skały (płytka cieplejsza, głęboka chłodniejsza); z tyłu spirali ciemniej;
+  - przód ściany szybu jest ścięty (przekrój), jak wszędzie w grze.
+- **Budowa:** schody widać tylko w wykutych kaflach (rysunek przycięty do kafli ze schodami). Wykuty kafel odsłania
+  kawałek stopni, słupa i ściany: sypią się z niego okruchy skały, unosi się pył, a świeżo ciosany kamień przez kilka
+  sekund jest jaśniejszy. Schody powstają z rozkuwanej skały, nie wyrastają z pustki. Kafel wykuty poza kadrem nie
+  sypie okruchami, gdy kamera na niego najedzie.
+- **Chód po schodach:**
+  - postać idzie po spirali (`naSchodach` w `schody.ts` → `rozstep.ts`): w poziomie po linii stopni, w pionie stopień po
+    stopniu;
+  - krok jest w takt stopni: jedna stopa na jeden stopień (`figury.ts`: faza z numeru stopnia);
+  - pod górę kolano unosi się wysoko nad krawędź stopnia, a tułów pochyla. W dół noga z przodu sięga niżej, ta,
+    na której stoi, ugina się pod ciężarem, a głowa patrzy pod nogi (`chodPoSchodach` w `src/render/lud/ruch.ts`);
+  - postać obraca się z biegiem spirali: zwrot w stronę marszu, przy ścianach szybu (gdzie idzie w głąb albo ku widzowi)
+    sylwetka się zwęża jak obracająca się postać, a z tyłu, za słupem, jest przygaszona;
+  - kopacze przy czole szybu i stojący na posadzce rysują się po staremu.
+- **Symulacja:** po schodach ruch w pionie jest wolniejszy niż dawniej szybem (`SCHODY.wGore` 0,5, `wDol` 0,55
+  prędkości chodu; dawniej 0,6 w górę i 1,2 w dół). Przy dawnych liczbach postać zrobiłaby na spirali ponad 3 obroty
+  i 40 stopni na sekundę, więc nogi migałyby, zamiast stawać na stopniach. Teraz to ok. 1,4 obrotu i 17 stopni na
+  sekundę gry: żwawy chód, trochę szybszy niż po płaskim. Pierwszy odcinek (46 rzędów) w dół trwa ok. 6 s.
+  - Wybór sprawdzony pełnymi partiami bota (styl „rozsądny”, ziarna 1–64):
+    - dawne liczby: 64 wygrane z 64, średnio 14,0 min;
+    - te liczby: 63 z 64, średnio 14,9 min;
+    - chód zupełnie „po płaskiemu” (0,42 / 0,46): tylko 26 z 32, bo każda droga z jedzeniem do lochu trwała dłużej.
+  - Przy tym pomiarze wyszły na jaw błędy lochu, poprawione niżej w „Droga wiernych z zakrętem…”: jedzenie przez kratę,
+    gruz w lochu i bot przy kotle.
+- **Wydajność:** cały odcinek rysuje się raz na płótno (na nowo po wykuciu kafla albo zmianie przybliżenia o ~19%).
+  W klatce idzie tylko jego kawałek w kadrze, plus okruchy i świeży kamień.
+
 ## Droga wiernych z zakrętem, komnata z kotłem, loch za stalową bramą, modlitwa za innych (6.11)
 Użytkownik: droga wiernych „ma być zakręcona” — w dół, w bok przez „stare pomieszczenie z pajęczynami” z kotłem, znowu
 w dół; na dole „inny” loch z bossem, do którego wchodzi się przez stalową bramę. Bramę podnoszą zaklęcia dwóch pobożnych
@@ -106,6 +145,28 @@ modlić za innych w swoim kręgu — leczyć i dawać dary. Styl: „ekstremalni
     daje tylko ogień: kocioł, świece, pochodnie, kosze ognia.
 - **Atlas**: tablice „Kocioł i stalowa brama” (rycina: zaklinanie, krata rośnie i opada, progi „przejdzie” i „przeczołga
   się”) oraz „Modlitwa za innych”. Samouczek („Droga do wolności”) ma etap o bramie i kotle.
+- **Jedzenie za kratą** (`podKrata`, `miejsceKosza`, `zaKrata`, `podajPrzezKrate` w `src/sim/brama.ts`; źródło jedzenia
+  w `zrodlaJedzenia`, `src/sim/wiadro.ts`):
+  - przy kracie, od strony lochu, stoi kosz. Robotnik niesie jedzenie zamkniętemu w lochu pod kratę i podaje porcje
+    przez pręty, a zamknięty je z kosza;
+  - póki w koszu leżą 2 porcje, nikt nie niesie więcej;
+  - miejsce pod kratą leży poza strefą Strażników, więc w czasie fali też się tam niesie.
+  - Wcześniej rycerz zamknięty w lochu umierał z głodu, z dwóch powodów:
+    - robotnik szukał drogi do samego głodnego, której za kratą nie ma. Odnosił więc porcje do wiadra i brał je od
+      nowa, w kółko;
+    - w czasie fali głodny stał w strefie Strażników, więc robotnicy w ogóle nie brali dostawy.
+- **Gruz w lochu** (`poGruzie` w `src/sim/creatures.ts`):
+  - uderzenie demona w ziemię (`zasypDroge`) zasypuje kawałek kreski drogi. W lochu kreska biegnie po posadzce, więc
+    gruz jest garbem na jeden kafel;
+  - idący drogą przechodzi po nim jak po stopniu, do pierwszego wolnego kafla kreski za nim. Cel trzyma do końca
+    przejścia;
+  - wcześniej czekał, aż robotnicy go odkopią. Za zamkniętą kratą robotnicy nie wejdą: rycerz wracający od kosza stał
+    przed garbem do końca gry, a demon czekał nietknięty.
+- **Bot** (`brama`, `walka` w `src/app/bot.ts`):
+  - gdy przy kotle zaklina tylko jeden pobożny (drugiego zabrał rytuał przy ołtarzu), bot dosyła wolnego. Wcześniej
+    jeden zaklinał do końca gry, a drugi czekał pod bramą;
+  - gdy demon wychodzi z pomnika, a krata jest opadła, bezbronni w lochu odchodzą na drugi koniec lochu, z dala od
+    demona. Wcześniej rozkaz „do sali” był odrzucany, a pobożni modlili się dalej pod pomnikiem.
 - **Testy**: `test-swiata` sprawdza w 100 światach dwa odcinki drogi, puste wnętrze komnaty za szczelnym murem, kocioł
   na posadzce i zamkniętą bramę na starcie. Sprawdza też, że do przedsionka nie da się dojść z przedproża obok bramy,
   a przez bramę — tak. Pełne partie bota (seed 3 i 4) kończą się Uwolnieniem po 14 minutach gry: bot podnosi bramę,
@@ -213,7 +274,7 @@ Czarne menu według szkicu grafika (logo z bijącym sercem, znaki zespołu jako 
 - **Blok pod wiadrem:** robotnicy nie kopią przez blok, na którym stoi wiadro. Szukają drogi obok, a gdy jej
   nie ma, odmawiają. Rozkaz „kop” wskazany wprost na ten blok (albo ramka, która go obejmuje) odblokowuje kolumnę
   szybu wiadra do końca partii. Pobożny i rycerz nie kopią, idąc na przełaj.
-- **Droga wiernych jako szyb ze schodami:**
+- **Droga wiernych jako szyb ze schodami** (od 6.11 schody kręcone — „Schody kręcone w szybie drogi wiernych” wyżej):
   - szyb szeroki na 5 kafli przy lewej ścianie sali, prosto w dół do krypty;
   - we wnęce na start stoi rama z lampką, kilof i strzałka;
   - w każdym wykutym kaflu same pojawiają się schody, którymi chodzi się w obie strony;

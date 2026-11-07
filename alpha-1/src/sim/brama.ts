@@ -21,6 +21,8 @@ export interface StanBramy {
   wolne: boolean;
   /** Najwyższe otwarcie w tym podniesieniu — do kroniki. */
   szczyt?: number;
+  /** Porcje w koszu przy kracie (od środka lochu) — robotnicy podają je przez pręty, gdy brama jest zamknięta. */
+  kosz?: number;
 }
 
 export function stanBramy(sim: Sim): StanBramy {
@@ -103,4 +105,32 @@ export function tikBramy(sim: Sim): void {
     if (wolne) sim.gdzie(x, y).log('Krata bramy uniosła się nad posadzkę — pod nią da się przeczołgać.', 'wiara', 'brama-czolga');
     else { sim.gdzie(x, y).log('Stalowa brama opadła. Loch znów jest zamknięty.', 'otchlan', 'brama-zamknieta'); b.szczyt = 0; }
   }
+}
+
+/** Kafel pod kratą od strony przedproża (tu staje robotnik, który podaje jedzenie przez pręty). */
+export function podKrata(sim: Sim): { x: number; y: number } {
+  const b = sim.world.brama;
+  return { x: b.x0 - 1, y: b.y1 };
+}
+
+/** Kafel kosza przy kracie od strony lochu. */
+export function miejsceKosza(sim: Sim): { x: number; y: number } {
+  const b = sim.world.brama;
+  return { x: b.x1 + 1, y: b.y1 };
+}
+
+/** Czy postać jest za zamkniętą kratą — w lochu, a brama opadła (jedzenie tylko przez pręty). */
+export function zaKrata(sim: Sim, c: Creature): boolean {
+  const w = sim.world;
+  return w.brama.x1 >= w.brama.x0 && !stanBramy(sim).wolne && w.wLochu(c.x, c.y);
+}
+
+/** Robotnik podaje przez kratę wszystko, co niesie — porcje lądują w koszu od strony lochu. */
+export function podajPrzezKrate(sim: Sim, c: Creature): void {
+  const b = stanBramy(sim);
+  b.kosz = (b.kosz ?? 0) + c.carry;
+  c.carry = 0;
+  const k = miejsceKosza(sim);
+  sim.spark(k.x + 0.5, k.y + 0.5, 'spore');
+  sim.efekt(c.x, c.y - 0.6, 'mysl', 'podaje jedzenie przez kratę');
 }

@@ -14,7 +14,7 @@ export { KATEDRA, PROMIEN } from './katedra';
 export { KRUSZCE, OKRUCH } from './kruszce';
 export { POMIESZCZENIA } from './pomieszczenia';
 export { OLTARZ } from './oltarz';
-export { LOCH, BRAMA, BLOGOSLAWIENSTWO } from './loch';
+export { LOCH, BRAMA, BLOGOSLAWIENSTWO, SCHODY } from './loch';
 export { STWORZENIA } from './stworzenia';
 export { KOSZTY, MOCE, SKAZY } from './moce';
 export { KAMERA, TEMPO, STEROWANIE } from './sterowanie';
