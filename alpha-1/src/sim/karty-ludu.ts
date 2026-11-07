@@ -119,9 +119,10 @@ export function wykonajLudu(sim: Sim, e: Wydarzenie, id: string): boolean {
         const i = plan.sciezka[start + k];
         // droga wiernych jako szyb: wali się cały rząd szybu, nie tylko jego środek
         const sy = (i / w.w) | 0;
-        const rzad = w.wSzybie(i % w.w, sy) ? Array.from({ length: w.szybDrogi.x1 - w.szybDrogi.x0 + 1 }, (_, n) => w.idx(w.szybDrogi.x0 + n, sy)) : [i];
-        // (etap 3d: w sali z ołtarzem nic się nie wali — droga do niego zostaje wolna)
-        for (const j of rzad) if (!zajete.has(j) && w.tile[j] !== T.CORE && !w.wSali(j % w.w, sy)) w.set(j % w.w, sy, T.ROCK);
+        const o = w.odcinekDrogi(i % w.w, sy);
+        const rzad = o ? Array.from({ length: o.x1 - o.x0 + 1 }, (_, n) => w.idx(o.x0 + n, sy)) : [i];
+        // (etap 3d: w sali z ołtarzem nic się nie wali — droga do niego zostaje wolna; 6.11: w przejściu bramy też nie)
+        for (const j of rzad) if (!zajete.has(j) && w.tile[j] !== T.CORE && !w.wSali(j % w.w, sy) && !w.wBramie(j % w.w, sy)) w.set(j % w.w, sy, T.ROCK);
       }
       return true;
     }

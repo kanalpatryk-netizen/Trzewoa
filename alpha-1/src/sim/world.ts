@@ -4,6 +4,12 @@ import { SWIAT, RDZEN } from '../nastawy/swiat';
 import { GORA } from '../nastawy/gora';
 import { POMNIK } from '../nastawy/pomnik';
 import { zbudujRuiny, type Ruina } from './ruiny';
+import { LOCH } from '../nastawy/loch';
+
+/** Prostokąt kafli (od–do włącznie); pusty, gdy x1 < x0. */
+export interface Prost { x0: number; x1: number; y0: number; y1: number }
+const PUSTY: Prost = { x0: 0, x1: -1, y0: 0, y1: -1 };
+const wProst = (r: Prost, x: number, y: number, zapas = 0): boolean => x >= r.x0 - zapas && x <= r.x1 + zapas && y >= r.y0 - zapas && y <= r.y1 + zapas;
 
 export const WORLD_W = SWIAT.szerokosc;
 export const WORLD_H = SWIAT.wysokosc;
@@ -64,8 +70,20 @@ export class World {
    * jak po linie (sim/droga.ts: stoi). Liczone z mapy (sim/pielgrzymka.ts: schodyDrogi), nie trafiają do zapisu.
    */
   schody = new Uint8Array(WORLD_W * WORLD_H);
-  /** Szyb drogi wiernych: kolumny od–do i rzędy od szczytu wnęki do dna krypty (pusty, gdy góra nie ma warstw). */
-  szybDrogi = { x0: 0, x1: -1, y0: 0, y1: -1 };
+  /**
+   * Droga wiernych (6.11 — z zakrętem): odcinki szybu, każdy prostokątem kafli — pierwszy od szczytu wnęki przy sali
+   * w dół do dna starej komnaty z kotłem, drugi z podłogi komnaty w dół do dna przedproża lochu. Puste, gdy góra nie
+   * ma warstw. `szybDrogi` to prostokąt, który obejmuje oba (do szybkiego „czy w ogóle blisko”).
+   */
+  odcinkiDrogi: Prost[] = [];
+  szybDrogi: Prost = { ...PUSTY };
+  /** Stara komnata na zakręcie drogi (wnętrze), kocioł na jej środku (kafel, na którym stoi) — LOCH.komnata. */
+  komnata: Prost = { ...PUSTY };
+  kociol = { x: 0, y: 0 };
+  /** Loch z Wielkim Pomnikiem (wnętrze, bez sklepienia nad przęsłami), przejście bramy w jego murze i przedproże. */
+  loch: Prost = { ...PUSTY };
+  brama: Prost = { ...PUSTY };
+  przedproze: Prost = { ...PUSTY };
   /** Alpha, etap 3d: wnętrze sali startowej (kafle od–do) — nic tu nie wyrośnie, co zagrodziłoby drogę do ołtarza. */
   salaOltarza = { x0: 0, x1: -1, y0: 0, y1: -1 };
   /**
@@ -97,11 +115,27 @@ export class World {
     if (this.kucie.size) this.kucie.delete(i);
     if (PASSABLE[t] !== 1) { this.lina[i] = 0; this.schody[i] = 0; }
   }
-  /** Czy kafel leży w szybie drogi wiernych (wykuty czy nie). */
+  /** Czy kafel leży w szybie drogi wiernych (wykuty czy nie) — w którymś z jego odcinków. */
   wSzybie(x: number, y: number): boolean {
     const s = this.szybDrogi;
-    return x >= s.x0 && x <= s.x1 && y >= s.y0 && y <= s.y1;
+    if (x < s.x0 || x > s.x1 || y < s.y0 || y > s.y1) return false;
+    for (const o of this.odcinkiDrogi) if (x >= o.x0 && x <= o.x1 && y >= o.y0 && y <= o.y1) return true;
+    return false;
   }
+  /** Odcinek szybu drogi wiernych, w którym leży kafel (albo null). */
+  odcinekDrogi(x: number, y: number): Prost | null {
+    for (const o of this.odcinkiDrogi) if (x >= o.x0 && x <= o.x1 && y >= o.y0 && y <= o.y1) return o;
+    return null;
+  }
+  // (te cztery przyjmują też położenie postaci — ułamki — i liczą kafel, w którym leży)
+  /** Czy kafel leży we wnętrzu lochu z pomnikiem (zapas — kafli wokół). */
+  wLochu(x: number, y: number, zapas = 0): boolean { return wProst(this.loch, Math.floor(x), Math.floor(y), zapas); }
+  /** Czy kafel leży na przedprożu przed bramą lochu. */
+  wPrzedprozu(x: number, y: number): boolean { return wProst(this.przedproze, Math.floor(x), Math.floor(y)); }
+  /** Czy kafel leży w przejściu bramy (w murze lochu). */
+  wBramie(x: number, y: number): boolean { return wProst(this.brama, Math.floor(x), Math.floor(y)); }
+  /** Czy kafel leży w starej komnacie z kotłem. */
+  wKomnacie(x: number, y: number, zapas = 0): boolean { return wProst(this.komnata, Math.floor(x), Math.floor(y), zapas); }
   passable(x: number, y: number): boolean { return this.inb(x, y) ? PASSABLE[this.tile[y * this.w + x]] === 1 : false; }
   solid(x: number, y: number): boolean { return !this.passable(x, y); }
   hardness(x: number, y: number): number { return HARDNESS[this.get(x, y)]; }
@@ -224,13 +258,16 @@ export class World {
     }
     const wolno = (x: number, y: number) => x >= S.rama + 2 && x < w - S.rama - 2 && y >= stropSali + 2 && y < h - S.rama - 2;
     const podlogaKrypty = this.przedsionekY + RDZEN.przedsionekY;   // pierwszy lity rząd pod kryptą
+    // 6.11: droga z zakrętem, komnata z kotłem, przedproże, brama i loch — najpierw sam układ (ruiny i jaskinie
+    // omijają go), wykuwa się je na końcu (wykujLochIDroge)
+    this.ukladDrogi(cx, dnoSali, podlogaKrypty);
     const zaRdzeniem = (x: number, y: number, zapas: number) => Math.hypot(x - this.coreX, (y - this.coreY) * 0.8) < RDZEN.skorupaX + zapas
       || Math.hypot(x - this.coreX, y - this.przedsionekY) < RDZEN.suchaStrefa + zapas * 0.5
-      || (Math.abs(x - this.coreX) < S.krypta.rx + zapas && y > podlogaKrypty - S.krypta.wysokosc - zapas);
+      || wProst(this.loch, x, y, LOCH.loch.mur + zapas);
     const wSali = (x: number, y: number, zapas: number) => Math.abs(x - cx) < S.sala.rx + zapas && y < dnoSali + zapas;
-    // szyb drogi wiernych (wykujWnekeDrogi) — ruiny stają z dala od niego
-    const szybX1 = cx - S.sala.rx - 1, szybX0 = szybX1 - S.drogaWiernych.szer + 1;
-    const przySzybie = (x: number, zapas: number) => x >= szybX0 - zapas && x <= szybX1 + zapas;
+    // droga wiernych (szyby, komnata z kotłem, przedproże) — ruiny i jaskinie stają z dala od niej
+    const przyDrodze = (x: number, y: number, zapas: number) => this.odcinkiDrogi.some((o) => wProst(o, x, y, zapas))
+      || wProst(this.komnata, x, y, zapas + 1) || wProst(this.przedproze, x, y, zapas + 1);
     // 2. żyły żelaza: kępy rudy w miękkiej i zwykłej skale
     const kepa = (x0: number, y0: number, r: number): void => {
       for (let y = Math.floor(y0 - r - 1); y <= y0 + r + 1; y++) for (let x = Math.floor(x0 - r - 1); x <= x0 + r + 1; x++) {
@@ -266,7 +303,7 @@ export class World {
       for (let p = 0; p < 30; p++) {
         const x = Math.round(S.rama + 3 + rx + rng.next() * (w - 2 * (S.rama + 3 + rx)));
         const y = Math.round(y0 + rng.next() * Math.max(1, y1 - y0));
-        if (wSali(x, y, rx + 4) || zaRdzeniem(x, y, rx + zapas)) continue;
+        if (wSali(x, y, rx + 4) || zaRdzeniem(x, y, rx + zapas) || wProst(this.komnata, x, y, rx + 3) || wProst(this.przedproze, x, y, rx + 3)) continue;
         return [x, y];
       }
       return null;
@@ -297,7 +334,7 @@ export class World {
     }
     // 3e. ruiny z zabytkami w środkowej warstwie — własne losowanie, żeby reszta góry z ziarna została ta sama
     this.ruiny = zbudujRuiny(this, new Rng(this.ziarno * 9781 + 77), g1, g2,
-      (x, y) => wolno(x, y) && !wSali(x, y, 8) && !zaRdzeniem(x, y, 8) && !przySzybie(x, 4));
+      (x, y) => wolno(x, y) && !wSali(x, y, 8) && !zaRdzeniem(x, y, 8) && !przyDrodze(x, y, 4));
     // 4. czapa nad salą i rama dookoła: kamień nie do ruszenia
     for (let y = SURFACE_Y + S.ziemia; y < stropSali; y++) for (let x = 0; x < w; x++) tile[y * w + x] = T.STONE;
     for (let y = SURFACE_Y; y < h; y++) for (let x = 0; x < w; x++) {
@@ -341,36 +378,92 @@ export class World {
     this.ellipse(this.coreX, this.coreY, RDZEN.komoraX, RDZEN.komoraY, T.AIR);
     // (Alpha, etap 5: w komorze stoi Wielki Pomnik demona — render/pomnik.ts; kafli rdzenia już nie ma)
     if (!POMNIK.wlaczony) this.ellipse(this.coreX, this.coreY, RDZEN.promien, RDZEN.promien, T.CORE);
-    const KR = S.krypta;
-    for (let x = this.coreX - KR.rx; x <= this.coreX + KR.rx; x++) {
-      if (x < S.rama || x >= w - S.rama) continue;
-      const dx = (x - this.coreX) / KR.rx;
-      const wys = Math.max(KR.niska, Math.round(KR.wysokosc * (1 - 0.45 * dx * dx) + (noise.fbm(x * 0.21, 91, 2) - 0.5) * 2));
-      for (let y = podlogaKrypty - wys; y < podlogaKrypty; y++) tile[y * w + x] = T.AIR;
-      const i = podlogaKrypty * w + x;
-      if (tile[i] !== T.STONE) tile[i] = T.TWARDA;
-    }
+    // 6.11: zamiast niskiej krypty — loch za murem nie do ruszenia, sklepiony łukami, z wysoką nawą nad przedsionkiem;
+    // wchodzi się do niego tylko przez stalową bramę z przedproża (sim/brama.ts)
+    this.wykujLoch(podlogaKrypty);
     this.ellipse(this.coreX, this.przedsionekY, RDZEN.przedsionekX, RDZEN.przedsionekY, T.AIR);
     this.osuszPrzedsionek();
     for (let k = 0; k < SWIAT.osypywanieNaStart; k++) this.tickSoil(k);
-    this.wykujWnekeDrogi(podlogaKrypty);
+    this.wykujDroge();
     this.unknown = this.w * this.h;
   }
 
   /**
-   * Droga wiernych (25.10): szyb od lewej krawędzi sali na dno krypty. Wnęka u jego szczytu (przy podłodze sali)
-   * jest pusta od początku; w samym szybie nie zostaje kamień nie do ruszenia — inaczej droga by stanęła.
+   * 6.11 — układ drogi wiernych z zakrętem (LOCH): pierwszy szyb od wnęki przy lewej ścianie sali w dół do dna starej
+   * komnaty, komnata w bok, drugi szyb z jej drugiego końca w dół na przedproże, a z przedproża brama do lochu.
    */
-  private wykujWnekeDrogi(podlogaKrypty: number): void {
-    const D = SWIAT.warstwy.drogaWiernych;
+  private ukladDrogi(cx: number, dnoSali: number, podlogaKrypty: number): void {
+    const S = SWIAT.warstwy, D = S.drogaWiernych, Z = LOCH.zakret, KM = LOCH.komnata, L = LOCH.loch, PP = LOCH.przedproze;
+    const dolSali = dnoSali - 1;
+    const s1x1 = cx - S.sala.rx - 1, s1x0 = s1x1 - D.szer + 1;
+    const yK1 = dolSali + Z.wDol, yK0 = yK1 - KM.wys + 1;
+    const s2x0 = s1x0 + Z.strona * Z.wBok, s2x1 = s2x0 + D.szer - 1;
+    this.komnata = { x0: Math.min(s1x0, s2x0) - KM.zaSzybem, x1: Math.max(s1x1, s2x1) + KM.zaSzybem, y0: yK0, y1: yK1 };
+    this.kociol = { x: Math.round((this.komnata.x0 + this.komnata.x1) / 2), y: yK1 };
+    this.loch = { x0: this.coreX - L.rx, x1: this.coreX + L.rx, y0: podlogaKrypty - L.nawa, y1: podlogaKrypty - 1 };
+    const bx0 = Z.strona < 0 ? this.loch.x0 - L.mur : this.loch.x1 + 1;
+    this.brama = { x0: bx0, x1: bx0 + L.mur - 1, y0: podlogaKrypty - LOCH.brama.wys, y1: podlogaKrypty - 1 };
+    this.przedproze = Z.strona < 0
+      ? { x0: s2x0 - PP.zaSzybem, x1: this.brama.x0 - 1, y0: podlogaKrypty - PP.wys, y1: podlogaKrypty - 1 }
+      : { x0: this.brama.x1 + 1, x1: s2x1 + PP.zaSzybem, y0: podlogaKrypty - PP.wys, y1: podlogaKrypty - 1 };
+    this.odcinkiDrogi = [
+      { x0: s1x0, x1: s1x1, y0: dolSali - D.wneka + 1, y1: yK1 },
+      { x0: s2x0, x1: s2x1, y0: yK1 + 1, y1: podlogaKrypty - 1 },
+    ];
+    const o = this.odcinkiDrogi;
+    this.szybDrogi = { x0: Math.min(o[0].x0, o[1].x0), x1: Math.max(o[0].x1, o[1].x1), y0: o[0].y0, y1: o[1].y1 };
+  }
+
+  /** Wysokość sklepienia lochu nad kolumną x (rzędy wnętrza nad podłogą): łuki przęseł i wysoka nawa nad przedsionkiem. */
+  wysokoscLochu(x: number): number {
+    const L = LOCH.loch;
+    const f = (((x - this.loch.x0) % L.przeslo) + L.przeslo) % L.przeslo / L.przeslo;
+    const luk = L.sklepienie + Math.round(L.luk * Math.sin(Math.PI * f));
+    const dx = (x - this.coreX) / L.nawaSzer;
+    const nawa = Math.abs(dx) <= 1 ? Math.round(L.nawa - 3 * dx * dx) : 0;
+    return Math.max(luk, nawa);
+  }
+
+  /** Loch (6.11): wnętrze pod sklepieniem, mur nie do ruszenia dookoła i kamienna posadzka; przejście bramy zamknięte. */
+  private wykujLoch(podloga: number): void {
+    const L = LOCH.loch, l = this.loch, tile = this.tile, W = this.w;
+    const mur = (x: number, y: number) => { if (this.inb(x, y)) tile[y * W + x] = T.STONE; };
+    for (let x = l.x0 - L.mur; x <= l.x1 + L.mur; x++) {
+      const xx = Math.max(l.x0, Math.min(l.x1, x));
+      const hh = this.wysokoscLochu(xx);
+      for (let y = podloga - hh - L.mur; y <= podloga + 1; y++) mur(x, y);
+      if (x < l.x0 || x > l.x1) continue;
+      for (let y = podloga - hh; y < podloga; y++) tile[y * W + x] = T.AIR;
+    }
+    // mur boczny sięga nad najwyższy łuk przy ścianie (sklepienie przy ścianie jest niższe niż nad przęsłem)
+    for (const sx of [l.x0 - L.mur, l.x1 + 1]) for (let x = sx; x < sx + L.mur; x++) for (let y = podloga - L.sklepienie - L.luk - L.mur; y <= podloga + 1; y++) mur(x, y);
+  }
+
+  /**
+   * Droga wiernych (6.11): stara komnata z kotłem i przedproże przed bramą stoją puste od początku (za murem nie do
+   * ruszenia, wchodzi się do nich szybem), wnęka u szczytu pierwszego szybu też; w samych szybach nie zostaje kamień nie
+   * do ruszenia — inaczej droga by stanęła (szyb przebija sklepienie komnaty, jej posadzkę i strop przedproża).
+   */
+  private wykujDroge(): void {
+    const tile = this.tile, W = this.w;
+    const pusta = (r: Prost) => {
+      for (let y = r.y0 - 1; y <= r.y1 + 1; y++) for (let x = r.x0 - 1; x <= r.x1 + 1; x++) {
+        if (!this.inb(x, y)) continue;
+        tile[y * W + x] = wProst(r, x, y) ? T.AIR : T.STONE;
+      }
+    };
+    pusta(this.komnata);
+    // przedproże: z prawej (od strony lochu) jego ścianą jest mur lochu z przejściem bramy
+    const pp = this.przedproze;
+    for (let y = pp.y0 - 1; y <= pp.y1 + 2; y++) for (let x = pp.x0 - 1; x <= pp.x1 + 1; x++) {
+      if (!this.inb(x, y) || this.wLochu(x, y)) continue;
+      tile[y * W + x] = wProst(pp, x, y) ? T.AIR : T.STONE;
+    }
     const s = this.salaOltarza;
-    const x1 = s.x0, x0 = x1 - D.szer + 1;
-    const y0 = s.y1 - D.wneka + 1, y1 = podlogaKrypty - 1;
-    this.szybDrogi = { x0, x1, y0, y1 };
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+    for (const o of this.odcinkiDrogi) for (let y = o.y0; y <= o.y1; y++) for (let x = o.x0; x <= o.x1; x++) {
       const i = this.idx(x, y);
-      if (y <= s.y1) this.tile[i] = T.AIR;
-      else if (this.tile[i] === T.STONE) this.tile[i] = T.ROCK;
+      if (y <= s.y1) tile[i] = T.AIR;
+      else if (tile[i] === T.STONE) tile[i] = T.ROCK;
     }
   }
 

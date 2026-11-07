@@ -15,6 +15,11 @@ export const MROK = {
    * rycina ma teraz szkic w nieznanym i jasne jaskinie — ciemność ma je przygasić, nie zgasić.
    */
   ciemnosc: 0.58, ciemnoscPauza: 0.38,
+  /**
+   * 6.11: loch za stalową bramą, przedproże i stara komnata z kotłem — mrok gęstszy (dokłada się do zwykłego krycia),
+   * „skrajnie mroczny, ale przyjazny dla oka”: światło z ognia wycina w nim miękkie, ciepłe plamy.
+   */
+  gesty: 0.62,
   /** Promienie światła (kafle). */
   swiatlo: {
     robotnik: 7.6, pobozny: 5.6, pobozny_modli: 6.6, rycerz: 5.4,

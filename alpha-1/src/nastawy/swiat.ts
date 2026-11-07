@@ -149,18 +149,13 @@ export const SWIAT = {
     jaskinie: { ile: 15, rxOd: 4, rxDo: 9, ryOd: 1.8, ryDo: 3.4, zlotoSzansa: 0.75, zlotoOd: 3, zlotoDo: 7 },
     /** Kieszenie w płytkiej i głębokiej warstwie (mniejsze, bez złota). */
     kieszenie: { plytka: 9, gleboka: 7, rxOd: 2.5, rxDo: 5.5, ryOd: 1.2, ryDo: 2.4 },
-    /**
-     * Krypta nad rdzeniem — na szkicu „pole”, w którym leży rdzeń: szeroki, niski pas z płaską podłogą. Tam modlą się
-     * pobożni, rycerz trzyma wartę obok, a przed falą Strażników jest dokąd odejść — końce krypty leżą dalej od
-     * przedsionka niż zasięg Strażników z zapasem (STRAZNICY.limitOdRdzenia + ucieczkaZapas = 36 kafli).
-     * `rx` — pół szerokości; wysokość sklepienia nad rdzeniem, a na końcach najmniej `niska`.
-     */
-    krypta: { rx: 44, wysokosc: 6, niska: 3 },
+    // (krypta nad rdzeniem — od 6.11 loch za stalową bramą: nastawy/loch.ts, LOCH.loch)
     /**
      * Droga wiernych (propozycja Pawła, 25.10): nie wąski korytarz, tylko szyb jak pomieszczenie — tylu kafli szeroki,
-     * prosto w dół od lewej krawędzi sali aż na dno krypty. U jego szczytu, przy podłodze sali, od początku jest pusta
-     * wnęka (tyle rzędów) — tam zaczyna się kopać. W każdym wykutym kaflu szybu same pojawiają się schody (chodzi się
-     * nimi w górę i w dół), a kafle szybu kuje się `kucieSzybciej` razy szybciej niż zwykłą skałę — szyb jest szerszy
+     * od lewej krawędzi sali w dół (6.11: z zakrętem przez komnatę z kotłem — nastawy/loch.ts, LOCH.zakret). U jego szczytu, przy podłodze sali, od początku jest pusta
+     * wnęka (tyle rzędów) — tam zaczyna się kopać. Wykutym szybem chodzi się w górę i w dół po drabinie, a schody
+     * stawia się w nim od dołu, gdy odcinek jest wykopany (6.11: sim/budowa-schodow.ts); kafle szybu kuje się
+     * `kucieSzybciej` razy szybciej niż zwykłą skałę — szyb jest szerszy
      * od dawnej drogi (ok. 335 kafli; szyb 5 × 178 ≈ 890), a zejście ma trwać tyle co przedtem.
      */
     drogaWiernych: { szer: 5, wneka: 2, kucieSzybciej: 2.5 },

@@ -37,6 +37,9 @@ import { kropla } from '../render/kruszce';
 import { ZBROJA, CZESC, type CzescZbroi } from '../nastawy/zbroja';
 import { SWIAT } from '../nastawy/swiat';
 import { POMNIK, DEMON } from '../nastawy/pomnik';
+import { RUCHY_RYCERZA, RUCHY_BOSSA, type IdRuchuRycerza, type IdRuchuBossa } from '../nastawy/walka';
+import { BRAMA, BLOGOSLAWIENSTWO } from '../nastawy/loch';
+import { podgladWalkiDemona } from '../render/demon-boss';
 import { rysujPosag, rysujWstajacego, rysujKonajacego, cokol, gruz } from '../render/pomnik';
 import { rycinaDloniDemona } from '../render/dlon-demona';
 import { rysujRelikwiarz, RELIKWIARZ_PROPORCJA } from '../render/relikwiarz';
@@ -305,7 +308,7 @@ function pomnikRycina({ ctx, w, h, t }: Plotno): void {
   rysujPosag(ctx, w / 2, h * 0.86, H, H / POMNIK.wysokosc, stan, t, stan ? swieze : 0);
 }
 
-/** Demon z pomnika: wstaje z gruzu, otwiera oczy, rozpościera skrzydła (w kółko). */
+/** Demon z pomnika: przebija się z gruzu, kamień ożywa, aureola bucha ogniem i ryk (w kółko). */
 function demonRycina({ ctx, w, h, t }: Plotno): void {
   sklepienie(ctx, w, h, 22);
   const H = h * 0.95, y = h * 0.86;
@@ -518,6 +521,159 @@ function kuzniaRycina(p: Plotno): void {
   rysujCzesc(ctx, 'helm', ax, ay - h * 0.04, h * 0.1, 'rgba(255,150,70,0.95)', 'rgba(60,20,8,0.9)');
   ctx.restore();
   robotnikNaRycinie(ctx, w * 0.47, y, h * 0.42, t, 'buduje');
+}
+
+/** Rycerz z ryciny „Walka rycerza” — w pełnej zbroi, ruchy jeden po drugim. */
+let rycerzWalki: { sim: Sim & { tick: number }; c: Creature } | null = null;
+const POKAZ_RYCERZA: IdRuchuRycerza[] = ['ciecieZGory', 'pchniecie', 'seriaTrzech', 'piruet', 'ciosZWyskoku', 'mlynek', 'egzekucja', 'uderzenieTarcza', 'szarzaZTarcza', 'kolano', 'kontraNapiersnika', 'blokTarcza', 'parowanie', 'powalony'];
+const NAZWY_CZESCI: Record<string, string> = { helm: 'hełm', napiersnik: 'napierśnik', naramienniki: 'naramienniki', nakolanniki: 'nakolanniki', tarcza: 'tarcza' };
+const wymagania = (d: { weteran?: boolean; zbroja?: string[] }): string => [d.weteran ? 'weteran' : '', ...(d.zbroja ?? []).map((z) => NAZWY_CZESCI[z] ?? z)].filter(Boolean).join(' + ');
+
+/** Walka rycerza: ruch za ruchem (podpis i wymaganie u góry), z iskrami w chwili trafienia. */
+function walkaRycerzaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 9);
+  rycerzWalki ??= (() => {
+    const sim = { clans: [{ race: Race.GOBLIN, tint: 0 }], tick: 0 } as unknown as Sim & { tick: number };
+    const c = makeCreature(Race.GOBLIN, 0, 0, 0, 908);
+    c.rola = 'rycerz';
+    c.zbroja = ['helm', 'naramienniki', 'napiersnik', 'nakolanniki', 'tarcza'];
+    return { sim, c };
+  })();
+  const { sim, c } = rycerzWalki;
+  const tik = Math.floor(t * 0.12);
+  // ruchy po kolei, każdy w swojej długości i z chwilą gardy po nim
+  const dl = (id: IdRuchuRycerza): number => RUCHY_RYCERZA[id].dl + 40;
+  const suma = POKAZ_RYCERZA.reduce((s, id) => s + dl(id), 0);
+  let k = tik % suma, i = 0;
+  while (k >= dl(POKAZ_RYCERZA[i])) { k -= dl(POKAZ_RYCERZA[i]); i++; }
+  const id = POKAZ_RYCERZA[i], def = RUCHY_RYCERZA[id];
+  sim.tick = tik;
+  c.ruch = k < def.dl ? { id, od: tik - k, dl: def.dl, cel: -1, traf: 0, zadane: (def.traf ?? []).map(() => 30), kier: 1, sila: 0.3 } : undefined;
+  const y = h * 0.84;
+  ctx.save(); ctx.translate(w * 0.42, y); rysujPostac(ctx, sim, c, h * 0.5, t, 'walczy'); ctx.restore();
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4;
+  ctx.fillStyle = 'rgba(240,228,204,0.95)'; ctx.font = `${Math.round(h * 0.06)}px Georgia, serif`; ctx.textAlign = 'center';
+  ctx.fillText(def.nazwa, w / 2, h * 0.12);
+  const wym = wymagania(def);
+  if (wym) { ctx.fillStyle = 'rgba(236,166,110,0.95)'; ctx.font = `italic ${Math.round(h * 0.045)}px Georgia, serif`; ctx.fillText(wym, w / 2, h * 0.19); }
+  ctx.restore();
+}
+
+const POKAZ_DEMONA: IdRuchuBossa[] = ['zGory', 'zamach', 'podwojnyZamach', 'zgniecenie', 'przygniecenie', 'tupniecie', 'tchnienie', 'wybuchAureoli', 'biczLancucha', 'szarza', 'uderzenieWZiemie', 'ryk', 'blok', 'zachwianie'];
+
+/**
+ * 6.11 — Kocioł i stalowa brama: po lewej dwóch zakapturzonych rzuca zaklęcia nad kotłem (nici światła, runy), po prawej
+ * krata bramy w murze lochu podnosi się, póki zaklinają, i powoli opada, gdy przestaną; z boku progi „przejdzie”
+ * i „przeczołga się”. Czas ściśnięty: 40 s zaklinania to 4 s ryciny.
+ */
+function bramaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 31);
+  const okres = 4000 + 11000 + 2000;
+  const f = t % okres;
+  const otw = f < 4000 ? f / 4000 : f < 15000 ? Math.max(0, 1 - (f - 4000) / 11000) : 0;
+  const zaklina = f < 4000;
+  const y = h * 0.84;
+  // kocioł
+  const kx = w * 0.3, kr = h * 0.13;
+  const zg = ctx.createRadialGradient(kx, y - kr * 0.3, 0, kx, y - kr * 0.3, kr * 2.4);
+  zg.addColorStop(0, `rgba(110,220,196,${zaklina ? 0.4 : 0.18})`); zg.addColorStop(1, 'rgba(40,120,110,0)');
+  ctx.fillStyle = zg; ctx.fillRect(kx - kr * 3, y - kr * 4, kr * 6, kr * 5);
+  ctx.fillStyle = 'rgb(30,31,35)';
+  ctx.beginPath(); ctx.moveTo(kx - kr, y - kr * 1.1); ctx.quadraticCurveTo(kx - kr * 1.1, y - kr * 0.1, kx, y - kr * 0.05); ctx.quadraticCurveTo(kx + kr * 1.1, y - kr * 0.1, kx + kr, y - kr * 1.1); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = `rgba(120,224,200,${zaklina ? 0.85 : 0.5})`; ctx.beginPath(); ctx.ellipse(kx, y - kr * 1.1, kr * 0.92, kr * 0.13, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgb(30,31,35)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(kx - kr * 1.1, y); ctx.lineTo(kx - kr * 0.7, y - kr * 0.6); ctx.moveTo(kx + kr * 1.1, y); ctx.lineTo(kx + kr * 0.7, y - kr * 0.6); ctx.stroke();
+  // dwóch zaklinających: zakapturzone sylwetki z uniesionymi dłońmi
+  for (const s of [-1, 1]) {
+    const px = kx + s * kr * 2.1, ph = h * 0.3;
+    ctx.fillStyle = 'rgb(208,198,176)';
+    ctx.beginPath(); ctx.moveTo(px - ph * 0.16, y); ctx.lineTo(px - ph * 0.1, y - ph * 0.72); ctx.quadraticCurveTo(px, y - ph * 1.02, px + ph * 0.1, y - ph * 0.72); ctx.lineTo(px + ph * 0.16, y); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = 1.4; ctx.stroke();
+    const hx = px - s * ph * 0.2, hy = y - ph * (zaklina ? 0.78 : 0.55);
+    ctx.strokeStyle = 'rgb(208,198,176)'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(px - s * ph * 0.05, y - ph * 0.6); ctx.lineTo(hx, hy); ctx.stroke();
+    if (zaklina) {
+      ctx.strokeStyle = 'rgba(150,236,214,0.75)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + kx) / 2, hy - kr * 1.2 + Math.sin(t * 0.006 + s) * kr * 0.3, kx, y - kr * 1.1); ctx.stroke();
+    }
+  }
+  // brama: ościeże, nadproże z runami, krata uniesiona o otwarcie
+  const bx = w * 0.72, bw = w * 0.13, bh = h * 0.42, by = y - bh;
+  ctx.fillStyle = 'rgb(84,74,64)'; ctx.fillRect(bx - bw * 0.35, by - h * 0.14, bw * 1.7, bh + h * 0.14);
+  ctx.fillStyle = 'rgb(40,33,28)'; ctx.fillRect(bx, by, bw, bh);
+  ctx.save(); ctx.beginPath(); ctx.rect(bx, by, bw, bh); ctx.clip();
+  const gora = by - otw * bh;
+  for (let k = 0; k < 6; k++) { const xx = bx + bw * ((k + 0.5) / 6); ctx.fillStyle = 'rgb(120,132,146)'; ctx.fillRect(xx - 1.6, gora - bh, 3.2, bh * 2 - 4); ctx.beginPath(); ctx.moveTo(xx - 2.6, gora + bh - 6); ctx.lineTo(xx + 2.6, gora + bh - 6); ctx.lineTo(xx, gora + bh); ctx.closePath(); ctx.fill(); }
+  for (let k = 0; k < 4; k++) { ctx.fillStyle = 'rgb(70,78,88)'; ctx.fillRect(bx, gora + bh * ((k + 0.5) / 4) - 1.5, bw, 3); }
+  ctx.restore();
+  for (let n = 0; n < 5; n++) {
+    const a = Math.max(0, Math.min(1, otw * 5 - n));
+    ctx.fillStyle = a > 0 ? (zaklina ? `rgba(150,236,214,${0.4 + 0.6 * a})` : `rgba(236,210,160,${0.3 + 0.5 * a})`) : 'rgba(0,0,0,0.5)';
+    ctx.beginPath(); ctx.arc(bx + bw * ((n + 0.5) / 5), by - h * 0.07, 2.6, 0, Math.PI * 2); ctx.fill();
+  }
+  // progi przejścia: wyprostowany i na czworakach
+  ctx.font = `${Math.round(h * 0.045)}px Georgia, serif`; ctx.textAlign = 'right';
+  for (const [prog, napis] of [[BRAMA.idzieOd, 'przejdzie'], [BRAMA.czolgaOd, 'przeczołga się']] as [number, string][]) {
+    const yy = y - prog * bh;
+    ctx.strokeStyle = 'rgba(240,228,204,0.5)'; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(bx - bw * 0.35 - 4, yy); ctx.lineTo(bx - bw * 0.35 - 14, yy); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = otw >= prog ? 'rgba(240,228,204,0.95)' : 'rgba(240,228,204,0.4)'; ctx.fillText(napis, bx - bw * 0.35 - 17, yy + 4);
+  }
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4;
+  ctx.fillStyle = 'rgba(240,228,204,0.95)'; ctx.font = `${Math.round(h * 0.055)}px Georgia, serif`; ctx.textAlign = 'center';
+  ctx.fillText(zaklina ? 'zaklinają — krata się unosi' : otw > 0 ? 'cisza — krata powoli opada' : 'brama zamknięta', w / 2, h * 0.1);
+  ctx.restore();
+}
+
+/** 6.11 — Modlitwa za innych: modlący się w środku kręgu, wokół trzej z ludu, nici światła i złote drobiny. */
+function modlitwaZaInnychRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 37);
+  const y = h * 0.84, cx = w / 2, R = w * 0.4;
+  const puls = 0.5 + 0.5 * Math.sin(t * 0.002);
+  ctx.save(); ctx.translate(cx, y); ctx.scale(1, 0.2);
+  const g = ctx.createRadialGradient(0, 0, R * 0.2, 0, 0, R);
+  g.addColorStop(0, `rgba(255,226,150,${0.25 + 0.08 * puls})`); g.addColorStop(1, 'rgba(255,214,130,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, R, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
+  const postac = (x: number, ph: number, kolor: string) => {
+    ctx.fillStyle = kolor; ctx.beginPath(); ctx.moveTo(x - ph * 0.15, y); ctx.lineTo(x - ph * 0.1, y - ph * 0.72); ctx.quadraticCurveTo(x, y - ph * 1.02, x + ph * 0.1, y - ph * 0.72); ctx.lineTo(x + ph * 0.15, y); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = 'rgba(20,12,8,0.9)'; ctx.lineWidth = 1.4; ctx.stroke();
+  };
+  const sg = ctx.createLinearGradient(0, y - h * 0.6, 0, y);
+  sg.addColorStop(0, 'rgba(255,230,170,0)'); sg.addColorStop(0.5, `rgba(255,230,170,${0.2 + 0.08 * puls})`); sg.addColorStop(1, 'rgba(255,230,170,0.04)');
+  ctx.fillStyle = sg; ctx.fillRect(cx - w * 0.05, y - h * 0.6, w * 0.1, h * 0.6);
+  postac(cx, h * 0.34, 'rgb(214,204,182)');
+  for (const [dx, kolor] of [[-0.3, 'rgb(70,74,84)'], [0.22, 'rgb(150,110,70)'], [0.34, 'rgb(120,96,70)']] as [number, string][]) {
+    const x = cx + w * dx;
+    ctx.strokeStyle = 'rgba(255,236,180,0.5)'; ctx.lineWidth = 1.3;
+    ctx.beginPath(); ctx.moveTo(cx, y - h * 0.3); ctx.quadraticCurveTo((cx + x) / 2, y - h * 0.5, x, y - h * 0.24); ctx.stroke();
+    postac(x, h * 0.28, kolor);
+    for (let n = 0; n < 3; n++) {
+      const f = (t * 0.0007 + n / 3 + dx) % 1;
+      ctx.fillStyle = `rgba(255,230,160,${0.7 * (1 - f)})`;
+      ctx.beginPath(); ctx.arc(x + Math.sin(f * 9 + n) * 6, y - h * 0.1 - f * h * 0.25, 1.8, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+}
+
+/** Walka demona: ruch za ruchem kukły z pomnika. */
+function walkaDemonaRycina(p: Plotno): void {
+  const { ctx, w, h, t } = p;
+  sklepienie(ctx, w, h, 24);
+  const tik = Math.floor(t * 0.12);
+  const dl = (id: IdRuchuBossa): number => (RUCHY_BOSSA[id].dl || 120) + 30;
+  const suma = POKAZ_DEMONA.reduce((s, id) => s + dl(id), 0);
+  let k = tik % suma, i = 0;
+  while (k >= dl(POKAZ_DEMONA[i])) { k -= dl(POKAZ_DEMONA[i]); i++; }
+  const id = POKAZ_DEMONA[i], def = RUCHY_BOSSA[id];
+  ctx.save(); ctx.translate(w * 0.5, h * 0.9); podgladWalkiDemona(ctx, h * 0.6, id, Math.min(k, (def.dl || 120) - 1), t, 1); ctx.restore();
+  ctx.save();
+  ctx.shadowColor = 'rgba(0,0,0,0.9)'; ctx.shadowBlur = 4;
+  ctx.fillStyle = 'rgba(240,228,204,0.95)'; ctx.font = `${Math.round(h * 0.06)}px Georgia, serif`; ctx.textAlign = 'center';
+  ctx.fillText(def.nazwa, w / 2, h * 0.1);
+  ctx.restore();
 }
 
 /** Rycerz z ryciny „Zbroja rycerza” — własna atrapa, bo zbroja na niej się zmienia (inne ryciny jej nie dzielą). */
@@ -1066,6 +1222,16 @@ export const TABLICE: Tablica[] = [
     kiedy: 'Nie chcesz czekać? Zaznacz rycerza i wskaż kuźnię — pójdzie od razu (gdy nic nie wisi, odmówi). Co nosi, widać na karcie postaci.',
     rycina: zbrojaRycina,
   },
+  {
+    id: 'walkaRycerza', grupa: 'zasoby', nazwa: 'Walka rycerza', lacina: 'Ars pugnandi',
+    opis: (() => {
+      const grupa = (f: (d: (typeof RUCHY_RYCERZA)[IdRuchuRycerza]) => boolean): string => (Object.values(RUCHY_RYCERZA)).filter((d) => d.rodzaj === 'atak' && f(d)).map((d) => d.nazwa.toLowerCase()).join(', ');
+      const zbr = (Object.values(RUCHY_RYCERZA)).filter((d) => d.rodzaj === 'atak' && d.zbroja && !d.weteran).map((d) => `${d.nazwa.toLowerCase()} (${wymagania(d)})`).join(', ');
+      return `Rycerz walczy ruchami — każdy to osobna, długa animacja z zamachem, uderzeniem i powrotem do gardy, a rana pada dokładnie wtedy, gdy spada ostrze. Zawsze: ${grupa((d) => !d.weteran && !d.zbroja)}. Tylko weteran: ${grupa((d) => !!d.weteran)}. Tylko w zbroi z kuźni: ${zbr}. Broni się sam: z tarczą zasłania się blokiem (zostaje ułamek rany), weteran paruje ostrzem i od razu kontruje, w nakolannikach robi unik, w napierśniku przyjmuje cios na blachę i tnie. Mała rana tylko go wzdryga, duża przerywa atak, a najcięższe ciosy demona zwalają go z nóg — wstaje, podpierając się mieczem. Iskry, odpryski i odrzut są tym większe, im mocniejszy cios.`;
+    })(),
+    kiedy: `Weteranem zostaje po ${Math.round(LUD.weteranPo / 7200)} minutach w ludzie — póki syty, a lud wierny. Kuj mu zbroję: każda część odblokowuje nowe ruchy.`,
+    rycina: walkaRycerzaRycina,
+  },
   // prawa góry
   {
     id: 'pamiec', grupa: 'prawa', nazwa: 'Pamięć', lacina: 'Memoria',
@@ -1087,20 +1253,20 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'skorupa', grupa: 'prawa', nazwa: 'Wielki Pomnik', lacina: 'Monumentum daemonis',
-    opis: `Na dnie góry, w komorze pod kryptą, na cokole z wyrytymi znakami kuca olbrzymi kamienny demon zakuty w łańcuchy — w środku śpi żywy. Kilof go nie ruszy; kruszy go tylko modlitwa: gdy w krypcie modli się co najmniej ${RYTUAL.potrzebaWiernych} pobożny z oddaniem od ${proc(RYTUAL.minOddanie)}. Pęka w trzech stanach: przy ${POMNIK.stany[0]}% biegną po nim rysy, przy ${POMNIK.stany[1]}% odpadają kawałki (róg, skrzydło, bark), przy ${POMNIK.stany[2]}% rysy żarzą się czerwono od środka. Każde pęknięcie idzie wolniej od poprzedniego, a na Koszmarze pomnik jest twardszy (${proc(RYTUAL.koszmarMnoznik)} tempa). Przy 100% rozpada się w gruz, a z gruzu wstaje demon.`,
+    opis: `Na dnie góry, w komorze pod kryptą, na cokole z wyrytymi znakami stoi olbrzymi kamienny demon z rękami wzniesionymi, z płomienną aureolą za głową i naszyjnikiem z czaszek, zakuty w łańcuchy — w środku śpi żywy. Kilof go nie ruszy; kruszy go tylko modlitwa: gdy w krypcie modli się co najmniej ${RYTUAL.potrzebaWiernych} pobożny z oddaniem od ${proc(RYTUAL.minOddanie)}. Pęka w trzech stanach: przy ${POMNIK.stany[0]}% biegną po nim rysy, przy ${POMNIK.stany[1]}% odpadają kawałki (czubki aureoli, palce, stopa), przy ${POMNIK.stany[2]}% rysy żarzą się czerwono od środka. Każde pęknięcie idzie wolniej od poprzedniego, a na Koszmarze pomnik jest twardszy (${proc(RYTUAL.koszmarMnoznik)} tempa). Przy 100% rozpada się w gruz, a z gruzu wstaje demon.`,
     kiedy: `Trzymaj w krypcie pobożnych, najedzonych i wierzących. Przy ${STRAZNICY.fale.filter((f) => !f.boss).map((f) => `${f.prog}`).join(', ')}% wychodzą Strażnicy Snu — dopóki żyją, pomnik nie pęka.`,
     rycina: pomnikRycina,
   },
   {
     id: 'rdzen', grupa: 'prawa', nazwa: 'Ostatnie uderzenie', lacina: 'Ictus ultimus',
-    opis: 'Gdy rycerz zada demonowi ostatnie uderzenie, czas na chwilę zwalnia, a kamera jedzie do demona. Cios odrzuca go w tył; po ciele rozchodzą się rysy złotego światła, demon pada na kolana — i rozsadza go od środka: rozbłysk, fala światła po krypcie, a z niego zostaje popiół i gasnące iskry. Jesteś wolny — to koniec gry.',
+    opis: 'Gdy rycerz zada demonowi ostatnie uderzenie, czas na chwilę zwalnia, a kamera jedzie do demona. Cios odrzuca go w tył, złote światło rozsadza mu pierś; zatacza się z dłonią na piersi, po całym ciele biegną złote pęknięcia, a ogień aureoli gaśnie. Pada na kolana, kamienieje od stóp w górę — i rozpada się na kawałki, które obracają się w pył i popiół: fala światła po krypcie, gasnące iskry i kupka kamieni. Jesteś wolny — to koniec gry.',
     kiedy: 'Ostatni cios zadaje rycerz (albo robotnik w hełmie, albo pobożny księgą, gdy walczących brak). W przyszłości będzie tu przerywnik filmowy.',
     rycina: uderzenieRycina,
   },
   {
     id: 'warstwy', grupa: 'prawa', nazwa: 'Warstwy góry', lacina: 'Strata montis',
     opis: 'Góra ma piętra. Z powierzchni prowadzą dwa otwory: szerszy szyb pod katedrą, którym z jej rozety pada światło na ołtarz, i węższy, nad którym stoi kozioł — tędy konwój spuszcza wiadro z jedzeniem — oba do sali z siedzibą. Nad salą leży czapa skały nie do ruszenia, a całą górę otacza gruba rama, której nikt nie przekuje. Niżej trzy warstwy: płytka — miękka skała i kępy rdzawego żelaza; środkowa — zwykła skała, małe jaskinie ze złotem pod dnem i ruiny; głęboka — twarda skała, kuje się najwolniej. Na samym dole szeroka, niska krypta z płaską podłogą, a pod jej środkiem, w komorze, Wielki Pomnik demona — zawsze w tym samym miejscu.',
-    kiedy: 'Każda warstwa w dół to dłuższa droga z powrotem do wiadra. Żelazo leży tuż pod salą, po złoto trzeba zejść do środkowej, a droga wiernych prowadzi przez wszystkie trzy aż do krypty.',
+    kiedy: 'Każda warstwa w dół to dłuższa droga z powrotem do wiadra. Żelazo leży tuż pod salą, po złoto trzeba zejść do środkowej, a droga wiernych prowadzi przez wszystkie trzy — z zakrętem przez starą komnatę z kotłem — aż do stalowej bramy lochu.',
     rycina: warstwyRycina,
   },
   {
@@ -1141,9 +1307,30 @@ export const TABLICE: Tablica[] = [
   },
   {
     id: 'boss', grupa: 'prawa', nazwa: DEMON.nazwa, lacina: 'Daemon lapidis',
-    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: prostuje się, otwiera płonące oczy, rozpościera skrzydła i ryczy — a z nim wychodzą ostatni Strażnicy. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Co jakiś czas uderza w ziemię i zasypuje kawałek drogi wiernych. Gdy w krypcie modlą się pobożni, słabnie — bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
+    opis: `Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: przebija się ręka, druga, kamienna głowa z zapalającymi się oczami; wstaje, kamień ożywa na nim od piersi w ciemną, żarzącą się skórę, aureola za jego głową bucha ogniem — i ryczy — a z nim wychodzą ostatni Strażnicy. To ten sam posąg, tylko żywy: wciąż ma na nadgarstkach i kostkach kajdany z zerwanymi łańcuchami. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (${DEMON.hp} życia). Walczy dziewiętnastoma ruchami (patrz „Walka demona”); co jakiś czas wznosi ręce z rykiem, wali pięściami w ziemię i zasypuje kawałek drogi wiernych. Dłoni z otchłani rozkazuje gestem. Ranny pęka i dymi, w szale drży i płonie. Gdy w krypcie modlą się pobożni, kuli się i zasłania twarz, a złoty pył parzy go do żywego — słabnie; bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.`,
     kiedy: 'Rycerz na demona, pobożni do modlitwy, robotnicy przy drodze. Życie demona widać na pasku nad płytą.',
     rycina: demonRycina,
+  },
+  {
+    id: 'walkaDemona', grupa: 'prawa', nazwa: 'Walka demona', lacina: 'Furor daemonis',
+    opis: (() => {
+      const z = (r: string): string => (Object.values(RUCHY_BOSSA)).filter((d) => d.rodzaj === r).map((d) => d.nazwa.toLowerCase() + (d.zycieDo ? ` (gdy życia mniej niż ${Math.round(d.zycieDo * 100)}%)` : '')).join(', ');
+      return `Demon walczy dziewiętnastoma ruchami, każdy z długim zamachem — widać, co nadchodzi. W zwarciu: ${z('atak')}. Na obszar: ${z('obszar')}. Z dystansu: ${z('dystans')}. Do tego ${z('zdolnosc')}. Gdy rycerz bierze zamach, czasem zasłania się przedramieniem (zostaje połowa rany — fintę przepuszcza); po ciężkim ciosie się chwieje i nie bije, a przy połowie i ćwierci życia pada na kolano, a potem ryczy. Ciosy z góry, podcięcie, szarża i wybuch aureoli mogą powalić rycerza, przygniecenie trzyma go pod dłonią.`;
+    })(),
+    kiedy: 'Nie stój z rycerzem przed demonem, gdy ten wciąga powietrze (ogień) albo kuli się z rękami na piersi (wybuch aureoli) — a gdy klęknie, to twoja chwila.',
+    rycina: walkaDemonaRycina,
+  },
+  {
+    id: 'brama', grupa: 'prawa', nazwa: 'Kocioł i stalowa brama', lacina: 'Porta ferrea',
+    opis: `Droga wiernych skręca: pierwszy szyb schodzi do starej komnaty z pajęczynami, w której stoi kocioł, komnatą idzie się w bok, a drugi szyb schodzi na przedproże lochu z Wielkim Pomnikiem. Do lochu wchodzi się tylko przez stalową bramę. Krata podnosi się, póki przy kotle rzuca zaklęcia co najmniej ${BRAMA.potrzeba} pobożnych (rozkaz „Do kotła”) — pełne otwarcie po ${Math.round(BRAMA.otwieranie / 120)} s; gdy przestaną, krata powoli opada (${Math.round(BRAMA.opadanie / 120)} s). Wyprostowanym przejdzie się od ${Math.round(BRAMA.idzieOd * 100)}% otwarcia, niżej trzeba się przeczołgać — do ${Math.round(BRAMA.czolgaOd * 100)}%. Na nadprożu bramy pięć run zapala się kolejno, ile otwarta.`,
+    kiedy: `Najpierw postaw pod bramą tych, którzy mają wejść, potem poślij dwóch pobożnych do kotła. Po ${Math.round(BRAMA.otwieranie / 120)} s zaklinania pobożni zdążą zejść z komnaty i przejść, zanim krata opadnie. Wejście w mur lochu jest nie do przekucia — tylko brama.`,
+    rycina: bramaRycina,
+  },
+  {
+    id: 'modlitwaZaInnych', grupa: 'prawa', nazwa: 'Modlitwa za innych', lacina: 'Oratio pro aliis',
+    opis: `Pobożny, który się modli — na rozkaz „Módl się za innych”, przy obozie, przy ołtarzu albo w krypcie — błogosławi swoich w promieniu ${BLOGOSLAWIENSTWO.promien} kafli: rany się goją (${String(BLOGOSLAWIENSTWO.leczenie).replace('.', ',')} życia na sekundę), a każdy dostaje dar swojej roli na ${Math.round(BLOGOSLAWIENSTWO.trwa / 120)} s po wyjściu z kręgu — rycerz bije mocniej i szybciej chodzi, robotnik szybciej kopie, pobożny mocniej się modli, a każdy wolniej głodnieje. Siebie nie błogosławi. Rzucający zaklęcia przy kotle się nie modlą.`,
+    kiedy: 'Postaw modlącego się za innych za rycerzem w walce albo przy kopaczach drogi.',
+    rycina: modlitwaZaInnychRycina,
   },
   {
     id: 'helmy', grupa: 'prawa', nazwa: 'Hełmy robotników', lacina: 'Fossores armati',
@@ -1232,7 +1419,7 @@ export const TABLICE: Tablica[] = [
   {
     id: 'schody', grupa: 'prawa', nazwa: 'Schody', lacina: 'Gradus',
     opis: 'Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie: musi wykuć sobie w skale schody albo wejść po linie, którą powiesisz. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy.',
-    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych to szeroki szyb od lewej krawędzi sali do krypty: w każdym wykutym kaflu szybu same pojawiają się schody, więc kto nim zejdzie, wróci nim do sali, do wiadra. Kafle szybu kuje się szybciej niż zwykłą skałę.',
+    kiedy: 'Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych to szyb od wnęki przy sali do lochu: kopacze schodzą w głąb po drabinie, którą przedłużają za sobą, a przy wylocie kołowrót wyciąga kubłem urobek. Gdy odcinek jest wykopany do dna, robotnicy stawiają w nim od dołu schody kręcone: kołowrotem opuszczają ciosane stopnie, a murarze z rusztowania osadzają je jeden po drugim (rozkaz „Buduj schody drogi wiernych” — robotnicy, którzy długo nie mają co robić, idą pomóc sami). Do tego czasu szybem chodzi się po drabinie, w obie strony. Kafle szybu kuje się szybciej niż zwykłą skałę.',
     rycina: postac(Race.GOBLIN, 'wspina'),
   },
   {

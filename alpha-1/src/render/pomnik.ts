@@ -8,9 +8,11 @@ import { POMNIK } from '../nastawy/pomnik';
 import { RACES, Race } from '../sim/races';
 import { ustawienia } from '../core/settings-store';
 import { rysujDemona, type PozaDemona, type PunktyDemona } from './demon';
+import { wzorGotowy } from './demon-wzor';
 import { tetnoRdzenia } from './rdzen';
 import { glif } from './tajemnica';
 import { wolnoRuszac } from './nastroj';
+import { rysujBossaKukla, rysujWstajacegoKukla, rysujKonajacegoKukla } from './demon-boss';
 
 /**
  * WIELKI POMNIK DEMONA (Alpha, etap 5) — rysunek do sim/pomnik.ts. Na dnie komory pod kryptą, na cokole z wyrytymi
@@ -96,7 +98,8 @@ interface WarstwaPosagu { c: HTMLCanvasElement; cw: number; ch: number; W: numbe
  */
 function warstwaPosagu(ctx: CanvasRenderingContext2D, H: number, poza: PozaDemona): WarstwaPosagu {
   const m = ctx.getTransform(), dpr = Math.max(1, Math.hypot(m.a, m.b));
-  const W = Math.ceil(H * 1.5), Hh = Math.ceil(H * 1.35), ox = W / 2, oy = H * 1.15;
+  // (wzór grafika z aureolą jest wyższy od dawnej ryciny — warstwa z zapasem w górę)
+  const W = Math.ceil(H * 1.5), Hh = Math.ceil(H * 1.55), ox = W / 2, oy = H * 1.35;
   warstwa ??= document.createElement('canvas');
   const cw = Math.ceil(W * dpr), ch = Math.ceil(Hh * dpr);
   if (warstwa.width < cw || warstwa.height < ch) { warstwa.width = cw; warstwa.height = ch; }
@@ -118,7 +121,8 @@ function warstwaPosagu(ctx: CanvasRenderingContext2D, H: number, poza: PozaDemon
     }
     wyrwa.closePath();
   });
-  g.globalAlpha = Math.min(1, poza.ubytki * 1.5);
+  // wzór grafika ma własne ubytki na brzegu swojej sylwetki (render/demon-wzor.ts) — tu tylko dawna rycina
+  g.globalAlpha = wzorGotowy() ? 0 : Math.min(1, poza.ubytki * 1.5);
   g.globalCompositeOperation = 'destination-out';
   g.fill(wyrwa);
   // przełom: jasna krawędź świeżego kamienia i cień pod nią — tylko tam, gdzie kamień został
@@ -136,7 +140,7 @@ let warstwa: HTMLCanvasElement | null = null;
 
 /** Posąg (stopy w x, top): z ubytkami — z warstwy, bez nich — wprost. */
 function posagZUbytkami(ctx: CanvasRenderingContext2D, x: number, top: number, H: number, poza: PozaDemona): PunktyDemona {
-  if (poza.ubytki <= 0.01 || typeof document === 'undefined') {
+  if (poza.ubytki <= 0.01 || typeof document === 'undefined' || wzorGotowy()) {
     ctx.save(); ctx.translate(x, top);
     const p = rysujDemona(ctx, H, poza);
     ctx.restore();
@@ -377,6 +381,8 @@ function wstajacyDemon(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, bx:
 
 /** Demon wstaje z gruzu (`k` 0…1): stopy w (bx, by), `Hp` — wysokość posągu (kopiec), `h` — demona. Także w atlasie. */
 export function rysujWstajacego(ctx: CanvasRenderingContext2D, bx: number, by: number, Hp: number, h: number, k: number, teraz: number): void {
+  // Alpha 1 (5.11): kukła z rysunku pomnika (render/demon-boss.ts) — póki się nie wczyta, dawny rysunek
+  if (rysujWstajacegoKukla(ctx, bx, by, Hp, h, k, teraz)) return;
   const wzlot = gladko(k / 0.6);
   const poza: PozaDemona = {
     zywy: true,
@@ -420,6 +426,7 @@ export function rysujWstajacego(ctx: CanvasRenderingContext2D, bx: number, by: n
  * Po ostatnim uderzeniu kona: złote światło rozsadza go od środka, pada na kolana i rozsypuje się w popiół.
  */
 export function rysujDemonaBossa(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h: number, czas: number): void {
+  if (rysujBossaKukla(ctx, sim, c, h, czas)) return;
   const s = sim.lud.pomnik;
   const oddech = 0.5 + 0.5 * Math.sin(czas * 0.003 + c.id);
   const ciosT = sim.tick - (c.ciosT ?? -1e9);
@@ -435,6 +442,7 @@ export function rysujDemonaBossa(ctx: CanvasRenderingContext2D, sim: Sim, c: Cre
 
 /** Demon kona po ostatnim uderzeniu (`k` 0…1), stopami w (0, 0). Także rycina w atlasie. */
 export function rysujKonajacego(ctx: CanvasRenderingContext2D, h: number, k: number, czas: number): void {
+  if (rysujKonajacegoKukla(ctx, h, k, czas)) return;
   const PEK = 0.55;
   const poza = (kk: number): PozaDemona => ({
     zywy: true,

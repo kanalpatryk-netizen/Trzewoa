@@ -8,6 +8,8 @@ import type { Pamiec } from './pamiec';
 import { postepOdmowy } from './odmowa';
 import { naWieszaku } from '../../sim/zbroja';
 import { ZBROJA } from '../../nastawy/zbroja';
+import { pozaWalkiRycerza } from './walka-rycerza';
+import { chodNaSchodach } from './rozstep';
 
 /**
  * Animacje ludu. Każda czynność daje pozę z klatek kluczowych albo z cyklu (chód, bieg, wspinaczka).
@@ -57,6 +59,26 @@ function chod(p: Poza, faza: number, sila: number): void {
   p.rB = amp * 0.85 * sin(q); p.eB = 0.2 + 0.42 * Math.max(0, sin(q));
   p.tulow = 0.05 + 0.07 * sila + 0.018 * cos(q * 2);
   p.glowa = -0.04 - 0.015 * cos(q * 2);
+}
+
+/**
+ * 6.11: chód po schodach kręconych — krok w takt stopni (faza z numeru stopnia: render/figury.ts). Noga w powietrzu
+ * unosi się wyżej (nad krawędź stopnia), pod górę wyraźnie, z pochyleniem tułowia; w dół noga z przodu sięga niżej
+ * wyprostowana, a ta, na której stoi, ugina się pod ciężarem; głowa patrzy pod nogi.
+ */
+function chodPoSchodach(p: Poza, faza: number, kier: number, sila: number): void {
+  chod(p, faza, sila * 0.7);
+  const q = faza * TAU;
+  const wGore = kier < 0;
+  const unies = wGore ? 0.62 : 0.34;
+  for (const [f, u, k] of [[q, 'uA', 'kA'], [q + PI, 'uB', 'kB']] as [number, 'uA' | 'uB', 'kA' | 'kB'][]) {
+    const lot = Math.pow(Math.max(0, cos(f + 0.15)), 1.4);          // noga w powietrzu (przenoszona nad stopniem)
+    const nosi = Math.max(0, -cos(f));                               // noga, na której stoi
+    p[k] += unies * lot + (wGore ? 0.1 : 0.28) * nosi;
+    p[u] += (wGore ? 0.3 : 0.12) * lot - (wGore ? 0 : 0.06) * nosi;
+  }
+  p.tulow += wGore ? 0.14 : -0.03;
+  p.glowa += wGore ? 0.02 : 0.16;
 }
 
 function bieg(p: Poza, faza: number): void {
@@ -148,7 +170,9 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
   else if (rola === 'pobozny') tryb.narzedzie = cz === 'stoi' || cz === 'idzie' || cz === 'biegnie' || cz === 'walczy' ? 'laska' : cz === 'buduje' ? 'mlot' : null;
   else tryb.narzedzie = cz === 'kopie' || cz === 'walczy' ? 'kilof' : cz === 'buduje' ? 'mlot' : null;
 
-  switch (cz) {
+  // Alpha 1 (6.11): rycerz w walce — ruchy z symulacji (render/lud/walka-rycerza.ts) zamiast zwykłej czynności
+  const walka = rola === 'rycerz' && pozaWalkiRycerza(sim, c, cz, czas, p, tryb);
+  if (!walka) switch (cz) {
     case 'stoi': {
       const wg = szum(czas * 0.00042, id);
       p.uA = 0.04 + 0.03 * wg; p.kA = 0.06 + 0.07 * Math.max(0, wg);
@@ -177,7 +201,9 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
       break;
     }
     case 'idzie': {
-      chod(p, w.faza, sila);
+      const sch = chodNaSchodach(c);
+      if (sch && sch.kier !== 0) chodPoSchodach(p, w.faza, sch.kier, sila);
+      else chod(p, w.faza, sila);
       if (rola === 'rycerz') {
         // znużony marsz: miecz nisko, tarcza opuszczona, tułów pochylony
         const q = w.faza * TAU;
@@ -295,6 +321,19 @@ export function animuj(w: Wejscie): { p: Poza; tryb: Tryb } {
       p.uB = 0.12 + 0.03 * sin(q * 0.5); p.kB = 0.35; p.sB = 0.2;
       p.tulow = 0.06 + 0.02 * sin(q); p.glowa = -0.32 + szarp * 0.1;
       p.wysilek = 0.45 + szarp * 0.4;
+      break;
+    }
+    case 'kreci': {
+      // 6.11: kręci korbą kołowrotu nad szybem drogi wiernych (render/budowa-schodow.ts) — obie dłonie na rączce korby,
+      // która chodzi w kółko przed nim na wysokości pasa; nogi w rozkroku, tułów pracuje z korbą (w dół — z wysiłkiem)
+      const q = (czas * 0.0042 + id * 0.7) % TAU;
+      const kx = 0.3, ky = 0.2, r = 0.075;
+      siegnij(p, 'A', kx + r * cos(q), ky + r * sin(q));
+      siegnij(p, 'B', kx - 0.02 + r * cos(q), ky + 0.01 + r * sin(q));
+      p.uA = 0.32; p.kA = 0.34; p.sA = 0.05; p.uB = -0.16; p.kB = 0.18; p.sB = -0.1;
+      p.tulow = 0.2 + 0.07 * sin(q); p.glowa = 0.14 + 0.04 * sin(q);
+      p.wysilek = 0.35 + 0.3 * Math.max(0, sin(q));
+      tryb.narzedzie = null;
       break;
     }
     case 'je': {

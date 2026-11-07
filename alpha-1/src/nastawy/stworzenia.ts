@@ -319,6 +319,8 @@ export const STWORZENIA = {
   zjadaOfiare: 0.5,
   /** Traci wroga z oczu dalej niż to. */
   walkaGubi: 22,
+  /** Alpha 1: do wroga dalszego niż tyle kafli lud idzie drogą (schody, liny), bliżej — wprost na niego. */
+  walkaDrogaOd: 10,
 
   // ----------------------------------------------------------------- jarzmo
   /** Zasięg, obrażenia i próg zdrowia (ułamek), poniżej którego ofiara idzie w jarzmo. */

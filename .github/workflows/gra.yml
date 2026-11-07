@@ -13,7 +13,7 @@
 #   trzewia-alpha-0.1.html — Alpha 0.1 na komputer (folder alpha-0.1/)
 #   trzewia-alpha-0.1-obserwatorium.html — Alpha 0.1: cztery okna gry, w każdym gra bot
 #   trzewia-alpha-1.html   — TRZEWIA Alpha 1 na komputer, najnowsza (folder alpha-1/)
-#   trzewia-alpha-1-obserwatorium.html — Alpha 1: cztery okna gry, w każdym gra bot
+#   trzewia-alpha-1-obserwatorium.html — Alpha 1: jedno okno z botem i panel przebiegu partii
 #   trzewia-alpha-0.2.html — Alpha 0.2 na komputer (folder alpha-0.2/)
 #   trzewia-alpha-0.2-obserwatorium.html — Alpha 0.2: cztery okna gry, w każdym gra bot
 #   audio-test.html       — pracownia dźwięku, do odsłuchu nowego soundtracku (folder pracownia-dzwieku/)
@@ -158,7 +158,7 @@ jobs:
           - \`trzewia-android.html\` — na telefon z Androidem ($(kb android/trzewia-android.html) kB)
           - \`trzewia-v3-remake.html\` — gra z telefonu (v3) na komputer, myszą
           - \`trzewia-alpha-1.html\` — **TRZEWIA Alpha 1** na komputer: najnowsza gra — Alpha 0.2 z nowym menu i ustawieniami, propozycje Pawła (szyb drogi wiernych, ramka, pomieszczenia gdziekolwiek) i nowy dół ekranu: księga z ludem i zasobami, okno postaci, menu „Budowa”, Cud jako objawienie ($(kb alpha-1/trzewia-alpha-1.html) kB)
-          - \`trzewia-alpha-1-obserwatorium.html\` — Alpha 1: obserwatorium — cztery okna gry naraz, w każdym gra bot
+          - \`trzewia-alpha-1-obserwatorium.html\` — Alpha 1: obserwatorium — jedno duże okno, w nim gra bot; obok przebieg partii, wykres zasobów, decyzje bota, statystyki partii, zatrzymywanie czasu przy zdarzeniach
           - \`trzewia-alpha-0.2.html\` — Alpha 0.2 na komputer (poprzednia): dalszy ciąg Alphy 0.1 — Wielki Pomnik demona kruszony modlitwą, demon z jego gruzów, wygrana po pokonaniu demona
           - \`trzewia-alpha-0.2-obserwatorium.html\` — Alpha 0.2: obserwatorium — cztery okna gry naraz, w każdym gra bot
           - \`trzewia-alpha-0.1.html\` — Alpha 0.1 na komputer (etapy 1–4) (stała drużyna i rozkazy, bez lin, góra według szkicu, liczniki żelaza i złota, pomieszczenia: warsztat, kuźnia, sypialnia, ołtarz z rytuałami za krew, drabiny)

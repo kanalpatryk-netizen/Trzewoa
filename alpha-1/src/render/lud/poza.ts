@@ -46,6 +46,9 @@ export interface Tryb {
   zlozone: boolean;
   /** leży (rzadkie — sen) */
   lezy: boolean;
+  /** Alpha 1: ruch całego ciała w walce (render/lud/walka-rycerza.ts): przesunięcie i skok (w h), obrót wokół stóp,
+   * odbicie w poziomie (obrót w piruecie) */
+  cialo?: { x: number; y: number; kat: number; sx: number };
 }
 
 export const LICZBY = [

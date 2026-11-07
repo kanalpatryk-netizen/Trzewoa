@@ -13,6 +13,7 @@ import { SWIAT } from '../nastawy/swiat';
 import { ukladKatedry } from './katedra';
 import { latarniaKonwoju } from './konwoj';
 import { wysokoscGrzbietu } from './grzbiet';
+import { swiatlaLochu, gestyMrok } from './loch';
 
 /**
  * Ciemność w górze: świat jest widoczny tylko w świetle lampek robotników, aureol
@@ -21,6 +22,17 @@ import { wysokoscGrzbietu } from './grzbiet';
  */
 let warstwa: HTMLCanvasElement | null = null;
 let plamka: HTMLCanvasElement | null = null;
+/** Kiedy (czas klatki) mrok narysowano ostatnio — warstwę z innej klatki pomija się (render/schody.ts). */
+let narysowanyT = NaN;
+
+/**
+ * 6.11: warstwa mroku tej klatki (płótno w skali `k` ekranu) — to, co po mroku rysuje się z powrotem na świat
+ * (słup i stopnie schodów kręconych przed postacią: render/schody.ts), ciemnieje nią tak samo jak reszta.
+ * Null — w tej klatce mroku nie ma (wyłączony, tryb „bez ciemności”).
+ */
+export function warstwaMroku(teraz: number): { plotno: HTMLCanvasElement; k: number } | null {
+  return warstwa && narysowanyT === teraz ? { plotno: warstwa, k: MROK.skala } : null;
+}
 
 /** Miękka plama światła: biała w środku, wygasa ku brzegom. Rysowana „destination-out” wycina ciemność. */
 function plamaSwiatla(): HTMLCanvasElement {
@@ -54,6 +66,21 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   const ciemnosc = (pauza ? MROK.ciemnoscPauza : MROK.ciemnosc) / Math.max(1, ustawienia.jasnosc);
   g.fillStyle = `rgba(6,3,2,${ciemnosc})`;
   g.fillRect(0, 0, W, H);
+  // 6.11: loch, przedproże i komnata z kotłem — mrok gęstszy (granatowo-brązowy, nie czarny), światło tylko z ognia
+  if (MROK.gesty > 0) {
+    // ciepła, brązowa czerń — i miękka krawędź (rozmycie), żeby nie było widać prostokątów
+    g.fillStyle = `rgba(10,7,6,${MROK.gesty / Math.max(1, ustawienia.jasnosc * 0.8)})`;
+    const rozmycie = Math.max(1.5, cam.zoom * k * 1.1);
+    g.filter = `blur(${rozmycie.toFixed(1)}px)`;
+    g.beginPath();
+    for (const r of gestyMrok(sim)) {
+      const x0 = cam.toScreenX(r.x0) * k, y0 = cam.toScreenY(r.y0) * k, x1 = cam.toScreenX(r.x1 + 1) * k, y1 = cam.toScreenY(r.y1 + 1) * k;
+      if (x1 < -rozmycie || y1 < -rozmycie || x0 > W + rozmycie || y0 > H + rozmycie) continue;
+      g.rect(x0, y0, x1 - x0, y1 - y0);
+    }
+    g.fill();
+    g.filter = 'none';
+  }
   g.globalCompositeOperation = 'destination-out';
   const spr = plamaSwiatla();
   const z = cam.zoom * k;
@@ -102,6 +129,8 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   const lat = latarniaKonwoju(sim, (x) => SURFACE_Y - wysokoscGrzbietu(w, x));
   if (lat) swiec(lat.x, lat.y, S.latarnia * (0.95 + 0.07 * migotLampy(teraz + 4127)));
   for (const e of sim.efekty) if (e.rodzaj === 'cud') swiec(e.x, e.y, S.cud * (1 - e.t / e.max * 0.5));
+  // 6.11: kocioł, pochodnie przy bramie, kosze ognia w lochu, runy bramy
+  swiatlaLochu(sim, swiec, teraz);
   // jasna sala: cała w świetle, nie tylko krąg wokół ołtarza — to tu lud odpoczywa i tu wraca
   const so = w.salaOltarza;
   if (so.x1 >= 0) {
@@ -129,6 +158,7 @@ export function rysujMrok(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
   g.globalAlpha = 1;
   g.globalCompositeOperation = 'source-over';
   ctx.drawImage(warstwa, 0, 0, cam.vw, cam.vh);
+  narysowanyT = teraz;
   // żar kuźni na ścianach: ciepła, pomarańczowa poświata nad mrokiem (drga razem z ogniem)
   for (const p of sim.pomieszczenia) {
     if (!p.gotowe || p.rodzaj !== 'kuznia') continue;

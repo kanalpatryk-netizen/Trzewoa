@@ -10,10 +10,12 @@ import { animuj } from './lud/ruch';
 import { rysujPoboznego } from './lud/pobozny';
 import { rysujRobotnika } from './lud/robotnik';
 import { rysujRycerza } from './lud/rycerz';
+import { efektyWalkiRycerza } from './lud/walka-rycerza';
 import { stroj } from './lud/stroj';
 import { szkielet } from './lud/szkielet';
 import { swiatloOtoczenia } from './lud/oswietlenie';
 import type { Poza, Tryb } from './lud/poza';
+import { czolgaSie } from '../sim/brama';
 
 /** Gdzie wypadła głowa w ostatnim rysunku: środek i promień jako części wysokości postaci, od środka stóp (twarzą w prawo). */
 const glowy = new WeakMap<Creature, { x: number; y: number; r: number }>();
@@ -90,6 +92,13 @@ export function rysujLud(
   // niski korytarz: kuca (nie dotyczy wspinaczki, zwisu i leżenia)
   const kuc = tryb.lezy ? 0 : przykucniecie(sim, c, czas) * (1 - p.wis);
   if (kuc > 0.005) p = kucnij(p, kuc, tryb);
+  // 6.11: pod nisko zawieszoną kratą bramy lochu — czołga się na czworakach, ciało prawie poziomo, nisko nad posadzką
+  if (czolgaSie(sim, c) && !tryb.cialo) {
+    const f = faza * Math.PI * 2;
+    p = { ...p, uA: 1.5 + 0.28 * sin(f), kA: 1.55, uB: 1.5 - 0.28 * sin(f), kB: 1.55, rA: 1.85 + 0.35 * sin(f + Math.PI), eA: -0.35, rB: 1.85 + 0.35 * sin(f), eB: -0.35, tulow: 0, glowa: -0.55, wis: 0, lot: 0 };
+    tryb.cialo = { x: -0.42, y: -0.2 + 0.02 * sin(f * 2), kat: 1.28, sx: 1 };
+    tryb.narzedzie = null;
+  }
   const t = ctx.getTransform();
   // gdy gra tnie jakość (ustawienie „szybka” albo auto przy małej liczbie klatek) — bez najdrobniejszych szczegółów
   const taniej = ustawienia.jakosc === 'szybka' || (ustawienia.jakosc === 'auto' && jakoscAuto.taniej);
@@ -98,6 +107,13 @@ export function rysujLud(
   const st = stroj(rola, c, sim);
   ctx.save();
   if (tryb.lezy) { ctx.translate(-h * 0.45, -h * 0.07); ctx.rotate(-Math.PI / 2); }
+  // Alpha 1: ruch całego ciała w walce — wypad, wyskok, upadek na plecy, odskok, obrót w piruecie
+  const ci = tryb.cialo;
+  if (ci) {
+    ctx.translate(ci.x * h, ci.y * h);
+    if (ci.kat) ctx.rotate(ci.kat);
+    if (ci.sx !== 1) ctx.scale(Math.abs(ci.sx) < 0.06 ? 0.06 * Math.sign(ci.sx || 1) : ci.sx, 1);
+  }
   // drgnięcie przy trafieniu narzędziem
   if (p.cios > 0.05) ctx.translate(sin(czas * 0.09) * 0.01 * h * p.cios, 0);
   const s = szkielet(p, h, tryb);
@@ -109,4 +125,6 @@ export function rysujLud(
   else rysujRycerza(r);
   m.maluj(st.obwodka);
   ctx.restore();
+  // efekty walki — w układzie stóp (bez ruchu ciała: iskry zostają tam, gdzie padł cios, pył leży na ziemi)
+  if (rola === 'rycerz') efektyWalkiRycerza(ctx, sim, c, s, h, czas, ci);
 }

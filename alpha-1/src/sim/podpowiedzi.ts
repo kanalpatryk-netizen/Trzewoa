@@ -5,6 +5,7 @@ import { aktualnyPlan } from './pielgrzymka';
 import { RYTUAL, PIELGRZYMKA } from '../nastawy/rytual';
 import { REMAKE } from '../nastawy/lud';
 import { linaPrzecieta, sklejajacy } from './lina-wiadra';
+import { BRAMA } from '../nastawy/loch';
 
 /** Remake v2: podpis siedziby (jedzenie jest w wiadrach, nie w spiżarni). */
 export function podpisSiedziby(_sim: Sim, _k: Sim['clans'][number]): string {
@@ -81,6 +82,19 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   for (const t of sim.world.tile) if (t === T.SHRINE || t === T.GLYPH) oltarze++;
   if (sim.wiara < 40 && oltarze < 2 && zywi > 6) {
     kandydaci.push({ tekst: 'Nikt się do ciebie nie modli. Zrób Cud przy gnieździe, a gdy odsłoni się ruda — daj ją Ślepemu Ludowi na ołtarz.', waga: 60 });
+  }
+
+  // 6.11: pod zamkniętą stalową bramą lochu ktoś czeka — bramę podnoszą tylko zaklęcia dwóch pobożnych przy kotle
+  {
+    const w = sim.world, b = sim.lud.brama;
+    if (w.brama.x1 >= w.brama.x0 && !(b?.wolne) && !(b && b.zaklina >= BRAMA.potrzeba)
+      && sim.creatures.some((c) => !c.dead && !c.straznik && c.race === Race.GOBLIN && w.wPrzedprozu(c.x, c.y))) {
+      kandydaci.push({
+        tekst: `Pod stalową bramą lochu czekają twoi. Zaznacz ${BRAMA.potrzeba} pobożnych i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.`,
+        cel: { x: w.kociol.x + 0.5, y: w.kociol.y, r: 5, tekst: 'kocioł' },
+        waga: 88,
+      });
+    }
   }
 
   // 6. rytuał: jedyna droga do końca gry musi być widoczna, gdy staje się możliwa

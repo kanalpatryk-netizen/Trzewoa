@@ -88,6 +88,9 @@ export const DLON = {
      * Gruz trzyma `trwa` tików (robotnicy mogą go rozkuć wcześniej), potem się kruszy (`kruszy` tików). Póki stoi, demon
      * jest odcięty: nie przechodzi na drugą stronę i zrasta się szybciej (× `zrastanie`).
      */
-    zawal: { wstaje: 70, drze: 80, wali: 30, cofa: 70, trwa: 1800, kruszy: 150, szer: 2, minOdstep: 5, maxOdstep: 16, maxWys: 10, zrastanie: 3 },
+    // Alpha 1 (5.11): `maxRoznicaWys` — zawał tylko, gdy rycerz stoi przy demonie, najwyżej tyle kafli wyżej albo niżej.
+    // Wcześniej liczył się tylko odstęp w poziomie, a ściana stawała na wysokości rycerza: przy drodze wiernych jako
+    // pionowym szybie rycerz w sali był „obok” demona i gruz zamurowywał salę — rycerz nie mógł zejść, walka stała.
+    zawal: { wstaje: 70, drze: 80, wali: 30, cofa: 70, trwa: 1800, kruszy: 150, szer: 2, minOdstep: 5, maxOdstep: 16, maxWys: 10, zrastanie: 3, maxRoznicaWys: 4 },
   },
 };

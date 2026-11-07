@@ -10,7 +10,9 @@ import type { Camera } from './camera';
 import { ustawienia } from '../core/settings-store';
 import { BUDOWA, MAKS_KROKOW_NA_SEKUNDE, type Budowa } from '../nastawy/wyglad/postacie';
 import { postepOdmowy } from './lud/odmowa';
-import { przesuniecieX, rozstawTlum, wTle } from './lud/rozstep';
+import { przesuniecieX, przesuniecieY, zwrotNaRysunku, szerokoscNaRysunku, chodNaSchodach, rozstawTlum, wTle, zTyluSchodow, naDrabinie } from './lud/rozstep';
+import { BUDOWA_SCHODOW } from '../nastawy/loch';
+import { stopniePodStopami, zaslonNaSchodach } from './schody';
 import { swiatloDla, ustawSwiatlo } from './lud/oswietlenie';
 import { kropla } from './kruszce';
 
@@ -51,21 +53,30 @@ const pamiec = new WeakMap<Creature, Ruch>();
 function ruch(c: Creature, czas: number): Ruch {
   let r = pamiec.get(c);
   if (!r) {
-    r = { x: c.x, y: c.y, faza: (c.id * 0.37) % 1, fazaPion: (c.id * 0.61) % 1, v: 0, t: czas, zegar: (c.id * 0.29) % 1, uderzenie: -1e9 };
+    r = { x: c.x + przesuniecieX(c), y: c.y, faza: (c.id * 0.37) % 1, fazaPion: (c.id * 0.61) % 1, v: 0, t: czas, zegar: (c.id * 0.29) % 1, uderzenie: -1e9 };
     pamiec.set(c, r);
     return r;
   }
   const dt = Math.max(1, Math.min(250, czas - r.t)) / 1000;
-  const dx = c.x - r.x, dy = c.y - r.y;
+  // (6.11: krok liczy się z miejsca na rysunku — na schodach kręconych postać idzie po spirali w bok)
+  const xr = c.x + przesuniecieX(c);
+  const dx = xr - r.x, dy = c.y - r.y;
   const droga = Math.hypot(dx, dy);
-  if (droga > 4) { r.x = c.x; r.y = c.y; r.t = czas; return r; }          // skok (wczytanie, teleport)
+  if (droga > 4) { r.x = xr; r.y = c.y; r.t = czas; return r; }          // skok (wczytanie, teleport)
   const krok = krokPostaci(c);
   const przyrost = Math.min(Math.abs(dx) / krok, MAKS_KROKOW_NA_SEKUNDE * dt);
   r.faza = (r.faza + przyrost) % 1;
   r.fazaPion = (r.fazaPion + Math.min(Math.abs(dy) / 0.9, 2.4 * dt)) % 1;
   r.v += (droga / dt - r.v) * Math.min(1, dt * 8);
   r.zegar = (r.zegar + dt) % 1000;
-  r.x = c.x; r.y = c.y; r.t = czas;
+  r.x = xr; r.y = c.y; r.t = czas;
+  // 6.11: na schodach kręconych krok idzie ze stopniami — jedna stopa na jeden stopień (pełny cykl to dwa stopnie).
+  // Pięta uderza (faza 0,25 i 0,75 — render/lud/ruch.ts: nogaChod) przy nosie stopnia, gdy ciało przenosi się na
+  // następny (render/schody.ts: stopyNaStopniu); pod górę faza też rośnie — dawniej szła wstecz i nogi wchodziły tyłem
+  const sch = chodNaSchodach(c);
+  if (sch) { const f = (sch.kier < 0 ? -1 : 1) * sch.stopien / 2 + 0.25; r.faza = ((f % 1) + 1) % 1; }
+  // 6.11: na drabinie ręce i nogi idą ze szczeblami — pełny cykl na dwa szczeble
+  else if (naDrabinie(c)) { const f = (c.y + 1) / (2 * BUDOWA_SCHODOW.szczebel); r.fazaPion = ((f % 1) + 1) % 1; }
   return r;
 }
 
@@ -96,7 +107,7 @@ function krokPostaci(c: Creature): number {
 
 export type Czynnosc =
   | 'stoi' | 'idzie' | 'biegnie' | 'wspina' | 'spada'
-  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia' | 'zaklada' | 'skleja';
+  | 'kopie' | 'modli' | 'je' | 'walczy' | 'spi' | 'buduje' | 'wysysa' | 'czyta' | 'odmawia' | 'zaklada' | 'skleja' | 'kreci';
 
 /** Co widać: czynność wynika z zajęcia, ale i z tego, czy stworzenie w ogóle się rusza. */
 /** Kuje kafel w tej chwili (ostatnie uderzenie najwyżej 0,2 s temu). */
@@ -117,10 +128,14 @@ function czynnosc(c: Creature, r: Ruch, sim: Sim, czas: number): Czynnosc {
   if (c.naLinie !== undefined) return 'wspina';
   // Alpha, etap 5b: w dłoni z otchłani i w locie po rzucie — wymachuje rękami; po upadku leży ogłuszony
   if (c.wDloni || c.lot) return 'spada';
+  // Alpha 1 (6.11): rycerz w ruchu walki (cios, obrona, powalony — sim/walka.ts) — rysunek walki, nie sen ani chód
+  if (c.ruch && c.rola === 'rycerz' && sim.tick - c.ruch.od < c.ruch.dl) return 'walczy';
   if ((c.ogluszonyDo ?? -1) > sim.tick) return 'spi';
   if (c.vy > 0.3) return 'spada';
   // Alpha: odmówił rozkazu — stojąc, kręci głową i rozkłada ręce (render/lud/odmowa.ts)
   if (r.v < 0.6 && postepOdmowy(sim, c, czas) !== null) return 'odmawia';
+  // 6.11, budowa schodów: na drabinie w surowym szybie — wspina się (stoi przy pracy: kręci, osadza — niżej)
+  if (naDrabinie(c) && !c.czynnosc) return 'wspina';
   const lx = Math.floor(c.x), ly = Math.floor(c.y);
   // droga wiernych: po schodach szyb się idzie, nie wspina
   const naSchodach = sim.world.inb(lx, ly) && sim.world.schody[sim.world.idx(lx, ly)] === 1;
@@ -1080,19 +1095,22 @@ function postacZeSzkicu(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h:
 
 let plamaCienia: HTMLCanvasElement | null = null;
 
-/** Miękki cień pod stopami: plama z gradientu (raz narysowana), spłaszczona w elipsę. */
+/**
+ * Miękki cień pod stopami: plama z gradientu (raz narysowana), spłaszczona w elipsę. (6.11, uwaga użytkownika
+ * „dodaj cienie do postaci”: ciemniejsza i szersza — dawna ginęła na jasnej posadzce sali, a postać wisiała nad nią.)
+ */
 function cienKontaktowy(ctx: CanvasRenderingContext2D, sx: number, sy: number, h: number): void {
   if (!plamaCienia) {
     plamaCienia = document.createElement('canvas');
     plamaCienia.width = plamaCienia.height = 64;
     const g = plamaCienia.getContext('2d')!;
     const gr = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-    gr.addColorStop(0, 'rgba(6,4,4,0.74)'); gr.addColorStop(0.35, 'rgba(6,4,4,0.52)');
-    gr.addColorStop(0.7, 'rgba(6,4,4,0.18)'); gr.addColorStop(1, 'rgba(6,4,4,0)');
+    gr.addColorStop(0, 'rgba(6,4,4,0.86)'); gr.addColorStop(0.35, 'rgba(6,4,4,0.64)');
+    gr.addColorStop(0.7, 'rgba(6,4,4,0.26)'); gr.addColorStop(1, 'rgba(6,4,4,0)');
     g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
   }
-  const rx = h * 0.4, ry = Math.max(2.2, h * 0.085);
-  ctx.drawImage(plamaCienia, sx - rx, sy - ry * 0.85, rx * 2, ry * 2);
+  const rx = h * 0.46, ry = Math.max(2.6, h * 0.1);
+  ctx.drawImage(plamaCienia, sx - rx, sy - ry * 0.8, rx * 2, ry * 2);
 }
 
 let plotnoTla: HTMLCanvasElement | null = null;
@@ -1101,7 +1119,7 @@ let plotnoTla: HTMLCanvasElement | null = null;
  * Postać stojąca z tyłu (rozstęp w wąskim szybie): rysowana na boku i przyciemniona tuszem przez całą
  * sylwetkę naraz — `ciemniej` to krycie ciemnej warstwy (0..1). Klatka po klatce, bez szkiców tłumu.
  */
-function postacWTle(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h: number, czas: number, kier: number, sx: number, sy: number, ciemniej: number): Czynnosc {
+function postacWTle(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h: number, czas: number, kier: number, sx: number, sy: number, ciemniej: number, szer = 1): Czynnosc {
   const t = ctx.getTransform();
   const skala = Math.max(1, Math.min(4, Math.hypot(t.a, t.b)));
   const w = h * 2.4, wys = h * 2.1, stopy = h * 1.6;
@@ -1112,7 +1130,8 @@ function postacWTle(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h: num
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.clearRect(0, 0, pw, ph);
   g.setTransform(skala, 0, 0, skala, (w / 2) * skala, stopy * skala);
-  g.scale(kier, 1);
+  // (6.11: z tyłu spirali schodów kręconych też się obraca — przy ścianach szybu sylwetka zwęża się)
+  g.scale(kier * szer, 1);
   const cz = rysujPostac(g, sim, c, h, czas);
   g.setTransform(1, 0, 0, 1, 0, 0);
   g.globalCompositeOperation = 'source-atop';
@@ -1150,8 +1169,10 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     zajete.set(klucz, wpis);
     doRysowania.push(wpis);
   }
-  // dalsze (wyżej na ekranie) pierwsze — niższe zachodzą na nie, jak na rycinie z głębią; stojący z tyłu (rozstęp) też
-  doRysowania.sort((a, b) => (a.c.y - wTle(a.c) * 0.3) - (b.c.y - wTle(b.c) * 0.3));
+  // dalsze (wyżej na ekranie) pierwsze — niższe zachodzą na nie, jak na rycinie z głębią; stojący z tyłu (rozstęp) też;
+  // z tyłu schodów kręconych — przed wszystkimi (słup i stopnie, które je zasłaniają, nie mogą przykryć tych z przodu)
+  const kolejnosc = (c: Creature) => c.y - wTle(c) * 0.3 - (zTyluSchodow(c) ? 1e4 : 0);
+  doRysowania.sort((a, b) => kolejnosc(a.c) - kolejnosc(b.c));
   const tlum = doRysowania.length > TLUM.od;
 
   for (const { c, n } of doRysowania) {
@@ -1159,13 +1180,31 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     const h = wysokoscPostaci(c, z);
     const dx = n > 1 ? 0 : przesuniecieX(c);
     const sx = (c.x + dx - left) * z;
-    const sy = (c.y + 1 - top) * z;
-    const kier = c.face >= 0 ? 1 : -1;
+    // (6.11: na schodach kręconych dalsza strona spirali leży wyżej — render/schody.ts)
+    const sy = (c.y + 1 + (n > 1 ? 0 : przesuniecieY(c)) - top) * z;
+    const zw = n > 1 ? 0 : zwrotNaRysunku(c);
+    const kier = zw || (c.face >= 0 ? 1 : -1);
     const tlo = n > 1 ? 0 : wTle(c);
 
     // cień kontaktowy — tylko na ziemi: miękka plama, najciemniejsza tuż pod stopami
     const naZiemi = c.vy <= 0.3 && sim.world.solid(Math.floor(c.x + dx), Math.floor(c.y) + 1);
     if (naZiemi && !(tlum && wybrany !== c.id)) cienKontaktowy(ctx, sx, sy, h);
+    // 6.11: na schodach kręconych — cień na stopnicy pod stopami (i słabiej na następnej niższej), przycięty do niej
+    const naSchodach = n === 1 && !!chodNaSchodach(c);
+    if (naSchodach) {
+      for (const st of stopniePodStopami(sim, cam, c, c.x + dx)) {
+        ctx.save();
+        ctx.beginPath(); ctx.moveTo(st.tr[0][0], st.tr[0][1]);
+        for (let i = 1; i < st.tr.length; i++) ctx.lineTo(st.tr[i][0], st.tr[i][1]);
+        ctx.closePath(); ctx.clip();
+        // (stopnica w lekkim ujęciu z góry to wąski pas — cień ciemniejszy i szerszy niż na posadzce, inaczej ginął)
+        ctx.globalAlpha = st.sila;
+        cienKontaktowy(ctx, st.cx, st.cy, h * 1.05);
+        ctx.globalAlpha = st.sila * 0.45;
+        cienKontaktowy(ctx, st.cx, st.cy, h * 0.75);
+        ctx.restore();
+      }
+    }
 
     // Alpha, etap 3d: szał krwi z ołtarza — czerwona aura wokół postaci, pulsuje
     if ((c.szalDo ?? -1) > sim.tick) {
@@ -1178,21 +1217,25 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
 
     let cz: Czynnosc;
     // cudze światło z otoczenia kładzie ciepłą krawędź po swojej stronie sylwetki (render/lud/oswietlenie.ts)
-    const szkic = tlum && wybrany !== c.id && !c.straznik && !c.odmowa;
+    const szkic = tlum && wybrany !== c.id && !c.straznik && !c.odmowa && !(c.ruch && c.rola === 'rycerz');
     ustawSwiatlo(!szkic && rolaPostaci(c) ? swiatloDla(sim, c, h / z) : null);
     if (szkic) cz = postacZeSzkicu(ctx, sim, c, h, czas, kier, sx, sy, naZiemi);
-    else if (tlo > 0.02 && !c.lot) cz = postacWTle(ctx, sim, c, h, czas, kier, sx, sy, 0.42 * tlo);
+    else if (tlo > 0.02 && !c.lot) cz = postacWTle(ctx, sim, c, h, czas, kier, sx, sy, 0.42 * tlo, szerokoscNaRysunku(c));
     else {
       ctx.save();
       ctx.translate(sx, sy);
       // etap 5b: ciśnięty przez dłoń z otchłani koziołkuje w locie (wokół środka ciała)
       if (c.lot) { ctx.translate(0, -h * 0.5); ctx.rotate((sim.tick - c.lot.od) * 0.16 * (Math.sign(c.lot.vx) || 1)); ctx.translate(0, h * 0.5); }
       // (niski korytarz: lud kuca — poza w render/postacie.ts; dawne zgniatanie rysunku w pionie zniekształcało postać)
-      ctx.scale(zwrotKucia(sim, c, kier), 1);
+      // (6.11: na schodach kręconych obraca się z nimi — przy ścianach szybu idzie w głąb, sylwetka się zwęża)
+      ctx.scale(zwrotKucia(sim, c, kier) * szerokoscNaRysunku(c), 1);
       cz = rysujPostac(ctx, sim, c, h, czas);
       ctx.restore();
     }
     ustawSwiatlo(null);
+    // 6.11: na schodach kręconych to, co leży bliżej widza (słup, gdy jest za nim, stopnie po drugiej stronie),
+    // rysuje się na postaci — znika za słupem (render/schody.ts)
+    if (naSchodach) zaslonNaSchodach(ctx, sim, cam, c, c.x + dx, c.y + 1 + przesuniecieY(c), h, czas);
 
     // Aureola znaczy świętość: tylko nad pobożnym, który się modli. Wzmocnienia i osłabienia to małe znaki ryciny
     // przy głowie (szewron weterana, płomień szału, kropla krwi okaleczonego, kropla trucizny) — dawniej każde

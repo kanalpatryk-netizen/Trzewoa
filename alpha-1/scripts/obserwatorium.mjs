@@ -1,5 +1,5 @@
-// Obserwatorium — cztery okna gry, w każdym gra bot (osobny plik obserwatorium.html).
-// Bierze gotowy trzewia.html (po `npm run pack`) i wkłada go w stronę z czterema oknami.
+// Obserwatorium (Alpha 1) — jedno okno gry, w nim gra bot, a obok panel przebiegu partii (osobny plik obserwatorium.html).
+// Bierze gotowy trzewia.html (po `npm run pack`) i wkłada go w stronę obserwatorium.
 // Uruchom: npm run obserwatorium
 import fs from 'fs';
 import path from 'path';

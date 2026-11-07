@@ -31,8 +31,11 @@ import { rysujDev } from '../../render/dev';
 import { mnoznikNapis } from '../../render/przyciski';
 import { klanLudu, rolaPostaci, NAZWA_ROLI, NAZWA_ROLI_MNOGA, type Rola } from '../../sim/lud';
 import { naWieszaku } from '../../sim/zbroja';
-import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, rysujRamke, ludRoli, type PoleDruzyny, type FalaRozkazu } from '../../render/druzyna';
-import { wydajGrupie, wydajObszar, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa, type Polecenie } from '../../sim/polecenia';
+import { rysujDruzyne, rysujZaznaczenie, rysujPoleceniaNaMapie, rysujRamke, kafleRamki, ludRoli, type PoleDruzyny, type FalaRozkazu, type PodgladRamki } from '../../render/druzyna';
+import { wydajDoKotla, wydajModlitweZaInnych } from '../../sim/polecenia';
+import { BRAMA } from '../../nastawy/loch';
+import { rysujLoch, rysujLochNad } from '../../render/loch';
+import { wydajGrupie, wydajObszar, doWykuciaRamka, drogaGrupie, odwolajPolecenie, wydajNaPomieszczenie, wydajDoOltarza, przywolajDoOltarza, wydajNaprawe, type Odmowa, type Polecenie } from '../../sim/polecenia';
 import { POLECENIA } from '../../nastawy/polecenia';
 import { NASTAWY_GLOSU } from '../../core/glos-odmowy';
 import { GLOSY_LUDU } from '../../nastawy/dzwiek';
@@ -49,7 +52,9 @@ import { rysujZarys } from '../../render/zarys';
 import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { scianaKrypty, tynkSwiata } from '../../render/fresk';
-import { rysujDrogePielgrzymow, rysujSchodyDrogi, rysujPlanDrogi } from '../../render/pielgrzymka';
+import { rysujDrogePielgrzymow, rysujPlanDrogi } from '../../render/pielgrzymka';
+import { rysujSchodyDrogi } from '../../render/schody';
+import { rysujBudoweSchodow } from '../../render/budowa-schodow';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
@@ -273,6 +278,8 @@ export class EkranGry implements Ekran {
    * świata. Po puszczeniu zaznacza postacie w środku albo (gdy ich nie ma, a zaznaczeni są robotnicy) oznacza skałę do wykucia.
    */
   private ramka: { x0: number; y0: number; x1: number; y1: number; od: number } | null = null;
+  /** Ostatni podgląd ramki (co zostanie wykute) i klucz, dla którego go policzono. */
+  private podgladRamkiPamiec: { klucz: string; podglad: PodgladRamki } | null = null;
   private pinch = 0;
   private srodekPinch: { x: number; y: number } | null = null;
   private painting = false;
@@ -502,6 +509,25 @@ export class EkranGry implements Ekran {
         this.nasluch?.({ typ: 'oltarz', rodzaj: 'okno' });
         break;
       }
+      case 'kociol': {
+        // 6.11: zaklinanie przy kotle podnosi stalową bramę lochu (dwóch naraz)
+        const { przyjeli, odmowy } = wydajDoKotla(sim, m.ids), k = sim.world.kociol;
+        this.falaRozkazu = { x: k.x + 0.5, y: k.y + 0.5, t: performance.now(), ok: przyjeli > 0 };
+        const zaklina = sim.creatures.filter((c) => !c.dead && c.polecenie?.zaklinaj).length;
+        if (przyjeli) {
+          ui.say((przyjeli === 1 ? 'Idzie do kotła.' : `Idą do kotła: ${przyjeli}.`) + (zaklina < BRAMA.potrzeba ? ` Bramę podniosą dopiero ${BRAMA.potrzeba} naraz.` : ' Brama ruszy, gdy zaczną zaklinać.'), sim.tick);
+          this.app.gesty.klik();
+        } else { ui.say(`Nie pójdą: ${odmowy[0] ?? 'nie ma drogi'}.`, sim.tick); this.app.gesty.odmowa(); }
+        this.nasluch?.({ typ: 'polecenie', rodzaj: 'idz', przyjeli });
+        break;
+      }
+      case 'zaInnych': {
+        const { przyjeli, odmowy } = wydajModlitweZaInnych(sim, m.ids);
+        if (przyjeli) { ui.say(przyjeli === 1 ? 'Modli się za tych, którzy stoją wokół.' : `Modlą się za innych: ${przyjeli}.`, sim.tick); this.app.gesty.klik(); }
+        else { ui.say(`Teraz nie: ${odmowy[0] ?? 'nie może'}.`, sim.tick); this.app.gesty.odmowa(); }
+        this.nasluch?.({ typ: 'polecenie', rodzaj: 'idz', przyjeli });
+        break;
+      }
       case 'zbroja': case 'warsztat': case 'kuznia': case 'sen': {
         const rodzaj = akcja === 'zbroja' ? 'kuznia' : akcja === 'sen' ? 'sypialnia' : akcja;
         const pom = sim.pomieszczenia.find((q) => q.gotowe && q.rodzaj === rodzaj);
@@ -696,6 +722,9 @@ export class EkranGry implements Ekran {
     if (sim.world.ever[sim.world.idx(sim.world.coreX, sim.world.coreY)]) odkrycia.odkryj('skorupa');
     // skorupę odkrywa się, gdy ktoś zacznie się przy niej modlić albo gdy pęknie
     if (sim.rytual.wierni >= 1 || sim.rytual.pekniecia > 0) odkrycia.odkryj('skorupa');
+    // 6.11: kocioł i brama — gdy lud zobaczy komnatę z kotłem; modlitwa za innych — przy pierwszym błogosławieństwie
+    { const w = sim.world; if (w.komnata.x1 >= w.komnata.x0 && w.ever[w.idx(w.kociol.x, w.kociol.y)]) odkrycia.odkryj('brama'); }
+    if (sim.creatures.some((c) => !c.dead && c.blogDo !== undefined)) cicho('modlitwaZaInnych');
     if (sim.tick > 1500) cicho('krew');
     if (sim.wiara > 15) cicho('wiara');
     // wiara to serce drogi do wygranej — jej tablica wyskakuje sama przy pierwszej modlitwie
@@ -1354,12 +1383,17 @@ export class EkranGry implements Ekran {
     rysujKucie(ctx, sim, cam, teraz);
     // etap 3c: wyposażenie gotowych pomieszczeń (stół, kowadło, posłania) — w mroku ginie jak skała
     this.pokoje.rysujWnetrza(ctx, sim, cam, teraz);
-    // droga wiernych: schody w wykutym szybie (ciemność je zakrywa)
-    rysujSchodyDrogi(ctx, sim, cam, teraz);
     // etap 3d: ołtarz na środku sali — kamień i drewno (świece i smuga dnia — nad mrokiem)
     this.oltarz.rysuj(ctx, sim, cam);
     // etap 3e: ruiny — mury, łuki, belki, zabytek na posadzce (światło zabytku — nad mrokiem)
     this.ruiny.rysuj(ctx, sim, cam);
+    // 6.11: loch za stalową bramą, przedproże i stara komnata z kotłem — mury, filary, pajęczyny, kocioł, krata
+    rysujLoch(ctx, sim, cam, teraz);
+    // droga wiernych: schody kręcone — tylko to, co już zbudowano, w wykutych kaflach (ciemność je zakrywa); po lochu,
+    // bo dół schodów stoi w komnacie z kotłem i na przedprożu, a ich tylna ściana ma być za schodami, nie na nich
+    rysujSchodyDrogi(ctx, sim, cam, teraz);
+    // 6.11: budowa schodów — drabina, rusztowanie, kołowrót z kubłem urobku albo opuszczanym stopniem, hałda
+    rysujBudoweSchodow(ctx, sim, cam, teraz);
     // katedra na powierzchni nad szybem ze światłem — kamień (szkło rozety i płomienie świec — nad mrokiem)
     rysujKatedre(ctx, sim, cam);
     smugiSwiatla(ctx, sim, cam, teraz);
@@ -1391,6 +1425,8 @@ export class EkranGry implements Ekran {
     this.oltarz.rysujNad(ctx, sim, cam, teraz, this.oltarzPodKursorem());
     // etap 3e: odkrycie zabytku (kurz, światło, wzlot), wzięcie (do rąk, fala do ludu), zostawienie (gaśnie)
     this.ruiny.rysujNad(ctx, sim, cam, teraz);
+    // 6.11: wywar w kotle i zaklinanie, płomienie, runy bramy, krąg modlitwy za innych — nad mrokiem
+    rysujLochNad(ctx, sim, cam, teraz);
     const proba = this.probaPodKursorem();
     if (proba) this.pokoje.podglad(ctx, sim, cam, proba, teraz, this.szablon === 'lina' ? this.cenaLinyPodpis(!this.ciagniecie)
       : this.ciagniecie ? undefined : this.szablon && !czyPokoj(this.szablon) ? `${NAZWA_POMIESZCZENIA[this.szablon]} — przeciągnij` : undefined);
@@ -1409,7 +1445,7 @@ export class EkranGry implements Ekran {
     this.pokoje.rysujPrzod(ctx, sim, cam, teraz);
     rysujPrzodWiader(ctx, sim, cam, teraz);
     rysujPoleceniaNaMapie(ctx, sim, cam, teraz, this.zaznaczeni, this.falaRozkazu);
-    if (this.ramka) rysujRamke(ctx, cam, this.ramka, teraz);
+    if (this.ramka) rysujRamke(ctx, cam, this.ramka, teraz, sim.world.w, sim.world.h, this.podgladRamki());
     if (this.panelDev && ustawienia.trybDeweloperski && !this.nasluch) rysujDev(ctx, sim, cam, teraz);
     rysujEfekty(ctx, sim.efekty, cam, teraz, sim);
     rysujZnacznikiLudu(ctx, sim, cam);
@@ -1890,24 +1926,63 @@ export class EkranGry implements Ekran {
    * Puszczona ramka: postacie ludu w środku — zaznacza je (z Shiftem dokłada); bez postaci, gdy zaznaczeni są
    * robotnicy — lita skała w środku oznaczona do wykucia (sim/polecenia.ts: wydajObszar).
    */
+  /**
+   * Co zrobi ramka (to samo przy ciągnięciu — podgląd — i po puszczeniu): ramka trzyma się kafli (6.11), więc liczy
+   * się pełny blok pod każdym rogiem. Postacie ludu w środku wygrywają — chyba że to dokładnie ci zaznaczeni
+   * robotnicy (zaznaczenie ich na nowo nic by nie zmieniło), a w ramce jest skała do wykucia: wtedy kują.
+   */
+  private wynikRamki(r: { x0: number; y0: number; x1: number; y1: number }): { tryb: 'kop' | 'lud' | 'nic'; lud: Creature[]; kop: number[]; lite: number[]; k: { x0: number; y0: number; x1: number; y1: number }; rob: Creature[] } {
+    const { sim } = this;
+    const w = sim.world;
+    const k = kafleRamki(r, w.w, w.h);
+    // sylwetka stoi na c.y + 1 i sięga ok. półtora kafla w górę — liczy się, gdy ramka zahacza o tułów
+    const lud = sim.creatures.filter((c) => !c.dead && rolaPostaci(c) && c.x >= k.x0 - 0.15 && c.x <= k.x1 + 1.15 && c.y + 1 > k.y0 && c.y - 0.5 < k.y1 + 1);
+    const zazn = this.zaznaczeniZywi();
+    const rob = zazn.filter((c) => rolaPostaci(c) === 'robotnik');
+    const kop: number[] = [], lite: number[] = [];
+    if (rob.length) {
+      for (let y = k.y0; y <= k.y1; y++) for (let x = k.x0; x <= k.x1; x++) {
+        if (!w.solid(x, y)) continue;
+        const i = w.idx(x, y);
+        lite.push(i);
+        if (doWykuciaRamka(sim, i)) kop.push(i);
+      }
+    }
+    const tylkoCiSami = lud.length === zazn.length && lud.every((c) => this.zaznaczeni.has(c.id));
+    const tryb = kop.length && (!lud.length || tylkoCiSami) ? 'kop' : lud.length ? 'lud' : 'nic';
+    return { tryb, lud, kop, lite, k, rob };
+  }
+
+  /** Podgląd ramki przy ciągnięciu — liczony na nowo, gdy ramka przeskoczy na inny kafel albo co kilka tików. */
+  private podgladRamki(): PodgladRamki | null {
+    if (!this.ramka) return null;
+    const w = this.sim.world;
+    const k = kafleRamki(this.ramka, w.w, w.h);
+    const klucz = `${k.x0},${k.y0},${k.x1},${k.y1},${this.sim.tick >> 3},${this.zaznaczeni.size}`;
+    if (this.podgladRamkiPamiec?.klucz !== klucz) {
+      const { tryb, kop, lud } = this.wynikRamki(this.ramka);
+      this.podgladRamkiPamiec = { klucz, podglad: { tryb, kop, lud: lud.length } };
+    }
+    return this.podgladRamkiPamiec.podglad;
+  }
+
+  /**
+   * Puszczona ramka: postacie ludu w środku — zaznacza je (z Shiftem dokłada); bez postaci, gdy zaznaczeni są
+   * robotnicy — lita skała w środku oznaczona do wykucia (sim/polecenia.ts: wydajObszar). Bez limitu wielkości (6.11).
+   */
   private zaznaczRamka(r: { x0: number; y0: number; x1: number; y1: number }, dokladaj: boolean): void {
     const { sim, ui } = this;
-    const xa = Math.min(r.x0, r.x1), xb = Math.max(r.x0, r.x1), ya = Math.min(r.y0, r.y1), yb = Math.max(r.y0, r.y1);
-    // sylwetka stoi na c.y + 1 i sięga ok. półtora kafla w górę — liczy się, gdy ramka zahacza o tułów
-    const lud = sim.creatures.filter((c) => !c.dead && rolaPostaci(c) && c.x >= xa - 0.3 && c.x <= xb + 0.3 && c.y + 0.9 >= ya && c.y - 0.5 <= yb);
-    if (lud.length) {
+    const { tryb, lud, lite, k, rob } = this.wynikRamki(r);
+    this.podgladRamkiPamiec = null;
+    if (tryb === 'lud') {
       this.zaznacz(lud.map((c) => c.id), dokladaj);
       ui.say(lud.length === 1 ? 'Zaznaczony. Dotknij mapy, dokąd ma iść.' : `Zaznaczeni: ${lud.length}. Dotknij mapy, dokąd mają iść.`, sim.tick);
       this.app.gesty.klik();
       return;
     }
-    const rob = this.zaznaczeniZywi().filter((c) => rolaPostaci(c) === 'robotnik');
     if (!rob.length) { ui.say('Zaznacz robotników — wtedy ramka oznaczy skałę do wykucia.', sim.tick); return; }
-    const w = sim.world, kafle: number[] = [];
-    for (let y = Math.floor(ya); y <= Math.floor(yb); y++) for (let x = Math.floor(xa); x <= Math.floor(xb); x++) if (w.inb(x, y) && w.solid(x, y)) kafle.push(w.idx(x, y));
-    if (kafle.length > STEROWANIE.ramkaMaks) { ui.say(`Za duża ramka — najwyżej ${STEROWANIE.ramkaMaks} kafli naraz.`, sim.tick); this.app.gesty.odmowa(); return; }
-    const { przyjeli, odmowy, kafli } = wydajObszar(sim, rob.map((c) => c.id), kafle);
-    this.falaRozkazu = { x: (xa + xb) / 2, y: (ya + yb) / 2, t: performance.now(), ok: przyjeli > 0 };
+    const { przyjeli, odmowy, kafli } = wydajObszar(sim, rob.map((c) => c.id), lite);
+    this.falaRozkazu = { x: (k.x0 + k.x1 + 1) / 2, y: (k.y0 + k.y1 + 1) / 2, t: performance.now(), ok: przyjeli > 0 };
     if (!przyjeli) { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
     else {
       ui.say(`Kują oznaczoną skałę (${kafli} kafli)` + (odmowy.length ? `. Odmawia: ${odmowy.length}.` : '.'), sim.tick);

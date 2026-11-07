@@ -58,17 +58,54 @@ function bledyOltarza(w) {
     if (w.wSali(z.x, z.y)) bledy.push('ruina w sali');
   }
   if (w.ruiny.length === 2 && w.ruiny[0].zabytek.typ === w.ruiny[1].zabytek.typ) bledy.push('dwa takie same zabytki');
-  // droga wiernych (25.10): wnęka przy lewej ścianie sali pusta i połączona z salą, w szybie nic nie do ruszenia,
-  // szyb sięga krypty (dolny rząd szybu to pustka nad jej podłogą)
-  const s = w.szybDrogi;
-  if (s.x1 < s.x0) bledy.push('brak szybu drogi wiernych');
+  // droga wiernych (25.10; 6.11 — z zakrętem): wnęka przy lewej ścianie sali pusta i połączona z salą, w odcinkach
+  // szybu nic nie do ruszenia, pierwszy sięga dna starej komnaty z kotłem, drugi — dna przedproża lochu
+  const od = w.odcinkiDrogi;
+  if (od.length !== 2) bledy.push('droga wiernych nie ma dwóch odcinków');
   else {
-    for (let y = s.y0; y <= w.salaOltarza.y1; y++) for (let x = s.x0; x <= s.x1 + 1; x++) if (!wolny(x, y)) { bledy.push('wnęka drogi wiernych zasypana (' + x + ', ' + y + ')'); y = 1e9; break; }
-    for (let y = w.salaOltarza.y1 + 1; y <= s.y1; y++) for (let x = s.x0; x <= s.x1; x++) {
+    const [s1, s2] = od;
+    for (let y = s1.y0; y <= w.salaOltarza.y1; y++) for (let x = s1.x0; x <= s1.x1 + 1; x++) if (!wolny(x, y)) { bledy.push('wnęka drogi wiernych zasypana (' + x + ', ' + y + ')'); y = 1e9; break; }
+    for (const s of od) for (let y = Math.max(s.y0, w.salaOltarza.y1 + 1); y <= s.y1; y++) for (let x = s.x0; x <= s.x1; x++) {
       const t = w.tile[w.idx(x, y)];
       if (t === T.STONE || t === T.CORE) { bledy.push('w szybie drogi wiernych kamień nie do ruszenia (' + x + ', ' + y + ')'); y = 1e9; break; }
     }
-    for (let x = s.x0; x <= s.x1; x++) if (!wolny(x, s.y1) || wolny(x, s.y1 + 1)) { bledy.push('szyb drogi wiernych nie trafia w podłogę krypty (' + x + ')'); break; }
+    for (let x = s1.x0; x <= s1.x1; x++) if (!wolny(x, s1.y1) || wolny(x, s1.y1 + 1) && !w.wSzybie(x, s1.y1 + 1)) { bledy.push('pierwszy odcinek nie trafia w posadzkę komnaty (' + x + ')'); break; }
+    for (let x = s2.x0; x <= s2.x1; x++) if (!wolny(x, s2.y1) || wolny(x, s2.y1 + 1)) { bledy.push('drugi odcinek nie trafia w posadzkę przedproża (' + x + ')'); break; }
+    if (Math.abs(((s1.x0 + s1.x1) >> 1) - ((s2.x0 + s2.x1) >> 1)) < 20) bledy.push('zakręt drogi za krótki');
+    if (s1.y1 - w.salaOltarza.y1 < 30) bledy.push('pierwszy odcinek za krótki');
+  }
+  // 6.11: stara komnata — pusta w środku, za murem nie do ruszenia (poza szybami), kocioł stoi na posadzce
+  const km = w.komnata, k = w.kociol;
+  for (let y = km.y0; y <= km.y1; y++) for (let x = km.x0; x <= km.x1; x++) if (!wolny(x, y)) { bledy.push('komnata z kotłem zasypana (' + x + ', ' + y + ')'); y = 1e9; break; }
+  for (let y = km.y0 - 1; y <= km.y1 + 1; y++) for (let x = km.x0 - 1; x <= km.x1 + 1; x++) {
+    if (x >= km.x0 && x <= km.x1 && y >= km.y0 && y <= km.y1) continue;
+    if (!w.wSzybie(x, y) && w.tile[w.idx(x, y)] !== T.STONE) { bledy.push('mur komnaty dziurawy (' + x + ', ' + y + ')'); y = 1e9; break; }
+  }
+  if (!wolny(k.x, k.y) || wolny(k.x, k.y + 1) || !w.wKomnacie(k.x, k.y)) bledy.push('kocioł nie stoi na posadzce komnaty');
+  // 6.11: loch za stalową bramą — z przedproża do przedsionka da się dojść tylko przez przejście bramy
+  const b = w.brama, pp = w.przedproze;
+  for (let y = b.y0; y <= b.y1; y++) for (let x = b.x0; x <= b.x1; x++) if (w.tile[w.idx(x, y)] !== T.STONE) { bledy.push('brama nie jest zamknięta na starcie'); y = 1e9; break; }
+  const zalej = (przezBrame) => {
+    const W = w.w, seen = new Uint8Array(W * w.h), q = [w.idx(pp.x0, pp.y1)];
+    seen[q[0]] = 1;
+    while (q.length) {
+      const i = q.pop(), x = i % W, y = (i / W) | 0;
+      for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+        const nx = x + dx, ny = y + dy;
+        if (!w.inb(nx, ny)) continue;
+        const j = w.idx(nx, ny);
+        if (seen[j]) continue;
+        if (!wolny(nx, ny) && !(przezBrame && w.wBramie(nx, ny))) continue;
+        seen[j] = 1; q.push(j);
+      }
+    }
+    return seen;
+  };
+  const cel = w.idx(w.coreX - 3, w.przedsionekY + 3);
+  if (!wolny(pp.x0, pp.y1)) bledy.push('przedproże zasypane');
+  else {
+    if (zalej(false)[cel]) bledy.push('do lochu da się wejść obok bramy');
+    if (!zalej(true)[cel]) bledy.push('przez bramę nie da się dojść do przedsionka');
   }
   return bledy;
 }
@@ -105,4 +142,4 @@ if (wynik.zlych > 0) {
   console.error(`\nZŁY ŚWIAT (zalany przedsionek albo ołtarz i otwory) w ${wynik.zlych} z ${ILE} światów.`);
   process.exit(1);
 }
-console.log(`\nOK: przedsionek suchy, ołtarz na kamiennym kopczyku, oba otwory, ruiny z zabytkami i szyb drogi wiernych w ${ILE} z ${ILE} światów.`);
+console.log(`\nOK: przedsionek suchy, ołtarz na kamiennym kopczyku, oba otwory, ruiny z zabytkami, droga wiernych z zakrętem, komnata z kotłem i loch za bramą w ${ILE} z ${ILE} światów.`);

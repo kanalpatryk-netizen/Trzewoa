@@ -22,7 +22,9 @@ import { Job } from '../sim/creatures';
 import { rozstrzygnij } from '../sim/wydarzenia';
 import { seed, sign, whisper } from '../powers/powers';
 import { porcjiWWiadrach } from '../sim/wiadro';
-import { wydajPolecenie, odwolajPolecenie, wydajNaprawe, wydajNaPomieszczenie } from '../sim/polecenia';
+import { wydajPolecenie, odwolajPolecenie, wydajNaprawe, wydajNaPomieszczenie, wydajDoKotla } from '../sim/polecenia';
+import { stanBramy } from '../sim/brama';
+import { BRAMA } from '../nastawy/loch';
 import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
 import { STRAZNICY } from '../nastawy/straznicy';
 import { czoloDrogi, nieWykopane } from '../sim/pielgrzymka';
@@ -76,6 +78,8 @@ interface Pamiec {
   oslona?: [number, number];
   /** od kiedy krwi jest mniej niż 10 i kiedy bot ostatnio sam wydał krew na rytuał */
   krewNiskoOd?: number; wydalKrewT?: number;
+  /** 6.11: od kiedy bot podnosi bramę lochu (pobożni przy kotle, rycerze czekają na przedprożu) */
+  bramaOd?: number;
 }
 const pamieci = new WeakMap<Sim, Pamiec>();
 function pamiec(sim: Sim): Pamiec {
@@ -405,11 +409,69 @@ function robotnicy(sim: Sim, styl: StylBota): void {
  * Alpha: rycerz jest jeden. Gdy trwa fala Strażników, a on stoi daleko od przedsionka (pilnuje obozu na górze),
  * bot posyła go pod pomnik; po fali odwołuje rozkaz — rycerz wraca do warty przy pobożnych.
  */
+/**
+ * 6.11: stalowa brama lochu. Gdy ktoś z ludu chce do lochu (pobożni idą pod pomnik albo ktoś czeka na przedprożu),
+ * a brama zamknięta — dwóch pobożnych idzie do kotła i zaklina; rycerze czekają na przedprożu. Przy pełnym otwarciu
+ * pobożni z kotła schodzą pod pomnik, a rycerze wchodzą do lochu, zanim krata opadnie.
+ */
+function brama(sim: Sim): void {
+  const w = sim.world, p = pamiec(sim);
+  if (w.brama.x1 < w.brama.x0 || czoloDrogi(sim) >= 0 || sim.rytual.otwarta) return;
+  const st = stanBramy(sim);
+  const pobozni = zRola(sim, 'pobozny');
+  const zaklinaja = pobozni.filter((c) => c.polecenie?.zaklinaj);
+  const wLochu = (c: C) => w.wLochu(c.x, c.y);
+  const wPosterunku = (c: C) => wydajPolecenie(sim, c, 'idz', w.coreX + (c.id % 2 ? -6 : 6), w.przedsionekY);
+  if (zaklinaja.length) {
+    if (st.otwarcie >= 0.97) {
+      for (const c of zaklinaja) {
+        odwolajPolecenie(sim, c);
+        if (sim.wiara < 8 || !whisper(sim, 'modl', c)) wydajPolecenie(sim, c, 'idz', w.coreX + (c.id % 2 ? -3 : 3), w.przedsionekY);
+      }
+      for (const c of zRola(sim, 'rycerz')) if (!wLochu(c)) wPosterunku(c);
+      mysl(sim, 'brama lochu podniesiona — pobożni z kotła schodzą pod pomnik, rycerze wchodzą do lochu');
+      return;
+    }
+    // przy kotle za mało rąk (drugiego zabrał np. rytuał przy ołtarzu) — krata stoi w miejscu: dosyła wolnego pobożnego
+    // (bez tego jeden zaklinał sam do końca gry, a drugi czekał pod bramą, aż ktoś ją podniesie)
+    if (zaklinaja.length < BRAMA.potrzeba) {
+      const k = w.kociol;
+      const wolni = pobozni.filter((c) => !c.polecenie && !wLochu(c) && c.hunger < 0.6)
+        .sort((a, b) => Math.hypot(a.x - k.x, a.y - k.y) - Math.hypot(b.x - k.x, b.y - k.y))
+        .slice(0, BRAMA.potrzeba - zaklinaja.length);
+      if (wolni.length && wydajDoKotla(sim, wolni.map((c) => c.id)).przyjeli) mysl(sim, 'przy kotle zaklina za mało pobożnych — dosyłam drugiego');
+    }
+    return;
+  }
+  if (p.bramaOd && !st.wolne) p.bramaOd = undefined;
+  // krata jeszcze wysoko — kto czeka na przedprożu, wchodzi
+  if (st.otwarcie >= BRAMA.idzieOd) {
+    for (const c of zRola(sim, 'rycerz')) if (!wLochu(c) && w.wPrzedprozu(c.x, c.y)) wPosterunku(c);
+    return;
+  }
+  const chcaWejsc = pobozni.some((c) => (c.job === Job.PIELGRZYM || c.wyprawa) && !wLochu(c))
+    || zywi(sim).some((c) => w.wPrzedprozu(c.x, c.y));
+  if (!chcaWejsc || stanPomnika(sim).faza === 'kona') return;
+  const k = w.kociol;
+  const wolni = pobozni.filter((c) => !wLochu(c) && c.hunger < 0.6).sort((a, b) => Math.hypot(a.x - k.x, a.y - k.y) - Math.hypot(b.x - k.x, b.y - k.y)).slice(0, BRAMA.potrzeba);
+  if (wolni.length < BRAMA.potrzeba) return;
+  const r = wydajDoKotla(sim, wolni.map((c) => c.id));
+  if (!r.przyjeli) return;
+  p.bramaOd = sim.tick;
+  // rycerze — na przedproże, pod bramę
+  const pp = w.przedproze;
+  for (const c of zRola(sim, 'rycerz')) if (!wLochu(c)) wydajPolecenie(sim, c, 'idz', pp.x1 - 1 - (c.id % 3), pp.y1);
+  mysl(sim, 'brama lochu zamknięta — dwóch pobożnych do kotła, rycerze pod bramę');
+}
+
 function rycerzNaFale(sim: Sim): void {
   const w = sim.world;
   const fala = !!sim.lud.straznicy?.trwa;
+  const p = pamiec(sim);
   for (const c of zRola(sim, 'rycerz')) {
     if (walkaZDemonem(sim)) continue;
+    // (6.11: czeka pod bramą albo właśnie przez nią wchodzi — rozkazu nie odwołuje)
+    if (p.bramaOd && sim.tick - p.bramaOd < 4 * M) continue;
     const daleko = Math.hypot(c.x - w.coreX, c.y - w.przedsionekY) > STRAZNICY.rycerzWidzi * 0.75;
     if (fala && daleko && (!c.polecenie || c.polecenie.typ === 'zbroja') && !(c.odmowa && sim.tick - c.odmowa.od < M / 2)) {
       if (wydajPolecenie(sim, c, 'idz', w.coreX + (c.id % 2 ? -6 : 6), w.przedsionekY) === null) mysl(sim, 'fala Strażników — rycerz biegnie pod pomnik');
@@ -460,6 +522,17 @@ function walka(sim: Sim): void {
     if (wydajPolecenie(sim, c, 'idz', salaX + (c.id % 2 ? -8 : 8), salaY) === null) {
       p.odeslani.add(c.id);
       mysl(sim, `${imie(c)} odchodzi od demona — nie ma czym walczyć`);
+      continue;
+    }
+    // 6.11: za opadłą kratą do sali nie dojdzie — w lochu odchodzi na koniec dalszy od demona (rozkaz w górę był
+    // odrzucany, a pobożni modlili się dalej pod pomnikiem, z którego właśnie wyszedł demon)
+    if (w.brama.x1 >= w.brama.x0 && w.wLochu(c.x, c.y)) {
+      const L = w.loch;
+      const kx = dx < (L.x0 + L.x1) / 2 ? L.x1 - 2 - (c.id % 3) : L.x0 + 2 + (c.id % 3);
+      if (wydajPolecenie(sim, c, 'idz', kx, L.y1) === null) {
+        p.odeslani.add(c.id);
+        mysl(sim, `${imie(c)} odchodzi od demona na drugi koniec lochu — krata opadła`);
+      }
     }
   }
   // rycerz: bez rozkazów — sam idzie na demona i bije go najszybciej (posterunek z rozkazu wydłużał walkę);
@@ -654,6 +727,7 @@ export function ruchBota(sim: Sim, styl: StylBota): void {
   const k = Math.floor(sim.tick / BOT_CO);
   naprawLine(sim);
   walka(sim);
+  if (k % 2 === 1) brama(sim);
   if (k % 2 === 0) oltarz(sim, styl);
   if (k % 5 === 0) {
     for (const r of chcePokoje(sim, styl)) { if (!pokoj(sim, r)) { zalozPokoj(sim, r); break; } }

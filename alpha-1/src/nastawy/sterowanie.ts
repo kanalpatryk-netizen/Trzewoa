@@ -55,8 +55,6 @@ export const TEMPO = {
 
 /** STEROWANIE PALCEM — tylko wersja Android (na telefonie nie ma klawiatury ani myszy). */
 export const STEROWANIE = {
-  /** Ramka „do wykopania” (zaznaczanie prostokątem, 25.10): najwyżej tyle kafli skały naraz. */
-  ramkaMaks: 600,
   /** Podpowiedzi klawiszy: cyfry przy rytach, „esc”, „P”, klawisze w samouczku i w ustawieniach. */
   pokazKlawisze: false,
   /** Przytrzymanie palca na rycie (ms) otwiera jego tablicę w atlasie — zamiast prawego przycisku. */

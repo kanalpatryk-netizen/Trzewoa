@@ -1,11 +1,12 @@
 import { los } from './lud/matma';
+import { rysujWedlugWzoru } from './demon-wzor';
 
 /**
  * DEMON (Alpha, etap 5) — jedna rycina na dwie role: kamienny posąg Wielkiego Pomnika (przykucnięty, zakuty,
  * pękający) i żywy demon, który wstaje z jego gruzów (boss ostatniej fali). Rysunek stopami w (0, 0), przodem
  * w prawo, w jednostkach wysokości stojącej postaci `H` (rogi sięgają wyżej). Pozę liczy się z dwóch szkieletów —
  * stojącego i przykucniętego — więc wstawanie z gruzów to ta sama postać, płynnie.
- * Zastępstwo do czasu docelowej grafiki (robi ją Paweł).
+ * Alpha 1 (5.11): w grze rysuje go już wzór grafika (render/demon-wzor.ts) — ta rycina zostaje jako zapas.
  */
 
 type P = [number, number];
@@ -146,7 +147,8 @@ for (let i = 0; i < 16; i++) {
  * Rysuje demona. `H` w pikselach; kontekst ustawiony stopami w (0, 0), zwrot przez ctx.scale(±1, 1) u wołającego.
  * Zwraca punkty zaczepienia (w jednostkach H).
  */
-export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDemona): PunktyDemona {
+/** Dawna rycina demona (kreślona w kodzie) — zapas, póki nie wczytały się obrazki nowego pomnika (render/demon-wzor.ts). */
+export function rysujDemonaRycina(ctx: CanvasRenderingContext2D, H: number, p: PozaDemona): PunktyDemona {
   const s = poza(p);
   const B = barwy(p.zywy);
   const px = 1 / H;
@@ -400,4 +402,12 @@ export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDem
   ctx.restore();
   const piers = mp(s.chest, s.neck, 0.2);
   return { wrF: s.wrF, wrB: s.wrB, glowa: s.head, piers };
+}
+
+/**
+ * Demon — Alpha 1: według wzoru grafika (posąg z rękami uniesionymi, z płomienną aureolą i naszyjnikiem czaszek;
+ * render/demon-wzor.ts). Póki obrazki się wczytują (i poza przeglądarką) — dawna rycina.
+ */
+export function rysujDemona(ctx: CanvasRenderingContext2D, H: number, p: PozaDemona): PunktyDemona {
+  return rysujWedlugWzoru(ctx, H, p) ?? rysujDemonaRycina(ctx, H, p);
 }

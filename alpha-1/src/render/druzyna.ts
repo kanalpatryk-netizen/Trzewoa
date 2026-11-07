@@ -16,6 +16,7 @@ import type { Plate, Obszar } from './plate';
 import { obszarSpisu } from './plate';
 import { rolaPostaci, NAZWA_ROLI_MNOGA, type Rola } from '../sim/lud';
 import { czoloDrogi } from '../sim/pielgrzymka';
+import { trwaBudowaSchodow } from '../sim/budowa-schodow';
 import { linaPrzecieta, sklejajacy } from '../sim/lina-wiadra';
 import { rysujPostac, wysokoscPostaci } from './figury';
 import { przesuniecieX, rozstawTlum } from './lud/rozstep';
@@ -189,6 +190,8 @@ export function rysujDruzyne(
         : { akcja: 'naprawa', tekst: idzie ? 'napraw linę (idzie)' : 'napraw linę wiadra', pilne: !idzie });
     }
     if (robotnicy && czoloDrogi(sim) >= 0) opcje.push({ akcja: 'droga', tekst: 'kop drogę wiernych' });
+    // 6.11: szyb wykopany, schody w budowie — ten sam rozkaz posyła do budowy (sim/budowa-schodow.ts)
+    else if (robotnicy && !sim.rytual.otwarta && trwaBudowaSchodow(sim)) opcje.push({ akcja: 'droga', tekst: 'buduj schody drogi wiernych' });
     if (zaznaczone.some((c) => c.polecenie)) opcje.push({ akcja: 'odwolaj', tekst: 'odwołaj rozkaz' });
     if (zaznaczone.length) opcje.push({ akcja: 'odznacz', tekst: 'odznacz' });
     // etap 3c: plany pomieszczeń — zawsze pod ręką (klawisz B)
@@ -366,17 +369,30 @@ export function rysujPoleceniaNaMapie(
     for (const i of p.obszar) if (!oznaczone.has(i) || oznaczone.get(i)! > p.od) oznaczone.set(i, p.od);
   }
   if (oznaczone.size) {
+    // ramka nie ma limitu (6.11) — tylko kafle w widoku, a te już wbite jednym pociągnięciem (tysiące krzyżyków naraz)
+    const vx0 = Math.floor(cam.toWorldX(0)) - 1, vx1 = Math.ceil(cam.toWorldX(cam.vw)) + 1;
+    const vy0 = Math.floor(cam.toWorldY(0)) - 1, vy1 = Math.ceil(cam.toWorldY(cam.vh)) + 1;
+    const krzyz = (sx: number, sy: number, s: number) => { ctx.moveTo(sx - s, sy - s); ctx.lineTo(sx + s, sy + s); ctx.moveTo(sx + s, sy - s); ctx.lineTo(sx - s, sy + s); };
+    const s1 = z * 0.26;
     ctx.lineCap = 'round';
+    const wbite = new Path2D();
+    let ileWbitych = 0;
     for (const [i, od] of oznaczone) {
       const x = i % w.w, y = (i / w.w) | 0;
-      if (!w.solid(x, y)) continue;
+      if (x < vx0 || x > vx1 || y < vy0 || y > vy1 || !w.solid(x, y)) continue;
       const t = Math.min(1, Math.max(0, (sim.tick - od) / 18 - ((x + y) % 5) * 0.08));
       if (t <= 0) continue;
-      const s = z * 0.26 * (t < 0.7 ? t / 0.7 * 1.25 : 1.25 - (t - 0.7) / 0.3 * 0.25);
       const sx = cam.toScreenX(x + 0.5), sy = cam.toScreenY(y + 0.5);
+      if (t >= 1) { wbite.moveTo(sx - s1, sy - s1); wbite.lineTo(sx + s1, sy + s1); wbite.moveTo(sx + s1, sy - s1); wbite.lineTo(sx - s1, sy + s1); ileWbitych++; continue; }
+      const s = z * 0.26 * (t < 0.7 ? t / 0.7 * 1.25 : 1.25 - (t - 0.7) / 0.3 * 0.25);
       ctx.strokeStyle = 'rgba(14,9,7,0.7)'; ctx.lineWidth = Math.max(2.2, z * 0.12);
-      ctx.beginPath(); ctx.moveTo(sx - s, sy - s); ctx.lineTo(sx + s, sy + s); ctx.moveTo(sx + s, sy - s); ctx.lineTo(sx - s, sy + s); ctx.stroke();
+      ctx.beginPath(); krzyz(sx, sy, s); ctx.stroke();
       ctx.strokeStyle = 'rgba(240,222,180,0.85)'; ctx.lineWidth = Math.max(1.2, z * 0.06); ctx.stroke();
+    }
+    if (ileWbitych) {
+      // przy małym przybliżeniu krzyżyk byłby większy od kafla — cieńsza kreda
+      ctx.strokeStyle = 'rgba(14,9,7,0.7)'; ctx.lineWidth = Math.min(Math.max(2.2, z * 0.12), z * 0.5); ctx.stroke(wbite);
+      ctx.strokeStyle = 'rgba(240,222,180,0.85)'; ctx.lineWidth = Math.min(Math.max(1.2, z * 0.06), z * 0.25); ctx.stroke(wbite);
     }
   }
   for (const c of sim.creatures) {
@@ -432,27 +448,90 @@ export function rysujPoleceniaNaMapie(
   ctx.restore();
 }
 
+/** Rogi ramki w świecie → pełne kafle, które przecina (włącznie), przycięte do świata. */
+export function kafleRamki(r: { x0: number; y0: number; x1: number; y1: number }, sw: number, sh: number): { x0: number; y0: number; x1: number; y1: number } {
+  const x0 = Math.max(0, Math.floor(Math.min(r.x0, r.x1))), x1 = Math.min(sw - 1, Math.floor(Math.max(r.x0, r.x1)));
+  const y0 = Math.max(0, Math.floor(Math.min(r.y0, r.y1))), y1 = Math.min(sh - 1, Math.floor(Math.max(r.y0, r.y1)));
+  return { x0, y0, x1: Math.max(x0, x1), y1: Math.max(y0, y1) };
+}
+
+/** Co zrobi puszczona ramka — liczone na bieżąco przy ciągnięciu, żeby było widać, które kafle pójdą do wykucia. */
+export interface PodgladRamki {
+  /** 'kop' — oznaczy skałę (kafle `kop`); 'lud' — zaznaczy postacie; 'nic' — nic do zrobienia. */
+  tryb: 'kop' | 'lud' | 'nic';
+  /** Kafle do wykucia (indeksy świata, wierszami). */
+  kop: readonly number[];
+  /** Ile postaci zaznaczy. */
+  lud: number;
+}
+
 /**
  * Ramka ciągnięta myszą po mapie (zaznaczanie prostokątem, 25.10): złota przerywana linia, która „płynie”,
- * jasne rogi i lekkie wypełnienie — rośnie za kursorem. Rogi w kaflach świata.
+ * jasne rogi i lekkie wypełnienie — rośnie za kursorem. Od 6.11 trzyma się siatki kafli (rogi na krawędziach
+ * bloków), a gdy zaznaczeni robotnicy mają co kuć, każdy kafel do wykucia jest podświetlony, z liczbą przy rogu.
  */
-export function rysujRamke(ctx: CanvasRenderingContext2D, cam: Camera, r: { x0: number; y0: number; x1: number; y1: number; od: number }, czas: number): void {
-  const x = cam.toScreenX(Math.min(r.x0, r.x1)), y = cam.toScreenY(Math.min(r.y0, r.y1));
-  const w = Math.abs(r.x1 - r.x0) * cam.zoom, h = Math.abs(r.y1 - r.y0) * cam.zoom;
+export function rysujRamke(
+  ctx: CanvasRenderingContext2D, cam: Camera, r: { x0: number; y0: number; x1: number; y1: number; od: number },
+  czas: number, sw: number, sh: number, podglad: PodgladRamki | null = null,
+): void {
+  const k = kafleRamki(r, sw, sh);
+  const z = cam.zoom;
+  const x = cam.toScreenX(k.x0), y = cam.toScreenY(k.y0);
+  const w = (k.x1 - k.x0 + 1) * z, h = (k.y1 - k.y0 + 1) * z;
   const t = Math.min(1, (czas - r.od) / 160);
+  const kop = podglad?.tryb === 'kop';
   ctx.save();
-  ctx.fillStyle = `rgba(246,216,142,${0.08 * t})`; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = `rgba(246,216,142,${(kop ? 0.04 : 0.08) * t})`; ctx.fillRect(x, y, w, h);
+  // siatka bloków w ramce — widać, ile kafli i które
+  if (z >= 6) {
+    ctx.strokeStyle = `rgba(246,216,142,${0.18 * t})`; ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let gx = k.x0 + 1; gx <= k.x1; gx++) { const sx = Math.round(cam.toScreenX(gx)) + 0.5; ctx.moveTo(sx, y); ctx.lineTo(sx, y + h); }
+    for (let gy = k.y0 + 1; gy <= k.y1; gy++) { const sy = Math.round(cam.toScreenY(gy)) + 0.5; ctx.moveTo(x, sy); ctx.lineTo(x + w, sy); }
+    ctx.stroke();
+  }
+  // kafle do wykucia: ciepłe wypełnienie (wierszami, ciągi sąsiednich kafli jednym prostokątem) i obrys każdego bloku
+  if (kop && podglad!.kop.length) {
+    const pulsa = wolnoRuszac() ? 0.5 + 0.5 * Math.sin(czas * 0.006) : 0.5;
+    const runy = new Path2D(), bloki = new Path2D();
+    const list = podglad!.kop;
+    for (let a = 0; a < list.length;) {
+      let b = a;
+      while (b + 1 < list.length && list[b + 1] === list[b] + 1 && (list[b + 1] % sw) !== 0) b++;
+      const tx = list[a] % sw, ty = (list[a] / sw) | 0;
+      runy.rect(cam.toScreenX(tx), cam.toScreenY(ty), (b - a + 1) * z, z);
+      a = b + 1;
+    }
+    if (z >= 9) for (const i of list) bloki.rect(cam.toScreenX(i % sw) + 1.5, cam.toScreenY((i / sw) | 0) + 1.5, z - 3, z - 3);
+    ctx.fillStyle = `rgba(232,150,70,${(0.2 + 0.08 * pulsa) * t})`; ctx.fill(runy);
+    if (z >= 9) { ctx.strokeStyle = `rgba(255,214,150,${0.55 * t})`; ctx.lineWidth = 1; ctx.stroke(bloki); }
+  }
   ctx.setLineDash([6, 5]); ctx.lineDashOffset = wolnoRuszac() ? -czas * 0.02 : 0;
   ctx.strokeStyle = 'rgba(14,9,7,0.75)'; ctx.lineWidth = 3; ctx.strokeRect(x, y, w, h);
   ctx.strokeStyle = `rgba(246,216,142,${0.95 * t})`; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, w, h);
   ctx.setLineDash([]);
   // rogi
-  const k = Math.min(12, w / 3, h / 3);
+  const rg = Math.min(12, w / 3, h / 3);
   ctx.strokeStyle = 'rgba(255,236,190,0.95)'; ctx.lineWidth = 2.2;
   ctx.beginPath();
   for (const [cx, cy, dx, dy] of [[x, y, 1, 1], [x + w, y, -1, 1], [x, y + h, 1, -1], [x + w, y + h, -1, -1]]) {
-    ctx.moveTo(cx + dx * k, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy + dy * k);
+    ctx.moveTo(cx + dx * rg, cy); ctx.lineTo(cx, cy); ctx.lineTo(cx, cy + dy * rg);
   }
   ctx.stroke();
+  // podpis przy rogu pod kursorem: wymiary ramki w blokach i co z niej będzie
+  const szer = k.x1 - k.x0 + 1, wys = k.y1 - k.y0 + 1;
+  const napis = `${szer}×${wys}` + (kop ? ` · do wykucia: ${podglad!.kop.length}`
+    : podglad?.tryb === 'lud' ? ` · zaznaczy: ${podglad.lud}` : '');
+  ctx.font = `13px ${SERIF}`;
+  const tw = ctx.measureText(napis).width + 12, th = 20;
+  const prawo = r.x1 >= r.x0, dol = r.y1 >= r.y0;
+  // po prawej/pod spodem odsunięty o kursor (rękawica zasłoniłaby napis)
+  let px = (prawo ? x + w + 24 : x - tw - 8), py = (dol ? y + h + 10 : y - th - 8);
+  px = Math.max(4, Math.min(cam.vw - tw - 4, px)); py = Math.max(4, Math.min(cam.vh - th - 4, py));
+  ctx.globalAlpha = t;
+  ctx.fillStyle = 'rgba(14,9,7,0.82)'; ctx.fillRect(px, py, tw, th);
+  ctx.strokeStyle = 'rgba(246,216,142,0.6)'; ctx.lineWidth = 1; ctx.strokeRect(px + 0.5, py + 0.5, tw - 1, th - 1);
+  ctx.fillStyle = 'rgba(255,236,190,0.97)'; ctx.textBaseline = 'middle'; ctx.textAlign = 'left';
+  ctx.fillText(napis, px + 6, py + th / 2 + 0.5);
   ctx.restore();
 }

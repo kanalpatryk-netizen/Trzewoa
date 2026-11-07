@@ -17,6 +17,9 @@ import { GORA as G, LUDY as L, ZASIEDLENIE as Z, PRZYPLYWY as PP } from '../nast
 import { SWIAT } from '../nastawy/swiat';
 import { cechaNacji, losujCeche } from './cechy';
 import type { Podsumowanie } from '../core/osiagniecia';
+import { tikBramy } from './brama';
+import { tikBlogoslawienstwa } from './blogoslawienstwo';
+import { tikBudowySchodow } from './budowa-schodow';
 import { tikLudu, nowyStanLudu, nadajRole, podloga, miejsceNaObozu, type StanLudu } from './lud';
 import { zostawTrupa } from './trupy';
 import { wiadroTeraz } from './wiadro';
@@ -1338,6 +1341,11 @@ export class Sim {
     this.tides();
     tikWydarzen(this);
     tikLudu(this);
+    // 6.11: stalowa brama lochu (zaklinanie przy kotle) i modlitwa pobożnych za innych
+    tikBramy(this);
+    tikBlogoslawienstwa(this);
+    // 6.11: budowa schodów drogi wiernych — wykop, rusztowanie, kołowrót, osadzanie stopni od dołu
+    tikBudowySchodow(this);
     tikPomieszczen(this);
     tikZbroi(this);
     tikOltarza(this);
