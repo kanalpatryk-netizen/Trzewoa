@@ -20,7 +20,7 @@ exports.default = async function poSpakowaniu(ctx) {
     wersja.setFileVersion(a, b, c, 0, jezyk.lang);
     wersja.setProductVersion(a, b, c, 0, jezyk.lang);
     wersja.setStringValues(jezyk, {
-      FileDescription: 'Trzewia — Alpha 0.2', ProductName: 'Trzewia', CompanyName: 'Trzewia',
+      FileDescription: 'Trzewia — Alpha 1', ProductName: 'Trzewia', CompanyName: 'Trzewia',
       InternalName: 'Trzewia', OriginalFilename: 'Trzewia.exe', LegalCopyright: 'Trzewia',
     });
     wersja.outputToResourceEntries(res.entries);
