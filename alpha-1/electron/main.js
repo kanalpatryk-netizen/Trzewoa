@@ -1,5 +1,5 @@
-// Trzewia — Alpha 0.2 jako program na Windows (Electron): jedno okno z grą (gra/trzewia.html z `npm run pack`).
-// Budowa: npm run exe (budowa.mjs) → dist/Trzewia-alpha-0.2.exe — jeden plik, bez instalacji.
+// Trzewia — Alpha 1 jako program na Windows (Electron): jedno okno z grą (gra/trzewia.html z `npm run pack`).
+// Budowa: npm run exe (budowa.mjs) → dist/Trzewia-alpha-1.exe — jeden plik, bez instalacji.
 const { app, BrowserWindow, Menu, shell } = require('electron');
 const path = require('path');
 
