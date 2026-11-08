@@ -1,0 +1,88 @@
+# Trzewia Electron — program na Windows (.exe) do pobrania.
+#
+# Buduje najnowszą grę (folder alpha-1/) w jeden plik, pakuje ją w Electrona (alpha-1/electron/)
+# i wystawia przenośny Trzewia-electron.exe (bez instalacji) w wydaniu „Trzewia Electron (Windows .exe)”:
+#   https://github.com/<właściciel>/<repozytorium>/releases/download/electron-exe/Trzewia-electron.exe
+# Rusza po każdej zmianie w alpha-1/ (w main i na gałęziach claude/…) albo ręcznie z zakładki Actions.
+name: Trzewia Electron
+
+on:
+  push:
+    branches: [main, 'claude/**']
+    paths:
+      - 'alpha-1/**'
+      - '.github/workflows/electron-exe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: electron-exe
+  cancel-in-progress: true
+
+jobs:
+  exe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Electron 44 i electron-builder 26 potrzebują Node 22
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            alpha-1/package-lock.json
+            alpha-1/electron/package-lock.json
+
+      - name: Gra w jeden plik
+        working-directory: alpha-1
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npm run pack
+
+      - name: Budowa .exe
+        working-directory: alpha-1/electron
+        env:
+          # Electron na Linuksa nie jest potrzebny — electron-builder sam pobiera wersję na Windows
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+        run: |
+          npm ci
+          npm run exe
+          cp dist/Trzewia-alpha-1.exe ../../Trzewia-electron.exe
+          ls -la ../../Trzewia-electron.exe
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Trzewia-electron
+          path: Trzewia-electron.exe
+
+      - name: Wydanie „Trzewia Electron (Windows .exe)”
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mb() { echo $(( $(stat -c %s "$1") / 1048576 )); }
+          cat > notatki.md <<NOTATKI
+          **Jak zagrać:** pobierz \`Trzewia-electron.exe\` (niżej, w sekcji *Assets*) i uruchom dwuklikiem — bez instalacji, działa bez internetu.
+          Windows 10/11, 64 bity ($(mb Trzewia-electron.exe) MB). F11 — pełny ekran.
+
+          Plik nie jest podpisany, więc Windows SmartScreen może ostrzec przy pierwszym uruchomieniu:
+          „Więcej informacji” → „Uruchom mimo to”.
+
+          W środku: **TRZEWIA Alpha 1** z gałęzi \`${GITHUB_REF_NAME}\`, commit ${GITHUB_SHA::7} ($(date -u +%Y-%m-%d)).
+          NOTATKI
+          # Plik podmieniamy w istniejącym wydaniu — link do pobrania się nie zmienia.
+          # Wydanie jest „prerelease”, żeby nie zabrało miejsca „najnowszego” wydaniu gra
+          # (na nim stoją linki /releases/latest/download/…).
+          if gh release view electron-exe >/dev/null 2>&1; then
+            gh release upload electron-exe Trzewia-electron.exe --clobber
+            gh release edit electron-exe --notes-file notatki.md
+          else
+            gh release create electron-exe Trzewia-electron.exe \
+              --target "$GITHUB_SHA" \
+              --title "Trzewia Electron (Windows .exe)" \
+              --notes-file notatki.md \
+              --prerelease
+          fi
