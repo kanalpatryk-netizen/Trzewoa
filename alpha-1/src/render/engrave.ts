@@ -1,15 +1,36 @@
-import { Sim } from '../sim/sim';
 import { T, PASSABLE } from '../sim/tiles';
 import { MEM_SPAN, SURFACE_Y, type World } from '../sim/world';
 import { ustawienia, skalaRenderu } from '../core/settings-store';
-import { Camera } from './camera';
-import { rolaPostaci, klanLudu } from '../sim/lud';
+import type { Camera } from './camera';
 import { SWIAT, RDZEN } from '../nastawy/swiat';
 import { odWidoku } from './shafts';
-import { wysokoscGrzbietu } from './grzbiet';
+import { wysokoscGrzbietuZ, type RowneGrzbietu } from './grzbiet-wzor';
 
 import { TON_MAX, MATERIALY, MASA, RYCINA_SWIATA as RS, SWIATLO_RYCINY as SR, type Kreskowanie } from '../nastawy/wyglad/rycina';
 import { FRESK_SWIATA as FS } from '../nastawy/wyglad/fresk-swiata';
+
+/**
+ * Tyle ze stanu gry potrzebuje rycina: świat i tik (blaknięcie pamięci). Światło ludu (lampki, obozy, siedziba,
+ * gotowe pomieszczenia) dostaje gotowe w `Engraver.zrodla` (render/rycina-zrodla.ts) — dzięki temu ta sama rycina
+ * liczy się też w osobnym wątku (render/rycina-watek.ts), który nie zna postaci ani pomieszczeń.
+ */
+export interface SimRyciny { world: World; tick: number }
+
+/** Kamera ryciny: środek (kafle), przybliżenie (px na kafel) i rozmiar widoku (px logiczne). */
+export type KameraRyciny = Pick<Camera, 'x' | 'y' | 'zoom' | 'vw' | 'vh'>;
+
+/** Okno kafli, dla którego rycina liczy światło i pola pomocnicze (z zapasem pięciu kafli na stronę). */
+export function oknoKafli(cam: { x: number; y: number; zoom: number }, aw: number, ah: number, scale: number): { x0: number; y0: number; tilesX: number; tilesY: number } {
+  const zoom = cam.zoom / scale;
+  const tilesX = Math.ceil(aw / zoom) + 10;
+  const tilesY = Math.ceil(ah / zoom) + 10;
+  return { x0: Math.floor(cam.x - tilesX / 2), y0: Math.floor(cam.y - tilesY / 2), tilesX, tilesY };
+}
+
+/** Płótno ryciny: zwykłe w głównym wątku, OffscreenCanvas w wątku ryciny (tam nie ma dokumentu). */
+function plotno(): HTMLCanvasElement | OffscreenCanvas {
+  return typeof document !== 'undefined' ? document.createElement('canvas') : new OffscreenCanvas(1, 1);
+}
 
 // materiały ryciny (ton, kąt, odstęp, krzyż, kropki, barwa) — nastawy/wyglad/rycina.ts
 type Hatch = Kreskowanie;
@@ -29,16 +50,34 @@ function skorupaJakSkala(w: World, wx: number, wy: number): boolean {
   return dx * dx + dy * dy <= 1;
 }
 
+/**
+ * Stałe ziarno faktur ryciny (płaty skały, szum papieru, szkic sinopii): ten sam papier w każdej partii i w każdym
+ * wątku — rycina liczy się w osobnym wątku (render/rycina-watek.ts), a jej obraz ma być taki sam jak w głównym.
+ */
+function losowe(ziarno: number): () => number {
+  let a = ziarno >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
 const KAT_WARSTW = RS.katWarstw;
 const PLAT_OCZKO = RS.platy.oczko, PLAT_IOCZKO = 1 / PLAT_OCZKO;
 const RYSA_SILA = RS.rysy.sila;
 /** Ziarna płatów skały: po jednym w każdej komórce siatki 64×64 (położenie w komórce, kąt, jasność). */
 const VOR_X = new Float32Array(4096), VOR_Y = new Float32Array(4096), VOR_K = new Float32Array(4096), VOR_J = new Float32Array(4096);
-for (let i = 0; i < 4096; i++) {
-  VOR_X[i] = 0.12 + Math.random() * 0.76;
-  VOR_Y[i] = 0.12 + Math.random() * 0.76;
-  VOR_K[i] = RS.platy.katy[(Math.random() * RS.platy.katy.length) | 0];
-  VOR_J[i] = (Math.random() * 2 - 1) * RS.platy.jasnosc;
+{
+  const los = losowe(0x7a3f19);
+  for (let i = 0; i < 4096; i++) {
+    VOR_X[i] = 0.12 + los() * 0.76;
+    VOR_Y[i] = 0.12 + los() * 0.76;
+    VOR_K[i] = RS.platy.katy[(los() * RS.platy.katy.length) | 0];
+    VOR_J[i] = (los() * 2 - 1) * RS.platy.jasnosc;
+  }
 }
 
 /** Czerwień głębi: 0 nad `RS.czerwienOd`, 1 na samym dnie — skała przy krypcie żarzy się. */
@@ -87,7 +126,9 @@ function warstwaMaterialu(mat: number): number {
  * linia rylca, nie schodki z kafli. Liczone raz na świat — z kafli, zanim ktokolwiek je przekopie.
  */
 const graniceSwiata = new WeakMap<World, { g1: Float32Array; g2: Float32Array }>();
-function graniceWarstw(w: World): { g1: Float32Array; g2: Float32Array } | null {
+/** Wątek ryciny dostaje granice warstw policzone w głównym wątku (z tych samych kafli, raz na świat). */
+export function ustawGraniceWarstw(w: World, g: { g1: Float32Array; g2: Float32Array }): void { graniceSwiata.set(w, g); }
+export function graniceWarstw(w: World): { g1: Float32Array; g2: Float32Array } | null {
   if (!SWIAT.warstwy.wlaczone) return null;
   const jest = graniceSwiata.get(w);
   if (jest) return jest;
@@ -154,16 +195,25 @@ const nowaKreska = (): Kreska => ({ mat: 0, toneC: 0, sp: 4.2, cross: 0.6, stip:
  * decyduje o grubości linii, pamięć o tym, czy linia w ogóle się pojawi.
  */
 export class Engraver {
-  buf = document.createElement('canvas');
-  private bctx = this.buf.getContext('2d', { alpha: false })!;
+  buf = plotno();
+  private bctx = this.buf.getContext('2d', { alpha: false }) as CanvasRenderingContext2D;
   private img!: ImageData;
   private data!: Uint8ClampedArray;
   /** Osobny bufor samych źródeł światła — tylko on idzie do poświaty. */
-  emis = document.createElement('canvas');
-  private ectx = this.emis.getContext('2d')!;
+  emis = plotno();
+  private ectx = this.emis.getContext('2d') as CanvasRenderingContext2D;
+  /**
+   * Światło ludu: po pięć liczb na źródło — środek x, y (kafle), promień, moc i zasięg w litej skale (Infinity — bez
+   * granicy). Ustawia je ten, kto woła rebuild (render/rycina-zrodla.ts: zrodlaSwiatla).
+   */
+  zrodla: Float64Array = new Float64Array(0);
+  /** Przedziały równego gruntu pod grzbietem góry (render/grzbiet.ts: rowneW) — też od wołającego. */
+  rowne: RowneGrzbietu | null = null;
   private eimg!: ImageData;
   private edata!: Uint8ClampedArray;
   aw = 1; ah = 1; scale = 1;
+  /** Numer odbitki: rośnie z każdym przerysowaniem — poświata rozmywa obraz tylko wtedy, gdy jest nowy. */
+  wersja = 0;
 
   private noise = new Float32Array(256 * 256);
   /** Szum gładki — papier drze się płatami, nie pikselami. */
@@ -263,10 +313,11 @@ export class Engraver {
       this.cosT[i] = Math.cos(a);
       this.sinT[i] = Math.sin(a);
     }
-    for (let i = 0; i < this.noise.length; i++) this.noise[i] = Math.random();
+    const los = losowe(0x51c0de);
+    for (let i = 0; i < this.noise.length; i++) this.noise[i] = los();
     const G = 32, cell = 256 / G;
     const grid = new Float32Array(G * G);
-    for (let i = 0; i < grid.length; i++) grid[i] = Math.random();
+    for (let i = 0; i < grid.length; i++) grid[i] = los();
     for (let y = 0; y < 256; y++) {
       for (let x = 0; x < 256; x++) {
         const gx = x / cell, gy = y / cell;
@@ -289,7 +340,7 @@ export class Engraver {
     // szkic sinopii: kilka poziomic szumu o dużym oczku — kreślone pędzlem linie, nie siatka
     const G2 = 8, cell2 = 256 / G2;
     const grid2 = new Float32Array(G2 * G2);
-    for (let i = 0; i < grid2.length; i++) grid2[i] = Math.random();
+    for (let i = 0; i < grid2.length; i++) grid2[i] = los();
     for (let y = 0; y < 256; y++) {
       for (let x = 0; x < 256; x++) {
         const gx = x / cell2, gy = y / cell2;
@@ -311,12 +362,14 @@ export class Engraver {
     }
   }
 
-  resize(vw: number, vh: number): void {
-    this.scale = skalaRenderu(vw);
+  /** Rozmiar widoku (px logiczne); `skala` — co ile pikseli ekranu jeden piksel ryciny (domyślnie z ustawień). */
+  resize(vw: number, vh: number, skala = skalaRenderu(vw)): void {
+    this.scale = skala;
     // piksel zapasu: rycina jest przyklejona do siatki pikseli świata i rysowana z przesunięciem do -1 px
     this.aw = Math.max(2, Math.ceil(vw / this.scale) + 1);
     this.ah = Math.max(2, Math.ceil(vh / this.scale) + 1);
     this.odbitkaWazna = false;
+    this.wersja++;
     this.buf.width = this.aw; this.buf.height = this.ah;
     this.img = this.bctx.createImageData(this.aw, this.ah);
     this.data = this.img.data;
@@ -340,12 +393,9 @@ export class Engraver {
   // ------------------------------------------------------------------ światło
 
   /** Światło jest wyłącznie diegetyczne: ogień, termika, biolumina. */
-  private computeLight(sim: Sim, cam: Camera): void {
+  private computeLight(sim: SimRyciny, cam: KameraRyciny): void {
     const w = sim.world;
-    const zoom = cam.zoom / this.scale;
-    const tilesX = Math.ceil(this.aw / zoom) + 10;
-    const tilesY = Math.ceil(this.ah / zoom) + 10;
-    const x0 = Math.floor(cam.x - tilesX / 2), y0 = Math.floor(cam.y - tilesY / 2);
+    const { x0, y0, tilesX, tilesY } = oknoKafli(cam, this.aw, this.ah, this.scale);
     if (this.lw !== tilesX || this.lh !== tilesY) {
       this.lw = tilesX; this.lh = tilesY;
       this.light = new Float32Array(tilesX * tilesY);
@@ -615,7 +665,7 @@ export class Engraver {
    * i gotowe pomieszczenia. Miękkie koła bez cieni — te same plamy, które wycina mrok — żeby
    * rysunek w świetle się rozgrzał, a nie tylko odsłonił.
    */
-  private swiatloLudu(sim: Sim, x0: number, y0: number, tilesX: number, tilesY: number): void {
+  private swiatloLudu(sim: SimRyciny, x0: number, y0: number, tilesX: number, tilesY: number): void {
     const w = sim.world;
     const L = this.light, LT = this.swiatlo, O = this.odl;
     LT.set(L);
@@ -666,28 +716,15 @@ export class Engraver {
       prostokat(w.szybWiadraX, SURFACE_Y - 2, w.szybWiadraX + SWIAT.warstwy.szybWiadra.szer, w.szybWiadraDol + 1, 1.5, SR.sala.moc * 0.5);
       plama(w.oltarz.x + 0.5, w.oltarz.y - 1, SR.oltarz.r, SR.oltarz.moc);
     }
-    for (const p of sim.pomieszczenia) {
-      if (!p.gotowe) continue;
-      const moc = SR.pomieszczenia[p.rodzaj];
-      // okrągła plama, nie prostokąt — prostokątne światło rysowało w skale jasne słupy
-      // i tylko na kafel–dwa w głąb skały: światło pokoju przez lity strop świeciło jak przez mgłę
-      if (moc) plama(p.x + p.w / 2, p.y + p.h / 2, Math.max(p.w, p.h) / 2 + SR.pomieszczenieZasieg, moc, SR.pomieszczenieWSkale);
-    }
-    const klan = klanLudu(sim);
-    if (klan) plama(klan.hx + 0.5, klan.hy + 0.5, SR.siedziba.r, SR.siedziba.moc);
-    for (const o of sim.lud.obozy ?? []) plama(o.x + 0.5, o.y + 0.5, SR.oboz.r, SR.oboz.moc);
-    for (const c of sim.creatures) {
-      if (c.dead || c.straznik) continue;
-      const r = rolaPostaci(c);
-      if (!r) continue;
-      const s = r === 'robotnik' ? SR.robotnik : r === 'rycerz' ? SR.rycerz : SR.pobozny;
-      plama(c.x + 0.5, c.y + 0.5, s.r, s.moc);
-    }
+    // gotowe pomieszczenia, siedziba, obozy i lampki ludu — gotowa lista (render/rycina-zrodla.ts)
+    const Z = this.zrodla;
+    for (let i = 0; i + 4 < Z.length; i += 5) plama(Z[i], Z[i + 1], Z[i + 2], Z[i + 3], Z[i + 4]);
   }
 
   // ------------------------------------------------------------------ kreska
 
-  rebuild(sim: Sim, cam: Camera, time: number): void {
+  rebuild(sim: SimRyciny, cam: KameraRyciny, time: number): void {
+    this.wersja++;
     this.computeLight(sim, cam);
     if (this.fresk) {
       this.edata.fill(0);
@@ -709,7 +746,7 @@ export class Engraver {
    * Kreska jest wygładzana (pokrycie z odległości od osi linii), więc w pełnej rozdzielczości czyta się
    * jak miedzioryt, a nie szum pikseli.
    */
-  private rytujRycine(sim: Sim, cam: Camera, time: number): void {
+  private rytujRycine(sim: SimRyciny, cam: KameraRyciny, time: number): void {
     const w = sim.world;
     const data = this.data, edata = this.edata;
     const noise = this.noise, smooth = this.smooth, ziarno = this.ziarno;
@@ -773,7 +810,7 @@ export class Engraver {
       kolFala[px] = (s1 + (s2 - s1) * t1 - 0.5) * 0.9 + (s3 + (s4 - s3) * t2 - 0.5) * 0.12;
       // grzbiet: łagodne garby ziemi ponad płaską powierzchnią świata (render/grzbiet.ts — równo przy wylotach szybów,
       // pod katedrą i na placu konwoju)
-      kolGrzbiet[px] = gr ? wysokoscGrzbietu(w, wx) : 0;
+      kolGrzbiet[px] = gr && this.rowne ? wysokoscGrzbietuZ(this.rowne, wx) : 0;
       if (gr) {
         const xf = wx - 0.5, xi = Math.floor(xf), xt = xf - xi;
         const a = xi < 0 ? 0 : xi >= w.w ? w.w - 1 : xi, b = xi + 1 < 0 ? 0 : xi + 1 >= w.w ? w.w - 1 : xi + 1;
@@ -900,7 +937,9 @@ export class Engraver {
     const zgrubnie = pelna && aw * ah > 250000;
     const ZG = this.zgrubne;
     const koniec = performance.now() + 12;
-    this.niedokonczona = false;
+    // (8.11) zgrubna odbitka jest z założenia niedokończona — dopracowanie rusza w następnej klatce (dawniej czekało
+    // na zwykłe przerysowanie: do 33 ms w grze, do 150 ms w pauzie; wątek ryciny brał zgrubną za gotową)
+    this.niedokonczona = zgrubnie;
     /** Zgrubny kafel: policzony co drugi piksel — skopiuj każdy na sąsiadów w kwadracie 2×2. */
     const powiel = (px0: number, px1: number, py0: number, py1: number): void => {
       for (let py = py0; py < py1; py += 2) {
@@ -1550,7 +1589,7 @@ export class Engraver {
   }
 
   /** Fresk (ustawienia → „Rysunek świata”): półki pigmentu, świetlik i sinopia. */
-  private malujFresk(sim: Sim, cam: Camera, time: number): void {
+  private malujFresk(sim: SimRyciny, cam: KameraRyciny, time: number): void {
     const w = sim.world;
     const data = this.data;
     const noise = this.noise, smooth = this.smooth;

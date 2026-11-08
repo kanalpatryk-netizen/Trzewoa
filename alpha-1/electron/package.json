@@ -18,7 +18,7 @@
     "appId": "pl.trzewia.alpha1",
     "productName": "Trzewia",
     "copyright": "Trzewia",
-    "files": ["main.js", "gra/**"],
+    "files": ["main.js", "preload.js", "gra/**"],
     "directories": { "output": "dist", "buildResources": "zasoby" },
     "afterPack": "./po-spakowaniu.cjs",
     "win": {

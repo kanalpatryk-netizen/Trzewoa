@@ -18,7 +18,7 @@ import { Sim, resetRaces } from '../../sim/sim';
 import { KAMERA, TEMPO, STEROWANIE } from '../../nastawy/sterowanie';
 import { ATLAS } from '../../nastawy/wyglad/atlas';
 import { Camera } from '../../render/camera';
-import { Engraver } from '../../render/engrave';
+import { Rycina } from '../../render/rycina';
 import { drawParticles } from '../../render/overlay';
 import { rysujStworzenia } from '../../render/figury';
 import { rysujEfekty } from '../../render/efekty';
@@ -49,7 +49,6 @@ import { LUD, REMAKE } from '../../nastawy/lud';
 import { rozmiescPrzyciski, rysujPrzyciski, przyciskPod, type Przycisk } from '../../render/przyciski';
 import { rysujMinimape, miejsceZMinimapy } from '../../render/minimapa';
 import { rysujZarys } from '../../render/zarys';
-import { Poswiata } from '../../render/bloom';
 import { Tajemnica, oddechRdzenia } from '../../render/tajemnica';
 import { scianaKrypty, tynkSwiata } from '../../render/fresk';
 import { rysujDrogePielgrzymow, rysujPlanDrogi } from '../../render/pielgrzymka';
@@ -97,6 +96,7 @@ import { Job, type Creature } from '../../sim/creatures';
 import { saveToStorage, loadFromStorage } from '../../core/save';
 import { ustawienia, jakoscAuto } from '../../core/settings-store';
 import { StrazKlatek } from '../../render/straz-klatek';
+import { licznik } from '../../core/wydajnosc';
 import { mikser } from '../../core/mikser';
 import type { Akcja } from '../../core/keybinds';
 import type { Ekran } from '../screen';
@@ -167,10 +167,10 @@ export class EkranGry implements Ekran {
   nazwa = 'gra';
   sim = new Sim((Math.random() * 1e9) | 0);
   cam = new Camera(1, 1);
-  eng = new Engraver();
+  /** Rycina świata na płycie — liczona w osobnym wątku (render/rycina.ts), bez niego tutaj, jak dawniej. */
+  eng = new Rycina();
   /** Pilnuje klatek w trybie jakości „auto” — przy zadyszce rycina tanieje. */
   private straz = new StrazKlatek();
-  private poswiata = new Poswiata();
   /** Ostatnio widziane wiara, krew, jedzenie — zmiana żarzy się chwilę (render/nastroj.ts). */
   private zmianyZasobow = new Map<string, { n: number; t: number; wiecej: boolean }>();
   /** Alpha, etap 3b: okruchy rudy lecące do liczników żelaza i złota (render/kruszce.ts). */
@@ -663,7 +663,6 @@ export class EkranGry implements Ekran {
     if (this.cam.zoom < this.cam.minZoom) this.cam.zoom = this.cam.minZoom;
     this.cam.clamp(this.sim.world.w, this.sim.world.h);
     this.eng.resize(this.plate.w, this.plate.h);
-    this.poswiata.resize(this.plate.w, this.plate.h);
     this.ui.layout(this.plate, w);
     this.dirty = true;
   }
@@ -1213,6 +1212,7 @@ export class EkranGry implements Ekran {
         // Dawniej klatka liczyła wszystkie zaległe tiki: wolna klatka → więcej tików w następnej → jeszcze wolniejsza
         if (performance.now() - t0 > budzet && !(dev && DEV.pauza)) break;
       }
+      licznik.dodaj('logika', performance.now() - t0);
       if (dev && zrobione > 0) DEV.msKroku = DEV.msKroku * 0.9 + ((performance.now() - t0) / zrobione) * 0.1;
       const wiadroT = this.sim.lud.wiadra?.zjazdT;
       if (wiadroT !== undefined && wiadroT !== this.slyszaneWiadro) { this.slyszaneWiadro = wiadroT; this.app.dzwiek.wiadro(); }
@@ -1325,6 +1325,9 @@ export class EkranGry implements Ekran {
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
     const { plate, cam, eng, sim } = this;
+    // licznik wydajności (F3): kolejne odcinki klatki doliczane do swoich części
+    const L = licznik;
+    let t = performance.now();
     if (ustawienia.jakosc === 'auto' && !jakoscAuto.taniej && eng.scale === 1 && this.straz.klatka(teraz)) {
       jakoscAuto.taniej = true;
       eng.resize(plate.w, plate.h);
@@ -1334,12 +1337,15 @@ export class EkranGry implements Ekran {
     // odjeżdżałby spod postaci), a zmiany samego świata wystarczą trzydzieści razy na sekundę.
     const kameraRuszona = cam.x !== this.rysKam[0] || cam.y !== this.rysKam[1] || cam.zoom !== this.rysKam[2];
     // (eng.niedokonczona: po zmianie przybliżenia rycina dopracowuje zgrubną odbitkę przez kilka klatek)
-    if (kameraRuszona || eng.niedokonczona || (this.dirty && teraz - this.lastInk > 30) || teraz - this.lastInk > 150) {
-      eng.fresk = ustawienia.swiat !== 'rycina';
-      eng.rebuild(sim, cam, teraz);
+    // (8.11: wydajność) rycinę liczy osobny wątek — tu tylko zamówienie; gdy wątek jeszcze liczy poprzednią, czeka
+    // do następnej klatki, a płyta pokazuje poprzedni obraz przesunięty pod kamerę (render/rycina.ts)
+    const chce = kameraRuszona || eng.niedokonczona || (this.dirty && teraz - this.lastInk > 30) || teraz - this.lastInk > 150;
+    eng.fresk = ustawienia.swiat !== 'rycina';
+    if (eng.klatka(sim, cam, teraz, chce)) {
       this.lastInk = teraz; this.dirty = false;
       this.rysKam[0] = cam.x; this.rysKam[1] = cam.y; this.rysKam[2] = cam.zoom;
     }
+    t = L.znacz('rycina', t);
 
     // (rycina już nie drga co klatkę ani nie oddycha skalą: losowe przesunięcie o pół piksela i zmiana
     // skali przepróbkowywały cienką kreskę w każdej klatce — świat migotał jak szum telewizora)
@@ -1349,7 +1355,16 @@ export class EkranGry implements Ekran {
     const oddech = ruch ? oddechRdzenia(sim, teraz, this.app.dzwiek.oddech(sim.sen)) : 0.5;
 
     // ściana krypty pod płytą: tynk przy lampce, ciemność w kątach oddycha z rdzeniem
+    // (8.11: wydajność) płyta zakrywa ścianę w całości — rycina jest nieprzezroczysta — więc ściana rysuje się tylko
+    // wokół niej; przy samym brzegu płyty (2 px) zostaje, żeby wygładzona krawędź płyty leżała na ścianie jak dawniej
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, w, h);
+    ctx.rect(plate.x + 2, plate.y + 2, Math.max(0, plate.w - 4), Math.max(0, plate.h - 4));
+    ctx.clip('evenodd');
     scianaKrypty(ctx, w, h, ruch ? teraz : 0, oddech, { x: (plate.x + plate.w / 2) / w, y: (plate.y + plate.h / 2) / h });
+    ctx.restore();
+    t = L.znacz('interfejs', t);
 
     ctx.save();
     ctx.beginPath();
@@ -1359,22 +1374,15 @@ export class EkranGry implements Ekran {
     ctx.save();
     // wygładzanie zawsze: płyta bywa większa od bufora (skala ekranu), a najbliższy sąsiad szarpał kreskę
     ctx.imageSmoothingEnabled = true;
-    // bufor leży na siatce pikseli świata: rysowany w skali 1:1, przesunięty o ułamek piksela kamery
-    const bw = eng.buf.width * eng.scale, bh = eng.buf.height * eng.scale;
-    ctx.drawImage(eng.buf, eng.dx, eng.dy, bw, bh);
-    // v4.2 beta: jasność ryciny — ta sama rycina jeszcze raz w trybie „lighter” mnoży kolory
-    // o (1 + nadwyżka); filtr brightness() kosztował prawie dwa razy więcej na klatkę
-    if (ustawienia.jasnosc > 1) {
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.globalAlpha = Math.min(1, ustawienia.jasnosc - 1);
-      ctx.drawImage(eng.buf, eng.dx, eng.dy, bw, bh);
-      ctx.restore();
-    }
+    // bufor leży na siatce pikseli świata: rysowany w skali 1:1, przesunięty o ułamek piksela kamery (obraz z wątku —
+    // przełożony z kamery, dla której powstał); v4.2 beta: jasność > 1 — ta sama rycina drugi raz, „lighter”
+    eng.rysuj(ctx, cam, ustawienia.jasnosc);
     // fresk: faktura tynku przyklejona do świata — jedzie razem ze skałą, gdy przesuwasz kamerę
     // (rycina ma barwy warstw wpisane w kreskę — dawny ochrowy filtr „multiply” gasił chłodny łupek głębi)
     if (eng.fresk) tynkSwiata(ctx, cam);
-    this.poswiata.nalozy(ctx, eng.emis, eng.dx, eng.dy, bw, bh, 0.5);
+    t = L.znacz('rycina', t);
+    eng.poswiata(ctx, cam, true);
+    t = L.znacz('poswiata', t);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     rysujRdzen(ctx, sim, cam, teraz);
     // kruszec w skale: bryłki żelaza i żyłki złota (pod rysami kucia i pod mrokiem)
@@ -1405,8 +1413,11 @@ export class EkranGry implements Ekran {
     rysujKonwoj(ctx, sim, cam, teraz, grunt);
     rysujWiadra(ctx, sim, cam, teraz);
     // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
+    t = L.znacz('swiat', t);
     rysujMrok(ctx, sim, cam, teraz, this.pauza);
-    if (MROK.wlaczony) this.poswiata.nalozy(ctx, eng.emis, 0, 0, cam.vw, cam.vh, 0.3);
+    t = L.znacz('mrok', t);
+    if (MROK.wlaczony) eng.poswiata(ctx, cam, false);
+    t = L.znacz('poswiata', t);
     // katedra: witraże rozety i okien, płomienie świec — świecą przez mrok; z rozety pada promień na ołtarz
     rysujKatedreNad(ctx, sim, cam, teraz);
     rysujPromien(ctx, sim, cam, teraz);
@@ -1437,6 +1448,7 @@ export class EkranGry implements Ekran {
     else if (plan && plan.kopac.length && !sim.rytual.otwarta && sim.tick - plan.tick < 3000) {
       rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, false);
     }
+    t = L.znacz('swiat', t);
     rysujZarys(ctx, sim, cam, teraz);
     this.oczyscZaznaczenie();
     rysujZaznaczenie(ctx, sim, cam, teraz, this.zaznaczeni);
@@ -1471,6 +1483,7 @@ export class EkranGry implements Ekran {
     if (this.cel) podswietlCel(ctx, cam, this.cel, teraz);
     ctx.restore();
     ctx.restore();
+    t = L.znacz('postacie', t);
     // etap 3: fala Strażników Snu — pasek nad polem gry (między wstęgą drogi a Cudem)
     rysujPasekFali(ctx, sim, plate.x + plate.w * 0.42, plate.y + 10, plate.w * 0.46);
     if (this.pauza) {
@@ -1622,6 +1635,7 @@ export class EkranGry implements Ekran {
       this.maxPrzewin = r.maxPrzewin;
     }
     this.atlas.rysuj(ctx, w, h, teraz);
+    L.znacz('interfejs', t);
   }
 
   /** Prostokąty interfejsu — dla automatycznego testu nakładania (narzędzie deweloperskie). */

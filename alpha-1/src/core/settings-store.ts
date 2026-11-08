@@ -33,6 +33,17 @@ export interface Settings {
   nowePostacie: boolean;
   /** Rysunek świata na płycie: malowany jak fresk z ikony albo kreskowany jak dawna rycina. */
   swiat: 'fresk' | 'rycina';
+  /**
+   * Wydajność (8.11): rozdzielczość obrazu — ułamek pikseli ekranu, w których gra rysuje (1, 0,85, 0,75, 0,6).
+   * Mniej pikseli to mniej pracy karty graficznej; obraz rozciąga się na cały ekran, trochę miękcej.
+   */
+  rozdzielczosc: number;
+  /** Wydajność: najwięcej klatek na sekundę (0 — bez limitu, czyli tyle, ile odświeża monitor). */
+  limitKlatek: number;
+  /** Wydajność: licznik klatek i czasu każdej części klatki (F3). */
+  licznikWydajnosci: boolean;
+  /** Wydajność: rycina świata liczy się w osobnym wątku (drugi rdzeń procesora); wyłączone — w głównym, jak dawniej. */
+  rycinaWWatku: boolean;
 }
 
 export const DOMYSLNE: Settings = {
@@ -61,6 +72,10 @@ export const DOMYSLNE: Settings = {
   pelnyEkran: true,
   nowePostacie: true,
   swiat: 'rycina',
+  rozdzielczosc: 1,
+  limitKlatek: 0,
+  licznikWydajnosci: false,
+  rycinaWWatku: true,
 };
 
 /**

@@ -24,6 +24,7 @@ import { PIELGRZYMKA } from '../nastawy/rytual';
 import { OKRUCH } from '../nastawy/kruszce';
 import { NASTROJ } from '../nastawy/wyglad/nastroj';
 import type { Sim } from '../sim/sim';
+import type { Creature } from '../sim/creatures';
 
 type Rgb = [number, number, number];
 /** Atrament (sepia) i barwy liczb zasobów. */
@@ -288,15 +289,82 @@ const NAPIS_ZASOBU: Record<Zasob | 'oddanie', string> = { wiara: 'wiara', krew: 
 /** Ostatnio pokazana liczba każdego zasobu — żeby przy zmianie liczba na chwilę rozjarzyła się (więcej złotem, mniej czerwienią). */
 const ostatnie = new Map<string, { n: number; t: number; wiecej: boolean }>();
 
+// ------------------------------------------------------------------ pamięć podręczna (8.11: wydajność)
+
+/** Prostokąt logiczny w pikselach urządzenia przy transformacji `t` (tylko skala i przesunięcie), z zapasem. */
+function wPikselach(t: DOMMatrix, x: number, y: number, w: number, h: number, zapas: number): { X: number; Y: number; W: number; H: number } {
+  const X = Math.floor(x * t.a + t.e) - zapas, Y = Math.floor(y * t.d + t.f) - zapas;
+  const X1 = Math.ceil((x + w) * t.a + t.e) + zapas, Y1 = Math.ceil((y + h) * t.d + t.f) + zapas;
+  return { X, Y, W: Math.max(1, X1 - X), H: Math.max(1, Y1 - Y) };
+}
+
+/** Odbitka w pikselach urządzenia: płótno i jego lewy górny róg na ekranie. */
+interface Odbitka { c: HTMLCanvasElement; klucz: string; X: number; Y: number; }
+
+let okladkaCien: Odbitka | null = null;
+
+/**
+ * Okładka z cieniem pod księgą. Cień (rozmycie 18 px) liczył się w każdej klatce na całej księdze — teraz raz na
+ * układ: okładka z cieniem leży w pamięci w pikselach ekranu, a klatka tylko ją kopiuje. Cień płótna nie zależy od
+ * skali (liczy się w pikselach urządzenia), więc odbitka w tych pikselach daje ten sam obraz co rysowanie wprost.
+ */
+function okladkaZCieniem(ctx: CanvasRenderingContext2D, k: { x: number; y: number; w: number; h: number }, oprawa: number): Odbitka | null {
+  const x = k.x - oprawa, y = k.y - oprawa, w = k.w + oprawa * 2, h = k.h + oprawa * 2 + 12;
+  const t = ctx.getTransform();
+  if (t.b !== 0 || t.c !== 0 || typeof document === 'undefined') {
+    ctx.save();
+    ctx.shadowColor = 'rgba(0,0,0,0.65)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 6;
+    ctx.drawImage(okladka(k.w, k.h, oprawa), x, y, w, h);
+    ctx.restore();
+    return null;
+  }
+  const r = wPikselach(t, x, y, w, h, 48);
+  const klucz = `${x},${y},${w},${h},${t.a},${t.d},${t.e},${t.f}`;
+  if (!okladkaCien || okladkaCien.klucz !== klucz) {
+    const c = okladkaCien?.c ?? document.createElement('canvas');
+    c.width = r.W; c.height = r.H;
+    const g = c.getContext('2d')!;
+    g.setTransform(t.a, 0, 0, t.d, t.e - r.X, t.f - r.Y);
+    g.shadowColor = 'rgba(0,0,0,0.65)'; g.shadowBlur = 18; g.shadowOffsetY = 6;
+    g.drawImage(okladka(k.w, k.h, oprawa), x, y, w, h);
+    okladkaCien = { c, klucz, X: r.X, Y: r.Y };
+  }
+  ctx.save();
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.drawImage(okladkaCien.c, okladkaCien.X, okladkaCien.Y);
+  ctx.restore();
+  return okladkaCien;
+}
+
+/** Tło owalu medalionu (pergamin, jaśniejszy pod kursorem); owal zostaje bieżącą ścieżką (pod clip). */
+function tloMedalionu(ctx: CanvasRenderingContext2D, m: { x: number; y: number; rx: number; ry: number }, pod: boolean): void {
+  ctx.beginPath(); ctx.ellipse(m.x, m.y, m.rx, m.ry, 0, 0, Math.PI * 2);
+  const tlo = ctx.createRadialGradient(m.x, m.y - m.ry * 0.2, m.rx * 0.2, m.x, m.y, m.ry);
+  tlo.addColorStop(0, pod ? 'rgba(255,246,214,0.85)' : 'rgba(250,240,210,0.6)'); tlo.addColorStop(1, 'rgba(176,136,82,0.35)');
+  ctx.fillStyle = tlo; ctx.fill();
+}
+
+/** Wnętrze owalu (przycięte do bieżącej ścieżki): kreska podłogi i miniatura postaci tej roli. */
+function wnetrzeMedalionu(ctx: CanvasRenderingContext2D, sim: Sim, m: { x: number; y: number; rx: number; ry: number }, rola: Rola, wzor: Creature, czas: number): void {
+  ctx.save(); ctx.clip();
+  ctx.strokeStyle = rgbA(ATRAMENT, 0.35); ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(m.x - m.rx * 0.7, m.y + m.ry * 0.7); ctx.lineTo(m.x + m.rx * 0.7, m.y + m.ry * 0.7); ctx.stroke();
+  ctx.translate(m.x, m.y + m.ry * 0.72);
+  rysujPostac(ctx, sim, zastepca(rola, wzor), m.ry * 1.45, czas, 'stoi');
+  ctx.restore();
+}
+
+/** Czyści pamięć księgi (testy obrazu: następna klatka liczy wszystko od nowa). */
+export function wyczyscPamiecKsiegi(): void {
+  okladkaCien = null;
+}
+
 /** Rysuje księgę i zwraca pola do kliknięcia (medaliony ról, pieczęć Nakarm). */
 export function rysujKsiege(ctx: CanvasRenderingContext2D, sim: Sim, p: Plate, vh: number,
   o: { zaznaczeni: Set<number>; kursor: { x: number; y: number }; czas: number; urobki: Urobki }): PoleKsiegi[] {
   const ud = ukladDolu(p, vh), k = ud.ksiega, oprawa = ud.oprawa, u = ukladKsiegi(ud);
   const { kursor, czas, urobki } = o, pola: PoleKsiegi[] = [];
-  ctx.save();
-  ctx.shadowColor = 'rgba(0,0,0,0.65)'; ctx.shadowBlur = 18; ctx.shadowOffsetY = 6;
-  ctx.drawImage(okladka(k.w, k.h, oprawa), k.x - oprawa, k.y - oprawa, k.w + oprawa * 2, k.h + oprawa * 2 + 12);
-  ctx.restore();
+  okladkaZCieniem(ctx, k, oprawa);
 
   // ---- lewa karta: Twój lud
   naglowekKarty(ctx, 'Twój lud', u.lewa.x + u.lewa.w / 2, u.lewa.y + u.naglowek * 0.95, u.naglowek, u.lewa.w);
@@ -304,20 +372,13 @@ export function rysujKsiege(ctx: CanvasRenderingContext2D, sim: Sim, p: Plate, v
     const rola = m.rola, lud = ludRoli(sim, rola), ile = lud.length, zazn = lud.filter((c) => o.zaznaczeni.has(c.id)).length;
     const pod = ((kursor.x - m.x) / (m.rx + 4)) ** 2 + ((kursor.y - m.y) / (m.ry + 4)) ** 2 <= 1;
     ctx.save();
-    ctx.beginPath(); ctx.ellipse(m.x, m.y, m.rx, m.ry, 0, 0, Math.PI * 2);
-    const tlo = ctx.createRadialGradient(m.x, m.y - m.ry * 0.2, m.rx * 0.2, m.x, m.y, m.ry);
-    tlo.addColorStop(0, pod ? 'rgba(255,246,214,0.85)' : 'rgba(250,240,210,0.6)'); tlo.addColorStop(1, 'rgba(176,136,82,0.35)');
-    ctx.fillStyle = tlo; ctx.fill();
+    // miniatura postaci tej roli (zaznaczona, jeśli jest) na kresce podłogi
+    // (8.11: miniatury rysują się w każdej klatce — odbitka medalionu kopiowała kawałek okładki między płótnami,
+    // a takie kopiowanie bywa droższe niż sama postać, na karcie graficznej nawet bardzo)
     const wzor = lud.find((c) => o.zaznaczeni.has(c.id)) ?? lud[0];
-    if (wzor) {
-      // miniatura postaci tej roli (zaznaczona, jeśli jest) na kresce podłogi
-      ctx.save(); ctx.clip();
-      ctx.strokeStyle = rgbA(ATRAMENT, 0.35); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(m.x - m.rx * 0.7, m.y + m.ry * 0.7); ctx.lineTo(m.x + m.rx * 0.7, m.y + m.ry * 0.7); ctx.stroke();
-      ctx.translate(m.x, m.y + m.ry * 0.72);
-      rysujPostac(ctx, sim, zastepca(rola, wzor), m.ry * 1.45, czas, 'stoi');
-      ctx.restore();
-    } else {
+    tloMedalionu(ctx, m, pod);
+    if (wzor) wnetrzeMedalionu(ctx, sim, m, rola, wzor, czas);
+    else {
       // nikogo z tej roli — przekreślony medalion
       ctx.strokeStyle = rgbA(ATRAMENT, 0.6); ctx.lineWidth = 1.6;
       ctx.beginPath();

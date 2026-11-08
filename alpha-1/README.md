@@ -9,6 +9,58 @@ Zapisy, ustawienia, atlas i osiągnięcia są tu osobne (klucze `trzewia-alpha-1
 **[⬇️ Pobierz trzewia-alpha-1-obserwatorium.html](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-1-obserwatorium.html)** — obserwatorium.
 Otwórz w przeglądarce (jeden plik, bez instalacji, działa bez internetu). Plik jest też w repozytorium: [`trzewia.html`](trzewia.html).
 
+## Wydajność: licznik F3, rycina w osobnym wątku (8.11)
+Polecenie użytkownika: „zrób wszystko od 1 do 6” (lista pomysłów na wydajność programu .exe; świat na WebGL —
+później). Pomiar przed zmianą (Chromium bez karty graficznej, 1920×1080, partia bota po 8–17 min): logika gry ok.
+0,1 ms na klatkę (0,03 ms na tik), rysowanie 12–16 ms — rycina świata 2 ms przy stojącej kamerze, 4–8 ms przy ruchu
+i 27–50 ms w pojedynczych klatkach (przesuwanie, kółko — szarpnięcia), poświata 2–3 ms (rozmywana dwa razy w każdej
+klatce), księga 1–2,5 ms (z czego ⅔ to trzy miniatury postaci).
+
+1. **Licznik wydajności (F3)** — `src/core/wydajnosc.ts` (pomiar), `src/render/licznik-wydajnosci.ts` (nakładka),
+   `src/core/karta.ts` (karta graficzna). Klatki na sekundę, czas klatki średni i najdłuższy, JS na klatkę i jego
+   części (logika gry, rycina świata, świat, mrok, poświata, postacie i efekty, interfejs, reszta) z paskami (pełny
+   pasek — budżet klatki przy 60 kl/s), praca wątku ryciny, rozmiar płótna, nazwa karty (z WebGL), a w programie .exe —
+   czy płótno idzie przez kartę. Na czerwono: mniej niż 50 kl/s, klatka dłuższa niż 40 ms, karta programowa.
+   F3 działa na każdym ekranie; to samo w Ustawieniach → Wydajność → „Licznik wydajności (F3)”.
+2. **Program .exe a karta graficzna** — `electron/main.js`, `electron/preload.js`. Laptop z dwiema kartami bierze
+   mocniejszą (`force_high_performance_gpu`). Gdy Chromium rysuje procesorem, choć w komputerze jest prawdziwa karta
+   (NVIDIA, AMD, Intel — sterownik na jego czarnej liście), program zapisuje to w `karta.json` w danych programu i od
+   następnego uruchomienia rysuje kartą mimo listy (`ignore-gpu-blocklist`, `enable-gpu-rasterization`); gdy wymuszona
+   karta się sypie (proces karty pada), następne uruchomienie znów idzie bez. Karty programowej (Microsoft Basic Render
+   Driver, llvmpipe) nie wymusza — rysuje wolniej niż zwykłe rysowanie procesorem (próba pod Xvfb: 4 zamiast 26 kl/s).
+   Ręcznie: `Trzewia-alpha-1.exe --bez-wymuszania-karty`. Licznik F3 pyta przez `preload.js` (`trzewia:karta`).
+3. **Bez rysowania w każdej klatce tego, co się nie zmienia.** Poświata rozmywa światło tylko z nowej odbitki ryciny
+   (`render/bloom.ts`, numer odbitki `Engraver.wersja`; w trybie wątku rozmywa wątek, raz na odbitkę). Cień okładki
+   księgi (rozmycie 18 px na całej księdze) liczy się raz na układ (`okladkaZCieniem` w `render/ksiega.ts`). Ściana
+   krypty rysuje się tylko wokół płyty (płyta ją zakrywa — ok. ⅔ ekranu mniej malowania). Medaliony księgi zostały jak
+   były: odbitka medalionu musiała kopiować kawałek okładki między płótnami, a to bywa droższe niż sama postać (na karcie
+   graficznej — odczyt obrazu z karty); rama płyty też (0,2 ms, odbitka ruszyłaby wygładzone krawędzie).
+4. **Płynne przesuwanie i przybliżanie.** W trybie wątku płyta pokazuje ostatni gotowy obraz ryciny przełożony
+   z kamery, dla której powstał, na bieżącą (`naPlycie`, `plytaKamery` w `render/rycina.ts`): przy przesuwaniu jedzie
+   razem ze skałą (piksel w piksel jak rycina liczona wprost), przy kółku rośnie albo maleje, aż przyjdzie nowy.
+   Brzeg, którego jeszcze nie przykrywa (szybkie oddalanie), ma przez klatkę–dwie barwę nieznanej skały. Zgrubna
+   odbitka (po zmianie przybliżenia) od razu prosi o dopracowanie — dawniej czekała na zwykłe przerysowanie (do 150 ms).
+5. **Rycina w osobnym wątku** (Web Worker). `render/rycina-watek.ts` — wątek: ta sama rycina z `render/engrave.ts`
+   na OffscreenCanvas, odsyła ImageBitmap ryciny i rozmytej poświaty. `render/rycina.ts` — gra: migawka świata (okno
+   kafli wokół kamery, światło ludu z `render/rycina-zrodla.ts`, stałe świata), najwyżej jedno zamówienie naraz;
+   pierwsza klatka i skok kamery (obraz przykrywa < 30% płyty) — odbitka liczona tutaj, jak dawniej, żeby płyta nie
+   była pusta. `render/rycina-wspolne.ts` — wiadomości i wycinanie okna mapy. Obraz z wątku ma 32 px zapasu na każdym
+   brzegu, więc przesuwanie nie odsłania pustki. Faktury ryciny z ziarna (`losowe` w `engrave.ts`) — ten sam papier
+   w obu wątkach; grzbiet góry z samego wzoru (`render/grzbiet-wzor.ts`), bez rysunku katedry i konwoju. Wynik:
+   rycina z wątku = rycina liczona wprost (środek płyty piksel w piksel; przy samych brzegach do 24 poziomów jasności —
+   wątek widzi światła tuż za krawędzią ekranu). Bez wątku (Ustawienia → Wydajność → „Rycina w osobnym wątku”, stara
+   przeglądarka, błąd wątku) — dokładnie jak dawniej. W pliku `trzewia.html` wątek jest w środku (Vite `?worker&inline`).
+6. **Ustawienia → Wydajność** (nowa kategoria, ikona wskaźnika): „Rozdzielczość obrazu” 100/85/75/60% (`rozdzielczosc`:
+   płótno w mniejszej liczbie pikseli rozciągnięte na ekran — mniej pracy karty, obraz trochę miękcej), „Limit klatek”
+   bez limitu/120/60/30 (`limitKlatek`; na monitorze 144 Hz z limitem 60 wychodzi średnio 60), „Rycina w osobnym
+   wątku” (`rycinaWWatku`), „Licznik wydajności (F3)” (`licznikWydajnosci`).
+
+Pomiar po zmianie (to samo środowisko i stan partii): JS na klatkę 8–9,5 ms zamiast 13,6–26,5 ms (rycina 0,12 ms
+zamiast 5–16,6, poświata 0,03 zamiast 1,1–1,4). Klatki na sekundę ogranicza w tym środowisku programowe rysowanie
+płótna (bez karty graficznej) — na komputerze z kartą zysk ma być w klatkach; pokaże licznik F3. Obraz: zrzuty przed
+i po (5 scen, 1920×1080 i 2560×1440) — bez wątku piksel w piksel, z wątkiem różnice do 4 poziomów jasności (poza cienką
+linią nieba w jednej scenie — inna chwila przerysowania animowanych kafli). Testy: świat 100/100, pomnik 12/12.
+
 ## Nowy Wielki Pomnik i boss (5.11, wzór grafika)
 - Pomnik według wzoru grafika (`render/demon-wzor.ts`): kamienny demon **stojący z rękami wzniesionymi**, z płomienną
   aureolą, naszyjnikiem z czaszek i twarzą na przepasce, zakuty w łańcuchy. Z dwóch rysunków (cały i pęknięty)

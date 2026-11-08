@@ -14,7 +14,7 @@ type Wiersz =
   | { typ: 'wybor'; etykieta: string; opcje: string[]; czytaj: () => string; zmien: (v: string) => void }
   | { typ: 'akcja'; etykieta: string; wykonaj: () => void };
 
-type Ikona = 'dzwiek' | 'obraz' | 'rozgrywka' | 'inne';
+type Ikona = 'dzwiek' | 'obraz' | 'rozgrywka' | 'wydajnosc' | 'inne';
 interface Kategoria { nazwa: string; ikona: Ikona; wiersze: Wiersz[]; }
 interface Prostokat { x: number; y: number; w: number; h: number; }
 
@@ -49,6 +49,19 @@ function rysujIkone(ctx: CanvasRenderingContext2D, ikona: Ikona, cx: number, cy:
     ctx.stroke();
     ctx.beginPath(); ctx.moveTo(-0.3, 0.82); ctx.quadraticCurveTo(0, 0.4, 0.3, 0.82); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(-0.22, -0.55); ctx.lineTo(0.22, -0.55); ctx.lineTo(0, -0.3); ctx.closePath(); ctx.fill();
+  } else if (ikona === 'wydajnosc') {
+    // wskaźnik: łuk z podziałką i wskazówka wychylona w prawo
+    ctx.arc(0, 0.22, 0.82, Math.PI * 0.85, Math.PI * 2.15);
+    ctx.stroke();
+    for (let k = 0; k <= 4; k++) {
+      const a = Math.PI * (0.97 + 0.265 * k);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(a) * 0.6, 0.22 + Math.sin(a) * 0.6); ctx.lineTo(Math.cos(a) * 0.78, 0.22 + Math.sin(a) * 0.78);
+      ctx.stroke();
+    }
+    const w = Math.PI * 1.74;
+    ctx.beginPath(); ctx.moveTo(0, 0.22); ctx.lineTo(Math.cos(w) * 0.62, 0.22 + Math.sin(w) * 0.62); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0, 0.22, 0.13, 0, Math.PI * 2); ctx.fill();
   } else {
     // koło zębate
     const zeby = 8;
@@ -132,6 +145,15 @@ export class EkranUstawien implements Ekran {
           { typ: 'przelacznik', etykieta: 'Kamera za ludem', czytaj: () => ustawienia.kameraZaZyciem, zmien: (v) => ustaw('kameraZaZyciem', v) },
           { typ: 'przelacznik', etykieta: 'Kamera do wydarzeń', czytaj: () => ustawienia.kameraDoWydarzen, zmien: (v) => ustaw('kameraDoWydarzen', v) },
           { typ: 'przelacznik', etykieta: 'Autozapis', czytaj: () => ustawienia.autozapis, zmien: (v) => ustaw('autozapis', v) },
+        ],
+      },
+      {
+        // 8.11: wydajność — gdy komputer nie nadąża: mniej pikseli, mniej klatek, licznik (F3)
+        nazwa: 'Wydajność', ikona: 'wydajnosc', wiersze: [
+          { typ: 'wybor', etykieta: 'Rozdzielczość obrazu', opcje: ['100%', '85%', '75%', '60%'], czytaj: () => `${Math.round((ustawienia.rozdzielczosc || 1) * 100)}%`, zmien: (v) => ustaw('rozdzielczosc', parseInt(v, 10) / 100) },
+          { typ: 'wybor', etykieta: 'Limit klatek', opcje: ['bez limitu', '120', '60', '30'], czytaj: () => (ustawienia.limitKlatek ? String(ustawienia.limitKlatek) : 'bez limitu'), zmien: (v) => ustaw('limitKlatek', v === 'bez limitu' ? 0 : +v) },
+          { typ: 'przelacznik', etykieta: 'Rycina w osobnym wątku', czytaj: () => ustawienia.rycinaWWatku, zmien: (v) => ustaw('rycinaWWatku', v) },
+          { typ: 'przelacznik', etykieta: 'Licznik wydajności (F3)', czytaj: () => ustawienia.licznikWydajnosci, zmien: (v) => ustaw('licznikWydajnosci', v) },
         ],
       },
       {
