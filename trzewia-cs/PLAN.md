@@ -1,6 +1,6 @@
 # Trzewia w C# — plan przeniesienia (etap 0)
 
-Stan na 9.11.2026. Plan do akceptacji użytkownika: **przed etapem 1 nic nie kodujemy**.
+Stan na 9.11.2026. Plan zaakceptowany przez użytkownika 9.11 — jego odpowiedzi są w punkcie 8.
 Zadanie: przepisać grę z `alpha-1/` (TypeScript, Canvas 2D, Electron) na C# (.NET 10 LTS) z SkiaSharp,
 wiernie, jako program na Windows w folderze jak gry na Steamie.
 
@@ -33,7 +33,7 @@ wiernie, jako program na Windows w folderze jak gry na Steamie.
 | Dlaczego nie `main` | zadanie każe przenieść licznik F3 jak w `src/render/licznik-wydajnosci.ts` i kategorię „Wydajność” — są tylko na tej gałęzi |
 | Moja gałąź | `claude/trzewia-cs` (od `5a9b7a7`); kod C# tylko w `trzewia-cs/` |
 | `alpha-1/` | bez zmian; jedyny wyjątek — skrypt testów złotych w `alpha-1/scripts/` (zgłaszany w commicie) |
-| Zmiany w `alpha-1/` w trakcie | jeśli gra TS będzie się dalej zmieniać, przenoszę do konkretnego commitu, a potem doganiam różnicę (`git diff 5a9b7a7..`) |
+| Zmiany w `alpha-1/` w trakcie | nie będzie ich (użytkownik 9.11); gdyby jednak były — doganiam różnicę (`git diff 5a9b7a7..`) |
 
 ---
 
@@ -62,8 +62,13 @@ Tytul”, „Trzewia Pismo”), ikona `electron/zasoby/ikona.ico`.
 
 **Czego nie przenoszę:** kod tylko pod telefon (`core/android.ts`, układy `TELEFON`, `plate.waski`, `niski` —
 69 miejsc), maszyneria wątku ryciny (`render/rycina*.ts` — zastępuje ją shader), wybór karty z Electrona
-(`core/karta.ts`, `electron/`). **Do decyzji użytkownika:** okienko dewelopera (`app/devpanel.ts`, DOM) i tryb
-obserwatorium (`app/obserwowany.ts`, `scripts/obserwatorium/`). Bota przenoszę zawsze — jest potrzebny do testów.
+(`core/karta.ts`, `electron/`) i tryb obserwatorium (`app/obserwowany.ts`, `scripts/obserwatorium/` — decyzja
+użytkownika 9.11: „usuń tylko obserwatorium”). Bota przenoszę — jest potrzebny do testów.
+
+**Okienko dewelopera** (`app/devpanel.ts`, w TS zrobione z elementów strony) przenoszę (decyzja użytkownika 9.11:
+„nie pomijaj okna deweloperskiego”) jako przesuwane okno rysowane przez grę, z tymi samymi częściami: stan świata,
+czas, logi, inspektor, narzędzia. Tryb deweloperski włącza `Trzewia.exe --dev` (w TS — `npm run dev`); w nim, jak
+w TS, działa też przyspieszanie i zwalnianie czasu oraz rysunki z `render/dev.ts`.
 
 Pełna mapa plik po pliku jest w **Dodatku A** na końcu.
 
@@ -213,8 +218,16 @@ Symulacja w TS nie używa `Math.random`, `Date.now` ani `performance.now` (spraw
 - Do tego przeniesione `scripts/test-swiata.mjs` (100 światów) i `scripts/test-pomnika.mjs` (12) oraz balans:
   96 partii bota w stylu „rozsądny” — w TS 92 wygrane (`alpha-1/README.md`); C# ma dać to samo, partia po partii.
 
-**Nastawy:** klasy statyczne w C#, pole w pole jak obiekty w `src/nastawy/` (te same nazwy i komentarze).
-Opcjonalnie: plik `dane/nastawy/<nazwa>.json` nadpisuje liczby przy starcie (bez niego — wartości z kodu).
+**Nastawy** (decyzja użytkownika 9.11: liczby „mają mieć możliwość nadmiany”):
+- klasy statyczne w C#, pole w pole jak obiekty w `src/nastawy/` (te same nazwy i komentarze) — to wartości
+  domyślne;
+- przy starcie gra czyta pliki `dane/nastawy/*.json`, jeśli są. Plik nazywa się jak plik TS (`swiat.json`,
+  `walka.json`…), a w środku są te same nazwy co w kodzie (`{ "SWIAT": { "szerokosc": 192, … } }`). Wystarczy
+  wpisać tylko zmieniane liczby — reszta zostaje z kodu;
+- literówka w nazwie albo zły typ: liczba zostaje z kodu, a gra zapisuje ostrzeżenie w dzienniku i pokazuje je
+  w okienku dewelopera;
+- `Trzewia.exe --wypisz-nastawy` zapisuje wszystkie obecne liczby do `dane/nastawy/` — punkt wyjścia do zmian;
+- testy złote i testy balansu chodzą zawsze na liczbach z kodu (inaczej porównanie z TS nie miałoby sensu).
 
 ### 3.6 Dźwięk
 
@@ -286,11 +299,11 @@ w testach złotych) i 3 (wygląd ryciny w shaderze).
 | Etap | Co | Jak sprawdzam | Sesje |
 |---|---|---|---:|
 | 0 | audyt i plan (ten plik) | akceptacja użytkownika | 1 |
-| 1 | szkielet: okno, F11, skalowanie, pętla, Skia na karcie, ANGLE/GL, wejście, klawisze, F3, publikacja do folderu i jeden plik | `dotnet publish -r win-x64` daje działający folder; pod Xvfb okno z F3; zip do użytkownika — zrzut F3 z jego Windows | 1–2 |
+| 1 | szkielet: okno, F11, skalowanie, pętla, Skia na karcie, ANGLE/GL, wejście, klawisze, F3, przełącznik `--dev`, publikacja do folderu i jeden plik | `dotnet publish -r win-x64` daje działający folder; pod Xvfb okno z F3; zip do użytkownika — zrzut F3 z jego Windows | 1–2 |
 | 2 | symulacja, nastawy, ryty, RNG, bot, zapis do JSON; testy świata i pomnika; testy złote; balans bota | 100/100 i 12/12; **1 200 identycznych skrótów**; 96 partii — te same wyniki co TS | 4–6 |
 | 3 | świat: kamera, rycina w shaderze, mrok, poświata, rdzeń, żyły, kucie, pomieszczenia, ołtarz, ruiny, katedra, konwój, wiadra, loch, schody i ich budowa, pomnik, efekty | zrzuty obu wersji w tych samych scenach; czas klatki w F3 | 4–6 |
 | 4 | postacie: figury, lud, demon i kukła bossa, walka (25 + 19 ruchów), strażnicy, dłonie, anioł | zrzuty i krótkie nagrania ruchów obok siebie | 3–5 |
-| 5 | interfejs: płyta i rama, księga, okno postaci, Budowa, przyciski, minimapa, karty i alarmy, zapiski, legenda, menu, ustawienia, atlas, kronika, osiągnięcia, bestiariusz, samouczek, przerywniki | zrzuty; test nakładania elementów jak `test-nakladania.mjs` | 4–6 |
+| 5 | interfejs: płyta i rama, księga, okno postaci, Budowa, przyciski, minimapa, karty i alarmy, zapiski, legenda, menu, ustawienia, atlas, kronika, osiągnięcia, bestiariusz, samouczek, przerywniki, okienko dewelopera | zrzuty; test nakładania elementów jak `test-nakladania.mjs` | 4–6 |
 | 6 | dźwięk, intro, zapis do Dokumentów, kursor (rękawica jako kursor systemowy z `obrazy/kursor1.png` i `kursor2.png`) | porównanie offline WAV; zapis–wczytanie w trakcie partii | 2–3 |
 | 7 | wydanie: `buduj.ps1`/`.sh`, ikona, opis i wersja pliku, jeden plik, GitHub Actions | zip z Actions uruchomiony u użytkownika | 1 |
 | 8 | zgodność obrazu (ziarno 3, bot 60 000 tików, przybliżenia 6, 12, 14, 26, zamrożony zegar) i wydajność (1920×1080, 2560×1440; stoi / jedzie / kółko / walka z demonem) vs Electron; README, CHANGELOG, handoff | raport z liczbami i zrzutami | 2–3 |
@@ -307,14 +320,18 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
    Możliwe drobne różnice jasności (karta liczy w 32 bitach, JS w 64).
 2. Znika ustawienie „Rycina w osobnym wątku” — w shaderze nie ma czego przenosić do wątku. Zamiast wymuszania karty
    z Electrona (`karta.json`) — wybór „ANGLE / OpenGL” z automatycznym powrotem, gdy jeden nie wstanie.
-3. Film intro jako klatki JPEG/WebP zamiast H.264 — ten sam obraz, inna kompresja, większy plik.
+3. Film intro jako klatki JPEG/WebP zamiast H.264 — ten sam obraz, inna kompresja, większy plik (zgoda użytkownika
+   9.11).
 4. Kroje te same, ale w TTF; tekst składa HarfBuzz w Skii zamiast silnika Chrome — możliwe różnice o piksel
    w odstępach.
 5. Zapisy, ustawienia, klawisze i osiągnięcia w plikach w `Dokumenty\My Games\Trzewia\` zamiast pamięci
    przeglądarki; format ten sam.
 6. Rękawica jako kursor systemowy z tych samych obrazków — rusza się bez opóźnienia klatki (w TS to warstwa strony
    przesuwana za myszą).
-7. Bez kodu pod telefon; bez okienka dewelopera i obserwatorium (jeśli użytkownik się zgodzi).
+7. Bez kodu pod telefon i bez obserwatorium (decyzja użytkownika 9.11). Okienko dewelopera zostaje, ale rysuje je
+   gra, a nie przeglądarka — wygląd inny, części te same.
+8. Liczby gry można nadpisać plikami `.json` w `dane/nastawy/` (decyzja użytkownika 9.11) — w TS liczby zmieniało się
+   tylko w kodzie albo w konsoli przeglądarki.
 
 ---
 
@@ -329,7 +346,7 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
 | Brzmienie syntezy (kompresor, oscylatory) | inny dźwięk | wierne wzory z Chromium; porównanie offline |
 | Szarpnięcia od sprzątania pamięci (GC) | pojedyncze długie klatki | brak przydziałów w klatce (pule), tryb `SustainedLowLatency`, licznik GC w F3 |
 | Skala: 60 tys. linii | długi czas, błędy przy przepisywaniu | warstwa `Plotno` (przepisywanie prawie mechaniczne), ten sam podział plików, testy i zrzuty po każdym etapie |
-| Gra TS zmienia się w trakcie | dwie wersje się rozjeżdżają | wzorzec przypięty do commitu; zmiany doganiane różnicą |
+| Gra TS zmienia się w trakcie | dwie wersje się rozjeżdżają | użytkownik 9.11: w trakcie przenoszenia `alpha-1/` się nie zmienia; wzorzec i tak przypięty do commitu `5a9b7a7` |
 | Brak karty graficznej w moim środowisku | kl/s zmierzę tylko u użytkownika | tu mierzę czas procesora na klatkę (llvmpipe); kl/s — zrzut F3 z Windows |
 | Windows: niepodpisany .exe | ostrzeżenie SmartScreen, czasem antywirus (zwłaszcza jeden plik, który się rozpakowuje) | jak dziś przy Electronie; wersja folderowa jest bezpieczniejsza |
 
@@ -351,13 +368,15 @@ ffmpeg, Python):
 
 ---
 
-## 8. Pytania do użytkownika
+## 8. Decyzje użytkownika (9.11)
 
-1. Wzorzec: `alpha-1/` z gałęzi `claude/zealous-brown-e2160u` (8.11, z licznikiem F3) — zgoda?
-2. Okienko dewelopera i obserwatorium — pomijam (to narzędzia, nie gra), czy przenieść później?
-3. Film intro jako klatki obrazków (kilka–kilkanaście MB zamiast 340 KB) — zgoda?
-4. Liczby gry: tylko w kodzie C#, czy od razu z możliwością nadpisania plikami `.json` w `dane/nastawy/`?
-5. Czy `alpha-1/` będzie się jeszcze zmieniać w czasie przenoszenia?
+| Pytanie | Odpowiedź |
+|---|---|
+| Wzorzec: `alpha-1/` z gałęzi `claude/zealous-brown-e2160u` (8.11, z licznikiem F3)? | „jest w porządku” |
+| Okienko dewelopera i obserwatorium? | „nie pomijaj okna deweloperskiego, usuń tylko obserwatorium” |
+| Film intro jako klatki obrazków (kilka–kilkanaście MB zamiast 340 KB)? | „zgoda” |
+| Liczby gry tylko w kodzie, czy z nadpisaniem plikami `.json`? | „mają mieć możliwość nadmiany” (3.5) |
+| Czy `alpha-1/` będzie się zmieniać w trakcie? | „w trakcie przenoszenia nie będzie zmian” |
 
 ---
 
@@ -380,8 +399,8 @@ który z nich korzysta.
 | `app/app.ts` | 213 | `Trzewia/Aplikacja/App.cs` | 1 |
 | `app/bot.ts` | 762 | `Trzewia.Symulacja/Bot/Bot.cs` | 2 |
 | `app/context.ts` | 18 | `Trzewia/Aplikacja/Context.cs` | 1 |
-| `app/devpanel.ts` | 511 | — | pytanie (narzędzie dewelopera) |
-| `app/obserwowany.ts` | 146 | — | pytanie (obserwatorium) |
+| `app/devpanel.ts` | 511 | `Trzewia/Aplikacja/Devpanel.cs` | 5 (okno rysowane przez grę, tryb `--dev`) |
+| `app/obserwowany.ts` | 146 | — | pominięte (obserwatorium, decyzja użytkownika 9.11) |
 | `app/obszary-hud.ts` | 59 | `Trzewia/Aplikacja/ObszaryHud.cs` | 5 |
 | `app/screen.ts` | 14 | `Trzewia/Aplikacja/Screen.cs` | 1 |
 | `app/screens/bestiariusz.ts` | 66 | `Trzewia/Aplikacja/Screens/Bestiariusz.cs` | 5 |
@@ -522,7 +541,7 @@ który z nich korzysta.
 | `render/demon-kukla.ts` | 604 | `Trzewia/Rysunek/DemonKukla.cs` | 4 |
 | `render/demon-wzor.ts` | 214 | `Trzewia/Rysunek/DemonWzor.cs` | 3 |
 | `render/demon.ts` | 413 | `Trzewia/Rysunek/Demon.cs` | 3 |
-| `render/dev.ts` | 75 | `Trzewia/Rysunek/Dev.cs` | 8 (tryb deweloperski, jeśli zostaje) |
+| `render/dev.ts` | 75 | `Trzewia/Rysunek/Dev.cs` | 5 (z okienkiem dewelopera) |
 | `render/dlon-demona.ts` | 698 | `Trzewia/Rysunek/DlonDemona.cs` | 4 |
 | `render/dlon.ts` | 392 | `Trzewia/Rysunek/Dlon.cs` | 4 |
 | `render/druzyna.ts` | 537 | `Trzewia/Rysunek/Druzyna.cs` | 5 |
