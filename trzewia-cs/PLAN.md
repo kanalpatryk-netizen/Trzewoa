@@ -399,7 +399,7 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
 | Słabe sterowniki OpenGL na laptopach z Intelem | czarny ekran albo błędy | ANGLE (Direct3D 11) domyślnie, OpenGL jako zapas, powrót automatyczny |
 | Tekst inaczej złożony | przesunięte napisy, nakładanie | HarfBuzz; test nakładania; zrzuty |
 | Brzmienie syntezy (kompresor, oscylatory) | inny dźwięk | wierne wzory z Chromium; porównanie offline |
-| Skia wybiera wolną drogę dla długich obrysów (10.11: siatka ~250 linii przez cały ekran — ok. 12 ms procesora na karcie programowej, 880 prostokątów — 0,5 ms) | wolne klatki przy dużych kreskowanych kształtach | pomiar F3 na prawdziwej karcie (etap 1, u użytkownika); w razie potrzeby opcje kontekstu Skii, MSAA albo rozbicie ścieżek |
+| Skia wybiera wolną drogę dla długich obrysów (10.11: siatka ~250 linii przez cały ekran — ok. 12 ms procesora na karcie programowej, 880 prostokątów — 0,5 ms; **potwierdzone u użytkownika: RTX 3060, 7,6 ms procesora**) | wolne klatki przy dużych kreskowanych kształtach | na początku etapu 3: pomiar wariantów (kreska włosowa, odcinki osobno, MSAA, opcje kontekstu Skii) i wybór najtańszego w PlotnoSkia — bez zmiany obrazu |
 | Szarpnięcia od sprzątania pamięci (GC) | pojedyncze długie klatki | brak przydziałów w klatce (pule), tryb `SustainedLowLatency`, licznik GC w F3 |
 | Skala: 60 tys. linii | długi czas, błędy przy przepisywaniu | warstwa `Plotno` (przepisywanie prawie mechaniczne), ten sam podział plików, testy i zrzuty po każdym etapie |
 | Gra TS zmienia się w trakcie | dwie wersje się rozjeżdżają | użytkownik 9.11: w trakcie przenoszenia `alpha-1/` się nie zmienia; wzorzec i tak przypięty do commitu `5a9b7a7` |
@@ -420,6 +420,11 @@ Python, Chromium z Playwrightem (zainstalowany w obrazie).
 | .NET 10 SDK | **z archiwum Ubuntu** (`apt-get install dotnet-sdk-10.0`, wersja 10.0.114) — strona Microsoftu (`builds.dotnet.microsoft.com`, `dotnetcli.azureedge.net`) dalej zablokowana, ale nie jest potrzebna: pakiety uruchomieniowe dla Windows (`Microsoft.NETCore.App.Runtime.win-x64`, `…Host.win-x64`, `…Crossgen2`) przychodzą z NuGet |
 | `cdn.playwright.dev` | zablokowane — niepotrzebne, Chromium jest w obrazie (`/opt/pw-browsers`) |
 | karta graficzna | brak — tu mierzę czas procesora na klatkę (llvmpipe); kl/s mierzę u użytkownika: wysyłam zip, proszę o zrzut F3 |
+
+**Pierwszy pomiar u użytkownika (10.11, etap 1, ekran próbny):** Linux Mint, NVIDIA GeForce RTX 3060, OpenGL 4.6,
+obraz 3440×1439 px przy skali 130% (skala gry 1,349, ekran logiczny 1959×820 — jak w TS): 85 kl/s (tyle, ile monitor),
+klatka 11,8 ms, najdłuższa 12 ms, procesor 7,9 ms (z tego 7,6 ms siatka — zob. ryzyka), karta 0,5 ms, czekanie na monitor
+3,7 ms, pamięć 3 MB, bez sprzątań. Użytkownik gra na Linuksie — paczka `Trzewia-linux-x64.tar.gz` (buduj.sh linux-x64).
 
 **9.11 (poprzednia sesja):** brak sieci do NuGet, .NET i npm — dlatego etap 1 czekał.
 
