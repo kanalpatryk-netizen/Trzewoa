@@ -59,7 +59,7 @@ namespace Trzewia.Skia
         protected override void pAddPath(Path2D p, DOMMatrix? m)
         {
             var sk = Sk(p);
-            if (m is DOMMatrix mm) { var x = Macierz.Sk(mm); Sciezka.AddPath(sk, ref x); }
+            if (m is DOMMatrix mm) { var x = Macierz.Sk(mm); Sciezka.AddPath(sk, in x); }
             else Sciezka.AddPath(sk);
         }
 

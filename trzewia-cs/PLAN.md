@@ -2,6 +2,8 @@
 
 Stan na 9.11.2026. Plan zaakceptowany przez użytkownika 9.11 — jego odpowiedzi są w punkcie 8.
 Aktualizacja 10.11: środowisko ma już sieć do NuGet i npm, a .NET 10 SDK jest z archiwum Ubuntu (punkt 7) — etap 1 ruszył.
+Decyzja użytkownika 10.11: plan i kod tak, „żeby potem wszystko łatwo można było przenieść pod jakiś silnik (np. Unity albo
+Godot)” — gra w warstwach przenośnych (punkt 3.0).
 Zadanie: przepisać grę z `alpha-1/` (TypeScript, Canvas 2D, Electron) na C# (.NET 10 LTS) z SkiaSharp,
 wiernie, jako program na Windows w folderze jak gry na Steamie.
 
@@ -14,6 +16,9 @@ wiernie, jako program na Windows w folderze jak gry na Steamie.
 - **Biblioteki:** SkiaSharp (rysunek na karcie), **SDL3** (okno, mysz, klawiatura, wyjście dźwięku, kursor) zamiast
   Silk.NET, **ANGLE** (OpenGL ES na Direct3D 11 — ta sama droga do karty, z której dziś korzysta Electron),
   NLayer (MP3), HarfBuzzSharp (składanie tekstu). Wszystko na licencjach MIT/BSD/zlib, bez instalacji.
+- **Przenośność (10.11):** gra w czterech warstwach; trzy dolne (symulacja, gra, Skia) w .NET Standard 2.1 i C# 9, czyli
+  w tym, co przyjmuje Unity i Godot. Przy przenosinach do silnika wymienia się tylko gospodarza (okno, karta, dźwięk,
+  pliki) — punkt 3.0.
 - **Rysunek:** cienka warstwa „płótno” w C#, która ma te same polecenia co Canvas 2D (`save`, `fillStyle`,
   `globalCompositeOperation`, `ellipse`…), ale rysuje Skią na karcie. Pliki z `src/render/` przenoszą się wtedy
   linijka w linijkę. Chrome też rysuje Canvas 2D Skią, więc obraz będzie bardzo bliski. Rycina świata, najdroższa
@@ -96,6 +101,48 @@ Wersje sprawdzone 9.11.2026; w etapie 1 biorę najnowsze stabilne.
 
 ## 3. Architektura
 
+### 3.0 Przenośność do silnika (Unity, Godot) — decyzja użytkownika 10.11
+
+Użytkownik: „pisz plan i kod w C# tak, żeby potem wszystko łatwo można było przenieść pod jakiś silnik (np. Unity albo
+Godot)”. Dlatego gra jest w czterech warstwach, a tylko najwyższa wie, na czym działa:
+
+| Warstwa | Projekt | Co w niej jest | Zależy od | Cel |
+|---|---|---|---|---|
+| 1 | `Trzewia.Symulacja` | symulacja, nastawy, ryty, bot, RNG, zgodność z JS, model zapisu | nic | netstandard2.1, C# 9 |
+| 2 | `Trzewia.Gra` | rysunek (src/render), ekrany i wejście (src/app), interfejs, atlas, przerywniki, synteza dźwięku (węzły liczące próbki), ustawienia, klawisze, licznik F3, JSON | 1 | netstandard2.1, C# 9 |
+| 3 | `Trzewia.Skia` | `IPlotno` na SkiaSharp (karta albo procesor), kroje z HarfBuzzem, filtry, shader ryciny (SkSL) | 2, SkiaSharp | netstandard2.1, C# 9 |
+| 4 | `Trzewia` (Trzewia.exe) | gospodarz na komputer: okno SDL3, ANGLE/OpenGL, wyjście dźwięku, pliki, pętla | 1–3, SDL3 | .NET 10 |
+
+**Szwy (interfejsy) między grą a gospodarzem** — wszystkie w `Trzewia.Gra`:
+- `IPlotno` — polecenia Canvas 2D; cały rysunek idzie tylko przez nie. `Plotno.Nowe(w, h)` zamiast
+  `document.createElement('canvas')`, `Plotno.Wczytaj(ścieżka)` na obrazki (`IFabrykaPlocien` daje warstwa rysunku);
+- `IOknoGry` — rozmiar okna, skala ekranu, podpięcie płótna gry do okna;
+- `IPlikiGracza`, `IDaneGry` (`Gospodarz.Pliki`, `Gospodarz.Dane`) — pliki gracza i dane gry;
+- zdarzenia wejścia: gospodarz woła `App.NaWskaznik`, `NaKolko`, `NaKlawisz` (nazwy klawiszy jak `KeyboardEvent.key`);
+- pętla: gospodarz woła `App.Pora` i `App.Klatka` raz na odświeżenie ekranu;
+- dźwięk (etap 6): gra liczy próbki (synteza jak Web Audio, nagrania zdekodowane), gospodarz tylko je odtwarza;
+- rycina (etap 3): pola kafli liczy warstwa 2 (procesor), obraz na piksel — shader w warstwie rysunku (`IRycina`
+  z fabryki płócien); w silniku to jego własny shader (Godot: shader CanvasItem, Unity: shader materiału) na tych
+  samych teksturach pól.
+
+**Jak wyglądają przenosiny:**
+- **Godot 4 (C#):** warstwy 1–3 jako biblioteki albo pliki źródłowe; węzeł z `_Process` woła `App.Klatka`, płótno gry
+  rysuje Skia do bitmapy wgranej jako `ImageTexture` (najprościej) albo nowe `IPlotno` na `CanvasItem.Draw*`;
+  wejście z `_Input`, dźwięk przez `AudioStreamGenerator`, pliki w `user://` i `res://`.
+- **Unity:** to samo przez `MonoBehaviour.Update`, `Texture2D` (albo `IPlotno` na własnym rysowaniu), `OnAudioFilterRead`,
+  `Application.persistentDataPath` i `StreamingAssets`. SkiaSharp ma paczkę dla Unity; bez niej — własne `IPlotno`.
+- Symulacja przenosi się bez zmian i liczy bit w bit to samo (własne `Js.Sin`, `Js.Hypot`, sortowanie z V8 — punkt 3.5),
+  więc testy złote przechodzą też w silniku.
+
+**Zasady pisania warstw 1–3** (pilnuje ich kompilator — projekty mają netstandard2.1 i `LangVersion 9.0`):
+- C# 9: bez `namespace X;` w jednej linii, bez `record struct`, `required`, zbiorów `[1, 2]`, głównych konstruktorów klas
+  i `global using`; bez metod domyślnych w interfejsach (ekran gry to klasa bazowa `Ekran`);
+- API .NET Standard 2.1: bez `Enum.GetValues<T>()`, `File.Move(…, overwrite)` i podobnych nowości;
+- bez bibliotek z NuGet w warstwach 1–2 (JSON własny: `Rdzen/Json.cs`); bez wątków i `async` w symulacji;
+- żadnych typów SDL, okna ani systemu plików gry w warstwach 1–3; Skia tylko w warstwie 3;
+- refleksja tylko tam, gdzie konieczna (ustawienia, nastawy z `.json`) — w Unity z IL2CPP te typy trzeba zachować
+  (`link.xml`), co opiszę przy przenosinach.
+
 ### 3.1 Foldery i projekty
 
 ```
@@ -103,11 +150,12 @@ trzewia-cs/
 ├── PLAN.md, README.md
 ├── Trzewia.sln
 ├── src/
-│   ├── Trzewia.Symulacja/      bez grafiki i dźwięku: Js (zgodność z JavaScriptem), Rdzen/Rng, Nastawy/, Symulacja/,
-│   │                           Moce/, Bot/, zapis do JSON — testy chodzą bez okna i karty
-│   └── Trzewia/                Trzewia.exe: Program.cs, Okno/ (SDL3, GL, pętla), Plotno/ (Canvas 2D na Skii),
-│                               Rysunek/ (jak src/render), Aplikacja/ (jak src/app), Atlas/, Przerywniki/,
-│                               Interfejs/, Dzwiek/, Rdzen/ (ustawienia, klawisze, osiągnięcia, kursor, F3), Zasoby/
+│   ├── Trzewia.Symulacja/      warstwa 1: Js (zgodność z JavaScriptem), Rdzen/Rng, Nastawy/, Symulacja/, Moce/, Bot/
+│   ├── Trzewia.Gra/            warstwa 2: Plotna/ (IPlotno, Barwa, Path2D…), Rysunek/ (jak src/render), Aplikacja/
+│   │                           (jak src/app), Atlas/, Przerywniki/, Interfejs/, Dzwiek/, Rdzen/ (ustawienia, klawisze,
+│   │                           osiągnięcia, F3, JSON, Gospodarz), Zasoby/
+│   ├── Trzewia.Skia/           warstwa 3: PlotnoSkia, kroje i tekst, filtry, shader ryciny
+│   └── Trzewia/                warstwa 4, Trzewia.exe: Program.cs, Okno/ (SDL3, GL/ANGLE, klawisze), Komputer/ (pliki)
 ├── testy/
 │   ├── Trzewia.Testy/          test świata (100), test pomnika (12), testy złote, zgodność Js, balans bota (długi)
 │   └── zlote/                  skróty stanu wypisane przez wersję TS
@@ -333,6 +381,12 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
    gra, a nie przeglądarka — wygląd inny, części te same.
 8. Liczby gry można nadpisać plikami `.json` w `dane/nastawy/` (decyzja użytkownika 9.11) — w TS liczby zmieniało się
    tylko w kodzie albo w konsoli przeglądarki.
+9. (etap 1) Pełny ekran od razu po starcie (gdy włączony w ustawieniach) — w TS dopiero po pierwszym kliknięciu albo
+   klawiszu, bo przeglądarka nie pozwala wcześniej. F11 przełącza jak dawniej.
+10. (etap 1) Licznik F3: „procesor na klatkę” zamiast „JS na klatkę”; zamiast wiersza o wątku ryciny — czas karty
+    graficznej, wysłanie do karty i czekanie na monitor, pamięć i sprzątania (GC); karta i droga (ANGLE/OpenGL) wprost.
+11. (etap 1) Ustawienie „karta” (`auto` / `angle` / `opengl`) zamiast wymuszania karty z Electrona; plik ustawień ma
+    poza tym te same pola co w TS (także nieużywane `rycinaWWatku`).
 
 ---
 
@@ -345,6 +399,7 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
 | Słabe sterowniki OpenGL na laptopach z Intelem | czarny ekran albo błędy | ANGLE (Direct3D 11) domyślnie, OpenGL jako zapas, powrót automatyczny |
 | Tekst inaczej złożony | przesunięte napisy, nakładanie | HarfBuzz; test nakładania; zrzuty |
 | Brzmienie syntezy (kompresor, oscylatory) | inny dźwięk | wierne wzory z Chromium; porównanie offline |
+| Skia wybiera wolną drogę dla długich obrysów (10.11: siatka ~250 linii przez cały ekran — ok. 12 ms procesora na karcie programowej, 880 prostokątów — 0,5 ms) | wolne klatki przy dużych kreskowanych kształtach | pomiar F3 na prawdziwej karcie (etap 1, u użytkownika); w razie potrzeby opcje kontekstu Skii, MSAA albo rozbicie ścieżek |
 | Szarpnięcia od sprzątania pamięci (GC) | pojedyncze długie klatki | brak przydziałów w klatce (pule), tryb `SustainedLowLatency`, licznik GC w F3 |
 | Skala: 60 tys. linii | długi czas, błędy przy przepisywaniu | warstwa `Plotno` (przepisywanie prawie mechaniczne), ten sam podział plików, testy i zrzuty po każdym etapie |
 | Gra TS zmienia się w trakcie | dwie wersje się rozjeżdżają | użytkownik 9.11: w trakcie przenoszenia `alpha-1/` się nie zmienia; wzorzec i tak przypięty do commitu `5a9b7a7` |
@@ -370,7 +425,7 @@ Python, Chromium z Playwrightem (zainstalowany w obrazie).
 
 ---
 
-## 8. Decyzje użytkownika (9.11)
+## 8. Decyzje użytkownika (9.11 i 10.11)
 
 | Pytanie | Odpowiedź |
 |---|---|
@@ -379,99 +434,100 @@ Python, Chromium z Playwrightem (zainstalowany w obrazie).
 | Film intro jako klatki obrazków (kilka–kilkanaście MB zamiast 340 KB)? | „zgoda” |
 | Liczby gry tylko w kodzie, czy z nadpisaniem plikami `.json`? | „mają mieć możliwość nadmiany” (3.5) |
 | Czy `alpha-1/` będzie się zmieniać w trakcie? | „w trakcie przenoszenia nie będzie zmian” |
+| (10.11, sam z siebie) Silnik w przyszłości? | „pisz plan i kod w c# tak, żeby potem wszystko łatwo można było przenieść pod jakiś silnik (np unity albo godot)” — punkt 3.0 |
 
 ---
 
 ## Dodatek A — mapa plików TS → C#
 
-Ścieżki C# względem `trzewia-cs/src/`. Etap „3–5 (z rysunkiem)” — nastawy wyglądu przenoszę razem z plikiem,
+Ścieżki C# względem `trzewia-cs/src/` (warstwy — punkt 3.0). Shadery ryciny, mroku i poświaty — `Trzewia.Skia/`. Etap „3–5 (z rysunkiem)” — nastawy wyglądu przenoszę razem z plikiem,
 który z nich korzysta.
 
 ### `src/` (plik główny)
 
 | Plik TS | Linie | Plik C# | Etap |
 |---|---:|---|---|
-| `main.ts` | 113 | `Trzewia/Program.cs` | 1 |
+| `main.ts` | 113 | `Trzewia.Gra/Aplikacja/Start.cs` (ekrany, ładowanie) + `Trzewia/Program.cs` (gospodarz) | 1, 5 |
 
 ### `src/app/` — 7212 linii, 19 plików
 
 | Plik TS | Linie | Plik C# | Etap |
 |---|---:|---|---|
-| `app/alarmy.ts` | 167 | `Trzewia/Aplikacja/Alarmy.cs` | 5 |
-| `app/app.ts` | 213 | `Trzewia/Aplikacja/App.cs` | 1 |
+| `app/alarmy.ts` | 167 | `Trzewia.Gra/Aplikacja/Alarmy.cs` | 5 |
+| `app/app.ts` | 213 | `Trzewia.Gra/Aplikacja/App.cs` | 1 |
 | `app/bot.ts` | 762 | `Trzewia.Symulacja/Bot/Bot.cs` | 2 |
-| `app/context.ts` | 18 | `Trzewia/Aplikacja/Context.cs` | 1 |
-| `app/devpanel.ts` | 511 | `Trzewia/Aplikacja/Devpanel.cs` | 5 (okno rysowane przez grę, tryb `--dev`) |
+| `app/context.ts` | 18 | `Trzewia.Gra/Aplikacja/Context.cs` | 1 |
+| `app/devpanel.ts` | 511 | `Trzewia.Gra/Aplikacja/Devpanel.cs` | 5 (okno rysowane przez grę, tryb `--dev`) |
 | `app/obserwowany.ts` | 146 | — | pominięte (obserwatorium, decyzja użytkownika 9.11) |
-| `app/obszary-hud.ts` | 59 | `Trzewia/Aplikacja/ObszaryHud.cs` | 5 |
-| `app/screen.ts` | 14 | `Trzewia/Aplikacja/Screen.cs` | 1 |
-| `app/screens/bestiariusz.ts` | 66 | `Trzewia/Aplikacja/Screens/Bestiariusz.cs` | 5 |
-| `app/screens/game.ts` | 2539 | `Trzewia/Aplikacja/Screens/Game.cs` | 1 (wejście), 3–5 |
-| `app/screens/intro.ts` | 73 | `Trzewia/Aplikacja/Screens/Intro.cs` | 6 |
-| `app/screens/kronika.ts` | 260 | `Trzewia/Aplikacja/Screens/Kronika.cs` | 5 |
-| `app/screens/ladowanie.ts` | 157 | `Trzewia/Aplikacja/Screens/Ladowanie.cs` | 5 |
-| `app/screens/menu.ts` | 335 | `Trzewia/Aplikacja/Screens/Menu.cs` | 5 |
-| `app/screens/osiagniecia.ts` | 112 | `Trzewia/Aplikacja/Screens/Osiagniecia.cs` | 5 |
-| `app/screens/samouczek/rozdzialy.ts` | 416 | `Trzewia/Aplikacja/Screens/Samouczek/Rozdzialy.cs` | 5 |
-| `app/screens/settings.ts` | 424 | `Trzewia/Aplikacja/Screens/Settings.cs` | 5 |
-| `app/screens/tutorial.ts` | 861 | `Trzewia/Aplikacja/Screens/Tutorial.cs` | 5 |
-| `app/wyrok.ts` | 79 | `Trzewia/Aplikacja/Wyrok.cs` | 5 |
+| `app/obszary-hud.ts` | 59 | `Trzewia.Gra/Aplikacja/ObszaryHud.cs` | 5 |
+| `app/screen.ts` | 14 | `Trzewia.Gra/Aplikacja/Screen.cs` | 1 |
+| `app/screens/bestiariusz.ts` | 66 | `Trzewia.Gra/Aplikacja/Screens/Bestiariusz.cs` | 5 |
+| `app/screens/game.ts` | 2539 | `Trzewia.Gra/Aplikacja/Screens/Game.cs` | 1 (wejście), 3–5 |
+| `app/screens/intro.ts` | 73 | `Trzewia.Gra/Aplikacja/Screens/Intro.cs` | 6 |
+| `app/screens/kronika.ts` | 260 | `Trzewia.Gra/Aplikacja/Screens/Kronika.cs` | 5 |
+| `app/screens/ladowanie.ts` | 157 | `Trzewia.Gra/Aplikacja/Screens/Ladowanie.cs` | 5 |
+| `app/screens/menu.ts` | 335 | `Trzewia.Gra/Aplikacja/Screens/Menu.cs` | 5 |
+| `app/screens/osiagniecia.ts` | 112 | `Trzewia.Gra/Aplikacja/Screens/Osiagniecia.cs` | 5 |
+| `app/screens/samouczek/rozdzialy.ts` | 416 | `Trzewia.Gra/Aplikacja/Screens/Samouczek/Rozdzialy.cs` | 5 |
+| `app/screens/settings.ts` | 424 | `Trzewia.Gra/Aplikacja/Screens/Settings.cs` | 5 |
+| `app/screens/tutorial.ts` | 861 | `Trzewia.Gra/Aplikacja/Screens/Tutorial.cs` | 5 |
+| `app/wyrok.ts` | 79 | `Trzewia.Gra/Aplikacja/Wyrok.cs` | 5 |
 
 ### `src/atlas/` — 1680 linii, 3 pliki
 
 | Plik TS | Linie | Plik C# | Etap |
 |---|---:|---|---|
-| `atlas/odkrycia.ts` | 42 | `Trzewia/Atlas/Odkrycia.cs` | 5 |
-| `atlas/okno.ts` | 162 | `Trzewia/Atlas/Okno.cs` | 5 |
-| `atlas/tablice.ts` | 1476 | `Trzewia/Atlas/Tablice.cs` | 5 |
+| `atlas/odkrycia.ts` | 42 | `Trzewia.Gra/Atlas/Odkrycia.cs` | 5 |
+| `atlas/okno.ts` | 162 | `Trzewia.Gra/Atlas/Okno.cs` | 5 |
+| `atlas/tablice.ts` | 1476 | `Trzewia.Gra/Atlas/Tablice.cs` | 5 |
 
 ### `src/core/` — 2405 linii, 16 plików
 
 | Plik TS | Linie | Plik C# | Etap |
 |---|---:|---|---|
 | `core/android.ts` | 82 | — | pominięte (telefon) |
-| `core/audio.ts` | 268 | `Trzewia/Rdzen/Audio.cs` | 6 |
-| `core/gesty.ts` | 423 | `Trzewia/Rdzen/Gesty.cs` | 6 |
-| `core/glos-odmowy.ts` | 36 | `Trzewia/Rdzen/GlosOdmowy.cs` | 6 |
-| `core/glosy-ludu.ts` | 58 | `Trzewia/Rdzen/GlosyLudu.cs` | 6 |
-| `core/karta.ts` | 69 | `Trzewia/Rdzen/Karta.cs` | 1 — zastąpione (nazwa karty z GL) |
-| `core/keybinds.ts` | 100 | `Trzewia/Rdzen/Keybinds.cs` | 1 |
-| `core/kursor.ts` | 119 | `Trzewia/Rdzen/Kursor.cs` | 6 |
-| `core/mikser.ts` | 134 | `Trzewia/Rdzen/Mikser.cs` | 6 |
-| `core/music.ts` | 433 | `Trzewia/Rdzen/Music.cs` | 6 |
-| `core/nagrania.ts` | 155 | `Trzewia/Rdzen/Nagrania.cs` | 6 |
-| `core/osiagniecia.ts` | 72 | `Trzewia/Rdzen/Osiagniecia.cs` | 5 |
+| `core/audio.ts` | 268 | `Trzewia.Gra/Rdzen/Audio.cs` | 6 |
+| `core/gesty.ts` | 423 | `Trzewia.Gra/Rdzen/Gesty.cs` | 6 |
+| `core/glos-odmowy.ts` | 36 | `Trzewia.Gra/Rdzen/GlosOdmowy.cs` | 6 |
+| `core/glosy-ludu.ts` | 58 | `Trzewia.Gra/Rdzen/GlosyLudu.cs` | 6 |
+| `core/karta.ts` | 69 | `Trzewia/Okno/Grafika.cs` | 1 — zastąpione (nazwa karty z GL) |
+| `core/keybinds.ts` | 100 | `Trzewia.Gra/Rdzen/Keybinds.cs` | 1 |
+| `core/kursor.ts` | 119 | `Trzewia.Gra/Rdzen/Kursor.cs` | 6 |
+| `core/mikser.ts` | 134 | `Trzewia.Gra/Rdzen/Mikser.cs` | 6 |
+| `core/music.ts` | 433 | `Trzewia.Gra/Rdzen/Music.cs` | 6 |
+| `core/nagrania.ts` | 155 | `Trzewia.Gra/Rdzen/Nagrania.cs` | 6 |
+| `core/osiagniecia.ts` | 72 | `Trzewia.Gra/Rdzen/Osiagniecia.cs` | 5 |
 | `core/rng.ts` | 54 | `Trzewia.Symulacja/Rdzen/Rng.cs` | 2 |
-| `core/save.ts` | 155 | `Trzewia/Rdzen/Save.cs` | 6 (zapis do JSON już w 2, do testów) |
-| `core/settings-store.ts` | 133 | `Trzewia/Rdzen/SettingsStore.cs` | 1 (część), 5 |
-| `core/wydajnosc.ts` | 114 | `Trzewia/Rdzen/Wydajnosc.cs` | 1 |
+| `core/save.ts` | 155 | `Trzewia.Gra/Rdzen/Save.cs` | 6 (zapis do JSON już w 2, do testów) |
+| `core/settings-store.ts` | 133 | `Trzewia.Gra/Rdzen/SettingsStore.cs` | 1 (część), 5 |
+| `core/wydajnosc.ts` | 114 | `Trzewia.Gra/Rdzen/Wydajnosc.cs` | 1 |
 
 ### `src/cutscene/` — 1544 linie, 16 plików
 
 | Plik TS | Linie | Plik C# | Etap |
 |---|---:|---|---|
-| `cutscene/art/cel.ts` | 156 | `Trzewia/Przerywniki/Art/Cel.cs` | 5 |
-| `cutscene/art/common.ts` | 136 | `Trzewia/Przerywniki/Art/Common.cs` | 5 |
-| `cutscene/art/gora.ts` | 169 | `Trzewia/Przerywniki/Art/Gora.cs` | 5 |
-| `cutscene/art/krew.ts` | 48 | `Trzewia/Przerywniki/Art/Krew.cs` | 5 |
-| `cutscene/art/kronika.ts` | 41 | `Trzewia/Przerywniki/Art/Kronika.cs` | 5 |
-| `cutscene/art/organy.ts` | 123 | `Trzewia/Przerywniki/Art/Organy.cs` | 5 |
-| `cutscene/art/pamiec.ts` | 100 | `Trzewia/Przerywniki/Art/Pamiec.cs` | 5 |
-| `cutscene/art/przyplyw.ts` | 36 | `Trzewia/Przerywniki/Art/Przyplyw.cs` | 5 |
-| `cutscene/art/rasy.ts` | 58 | `Trzewia/Przerywniki/Art/Rasy.cs` | 5 |
-| `cutscene/art/spis.ts` | 49 | `Trzewia/Przerywniki/Art/Spis.cs` | 5 |
-| `cutscene/art/szept.ts` | 50 | `Trzewia/Przerywniki/Art/Szept.cs` | 5 |
-| `cutscene/art/ziarno.ts` | 63 | `Trzewia/Przerywniki/Art/Ziarno.cs` | 5 |
-| `cutscene/art/znak.ts` | 56 | `Trzewia/Przerywniki/Art/Znak.cs` | 5 |
-| `cutscene/art/zyly.ts` | 55 | `Trzewia/Przerywniki/Art/Zyly.cs` | 5 |
-| `cutscene/cutscene.ts` | 222 | `Trzewia/Przerywniki/Cutscene.cs` | 5 |
-| `cutscene/scenes.ts` | 182 | `Trzewia/Przerywniki/Scenes.cs` | 5 |
+| `cutscene/art/cel.ts` | 156 | `Trzewia.Gra/Przerywniki/Art/Cel.cs` | 5 |
+| `cutscene/art/common.ts` | 136 | `Trzewia.Gra/Przerywniki/Art/Common.cs` | 5 |
+| `cutscene/art/gora.ts` | 169 | `Trzewia.Gra/Przerywniki/Art/Gora.cs` | 5 |
+| `cutscene/art/krew.ts` | 48 | `Trzewia.Gra/Przerywniki/Art/Krew.cs` | 5 |
+| `cutscene/art/kronika.ts` | 41 | `Trzewia.Gra/Przerywniki/Art/Kronika.cs` | 5 |
+| `cutscene/art/organy.ts` | 123 | `Trzewia.Gra/Przerywniki/Art/Organy.cs` | 5 |
+| `cutscene/art/pamiec.ts` | 100 | `Trzewia.Gra/Przerywniki/Art/Pamiec.cs` | 5 |
+| `cutscene/art/przyplyw.ts` | 36 | `Trzewia.Gra/Przerywniki/Art/Przyplyw.cs` | 5 |
+| `cutscene/art/rasy.ts` | 58 | `Trzewia.Gra/Przerywniki/Art/Rasy.cs` | 5 |
+| `cutscene/art/spis.ts` | 49 | `Trzewia.Gra/Przerywniki/Art/Spis.cs` | 5 |
+| `cutscene/art/szept.ts` | 50 | `Trzewia.Gra/Przerywniki/Art/Szept.cs` | 5 |
+| `cutscene/art/ziarno.ts` | 63 | `Trzewia.Gra/Przerywniki/Art/Ziarno.cs` | 5 |
+| `cutscene/art/znak.ts` | 56 | `Trzewia.Gra/Przerywniki/Art/Znak.cs` | 5 |
+| `cutscene/art/zyly.ts` | 55 | `Trzewia.Gra/Przerywniki/Art/Zyly.cs` | 5 |
+| `cutscene/cutscene.ts` | 222 | `Trzewia.Gra/Przerywniki/Cutscene.cs` | 5 |
+| `cutscene/scenes.ts` | 182 | `Trzewia.Gra/Przerywniki/Scenes.cs` | 5 |
 
 ### `src/grafiki/` — 73 linie, 1 plik
 
 | Plik TS | Linie | Plik C# | Etap |
 |---|---:|---|---|
-| `grafiki/grafiki.ts` | 73 | `Trzewia/Zasoby/Grafiki.cs` | 3 (wczytywanie z dane/grafika) |
+| `grafiki/grafiki.ts` | 73 | `Trzewia.Gra/Zasoby/Grafiki.cs` | 3 (wczytywanie z dane/grafika) |
 
 ### `src/nastawy/` — 3972 linie, 43 plików
 
@@ -532,102 +588,102 @@ który z nich korzysta.
 
 | Plik TS | Linie | Plik C# | Etap |
 |---|---:|---|---|
-| `render/alarm.ts` | 114 | `Trzewia/Rysunek/Alarm.cs` | 5 |
-| `render/aniol.ts` | 244 | `Trzewia/Rysunek/Aniol.cs` | 4 |
-| `render/bloom.ts` | 46 | `Trzewia/Rysunek/Bloom.cs` | 3 |
-| `render/budowa-schodow.ts` | 386 | `Trzewia/Rysunek/BudowaSchodow.cs` | 3 |
-| `render/budowa.ts` | 129 | `Trzewia/Rysunek/Budowa.cs` | 5 |
-| `render/camera.ts` | 27 | `Trzewia/Rysunek/Camera.cs` | 3 |
-| `render/demon-boss.ts` | 1307 | `Trzewia/Rysunek/DemonBoss.cs` | 4 |
-| `render/demon-czesci.ts` | 19 | `Trzewia/Rysunek/DemonCzesci.cs` | 4 |
-| `render/demon-kukla.ts` | 604 | `Trzewia/Rysunek/DemonKukla.cs` | 4 |
-| `render/demon-wzor.ts` | 214 | `Trzewia/Rysunek/DemonWzor.cs` | 3 |
-| `render/demon.ts` | 413 | `Trzewia/Rysunek/Demon.cs` | 3 |
-| `render/dev.ts` | 75 | `Trzewia/Rysunek/Dev.cs` | 5 (z okienkiem dewelopera) |
-| `render/dlon-demona.ts` | 698 | `Trzewia/Rysunek/DlonDemona.cs` | 4 |
-| `render/dlon.ts` | 392 | `Trzewia/Rysunek/Dlon.cs` | 4 |
-| `render/druzyna.ts` | 537 | `Trzewia/Rysunek/Druzyna.cs` | 5 |
-| `render/efekty.ts` | 404 | `Trzewia/Rysunek/Efekty.cs` | 3 |
-| `render/engrave.ts` | 1959 | `Trzewia/Rysunek/Engrave.cs` | 3 |
-| `render/figury.ts` | 1350 | `Trzewia/Rysunek/Figury.cs` | 4 |
-| `render/fonts.ts` | 37 | `Trzewia/Rysunek/Fonts.cs` | 1 |
-| `render/fresk.ts` | 428 | `Trzewia/Rysunek/Fresk.cs` | 5 |
-| `render/freski.ts` | 162 | `Trzewia/Rysunek/Freski.cs` | 5 |
-| `render/frontyspis.ts` | 457 | `Trzewia/Rysunek/Frontyspis.cs` | 5 |
-| `render/grzbiet-wzor.ts` | 33 | `Trzewia/Rysunek/GrzbietWzor.cs` | 3 |
-| `render/grzbiet.ts` | 38 | `Trzewia/Rysunek/Grzbiet.cs` | 3 |
-| `render/ikony-hud.ts` | 200 | `Trzewia/Rysunek/IkonyHud.cs` | 5 |
-| `render/ink.ts` | 108 | `Trzewia/Rysunek/Ink.cs` | 5 |
-| `render/katedra.ts` | 544 | `Trzewia/Rysunek/Katedra.cs` | 3 |
-| `render/konwoj.ts` | 562 | `Trzewia/Rysunek/Konwoj.cs` | 3 |
-| `render/kruszce.ts` | 325 | `Trzewia/Rysunek/Kruszce.cs` | 5 |
-| `render/ksiega.ts` | 515 | `Trzewia/Rysunek/Ksiega.cs` | 5 |
-| `render/kucie.ts` | 84 | `Trzewia/Rysunek/Kucie.cs` | 3 |
-| `render/legenda.ts` | 66 | `Trzewia/Rysunek/Legenda.cs` | 5 |
-| `render/licznik-wydajnosci.ts` | 75 | `Trzewia/Rysunek/LicznikWydajnosci.cs` | 1 |
-| `render/loch.ts` | 664 | `Trzewia/Rysunek/Loch.cs` | 3 |
-| `render/lud.ts` | 24 | `Trzewia/Rysunek/Lud.cs` | 4 |
-| `render/lud/helm.ts` | 225 | `Trzewia/Rysunek/Lud/Helm.cs` | 4 |
-| `render/lud/malarz.ts` | 354 | `Trzewia/Rysunek/Lud/Malarz.cs` | 4 |
-| `render/lud/matma.ts` | 97 | `Trzewia/Rysunek/Lud/Matma.cs` | 4 |
-| `render/lud/odmowa.ts` | 27 | `Trzewia/Rysunek/Lud/Odmowa.cs` | 4 |
-| `render/lud/oswietlenie.ts` | 67 | `Trzewia/Rysunek/Lud/Oswietlenie.cs` | 4 |
-| `render/lud/pamiec.ts` | 146 | `Trzewia/Rysunek/Lud/Pamiec.cs` | 4 |
-| `render/lud/pobozny.ts` | 965 | `Trzewia/Rysunek/Lud/Pobozny.cs` | 4 |
-| `render/lud/poza.ts` | 133 | `Trzewia/Rysunek/Lud/Poza.cs` | 4 |
-| `render/lud/robotnik.ts` | 666 | `Trzewia/Rysunek/Lud/Robotnik.cs` | 4 |
-| `render/lud/rozstep.ts` | 265 | `Trzewia/Rysunek/Lud/Rozstep.cs` | 4 |
-| `render/lud/ruch.ts` | 460 | `Trzewia/Rysunek/Lud/Ruch.cs` | 4 |
-| `render/lud/rycerz.ts` | 688 | `Trzewia/Rysunek/Lud/Rycerz.cs` | 4 |
-| `render/lud/stroj.ts` | 97 | `Trzewia/Rysunek/Lud/Stroj.cs` | 4 |
-| `render/lud/szkielet.ts` | 97 | `Trzewia/Rysunek/Lud/Szkielet.cs` | 4 |
-| `render/lud/tusz.ts` | 433 | `Trzewia/Rysunek/Lud/Tusz.cs` | 4 |
-| `render/lud/twarz.ts` | 273 | `Trzewia/Rysunek/Lud/Twarz.cs` | 4 |
-| `render/lud/uzbrojenie.ts` | 360 | `Trzewia/Rysunek/Lud/Uzbrojenie.cs` | 4 |
-| `render/lud/walka-rycerza.ts` | 539 | `Trzewia/Rysunek/Lud/WalkaRycerza.cs` | 4 |
-| `render/lud/wspolne.ts` | 394 | `Trzewia/Rysunek/Lud/Wspolne.cs` | 4 |
-| `render/minimapa.ts` | 102 | `Trzewia/Rysunek/Minimapa.cs` | 5 |
-| `render/mrok.ts` | 179 | `Trzewia/Rysunek/Mrok.cs` | 3 |
-| `render/nastroj.ts` | 106 | `Trzewia/Rysunek/Nastroj.cs` | 5 |
-| `render/okno-oltarza.ts` | 178 | `Trzewia/Rysunek/OknoOltarza.cs` | 5 |
-| `render/okno-postaci.ts` | 223 | `Trzewia/Rysunek/OknoPostaci.cs` | 5 |
-| `render/oltarz.ts` | 750 | `Trzewia/Rysunek/Oltarz.cs` | 3 |
-| `render/overlay.ts` | 48 | `Trzewia/Rysunek/Overlay.cs` | 3 |
-| `render/ozdobnik.ts` | 50 | `Trzewia/Rysunek/Ozdobnik.cs` | 5 |
-| `render/ozdoby.ts` | 322 | `Trzewia/Rysunek/Ozdoby.cs` | 5 |
-| `render/palette.ts` | 16 | `Trzewia/Rysunek/Palette.cs` | 1 |
-| `render/panele.ts` | 108 | `Trzewia/Rysunek/Panele.cs` | 5 (sprawdzić: może tylko telefon) |
-| `render/pielgrzymka.ts` | 159 | `Trzewia/Rysunek/Pielgrzymka.cs` | 3 |
-| `render/plate.ts` | 584 | `Trzewia/Rysunek/Plate.cs` | 5 |
-| `render/pomieszczenia.ts` | 895 | `Trzewia/Rysunek/Pomieszczenia.cs` | 3 |
-| `render/pomnik.ts` | 565 | `Trzewia/Rysunek/Pomnik.cs` | 3 |
-| `render/postacie.ts` | 130 | `Trzewia/Rysunek/Postacie.cs` | 4 |
-| `render/promien.ts` | 198 | `Trzewia/Rysunek/Promien.cs` | 3 |
-| `render/przyciski.ts` | 273 | `Trzewia/Rysunek/Przyciski.cs` | 5 |
-| `render/rdzen.ts` | 452 | `Trzewia/Rysunek/Rdzen.cs` | 3 |
-| `render/relikwiarz.ts` | 565 | `Trzewia/Rysunek/Relikwiarz.cs` | 5 |
-| `render/rozkazy.ts` | 182 | `Trzewia/Rysunek/Rozkazy.cs` | 5 |
-| `render/ruiny.ts` | 446 | `Trzewia/Rysunek/Ruiny.cs` | 3 |
-| `render/rycina-watek.ts` | 97 | `Trzewia/Rysunek/RycinaWatek.cs` | 3 — zastąpione shaderem |
-| `render/rycina-wspolne.ts` | 96 | `Trzewia/Rysunek/RycinaWspolne.cs` | 3 — zastąpione shaderem |
-| `render/rycina-zrodla.ts` | 31 | `Trzewia/Rysunek/RycinaZrodla.cs` | 3 |
-| `render/rycina.ts` | 285 | `Trzewia/Rysunek/Rycina.cs` | 3 — zastąpione shaderem |
-| `render/schody.ts` | 694 | `Trzewia/Rysunek/Schody.cs` | 3 |
-| `render/shafts.ts` | 88 | `Trzewia/Rysunek/Shafts.cs` | 3 |
-| `render/stany.ts` | 61 | `Trzewia/Rysunek/Stany.cs` | 4 |
-| `render/straz-klatek.ts` | 28 | `Trzewia/Rysunek/StrazKlatek.cs` | 1 |
-| `render/straznicy.ts` | 201 | `Trzewia/Rysunek/Straznicy.cs` | 4 |
-| `render/tablica.ts` | 300 | `Trzewia/Rysunek/Tablica.cs` | 5 |
-| `render/tajemnica.ts` | 389 | `Trzewia/Rysunek/Tajemnica.cs` | 3 |
-| `render/tempo.ts` | 54 | `Trzewia/Rysunek/Tempo.cs` | 5 (sprawdzić: może tylko telefon) |
-| `render/trupy.ts` | 83 | `Trzewia/Rysunek/Trupy.cs` | 4 |
-| `render/wiadro.ts` | 380 | `Trzewia/Rysunek/Wiadro.cs` | 3 |
-| `render/wydarzenie.ts` | 160 | `Trzewia/Rysunek/Wydarzenie.cs` | 5 |
-| `render/zapiski.ts` | 120 | `Trzewia/Rysunek/Zapiski.cs` | 5 |
-| `render/zarys.ts` | 53 | `Trzewia/Rysunek/Zarys.cs` | 3 |
-| `render/zegar-gry.ts` | 18 | `Trzewia/Rysunek/ZegarGry.cs` | 3 |
-| `render/znaczniki.ts` | 78 | `Trzewia/Rysunek/Znaczniki.cs` | 5 |
-| `render/zyly.ts` | 957 | `Trzewia/Rysunek/Zyly.cs` | 3 |
+| `render/alarm.ts` | 114 | `Trzewia.Gra/Rysunek/Alarm.cs` | 5 |
+| `render/aniol.ts` | 244 | `Trzewia.Gra/Rysunek/Aniol.cs` | 4 |
+| `render/bloom.ts` | 46 | `Trzewia.Gra/Rysunek/Bloom.cs` | 3 |
+| `render/budowa-schodow.ts` | 386 | `Trzewia.Gra/Rysunek/BudowaSchodow.cs` | 3 |
+| `render/budowa.ts` | 129 | `Trzewia.Gra/Rysunek/Budowa.cs` | 5 |
+| `render/camera.ts` | 27 | `Trzewia.Gra/Rysunek/Camera.cs` | 3 |
+| `render/demon-boss.ts` | 1307 | `Trzewia.Gra/Rysunek/DemonBoss.cs` | 4 |
+| `render/demon-czesci.ts` | 19 | `Trzewia.Gra/Rysunek/DemonCzesci.cs` | 4 |
+| `render/demon-kukla.ts` | 604 | `Trzewia.Gra/Rysunek/DemonKukla.cs` | 4 |
+| `render/demon-wzor.ts` | 214 | `Trzewia.Gra/Rysunek/DemonWzor.cs` | 3 |
+| `render/demon.ts` | 413 | `Trzewia.Gra/Rysunek/Demon.cs` | 3 |
+| `render/dev.ts` | 75 | `Trzewia.Gra/Rysunek/Dev.cs` | 5 (z okienkiem dewelopera) |
+| `render/dlon-demona.ts` | 698 | `Trzewia.Gra/Rysunek/DlonDemona.cs` | 4 |
+| `render/dlon.ts` | 392 | `Trzewia.Gra/Rysunek/Dlon.cs` | 4 |
+| `render/druzyna.ts` | 537 | `Trzewia.Gra/Rysunek/Druzyna.cs` | 5 |
+| `render/efekty.ts` | 404 | `Trzewia.Gra/Rysunek/Efekty.cs` | 3 |
+| `render/engrave.ts` | 1959 | `Trzewia.Gra/Rysunek/Engrave.cs` | 3 |
+| `render/figury.ts` | 1350 | `Trzewia.Gra/Rysunek/Figury.cs` | 4 |
+| `render/fonts.ts` | 37 | `Trzewia.Gra/Rysunek/Fonts.cs` | 1 |
+| `render/fresk.ts` | 428 | `Trzewia.Gra/Rysunek/Fresk.cs` | 5 |
+| `render/freski.ts` | 162 | `Trzewia.Gra/Rysunek/Freski.cs` | 5 |
+| `render/frontyspis.ts` | 457 | `Trzewia.Gra/Rysunek/Frontyspis.cs` | 5 |
+| `render/grzbiet-wzor.ts` | 33 | `Trzewia.Gra/Rysunek/GrzbietWzor.cs` | 3 |
+| `render/grzbiet.ts` | 38 | `Trzewia.Gra/Rysunek/Grzbiet.cs` | 3 |
+| `render/ikony-hud.ts` | 200 | `Trzewia.Gra/Rysunek/IkonyHud.cs` | 5 |
+| `render/ink.ts` | 108 | `Trzewia.Gra/Rysunek/Ink.cs` | 5 |
+| `render/katedra.ts` | 544 | `Trzewia.Gra/Rysunek/Katedra.cs` | 3 |
+| `render/konwoj.ts` | 562 | `Trzewia.Gra/Rysunek/Konwoj.cs` | 3 |
+| `render/kruszce.ts` | 325 | `Trzewia.Gra/Rysunek/Kruszce.cs` | 5 |
+| `render/ksiega.ts` | 515 | `Trzewia.Gra/Rysunek/Ksiega.cs` | 5 |
+| `render/kucie.ts` | 84 | `Trzewia.Gra/Rysunek/Kucie.cs` | 3 |
+| `render/legenda.ts` | 66 | `Trzewia.Gra/Rysunek/Legenda.cs` | 5 |
+| `render/licznik-wydajnosci.ts` | 75 | `Trzewia.Gra/Rysunek/LicznikWydajnosci.cs` | 1 |
+| `render/loch.ts` | 664 | `Trzewia.Gra/Rysunek/Loch.cs` | 3 |
+| `render/lud.ts` | 24 | `Trzewia.Gra/Rysunek/Lud.cs` | 4 |
+| `render/lud/helm.ts` | 225 | `Trzewia.Gra/Rysunek/Lud/Helm.cs` | 4 |
+| `render/lud/malarz.ts` | 354 | `Trzewia.Gra/Rysunek/Lud/Malarz.cs` | 4 |
+| `render/lud/matma.ts` | 97 | `Trzewia.Gra/Rysunek/Lud/Matma.cs` | 4 |
+| `render/lud/odmowa.ts` | 27 | `Trzewia.Gra/Rysunek/Lud/Odmowa.cs` | 4 |
+| `render/lud/oswietlenie.ts` | 67 | `Trzewia.Gra/Rysunek/Lud/Oswietlenie.cs` | 4 |
+| `render/lud/pamiec.ts` | 146 | `Trzewia.Gra/Rysunek/Lud/Pamiec.cs` | 4 |
+| `render/lud/pobozny.ts` | 965 | `Trzewia.Gra/Rysunek/Lud/Pobozny.cs` | 4 |
+| `render/lud/poza.ts` | 133 | `Trzewia.Gra/Rysunek/Lud/Poza.cs` | 4 |
+| `render/lud/robotnik.ts` | 666 | `Trzewia.Gra/Rysunek/Lud/Robotnik.cs` | 4 |
+| `render/lud/rozstep.ts` | 265 | `Trzewia.Gra/Rysunek/Lud/Rozstep.cs` | 4 |
+| `render/lud/ruch.ts` | 460 | `Trzewia.Gra/Rysunek/Lud/Ruch.cs` | 4 |
+| `render/lud/rycerz.ts` | 688 | `Trzewia.Gra/Rysunek/Lud/Rycerz.cs` | 4 |
+| `render/lud/stroj.ts` | 97 | `Trzewia.Gra/Rysunek/Lud/Stroj.cs` | 4 |
+| `render/lud/szkielet.ts` | 97 | `Trzewia.Gra/Rysunek/Lud/Szkielet.cs` | 4 |
+| `render/lud/tusz.ts` | 433 | `Trzewia.Gra/Rysunek/Lud/Tusz.cs` | 4 |
+| `render/lud/twarz.ts` | 273 | `Trzewia.Gra/Rysunek/Lud/Twarz.cs` | 4 |
+| `render/lud/uzbrojenie.ts` | 360 | `Trzewia.Gra/Rysunek/Lud/Uzbrojenie.cs` | 4 |
+| `render/lud/walka-rycerza.ts` | 539 | `Trzewia.Gra/Rysunek/Lud/WalkaRycerza.cs` | 4 |
+| `render/lud/wspolne.ts` | 394 | `Trzewia.Gra/Rysunek/Lud/Wspolne.cs` | 4 |
+| `render/minimapa.ts` | 102 | `Trzewia.Gra/Rysunek/Minimapa.cs` | 5 |
+| `render/mrok.ts` | 179 | `Trzewia.Gra/Rysunek/Mrok.cs` | 3 |
+| `render/nastroj.ts` | 106 | `Trzewia.Gra/Rysunek/Nastroj.cs` | 5 |
+| `render/okno-oltarza.ts` | 178 | `Trzewia.Gra/Rysunek/OknoOltarza.cs` | 5 |
+| `render/okno-postaci.ts` | 223 | `Trzewia.Gra/Rysunek/OknoPostaci.cs` | 5 |
+| `render/oltarz.ts` | 750 | `Trzewia.Gra/Rysunek/Oltarz.cs` | 3 |
+| `render/overlay.ts` | 48 | `Trzewia.Gra/Rysunek/Overlay.cs` | 3 |
+| `render/ozdobnik.ts` | 50 | `Trzewia.Gra/Rysunek/Ozdobnik.cs` | 5 |
+| `render/ozdoby.ts` | 322 | `Trzewia.Gra/Rysunek/Ozdoby.cs` | 5 |
+| `render/palette.ts` | 16 | `Trzewia.Gra/Rysunek/Palette.cs` | 1 |
+| `render/panele.ts` | 108 | `Trzewia.Gra/Rysunek/Panele.cs` | 5 (sprawdzić: może tylko telefon) |
+| `render/pielgrzymka.ts` | 159 | `Trzewia.Gra/Rysunek/Pielgrzymka.cs` | 3 |
+| `render/plate.ts` | 584 | `Trzewia.Gra/Rysunek/Plate.cs` | 5 |
+| `render/pomieszczenia.ts` | 895 | `Trzewia.Gra/Rysunek/Pomieszczenia.cs` | 3 |
+| `render/pomnik.ts` | 565 | `Trzewia.Gra/Rysunek/Pomnik.cs` | 3 |
+| `render/postacie.ts` | 130 | `Trzewia.Gra/Rysunek/Postacie.cs` | 4 |
+| `render/promien.ts` | 198 | `Trzewia.Gra/Rysunek/Promien.cs` | 3 |
+| `render/przyciski.ts` | 273 | `Trzewia.Gra/Rysunek/Przyciski.cs` | 5 |
+| `render/rdzen.ts` | 452 | `Trzewia.Gra/Rysunek/Rdzen.cs` | 3 |
+| `render/relikwiarz.ts` | 565 | `Trzewia.Gra/Rysunek/Relikwiarz.cs` | 5 |
+| `render/rozkazy.ts` | 182 | `Trzewia.Gra/Rysunek/Rozkazy.cs` | 5 |
+| `render/ruiny.ts` | 446 | `Trzewia.Gra/Rysunek/Ruiny.cs` | 3 |
+| `render/rycina-watek.ts` | 97 | `Trzewia.Gra/Rysunek/RycinaWatek.cs` | 3 — zastąpione shaderem |
+| `render/rycina-wspolne.ts` | 96 | `Trzewia.Gra/Rysunek/RycinaWspolne.cs` | 3 — zastąpione shaderem |
+| `render/rycina-zrodla.ts` | 31 | `Trzewia.Gra/Rysunek/RycinaZrodla.cs` | 3 |
+| `render/rycina.ts` | 285 | `Trzewia.Gra/Rysunek/Rycina.cs` | 3 — zastąpione shaderem |
+| `render/schody.ts` | 694 | `Trzewia.Gra/Rysunek/Schody.cs` | 3 |
+| `render/shafts.ts` | 88 | `Trzewia.Gra/Rysunek/Shafts.cs` | 3 |
+| `render/stany.ts` | 61 | `Trzewia.Gra/Rysunek/Stany.cs` | 4 |
+| `render/straz-klatek.ts` | 28 | `Trzewia.Gra/Rysunek/StrazKlatek.cs` | 1 |
+| `render/straznicy.ts` | 201 | `Trzewia.Gra/Rysunek/Straznicy.cs` | 4 |
+| `render/tablica.ts` | 300 | `Trzewia.Gra/Rysunek/Tablica.cs` | 5 |
+| `render/tajemnica.ts` | 389 | `Trzewia.Gra/Rysunek/Tajemnica.cs` | 3 |
+| `render/tempo.ts` | 54 | `Trzewia.Gra/Rysunek/Tempo.cs` | 5 (sprawdzić: może tylko telefon) |
+| `render/trupy.ts` | 83 | `Trzewia.Gra/Rysunek/Trupy.cs` | 4 |
+| `render/wiadro.ts` | 380 | `Trzewia.Gra/Rysunek/Wiadro.cs` | 3 |
+| `render/wydarzenie.ts` | 160 | `Trzewia.Gra/Rysunek/Wydarzenie.cs` | 5 |
+| `render/zapiski.ts` | 120 | `Trzewia.Gra/Rysunek/Zapiski.cs` | 5 |
+| `render/zarys.ts` | 53 | `Trzewia.Gra/Rysunek/Zarys.cs` | 3 |
+| `render/zegar-gry.ts` | 18 | `Trzewia.Gra/Rysunek/ZegarGry.cs` | 3 |
+| `render/znaczniki.ts` | 78 | `Trzewia.Gra/Rysunek/Znaczniki.cs` | 5 |
+| `render/zyly.ts` | 957 | `Trzewia.Gra/Rysunek/Zyly.cs` | 3 |
 
 ### `src/sim/` — 12747 linii, 34 plików
 
@@ -672,4 +728,4 @@ który z nich korzysta.
 
 | Plik TS | Linie | Plik C# | Etap |
 |---|---:|---|---|
-| `ui/ui.ts` | 611 | `Trzewia/Interfejs/Ui.cs` | 5 |
+| `ui/ui.ts` | 611 | `Trzewia.Gra/Interfejs/Ui.cs` | 5 |

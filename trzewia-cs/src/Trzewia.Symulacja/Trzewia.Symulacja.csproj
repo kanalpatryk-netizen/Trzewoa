@@ -4,7 +4,10 @@
     testy chodzą bez okna i karty, a w Unity/Godocie ta sama biblioteka liczy grę bit w bit tak samo.
   -->
   <PropertyGroup>
-    <Przenosny>true</Przenosny>
+    <!-- warstwa przenośna: .NET Standard 2.1 i C# 9 (Unity, Godot) — PLAN.md, punkt 3.0 -->
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <ImplicitUsings>disable</ImplicitUsings>
     <RootNamespace>Trzewia</RootNamespace>
     <AssemblyName>Trzewia.Symulacja</AssemblyName>
   </PropertyGroup>

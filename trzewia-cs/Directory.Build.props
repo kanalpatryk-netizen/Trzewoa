@@ -14,19 +14,13 @@
   </PropertyGroup>
 
   <!--
-    Warstwy przenośne (decyzja użytkownika 10.11: „żeby potem wszystko łatwo można było przenieść pod jakiś silnik,
-    np. Unity albo Godot”): .NET Standard 2.1 i C# 9 — to przyjmuje Unity (także z IL2CPP) i Godot 4 bez zmian,
-    jako gotowe DLL albo jako pliki źródłowe. Żadnych typów SDL ani okna; Skia tylko w Trzewia.Skia.
-    Zasady pisania tych warstw: trzewia-cs/PLAN.md, punkt 3.0.
+    Warstwy przenośne (Trzewia.Symulacja, Trzewia.Gra, Trzewia.Skia) same ustawiają netstandard2.1 i C# 9 (decyzja
+    użytkownika 10.11: „żeby potem wszystko łatwo można było przenieść pod jakiś silnik, np. Unity albo Godot”);
+    gospodarz i testy — .NET 10 i najnowszy C#. Zasady pisania warstw przenośnych: PLAN.md, punkt 3.0.
   -->
-  <PropertyGroup Condition="'$(Przenosny)' == 'true'">
-    <TargetFramework>netstandard2.1</TargetFramework>
-    <LangVersion>9.0</LangVersion>
-    <ImplicitUsings>disable</ImplicitUsings>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Przenosny)' != 'true'">
-    <TargetFramework>net10.0</TargetFramework>
-    <LangVersion>latest</LangVersion>
-    <ImplicitUsings>enable</ImplicitUsings>
+  <PropertyGroup>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net10.0</TargetFramework>
+    <LangVersion Condition="'$(LangVersion)' == ''">latest</LangVersion>
+    <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
   </PropertyGroup>
 </Project>

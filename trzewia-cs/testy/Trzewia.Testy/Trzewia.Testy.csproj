@@ -9,6 +9,9 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <!-- Skia na procesorze w testach (Linux) -->
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.155.0" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.4.0" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
