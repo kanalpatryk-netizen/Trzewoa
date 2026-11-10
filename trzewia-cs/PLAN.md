@@ -1,6 +1,7 @@
 # Trzewia w C# — plan przeniesienia (etap 0)
 
 Stan na 9.11.2026. Plan zaakceptowany przez użytkownika 9.11 — jego odpowiedzi są w punkcie 8.
+Aktualizacja 10.11: środowisko ma już sieć do NuGet i npm, a .NET 10 SDK jest z archiwum Ubuntu (punkt 7) — etap 1 ruszył.
 Zadanie: przepisać grę z `alpha-1/` (TypeScript, Canvas 2D, Electron) na C# (.NET 10 LTS) z SkiaSharp,
 wiernie, jako program na Windows w folderze jak gry na Steamie.
 
@@ -8,7 +9,8 @@ wiernie, jako program na Windows w folderze jak gry na Steamie.
 
 - **Wzorzec:** `alpha-1/` z gałęzi `claude/zealous-brown-e2160u` (commit `5a9b7a7`, 8.11 — licznik F3, rycina
   w osobnym wątku, Ustawienia → Wydajność). Ta gałąź nie jest jeszcze na `main`. Symulacja jest tam taka sama jak
-  na `main` (commit `5a9b7a7` jej nie rusza). Moja gałąź `claude/trzewia-cs` wyrasta z niej.
+  na `main` (commit `5a9b7a7` jej nie rusza). Gałąź `claude/trzewia-cs` wyrasta z niej; od 10.11 pracuję na
+  gałęzi od środowiska, `claude/friendly-mayer-7sx7tn`, przewiniętej na `claude/trzewia-cs` (ten sam wzorzec i plan).
 - **Biblioteki:** SkiaSharp (rysunek na karcie), **SDL3** (okno, mysz, klawiatura, wyjście dźwięku, kursor) zamiast
   Silk.NET, **ANGLE** (OpenGL ES na Direct3D 11 — ta sama droga do karty, z której dziś korzysta Electron),
   NLayer (MP3), HarfBuzzSharp (składanie tekstu). Wszystko na licencjach MIT/BSD/zlib, bez instalacji.
@@ -20,8 +22,7 @@ wiernie, jako program na Windows w folderze jak gry na Steamie.
   muszą dać te same skróty w TS i w C#. Do tego trzeba odtworzyć kilka zachowań silnika JavaScript (sortowanie,
   `Math.hypot`, `Math.sin`, `| 0`) — opisane w punkcie 3.5.
 - **Czas:** ok. 22–33 długich sesji pracy (szczegóły w punkcie 4). Pierwszą grywalną wersję widać po etapie 5.
-- **Blokada teraz:** w tym środowisku nie ma sieci do NuGet, .NET ani npm. Bez niej nie zacznę etapu 1
-  (punkt 7).
+- **Środowisko (10.11):** NuGet i npm działają, .NET 10 SDK z archiwum Ubuntu — blokada z 9.11 zdjęta (punkt 7).
 
 ---
 
@@ -31,7 +32,7 @@ wiernie, jako program na Windows w folderze jak gry na Steamie.
 |---|---|
 | Wzorzec | `alpha-1/` w commicie `5a9b7a7` (gałąź `claude/zealous-brown-e2160u`, 8.11) |
 | Dlaczego nie `main` | zadanie każe przenieść licznik F3 jak w `src/render/licznik-wydajnosci.ts` i kategorię „Wydajność” — są tylko na tej gałęzi |
-| Moja gałąź | `claude/trzewia-cs` (od `5a9b7a7`); kod C# tylko w `trzewia-cs/` |
+| Moja gałąź | `claude/trzewia-cs` (od `5a9b7a7`), od 10.11 `claude/friendly-mayer-7sx7tn` (ta sama historia); kod C# tylko w `trzewia-cs/` |
 | `alpha-1/` | bez zmian; jedyny wyjątek — skrypt testów złotych w `alpha-1/scripts/` (zgłaszany w commicie) |
 | Zmiany w `alpha-1/` w trakcie | nie będzie ich (użytkownik 9.11); gdyby jednak były — doganiam różnicę (`git diff 5a9b7a7..`) |
 
@@ -352,19 +353,20 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
 
 ---
 
-## 7. Środowisko — czego brakuje
+## 7. Środowisko
 
-Sprawdzone 9.11 w tej sesji (Linux, 2 rdzenie, 7 GB, bez karty graficznej; jest Mesa/llvmpipe, Xvfb, Node 22,
-ffmpeg, Python):
+**10.11 (ta sesja):** Linux, 4 rdzenie, 15 GB, bez karty graficznej (Mesa/llvmpipe przez GLX), Xvfb, Node 22, ffmpeg,
+Python, Chromium z Playwrightem (zainstalowany w obrazie).
 
-- **Brak sieci do pakietów:** `api.nuget.org`, `builds.dotnet.microsoft.com` i `dot.net` — połączenie odrzucone;
-  `registry.npmjs.org` — brak połączenia. Bez tego nie zainstaluję .NET 10 SDK ani bibliotek (etap 1) i nie zbuduję
-  testów TS (esbuild, etap 2) ani zrzutów (Playwright, etapy 3–8).
-- **Co trzeba zrobić:** w claude.ai w przeglądarce, Ustawienia → Capabilities: zezwolić na menedżery pakietów
-  i domeny `api.nuget.org`, `builds.dotnet.microsoft.com`, `dot.net`, `dotnet.microsoft.com`, `registry.npmjs.org`
-  (oraz `playwright.azureedge.net` / `cdn.playwright.dev` na przeglądarkę do zrzutów). Nowe ustawienia łapie nowa
-  rozmowa.
-- **Kl/s** mierzę u użytkownika: wysyłam zip, proszę o zrzut F3.
+| Co | Stan |
+|---|---|
+| NuGet (`api.nuget.org`) | działa — SkiaSharp, SDL3, ANGLE, pakiety .NET dla `win-x64` |
+| npm (`registry.npmjs.org`) | działa — esbuild do testów złotych i zrzutów TS |
+| .NET 10 SDK | **z archiwum Ubuntu** (`apt-get install dotnet-sdk-10.0`, wersja 10.0.114) — strona Microsoftu (`builds.dotnet.microsoft.com`, `dotnetcli.azureedge.net`) dalej zablokowana, ale nie jest potrzebna: pakiety uruchomieniowe dla Windows (`Microsoft.NETCore.App.Runtime.win-x64`, `…Host.win-x64`, `…Crossgen2`) przychodzą z NuGet |
+| `cdn.playwright.dev` | zablokowane — niepotrzebne, Chromium jest w obrazie (`/opt/pw-browsers`) |
+| karta graficzna | brak — tu mierzę czas procesora na klatkę (llvmpipe); kl/s mierzę u użytkownika: wysyłam zip, proszę o zrzut F3 |
+
+**9.11 (poprzednia sesja):** brak sieci do NuGet, .NET i npm — dlatego etap 1 czekał.
 
 ---
 
