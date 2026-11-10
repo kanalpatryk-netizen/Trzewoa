@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Warstwa 2 (przenośna): wszystko, co gracz widzi i słyszy — rysunek (jak src/render), ekrany i wejście (src/app),
+    interfejs, atlas, przerywniki, synteza dźwięku, ustawienia, klawisze, licznik F3. Rysuje wyłącznie przez IPlotno
+    (polecenia Canvas 2D), pliki czyta i zapisuje przez Gospodarz — nie zna Skii, SDL ani systemu plików gry.
+  -->
+  <PropertyGroup>
+    <Przenosny>true</Przenosny>
+    <RootNamespace>Trzewia</RootNamespace>
+    <AssemblyName>Trzewia.Gra</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Trzewia.Symulacja\Trzewia.Symulacja.csproj" />
+  </ItemGroup>
+</Project>

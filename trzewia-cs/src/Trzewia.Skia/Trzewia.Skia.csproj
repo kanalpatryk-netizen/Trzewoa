@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Warstwa 3 (przenośna, wymienna): IPlotno na SkiaSharp — rysunek na karcie graficznej (albo procesorem), kroje
+    z HarfBuzzem, filtry, shader ryciny (SkSL). SkiaSharp działa też w Unity i Godocie, więc tę warstwę można tam wziąć
+    całą (Skia rysuje do tekstury silnika) albo zastąpić własnym IPlotno na rysowaniu 2D silnika.
+  -->
+  <PropertyGroup>
+    <Przenosny>true</Przenosny>
+    <RootNamespace>Trzewia</RootNamespace>
+    <AssemblyName>Trzewia.Skia</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp" Version="4.155.0" />
+    <PackageReference Include="SkiaSharp.HarfBuzz" Version="4.155.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Trzewia.Gra\Trzewia.Gra.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Warstwa 1 (przenośna): symulacja, nastawy, ryty, bot, RNG, zgodność z JavaScriptem. Bez grafiki, dźwięku i bibliotek —
+    testy chodzą bez okna i karty, a w Unity/Godocie ta sama biblioteka liczy grę bit w bit tak samo.
+  -->
+  <PropertyGroup>
+    <Przenosny>true</Przenosny>
+    <RootNamespace>Trzewia</RootNamespace>
+    <AssemblyName>Trzewia.Symulacja</AssemblyName>
+  </PropertyGroup>
+</Project>

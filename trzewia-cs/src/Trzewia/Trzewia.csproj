@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Warstwa 4 (gospodarz na komputer): Trzewia.exe — okno SDL3, karta graficzna (ANGLE / OpenGL), wyjście dźwięku,
+    pliki w dane/ i w Dokumenty\My Games\Trzewia. Przy przenosinach do Unity albo Godota wymienia się tylko tę warstwę.
+  -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>Trzewia</AssemblyName>
+    <RootNamespace>Trzewia</RootNamespace>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>ikona.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <AssemblyTitle>Trzewia</AssemblyTitle>
+    <Description>Trzewia</Description>
+    <RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>
+    <!-- Sprzątanie pamięci w tle, bez zatrzymywania klatki (licznik F3 pokazuje, ile ich było). -->
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+    <!-- Przy publikacji kod jest wstępnie skompilowany (bez rozgrzewania przy pierwszych klatkach). -->
+    <PublishReadyToRun>true</PublishReadyToRun>
+  </PropertyGroup>
+
+  <!-- Jeden plik na testy (buduj.sh/ps1 z opcją jeden-plik): biblioteki natywne rozpakowują się same, dane/ jest w środku. -->
+  <PropertyGroup Condition="'$(JedenPlik)' == 'true'">
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <DefineConstants>$(DefineConstants);JEDEN_PLIK</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="4.155.0" />
+    <PackageReference Include="HarfBuzzSharp.NativeAssets.Linux" Version="14.4.0" />
+    <PackageReference Include="ppy.SDL3-CS" Version="2026.1002.1" />
+    <!-- ANGLE: OpenGL ES na Direct3D 11 — ta sama droga do karty co w Chrome/Electronie (tylko Windows). -->
+    <PackageReference Include="Avalonia.Angle.Windows.Natives" Version="2.1.27548.20260419" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Trzewia.Skia\Trzewia.Skia.csproj" />
+  </ItemGroup>
+
+  <!-- Dane gry (grafika, dźwięki, filmy, kroje, nastawy) obok Trzewia.exe w folderze dane/. -->
+  <ItemGroup Condition="'$(JedenPlik)' != 'true'">
+    <None Include="..\..\dane\**\*" LinkBase="dane" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(JedenPlik)' == 'true'">
+    <EmbeddedResource Include="..\..\dane\**\*" LogicalName="dane/%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>
