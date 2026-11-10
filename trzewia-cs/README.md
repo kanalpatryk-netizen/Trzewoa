@@ -27,7 +27,7 @@ Potrzebny .NET 10 SDK.
 ```bash
 ./buduj.sh                      # publikacja/win-x64/Trzewia/ i publikacja/Trzewia-win-x64.zip
 ./buduj.sh win-x64 jeden-plik   # jeden Trzewia.exe na testy
-./buduj.sh linux-x64            # wersja na Linuksa (testy pod Xvfb)
+./buduj.sh linux-x64            # wersja na Linuksa: publikacja/Trzewia-linux-x64.tar.gz
 dotnet test                     # testy
 ```
 
@@ -44,7 +44,10 @@ Trzewia/
 ```
 
 Zapis, ustawienia, klawisze i dziennik (`dziennik.txt` — karta graficzna i błędy) trafiają do
-`Dokumenty\My Games\Trzewia\`.
+`Dokumenty\My Games\Trzewia\` (Windows) albo `~/.local/share/Trzewia/` (Linux).
+
+Na Linuksie (np. Mint): `tar -xzf Trzewia-linux-x64.tar.gz`, potem `./Trzewia/Trzewia` (albo dwuklik na pliku
+`Trzewia` w folderze). Grafika idzie przez OpenGL — sterownik karty jak do innych gier.
 
 ## Przełączniki (dla twórców i testów)
 

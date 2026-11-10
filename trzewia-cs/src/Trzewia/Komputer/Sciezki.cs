@@ -6,7 +6,7 @@ namespace Trzewia.Komputer;
 /// <summary>
 /// Gdzie Trzewia.exe trzyma rzeczy. Dane gry (grafika, dźwięki, filmy, kroje, nastawy) leżą w folderze `dane/` obok
 /// programu — w wersji jednoplikowej są w środku programu. Rzeczy gracza (zapis, ustawienia, klawisze, osiągnięcia,
-/// atlas, dziennik) idą do `Dokumenty\My Games\Trzewia\`, jak w grach ze Steama — nie do folderu gry, który bywa
+/// atlas, dziennik) idą do `Dokumenty\My Games\Trzewia\` (na Linuksie `~/.local/share/Trzewia`), jak w grach ze Steama — nie do folderu gry, który bywa
 /// tylko do odczytu (Program Files) i który podmienia się przy aktualizacji.
 /// </summary>
 public sealed class Sciezki : IPlikiGracza, IDaneGry
@@ -29,6 +29,14 @@ public sealed class Sciezki : IPlikiGracza, IDaneGry
     {
         var wlasny = Environment.GetEnvironmentVariable("TRZEWIA_GRACZ");
         if (!string.IsNullOrEmpty(wlasny)) return wlasny;
+        // Linux (10.11, użytkownik gra na Linux Mint): .NET podaje jako „Dokumenty” katalog domowy, więc pliki gracza
+        // idą tam, gdzie trzymają je gry na Linuksie: $XDG_DATA_HOME/Trzewia, zwykle ~/.local/share/Trzewia
+        if (OperatingSystem.IsLinux())
+        {
+            var xdg = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
+            if (string.IsNullOrEmpty(xdg)) xdg = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share");
+            return Path.Combine(xdg, "Trzewia");
+        }
         var dokumenty = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
         if (string.IsNullOrEmpty(dokumenty)) dokumenty = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         return Path.Combine(dokumenty, "My Games", "Trzewia");
