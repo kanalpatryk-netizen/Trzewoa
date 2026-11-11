@@ -1,0 +1,17 @@
+# pliki, które Unity tworzy samo po otwarciu projektu
+/Library/
+/Temp/
+/Obj/
+/Logs/
+/UserSettings/
+/Build/
+/Builds/
+/Packages/
+/ProjectSettings/*
+!/ProjectSettings/ProjectVersion.txt
+/Assets/*.meta
+/Assets/Scenes/
+*.csproj
+*.sln
+.vs/
+.idea/
