@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Próba LochAscii.cs bez Unity. Wersja języka 7.3 — taka, jaką rozumie Unity od 2018.3. -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>7.3</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <DefineConstants>$(DefineConstants);$(Wejscie)</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../LochAscii/Assets/LochAscii.cs" />
+    <Compile Include="Namiastka.cs" />
+    <Compile Include="Proba.cs" />
+  </ItemGroup>
+
+</Project>
