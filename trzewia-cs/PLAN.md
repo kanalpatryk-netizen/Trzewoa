@@ -24,7 +24,7 @@ wiernie, jako program na Windows w folderze jak gry na Steamie.
   linijka w linijkę. Chrome też rysuje Canvas 2D Skią, więc obraz będzie bardzo bliski. Rycina świata, najdroższa
   część klatki, idzie do shadera (SkSL) w pełnej rozdzielczości.
 - **Symulacja:** przeniesiona 1:1 i deterministyczna. Testy złote (ziarna 1–20, skrót stanu co 1000 tików do 60 000)
-  muszą dać te same skróty w TS i w C#. Do tego trzeba odtworzyć kilka zachowań silnika JavaScript (sortowanie,
+  dają te same skróty w TS i w C# (etap 2 zakończony 12.11: 1 260/1 260, balans 96/96 partii jak w TS). Do tego trzeba odtworzyć kilka zachowań silnika JavaScript (sortowanie,
   `Math.hypot`, `Math.sin`, `| 0`) — opisane w punkcie 3.5.
 - **Czas:** ok. 22–33 długich sesji pracy (szczegóły w punkcie 4). Pierwszą grywalną wersję widać po etapie 5.
 - **Środowisko (10.11):** NuGet i npm działają, .NET 10 SDK z archiwum Ubuntu — blokada z 9.11 zdjęta (punkt 7).
@@ -38,7 +38,7 @@ wiernie, jako program na Windows w folderze jak gry na Steamie.
 | Wzorzec | `alpha-1/` w commicie `5a9b7a7` (gałąź `claude/zealous-brown-e2160u`, 8.11) |
 | Dlaczego nie `main` | zadanie każe przenieść licznik F3 jak w `src/render/licznik-wydajnosci.ts` i kategorię „Wydajność” — są tylko na tej gałęzi |
 | Moja gałąź | `claude/trzewia-cs` (od `5a9b7a7`), od 10.11 `claude/friendly-mayer-7sx7tn` (ta sama historia); kod C# tylko w `trzewia-cs/` |
-| `alpha-1/` | bez zmian; jedyny wyjątek — skrypt testów złotych w `alpha-1/scripts/` (zgłaszany w commicie) |
+| `alpha-1/` | bez zmian (wzorce testów liczą skrypty w `trzewia-cs/narzedzia/wzorce/`, które tylko importują `alpha-1/src`) |
 | Zmiany w `alpha-1/` w trakcie | nie będzie ich (użytkownik 9.11); gdyby jednak były — doganiam różnicę (`git diff 5a9b7a7..`) |
 
 ---
@@ -268,15 +268,24 @@ Symulacja (`sim/`, `nastawy/`, `powers/`, `core/rng.ts`, bot) idzie do osobnej b
 Symulacja w TS nie używa `Math.random`, `Date.now` ani `performance.now` (sprawdzone), a budżet szukania drogi
 (`sim/droga.ts`, `nowyTik`) jest liczbą prób, nie czasem — więc da się ją odtworzyć bit w bit.
 
-**Testy złote:**
-- Skrypt TS `alpha-1/scripts/test-zloty.mjs` (esbuild, jak pozostałe testy): ziarna 1–20, bot jak w grze (po
-  każdym tiku karta, co `BOT_CO` = 60 tików ruch), co 1000 tików do 60 000 skrót stanu (FNV‑1a 64 po bajtach:
-  kafle, kucie, postacie po kolei — położenie i liczby jako dokładne bity `double`, zasoby, stan RNG). Wynik:
-  `trzewia-cs/testy/zlote/*.json` (1 200 skrótów).
-- Test C# liczy to samo i porównuje. Przy pierwszej różnicy oba programy zrzucają pełny stan z tego tiku (JSON)
-  — porównanie pól pokazuje, która wartość się rozjechała.
-- Do tego przeniesione `scripts/test-swiata.mjs` (100 światów) i `scripts/test-pomnika.mjs` (12) oraz balans:
-  96 partii bota w stylu „rozsądny” — w TS 92 wygrane (`alpha-1/README.md`); C# ma dać to samo, partia po partii.
+**Testy złote** (tak zrobione w etapie 2, 12.11 — inaczej, niż zakładał pierwszy plan; `alpha-1/` zostało nietknięte):
+- Wzorce liczy kod TS z `alpha-1/src` uruchomiony w Chromium (`trzewia-cs/narzedzia/wzorce/chromium.mjs`: esbuild
+  pakuje plik wejścia, Playwright uruchamia go w stronie; `OSOBNO=1` — każde ziarno w świeżej stronie). Pliki wejścia:
+  `stan.ts` (kanoniczny zapis stanu), `zlote.ts` (skróty, wyniki partii, pomnik), `zapis.ts`, `podpowiedzi.ts`.
+  Skrypt w `alpha-1/scripts/` okazał się niepotrzebny.
+- Skrót stanu to nie skrót wybranych bajtów, tylko FNV‑1a 64 po **kanonicznym zapisie całego stanu** (ten sam
+  algorytm w TS `stan.ts` i w C# `Kanon.cs`): pola obiektów posortowane, bez null/undefined i funkcji, Map — lista par,
+  tablice typowane dłuższe niż 64 — FNV‑1a 32 po wartościach int32, Rng — jego stan, liczby jak `String(x)` w JS;
+  pomijane są tylko kopie i pamięć podręczna (`byId`, siatka `hash`, `noise`…). Wyłapuje więc każdą różnicę stanu.
+- Ziarna 1–20, bot jak w grze (krok, a co `BOT_CO` = 60 tików ruch bota), skrót co 1000 tików do 60 000:
+  **1 260 skrótów** (20 × 61, z tikiem 0) w `testy/zlote/skroty-rozsadny.json`. Przy różnicy test zapisuje pełny
+  kanoniczny stan C# z tego tiku, a `stan.ts` (`stanyBot`) daje ten sam stan z TS — porównanie pól pokazuje rozjazd.
+- Do tego: test świata (100), test pomnika (12, ta sama pętla co `scripts/test-pomnika.mjs`, wynik porównany z TS),
+  zapis gry (5 partii: dane zapisu, stan po wczytaniu i po 6000 tikach dalszej gry; prawdziwy zapis z TS wczytany
+  w C#), podpowiedzi (5 partii, co 500 tików) i balans: 96 partii bota w stylu „rozsądny” do końca albo 90 minut gry
+  (`TRZEWIA_BALANS=1`, ~5,5 min w Release) — każda partia kończy się tak samo, w tym samym tiku i z tym samym skrótem
+  stanu co w TS. Wzorzec z Chromium: 90 Uwolnień, 2 upadki, 4 bez końca w 90 min (README podaje 92/96 — inne
+  ziarna albo starszy kod; liczy się zgodność partia w partię z tym samym kodem TS).
 
 **Nastawy** (decyzja użytkownika 9.11: liczby „mają mieć możliwość nadmiany”):
 - klasy statyczne w C#, pole w pole jak obiekty w `src/nastawy/` (te same nazwy i komentarze) — to wartości
@@ -360,7 +369,7 @@ w testach złotych) i 3 (wygląd ryciny w shaderze).
 |---|---|---|---:|
 | 0 | audyt i plan (ten plik) | akceptacja użytkownika | 1 |
 | 1 | szkielet: okno, F11, skalowanie, pętla, Skia na karcie, ANGLE/GL, wejście, klawisze, F3, przełącznik `--dev`, publikacja do folderu i jeden plik | `dotnet publish -r win-x64` daje działający folder; pod Xvfb okno z F3; zip do użytkownika — zrzut F3 z jego Windows | 1–2 |
-| 2 | symulacja, nastawy, ryty, RNG, bot, zapis do JSON; testy świata i pomnika; testy złote; balans bota | 100/100 i 12/12; **1 200 identycznych skrótów**; 96 partii — te same wyniki co TS | 4–6 |
+| 2 | symulacja, nastawy, ryty, RNG, bot, zapis do JSON; testy świata i pomnika; testy złote; balans bota | 100/100 i 12/12; **1 260 identycznych skrótów**; 96 partii — te same wyniki co TS (**zrobione 12.11**) | 4–6 |
 | 3 | świat: kamera, rycina w shaderze, mrok, poświata, rdzeń, żyły, kucie, pomieszczenia, ołtarz, ruiny, katedra, konwój, wiadra, loch, schody i ich budowa, pomnik, efekty | zrzuty obu wersji w tych samych scenach; czas klatki w F3 | 4–6 |
 | 4 | postacie: figury, lud, demon i kukła bossa, walka (25 + 19 ruchów), strażnicy, dłonie, anioł | zrzuty i krótkie nagrania ruchów obok siebie | 3–5 |
 | 5 | interfejs: płyta i rama, księga, okno postaci, Budowa, przyciski, minimapa, karty i alarmy, zapiski, legenda, menu, ustawienia, atlas, kronika, osiągnięcia, bestiariusz, samouczek, przerywniki, okienko dewelopera | zrzuty; test nakładania elementów jak `test-nakladania.mjs` | 4–6 |
