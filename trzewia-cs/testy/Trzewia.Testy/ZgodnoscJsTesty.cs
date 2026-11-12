@@ -6,8 +6,8 @@ using Trzewia.Rdzen;
 namespace Trzewia.Testy;
 
 /// <summary>
-/// Zgodność z JavaScriptem: wzorzec z narzedzia/zgodnosc-js.mjs (Node na kodzie z alpha-1/src/core/rng.ts) w
-/// testy/zlote/js-zgodnosc.json. Sin, cos i atan2 sprawdza osobny wzorzec z Chromium (JsMathTesty).
+/// Zgodność z JavaScriptem: wzorzec z narzedzia/wzorce/zgodnosc.ts liczony w Chromium (kod z alpha-1/src/core/rng.ts)
+/// w testy/zlote/js-zgodnosc.json. Sin, cos i atan2 sprawdza osobny wzorzec z Chromium (JsMathTesty).
 /// </summary>
 public class ZgodnoscJsTesty
 {
@@ -69,9 +69,9 @@ public class ZgodnoscJsTesty
         foreach (var w in W.GetProperty("sort").EnumerateArray())
         {
             int n = w.GetProperty("n").GetInt32();
-            // porównanie losowe: dokładnie jak w V8 dla tablic krótszych niż 64 (gra sortuje losowo tylko 3 i 4 elementy —
-            // sim/ruiny.ts); dłuższe scala inaczej niż TimSort z „galopem”, co przy spójnym porównaniu nie zmienia wyniku
-            if (n < 64)
+            // porównanie losowe: dokładnie jak w V8 dla tablic krótszych niż 16 (gra sortuje losowo tylko 3 i 4 elementy —
+            // sim/ruiny.ts); dłuższe V8 scala PowerSortem, co przy spójnym porównaniu nie zmienia wyniku
+            if (n < 16)
             {
                 var g = new Rng(n + 1);
                 var a = Enumerable.Range(0, n).ToList();

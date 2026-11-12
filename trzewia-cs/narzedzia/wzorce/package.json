@@ -1,0 +1,7 @@
+{
+  "name": "trzewia-wzorce",
+  "private": true,
+  "description": "Wzorce z gry TS liczone w Chromium (jak w grze) — testy C# porównują się z nimi",
+  "type": "module",
+  "dependencies": { "esbuild": "0.25.12" }
+}

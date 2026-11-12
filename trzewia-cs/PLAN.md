@@ -254,6 +254,17 @@ Symulacja (`sim/`, `nastawy/`, `powers/`, `core/rng.ts`, bot) idzie do osobnej b
 | `Map`, `Set`, `Object.keys` | `Dictionary` nie gwarantuje kolejności po usunięciach | kolekcje z kolejnością wstawiania (`JsMap`); przy obiektach — kolejność kluczy jak w JS (najpierw klucze liczbowe rosnąco) |
 | liczba → tekst (zapis, kronika) | .NET pisze `1E+21`, JS `1e+21` | `Js.NumberToString` zgodne z JS |
 
+**Odkrycia przy etapie 2 (10.11–12.11) — wzorcem jest V8 z Chromium, bo w nim działa gra (Electron):**
+- **Funkcje trygonometryczne:** V8 w Chromium 153 liczy `Math.sin/cos/atan2` biblioteką LLVM libc (poprawnie
+  zaokrąglone), a Node 22 (stary V8) — fdlibm; .NET — biblioteką systemu. Różnice w ostatnim bicie: Node ↔ Chromium
+  3,4% sinusów i 18% atan2. W C#: własne, poprawnie zaokrąglone `JsMath` — 200 000 z 200 000 bit w bit jak Chromium.
+  Wzorce testów (świat, testy złote) liczę więc w Chromium (Playwright), nie w Node.
+- **Sortowanie:** nowy V8 sortuje tablice krótsze niż 16 samym wstawianiem binarnym (stary — biegi i wstawianie);
+  przy porównaniu losowym (`sim/ruiny.ts`) daje to inny wynik. Do tego TurboFan po kilkunastu wywołaniach funkcji
+  wstawia własny, wbudowany sort krótkich tablic i wynik losowego sortowania znów się zmienia — w samej grze TS ruiny
+  kolejnej góry w tej samej sesji mogą więc wyjść inaczej niż pierwszej z tego samego ziarna. C# robi zawsze to, co
+  V8 „na zimno” (pierwsza góra w sesji), a wzorce liczę dla każdego ziarna w świeżej stronie.
+
 Symulacja w TS nie używa `Math.random`, `Date.now` ani `performance.now` (sprawdzone), a budżet szukania drogi
 (`sim/droga.ts`, `nowyTik`) jest liczbą prób, nie czasem — więc da się ją odtworzyć bit w bit.
 

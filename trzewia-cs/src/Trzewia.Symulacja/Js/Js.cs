@@ -96,17 +96,20 @@ namespace Trzewia.Js
         public static byte ToUint8(double x) => unchecked((byte)ToInt32(x));
 
         /// <summary>
-        /// Array.prototype.sort(porównanie) jak w V8 (third_party/v8/builtins/array-sort.tq, TimSort): stabilne, a dla
-        /// tablic krótszych niż 64 — ta sama kolejność wywołań porównania (CountAndMakeRun, BinaryInsertionSort).
-        /// To ważne przy porównaniu losowym (sim/ruiny.ts: () => rng.next() − 0.5) — każde wywołanie zużywa liczbę
-        /// losową. Dłuższe tablice: te same naturalne biegi i scalanie stabilne — przy spójnym porównaniu wynik jak w V8.
-        /// Wynik porównania NaN liczy się jak 0 (jak w V8). Sortuje w miejscu i zwraca tę samą listę.
+        /// Array.prototype.sort(porównanie) jak w V8 Chromium 153 (third_party/v8/builtins/array-sort.tq, gałąź main
+        /// z 11.2026): tablice krótsze niż 16 (JSArray::kMaxInlineSortLength) — wstawianie binarne od początku, z tą samą
+        /// kolejnością wywołań porównania co w V8; to ważne przy porównaniu losowym (sim/ruiny.ts: () => rng.next() − 0.5),
+        /// bo każde wywołanie zużywa liczbę losową. Dłuższe: V8 robi PowerSort (naturalne biegi, scalanie stabilne) — tu
+        /// te same biegi i scalanie stabilne, więc przy spójnym porównaniu wynik jak w V8 (porównania losowego na długich
+        /// tablicach gra nie ma). Uwaga: stary V8 (Node 22) sortował krótkie tablice inaczej (biegi + wstawianie).
+        /// Wynik porównania NaN liczy się jak 0. Sortuje w miejscu i zwraca tę samą listę.
         /// </summary>
         public static List<T> Sort<T>(List<T> a, Func<T, T, double> porownaj)
         {
             int n = a.Count;
             if (n < 2) return a;
             double Por(T x, T y) { var v = porownaj(x, y); return double.IsNaN(v) ? 0 : v; }
+            if (n < 16) { WstawianieBinarne(a, 0, 0, n, Por); return a; }
 
             int minRun = n;
             int r = 0;
@@ -128,7 +131,7 @@ namespace Trzewia.Js
                 low += dl;
                 pozostalo -= dl;
             }
-            // scalanie biegów od lewej, stabilnie (dla n < 64 jest jeden bieg i nic się tu nie dzieje)
+            // scalanie biegów od lewej, stabilnie
             while (biegi.Count > 1)
             {
                 var nowe = new List<(int od, int dl)>();
@@ -279,6 +282,12 @@ namespace Trzewia.Js
             get => (uint)i < (uint)d.Length ? d[i] : double.NaN;
             set { if ((uint)i < (uint)d.Length) d[i] = (float)value; }
         }
+        /// <summary>Indeks jak w JS: ułamkowy albo poza zakresem — odczyt NaN (undefined), zapis pomijany.</summary>
+        public double this[double i]
+        {
+            get { int k = (int)i; return k == i && (uint)k < (uint)d.Length ? d[k] : double.NaN; }
+            set { int k = (int)i; if (k == i && (uint)k < (uint)d.Length) d[k] = (float)value; }
+        }
         public void fill(double v) { var f = (float)v; for (int i = 0; i < d.Length; i++) d[i] = f; }
     }
 
@@ -292,6 +301,12 @@ namespace Trzewia.Js
         {
             get => (uint)i < (uint)d.Length ? d[i] : double.NaN;
             set { if ((uint)i < (uint)d.Length) d[i] = Js.ToUint8(value); }
+        }
+        /// <summary>Indeks jak w JS: ułamkowy albo poza zakresem — odczyt NaN (undefined), zapis pomijany.</summary>
+        public double this[double i]
+        {
+            get { int k = (int)i; return k == i && (uint)k < (uint)d.Length ? d[k] : double.NaN; }
+            set { int k = (int)i; if (k == i && (uint)k < (uint)d.Length) d[k] = Js.ToUint8(value); }
         }
         public void fill(double v) { var b = Js.ToUint8(v); for (int i = 0; i < d.Length; i++) d[i] = b; }
         public void set(Uint8Array z) => Array.Copy(z.d, d, Math.Min(z.d.Length, d.Length));
@@ -307,6 +322,12 @@ namespace Trzewia.Js
             get => (uint)i < (uint)d.Length ? d[i] : double.NaN;
             set { if ((uint)i < (uint)d.Length) d[i] = Js.ToInt16(value); }
         }
+        /// <summary>Indeks jak w JS: ułamkowy albo poza zakresem — odczyt NaN (undefined), zapis pomijany.</summary>
+        public double this[double i]
+        {
+            get { int k = (int)i; return k == i && (uint)k < (uint)d.Length ? d[k] : double.NaN; }
+            set { int k = (int)i; if (k == i && (uint)k < (uint)d.Length) d[k] = Js.ToInt16(value); }
+        }
         public void fill(double v) { var b = Js.ToInt16(v); for (int i = 0; i < d.Length; i++) d[i] = b; }
     }
 
@@ -320,6 +341,12 @@ namespace Trzewia.Js
             get => (uint)i < (uint)d.Length ? d[i] : double.NaN;
             set { if ((uint)i < (uint)d.Length) d[i] = Js.ToInt32(value); }
         }
+        /// <summary>Indeks jak w JS: ułamkowy albo poza zakresem — odczyt NaN (undefined), zapis pomijany.</summary>
+        public double this[double i]
+        {
+            get { int k = (int)i; return k == i && (uint)k < (uint)d.Length ? d[k] : double.NaN; }
+            set { int k = (int)i; if (k == i && (uint)k < (uint)d.Length) d[k] = Js.ToInt32(value); }
+        }
         public void fill(double v) { var b = Js.ToInt32(v); for (int i = 0; i < d.Length; i++) d[i] = b; }
     }
 
@@ -332,6 +359,12 @@ namespace Trzewia.Js
         {
             get => (uint)i < (uint)d.Length ? d[i] : double.NaN;
             set { if ((uint)i < (uint)d.Length) d[i] = Js.ToUint32(value); }
+        }
+        /// <summary>Indeks jak w JS: ułamkowy albo poza zakresem — odczyt NaN (undefined), zapis pomijany.</summary>
+        public double this[double i]
+        {
+            get { int k = (int)i; return k == i && (uint)k < (uint)d.Length ? d[k] : double.NaN; }
+            set { int k = (int)i; if (k == i && (uint)k < (uint)d.Length) d[k] = Js.ToUint32(value); }
         }
         public void fill(double v) { var b = Js.ToUint32(v); for (int i = 0; i < d.Length; i++) d[i] = b; }
     }
