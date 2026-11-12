@@ -114,6 +114,7 @@ public static class Kanon
             {
                 if (e.Value == null) continue;
                 var k = e.Key is double dk ? Json.Liczba(dk) : Convert.ToString(e.Key, CultureInfo.InvariantCulture)!;
+                if (POMIN.Contains(k)) continue;   // jak w TS: słownik to zwykły obiekt, a obiekty pomijają te klucze
                 wpisy.Add((k, e.Value));
             }
             wpisy.Sort((a, b) => string.CompareOrdinal(a.k, b.k));
