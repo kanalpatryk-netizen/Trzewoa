@@ -11,6 +11,36 @@ namespace Trzewia.Js
     /// </summary>
     public static class Js
     {
+        /// <summary>Liczba w napisie jak `${x}` / String(x) w JS (NaN, Infinity — słownie).</summary>
+        public static string S(double x) =>
+            double.IsNaN(x) ? "NaN" : double.IsPositiveInfinity(x) ? "Infinity" : double.IsNegativeInfinity(x) ? "-Infinity" : Trzewia.Rdzen.Json.Liczba(x);
+
+        /// <summary>Prawdziwość liczby w JS: 0 i NaN to fałsz.</summary>
+        public static bool Tak(double x) => x != 0 && !double.IsNaN(x);
+        public static bool Tak(double? x) => x != null && x.Value != 0 && !double.IsNaN(x.Value);
+
+        /// <summary>arr[i] w JS: poza zakresem albo ułamkowy indeks — undefined (tu null).</summary>
+        public static double? At(System.Collections.Generic.IReadOnlyList<double>? l, double i)
+        {
+            if (l == null) return null;
+            int k = (int)i;
+            return k == i && k >= 0 && k < l.Count ? l[k] : (double?)null;
+        }
+        public static T? At<T>(System.Collections.Generic.IReadOnlyList<T>? l, double i) where T : class
+        {
+            if (l == null) return null;
+            int k = (int)i;
+            return k == i && k >= 0 && k < l.Count ? l[k] : null;
+        }
+
+        /// <summary>arr.indexOf(v, od) z JS (od poza zakresem — -1, bez wyjątku).</summary>
+        public static int IndexOf(System.Collections.Generic.List<double> l, double v, double od = 0)
+        {
+            int k = od < 0 ? Math.Max(0, l.Count + (int)Math.Ceiling(od)) : (int)Math.Min(od, l.Count);
+            if (k >= l.Count) return -1;
+            return l.IndexOf(v, k);
+        }
+
         public static double Sin(double x) => JsMath.Sin(x);
         public static double Cos(double x) => JsMath.Cos(x);
         public static double Atan2(double y, double x) => JsMath.Atan2(y, x);
@@ -209,47 +239,80 @@ namespace Trzewia.Js
     /// </summary>
     public sealed class JsMap<K, V> : IEnumerable<KeyValuePair<K, V>> where K : notnull
     {
-        readonly Dictionary<K, LinkedListNode<KeyValuePair<K, V>>> slownik = new Dictionary<K, LinkedListNode<KeyValuePair<K, V>>>();
-        readonly LinkedList<KeyValuePair<K, V>> lista = new LinkedList<KeyValuePair<K, V>>();
+        sealed class Wpis { public K k = default!; public V v = default!; public bool usuniety; }
+
+        readonly Dictionary<K, Wpis> slownik = new Dictionary<K, Wpis>();
+        readonly List<Wpis> wpisy = new List<Wpis>();
+        int przegladow, dziur;
 
         public int size => slownik.Count;
         public bool has(K k) => slownik.ContainsKey(k);
 
-        public V get(K k) => slownik.TryGetValue(k, out var w) ? w.Value.Value : default!;
+        public V get(K k) => slownik.TryGetValue(k, out var w) ? w.v : default!;
+        /// <summary>map.get(k) ?? d — brak klucza (undefined) daje `d`.</summary>
+        public V getOr(K k, V d) => slownik.TryGetValue(k, out var w) ? w.v : d;
         public bool TryGet(K k, out V v)
         {
-            if (slownik.TryGetValue(k, out var w)) { v = w.Value.Value; return true; }
+            if (slownik.TryGetValue(k, out var w)) { v = w.v; return true; }
             v = default!; return false;
         }
 
         public JsMap<K, V> set(K k, V v)
         {
-            if (slownik.TryGetValue(k, out var w)) w.Value = new KeyValuePair<K, V>(k, v);
-            else slownik[k] = lista.AddLast(new KeyValuePair<K, V>(k, v));
+            if (slownik.TryGetValue(k, out var w)) w.v = v;
+            else { w = new Wpis { k = k, v = v }; slownik[k] = w; wpisy.Add(w); }
             return this;
         }
 
         public bool delete(K k)
         {
             if (!slownik.TryGetValue(k, out var w)) return false;
-            lista.Remove(w);
+            w.usuniety = true;
             slownik.Remove(k);
+            dziur++;
+            Uprzataj();
             return true;
         }
 
-        public void clear() { slownik.Clear(); lista.Clear(); }
+        public void clear()
+        {
+            foreach (var w in wpisy) w.usuniety = true;
+            dziur = wpisy.Count;
+            slownik.Clear();
+            Uprzataj();
+        }
 
-        public IEnumerable<K> keys() { foreach (var p in Migawka()) yield return p.Key; }
-        public IEnumerable<V> values() { foreach (var p in Migawka()) yield return p.Value; }
+        /// <summary>Usunięte wpisy wyrzuca z listy dopiero, gdy nikt jej nie przegląda (jak tablica V8 po przejściu).</summary>
+        void Uprzataj()
+        {
+            if (przegladow > 0 || dziur == 0) return;
+            if (dziur == wpisy.Count) wpisy.Clear();
+            else if (dziur * 2 >= wpisy.Count) wpisy.RemoveAll(w => w.usuniety);
+            else return;
+            dziur = 0;
+        }
 
         /// <summary>
-        /// Przeglądanie jak for…of po Map: widzi wpisy dodane w trakcie (na końcu) i nie widzi usuniętych — tu
-        /// uproszczone do migawki, bo symulacja nie zmienia mapy w trakcie jej przeglądania (sprawdzone przy przenoszeniu).
+        /// Przeglądanie jak for…of po Map w JS: widzi wpisy dodane w trakcie (na końcu), pomija usunięte w trakcie,
+        /// a zmiana wartości już istniejącego klucza nie przesuwa go.
         /// </summary>
-        public IEnumerator<KeyValuePair<K, V>> GetEnumerator() => Migawka().GetEnumerator();
+        public IEnumerator<KeyValuePair<K, V>> GetEnumerator()
+        {
+            przegladow++;
+            try
+            {
+                for (int i = 0; i < wpisy.Count; i++)
+                {
+                    var w = wpisy[i];
+                    if (!w.usuniety) yield return new KeyValuePair<K, V>(w.k, w.v);
+                }
+            }
+            finally { przegladow--; Uprzataj(); }
+        }
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-        List<KeyValuePair<K, V>> Migawka() => new List<KeyValuePair<K, V>>(lista);
+        public IEnumerable<K> keys() { foreach (var p in this) yield return p.Key; }
+        public IEnumerable<V> values() { foreach (var p in this) yield return p.Value; }
     }
 
     /// <summary>Set z JavaScriptu — kolejność dodania, jak JsMap.</summary>

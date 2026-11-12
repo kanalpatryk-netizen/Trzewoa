@@ -37,6 +37,16 @@ namespace Trzewia.Symulacja
         public bool eatsMeat;
         public bool swims;
         public double size;         // piksele przy zoomie 1 i mnożnik Krwi
+
+        public RaceDef Kopia() => (RaceDef)MemberwiseClone();
+        /// <summary>Object.assign(this, z) — skazy (powers.ts) zmieniają rasy w trakcie partii, nowa góra je przywraca.</summary>
+        public void PrzepiszZ(RaceDef z)
+        {
+            id = z.id; name = z.name; @short = z.@short; dopelniacz = z.dopelniacz; nazwaDopelniacz = z.nazwaDopelniacz; mnoga = z.mnoga;
+            color = z.color; maxHp = z.maxHp; speed = z.speed; digPower = z.digPower; strength = z.strength; breedRate = z.breedRate;
+            lifespan = z.lifespan; faithGain = z.faithGain; fearGain = z.fearGain; metabolism = z.metabolism; eatsMeat = z.eatsMeat;
+            swims = z.swims; size = z.size;
+        }
     }
 
     public static class Races
@@ -108,6 +118,10 @@ namespace Trzewia.Symulacja
             var sufs = SUFFIX.TryGetValue((int)race, out var s) ? s : new[] { "" };
             return roots[(int)pick(roots.Length)] + sufs[(int)pick(sufs.Length)];
         }
+
+        // sim.ts: SAVE_BASE i resetRaces
+        static readonly RaceDef[] SAVE_BASE = Array.ConvertAll(RACES, r => r.Kopia());
+        public static void resetRaces() { for (int i = 0; i < RACES.Length; i++) RACES[i].PrzepiszZ(SAVE_BASE[i]); }
 
         /// <summary>Odmienia czasownik pod nazwe rasy.</summary>
         public static string odmien(double race, string pojedyncza, string mnoga) => RACES[(int)race].mnoga ? mnoga : pojedyncza;
