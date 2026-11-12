@@ -1,0 +1,7 @@
+{
+  "name": "trzewia-nastawy-cs",
+  "private": true,
+  "description": "Konwerter alpha-1/src/nastawy/*.ts → trzewia-cs/src/Trzewia.Symulacja/Nastawy/*.cs",
+  "type": "module",
+  "dependencies": { "typescript": "5.9.3" }
+}

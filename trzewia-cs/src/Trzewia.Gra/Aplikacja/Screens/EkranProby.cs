@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Trzewia.Nastawy;
+using static Trzewia.Nastawy.NastawySterowanie;
+using static Trzewia.Nastawy.NastawyEkran;
 using Trzewia.Plotna;
 using Trzewia.Rdzen;
 using Trzewia.Rysunek;

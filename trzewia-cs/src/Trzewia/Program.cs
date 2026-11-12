@@ -3,6 +3,7 @@ using System.Runtime;
 using SkiaSharp;
 using Trzewia.Aplikacja;
 using Trzewia.Aplikacja.Screens;
+using Trzewia.Nastawy;
 using Trzewia.Okno;
 using Trzewia.Plotna;
 using Trzewia.Rdzen;
@@ -30,6 +31,10 @@ static class Program
             $"Trzewia {typeof(Program).Assembly.GetName().Version} — {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n" +
             $"system: {System.Runtime.InteropServices.RuntimeInformation.OSDescription}, .NET {Environment.Version}, " +
             $"procesor: {Environment.ProcessorCount} wątków, argumenty: {string.Join(' ', args)}");
+        if (Uruchomienie.WypiszNastawy) return WypiszNastawy();
+        // liczby gry z dane/nastawy/*.json (jeśli są) — zastępują te z kodu (decyzja użytkownika 9.11)
+        foreach (var o in NastawyJson.WczytajWszystkie(p => { using var s = sciezki.Otworz(p); return s == null ? null : new StreamReader(s).ReadToEnd(); }))
+            Dziennik.Pisz("nastawy: " + o);
         // sprzątanie pamięci bez długich przerw w trakcie gry (licznik F3 pokazuje, ile ich było)
         GCSettings.LatencyMode = GCLatencyMode.SustainedLowLatency;
         Plotno.Fabryka = new FabrykaSkia();
@@ -57,6 +62,23 @@ static class Program
             return 1;
         }
         finally { Dziennik.Zamknij(); }
+    }
+
+    /// <summary>--wypisz-nastawy: wszystkie liczby gry do dane/nastawy/*.json (istniejące pliki zostają nietknięte).</summary>
+    static int WypiszNastawy()
+    {
+        var folder = Path.Combine(Sciezki.Dane, "nastawy");
+        Directory.CreateDirectory(folder);
+        int zapisane = 0;
+        foreach (var p in Rejestr.Pliki)
+        {
+            var plik = Path.Combine(folder, p.Key + ".json");
+            if (File.Exists(plik)) { Console.WriteLine($"pomijam (już jest): {plik}"); continue; }
+            File.WriteAllText(plik, NastawyJson.Wypisz(p.Value));
+            zapisane++;
+        }
+        Console.WriteLine($"Zapisano {zapisane} plików nastaw w {folder}. Zmień liczby i uruchom grę — zmiany działają od razu.");
+        return 0;
     }
 
     /// <summary>

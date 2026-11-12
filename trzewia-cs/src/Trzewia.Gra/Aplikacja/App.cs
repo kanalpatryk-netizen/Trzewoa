@@ -7,6 +7,7 @@ using System.Linq;
 // przez interfejsy (IOknoGry, IPlotno), więc App działa tak samo w Trzewia.exe i w silniku. Bez kodu pod telefon
 // (Wstecz, NieGasnij). Dźwięk (obudzDzwiek) dochodzi w etapie 6.
 using Trzewia.Nastawy;
+using static Trzewia.Nastawy.NastawyEkran;
 using Trzewia.Plotna;
 using Trzewia.Rdzen;
 using Trzewia.Rysunek;

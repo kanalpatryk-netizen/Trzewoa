@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 // Port: alpha-1/src/render/camera.ts
 using Trzewia.Nastawy;
+using static Trzewia.Nastawy.NastawySterowanie;
 
 namespace Trzewia.Rysunek
 {

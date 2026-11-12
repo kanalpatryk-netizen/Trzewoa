@@ -98,6 +98,8 @@ public static class Uruchomienie
     /// <summary>Zamknij grę po tylu sekundach (0 — bez końca).</summary>
     public static double PoSekundach;
     public static string? Zrzut, EkranStartowy;
+    /// <summary>Zapisz wszystkie nastawy do dane/nastawy/*.json i zakończ.</summary>
+    public static bool WypiszNastawy;
 
     public const string Pomoc = """
         Trzewia.exe [przełączniki]
@@ -112,6 +114,7 @@ public static class Uruchomienie
           --zrzut plik.png przed zamknięciem zapisz obraz ostatniej klatki
           --pomiar         przed zamknięciem wypisz wynik licznika F3
           --ekran nazwa    ekran na start (etap 1: „proba”)
+          --wypisz-nastawy zapisz wszystkie liczby gry do dane/nastawy/*.json (punkt wyjścia do zmian) i zakończ
         """;
 
     public static void Ustaw(string[] args)
@@ -135,6 +138,7 @@ public static class Uruchomienie
                     var cz = nast.Split('x', 'X', '×');
                     if (cz.Length == 2) { RozmiarW = int.Parse(cz[0]); RozmiarH = int.Parse(cz[1]); }
                     i++; break;
+                case "--wypisz-nastawy": WypiszNastawy = true; break;
                 case "--pomoc": case "-h": case "--help": Console.WriteLine(Pomoc); Environment.Exit(0); break;
             }
         }

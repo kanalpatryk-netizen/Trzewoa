@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 // Port: alpha-1/src/render/straz-klatek.ts
 using Trzewia.Nastawy;
+using static Trzewia.Nastawy.NastawyEkran;
 
 namespace Trzewia.Rysunek
 {
