@@ -47,3 +47,16 @@ export function stany(ziarno: number, tiki: number[]): string[] {
   }
   return out;
 }
+
+import { ruchBota, BOT_CO } from '../../../alpha-1/src/app/bot';
+
+/** Stan partii z botem (jak w scripts/proby-graczy.mjs: krok, a co BOT_CO tików ruch bota) w podanych tikach. */
+export function stanyBot(ziarno: number, styl: string, tiki: number[]): string[] {
+  const sim = new Sim(ziarno);
+  const out: string[] = [];
+  for (const t of tiki) {
+    while (sim.tick < t && !sim.ending) { sim.step(); if (sim.tick % BOT_CO === 0) ruchBota(sim, styl as never); }
+    out.push(kanon(sim));
+  }
+  return out;
+}

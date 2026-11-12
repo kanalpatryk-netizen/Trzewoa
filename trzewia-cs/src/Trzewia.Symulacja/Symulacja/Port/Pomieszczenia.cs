@@ -69,7 +69,7 @@ namespace Trzewia.Symulacja
 
         public static bool czyPokoj(string r) => r == "sypialnia" || r == "warsztat" || r == "kuznia";
 
-        static (double w, double h) szablon(string r) => r switch
+        public static (double w, double h) szablon(string r) => r switch
         {
             "sypialnia" => (P.szablony.sypialnia.w, P.szablony.sypialnia.h),
             "warsztat" => (P.szablony.warsztat.w, P.szablony.warsztat.h),
