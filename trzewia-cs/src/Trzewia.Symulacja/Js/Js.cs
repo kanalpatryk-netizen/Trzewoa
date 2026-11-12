@@ -41,6 +41,16 @@ namespace Trzewia.Js
             return l.IndexOf(v, k);
         }
 
+        /// <summary>x.toFixed(f) z JS (tylko do napisów w dzienniku; połówki w górę jak w JS).</summary>
+        public static string ToFixed(double x, int f)
+        {
+            if (double.IsNaN(x)) return "NaN";
+            if (double.IsInfinity(x)) return x > 0 ? "Infinity" : "-Infinity";
+            if (Math.Abs(x) >= 1e21) return S(x);
+            var d = Math.Round((decimal)x, f, MidpointRounding.AwayFromZero);
+            return d.ToString("F" + f, System.Globalization.CultureInfo.InvariantCulture);
+        }
+
         public static double Sin(double x) => JsMath.Sin(x);
         public static double Cos(double x) => JsMath.Cos(x);
         public static double Atan2(double y, double x) => JsMath.Atan2(y, x);

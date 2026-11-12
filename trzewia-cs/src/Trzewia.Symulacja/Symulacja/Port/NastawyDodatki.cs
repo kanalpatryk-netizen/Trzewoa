@@ -21,3 +21,12 @@ namespace Trzewia.Nastawy
         public double? this[string co] => co switch { "sila" => sila, "szybkosc" => szybkosc, "kopanie" => kopanie, "modlitwa" => modlitwa, _ => null };
     }
 }
+
+namespace Trzewia.Nastawy
+{
+    public sealed partial class Typ_ZBROJA_premie_wpis
+    {
+        /// <summary>ZBROJA.premie[z]?.[co] w TS.</summary>
+        public double? this[string co] => co switch { "hp" => hp, "sila" => sila, "szybkosc" => szybkosc, "rany" => rany, _ => null };
+    }
+}
