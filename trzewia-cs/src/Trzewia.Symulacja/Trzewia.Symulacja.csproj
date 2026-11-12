@@ -11,8 +11,4 @@
     <RootNamespace>Trzewia</RootNamespace>
     <AssemblyName>Trzewia.Symulacja</AssemblyName>
   </PropertyGroup>
-  <!-- Etap 2d: moduły symulacji w trakcie przenoszenia (kompilują się dopiero razem, gdy są wszystkie). -->
-  <ItemGroup>
-    <!-- <Compile Remove="Symulacja/Port/**" /> -->
-  </ItemGroup>
 </Project>
