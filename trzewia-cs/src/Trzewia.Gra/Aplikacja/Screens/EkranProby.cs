@@ -7,56 +7,147 @@ using static Trzewia.Nastawy.NastawyEkran;
 using Trzewia.Plotna;
 using Trzewia.Rdzen;
 using Trzewia.Rysunek;
+using Trzewia.Symulacja;
 using static Trzewia.Rdzen.SettingsStore;
 
 namespace Trzewia.Aplikacja.Screens
 {
 
 /// <summary>
-/// Ekran próbny etapu 1 (nie ma go w TS — zniknie, gdy przyjdą prawdziwe ekrany): płyta z siatką kafli świata
-/// 192 × 240, kamera jak w grze (kółko przybliża pod kursorem, prawy albo środkowy przycisk przesuwa), czas gry
-/// w tikach jak w game.ts (120 tików/s, TEMPO), kroje pisma gry z polskimi znakami, ostatni klawisz i jego akcja.
-/// Służy do sprawdzenia okna, pętli, wejścia i licznika F3 na komputerze użytkownika.
+/// Ekran próbny (nie ma go w TS — zniknie, gdy przyjdą prawdziwe ekrany). Etap 2: prawdziwa góra z symulacji C#,
+/// w której gra bot (jak okno obserwatorium w game.ts: karty od razu, reszta co BOT_CO tików). Kafle w prostych,
+/// tymczasowych barwach (prawdziwy rysunek góry to etap 3), stworzenia jako kropki w barwie rasy. Kamera jak w grze
+/// (kółko przybliża pod kursorem, prawy albo środkowy przycisk przesuwa), czas gry w tikach jak w game.ts
+/// (120 tików/s, TEMPO, budżet klatki). Sprawdza okno, pętlę, wejście, licznik F3 i szybkość symulacji na komputerze.
 /// </summary>
 public sealed class EkranProby : Ekran
 {
     public override string nazwa => "proba";
-    const int SWIAT_W = 192, SWIAT_H = 240;
+    const string STYL_BOTA = "rozsadny";
 
-    readonly Camera cam = new Camera(800, 600) { zoom = KAMERA.start, x = 96, y = 30 };
+    readonly Camera cam = new Camera(800, 600) { zoom = KAMERA.start };
     double plX, plY, plW, plH;
     double reszta;
-    long tik;
+    double ziarno = 1;
+    Sim sim = null!;
+    double tempo = 1;
+    bool pauza;
     string ostatniKlawisz = "—", ostatniaAkcja = "—";
     double myszX, myszY;
-    (double x, double y, double cx, double cy)? ciagniecie;
     int klikniecia;
+    double ostW = 800, ostH = 600;
+    (double x, double y, double cx, double cy)? ciagniecie;
+    // mapa w skali kafla (1 piksel = 1 kafel), odświeżana co kilka tików
+    IPlotno? mapa;
+    double mapaTik = -1;
+    double msKroku;
+    Podpowiedz? rada;
+
+    public EkranProby() { NowaGora(1); }
+
+    void NowaGora(double z)
+    {
+        ziarno = z;
+        sim = new Sim(z);
+        mapa?.Dispose();
+        mapa = null;
+        mapaTik = -1;
+        cam.x = sim.world.w / 2; cam.y = 30;
+        cam.clamp(sim.world.w, sim.world.h);
+    }
 
     public override void rozmiar(double w, double h)
     {
+        ostW = w; ostH = h;
         plX = EKRAN.ramaPlyty; plY = EKRAN.ramaPlyty;
         plW = w - 2 * EKRAN.ramaPlyty;
         plH = h - EKRAN.ramaPlyty - Math.Clamp(h * EKRAN.dolCzesc, EKRAN.dolMin, EKRAN.dolMax);
         cam.vw = plW; cam.vh = plH;
-        cam.minZoom = Math.Max(KAMERA.minNaDuzymEkranie, plW / SWIAT_W);
+        cam.minZoom = Math.Max(KAMERA.minNaDuzymEkranie, plW / sim.world.w);
         if (cam.zoom < cam.minZoom) cam.zoom = cam.minZoom;
-        cam.clamp(SWIAT_W, SWIAT_H);
+        cam.clamp(sim.world.w, sim.world.h);
     }
 
     public override void krok(double dt, double teraz)
     {
+        if (pauza || sim.ending != null) return;
         // zwykły czas: tyle tików na sekundę, niezależnie od tego, ile klatek pokazuje ekran (jak w game.ts)
-        var naSekunde = TEMPO.tikowNaSekunde;
+        var naSekunde = TEMPO.tikowNaSekunde * tempo;
         reszta += dt / 1000 * naSekunde;
         var cale = Math.Floor(reszta);
         reszta -= cale;
+        // wolny komputer: świat zwalnia, zamiast nadrabiać bez końca
         var kroki = Math.Min(Math.Max(TEMPO.maxNaKlatke, Math.Ceiling(naSekunde / 20)), cale);
         var t0 = Wydajnosc.Teraz();
-        for (int i = 0; i < kroki; i++) tik++;
-        Wydajnosc.licznik.dodaj(Czesc.logika, Wydajnosc.Teraz() - t0);
+        var budzet = TEMPO.budzetKlatkiMs * Math.Max(1, tempo);
+        int zrobione = 0;
+        while (zrobione < kroki)
+        {
+            sim.step();
+            zrobione++;
+            // okno obserwatorium: gra bot — karty rozstrzyga od razu, resztę co pół sekundy gry
+            if (sim.ending == null)
+            {
+                if (sim.wydarzenia.biezace != null) Bot.kartaBota(sim, STYL_BOTA);
+                if (sim.tick % Bot.BOT_CO == 0) Bot.ruchBota(sim, STYL_BOTA);
+            }
+            if (Wydajnosc.Teraz() - t0 > budzet || sim.ending != null) break;
+        }
+        var ms = Wydajnosc.Teraz() - t0;
+        Wydajnosc.licznik.dodaj(Czesc.logika, ms);
+        if (zrobione > 0) msKroku = msKroku * 0.9 + ms / zrobione * 0.1;
+        if (sim.tick % 60 == 0 || rada == null) rada = Podpowiedzi.podpowiedz(sim);
     }
 
-    static double Los(int x, int y) { uint h = (uint)(x * 374761393 + y * 668265263); h = (h ^ (h >> 13)) * 1274126177; return (h & 0xFFFF) / 65535.0; }
+    // Tymczasowe barwy kafli (tylko ten ekran; prawdziwy rysunek góry — render/engrave.ts — to etap 3).
+    static readonly Barwa[] BARWY = Barwy(1,
+        "#120e0b", "#2b3442", "#6b5038", "#4a3f36", "#b0683a", "#8a62c0", "#2a2624", "#5f8f4a", "#c8bca0",
+        "#d8b860", "#e07030", "#b4b4c4", "#8a6a50", "#d03848", "#f0e090", "#5c4c3e", "#38302a", "#e8c450");
+    /// <summary>Kafle, których nikt jeszcze nie widział — ciemniej.</summary>
+    static readonly Barwa[] BARWY_NIEZNANE = Barwy(0.45,
+        "#120e0b", "#2b3442", "#6b5038", "#4a3f36", "#b0683a", "#8a62c0", "#2a2624", "#5f8f4a", "#c8bca0",
+        "#d8b860", "#e07030", "#b4b4c4", "#8a6a50", "#d03848", "#f0e090", "#5c4c3e", "#38302a", "#e8c450");
+
+    static Barwa[] Barwy(double k, params string[] hex)
+    {
+        var w = new Barwa[hex.Length];
+        for (int i = 0; i < hex.Length; i++)
+        {
+            var c = Convert.ToInt32(hex[i].Substring(1), 16);
+            w[i] = Barwa.Rgba(((c >> 16) & 255) * k, ((c >> 8) & 255) * k, (c & 255) * k, 1);
+        }
+        return w;
+    }
+
+    /// <summary>Mapa kafli na płótnie 1:1 — prostokąt na każdy ciąg kafli tej samej barwy w wierszu.</summary>
+    void RysujMape()
+    {
+        var w = sim.world;
+        int W = (int)w.w, H = (int)w.h;
+        mapa ??= Plotno.Nowe(W, H);
+        var m = mapa;
+        m.clearRect(0, 0, W, H);
+        var tile = w.tile.d; var ever = w.ever.d;
+        for (int y = 0; y < H; y++)
+        {
+            int x = 0;
+            while (x < W)
+            {
+                int i = y * W + x;
+                int t = tile[i]; bool znany = ever[i] != 0;
+                int x2 = x + 1;
+                while (x2 < W && tile[y * W + x2] == t && (ever[y * W + x2] != 0) == znany) x2++;
+                m.fillStyle = (znany ? BARWY : BARWY_NIEZNANE)[t < BARWY.Length ? t : 0];
+                m.fillRect(x, y, x2 - x, 1);
+                x = x2;
+            }
+        }
+        // liny wiader: jaśniejszy pasek
+        var lina = w.lina.d;
+        m.fillStyle = "rgba(230,200,150,0.75)";
+        for (int i = 0; i < lina.Length; i++) if (lina[i] != 0) m.fillRect(i % W + 0.4, i / W, 0.2, 1);
+        mapaTik = sim.tick;
+    }
 
     public override void rysuj(IPlotno ctx, double w, double h, double teraz)
     {
@@ -65,75 +156,81 @@ public sealed class EkranProby : Ekran
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, w, h);
 
-        // płyta: kafle świata (bloki 4×4 o barwie warstwy) i siatka
+        // płyta: góra z symulacji
+        if (mapa == null || sim.tick - mapaTik >= 6 || sim.tick < mapaTik) RysujMape();
         ctx.save();
         ctx.beginPath();
         ctx.rect(plX, plY, plW, plH);
         ctx.clip();
         ctx.translate(plX, plY);
-        ctx.fillStyle = "#14100d";
+        ctx.fillStyle = "#0b0908";
         ctx.fillRect(0, 0, plW, plH);
-        int x0 = Math.Max(0, (int)Math.Floor(cam.toWorldX(0))), x1 = Math.Min(SWIAT_W, (int)Math.Ceiling(cam.toWorldX(plW)));
-        int y0 = Math.Max(0, (int)Math.Floor(cam.toWorldY(0))), y1 = Math.Min(SWIAT_H, (int)Math.Ceiling(cam.toWorldY(plH)));
-        for (int by = y0 / 4 * 4; by < y1; by += 4)
-            for (int bx = x0 / 4 * 4; bx < x1; bx += 4)
-            {
-                var g = by / (double)SWIAT_H;
-                var l = Los(bx, by) * 0.35 + 0.65;
-                ctx.fillStyle = Barwa.Rgba((70 - g * 30) * l, (52 - g * 30) * l, (40 - g * 22) * l, 1);
-                ctx.fillRect(cam.toScreenX(bx), cam.toScreenY(by), 4 * cam.zoom + 0.5, 4 * cam.zoom + 0.5);
-            }
-        if (cam.zoom >= 6)
+        ctx.imageSmoothingEnabled = false;
+        double W = sim.world.w, H = sim.world.h;
+        ctx.drawImage(mapa!, 0, 0, W, H, cam.toScreenX(0), cam.toScreenY(0), W * cam.zoom, H * cam.zoom);
+        ctx.imageSmoothingEnabled = true;
+        t = L.znacz(Czesc.swiat, t);
+
+        // stworzenia: kropki w barwie rasy (strażnicy i demon — czerwone obwódki)
+        int zywych = 0;
+        foreach (var c in sim.creatures)
         {
-            ctx.strokeStyle = "rgba(236,222,190,0.08)";
-            ctx.lineWidth = 1;
+            if (c.dead) continue;
+            zywych++;
+            var sx = cam.toScreenX(c.x); var sy = cam.toScreenY(c.y - 0.5);
+            if (sx < -20 || sy < -20 || sx > plW + 20 || sy > plH + 20) continue;
+            var k = Races.RACES[c.race].color;
+            ctx.fillStyle = Barwa.Rgba(k[0], k[1], k[2], 1);
             ctx.beginPath();
-            for (int x = x0; x <= x1; x++) { ctx.moveTo(cam.toScreenX(x), cam.toScreenY(y0)); ctx.lineTo(cam.toScreenX(x), cam.toScreenY(y1)); }
-            for (int y = y0; y <= y1; y++) { ctx.moveTo(cam.toScreenX(x0), cam.toScreenY(y)); ctx.lineTo(cam.toScreenX(x1), cam.toScreenY(y)); }
-            ctx.stroke();
+            ctx.arc(sx, sy, Math.Max(1.5, cam.zoom * (c.boss != null ? 1.4 : 0.45)), 0, Math.PI * 2);
+            ctx.fill();
+            if (c.straznik == true)
+            {
+                ctx.strokeStyle = "rgba(230,60,50,0.9)";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
         }
-        // „postać”, która idzie w takt tików — płynność ruchu przy 120 tikach/s
-        var px = 60 + (tik % 1440) / 1440.0 * 72;
-        var gr = ctx.createRadialGradient(cam.toScreenX(px), cam.toScreenY(37), 0, cam.toScreenX(px), cam.toScreenY(37), cam.zoom * 4);
-        gr.addColorStop(0, "rgba(255,214,110,0.55)");
-        gr.addColorStop(1, "rgba(255,214,110,0)");
-        ctx.globalCompositeOperation = "lighter";
-        ctx.fillStyle = gr;
-        ctx.fillRect(cam.toScreenX(px) - cam.zoom * 4, cam.toScreenY(37) - cam.zoom * 4, cam.zoom * 8, cam.zoom * 8);
-        ctx.globalCompositeOperation = "source-over";
-        ctx.fillStyle = "#e0b068";
-        ctx.beginPath();
-        ctx.arc(cam.toScreenX(px), cam.toScreenY(37), cam.zoom * 0.45, 0, Math.PI * 2);
-        ctx.fill();
+        // cel podpowiedzi
+        if (rada?.cel is { } cel)
+        {
+            ctx.strokeStyle = "rgba(240,210,140,0.6)";
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash(4, 4);
+            ctx.beginPath();
+            ctx.arc(cam.toScreenX(cel.x), cam.toScreenY(cel.y), cel.r * cam.zoom, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash();
+        }
         ctx.restore();
         ctx.strokeStyle = "rgba(224,176,104,0.5)";
         ctx.lineWidth = 2;
         ctx.strokeRect(plX, plY, plW, plH);
-        t = L.znacz(Czesc.swiat, t);
+        t = L.znacz(Czesc.postacie, t);
 
-        // dół: kroje gry i stan wejścia
+        // dół: stan partii i wejścia
         var dy = plY + plH + 34;
         ctx.textAlign = "left";
         ctx.textBaseline = "alphabetic";
         ctx.fillStyle = "#e8c482";
-        ctx.font = $"600 30px {Fonts.KROJ_TYTUL}";
-        ctx.fillText("Trzewia — C#, etap 1: okno, pętla, wejście", plX, dy);
+        ctx.font = $"600 28px {Fonts.KROJ_TYTUL}";
+        var koniec = sim.ending != null ? $" — koniec: {sim.ending}" : pauza ? " — pauza" : "";
+        ctx.fillText($"Trzewia — C#, etap 2: prawdziwa góra (ziarno {ziarno}), gra bot{koniec}", plX, dy);
         ctx.fillStyle = "rgba(236,222,190,0.92)";
-        ctx.font = $"18px {Fonts.KROJ}";
-        ctx.fillText("Trzewia Tekst: Zażółć gęślą jaźń — ĄĆĘŁŃÓŚŹŻ ąćęłńóśźż", plX, dy + 30);
         ctx.font = $"italic 18px {Fonts.KROJ}";
-        ctx.fillText("Trzewia Tekst, kursywa: Zażółć gęślą jaźń — ĄĆĘŁŃÓŚŹŻ", plX, dy + 54);
-        ctx.font = $"20px {Fonts.KROJ_PISMO}";
-        ctx.fillText("Trzewia Pismo: Zażółć gęślą jaźń — ĄĆĘŁŃÓŚŹŻ ąćęłńóśźż", plX, dy + 80);
+        ctx.fillText(rada?.tekst ?? "", plX, dy + 28, plW);
         ctx.font = $"15px {Fonts.KROJ}";
         ctx.fillStyle = "rgba(176,160,132,0.95)";
-        var sek = Math.Floor(tik / TEMPO.tikowNaSekunde);
-        ctx.fillText($"czas gry {sek / 60:00}:{sek % 60:00} ({tik} tików) · kamera {cam.x:F1}, {cam.y:F1}, przybliżenie {cam.zoom:F2} · " +
-                     $"mysz {myszX:F0}, {myszY:F0} · kliknięcia {klikniecia} · klawisz „{ostatniKlawisz}” → {ostatniaAkcja}", plX, dy + 106);
+        var sek = Math.Floor(sim.tick / TEMPO.tikowNaSekunde);
+        ctx.fillText($"czas gry {Math.Floor(sek / 60):00}:{sek % 60:00} ({sim.tick} tików, ×{tempo}) · krok symulacji {msKroku * 1000:F0} µs · " +
+                     $"żywych {zywych} · krew {sim.krew:F0} · wiara {sim.wiara:F0} · żelazo {sim.zelazo} · złoto {sim.zloto} · " +
+                     $"pęknięć {sim.rytual.pekniecia} · sen {sim.sen:F2}", plX, dy + 54);
+        ctx.fillText($"kamera {cam.x:F1}, {cam.y:F1}, przybliżenie {cam.zoom:F2} · mysz {myszX:F0}, {myszY:F0} · " +
+                     $"klawisz „{ostatniKlawisz}” → {ostatniaAkcja}", plX, dy + 76);
         ctx.fillText("F3 — licznik wydajności · F11 — pełny ekran · kółko — przybliż · prawy albo środkowy przycisk — przesuń · " +
-                     "C — kamera na środek · ] [ — przybliż, oddal", plX, dy + 126);
+                     "C — kamera na środek · ] [ — przybliż, oddal · spacja — pauza · + − — tempo · N — następna góra", plX, dy + 98);
         ctx.textAlign = "right";
-        ctx.fillText($"skala {ekran.skala:F3} · ekran logiczny {w:F0}×{h:F0}", w - EKRAN.ramaPlyty, dy + 30);
+        ctx.fillText($"skala {ekran.skala:F3} · ekran logiczny {w:F0}×{h:F0}", w - EKRAN.ramaPlyty, dy + 28);
         L.znacz(Czesc.interfejs, t);
     }
 
@@ -149,7 +246,7 @@ public sealed class EkranProby : Ekran
         {
             cam.x = c.cx - (e.clientX - c.x) / cam.zoom;
             cam.y = c.cy - (e.clientY - c.y) / cam.zoom;
-            cam.clamp(SWIAT_W, SWIAT_H);
+            cam.clamp(sim.world.w, sim.world.h);
         }
         else if (faza == Faza.gora) ciagniecie = null;
     }
@@ -159,10 +256,10 @@ public sealed class EkranProby : Ekran
     {
         var bx = cam.toWorldX(e.clientX - plX); var by = cam.toWorldY(e.clientY - plY);
         cam.zoom *= e.deltaY < 0 ? KAMERA.krokKolka : 1 / KAMERA.krokKolka;
-        cam.clamp(SWIAT_W, SWIAT_H);
+        cam.clamp(sim.world.w, sim.world.h);
         cam.x += bx - cam.toWorldX(e.clientX - plX);
         cam.y += by - cam.toWorldY(e.clientY - plY);
-        cam.clamp(SWIAT_W, SWIAT_H);
+        cam.clamp(sim.world.w, sim.world.h);
     }
 
     public override void klawisz(Akcja? akcja, Klawisz e)
@@ -171,9 +268,20 @@ public sealed class EkranProby : Ekran
         ostatniaAkcja = akcja?.ToString() ?? "—";
         switch (akcja)
         {
-            case Akcja.przyblizenie: cam.zoom = Math.Min(cam.maxZoom, cam.zoom * KAMERA.krokKlawisza); cam.clamp(SWIAT_W, SWIAT_H); break;
-            case Akcja.oddalenie: cam.zoom = Math.Max(cam.minZoom, cam.zoom / KAMERA.krokKlawisza); cam.clamp(SWIAT_W, SWIAT_H); break;
-            case Akcja.kamera: cam.x = 96; cam.y = 30; cam.zoom = KAMERA.start; cam.clamp(SWIAT_W, SWIAT_H); break;
+            case Akcja.przyblizenie: cam.zoom = Math.Min(cam.maxZoom, cam.zoom * KAMERA.krokKlawisza); cam.clamp(sim.world.w, sim.world.h); break;
+            case Akcja.oddalenie: cam.zoom = Math.Max(cam.minZoom, cam.zoom / KAMERA.krokKlawisza); cam.clamp(sim.world.w, sim.world.h); break;
+            case Akcja.kamera: cam.x = sim.world.w / 2; cam.y = 30; cam.zoom = KAMERA.start; cam.clamp(sim.world.w, sim.world.h); break;
+            case Akcja.pauza: pauza = !pauza; break;
+            case Akcja.szybciej: case Akcja.wolniej:
+                {
+                    // jak tryb deweloperski w game.ts: następny / poprzedni mnożnik z TEMPO.mnozniki
+                    var M = TEMPO.mnozniki;
+                    int i = Array.FindIndex(M, m => m >= tempo);
+                    if (i < 0) i = M.Length - 1;
+                    tempo = M[Math.Max(0, Math.Min(M.Length - 1, i + (akcja == Akcja.szybciej ? 1 : -1)))];
+                    break;
+                }
+            case Akcja.odNowa: NowaGora(ziarno + 1); rozmiar(ostW, ostH); break;
         }
     }
 }
