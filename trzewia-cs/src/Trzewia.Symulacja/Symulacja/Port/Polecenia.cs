@@ -1,5 +1,6 @@
 // Port: alpha-1/src/sim/polecenia.ts
 using System;
+using Trzewia.Nastawy;
 using System.Collections.Generic;
 using System.Linq;
 using Trzewia.Js;
@@ -405,7 +406,7 @@ namespace Trzewia.Symulacja
         static string? poZbroje(Sim sim, Creature c, Pomieszczenie pom)
         {
             if (naWieszaku(sim).Count == 0) return odmow(sim, c, "nie ma części na wieszaku");
-            var (mx, my) = miejscePodWieszakiem(pom);
+            var (mx, my, _) = miejscePodWieszakiem(pom);
             bool tam(double x, double y) => Math.Abs(x - mx) <= 1 && y == my && stoi(sim, x, y);
             if (!tam(Math.Floor(c.x), Math.Floor(c.y)) && drogaTeraz(sim, c, tam, P.szukanieDrogi) == null) return odmow(sim, c, "nie dojdę do kuźni — nie ma drogi");
             przerwij(sim, c);

@@ -1,5 +1,7 @@
 // Port: alpha-1/src/sim/kruszce.ts
 using System;
+using Trzewia.Js;
+using Trzewia.Nastawy;
 using JS = Trzewia.Js.Js;
 using System.Collections.Generic;
 using static Trzewia.Nastawy.NastawyKruszce;

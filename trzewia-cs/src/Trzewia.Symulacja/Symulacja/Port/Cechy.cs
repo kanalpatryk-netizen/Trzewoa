@@ -1,5 +1,6 @@
 // Port: alpha-1/src/sim/cechy.ts
 using System;
+using Trzewia.Js;
 using System.Collections.Generic;
 using System.Linq;
 using Trzewia.Nastawy;

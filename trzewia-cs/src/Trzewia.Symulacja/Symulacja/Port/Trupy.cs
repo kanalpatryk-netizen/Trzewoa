@@ -1,5 +1,7 @@
 // Port: alpha-1/src/sim/trupy.ts
 using System;
+using Trzewia.Js;
+using Trzewia.Nastawy;
 using System.Collections.Generic;
 using System.Linq;
 using static Trzewia.Nastawy.NastawyLud;

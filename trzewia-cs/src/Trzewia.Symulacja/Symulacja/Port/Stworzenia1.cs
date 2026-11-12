@@ -1,5 +1,6 @@
 // Port: alpha-1/src/sim/creatures.ts — część 1: stepCreature, krokStworzenia, rozstaw
 using System;
+using Trzewia.Nastawy;
 using System.Collections.Generic;
 using System.Linq;
 using Trzewia.Js;

@@ -1,5 +1,6 @@
 // Port: alpha-1/src/sim/droga.ts
 using System;
+using Trzewia.Nastawy;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;

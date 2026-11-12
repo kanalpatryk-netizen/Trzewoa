@@ -1,5 +1,6 @@
 // Port: alpha-1/src/sim/pielgrzymka.ts
 using System;
+using Trzewia.Nastawy;
 using System.Collections.Generic;
 using System.Linq;
 using Trzewia.Js;
@@ -203,13 +204,13 @@ namespace Trzewia.Symulacja
                 var x = i % W;
                 double g = JS.ToInt32(i / W);
                 while (g > 0 && JS.Tak(w.lina[(g - 1) * W + x])) g--;
-                if (kotwicaLiny(w, x, g)) continue;
+                if (kotwicaLiny(w, x, g) != null) continue;
                 var dodane = new List<double>();
-                while (dodane.Count < 4 && g > 0 && PASSABLE[w.tile[(g - 1) * W + x]] == 1 && !kotwicaLiny(w, x, g))
+                while (dodane.Count < 4 && g > 0 && PASSABLE[w.tile[(g - 1) * W + x]] == 1 && kotwicaLiny(w, x, g) == null)
                 {
                     g--; w.lina[g * W + x] = 1; dodane.Add(g * W + x);
                 }
-                if (kotwicaLiny(w, x, g)) { liny.AddRange(dodane); continue; }
+                if (kotwicaLiny(w, x, g) != null) { liny.AddRange(dodane); continue; }
                 foreach (var j in dodane) w.lina[j] = 0;
                 // bez zaczepienia — cały odcinek odpada
                 var d = g;
@@ -231,7 +232,7 @@ namespace Trzewia.Symulacja
                 double x = i % W, y = JS.ToInt32(i / W);
                 var gora = y;
                 while (gora > 0 && JS.Tak(w.lina[i - (y - gora + 1) * W])) gora--;
-                if (!kotwicaLiny(w, x, gora)) continue;
+                if (kotwicaLiny(w, x, gora) == null) continue;
                 w.lina[i] = 1;
                 zdarzenie(sim, new ZdarzeniePom { rodzaj = "lina", x = x, y0 = y, y1 = y, tik = sim.tick, gracz = false });
                 zapisz(sim, "praca", $"na zakręcie drogi wiernych ({JS.S(x)}, {JS.S(y)}) spadła lina — tędy wróci się pod górę", x, y);

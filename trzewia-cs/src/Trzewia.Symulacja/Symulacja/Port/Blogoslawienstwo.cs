@@ -1,5 +1,7 @@
 // Port: alpha-1/src/sim/blogoslawienstwo.ts
 using System;
+using Trzewia.Js;
+using Trzewia.Nastawy;
 using System.Linq;
 using static Trzewia.Nastawy.NastawyLoch;
 using static Trzewia.Nastawy.NastawyRytual;

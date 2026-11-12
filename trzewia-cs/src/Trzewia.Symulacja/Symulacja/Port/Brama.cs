@@ -1,5 +1,6 @@
 // Port: alpha-1/src/sim/brama.ts
 using System;
+using Trzewia.Nastawy;
 using System.Collections.Generic;
 using Trzewia.Js;
 using static Trzewia.Nastawy.NastawyLoch;

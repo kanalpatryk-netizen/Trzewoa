@@ -1,5 +1,6 @@
 // Port: alpha-1/src/sim/creatures.ts (typy: Job, Thought, Creature, makeCreature) i sim.ts (Clan, Particle, PK, ChronicleEntry)
 using System;
+using Trzewia.Nastawy;
 using System.Collections.Generic;
 using Trzewia.Js;
 using static Trzewia.Nastawy.NastawyStworzenia;

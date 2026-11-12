@@ -1,5 +1,6 @@
 // Port: alpha-1/src/sim/creatures.ts — część 7: doPielgrzym … doDrain
 using System;
+using Trzewia.Nastawy;
 using System.Collections.Generic;
 using System.Linq;
 using Trzewia.Js;

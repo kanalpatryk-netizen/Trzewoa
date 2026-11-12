@@ -1,5 +1,6 @@
 // Port: alpha-1/src/sim/aniol.ts
 using System;
+using Trzewia.Nastawy;
 using System.Collections.Generic;
 using System.Linq;
 using Trzewia.Js;
@@ -54,17 +55,17 @@ namespace Trzewia.Symulacja
             var w = sim.world;
             var @out = new List<MozliwyDar>();
             var P = ANIOL.dary.podkop;
-            var kafle = nieWykopane(sim).Where(i => w.tile[i] != T.CORE).Take((int)P.kafli).ToList();
-            if (kafle.Count >= P.najmniej) @out.Add(new MozliwyDar { dar = "podkop", x = kafle[0] % w.w, y = JS.ToInt32(kafle[0] / w.w), kafle = kafle });
+            var kafle = nieWykopane(sim).Where(i => w.tile[i] != T.CORE).Take((int)(P.kafli ?? 0)).ToList();
+            if (kafle.Count >= (P.najmniej ?? double.NaN)) @out.Add(new MozliwyDar { dar = "podkop", x = kafle[0] % w.w, y = JS.ToInt32(kafle[0] / w.w), kafle = kafle });
             var o = w.oltarz;
             double ludu = 0;
             foreach (var c in sim.creatures) if (!c.dead && rolaPostaci(c) != null) ludu++;
-            if (klanLudu(sim) != null && ludu < ANIOL.dary.ludzie.maksLudu)
+            if (klanLudu(sim) != null && ludu < (ANIOL.dary.ludzie.maksLudu ?? double.NaN))
             {
                 var m = podloga(sim, o.x + (sim.rng.next() < 0.5 ? -3 : 3), o.y, 4);
                 if (m != null) @out.Add(new MozliwyDar { dar = "ludzie", x = m.Value.x, y = m.Value.y });
             }
-            if (sim.krew < GORA.krewMax * ANIOL.dary.krew.niePonad) @out.Add(new MozliwyDar { dar = "krew", x = o.x, y = o.y - 2 });
+            if (sim.krew < GORA.krewMax * (ANIOL.dary.krew.niePonad ?? double.NaN)) @out.Add(new MozliwyDar { dar = "krew", x = o.x, y = o.y - 2 });
             return @out;
         }
 
@@ -134,7 +135,7 @@ namespace Trzewia.Symulacja
             }
             else if (s.dar == "krew")
             {
-                var cel = JS.Round(ANIOL.dary.krew.ile * Math.Min(1, t / (ANIOL.dar * 0.85)));
+                var cel = JS.Round((ANIOL.dary.krew.ile ?? double.NaN) * Math.Min(1, t / (ANIOL.dar * 0.85)));
                 var dolej = cel - (s.krewDana ?? 0);
                 if (dolej > 0) { sim.krew = Math.Min(GORA.krewMax, sim.krew + dolej); s.krewDana = cel; }
             }

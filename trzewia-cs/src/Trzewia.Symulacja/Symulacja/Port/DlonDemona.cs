@@ -170,10 +170,10 @@ namespace Trzewia.Symulacja
             var odl = JS.Hypot(r.x - dm.x, r.y - dm.y);
             var mozliwe = new List<Mozliwa>();
             var stoiNaZiemi = sim.world.solid(Math.Floor(r.x), Math.Floor(r.y) + 1);
-            if (odl <= D.rzut.zasieg && stoiNaZiemi && st.sciana == null) mozliwe.Add(new Mozliwa { a = "rzut", waga = D.wagi.rzut, ustaw = () => ustawRzut(sim, st, dm, r) });
-            if (odl <= D.tarcza.zasieg && st.sciana == null) mozliwe.Add(new Mozliwa { a = "tarcza", waga = D.wagi.tarcza, ustaw = () => ustawTarcze(sim, st, dm, r) });
+            if (odl <= D.rzut.zasieg && stoiNaZiemi && st.sciana == null) mozliwe.Add(new Mozliwa { a = "rzut", waga = D.wagi.rzut ?? double.NaN, ustaw = () => ustawRzut(sim, st, dm, r) });
+            if (odl <= D.tarcza.zasieg && st.sciana == null) mozliwe.Add(new Mozliwa { a = "tarcza", waga = D.wagi.tarcza ?? double.NaN, ustaw = () => ustawTarcze(sim, st, dm, r) });
             var dx = Math.Abs(r.x - dm.x);
-            if (dx >= D.zawal.minOdstep && dx <= D.zawal.maxOdstep && Math.Abs(r.y - dm.y) <= D.zawal.maxRoznicaWys && st.sciana == null) mozliwe.Add(new Mozliwa { a = "zawal", waga = D.wagi.zawal, ustaw = () => ustawZawal(sim, st, dm, r) });
+            if (dx >= D.zawal.minOdstep && dx <= D.zawal.maxOdstep && Math.Abs(r.y - dm.y) <= D.zawal.maxRoznicaWys && st.sciana == null) mozliwe.Add(new Mozliwa { a = "zawal", waga = D.wagi.zawal ?? double.NaN, ustaw = () => ustawZawal(sim, st, dm, r) });
             var inne = mozliwe.Where(m => m.a != st.ostatnia).ToList();
             var lista = inne.Count > 0 ? inne : mozliwe;
             while (lista.Count > 0)
