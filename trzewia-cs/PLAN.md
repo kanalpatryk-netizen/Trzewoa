@@ -450,7 +450,7 @@ klatka 11,8 ms, najdłuższa 12 ms, procesor 7,9 ms (z tego 7,6 ms siatka — zo
 
 ---
 
-## 8. Decyzje użytkownika (9.11 i 10.11)
+## 8. Decyzje użytkownika (9.11, 10.11 i 12.11)
 
 | Pytanie | Odpowiedź |
 |---|---|
@@ -460,6 +460,65 @@ klatka 11,8 ms, najdłuższa 12 ms, procesor 7,9 ms (z tego 7,6 ms siatka — zo
 | Liczby gry tylko w kodzie, czy z nadpisaniem plikami `.json`? | „mają mieć możliwość nadmiany” (3.5) |
 | Czy `alpha-1/` będzie się zmieniać w trakcie? | „w trakcie przenoszenia nie będzie zmian” |
 | (10.11, sam z siebie) Silnik w przyszłości? | „pisz plan i kod w c# tak, żeby potem wszystko łatwo można było przenieść pod jakiś silnik (np unity albo godot)” — punkt 3.0 |
+
+| (12.11) Kolejność etapów 3–4 i sposób rysowania postaci | „Zacznij od przeniesienia postaci, gdy skończysz nie rób nic więcej, zatrzymaj się i czekaj na moją komendę, ALE postacie nie mają już być rysowane przez grę bezpośrednio, zrób sprite'y każdego duszka i jego animacje tak, żeby działały w Unity też” — punkt 9 |
+| (12.11) Format duszków | „Postacie, jeśli się da, to zrób w png i jpg” — arkusze w PNG (przezroczystość), podglądy i tekstury w JPG |
+| (12.11) Dłoń | „Dłoń ma być modelem 3d oczywiście, a nie plikiem jpg” — punkt 9.6 |
+
+---
+
+## 9. Duszki (sprite'y postaci) i model 3D dłoni — decyzje użytkownika 12.11
+
+To świadoma zmiana wobec zasady „wierne przeniesienie”: w TS postać jest rysowana od zera w każdej klatce (szkielet,
+poza, stroje, sprężyny peleryny — ok. 12 tys. linii w `render/lud/`, `figury.ts`, `straznicy.ts`, `demon-*.ts`).
+W C# gra **nie rysuje postaci kodem** — wyświetla gotowe klatki z arkuszy (duszki). Arkusze nadają się wprost do Unity
+i Godota. Etap 3 (świat) czeka na komendę użytkownika; po duszkach i dłoni praca staje.
+
+### 9.1 Skąd są klatki — „piekarnia”
+- `narzedzia/duszki/`: kod rysunku **z gry TS** (`alpha-1/src/render/…`, bez zmian w `alpha-1/`) spakowany esbuildem
+  i uruchomiony w Chromium (Playwright) rysuje każdą klatkę na przezroczystym płótnie; narzędzie przycina ją, pakuje
+  w arkusze PNG i zapisuje opis JSON. Wygląd klatki jest więc 1:1 taki jak w grze TS.
+- Vite'owe importy (obrazki, `?url`, `import.meta.glob`) dorabia wtyczka w `paczka.mjs`; wybrane moduły gry można
+  podmienić nakładką (np. zamrożony szum w spoczynku), nie ruszając `alpha-1/`.
+- Rysunek idzie „jak w grze”: symulowany zegar 60 klatek/s, rozgrzewka (przejścia póz, sprężyny peleryny i kaptura),
+  dopiero potem zdjęcia klatek — smuga miecza i ruch wtórny są w klatkach.
+
+### 9.2 Kto ma duszki (spis z 8 partii bota, 12.11)
+- lud: **robotnik** (w grze numery 3, 4, 5 + przybysze od anioła), **pobożny** (1, 2), **rycerz** (6; 6 stanów zbroi —
+  kuźnia kuje części w stałej kolejności, więc stany to 0…5 części), robotnik w hełmie (gdy nie ma rycerza);
+- **Strażnik Snu**, **demon** (boss: spoczynek, chód, 19 ruchów walki, wstawanie z gruzu, konanie);
+- innych ras w Alphie nie ma (Strażnicy to rasa „trol” z własnym rysunkiem) — stare figury z `figury.ts` nie są pieczone.
+- Wygląd postaci ludu zależy od jej numeru (karnacja, broda, barwy szat — `render/lud/stroj.ts`): pieczone są dokładnie
+  numery drużyny 1–6 i kilka wzorów zapasowych dla przybyszów.
+
+### 9.3 Poziomy wielkości
+Rysunek TS zmienia się z wielkością na ekranie (grubość obwódki i siła jasnej aury mają progi w pikselach, szczegóły
+dochodzą od 70 px) — zmniejszona duża klatka wyglądałaby inaczej niż w TS (słabsza aura, postać ginie w mroku). Dlatego
+każda klatka jest pieczona w kilku wielkościach (wysokość postaci w px ekranu: 24, 34, 48, 68, 96; rycerz ×1,3),
+a gra bierze poziom najbliższy wielkości na ekranie. W Unity wystarczy największy poziom z mipmapami (albo wszystkie).
+
+### 9.4 Format (`dane/grafika/duszki/`)
+- `<postać>[-<wzór>][-<wariant>].json` + strony PNG `…-h<poziom>-<nr>.png` (≤ 2048 px, przezroczyste tło, alfa prosta,
+  2 px odstępu); do tego podglądy `podglad/*.jpg` (wszystkie klatki animacji obok siebie na ciemnym tle).
+- JSON: `wysokoscKafli`, `poziomy[]` (h, strony, `klatki[]` = strona, x, y, w, h, ox, oy — przesunięcie przyciętej
+  klatki względem punktu zaczepienia: środek stóp, twarzą w prawo), `animacje{}` (pierwsza klatka, liczba klatek,
+  sterownik, czas trwania, pętla), punkty na klatkę (głowa — aureola i znaki stanów).
+- Sterownik klatki — jak w TS: `faza` (krok rośnie z drogą, stopa się nie ślizga), `fazaPion` (wspinaczka), `zegar`
+  (zamach kilofa), `czas` (oddech, modlitwa), `postep` (ruch walki, zakładanie zbroi, odmowa).
+
+### 9.5 Odtwarzanie (`Trzewia.Gra/Rysunek/Duszki/`)
+Wybór animacji i klatki to przeniesione `czynnosc()` i `ruch()` z `render/figury.ts` oraz `stanWalki` rycerza; wynik to
+lista „duszek + klatka + położenie + odbicie” — rysuje ją `IPlotno.drawImage`, a w silniku ta sama lista steruje
+`SpriteRenderer`-ami. Cień pod stopami, aureola modlitwy, znaki stanów, pierścień zaznaczenia zostają rysunkiem kodu.
+Czego duszki nie mają (świadome uproszczenia, do raportu): płynnego mieszania póz przy zmianie czynności, mrugania,
+drżenia ze strachu, ciepłej krawędzi od cudzego światła, osobnych klatek szału (jest czerwona aura).
+
+### 9.6 Dłoń — model 3D
+W TS dłoń (z otchłani, demona, anielska) to arkusz 10 klatek wyrenderowanych z modelu SDF (`scripts/dlon/model.html`,
+ray marching w WebGL). W C#: **siatka trójkątów** wyciągnięta z tego samego SDF (marching cubes w pozie spoczynkowej,
+oryginalny GLSL liczony w Chromium), **szkielet palców** i wagi skóry, **animacje** (zacisk, rzut, tarcza, zawał),
+barwy i normalne z modelu; pliki: glTF (`.glb`) + format wczytywany przez Unity bez dodatków. Gra rysuje model na żywo
+(mały renderer z buforem głębi w warstwie rysunku), w silniku — zwykły `SkinnedMeshRenderer`.
 
 ---
 
