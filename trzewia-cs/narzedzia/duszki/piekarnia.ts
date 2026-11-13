@@ -80,7 +80,7 @@ export async function piecz(nazwa: string, nr: number) {
     s.co = a.nazwa;
     a.piecz(s, (k) => klatki.push(k));
     if (klatki.length - od !== a.n) throw new Error(`${nazwa}/${a.nazwa}: ${klatki.length - od} klatek zamiast ${a.n}`);
-    opis[a.nazwa] = { od, n: a.n, ster: a.ster, ...(a.mnoz !== undefined ? { mnoz: a.mnoz, przes: a.przes ?? 0 } : {}), ms: Math.round(a.ms), petla: a.petla };
+    opis[a.nazwa] = { od, n: a.n, ster: a.ster, ...(a.mnoz !== undefined ? { mnoz: a.mnoz, przes: a.przes ?? 0 } : {}), ms: Math.round(a.ms), petla: a.petla, ...(a.srodki ? { srodki: true } : {}) };
   }
   const { strony, gdzie } = pakuj(klatki);
   ostatnie = { nazwa, anim, klatki, h: s.hPx };

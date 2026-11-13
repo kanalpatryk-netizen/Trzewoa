@@ -1,5 +1,6 @@
 // Piecze duszki: node narzedzia/duszki/piecz.mjs [zlecenie…]   (bez argumentów — wszystkie z listy ZLECENIA)
-// Wynik: trzewia-cs/dane/grafika/duszki/<zlecenie>.json + strony PNG <zlecenie>-h<wys>-<nr>.png + podglad/<zlecenie>.jpg
+// Wynik: trzewia-cs/dane/grafika/duszki/<zlecenie>.json + strony PNG <zlecenie>-h<wys>-<nr>.png
+//        oraz podgląd trzewia-cs/duszki-podglad/<zlecenie>.jpg
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,6 +9,8 @@ import { zbuduj, otworz, zapiszPng } from './paczka.mjs';
 
 const TU = path.dirname(fileURLToPath(import.meta.url));
 const CEL = process.env.CEL ?? path.resolve(TU, '../../dane/grafika/duszki');
+// podglądy (wszystkie klatki animacji obok siebie) są dla ludzi — poza danymi gry
+const PODGLAD = process.env.CEL ? path.join(CEL, 'podglad') : path.resolve(TU, '../../duszki-podglad');
 export const ZLECENIA = [
   // robotnicy drużyny (numery 3, 4, 5) i dwa wzory dla przybyszów od anioła (7, 8); każdy także w hełmie
   'robotnik-3', 'robotnik-4', 'robotnik-5', 'robotnik-7', 'robotnik-8',
@@ -33,7 +36,8 @@ const wybrane = process.argv.slice(2).length ? process.argv.slice(2) : ZLECENIA;
 const kod = await zbuduj(path.join(TU, 'piekarnia.ts'), PODMIANY);
 const s = await otworz(kod);
 const poziomy = await s.wolaj('poziomy');
-fs.mkdirSync(path.join(CEL, 'podglad'), { recursive: true });
+fs.mkdirSync(CEL, { recursive: true });
+fs.mkdirSync(PODGLAD, { recursive: true });
 for (const nazwa of wybrane) {
   const t0 = Date.now();
   const opis = { wersja: 1, postac: '', wzor: 0, wariant: '', mnoznik: 1, poziomy: [], animacje: {}, glowa: [] };
@@ -56,7 +60,7 @@ for (const nazwa of wybrane) {
     klatek = w.klatki.length;
     if (nr === poziomy.length - 1) {
       const jpg = await s.wolaj('podglad');
-      fs.writeFileSync(path.join(CEL, 'podglad', nazwa + '.jpg'), Buffer.from(jpg.replace(/^data:image\/jpeg;base64,/, ''), 'base64'));
+      fs.writeFileSync(path.join(PODGLAD, nazwa + '.jpg'), Buffer.from(jpg.replace(/^data:image\/jpeg;base64,/, ''), 'base64'));
     }
   }
   // JSON zwarty: każda klatka w jednym wierszu

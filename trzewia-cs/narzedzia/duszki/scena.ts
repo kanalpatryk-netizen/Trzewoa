@@ -101,7 +101,8 @@ export class Scena {
   /** Płótno na postać wysoką na `hPx` pikseli ekranu. */
   wymiary(hPx: number): void {
     this.hPx = hPx; this.hLog = hPx / SKALA;
-    this.W = Math.ceil(hPx * 6.4); this.H = Math.ceil(hPx * 4.6);
+    // (pod stopami 1,9 wysokości zapasu: miecz wbity w ziemię przy wstawaniu, krople krwi, które spadają niżej)
+    this.W = Math.ceil(hPx * 6.4); this.H = Math.ceil(hPx * 5.4);
     this.px0 = Math.round(this.W / 2); this.py0 = Math.round(hPx * 3.5);
     this.plotno.width = this.W; this.plotno.height = this.H;
   }

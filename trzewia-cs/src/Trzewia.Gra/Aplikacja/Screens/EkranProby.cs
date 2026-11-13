@@ -41,6 +41,8 @@ public sealed class EkranProby : Ekran
     IPlotno? mapa;
     double mapaTik = -1;
     double msKroku;
+    /// <summary>Podgląd bez duszków (klawisz L): kropki w miejscach z symulacji — do porównania położeń.</summary>
+    bool kropki;
     Podpowiedz? rada;
 
     public EkranProby() { NowaGora(1); }
@@ -171,25 +173,25 @@ public sealed class EkranProby : Ekran
         ctx.imageSmoothingEnabled = true;
         t = L.znacz(Czesc.swiat, t);
 
-        // stworzenia: kropki w barwie rasy (strażnicy i demon — czerwone obwódki)
+        // stworzenia: duszki (PLAN.md, punkt 9) — ten sam rysunek, który wejdzie do ekranu gry
         int zywych = 0;
-        foreach (var c in sim.creatures)
+        foreach (var c in sim.creatures) if (!c.dead) zywych++;
+        if (kropki)
         {
-            if (c.dead) continue;
-            zywych++;
-            var sx = cam.toScreenX(c.x); var sy = cam.toScreenY(c.y - 0.5);
-            if (sx < -20 || sy < -20 || sx > plW + 20 || sy > plH + 20) continue;
-            var k = Races.RACES[c.race].color;
-            ctx.fillStyle = Barwa.Rgba(k[0], k[1], k[2], 1);
-            ctx.beginPath();
-            ctx.arc(sx, sy, Math.Max(1.5, cam.zoom * (c.boss != null ? 1.4 : 0.45)), 0, Math.PI * 2);
-            ctx.fill();
-            if (c.straznik == true)
+            foreach (var c in sim.creatures)
             {
-                ctx.strokeStyle = "rgba(230,60,50,0.9)";
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
+                if (c.dead) continue;
+                var k = Races.RACES[c.race].color;
+                ctx.fillStyle = Barwa.Rgba(k[0], k[1], k[2], 1);
+                ctx.beginPath();
+                ctx.arc(cam.toScreenX(c.x), cam.toScreenY(c.y + 0.5), Math.Max(1.5, cam.zoom * 0.3), 0, Math.PI * 2);
+                ctx.fill();
             }
+        }
+        else
+        {
+            Figury.rysujStworzenia(ctx, sim, cam, teraz);
+            RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
         }
         // cel podpowiedzi
         if (rada?.cel is { } cel)
@@ -215,7 +217,7 @@ public sealed class EkranProby : Ekran
         ctx.fillStyle = "#e8c482";
         ctx.font = $"600 28px {Fonts.KROJ_TYTUL}";
         var koniec = sim.ending != null ? $" — koniec: {sim.ending}" : pauza ? " — pauza" : "";
-        ctx.fillText($"Trzewia — C#, etap 2: prawdziwa góra (ziarno {ziarno}), gra bot{koniec}", plX, dy);
+        ctx.fillText($"Trzewia — C#, duszki postaci na prawdziwej górze (ziarno {ziarno}), gra bot{koniec}", plX, dy);
         ctx.fillStyle = "rgba(236,222,190,0.92)";
         ctx.font = $"italic 18px {Fonts.KROJ}";
         ctx.fillText(rada?.tekst ?? "", plX, dy + 28, plW);
@@ -228,7 +230,7 @@ public sealed class EkranProby : Ekran
         ctx.fillText($"kamera {cam.x:F1}, {cam.y:F1}, przybliżenie {cam.zoom:F2} · mysz {myszX:F0}, {myszY:F0} · " +
                      $"klawisz „{ostatniKlawisz}” → {ostatniaAkcja}", plX, dy + 76);
         ctx.fillText("F3 — licznik wydajności · F11 — pełny ekran · kółko — przybliż · prawy albo środkowy przycisk — przesuń · " +
-                     "C — kamera na środek · ] [ — przybliż, oddal · spacja — pauza · + − — tempo · N — następna góra", plX, dy + 98);
+                     "C — kamera na środek · ] [ — przybliż, oddal · spacja — pauza · + − — tempo · N — następna góra · L — kropki zamiast duszków", plX, dy + 98);
         ctx.textAlign = "right";
         ctx.fillText($"skala {ekran.skala:F3} · ekran logiczny {w:F0}×{h:F0}", w - EKRAN.ramaPlyty, dy + 28);
         L.znacz(Czesc.interfejs, t);
@@ -272,6 +274,7 @@ public sealed class EkranProby : Ekran
             case Akcja.oddalenie: cam.zoom = Math.Max(cam.minZoom, cam.zoom / KAMERA.krokKlawisza); cam.clamp(sim.world.w, sim.world.h); break;
             case Akcja.kamera: cam.x = sim.world.w / 2; cam.y = 30; cam.zoom = KAMERA.start; cam.clamp(sim.world.w, sim.world.h); break;
             case Akcja.pauza: pauza = !pauza; break;
+            case Akcja.legenda: kropki = !kropki; break;
             case Akcja.szybciej: case Akcja.wolniej:
                 {
                     // jak tryb deweloperski w game.ts: następny / poprzedni mnożnik z TEMPO.mnozniki

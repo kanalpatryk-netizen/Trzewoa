@@ -24,6 +24,8 @@ export interface Anim {
   mnoz?: number; przes?: number;
   /** czas całej animacji w ms przy zwykłym odtwarzaniu (dla silnika, który gra klipy zegarem) */
   ms: number; petla: boolean;
+  /** przebieg (postep) ze zdjęciami w środkach przedziałów: klatka = ⌊u · n⌋ (zwykle przebieg ma zdjęcia od początku do końca) */
+  srodki?: boolean;
   piecz(s: Scena, zdj: (k: Klatka) => void): void;
 }
 
@@ -78,7 +80,7 @@ export function lud(s: Scena, rola: Rola, id: number, o: Opcje = {}): Anim[] {
   spoczynek('', {});
   // gest w spoczynku: f = frac(czas · 0,00011 + id · 0,43) > 0,9 → postęp (f − 0,9) / 0,1
   A.push({
-    nazwa: 'stoi-gest', n: 8, ster: 'postep', ms: 0.1 / 0.00011, petla: false,
+    nazwa: 'stoi-gest', n: 8, ster: 'postep', ms: 0.1 / 0.00011, petla: false, srodki: true,
     piecz: (sc, zdj) => {
       zacznij('stoi');
       // chwila, w której f = 0,9
@@ -217,7 +219,7 @@ export function lud(s: Scena, rola: Rola, id: number, o: Opcje = {}): Anim[] {
   if (rola !== 'rycerz') {
     const od = rola === 'pobozny' ? 0.68 : 0.8, dl = rola === 'pobozny' ? 0.30 : 0.16, n = rola === 'pobozny' ? 12 : 8;
     A.push({
-      nazwa: 'modli-wznosi', n, ster: 'postep', ms: dl / 0.00016, petla: false,
+      nazwa: 'modli-wznosi', n, ster: 'postep', ms: dl / 0.00016, petla: false, srodki: true,
       piecz: (sc, zdj) => {
         zacznij('modli');
         let t0 = sc.czas + 5000;
@@ -314,13 +316,21 @@ export function lud(s: Scena, rola: Rola, id: number, o: Opcje = {}): Anim[] {
         piecz: (sc, zdj) => {
           zacznij('walczy'); wrog();
           let od = 0;
+          const trwa = (): void => { stan.cz = 'walczy'; c.ruch = { id: idRuchu, od, dl: dlTikow, cel: -1, traf: 0, zadane: [], kier: 1, sila: 0.3, ...extra }; };
+          // wycinek ze środka ruchu (wstawanie powalonego): rozgrzewka idzie w samym ruchu, 90 tików przed wycinkiem —
+          // poza dochodzi płynnie, a efekty z początku ruchu (krew, pył upadku) zdążą zgasnąć (żyją 700 ms)
+          const ROZBIEG = Math.min(odTiku, 90);
+          let rozgrzany = false;
           sc.raz({
-            czasMs: ((doTiku - odTiku) / 120) * 1000, n,
-            przed: () => { c.ruch = undefined; stan.cz = 'stoi'; },
+            czasMs: ((doTiku - odTiku) / 120) * 1000, n, rozgrzewkaMs: odTiku > 0 ? (ROZBIEG / 120) * 1000 : 700,
+            przed: () => {
+              if (odTiku === 0) { c.ruch = undefined; stan.cz = 'stoi'; return; }
+              if (!rozgrzany) { rozgrzany = true; od = sc.sim.tick - (odTiku - ROZBIEG); }
+              trwa();
+            },
             ustaw: (u) => {
-              if (u === 0) od = sc.sim.tick - odTiku;
-              stan.cz = 'walczy';
-              c.ruch = { id: idRuchu, od, dl: dlTikow, cel: -1, traf: 0, zadane: [], kier: 1, sila: 0.3, ...extra };
+              if (u === 0 && odTiku === 0) od = sc.sim.tick;
+              trwa();
               sc.sim.tick = od + Math.round(odTiku + u * (doTiku - odTiku - 1));
             },
           }, zdj);
@@ -344,7 +354,8 @@ export function lud(s: Scena, rola: Rola, id: number, o: Opcje = {}): Anim[] {
         zacznij('walczy'); wrog();
         const od = sc.sim.tick - 40;
         c.ruch = { id: 'powalony', od, dl: 100000, cel: -1, traf: 0, zadane: [], kier: 1, sila: 0.3 };
-        sc.cykl({ okresMs: 1500, n: 8, rozgrzewkaMs: 400, ustaw: () => { stan.cz = 'walczy'; } }, zdj);
+        // (rozgrzewka dłuższa niż życie efektów — krew i pył z początku ruchu gasną przed pierwszym zdjęciem)
+        sc.cykl({ okresMs: 1500, n: 8, rozgrzewkaMs: 1500, ustaw: () => { stan.cz = 'walczy'; } }, zdj);
         c.ruch = undefined;
       },
     });
