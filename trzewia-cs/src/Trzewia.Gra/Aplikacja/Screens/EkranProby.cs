@@ -190,6 +190,17 @@ public sealed class EkranProby : Ekran
         }
         else
         {
+            RysTrupy.rysujTrupy(ctx, sim, cam, teraz);
+            // demon wstający z gruzu po rozpadzie pomnika (w grze woła to rysunek pomnika — render/pomnik.ts, etap 3)
+            var pomnik = sim.lud.pomnik;
+            if (pomnik != null && pomnik.faza == "wychodzi")
+            {
+                var m = Symulacja.Pomnik.miejscePomnika(sim);
+                ctx.save();
+                ctx.translate(cam.toScreenX(m.x), cam.toScreenY(m.y + 1));
+                Rysunek.Duszki.DuszkiDemona.rysujWstajacego(ctx, Rysunek.Duszki.DuszkiDemona.wysokoscDemona(cam.zoom), Math.Min(1, (sim.tick - pomnik.od) / Nastawy.NastawyPomnik.POMNIK.wyjscie));
+                ctx.restore();
+            }
             Figury.rysujStworzenia(ctx, sim, cam, teraz);
             RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
         }

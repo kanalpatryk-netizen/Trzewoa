@@ -3,8 +3,26 @@ import { POZIOMY, Scena, type Klatka } from './scena';
 import { lud, type Anim, type Rola } from './lud';
 import { przechwytujSwiatla } from './swiatla';
 import { straznik } from './straznik';
+import { demon, czekajNaKukle } from './demon';
 
-interface Zlecenie { postac: string; wzor: number; wariant: string; mnoznik: number; anim: (s: Scena) => Anim[] }
+interface Zlecenie {
+  postac: string; wzor: number; wariant: string; mnoznik: number; anim: (s: Scena) => Anim[];
+  /** własne poziomy wielkości (domyślnie POZIOMY) i przygotowanie (np. czekanie na obrazki) */
+  poziomy?: number[]; przed?: () => Promise<void>;
+}
+
+// Losy rysunku (Math.random — cząstki i rozglądanie się demona) z ziarna: to samo pieczenie daje zawsze te same klatki.
+// PIEK_SIEJ(z) ustawia ziarno, a pierwszy los po nim to 0 (od niego zaczyna faza oddechu demona — demon.ts).
+{
+  const G = globalThis as any;
+  let ziarno = 1, zero = false;
+  G.PIEK_SIEJ = (z: number): void => { ziarno = z >>> 0; zero = true; };
+  Math.random = (): number => {
+    if (zero) { zero = false; return 0; }
+    ziarno = (Math.imul(ziarno, 1664525) + 1013904223) >>> 0;
+    return ziarno / 4294967296;
+  };
+}
 
 /** Rozbiera nazwę zlecenia: robotnik-3, robotnik-3-helm, pobozny-1, rycerz-6-z2. */
 function zlecenie(nazwa: string): Zlecenie {
@@ -19,6 +37,9 @@ function zlecenie(nazwa: string): Zlecenie {
   }
   // Strażnik Snu: sylwetka dwa razy wyższa niż postać ludu (rasa „trol”, size 2)
   if (postac === 'straznik') return { postac, wzor: 0, wariant: '', mnoznik: 2, anim: (s) => straznik(s) };
+  // Demon: sylwetka Strażnika × 3,2 × 0,6 (render/straznicy.ts) — kukła z obrazków, więc jeden poziom wielkości:
+  // h0 = 80 px to demon wysoki na ok. 154 px, tyle co przy zwykłym przybliżeniu gry w 1080p
+  if (postac === 'demon') return { postac, wzor: 0, wariant: '', mnoznik: 2, anim: (s) => demon(s), poziomy: [40], przed: czekajNaKukle };
   throw new Error('nieznana postać: ' + nazwa);
 }
 
@@ -62,7 +83,7 @@ function pakuj(klatki: Klatka[], maks = 2048): { strony: HTMLCanvasElement[]; gd
   return { strony, gdzie: wynik.gdzie };
 }
 
-export function poziomy(): number[] { return POZIOMY; }
+export function poziomy(nazwa?: string): number[] { return (nazwa ? zlecenie(nazwa).poziomy : undefined) ?? POZIOMY; }
 
 /** Piecze zlecenie na poziomie `nr` (indeks w POZIOMY). */
 export async function piecz(nazwa: string, nr: number) {
@@ -71,7 +92,9 @@ export async function piecz(nazwa: string, nr: number) {
   // świeża scena na każde pieczenie — wynik nie zależy od tego, co pieczono wcześniej
   const s = (scena = new Scena());
   s.ostrzezenia = [];
-  s.wymiary(Math.round(POZIOMY[nr] * z.mnoznik));
+  (globalThis as any).PIEK_SIEJ(1);
+  if (z.przed) await z.przed();
+  s.wymiary(Math.round((z.poziomy ?? POZIOMY)[nr] * z.mnoznik));
   const anim = z.anim(s);
   const klatki: Klatka[] = [];
   const opis: Record<string, unknown> = {};

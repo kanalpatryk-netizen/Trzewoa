@@ -87,23 +87,27 @@ namespace Trzewia.Rysunek.Duszki
         /// </summary>
         public static string nazwaDuszka(Creature c, string rola)
         {
-            int id = (int)c.id;
+            // kuźnia kuje części w stałej kolejności, więc rycerz ma zawsze pierwszych k części
+            int k = 0;
+            if (rola == "rycerz") while (k < CZESCI_ZBROI.Length && Zbroja.nosi(c, CZESCI_ZBROI[k])) k++;
+            return nazwaDuszka(rola, c.id, c.helm == true, k);
+        }
+
+        /// <summary>Arkusz dla roli, numeru postaci, hełmu robotnika i stanu zbroi rycerza (ile części z kuźni nosi).</summary>
+        public static string nazwaDuszka(string rola, double numer, bool helm, int zbroja)
+        {
+            int id = (int)numer;
             switch (rola)
             {
                 case "robotnik":
                     {
                         int wz = id == 3 || id == 4 || id == 5 ? id : (id % 2 != 0 ? 7 : 8);
-                        return c.helm == true ? "robotnik-" + wz + "-helm" : "robotnik-" + wz;
+                        return helm ? "robotnik-" + wz + "-helm" : "robotnik-" + wz;
                     }
                 case "pobozny":
                     return "pobozny-" + (id == 1 || id == 2 ? id : (id % 2 != 0 ? 1 : 2));
                 default:
-                    {
-                        // kuźnia kuje części w stałej kolejności, więc rycerz ma zawsze pierwszych k części
-                        int k = 0;
-                        while (k < CZESCI_ZBROI.Length && Zbroja.nosi(c, CZESCI_ZBROI[k])) k++;
-                        return "rycerz-6-z" + k;
-                    }
+                    return "rycerz-6-z" + zbroja;
             }
         }
 

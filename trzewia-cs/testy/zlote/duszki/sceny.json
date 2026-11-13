@@ -293,5 +293,301 @@
     "job": 21
    }
   ]
+ },
+ {
+  "nazwa": "ziarno1-demon-bicz",
+  "ziarno": 1,
+  "tik": 105664,
+  "klatek": 360,
+  "kam": {
+   "x": 99,
+   "y": 217.5,
+   "zoom": 14,
+   "vw": 640,
+   "vh": 300
+  },
+  "skala": 1.3170731707317074,
+  "prog": 60,
+  "tikKoniec": 105664,
+  "postacie": [
+   {
+    "id": 1,
+    "rola": "pobozny",
+    "x": 57.937,
+    "y": 215.045,
+    "job": 21
+   },
+   {
+    "id": 2,
+    "rola": "pobozny",
+    "x": 102.956,
+    "y": 37.962,
+    "job": 21
+   },
+   {
+    "id": 3,
+    "rola": "robotnik",
+    "x": 57.036,
+    "y": 215.02,
+    "job": 21
+   },
+   {
+    "id": 4,
+    "rola": "robotnik",
+    "x": 57.938,
+    "y": 215.993,
+    "job": 21
+   },
+   {
+    "id": 5,
+    "rola": "robotnik",
+    "x": 47.5,
+    "y": 202.309,
+    "job": 21
+   },
+   {
+    "id": 6,
+    "rola": "rycerz",
+    "x": 96.995,
+    "y": 215.9,
+    "job": 5
+   },
+   {
+    "id": 9,
+    "rola": "robotnik",
+    "x": 101.13,
+    "y": 37.977,
+    "job": 21
+   },
+   {
+    "id": 19,
+    "rola": "boss",
+    "x": 97.284,
+    "y": 221.641,
+    "job": 0
+   }
+  ]
+ },
+ {
+  "nazwa": "ziarno1-demon-ziemia",
+  "ziarno": 1,
+  "tik": 106996,
+  "klatek": 360,
+  "kam": {
+   "x": 99,
+   "y": 216,
+   "zoom": 14,
+   "vw": 640,
+   "vh": 300
+  },
+  "skala": 1.3170731707317074,
+  "prog": 60,
+  "tikKoniec": 106996,
+  "postacie": [
+   {
+    "id": 1,
+    "rola": "pobozny",
+    "x": 57.937,
+    "y": 215.045,
+    "job": 21
+   },
+   {
+    "id": 2,
+    "rola": "pobozny",
+    "x": 102.956,
+    "y": 37.962,
+    "job": 21
+   },
+   {
+    "id": 3,
+    "rola": "robotnik",
+    "x": 57.036,
+    "y": 215.02,
+    "job": 21
+   },
+   {
+    "id": 4,
+    "rola": "robotnik",
+    "x": 57.938,
+    "y": 215.993,
+    "job": 21
+   },
+   {
+    "id": 5,
+    "rola": "robotnik",
+    "x": 47.5,
+    "y": 147.428,
+    "job": 18
+   },
+   {
+    "id": 6,
+    "rola": "rycerz",
+    "x": 77.502,
+    "y": 215.972,
+    "job": 18
+   },
+   {
+    "id": 9,
+    "rola": "robotnik",
+    "x": 101.13,
+    "y": 37.977,
+    "job": 21
+   },
+   {
+    "id": 19,
+    "rola": "boss",
+    "x": 97.335,
+    "y": 219.798,
+    "job": 0
+   }
+  ]
+ },
+ {
+  "nazwa": "ziarno1-demon-szarza",
+  "ziarno": 1,
+  "tik": 108200,
+  "klatek": 360,
+  "kam": {
+   "x": 91,
+   "y": 213,
+   "zoom": 14,
+   "vw": 640,
+   "vh": 300
+  },
+  "skala": 1.3170731707317074,
+  "prog": 60,
+  "tikKoniec": 108200,
+  "postacie": [
+   {
+    "id": 1,
+    "rola": "pobozny",
+    "x": 57.242,
+    "y": 215.045,
+    "job": 21
+   },
+   {
+    "id": 2,
+    "rola": "pobozny",
+    "x": 102.956,
+    "y": 37.962,
+    "job": 21
+   },
+   {
+    "id": 3,
+    "rola": "robotnik",
+    "x": 56.336,
+    "y": 215.02,
+    "job": 21
+   },
+   {
+    "id": 4,
+    "rola": "robotnik",
+    "x": 56.875,
+    "y": 215.993,
+    "job": 21
+   },
+   {
+    "id": 5,
+    "rola": "robotnik",
+    "x": 66.371,
+    "y": 83.974,
+    "job": 18
+   },
+   {
+    "id": 6,
+    "rola": "rycerz",
+    "x": 85.095,
+    "y": 215,
+    "job": 5
+   },
+   {
+    "id": 9,
+    "rola": "robotnik",
+    "x": 101.13,
+    "y": 37.977,
+    "job": 21
+   },
+   {
+    "id": 19,
+    "rola": "boss",
+    "x": 88.356,
+    "y": 215.845,
+    "job": 0
+   }
+  ]
+ },
+ {
+  "nazwa": "ziarno1-demon-kona",
+  "ziarno": 1,
+  "tik": 109010,
+  "klatek": 360,
+  "kam": {
+   "x": 88,
+   "y": 211,
+   "zoom": 14,
+   "vw": 640,
+   "vh": 300
+  },
+  "skala": 1.3170731707317074,
+  "prog": 60,
+  "tikKoniec": 109010,
+  "postacie": [
+   {
+    "id": 1,
+    "rola": "pobozny",
+    "x": 58.139,
+    "y": 215.045,
+    "job": 3
+   },
+   {
+    "id": 2,
+    "rola": "pobozny",
+    "x": 102.956,
+    "y": 37.962,
+    "job": 21
+   },
+   {
+    "id": 3,
+    "rola": "robotnik",
+    "x": 56.336,
+    "y": 215.02,
+    "job": 21
+   },
+   {
+    "id": 4,
+    "rola": "robotnik",
+    "x": 56.875,
+    "y": 215.993,
+    "job": 21
+   },
+   {
+    "id": 5,
+    "rola": "robotnik",
+    "x": 74.621,
+    "y": 38.995,
+    "job": 18
+   },
+   {
+    "id": 6,
+    "rola": "rycerz",
+    "x": 84.336,
+    "y": 215,
+    "job": 5
+   },
+   {
+    "id": 9,
+    "rola": "robotnik",
+    "x": 78.5,
+    "y": 61.288,
+    "job": 23
+   },
+   {
+    "id": 19,
+    "rola": "boss",
+    "x": 86.236,
+    "y": 214.935,
+    "job": 0
+   }
+  ]
  }
 ]

@@ -54,6 +54,8 @@ export class Scena {
   ostrzezenia: string[] = [];
   /** co się teraz piecze (do ostrzeżeń) */
   co = '';
+  /** kadr zdjęcia: [lewo, prawo, góra, dół] w wysokościach postaci od punktu zaczepienia; null — całe płótno */
+  kadr: [number, number, number, number] | null = null;
 
   constructor() {
     this.sim = new Sim(1);
@@ -141,16 +143,20 @@ export class Scena {
     G.PIEK_SWIATLA = null;
     const W = this.W, H = this.H;
     const d = this.g.getImageData(0, 0, W, H).data;
+    // kadr: klatka nie sięga dalej niż tyle wysokości postaci od punktu zaczepienia (odłamki lecące daleko — ucięte)
+    const kd = this.kadr;
+    const kx0 = kd ? Math.max(0, Math.round(this.px0 + kd[0] * this.hPx)) : 0, kx1 = kd ? Math.min(W, Math.round(this.px0 + kd[1] * this.hPx)) : W;
+    const ky0 = kd ? Math.max(0, Math.round(this.py0 + kd[2] * this.hPx)) : 0, ky1 = kd ? Math.min(H, Math.round(this.py0 + kd[3] * this.hPx)) : H;
     let x0 = W, y0 = H, x1 = -1, y1 = -1;
-    for (let y = 0; y < H; y++) {
-      let i = y * W * 4 + 3;
-      for (let x = 0; x < W; x++, i += 4) {
+    for (let y = ky0; y < ky1; y++) {
+      let i = (y * W + kx0) * 4 + 3;
+      for (let x = kx0; x < kx1; x++, i += 4) {
         if (d[i] >= PROG_ALFY) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
       }
     }
     const pkt = this.punkty();
     if (x1 < 0) return { p: null, w: 0, h: 0, ox: 0, oy: 0, pkt, sw };
-    if (x0 === 0 || y0 === 0 || x1 === W - 1 || y1 === H - 1) this.ostrzezenia.push(`klatka dotyka brzegu płótna (${this.co}: ${x0},${y0}–${x1},${y1} z ${W}×${H})`);
+    if (!kd && (x0 === 0 || y0 === 0 || x1 === W - 1 || y1 === H - 1)) this.ostrzezenia.push(`klatka dotyka brzegu płótna (${this.co}: ${x0},${y0}–${x1},${y1} z ${W}×${H})`);
     const p = document.createElement('canvas');
     p.width = x1 - x0 + 1; p.height = y1 - y0 + 1;
     p.getContext('2d')!.drawImage(this.plotno, x0, y0, p.width, p.height, 0, 0, p.width, p.height);

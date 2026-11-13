@@ -19,6 +19,12 @@ const SCENY = [
   { nazwa: 'ziarno2-tik30000', ziarno: 2, tik: 30000, klatek: 240, kam: { x: 100, y: 36.6, zoom: 14, vw: 420, vh: 160 }, skala: 1080 / 820 },
   // z daleka (poniżej 9 px na kafel postacie grupują się i dostają „×n”)
   { nazwa: 'ziarno2-tik30000-daleko', ziarno: 2, tik: 30000, klatek: 240, kam: { x: 100, y: 37, zoom: 6, vw: 420, vh: 160 }, skala: 1080 / 820 },
+  // walka z demonem (ziarno 1: pomnik rozpada się w tiku 103 575, demon walczy od 104 295 do 108 910). Demon ma losowe
+  // cząstki i płynne mieszanie stanów, więc próg różnicy jest luźniejszy (`prog`) — liczy się ta sama animacja i miejsce.
+  { nazwa: 'ziarno1-demon-bicz', ziarno: 1, tik: 105664, klatek: 360, kam: { x: 99, y: 217.5, zoom: 14, vw: 640, vh: 300 }, skala: 1080 / 820, prog: 60 },
+  { nazwa: 'ziarno1-demon-ziemia', ziarno: 1, tik: 106996, klatek: 360, kam: { x: 99, y: 216, zoom: 14, vw: 640, vh: 300 }, skala: 1080 / 820, prog: 60 },
+  { nazwa: 'ziarno1-demon-szarza', ziarno: 1, tik: 108200, klatek: 360, kam: { x: 91, y: 213, zoom: 14, vw: 640, vh: 300 }, skala: 1080 / 820, prog: 60 },
+  { nazwa: 'ziarno1-demon-kona', ziarno: 1, tik: 109010, klatek: 360, kam: { x: 88, y: 211, zoom: 14, vw: 640, vh: 300 }, skala: 1080 / 820, prog: 60 },
 ];
 const s = await otworz(await zbuduj(path.join(TU, 'porownanie.ts')));
 fs.mkdirSync(CEL, { recursive: true });

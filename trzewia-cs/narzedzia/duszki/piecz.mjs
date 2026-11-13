@@ -18,7 +18,7 @@ export const ZLECENIA = [
   'pobozny-1', 'pobozny-2',
   // rycerz: stan zbroi z0…z5 = ile części z kuźni nosi (hełm, naramienniki, napierśnik, nakolanniki, tarcza)
   'rycerz-6-z0', 'rycerz-6-z1', 'rycerz-6-z2', 'rycerz-6-z3', 'rycerz-6-z4', 'rycerz-6-z5',
-  'straznik',
+  'straznik', 'demon',
 ];
 const PODMIANY = {
   'render/lud/matma': 'nakladki/matma.ts',
@@ -35,11 +35,11 @@ const kwantyzuj = (plik) => { if (pngquant) execFileSync('pngquant', ['--quality
 const wybrane = process.argv.slice(2).length ? process.argv.slice(2) : ZLECENIA;
 const kod = await zbuduj(path.join(TU, 'piekarnia.ts'), PODMIANY);
 const s = await otworz(kod);
-const poziomy = await s.wolaj('poziomy');
 fs.mkdirSync(CEL, { recursive: true });
 fs.mkdirSync(PODGLAD, { recursive: true });
 for (const nazwa of wybrane) {
   const t0 = Date.now();
+  const poziomy = await s.wolaj('poziomy', nazwa);
   const opis = { wersja: 1, postac: '', wzor: 0, wariant: '', mnoznik: 1, poziomy: [], animacje: {}, glowa: [] };
   let pikseli = 0, bajtow = 0, klatek = 0;
   // stare strony tego zlecenia znikają (liczba stron mogła się zmienić)
