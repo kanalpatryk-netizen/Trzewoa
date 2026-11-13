@@ -2,8 +2,8 @@
 // Wybór animacji i klatki to te same reguły, którymi render/lud/ruch.ts (animuj) i render/lud/walka-rycerza.ts
 // (stanWalki) wybierały pozę; klatki upiekła piekarnia (narzedzia/duszki/lud.ts) z rysunku gry TS.
 // Czego duszki nie mają (świadome uproszczenia — PLAN.md 9.5): płynnego mieszania póz przy zmianie czynności, lądowania
-// po upadku, wzdrygnięcia przy trafieniu, mrugania, drżenia ze strachu i szaleństwa, chwiania zatrutego, ciepłej
-// krawędzi od cudzego światła, żarzenia się w szale krwi (jest czerwona aura), iskier przy trafieniach w walce.
+// po upadku, wzdrygnięcia przy trafieniu, mrugania, drżenia ze strachu i szaleństwa, chwiania zatrutego, żarzenia się
+// w szale krwi (jest czerwona aura) i iskier przy trafieniach w walce.
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -218,7 +218,8 @@ namespace Trzewia.Rysunek.Duszki
             if (d == null || d.klatek == 0) { Zastepczo(ctx, c, h); return; }
             int k = klatka(d, sim, c, rola, czas, cz, faza, fazaPion, zegar);
             if (k < d.glowa.Length && d.glowa[k] is { } gl && gl.Length >= 3) { glowy.Remove(c); glowy.Add(c, gl); }
-            d.Rysuj(ctx, k, h);
+            // cudze światło z otoczenia kładzie ciepłą krawędź po swojej stronie sylwetki (render/lud/oswietlenie.ts)
+            d.Rysuj(ctx, k, h, true, Lud.Oswietlenie.swiatloOtoczenia());
         }
 
         /// <summary>Gdy arkusza nie ma w dane/grafika/duszki: kropka w barwie rasy — widać, że postać jest, i że brakuje pliku.</summary>

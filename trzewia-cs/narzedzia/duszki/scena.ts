@@ -6,10 +6,17 @@ import { Job, makeCreature } from '../../../alpha-1/src/sim/creatures';
 import { Race } from '../../../alpha-1/src/sim/races';
 import { nadajRole, klanLudu } from '../../../alpha-1/src/sim/lud';
 
-/** Skala ekranu wzorcowego (1920×1080: ekran logiczny gry ma 820 px wysokości, więc 1080/820 ≈ 4/3). */
-export const SKALA = 4 / 3;
-/** Poziomy wielkości: wysokość postaci ludu w pikselach ekranu (rycerz i więksi — razy ich mnożnik). */
-export const POZIOMY = [24, 36, 54, 80];
+/**
+ * Skala ekranu wzorcowego: 1920×1080 — ekran logiczny gry ma 820 jednostek wysokości (jak w C#: Ekran), więc jedna
+ * jednostka rysunku to 1080/820 piksela.
+ */
+export const SKALA = 1080 / 820;
+/**
+ * Poziomy wielkości: wysokość postaci ludu w pikselach ekranu (rycerz i więksi — razy ich mnożnik). Dobrane do
+ * najczęstszych wielkości na ekranie, żeby duszek szedł piksel w piksel: 21 — najmniejsza sylwetka (16 jednostek)
+ * w 1080p, 28 — to samo w 1440p, 40 — zwykłe przybliżenie gry (14 px na kafel) w 1080p, 56 — w 1440p, 80 — z bliska.
+ */
+export const POZIOMY = [21, 28, 40, 56, 80];
 /** Piksel słabszy niż to (alfa 0–255) nie liczy się do przycięcia klatki. */
 export const PROG_ALFY = 3;
 export const KLATKA_MS = 1000 / 60;

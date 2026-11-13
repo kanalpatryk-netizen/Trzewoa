@@ -1,0 +1,297 @@
+[
+ {
+  "nazwa": "ziarno1-tik1200",
+  "ziarno": 1,
+  "tik": 1200,
+  "klatek": 240,
+  "kam": {
+   "x": 91,
+   "y": 38,
+   "zoom": 24,
+   "vw": 1150,
+   "vh": 300
+  },
+  "skala": 1.3170731707317074,
+  "tikKoniec": 1200,
+  "postacie": [
+   {
+    "id": 1,
+    "rola": "pobozny",
+    "x": 99.12,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 2,
+    "rola": "pobozny",
+    "x": 106.925,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 3,
+    "rola": "robotnik",
+    "x": 75.5,
+    "y": 41.05,
+    "job": 1
+   },
+   {
+    "id": 4,
+    "rola": "robotnik",
+    "x": 76.5,
+    "y": 41.05,
+    "job": 1
+   },
+   {
+    "id": 5,
+    "rola": "robotnik",
+    "x": 101.88,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 6,
+    "rola": "rycerz",
+    "x": 106.014,
+    "y": 37,
+    "job": 21
+   }
+  ]
+ },
+ {
+  "nazwa": "ziarno1-tik9000-oboz",
+  "ziarno": 1,
+  "tik": 9000,
+  "klatek": 240,
+  "kam": {
+   "x": 103,
+   "y": 36.6,
+   "zoom": 26,
+   "vw": 420,
+   "vh": 200
+  },
+  "skala": 1.3170731707317074,
+  "tikKoniec": 9000,
+  "postacie": [
+   {
+    "id": 1,
+    "rola": "pobozny",
+    "x": 99.095,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 2,
+    "rola": "pobozny",
+    "x": 106.975,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 3,
+    "rola": "robotnik",
+    "x": 46.5,
+    "y": 100.883,
+    "job": 1
+   },
+   {
+    "id": 4,
+    "rola": "robotnik",
+    "x": 45.5,
+    "y": 101.03,
+    "job": 1
+   },
+   {
+    "id": 5,
+    "rola": "robotnik",
+    "x": 101.23,
+    "y": 37.95,
+    "job": 21
+   },
+   {
+    "id": 6,
+    "rola": "rycerz",
+    "x": 106.064,
+    "y": 37,
+    "job": 21
+   }
+  ]
+ },
+ {
+  "nazwa": "ziarno1-tik9000-kopacze",
+  "ziarno": 1,
+  "tik": 9000,
+  "klatek": 240,
+  "kam": {
+   "x": 46,
+   "y": 100,
+   "zoom": 26,
+   "vw": 300,
+   "vh": 220
+  },
+  "skala": 1.3170731707317074,
+  "tikKoniec": 9000,
+  "postacie": [
+   {
+    "id": 1,
+    "rola": "pobozny",
+    "x": 99.095,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 2,
+    "rola": "pobozny",
+    "x": 106.975,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 3,
+    "rola": "robotnik",
+    "x": 46.5,
+    "y": 100.883,
+    "job": 1
+   },
+   {
+    "id": 4,
+    "rola": "robotnik",
+    "x": 45.5,
+    "y": 101.03,
+    "job": 1
+   },
+   {
+    "id": 5,
+    "rola": "robotnik",
+    "x": 101.23,
+    "y": 37.95,
+    "job": 21
+   },
+   {
+    "id": 6,
+    "rola": "rycerz",
+    "x": 106.064,
+    "y": 37,
+    "job": 21
+   }
+  ]
+ },
+ {
+  "nazwa": "ziarno2-tik30000",
+  "ziarno": 2,
+  "tik": 30000,
+  "klatek": 240,
+  "kam": {
+   "x": 100,
+   "y": 36.6,
+   "zoom": 14,
+   "vw": 420,
+   "vh": 160
+  },
+  "skala": 1.3170731707317074,
+  "tikKoniec": 30000,
+  "postacie": [
+   {
+    "id": 1,
+    "rola": "pobozny",
+    "x": 103.475,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 2,
+    "rola": "pobozny",
+    "x": 104.405,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 3,
+    "rola": "robotnik",
+    "x": 45.909,
+    "y": 175.08,
+    "job": 1
+   },
+   {
+    "id": 4,
+    "rola": "robotnik",
+    "x": 47.157,
+    "y": 175.073,
+    "job": 1
+   },
+   {
+    "id": 5,
+    "rola": "robotnik",
+    "x": 94.825,
+    "y": 37.997,
+    "job": 8
+   },
+   {
+    "id": 6,
+    "rola": "rycerz",
+    "x": 106.027,
+    "y": 37,
+    "job": 21
+   }
+  ]
+ },
+ {
+  "nazwa": "ziarno2-tik30000-daleko",
+  "ziarno": 2,
+  "tik": 30000,
+  "klatek": 240,
+  "kam": {
+   "x": 100,
+   "y": 37,
+   "zoom": 6,
+   "vw": 420,
+   "vh": 160
+  },
+  "skala": 1.3170731707317074,
+  "tikKoniec": 30000,
+  "postacie": [
+   {
+    "id": 1,
+    "rola": "pobozny",
+    "x": 103.475,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 2,
+    "rola": "pobozny",
+    "x": 104.405,
+    "y": 37,
+    "job": 21
+   },
+   {
+    "id": 3,
+    "rola": "robotnik",
+    "x": 45.909,
+    "y": 175.08,
+    "job": 1
+   },
+   {
+    "id": 4,
+    "rola": "robotnik",
+    "x": 47.157,
+    "y": 175.073,
+    "job": 1
+   },
+   {
+    "id": 5,
+    "rola": "robotnik",
+    "x": 94.825,
+    "y": 37.997,
+    "job": 8
+   },
+   {
+    "id": 6,
+    "rola": "rycerz",
+    "x": 106.027,
+    "y": 37,
+    "job": 21
+   }
+  ]
+ }
+]

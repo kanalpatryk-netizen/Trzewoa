@@ -94,7 +94,7 @@ namespace Trzewia.Rysunek.Duszki
         /// `h` — wysokość postaci w jednostkach rysunku (ta sama, którą dostawał rysunek TS). Światła idą pod duszkiem,
         /// addytywnie — tak jak poświata w render/lud/wspolne.ts.
         /// </summary>
-        public void Rysuj(IPlotno ctx, int klatka, double h, bool zeSwiatlami = true)
+        public void Rysuj(IPlotno ctx, int klatka, double h, bool zeSwiatlami = true, Lud.SwiatloOtoczenia? otoczenie = null)
         {
             if (klatka < 0 || klatka >= klatek || poziomy.Length == 0) return;
             var t = ctx.getTransform();
@@ -122,7 +122,56 @@ namespace Trzewia.Rysunek.Duszki
             var obraz = p.Strona((int)p.klatki[k]);
             if (!obraz.complete) return;
             var f = h / p.h;
-            ctx.drawImage(obraz, p.klatki[k + 1], p.klatki[k + 2], w, wys, p.klatki[k + 5] * f, p.klatki[k + 6] * f, w * f, wys * f);
+            double sx = p.klatki[k + 1], sy = p.klatki[k + 2], dx = p.klatki[k + 5] * f, dy = p.klatki[k + 6] * f;
+            // Gdy klatka wypada na ekranie w swojej wielkości (poziom dobrany do tej wielkości) i układ nie jest obrócony,
+            // duszek idzie piksel w piksel: róg na całym pikselu, bez skalowania — inaczej mała sylwetka się rozmywa.
+            if (t.b == 0 && t.c == 0 && Math.Abs(f * skala - 1) < 0.035)
+            {
+                f = 1 / skala;
+                double ex = t.e + p.klatki[k + 5] * f * t.a, ey = t.f + p.klatki[k + 6] * f * t.d;
+                dx = (Math.Round(ex) - t.e) / t.a; dy = (Math.Round(ey) - t.f) / t.d;
+                // w odbiciu (t.a < 0) róg klatki jest po prawej — po zaokrągleniu rogu szerokość też jest całkowita
+            }
+            if (otoczenie != null && otoczenie.sila > 0.05) Krawedz(ctx, obraz, sx, sy, w, wys, dx, dy, f, h, t, skala, otoczenie);
+            ctx.drawImage(obraz, sx, sy, w, wys, dx, dy, w * f, wys * f);
+        }
+
+        static IPlotno? plotnoKrawedzi;
+
+        /// <summary>
+        /// Ciepła krawędź od strony cudzego światła (render/lud/malarz.ts: maluj): w TS ta sama obwódka sylwetki przesunięta
+        /// ku światłu, w jego barwie — wychodzi sierp po stronie światła. Tu: sylwetka klatki zalana barwą światła,
+        /// przesunięta o tyle samo i położona pod duszkiem.
+        /// </summary>
+        static void Krawedz(IPlotno ctx, IObraz obraz, double sx, double sy, double w, double wys, double dx, double dy, double f, double h,
+            DOMMatrix t, double skala, Lud.SwiatloOtoczenia sw)
+        {
+            // grubości obwódki jak w malarz.ts (jednostki rysunku) i przesunięcie ku światłu
+            double jasna = Math.Max(1.2, Math.Min(2.2, h * 0.036)), ciemna = Math.Max(0.85, Math.Min(1.8, h * 0.02));
+            var wyz = t.a * t.d - t.b * t.c;
+            if (Math.Abs(wyz) <= 1e-9) return;
+            // kierunek z ekranu do układu postaci (lustro, leżenie)
+            double lx = (t.d * sw.x - t.c * sw.y) / wyz, ly = (-t.b * sw.x + t.a * sw.y) / wyz;
+            var dl = Math.Sqrt(lx * lx + ly * ly);
+            if (dl <= 0) dl = 1;
+            var d = (jasna + ciemna) * (0.4 + 0.3 * sw.sila);
+            lx = lx / dl * d; ly = ly / dl * d;
+            // sylwetka klatki w barwie światła — na płótnie pomocniczym w pikselach ekranu
+            int pw = (int)Math.Ceiling(w * f * skala) + 2, ph = (int)Math.Ceiling(wys * f * skala) + 2;
+            var g = plotnoKrawedzi ??= Plotno.Nowe(Math.Max(64, pw), Math.Max(64, ph));
+            if (g.width < pw || g.height < ph) { g.width = Math.Max(g.width, pw); g.height = Math.Max(g.height, ph); }
+            g.setTransform(1, 0, 0, 1, 0, 0);
+            g.globalCompositeOperation = "source-over";
+            g.clearRect(0, 0, pw, ph);
+            g.drawImage(obraz, sx, sy, w, wys, 1, 1, pw - 2, ph - 2);
+            g.globalCompositeOperation = "source-in";
+            g.fillStyle = Barwa.Rgba(sw.barwa[0], sw.barwa[1], sw.barwa[2], 1);
+            g.fillRect(0, 0, pw, ph);
+            g.globalCompositeOperation = "source-over";
+            var alfa = ctx.globalAlpha;
+            ctx.globalAlpha = alfa * (0.22 + 0.4 * sw.sila);
+            ctx.drawImage(g, 0, 0, pw, ph, dx + lx - 1 / skala, dy + ly - 1 / skala, pw / skala, ph / skala);
+            ctx.globalAlpha = alfa;
         }
 
         // ── wczytywanie ────────────────────────────────────────────────────────────────────────────────────────

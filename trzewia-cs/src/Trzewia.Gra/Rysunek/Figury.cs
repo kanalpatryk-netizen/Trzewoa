@@ -5,7 +5,7 @@
 // Różnica wobec TS (decyzja użytkownika 12.11, PLAN.md punkt 9): samej sylwetki gra nie rysuje kodem — wkleja duszka
 // (Duszki/DuszkiLudu.cs, Straznicy.cs). Dlatego nie ma tu: faktur ras, szkieletu i póz starych figur (inne rasy w Alphie
 // nie występują), strojów ról na starych figurach, szkiców tłumu (postacZeSzkicu — duszek jest tani), własnych grafik
-// z src/grafiki/pliki ani ciepłej krawędzi od cudzego światła (ustawSwiatlo). Zasłanianie postaci przez słup schodów
+// z src/grafiki/pliki. Zasłanianie postaci przez słup schodów
 // kręconych i cień na stopnicach (render/schody.ts) przyjdą z rysunkiem schodów — etap 3.
 using System;
 using System.Collections.Generic;
@@ -304,6 +304,8 @@ namespace Trzewia.Rysunek
                 }
 
                 string cz;
+                // cudze światło z otoczenia kładzie ciepłą krawędź po swojej stronie sylwetki (render/lud/oswietlenie.ts)
+                Lud.Oswietlenie.ustawSwiatlo(Symulacja.Lud.rolaPostaci(c) != null ? Lud.Oswietlenie.swiatloDla(sim, c, h / z) : null);
                 if (tlo > 0.02 && c.lot == null) cz = postacWTle(ctx, sim, c, h, czas, kier, sx, sy, 0.42 * tlo, szerokoscNaRysunku(c));
                 else
                 {
@@ -317,6 +319,7 @@ namespace Trzewia.Rysunek
                     cz = rysujPostac(ctx, sim, c, h, czas);
                     ctx.restore();
                 }
+                Lud.Oswietlenie.ustawSwiatlo(null);
                 // (6.11: zaslonNaSchodach — słup i stopnie bliżej widza na postaci — z rysunkiem schodów, etap 3)
 
                 // Aureola znaczy świętość: tylko nad pobożnym, który się modli. Wzmocnienia i osłabienia to małe znaki ryciny
