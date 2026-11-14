@@ -166,6 +166,10 @@ public sealed class EkranProby : Ekran
         var t = Wydajnosc.Teraz();
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, w, h);
+        // rdzeń oddycha tym samym rytmem, którym dudni skała — ciemność na brzegach zaciska się i puszcza
+        // (game.ts: oddech z dźwięku, gdy gra; dźwięk to dalszy etap — tu z zegara, jak w TS bez dźwięku)
+        var ruch = ustawienia.oddech && !ustawienia.ograniczRuch;
+        var oddech = ruch ? Tajemnica.oddechRdzenia(sim, teraz, null) : 0.5;
 
         // płyta: góra z symulacji — rycina świata (etap 3; jak w TS, odbitka po ruchu kamery albo co 150 ms, przy zmianach co 30 ms)
         if (!mapaKafli)
@@ -178,6 +182,18 @@ public sealed class EkranProby : Ekran
             t = L.znacz(Czesc.rycina, t);
         }
         else if (mapa == null || sim.tick - mapaTik >= 6 || sim.tick < mapaTik) RysujMape();
+
+        // ściana krypty pod płytą: tynk przy lampce, ciemność w kątach oddycha z rdzeniem; płyta zakrywa ścianę w całości,
+        // więc ściana rysuje się tylko wokół niej (przy samym brzegu płyty — 2 px — zostaje, pod wygładzoną krawędzią)
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, w, h);
+        ctx.rect(plX + 2, plY + 2, Math.Max(0, plW - 4), Math.Max(0, plH - 4));
+        ctx.clip("evenodd");
+        Fresk.scianaKrypty(ctx, w, h, ruch ? teraz : 0, oddech, (plX + plW / 2) / w, (plY + plH / 2) / h);
+        ctx.restore();
+        t = L.znacz(Czesc.interfejs, t);
+
         ctx.save();
         ctx.beginPath();
         ctx.rect(plX, plY, plW, plH);
@@ -186,8 +202,7 @@ public sealed class EkranProby : Ekran
         if (!mapaKafli && !kropki)
         {
             // świat w kolejności z game.ts (wspólne z testem podglądu)
-            plyta.Rysuj(ctx, sim, cam, teraz, pauza, 0.5);
-            t = L.znacz(Czesc.swiat, t);
+            t = plyta.Rysuj(ctx, sim, cam, teraz, pauza, oddech, null, null, t);
         }
         else
         {
@@ -237,10 +252,29 @@ public sealed class EkranProby : Ekran
             ctx.setLineDash();
         }
         ctx.restore();
+        t = L.znacz(Czesc.postacie, t);
+        if (pauza)
+        {
+            // wstrzymany oddech: złota, pulsująca rama wewnątrz płyty
+            var puls = 0.5 + 0.5 * Math.Sin(teraz * 0.0025);
+            ctx.save();
+            ctx.strokeStyle = Barwa.Rgba(224, 176, 104, 0.28 + 0.22 * puls);
+            ctx.lineWidth = 2;
+            ctx.strokeRect(plX + 4, plY + 4, plW - 8, plH - 8);
+            ctx.restore();
+        }
+        if (!mapaKafli)
+        {
+            // rycina ma brzeg, nie ekran: rytowana ciemność, patyna odbitki i skala w obcym piśmie
+            var pr = new ProstokatPlyty(plX, plY, plW, plH);
+            plyta.tajemnica.brzegi(ctx, pr, oddech);
+            if (ustawienia.skalaGlebokosci) plyta.tajemnica.skala(ctx, pr, sim, cam, oddech);
+        }
+        // (rama płyty, minimapa, ryty i przyciski — ekran gry, etap 4; tu cienka rama zastępcza)
         ctx.strokeStyle = "rgba(224,176,104,0.5)";
         ctx.lineWidth = 2;
         ctx.strokeRect(plX, plY, plW, plH);
-        t = L.znacz(Czesc.postacie, t);
+        t = L.znacz(Czesc.interfejs, t);
 
         // dół: stan partii i wejścia
         var dy = plY + plH + 34;

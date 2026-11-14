@@ -7,6 +7,7 @@ using System;
 using Trzewia.Plotna;
 using Trzewia.Symulacja;
 using static Trzewia.Rdzen.SettingsStore;
+using Czesc = Trzewia.Rdzen.Czesc;
 
 namespace Trzewia.Rysunek
 {
@@ -24,8 +25,11 @@ namespace Trzewia.Rysunek
         /// <summary>
         /// Świat na płycie. `pomPod` i `oltarzPod` — co pod kursorem (podpisy); `oddech` — oddech rdzenia (Tajemnica).
         /// </summary>
-        public void Rysuj(IPlotno ctx, Sim sim, Camera cam, double teraz, bool pauza, double oddech, PodKursorem? pomPod = null, string? oltarzPod = null)
+        public double Rysuj(IPlotno ctx, Sim sim, Camera cam, double teraz, bool pauza, double oddech, PodKursorem? pomPod = null, string? oltarzPod = null, double t = -1)
         {
+            // licznik F3: części klatki jak w game.ts (rycina, poświata, świat, mrok, postacie)
+            var L = global::Trzewia.Rdzen.Wydajnosc.licznik;
+            if (t < 0) t = global::Trzewia.Rdzen.Wydajnosc.Teraz();
             var eng = rycina;
             ctx.save();
             // wygładzanie zawsze: płyta bywa większa od bufora (skala ekranu), a najbliższy sąsiad szarpał kreskę
@@ -33,7 +37,9 @@ namespace Trzewia.Rysunek
             eng.rysuj(ctx, cam, ustawienia.jasnosc);
             // fresk: faktura tynku przyklejona do świata — jedzie razem ze skałą, gdy przesuwasz kamerę
             if (eng.fresk) Fresk.tynkSwiata(ctx, cam);
+            t = L.znacz(Czesc.rycina, t);
             eng.poswiata(ctx, cam, true);
+            t = L.znacz(Czesc.poswiata, t);
             znakowWidac = tajemnica.znaki(ctx, sim, cam, oddech, pauza);
             RysRdzen.rysujRdzen(ctx, sim, cam, teraz);
             // kruszec w skale: bryłki żelaza i żyłki złota (pod rysami kucia i pod mrokiem)
@@ -60,8 +66,11 @@ namespace Trzewia.Rysunek
             Konwoj.rysujKonwoj(ctx, sim, cam, teraz, grunt);
             RysWiadra.rysujWiadra(ctx, sim, cam, teraz);
             // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
+            t = L.znacz(Czesc.swiat, t);
             RysMrok.rysujMrok(ctx, sim, cam, teraz, pauza);
+            t = L.znacz(Czesc.mrok, t);
             if (Nastawy.NastawyMrok.MROK.wlaczony) eng.poswiata(ctx, cam, false);
+            t = L.znacz(Czesc.poswiata, t);
             // katedra: witraże rozety i okien, płomienie świec — świecą przez mrok; z rozety pada promień na ołtarz
             Katedra.rysujKatedreNad(ctx, sim, cam, teraz);
             Promien.rysujPromien(ctx, sim, cam, teraz);
@@ -87,6 +96,7 @@ namespace Trzewia.Rysunek
             if (plan?.szyb != null && !sim.rytual.otwarta) Zarys.rysujPlanDrogi(ctx, sim, cam, plan, teraz);
             else if (plan != null && plan.kopac.Count > 0 && !sim.rytual.otwarta && sim.tick - plan.tick < 3000)
                 Zarys.rysujDrogePielgrzymow(ctx, sim, cam, plan, teraz, false);
+            t = L.znacz(Czesc.swiat, t);
             Zarys.rysujZarys(ctx, sim, cam, teraz);
             // (4) rysujZaznaczenie
             Figury.rysujStworzenia(ctx, sim, cam, teraz);
@@ -110,6 +120,7 @@ namespace Trzewia.Rysunek
             }
             // (4) podswietlCel
             ctx.restore();
+            return L.znacz(Czesc.postacie, t);
         }
     }
 }
