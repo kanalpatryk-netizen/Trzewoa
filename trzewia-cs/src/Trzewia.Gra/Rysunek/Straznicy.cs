@@ -1,6 +1,6 @@
 // Port (część): alpha-1/src/render/straznicy.ts — Strażnik Snu na mapie. Sylwetka: duszek „straznik” (narzedzia/duszki/
 // straznik.ts) zamiast rysunku kodem; unoszenie, odrzut przy trafieniu i odpryski kamienia dokłada gra, jak w TS.
-// Pasek fali (rysujPasekFali) to interfejs — etap 5.
+// Pasek fali (rysujPasekFali) — interfejs, dopisany w etapie 5 na końcu pliku.
 using System;
 using System.Runtime.CompilerServices;
 using Trzewia.Plotna;
@@ -88,6 +88,53 @@ namespace Trzewia.Rysunek
                 rysujStraznika(ctx, sim, c, h, czas);
                 ctx.restore();
             }
+        }
+    
+        /// <summary>Pasek fali Strażników (render/straznicy.ts: rysujPasekFali): ile zostało, a przy demonie — jego życie.</summary>
+        public static void rysujPasekFali(IPlotno ctx, Sim sim, double x, double y, double szer)
+        {
+            var st = sim.lud.straznicy;
+            if (st == null || !st.trwa) return;
+            var zywi = new System.Collections.Generic.List<Creature>();
+            foreach (var c in sim.creatures) if (!c.dead && c.straznik == true) zywi.Add(c);
+            // demon kona po ostatnim uderzeniu: walka wygrana — dawniej panel dalej pisał „pomnik nie pęka”
+            var kona = sim.lud.pomnik?.faza == "kona";
+            Creature? boss = null;
+            if (!kona) foreach (var c in zywi) if (c.boss != null) { boss = c; break; }
+            var zwykli = 0;
+            foreach (var c in zywi) if (c.boss == null) zwykli++;
+            var roz = Math.Max(12, Math.Min(16, szer * 0.02));
+            var POM = Nastawy.NastawyPomnik.POMNIK.wlaczony;
+            // (Alpha, etap 5: pomnik zamiast skorupy; przy demonie — co da wygraną)
+            var tekst = kona ? "DEMON Z POMNIKA KONA — JESTEŚ WOLNY"
+                : $"FALA STRAŻNIKÓW SNU {Js.Js.S(st.fala + 1)}/{Nastawy.NastawyStraznicy.STRAZNICY.fale.Length}" + (zwykli > 0 ? $" · zostało {zwykli}" : "")
+                + (boss != null && POM ? " · pokonaj demona — będziesz wolny" : POM ? " · pomnik nie pęka" : " · skorupa nie pęka");
+            ctx.save();
+            ctx.font = $"{Js.Js.S(roz)}px {Ink.SERIF}";
+            ctx.textAlign = "center";
+            var tw = ctx.measureText(tekst).width;
+            double bw = Math.Max(tw + 28, boss != null ? 320 : 0), bh = boss != null ? roz * 3.6 : roz * 1.9;
+            var bx = x + szer / 2 - bw / 2;
+            // barwy ryciny (ugier i kość) zamiast błękitnego neonu
+            ctx.fillStyle = "rgba(14,10,8,0.88)";
+            ctx.fillRect(bx, y, bw, bh);
+            ctx.strokeStyle = "rgba(224,168,96,0.5)";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(bx + 0.5, y + 0.5, bw - 1, bh - 1);
+            ctx.fillStyle = "rgba(239,227,198,0.95)";
+            ctx.fillText(tekst, x + szer / 2, y + roz * 1.3);
+            if (boss != null)
+            {
+                var b = Boss.aktywnyBoss();
+                var frac = Math.Max(0, Math.Min(1, boss.hp / (boss.hpMax ?? 1)));
+                ctx.font = $"italic {Js.Js.S(roz * 0.85)}px {Ink.SERIF}";
+                ctx.fillStyle = "rgba(224,206,170,0.95)";
+                ctx.fillText($"{b.nazwa} · {Js.Js.S(Math.Ceiling(boss.hp))} / {Js.Js.S(Math.Ceiling(boss.hpMax ?? 0))}", x + szer / 2, y + roz * 2.45);
+                double px = bx + 14, pw = bw - 28, py = y + roz * 2.75, ph = roz * 0.5;
+                ctx.fillStyle = "rgba(54,42,34,0.9)"; ctx.fillRect(px, py, pw, ph);
+                ctx.fillStyle = "rgba(170,52,36,0.92)"; ctx.fillRect(px, py, pw * frac, ph);
+            }
+            ctx.restore();
         }
     }
 }
