@@ -413,7 +413,7 @@ namespace Trzewia.Rysunek
         }
 
         /// <summary>Obrys kropli (render/kruszce.ts: kropla) — wysokość ok. 2a, ostry koniec w górze, okrągły spód; do ścieżki bieżącej.</summary>
-        static void kropla(IPlotno ctx, double a)
+        internal static void kropla(IPlotno ctx, double a)
         {
             ctx.moveTo(0, -a);
             ctx.quadraticCurveTo(a * 0.62, -a * 0.12, a * 0.55, a * 0.38);

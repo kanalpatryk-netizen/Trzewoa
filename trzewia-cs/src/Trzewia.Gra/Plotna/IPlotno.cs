@@ -139,6 +139,8 @@ namespace Trzewia.Plotna
     {
         IPlotno Nowe(int w, int h);
         IObraz Obraz(byte[]? dane, string nazwa);
+        /// <summary>Obrazek z gotowych pikseli RGBA (8 bitów, alfa wymnożona, wierszami od góry) — np. klatka modelu 3D.</summary>
+        IObraz ObrazZPikseli(int w, int h, byte[] rgba);
         void RejestrujKroj(string rodzina, int waga, bool kursywa, byte[] dane);
     }
 

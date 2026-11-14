@@ -611,6 +611,12 @@ namespace Trzewia.Skia
             return new ObrazSkia(img?.ToRasterImage(true));
         }
 
+        public IObraz ObrazZPikseli(int w, int h, byte[] rgba)
+        {
+            var info = new SKImageInfo(w, h, SKColorType.Rgba8888, SKAlphaType.Premul);
+            return new ObrazSkia(SKImage.FromPixelCopy(info, rgba, w * 4));
+        }
+
         public void RejestrujKroj(string rodzina, int waga, bool kursywa, byte[] dane)
         {
             using var d = SKData.CreateCopy(dane);

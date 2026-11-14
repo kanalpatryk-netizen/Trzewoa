@@ -203,6 +203,10 @@ public sealed class EkranProby : Ekran
             }
             Figury.rysujStworzenia(ctx, sim, cam, teraz);
             RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
+            // dłonie (model 3D): z otchłani, demona i anielska — po postaciach, jak w grze TS
+            RysDlon.rysujDlon(ctx, sim, cam, teraz);
+            RysDlonDemona.rysujDlonDemona(ctx, sim, cam, teraz);
+            RysAniol.rysujAniola(ctx, sim, cam, teraz);
         }
         // cel podpowiedzi
         if (rada?.cel is { } cel)
