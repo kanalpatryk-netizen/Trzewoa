@@ -494,31 +494,63 @@ i Godota. Etap 3 (świat) czeka na komendę użytkownika; po duszkach i dłoni p
 ### 9.3 Poziomy wielkości
 Rysunek TS zmienia się z wielkością na ekranie (grubość obwódki i siła jasnej aury mają progi w pikselach, szczegóły
 dochodzą od 70 px) — zmniejszona duża klatka wyglądałaby inaczej niż w TS (słabsza aura, postać ginie w mroku). Dlatego
-każda klatka jest pieczona w kilku wielkościach (wysokość postaci w px ekranu: 24, 34, 48, 68, 96; rycerz ×1,3),
-a gra bierze poziom najbliższy wielkości na ekranie. W Unity wystarczy największy poziom z mipmapami (albo wszystkie).
+każda klatka jest pieczona w pięciu wielkościach (wysokość postaci ludu w px ekranu: **21, 28, 40, 56, 80**; rycerz
+×1,3, Strażnik ×2, demon — jeden poziom 80 px), przy skali ekranu 1080/820 (1920×1080). Gra bierze poziom najbliższy
+wielkości na ekranie (w skali logarytmicznej), a gdy klatka wypada w swojej wielkości — rysuje ją piksel w piksel.
+W Unity wystarczy największy poziom (albo wszystkie).
 
 ### 9.4 Format (`dane/grafika/duszki/`)
-- `<postać>[-<wzór>][-<wariant>].json` + strony PNG `…-h<poziom>-<nr>.png` (≤ 2048 px, przezroczyste tło, alfa prosta,
-  2 px odstępu); do tego podglądy `podglad/*.jpg` (wszystkie klatki animacji obok siebie na ciemnym tle).
-- JSON: `wysokoscKafli`, `poziomy[]` (h, strony, `klatki[]` = strona, x, y, w, h, ox, oy — przesunięcie przyciętej
-  klatki względem punktu zaczepienia: środek stóp, twarzą w prawo), `animacje{}` (pierwsza klatka, liczba klatek,
-  sterownik, czas trwania, pętla), punkty na klatkę (głowa — aureola i znaki stanów).
+- `<postać>[-<wzór>][-<wariant>].json` + strony PNG `…-h<poziom>-<nr>.png` (≤ 2048 px, przezroczyste tło, paleta
+  256 barw z alfą — pngquant, 2 px odstępu). Podglądy w JPG (wszystkie klatki animacji obok siebie na ciemnym tle):
+  `trzewia-cs/duszki-podglad/` — poza danymi gry. JPG nie ma przezroczystości, dlatego klatki do gry są w PNG.
+- JSON: `wersja, postac, wzor, wariant, mnoznik`, `poziomy[]` (`h`, `strony`, `klatki[]` = strona, x, y, w, h, ox, oy —
+  lewy górny róg przyciętej klatki względem punktu zaczepienia: środek stóp, twarzą w prawo; `swiatla[]` — światła
+  klatki wyjęte z rysunku: x, y, promień w ułamkach h, barwa, siła), `animacje{}` (`od`, `n`, `ster`, `mnoz`, `przes`,
+  `ms`, `petla`, `srodki`), `glowa[]` (środek i promień głowy na klatkę — aureola i znaki stanów).
 - Sterownik klatki — jak w TS: `faza` (krok rośnie z drogą, stopa się nie ślizga), `fazaPion` (wspinaczka), `zegar`
   (zamach kilofa), `czas` (oddech, modlitwa), `postep` (ruch walki, zakładanie zbroi, odmowa).
+- Stan na 13.11: 20 arkuszy (robotnik-3/4/5/7/8 i warianty -helm, pobozny-1/2, rycerz-6-z0…z5, straznik, demon),
+  7135 klatek, 45 MB. Pieczenie: `node narzedzia/duszki/piecz.mjs [zlecenie…]` (Chromium z Playwrighta, esbuild
+  z narzedzia/wzorce, pngquant z systemu — bez niego arkusze są w pełnym kolorze i kilka razy większe).
 
 ### 9.5 Odtwarzanie (`Trzewia.Gra/Rysunek/Duszki/`)
 Wybór animacji i klatki to przeniesione `czynnosc()` i `ruch()` z `render/figury.ts` oraz `stanWalki` rycerza; wynik to
-lista „duszek + klatka + położenie + odbicie” — rysuje ją `IPlotno.drawImage`, a w silniku ta sama lista steruje
-`SpriteRenderer`-ami. Cień pod stopami, aureola modlitwy, znaki stanów, pierścień zaznaczenia zostają rysunkiem kodu.
-Czego duszki nie mają (świadome uproszczenia, do raportu): płynnego mieszania póz przy zmianie czynności, mrugania,
-drżenia ze strachu, ciepłej krawędzi od cudzego światła, osobnych klatek szału (jest czerwona aura).
+„duszek + klatka + położenie + odbicie” — rysuje to `IPlotno.drawImage`, a w silniku tym samym steruje się
+`SpriteRenderer`-ami (importer do Unity: `trzewia-cs/unity/`, nieuruchamiany — tu nie ma Unity). Cień pod stopami,
+aureola modlitwy, znaki stanów, pierścień zaznaczenia i ciepła krawędź od cudzego światła zostają rysunkiem kodu.
+Test: `DuszkiTesty` — ta sama scena narysowana grą TS (postacie kodem) i grą C# (duszki), 9 scen.
+Czego duszki nie mają (świadome uproszczenia): płynnego mieszania póz przy zmianie czynności, przysiadu po
+lądowaniu, wzdrygnięcia po ciosie, mrugania, drżenia ze strachu, chwiania zatrutego, osobnych klatek szału (jest
+czerwona aura), iskier przy trafieniach w walce rycerza; demon — pęknięć od ran i płynnego mieszania stanów (bicz
+upieczony dla trzech odległości celu). Postacie innych ras i stary rysunek (`nowePostacie = false`) nie są upieczone —
+w partiach bota nie występują.
 
-### 9.6 Dłoń — model 3D
-W TS dłoń (z otchłani, demona, anielska) to arkusz 10 klatek wyrenderowanych z modelu SDF (`scripts/dlon/model.html`,
-ray marching w WebGL). W C#: **siatka trójkątów** wyciągnięta z tego samego SDF (marching cubes w pozie spoczynkowej,
-oryginalny GLSL liczony w Chromium), **szkielet palców** i wagi skóry, **animacje** (zacisk, rzut, tarcza, zawał),
-barwy i normalne z modelu; pliki: glTF (`.glb`) + format wczytywany przez Unity bez dodatków. Gra rysuje model na żywo
-(mały renderer z buforem głębi w warstwie rysunku), w silniku — zwykły `SkinnedMeshRenderer`.
+### 9.6 Dłoń — model 3D (zrobione 13.11)
+W TS dłoń (z otchłani, demona, anielska) to arkusze po 10 klatek wyrenderowanych z modelu brył (`scripts/dlon/
+model.html`, ray marching w WebGL). W C# dłoń jest **modelem 3D**: `dane/grafika/modele/dlon-z-otchlani.glb`
+i `dlon-anielska.glb` (glTF 2.0). Buduje je `node narzedzia/dlon3d/buduj.mjs` (ok. 5 minut):
+- **siatka** — pole odległości liczone ORYGINALNYM shaderem modelu (funkcja `map()`, dopisane tylko trzy przełączniki:
+  sama skóra / same pazury / który pazur) na siatce punktów co 0,2 jednostki (pazury co 0,09), z niego powierzchnia
+  metodą „surface nets”, wierzchołki dociągnięte do powierzchni, normalne z gradientu pola; ok. 45 tys. wierzchołków;
+- **szkielet** — kość `dlon` i 5 palców × 3 kości, wprost z kinematyki `poza()` strony modelu; pazury sztywno przy
+  ostatnich członach; **wagi skóry** — z odległości od osi palców i stref przejścia przy stawach;
+- **animacje** — `zacisk` (25 kluczy, otwarta → pięść), `rzut`, `tarcza`, `zawal` (po 10 póz czytanych wprost
+  z `renderuj.mjs`; obrót całej dłoni siedzi w kości `dlon`);
+- **wnętrze pięści** — w modelu dwie bryły (`uPiesc`) wypełniają zaciśniętą pięść; tu osobna łatka powierzchni przy
+  kości `piesc`, która rośnie skalą, gdy dłoń się zaciska;
+- **barwy** — skóra, róg szponów, okluzja i brud w bruzdach formułami przepisanymi z `main()` modelu, w wierzchołkach;
+- **światło póz** (`*.swiatlo.gz`, tylko dla gry C#) — cienie rzucane i okluzja każdej pozy kluczowej policzone
+  oryginalnymi funkcjami `cien()` i `okluzja()` na bryłach tej pozy; gra miesza je między pozami.
+
+Gra (`Trzewia.Gra/Rysunek/Model3D/`): `Model3D` wczytuje `.glb`, `Dlon3D` ustawia pozę, ugina skórę, liczy światło
+jak w `main()` (te same lampy, kamera i kadr co arkusz TS) i rysuje programowym rasteryzatorem z buforem głębi;
+klatki są pamiętane (72 kroki na animację). `Dlon.cs`, `DlonDemona.cs`, `Aniol.cs` to przeniesione `render/dlon.ts`,
+`dlon-demona.ts`, `aniol.ts` — zamiast klatki arkusza biorą klatkę modelu. Test: `Dlon3DTesty`.
+Różnice wobec TS (świadome): ruch dłoni jest płynny (TS: 10 klatek na animację), światło liczone w wierzchołkach, bez
+mikrofaktury porów; skóra między pozami ugina się wagami kości, nie zlewaniem brył (przy stawach różnice rzędu ułamka
+jednostki); szpara w zaciśniętej pięści jest zatykana ciemnym wnętrzem. W silniku: zwykły `SkinnedMeshRenderer`
+(Unity: pakiet glTFast; Godot czyta `.glb` sam) — opis w `trzewia-cs/unity/README.md`. Drugiego formatu (FBX) nie ma:
+glTF jest standardem, a ręcznie pisany FBX byłby nie do sprawdzenia bez Unity.
 
 ---
 

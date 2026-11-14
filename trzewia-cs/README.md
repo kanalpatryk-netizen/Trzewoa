@@ -3,9 +3,14 @@
 Przeniesienie gry z [`alpha-1/`](../alpha-1/) (TypeScript, Canvas 2D, Electron) na C# — szybki program na Windows
 w folderze jak gry ze Steama. Plan, etapy, decyzje i ryzyka: [`PLAN.md`](PLAN.md). `alpha-1/` zostaje bez zmian jako wzorzec.
 
-**Stan: etap 1 (szkielet)** — okno, pełny ekran (F11), skalowanie jak w TS, pętla 120 tików/s, Skia na karcie
-graficznej (ANGLE/Direct3D 11 na Windows, OpenGL w zapasie), wejście (mysz, kółko, klawisze jak w TS), licznik F3,
-publikacja do folderu i do jednego pliku. Na ekranie jest jeszcze ekran próbny (siatka świata, kamera, kroje gry).
+**Stan (13.11):** etap 1 (okno, pętla, wejście, publikacja) i etap 2 (symulacja — bit w bit jak w TS, testy złote,
+zapis, bot) są gotowe. Z etapu 3 zrobione są **postacie**: nie rysuje ich już kod gry, tylko gotowe duszki (sprite'y)
+z arkuszy PNG (`dane/grafika/duszki/`, podglądy JPG w `duszki-podglad/`), a **dłoń** (z otchłani, demona, anielska)
+jest modelem 3D (`dane/grafika/modele/*.glb`) rysowanym na żywo. Na ekranie jest ekran próbny: prawdziwa góra z botem,
+postacie z duszków i dłonie (spacja — pauza, + − tempo, N — następna góra, L — kropki zamiast duszków). Świat
+(rycina skały, mrok, budowle, interfejs) — dalsza część etapu 3 i kolejne etapy.
+
+Duszki i model dłoni nadają się też do Unity i Godota — opis i importer: [`unity/README.md`](unity/README.md).
 
 ## Warstwy (żeby dało się potem przenieść grę do Unity albo Godota)
 
