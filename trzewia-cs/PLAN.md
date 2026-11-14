@@ -483,6 +483,7 @@ klatka 11,8 ms, najdłuższa 12 ms, procesor 7,9 ms (z tego 7,6 ms siatka — zo
 | (12.11) Kolejność etapów 3–4 i sposób rysowania postaci | „Zacznij od przeniesienia postaci, gdy skończysz nie rób nic więcej, zatrzymaj się i czekaj na moją komendę, ALE postacie nie mają już być rysowane przez grę bezpośrednio, zrób sprite'y każdego duszka i jego animacje tak, żeby działały w Unity też” — punkt 9 |
 | (12.11) Format duszków | „Postacie, jeśli się da, to zrób w png i jpg” — arkusze w PNG (przezroczystość), podglądy i tekstury w JPG |
 | (12.11) Dłoń | „Dłoń ma być modelem 3d oczywiście, a nie plikiem jpg” — punkt 9.6 |
+| (14.11) Reszta i dźwięk | „możesz przenieść wszystko ale wstrzymaj się z dzwiekiem mam na niego zamysł ale zrobimy to dopiero gdy wszystko inne będzie dopięte na ostatni guzik” — etapy 5, 6 (bez dźwięku), 7 i 8 teraz; dźwięk i muzyka (`core/audio.ts`, `mikser.ts`, `music.ts`, `glosy-ludu.ts`, `glos-odmowy.ts`, `nagrania.ts`) — na samym końcu, po rozmowie z użytkownikiem; do tego czasu gra jest cicha, a miejsca wywołań dźwięku zostają w kodzie jako puste wywołania z komentarzem |
 
 ---
 
