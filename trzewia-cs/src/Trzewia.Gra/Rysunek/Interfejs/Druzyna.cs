@@ -66,11 +66,13 @@ namespace Trzewia.Rysunek
         static readonly Dictionary<string, Creature> zastepcy = new Dictionary<string, Creature>();
         static readonly FieldInfo[] POLA_POSTACI = typeof(Creature).GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
+        /// <summary>Object.assign(z, wzor): wszystkie pola wzoru na kopię (płytko), kopia zostaje tym samym obiektem.</summary>
+        public static void przepisz(Creature z, Creature wzor) { foreach (var f in POLA_POSTACI) f.SetValue(z, f.GetValue(wzor)); }
+
         public static Creature zastepca(string rola, Creature wzor)
         {
             if (!zastepcy.TryGetValue(rola, out var z)) { z = wzor.Kopia(); zastepcy[rola] = z; }
-            // Object.assign(z, wzor, …): wszystkie pola wzoru na zastępcę (płytko), zastępca zostaje tym samym obiektem
-            foreach (var f in POLA_POSTACI) f.SetValue(z, f.GetValue(wzor));
+            przepisz(z, wzor);
             z.x = 0; z.y = 0; z.vy = 0; z.face = 1; z.carry = 0; z.fear = 0; z.mad = 0; z.job = Job.STOI;
             z.odmowa = null; z.naLinie = null; z.naWiadrze = null; z.wspina = null; z.ksiegaT = null;
             return z;
