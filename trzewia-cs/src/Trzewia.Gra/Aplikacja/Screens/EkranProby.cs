@@ -179,71 +179,48 @@ public sealed class EkranProby : Ekran
         ctx.rect(plX, plY, plW, plH);
         ctx.clip();
         ctx.translate(plX, plY);
-        if (!mapaKafli)
+        if (!mapaKafli && !kropki)
         {
-            ctx.save();
-            ctx.imageSmoothingEnabled = true;
-            rycina.rysuj(ctx, cam, ustawienia.jasnosc);
-            rycina.poswiata(ctx, cam, true);
-            ctx.restore();
-            tajemnica.znaki(ctx, sim, cam, 0.5, pauza);
-            // świat przed mrokiem (etap 3: na razie loch i konwój; reszta budowli w drodze)
-            RysLoch.rysujLoch(ctx, sim, cam, teraz);
-            Konwoj.rysujKonwoj(ctx, sim, cam, teraz, x => World.SURFACE_Y - Grzbiet.wysokoscGrzbietu(sim.world, x));
+            // świat w kolejności z game.ts (wspólne z testem podglądu)
+            PlytaSwiata.Rysuj(ctx, sim, cam, rycina, tajemnica, teraz, pauza, 0.5);
+            t = L.znacz(Czesc.swiat, t);
         }
         else
         {
-            ctx.fillStyle = "#0b0908";
-            ctx.fillRect(0, 0, plW, plH);
-            ctx.imageSmoothingEnabled = false;
-            double W = sim.world.w, H = sim.world.h;
-            ctx.drawImage(mapa!, 0, 0, W, H, cam.toScreenX(0), cam.toScreenY(0), W * cam.zoom, H * cam.zoom);
-            ctx.imageSmoothingEnabled = true;
-        }
-        t = L.znacz(Czesc.swiat, t);
-
-        // stworzenia: duszki (PLAN.md, punkt 9) — ten sam rysunek, który wejdzie do ekranu gry
-        int zywych = 0;
-        foreach (var c in sim.creatures) if (!c.dead) zywych++;
-        if (kropki)
-        {
-            foreach (var c in sim.creatures)
-            {
-                if (c.dead) continue;
-                var k = Races.RACES[c.race].color;
-                ctx.fillStyle = Barwa.Rgba(k[0], k[1], k[2], 1);
-                ctx.beginPath();
-                ctx.arc(cam.toScreenX(c.x), cam.toScreenY(c.y + 0.5), Math.Max(1.5, cam.zoom * 0.3), 0, Math.PI * 2);
-                ctx.fill();
-            }
-        }
-        else
-        {
-            RysTrupy.rysujTrupy(ctx, sim, cam, teraz);
-            // demon wstający z gruzu po rozpadzie pomnika (w grze woła to rysunek pomnika — render/pomnik.ts, etap 3)
-            var pomnik = sim.lud.pomnik;
-            if (pomnik != null && pomnik.faza == "wychodzi")
-            {
-                var m = Symulacja.Pomnik.miejscePomnika(sim);
-                ctx.save();
-                ctx.translate(cam.toScreenX(m.x), cam.toScreenY(m.y + 1));
-                Rysunek.Duszki.DuszkiDemona.rysujWstajacego(ctx, Rysunek.Duszki.DuszkiDemona.wysokoscDemona(cam.zoom), Math.Min(1, (sim.tick - pomnik.od) / Nastawy.NastawyPomnik.POMNIK.wyjscie));
-                ctx.restore();
-            }
             if (!mapaKafli)
             {
-                RysMrok.rysujMrok(ctx, sim, cam, teraz, pauza);
-                if (Nastawy.NastawyMrok.MROK.wlaczony) rycina.poswiata(ctx, cam, false);
-                Konwoj.rysujKonwojNad(ctx, sim, cam, teraz, x => World.SURFACE_Y - Grzbiet.wysokoscGrzbietu(sim.world, x));
-                RysLoch.rysujLochNad(ctx, sim, cam, teraz);
+                ctx.save();
+                ctx.imageSmoothingEnabled = true;
+                rycina.rysuj(ctx, cam, ustawienia.jasnosc);
+                ctx.restore();
             }
-            Figury.rysujStworzenia(ctx, sim, cam, teraz);
-            RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
-            // dłonie (model 3D): z otchłani, demona i anielska — po postaciach, jak w grze TS
-            RysDlon.rysujDlon(ctx, sim, cam, teraz);
-            RysDlonDemona.rysujDlonDemona(ctx, sim, cam, teraz);
-            RysAniol.rysujAniola(ctx, sim, cam, teraz);
+            else
+            {
+                ctx.fillStyle = "#0b0908";
+                ctx.fillRect(0, 0, plW, plH);
+                ctx.imageSmoothingEnabled = false;
+                double W = sim.world.w, H = sim.world.h;
+                ctx.drawImage(mapa!, 0, 0, W, H, cam.toScreenX(0), cam.toScreenY(0), W * cam.zoom, H * cam.zoom);
+                ctx.imageSmoothingEnabled = true;
+            }
+            t = L.znacz(Czesc.swiat, t);
+            if (kropki)
+            {
+                // podgląd bez duszków (klawisz L): kropki w miejscach z symulacji — do porównania położeń
+                foreach (var c in sim.creatures)
+                {
+                    if (c.dead) continue;
+                    var k = Races.RACES[c.race].color;
+                    ctx.fillStyle = Barwa.Rgba(k[0], k[1], k[2], 1);
+                    ctx.beginPath();
+                    ctx.arc(cam.toScreenX(c.x), cam.toScreenY(c.y + 0.5), Math.Max(1.5, cam.zoom * 0.3), 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            else Figury.rysujStworzenia(ctx, sim, cam, teraz);
         }
+        int zywych = 0;
+        foreach (var c in sim.creatures) if (!c.dead) zywych++;
         // cel podpowiedzi
         if (rada?.cel is { } cel)
         {
