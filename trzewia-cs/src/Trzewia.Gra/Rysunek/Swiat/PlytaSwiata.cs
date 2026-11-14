@@ -11,6 +11,28 @@ using Czesc = Trzewia.Rdzen.Czesc;
 
 namespace Trzewia.Rysunek
 {
+    /// <summary>
+    /// Warstwy ekranu gry wplecione w świat (game.ts: render) — w miejscach „(4)” z kolejności rysowania. Ekran próbny
+    /// i test podglądu ich nie mają.
+    /// </summary>
+    public interface IWarstwySterowania
+    {
+        /// <summary>Kogo karta mieszkańca jest otwarta (rysujStworzenia go wyróżnia).</summary>
+        double? wybrany { get; }
+        /// <summary>Podgląd planu pod kursorem (pokoje.podglad) — po rysujLochNad.</summary>
+        void podglad(IPlotno ctx, Camera cam, double teraz);
+        /// <summary>Złoty pierścień pod zaznaczonymi — przed postaciami.</summary>
+        void zaznaczenie(IPlotno ctx, Camera cam, double teraz);
+        /// <summary>Polecenia na mapie, ramka, rysunki trybu deweloperskiego — po przodach wiader.</summary>
+        void polecenia(IPlotno ctx, Camera cam, double teraz);
+        /// <summary>Znaczniki ludu (obozy) — po efektach.</summary>
+        void znacznikiLudu(IPlotno ctx, Camera cam, double teraz);
+        /// <summary>W pauzie, po przygaszeniu świata: szkice rozkazów.</summary>
+        void rozkazy(IPlotno ctx, Camera cam, double teraz);
+        /// <summary>Cel podpowiedzi — na samym końcu.</summary>
+        void cel(IPlotno ctx, Camera cam, double teraz);
+    }
+
     public sealed class PlytaSwiata
     {
         public readonly Rycina rycina = new Rycina();
@@ -25,7 +47,7 @@ namespace Trzewia.Rysunek
         /// <summary>
         /// Świat na płycie. `pomPod` i `oltarzPod` — co pod kursorem (podpisy); `oddech` — oddech rdzenia (Tajemnica).
         /// </summary>
-        public double Rysuj(IPlotno ctx, Sim sim, Camera cam, double teraz, bool pauza, double oddech, PodKursorem? pomPod = null, string? oltarzPod = null, double t = -1)
+        public double Rysuj(IPlotno ctx, Sim sim, Camera cam, double teraz, bool pauza, double oddech, PodKursorem? pomPod = null, string? oltarzPod = null, double t = -1, IWarstwySterowania? sterowanie = null)
         {
             // licznik F3: części klatki jak w game.ts (rycina, poświata, świat, mrok, postacie)
             var L = global::Trzewia.Rdzen.Wydajnosc.licznik;
@@ -91,6 +113,7 @@ namespace Trzewia.Rysunek
             // 6.11: wywar w kotle i zaklinanie, płomienie, runy bramy, krąg modlitwy za innych — nad mrokiem
             RysLoch.rysujLochNad(ctx, sim, cam, teraz);
             // (4) podgląd planu pod kursorem: pokoje.podglad
+            sterowanie?.podglad(ctx, cam, teraz);
             // droga pielgrzymów: którędy wierni zejdą pod rdzeń (25.10: droga wiernych jako szyb — plan widać zawsze)
             var plan = Pielgrzymka.aktualnyPlan(sim);
             if (plan?.szyb != null && !sim.rytual.otwarta) Zarys.rysujPlanDrogi(ctx, sim, cam, plan, teraz);
@@ -99,13 +122,16 @@ namespace Trzewia.Rysunek
             t = L.znacz(Czesc.swiat, t);
             Zarys.rysujZarys(ctx, sim, cam, teraz);
             // (4) rysujZaznaczenie
-            Figury.rysujStworzenia(ctx, sim, cam, teraz);
+            sterowanie?.zaznaczenie(ctx, cam, teraz);
+            Figury.rysujStworzenia(ctx, sim, cam, teraz, sterowanie?.wybrany);
             // etap 3f: część zbroi w rękach rycerza i błysk, gdy ją założy — przed postaciami
             pokoje.rysujPrzod(ctx, sim, cam, teraz);
             RysWiadra.rysujPrzodWiader(ctx, sim, cam, teraz);
             // (4) rysujPoleceniaNaMapie, rysujRamke, rysujDev
+            sterowanie?.polecenia(ctx, cam, teraz);
             Efekty.rysujEfekty(ctx, sim.efekty, cam, teraz, sim);
             // (4) rysujZnacznikiLudu
+            sterowanie?.znacznikiLudu(ctx, cam, teraz);
             RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
             // etap 5: błyski pomnika, rozpad i konanie demona (fala światła, popiół)
             RysPomnik.rysujNadPomnikiem(ctx, sim, cam, teraz);
@@ -117,8 +143,10 @@ namespace Trzewia.Rysunek
                 // czas stoi: świat przygasa (4: a na nim plan rozkazów — rysujRozkazy)
                 ctx.fillStyle = "rgba(8,6,10,0.26)";
                 ctx.fillRect(-cam.vw, -cam.vh, cam.vw * 3, cam.vh * 3);
+                sterowanie?.rozkazy(ctx, cam, teraz);
             }
             // (4) podswietlCel
+            sterowanie?.cel(ctx, cam, teraz);
             ctx.restore();
             return L.znacz(Czesc.postacie, t);
         }

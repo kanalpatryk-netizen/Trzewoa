@@ -34,6 +34,10 @@ public interface IKontekst
     double w { get; }
     double h { get; }
     void idz(string nazwa, object? dane = null);
+    /// <summary>Dźwięk świata, muzyka i dźwięki gestów — na razie zaślepki (Aplikacja/BezDzwieku.cs).</summary>
+    Dzwiek dzwiek { get; }
+    Muzyka muzyka { get; }
+    Gesty gesty { get; }
     void zarejestruj(Ekran ekran);
     Ekran? ekran(string nazwa);
 }

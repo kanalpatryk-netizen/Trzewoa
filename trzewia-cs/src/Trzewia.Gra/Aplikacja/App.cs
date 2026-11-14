@@ -25,6 +25,9 @@ public sealed class App : IKontekst
     public IPlotno ctx { get; }
     public double w { get; private set; } = 1;
     public double h { get; private set; } = 1;
+    public Dzwiek dzwiek { get; } = new Dzwiek();
+    public Muzyka muzyka { get; } = new Muzyka();
+    public Gesty gesty { get; } = new Gesty();
     /// <summary>Rozmiar w pikselach CSS i mnożnik, z którego wyszła skala — po nich poznajemy zmianę.</summary>
     double cssW, cssH, mnoznik = 1;
     /// <summary>Rozdzielczość obrazu (ustawienia → Wydajność) i gęstość pikseli, z którymi policzono płótno.</summary>
