@@ -1,0 +1,86 @@
+[
+ {
+  "nazwa": "sala-start",
+  "ziarno": 1,
+  "tik": 1200,
+  "kam": {
+   "x": 99,
+   "y": 34,
+   "zoom": 12
+  },
+  "teraz": 123456,
+  "vw": 600,
+  "vh": 380,
+  "klatek": 3
+ },
+ {
+  "nazwa": "oboz",
+  "ziarno": 1,
+  "tik": 9000,
+  "kam": {
+   "x": 96,
+   "y": 38,
+   "zoom": 14
+  },
+  "teraz": 98765,
+  "vw": 600,
+  "vh": 380,
+  "klatek": 3
+ },
+ {
+  "nazwa": "zelazo",
+  "ziarno": 1,
+  "tik": 9000,
+  "kam": {
+   "x": 50.5,
+   "y": 105.5,
+   "zoom": 30
+  },
+  "teraz": 55555,
+  "vw": 600,
+  "vh": 380,
+  "klatek": 3
+ },
+ {
+  "nazwa": "powierzchnia",
+  "ziarno": 2,
+  "tik": 4000,
+  "kam": {
+   "x": 96,
+   "y": 24,
+   "zoom": 9
+  },
+  "teraz": 31337,
+  "vw": 600,
+  "vh": 380,
+  "klatek": 3
+ },
+ {
+  "nazwa": "krypta",
+  "ziarno": 1,
+  "tik": 60000,
+  "kam": {
+   "x": 96.5,
+   "y": 222,
+   "zoom": 14
+  },
+  "teraz": 77777,
+  "vw": 600,
+  "vh": 380,
+  "klatek": 3
+ },
+ {
+  "nazwa": "daleko",
+  "ziarno": 3,
+  "tik": 20000,
+  "kam": {
+   "x": 96,
+   "y": 70,
+   "zoom": 5
+  },
+  "teraz": 4242,
+  "vw": 600,
+  "vh": 380,
+  "klatek": 3
+ }
+]

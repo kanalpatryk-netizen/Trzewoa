@@ -23,6 +23,12 @@ function wtyczkaVite(podmiany) {
   return {
     name: 'vite-w-esbuildzie',
     setup(b) {
+      // ?worker (Vite: moduł jako wątek) → zastępczy konstruktor; narzędzia liczą wszystko w jednym wątku
+      // (render/rycina.ts z ustawienia.rycinaWWatku = false nie tworzy wątku)
+      b.onResolve({ filter: /\?worker/ }, (a) => ({ path: a.path, namespace: 'pusty-watek' }));
+      b.onLoad({ filter: /.*/, namespace: 'pusty-watek' }, () => ({
+        contents: 'export default class { constructor() { throw new Error("wątek niedostępny w narzędziu"); } }', loader: 'js',
+      }));
       // ?url → ten sam plik bez dopisku (loader dataurl robi z niego adres data:)
       b.onResolve({ filter: /\?url$/ }, (a) => ({ path: path.resolve(a.resolveDir, a.path.replace(/\?url$/, '')) }));
       // podmiany modułów: { 'render/lud/matma': 'nakladki/matma.ts' } — nie dotyczy importu z samej nakładki
