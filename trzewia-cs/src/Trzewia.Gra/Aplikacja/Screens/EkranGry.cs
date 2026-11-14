@@ -165,17 +165,17 @@ namespace Trzewia.Aplikacja
         double tempoTeraz()
         {
             if (BOT.wlaczony) return BOT.tempo;
-            return ustawienia.trybDeweloperski ? Dziennik.DEV.mnoznik : 1;
+            return ustawienia.trybDeweloperski ? Trzewia.Symulacja.Dziennik.DEV.mnoznik : 1;
         }
 
         /// <summary>Tryb deweloperski: następny / poprzedni mnożnik czasu z TEMPO.mnozniki.</summary>
         void zmienTempo(int o)
         {
             var M = TEMPO.mnozniki;
-            var i = Array.FindIndex(M, m => m >= Dziennik.DEV.mnoznik);
+            var i = Array.FindIndex(M, m => m >= Trzewia.Symulacja.Dziennik.DEV.mnoznik);
             if (i < 0) i = M.Length - 1;
-            Dziennik.DEV.mnoznik = M[Math.Max(0, Math.Min(M.Length - 1, i + o))];
-            ui.say(Dziennik.DEV.mnoznik == 1 ? "Czas zwykły." : $"Czas ×{Js.Js.S(Dziennik.DEV.mnoznik)} (tryb deweloperski).", sim.tick);
+            Trzewia.Symulacja.Dziennik.DEV.mnoznik = M[Math.Max(0, Math.Min(M.Length - 1, i + o))];
+            ui.say(Trzewia.Symulacja.Dziennik.DEV.mnoznik == 1 ? "Czas zwykły." : $"Czas ×{Js.Js.S(Trzewia.Symulacja.Dziennik.DEV.mnoznik)} (tryb deweloperski).", sim.tick);
             nasluch?.Invoke(new ZdarzenieGry { typ = "tempo" });
         }
 
@@ -478,9 +478,9 @@ namespace Trzewia.Aplikacja
             if (sim.lud.aniol?.widziana == true) odkrycia.odkryj("dlon-anielska");
             // etap 5b: dłoń z otchłani pomaga demonowi — tablica każdej akcji, gdy ją pierwszy raz zrobi
             var dd = sim.lud.dlonDemona;
-            if (dd != null) foreach (var a in new[] { "rzut", "tarcza", "zawal" }) if (dd.ileRazy(a) > 0) odkrycia.odkryj($"dlon-{a}");
+            if (dd != null) foreach (var a in new[] { "rzut", "tarcza", "zawal" }) if ((a == "rzut" ? dd.ile.rzut : a == "tarcza" ? dd.ile.tarcza : dd.ile.zawal) > 0) odkrycia.odkryj($"dlon-{a}");
             // Remake v2: wiadro, hełmy, trupy
-            if ((sim.lud.wiadra?.lista ?? new List<Wiadro>()).Any(wd => wd.faza == "stoi")) cicho("wiadro");
+            if ((sim.lud.wiadra?.lista ?? new List<WiadroJedzenia>()).Any(wd => wd.faza == "stoi")) cicho("wiadro");
             if (sim.lud.helmy == true) odkrycia.odkryj("helmy");
             if ((sim.lud.trupy?.Count ?? 0) > 0) cicho("trupy");
             if (sim.creatures.Any(c => !c.dead && c.boss != null)) odkrycia.odkryj("boss");

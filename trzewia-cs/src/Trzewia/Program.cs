@@ -46,7 +46,10 @@ static class Program
             using var ctx = new PlotnoSkia(okno.Canvas, okno.PikseleW, okno.PikseleH);
             var app = new App(okno, ctx);
             app.zarejestruj(new EkranProby());
-            app.start(Uruchomienie.EkranStartowy ?? "proba");
+            app.zarejestruj(new EkranGry(app));
+            // (etap 5d: intro → menu; do tego czasu ekran gry startuje od nowej partii)
+            if (Uruchomienie.EkranStartowy == "gra") app.idz("gra", "nowa");
+            else app.start(Uruchomienie.EkranStartowy ?? "proba");
             Petla(okno, app);
             return 0;
         }

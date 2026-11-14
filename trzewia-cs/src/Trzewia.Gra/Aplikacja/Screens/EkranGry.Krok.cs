@@ -222,7 +222,7 @@ namespace Trzewia.Aplikacja
 
         public override void krok(double dt, double teraz)
         {
-            var DEV = Dziennik.DEV;
+            var DEV = Trzewia.Symulacja.Dziennik.DEV;
             if (BOT.wlaczony) krokObserwowanej(teraz);
             // karta wydarzenia rozstrzygnięta — jej znacznik znika, wraca cel podpowiedzi
             if (celKarty != null && sim.wydarzenia.biezace == null)

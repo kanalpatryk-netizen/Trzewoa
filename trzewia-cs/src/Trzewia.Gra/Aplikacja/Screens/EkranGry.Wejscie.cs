@@ -389,7 +389,7 @@ namespace Trzewia.Aplikacja
                 return;
             }
             if (b.rodzaj == null) return;
-            var powod = Polecenia.odprawRytual(sim, b.rodzaj, b.cel);
+            var powod = Oltarz.odprawRytual(sim, b.rodzaj, b.cel);
             if (powod != null) { ui.say($"{NAZWA_RYTUALU[b.rodzaj]} — teraz nie: {powod}.", sim.tick); app.gesty.odmowa(); return; }
             ui.say($"{NAZWA_RYTUALU[b.rodzaj]} — pobożny klęka przy ołtarzu.", sim.tick);
             app.gesty.klik();
@@ -647,7 +647,7 @@ namespace Trzewia.Aplikacja
                 if (naPlycie(e.clientX, e.clientY))
                 {
                     var (wx, wy) = swiatPod(e.clientX, e.clientY);
-                    Dziennik.DEV.kursor = new XY { x = wx, y = wy };
+                    Trzewia.Symulacja.Dziennik.DEV.kursor = new XY { x = wx, y = wy };
                     if (faza == Faza.dol && e.shiftKey)
                     {
                         double fx = cam.toWorldX(e.clientX - plate.x), fy = cam.toWorldY(e.clientY - plate.y);
@@ -658,11 +658,11 @@ namespace Trzewia.Aplikacja
                             var d = Math.Sqrt(Math.Pow(c.x - fx, 2) + Math.Pow(c.y - 0.5 - fy, 2));
                             if (d < bd) { bd = d; best = c.id; }
                         }
-                        Dziennik.DEV.sledzony = best;
+                        Trzewia.Symulacja.Dziennik.DEV.sledzony = best;
                         return;
                     }
                 }
-                else Dziennik.DEV.kursor = null;
+                else Trzewia.Symulacja.Dziennik.DEV.kursor = null;
             }
             ui.plan = pauza ? rozkazy : null;
 

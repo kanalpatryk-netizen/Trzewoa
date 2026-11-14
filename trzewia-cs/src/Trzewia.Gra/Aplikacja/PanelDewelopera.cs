@@ -225,11 +225,14 @@ namespace Trzewia.Aplikacja
 
         void zwin(bool z) { zwiniety = z; zapamietaj(); }
 
-        sealed class Polozenie { public bool zwiniety { get; set; } public double? left { get; set; } public double? top { get; set; } }
-
         void zapamietaj()
         {
-            try { Gospodarz.Pliki.Zapisz(PAMIEC, System.Text.Json.JsonSerializer.Serialize(new Polozenie { zwiniety = zwiniety, left = left, top = top })); }
+            try
+            {
+                var o = new Dictionary<string, object?> { ["zwiniety"] = zwiniety };
+                if (left != null && top != null) { o["left"] = left.Value; o["top"] = top.Value; }
+                Gospodarz.Pliki.Zapisz(PAMIEC, Rdzen.Json.Pisz(o));
+            }
             catch { /* bez pamięci okienko po prostu startuje w rogu */ }
         }
 
@@ -239,10 +242,9 @@ namespace Trzewia.Aplikacja
             {
                 var t = Gospodarz.Pliki.Czytaj(PAMIEC);
                 if (t == null) return;
-                var p = System.Text.Json.JsonSerializer.Deserialize<Polozenie>(t);
-                if (p == null) return;
-                if (p.left != null && p.top != null) { left = p.left; top = p.top; }      // przycięte do okna przy rysowaniu
-                if (p.zwiniety) zwiniety = true;
+                if (!(Rdzen.Json.Czytaj(t) is Dictionary<string, object?> p)) return;
+                if (p.TryGetValue("left", out var l) && l is double ld && p.TryGetValue("top", out var g) && g is double gd) { left = ld; top = gd; }      // przycięte do okna przy rysowaniu
+                if (p.TryGetValue("zwiniety", out var z) && z is bool zb && zb) zwiniety = true;
             }
             catch { /* jak wyżej */ }
         }
