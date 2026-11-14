@@ -65,6 +65,12 @@ namespace Trzewia.Plotna
         public readonly IZrodloObrazu Zrodlo;
         public readonly string Powtorzenie;
         public object? Uchwyt;
+        /// <summary>Przekształcenie wzoru (pattern.setTransform) — null: jednostkowe.</summary>
+        public DOMMatrix? Przeksztalcenie;
+        /// <summary>Numer zmiany przekształcenia — warstwa rysunku przelicza wtedy swój shader.</summary>
+        public int Wersja;
         public CanvasPattern(IZrodloObrazu zrodlo, string powtorzenie) { Zrodlo = zrodlo; Powtorzenie = powtorzenie; }
+        /// <summary>Jak CanvasPattern.setTransform(DOMMatrix) — bez argumentu: jednostkowe.</summary>
+        public void setTransform(DOMMatrix? m = null) { Przeksztalcenie = m; Wersja++; }
     }
 }

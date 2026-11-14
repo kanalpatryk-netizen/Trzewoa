@@ -317,14 +317,17 @@ namespace Trzewia.Skia
 
         static SKShader? ShaderWzoru(CanvasPattern w)
         {
-            if (w.Uchwyt is SKShader gotowy) return gotowy;
+            if (w.Uchwyt is (SKShader gotowy, int wersja) && wersja == w.Wersja) return gotowy;
             var img = FabrykaSkia.Obraz(w.Zrodlo);
             if (img == null) return null;
             var pw = w.Powtorzenie;
             var x = pw == "repeat" || pw == "repeat-x" || pw == "" ? SKShaderTileMode.Repeat : SKShaderTileMode.Decal;
             var y = pw == "repeat" || pw == "repeat-y" || pw == "" ? SKShaderTileMode.Repeat : SKShaderTileMode.Decal;
-            var sh = img.ToShader(x, y, new SKSamplingOptions(SKFilterMode.Linear));
-            w.Uchwyt = sh;
+            var sh = w.Przeksztalcenie is DOMMatrix m
+                ? img.ToShader(x, y, new SKSamplingOptions(SKFilterMode.Linear), Macierz.Sk(m))
+                : img.ToShader(x, y, new SKSamplingOptions(SKFilterMode.Linear));
+            if (w.Uchwyt is (SKShader stary, int _)) stary.Dispose();
+            w.Uchwyt = (sh, w.Wersja);
             return sh;
         }
 
