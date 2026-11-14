@@ -194,6 +194,29 @@ namespace Trzewia.Rysunek.Duszki
             if (d?.Animacja("wstaje") is { } a) d.Rysuj(ctx, a.Klatka(k), h / (Boss.aktywnyBoss().rozmiar * 0.6));
         }
 
+        /// <summary>
+        /// Podgląd ruchu walki demona na tablicy atlasu (render/demon-boss.ts: podgladWalkiDemona) stopami w (0, 0):
+        /// klatka `t` z `dl` tików ruchu `id`. Bicz z łańcucha — wariant na średnią odległość (kukła sięgała do stałego celu),
+        /// blok — „blok-trzyma” (w TS blok trwa do ciosu rycerza). Zwraca false, gdy arkusza nie ma.
+        /// </summary>
+        public static bool podgladWalki(IPlotno ctx, double h, string id, double t, double dl, double wariant = 1)
+        {
+            var d = Duszek.Daj("demon");
+            if (d == null) return false;
+            var nazwa = id == "biczLancucha" ? "biczLancucha-40" : id == "blok" ? "blok-trzyma" : id == "zachwianie" && wariant == 2 ? "zachwianie-klek" : id;
+            var a = d.Animacja(nazwa);
+            if (a == null) return false;
+            d.Rysuj(ctx, a.Klatka(dl > 0 ? Math.Min(1, t / dl) : 0), h / (Boss.aktywnyBoss().rozmiar * 0.6));
+            return true;
+        }
+
+        /// <summary>Demon kona (`k` 0…1) stopami w (0, 0) — klatki „kona” (render/pomnik.ts: rysujKonajacego).</summary>
+        public static void rysujKonajacego(IPlotno ctx, double h, double k)
+        {
+            var d = Duszek.Daj("demon");
+            if (d?.Animacja("kona") is { } a) d.Rysuj(ctx, a.Klatka(Math.Max(0, Math.Min(1, k))), h / (Boss.aktywnyBoss().rozmiar * 0.6));
+        }
+
         /// <summary>Wysokość żywego demona — ta sama co bossa na mapie (render/pomnik.ts: wysokoscDemona).</summary>
         public static double wysokoscDemona(double z) =>
             Math.Max(16, Races.RACES[Race.TROLL].size * z * 1.9 * Rdzen.SettingsStore.ustawienia.wielkoscSylwetek) * Boss.aktywnyBoss().rozmiar * 0.6;
