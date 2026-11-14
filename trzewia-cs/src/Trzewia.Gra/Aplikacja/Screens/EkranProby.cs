@@ -45,6 +45,7 @@ public sealed class EkranProby : Ekran
     bool kropki;
     /// <summary>Rycina świata (etap 3); M — dawna mapa kafli zamiast niej.</summary>
     readonly Rycina rycina = new Rycina();
+    readonly Tajemnica tajemnica = new Tajemnica();
     bool mapaKafli;
     double rysKamX = double.NaN, rysKamY, rysKamZ, lastInk = -1e9, rycinaW, rycinaH;
     Podpowiedz? rada;
@@ -185,6 +186,10 @@ public sealed class EkranProby : Ekran
             rycina.rysuj(ctx, cam, ustawienia.jasnosc);
             rycina.poswiata(ctx, cam, true);
             ctx.restore();
+            tajemnica.znaki(ctx, sim, cam, 0.5, pauza);
+            // świat przed mrokiem (etap 3: na razie loch i konwój; reszta budowli w drodze)
+            RysLoch.rysujLoch(ctx, sim, cam, teraz);
+            Konwoj.rysujKonwoj(ctx, sim, cam, teraz, x => World.SURFACE_Y - Grzbiet.wysokoscGrzbietu(sim.world, x));
         }
         else
         {
@@ -224,6 +229,13 @@ public sealed class EkranProby : Ekran
                 ctx.translate(cam.toScreenX(m.x), cam.toScreenY(m.y + 1));
                 Rysunek.Duszki.DuszkiDemona.rysujWstajacego(ctx, Rysunek.Duszki.DuszkiDemona.wysokoscDemona(cam.zoom), Math.Min(1, (sim.tick - pomnik.od) / Nastawy.NastawyPomnik.POMNIK.wyjscie));
                 ctx.restore();
+            }
+            if (!mapaKafli)
+            {
+                RysMrok.rysujMrok(ctx, sim, cam, teraz, pauza);
+                if (Nastawy.NastawyMrok.MROK.wlaczony) rycina.poswiata(ctx, cam, false);
+                Konwoj.rysujKonwojNad(ctx, sim, cam, teraz, x => World.SURFACE_Y - Grzbiet.wysokoscGrzbietu(sim.world, x));
+                RysLoch.rysujLochNad(ctx, sim, cam, teraz);
             }
             Figury.rysujStworzenia(ctx, sim, cam, teraz);
             RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
