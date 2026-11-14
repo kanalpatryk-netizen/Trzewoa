@@ -28,7 +28,10 @@ namespace Trzewia.Rysunek
             Kucie.rysujKucie(ctx, sim, cam, teraz);
             // (3c) pokoje.rysujWnetrza, oltarz.rysuj, ruiny.rysuj
             RysLoch.rysujLoch(ctx, sim, cam, teraz);
-            // (3c) rysujSchodyDrogi, rysujBudoweSchodow
+            // droga wiernych: schody kręcone — tylko to, co już zbudowano (po lochu: dół schodów stoi w komnacie z kotłem)
+            Schody.rysujSchodyDrogi(ctx, sim, cam, teraz);
+            // 6.11: budowa schodów — drabina, rusztowanie, kołowrót z kubłem urobku albo opuszczanym stopniem, hałda
+            RysBudowaSchodow.rysujBudoweSchodow(ctx, sim, cam, teraz);
             // katedra na powierzchni nad szybem ze światłem — kamień (szkło rozety i płomienie świec — nad mrokiem)
             Katedra.rysujKatedre(ctx, sim, cam);
             Shafts.smugiSwiatla(ctx, sim, cam, teraz);

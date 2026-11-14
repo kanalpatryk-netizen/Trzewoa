@@ -58,6 +58,12 @@ public class PodgladPlyty
         if (znajdz(T.ZLOTO) is { } g) miejsca.Add(("zloto", g.x, g.y, 30));
         foreach (var k in sim.clans) if (!k.dead) { miejsca.Add(("oboz", k.hx, k.hy, 14)); break; }
         miejsca.Add(("ogol", w.w / 2, 40, 6));
+        for (int n = 0; n < w.odcinkiDrogi.Count && n < 2; n++)
+        {
+            var o = w.odcinkiDrogi[n];
+            miejsca.Add(($"schody{n}", (o.x0 + o.x1) / 2 + 0.5, Math.Min(o.y1 - 4, o.y0 + 8), 20));
+        }
+        if (Environment.GetEnvironmentVariable("TRZEWIA_TYLKO") is { } tylko) miejsca.RemoveAll(m => !tylko.Split(',').Contains(m.nazwa));
 
         const int VW = 1280, VH = 720;
         foreach (var (nazwa, x, y, zoom) in miejsca)

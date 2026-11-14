@@ -291,7 +291,24 @@ namespace Trzewia.Rysunek
                 // cień kontaktowy — tylko na ziemi: miękka plama, najciemniejsza tuż pod stopami
                 var naZiemi = c.vy <= 0.3 && sim.world.solid(Math.Floor(c.x + dx), Math.Floor(c.y) + 1);
                 if (naZiemi) cienKontaktowy(ctx, sx, sy, h);
-                // (6.11: cień na stopnicy schodów kręconych — stopniePodStopami z render/schody.ts — z rysunkiem schodów, etap 3)
+                // 6.11: na schodach kręconych — cień na stopnicy pod stopami (i słabiej na następnej niższej), przycięty do niej
+                var naSchodach = n == 1 && chodNaSchodach(c) != null;
+                if (naSchodach)
+                {
+                    foreach (var st in Schody.stopniePodStopami(sim, cam, c, c.x + dx))
+                    {
+                        ctx.save();
+                        ctx.beginPath(); ctx.moveTo(st.tr[0].x, st.tr[0].y);
+                        for (int i = 1; i < st.tr.Count; i++) ctx.lineTo(st.tr[i].x, st.tr[i].y);
+                        ctx.closePath(); ctx.clip();
+                        // (stopnica w lekkim ujęciu z góry to wąski pas — cień ciemniejszy i szerszy niż na posadzce, inaczej ginął)
+                        ctx.globalAlpha = st.sila;
+                        cienKontaktowy(ctx, st.cx, st.cy, h * 1.05);
+                        ctx.globalAlpha = st.sila * 0.45;
+                        cienKontaktowy(ctx, st.cx, st.cy, h * 0.75);
+                        ctx.restore();
+                    }
+                }
 
                 // Alpha, etap 3d: szał krwi z ołtarza — czerwona aura wokół postaci, pulsuje
                 if ((c.szalDo ?? -1) > sim.tick)
@@ -320,7 +337,9 @@ namespace Trzewia.Rysunek
                     ctx.restore();
                 }
                 Lud.Oswietlenie.ustawSwiatlo(null);
-                // (6.11: zaslonNaSchodach — słup i stopnie bliżej widza na postaci — z rysunkiem schodów, etap 3)
+                // 6.11: na schodach kręconych to, co leży bliżej widza (słup, gdy jest za nim, stopnie po drugiej stronie),
+                // rysuje się na postaci — znika za słupem
+                if (naSchodach) Schody.zaslonNaSchodach(ctx, sim, cam, c, c.x + dx, c.y + 1 + przesuniecieY(c), h, czas);
 
                 // Aureola znaczy świętość: tylko nad pobożnym, który się modli. Wzmocnienia i osłabienia to małe znaki ryciny
                 // przy głowie (szewron weterana, płomień szału, kropla krwi okaleczonego, kropla trucizny).

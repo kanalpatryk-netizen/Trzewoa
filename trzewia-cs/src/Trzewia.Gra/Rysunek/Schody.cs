@@ -1,6 +1,6 @@
-// Port (część): alpha-1/src/render/schody.ts — tylko to, czego potrzebują postacie: gdzie na spirali schodów kręconych
-// narysować postać (naSchodach). Sam rysunek schodów (stopnie, słup, ściany, zasłanianie postaci za słupem
-// — zaslonNaSchodach, cień na stopnicy — stopniePodStopami) to etap 3 (świat).
+// Port (część): alpha-1/src/render/schody.ts — to, czego potrzebują postacie: gdzie na spirali schodów kręconych
+// narysować postać (naSchodach). Rysunek schodów (stopnie, słup, ściany, zasłanianie postaci za słupem, cień na
+// stopnicy) — Rysunek/Swiat/SchodyRysunek.cs.
 using System;
 using Trzewia.Symulacja;
 using static Trzewia.Nastawy.NastawyLoch;
@@ -30,7 +30,7 @@ namespace Trzewia.Rysunek
         public double kTop;
     }
 
-    public static class Schody
+    public static partial class Schody
     {
         /// <summary>
         /// Pół okna przejścia na sąsiedni stopień (w stopniach): ciało przenosi się przy nosie stopnia, od `PRZEJSCIE` przed
