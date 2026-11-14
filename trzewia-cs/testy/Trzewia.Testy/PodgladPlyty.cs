@@ -70,15 +70,15 @@ public class PodgladPlyty
         {
             var cam = new Camera(VW, VH) { x = x, y = y, zoom = zoom };
             cam.clamp(w.w, w.h);
-            var rycina = new Rycina();
-            var taj = new Tajemnica();
+            var plyta = new PlytaSwiata();
+            var rycina = plyta.rycina;
             rycina.resize(VW, VH);
             using var p = new PlotnoSkia(VW, VH);
             var t0 = System.Diagnostics.Stopwatch.StartNew();
             double teraz = 5000;
             rycina.klatka(sim, cam, teraz, true);
             p.fillStyle = "#000"; p.fillRect(0, 0, VW, VH);
-            PlytaSwiata.Rysuj(p, sim, cam, rycina, taj, teraz, false, 0.5);
+            plyta.Rysuj(p, sim, cam, teraz, false, 0.5);
             var ms = t0.Elapsed.TotalMilliseconds;
             var plik = Path.Combine(katalog, $"plyta-{nazwa}.png");
             Assert.True(p.ZapiszPng(plik));

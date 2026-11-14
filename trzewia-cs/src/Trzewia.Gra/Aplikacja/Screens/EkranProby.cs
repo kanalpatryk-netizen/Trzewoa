@@ -44,8 +44,9 @@ public sealed class EkranProby : Ekran
     /// <summary>Podgląd bez duszków (klawisz L): kropki w miejscach z symulacji — do porównania położeń.</summary>
     bool kropki;
     /// <summary>Rycina świata (etap 3); M — dawna mapa kafli zamiast niej.</summary>
-    readonly Rycina rycina = new Rycina();
-    readonly Tajemnica tajemnica = new Tajemnica();
+    /// <summary>Świat na płycie (rycina, tajemnica, pomieszczenia, ołtarz, ruiny, urobki) — PlytaSwiata.</summary>
+    PlytaSwiata plyta = new PlytaSwiata();
+    Rycina rycina => plyta.rycina;
     bool mapaKafli;
     double rysKamX = double.NaN, rysKamY, rysKamZ, lastInk = -1e9, rycinaW, rycinaH;
     Podpowiedz? rada;
@@ -56,6 +57,9 @@ public sealed class EkranProby : Ekran
     {
         ziarno = z;
         sim = new Sim(z);
+        // nowa góra — nowe rysunki ze stanem (jak nowy ekran gry w TS)
+        plyta = new PlytaSwiata();
+        rycinaW = rycinaH = 0;
         mapa?.Dispose();
         mapa = null;
         mapaTik = -1;
@@ -182,7 +186,7 @@ public sealed class EkranProby : Ekran
         if (!mapaKafli && !kropki)
         {
             // świat w kolejności z game.ts (wspólne z testem podglądu)
-            PlytaSwiata.Rysuj(ctx, sim, cam, rycina, tajemnica, teraz, pauza, 0.5);
+            plyta.Rysuj(ctx, sim, cam, teraz, pauza, 0.5);
             t = L.znacz(Czesc.swiat, t);
         }
         else
