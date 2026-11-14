@@ -43,6 +43,10 @@ public sealed class EkranProby : Ekran
     double msKroku;
     /// <summary>Podgląd bez duszków (klawisz L): kropki w miejscach z symulacji — do porównania położeń.</summary>
     bool kropki;
+    /// <summary>Rycina świata (etap 3); M — dawna mapa kafli zamiast niej.</summary>
+    readonly Rycina rycina = new Rycina();
+    bool mapaKafli;
+    double rysKamX = double.NaN, rysKamY, rysKamZ, lastInk = -1e9, rycinaW, rycinaH;
     Podpowiedz? rada;
 
     public EkranProby() { NowaGora(1); }
@@ -158,19 +162,39 @@ public sealed class EkranProby : Ekran
         ctx.fillStyle = "#000";
         ctx.fillRect(0, 0, w, h);
 
-        // płyta: góra z symulacji
-        if (mapa == null || sim.tick - mapaTik >= 6 || sim.tick < mapaTik) RysujMape();
+        // płyta: góra z symulacji — rycina świata (etap 3; jak w TS, odbitka po ruchu kamery albo co 150 ms, przy zmianach co 30 ms)
+        if (!mapaKafli)
+        {
+            if (rycinaW != plW || rycinaH != plH) { rycina.resize(plW, plH); rycinaW = plW; rycinaH = plH; }
+            var ruszona = cam.x != rysKamX || cam.y != rysKamY || cam.zoom != rysKamZ;
+            var chce = ruszona || rycina.niedokonczona || teraz - lastInk > 33;
+            rycina.fresk = ustawienia.swiat != "rycina";
+            if (rycina.klatka(sim, cam, teraz, chce)) { lastInk = teraz; rysKamX = cam.x; rysKamY = cam.y; rysKamZ = cam.zoom; }
+            t = L.znacz(Czesc.rycina, t);
+        }
+        else if (mapa == null || sim.tick - mapaTik >= 6 || sim.tick < mapaTik) RysujMape();
         ctx.save();
         ctx.beginPath();
         ctx.rect(plX, plY, plW, plH);
         ctx.clip();
         ctx.translate(plX, plY);
-        ctx.fillStyle = "#0b0908";
-        ctx.fillRect(0, 0, plW, plH);
-        ctx.imageSmoothingEnabled = false;
-        double W = sim.world.w, H = sim.world.h;
-        ctx.drawImage(mapa!, 0, 0, W, H, cam.toScreenX(0), cam.toScreenY(0), W * cam.zoom, H * cam.zoom);
-        ctx.imageSmoothingEnabled = true;
+        if (!mapaKafli)
+        {
+            ctx.save();
+            ctx.imageSmoothingEnabled = true;
+            rycina.rysuj(ctx, cam, ustawienia.jasnosc);
+            rycina.poswiata(ctx, cam, true);
+            ctx.restore();
+        }
+        else
+        {
+            ctx.fillStyle = "#0b0908";
+            ctx.fillRect(0, 0, plW, plH);
+            ctx.imageSmoothingEnabled = false;
+            double W = sim.world.w, H = sim.world.h;
+            ctx.drawImage(mapa!, 0, 0, W, H, cam.toScreenX(0), cam.toScreenY(0), W * cam.zoom, H * cam.zoom);
+            ctx.imageSmoothingEnabled = true;
+        }
         t = L.znacz(Czesc.swiat, t);
 
         // stworzenia: duszki (PLAN.md, punkt 9) — ten sam rysunek, który wejdzie do ekranu gry
@@ -283,6 +307,7 @@ public sealed class EkranProby : Ekran
     {
         ostatniKlawisz = e.key == " " ? "spacja" : e.key;
         ostatniaAkcja = akcja?.ToString() ?? "—";
+        if (e.code == "KeyM") { mapaKafli = !mapaKafli; return; }
         switch (akcja)
         {
             case Akcja.przyblizenie: cam.zoom = Math.Min(cam.maxZoom, cam.zoom * KAMERA.krokKlawisza); cam.clamp(sim.world.w, sim.world.h); break;

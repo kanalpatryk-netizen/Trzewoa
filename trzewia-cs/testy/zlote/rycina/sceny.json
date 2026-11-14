@@ -1,0 +1,146 @@
+[
+ {
+  "nazwa": "sala-start",
+  "ziarno": 1,
+  "tik": 1200,
+  "kam": {
+   "x": 99,
+   "y": 37,
+   "zoom": 14,
+   "vw": 600,
+   "vh": 380
+  },
+  "czas": 123456,
+  "fresk": false,
+  "aw": 601,
+  "ah": 381,
+  "dx": 0,
+  "dy": -4.973799150320701e-14
+ },
+ {
+  "nazwa": "oboz-blisko",
+  "ziarno": 1,
+  "tik": 9000,
+  "kam": {
+   "x": 103,
+   "y": 38,
+   "zoom": 26,
+   "vw": 600,
+   "vh": 380
+  },
+  "czas": 98765,
+  "fresk": false,
+  "aw": 601,
+  "ah": 381,
+  "dx": 0,
+  "dy": 0
+ },
+ {
+  "nazwa": "kopalnia",
+  "ziarno": 2,
+  "tik": 30000,
+  "kam": {
+   "x": 60,
+   "y": 110,
+   "zoom": 10,
+   "vw": 600,
+   "vh": 380
+  },
+  "czas": 5555,
+  "fresk": false,
+  "aw": 601,
+  "ah": 381,
+  "dx": 0,
+  "dy": 0
+ },
+ {
+  "nazwa": "krypta",
+  "ziarno": 1,
+  "tik": 60000,
+  "kam": {
+   "x": 96,
+   "y": 212,
+   "zoom": 12,
+   "vw": 600,
+   "vh": 380
+  },
+  "czas": 77777,
+  "fresk": false,
+  "aw": 601,
+  "ah": 381,
+  "dx": 0,
+  "dy": 0
+ },
+ {
+  "nazwa": "daleko",
+  "ziarno": 3,
+  "tik": 20000,
+  "kam": {
+   "x": 96,
+   "y": 70,
+   "zoom": 5,
+   "vw": 600,
+   "vh": 380
+  },
+  "czas": 4242,
+  "fresk": false,
+  "aw": 601,
+  "ah": 381,
+  "dx": 0,
+  "dy": 0
+ },
+ {
+  "nazwa": "plasko",
+  "ziarno": 3,
+  "tik": 20000,
+  "kam": {
+   "x": 96,
+   "y": 110,
+   "zoom": 2.2,
+   "vw": 600,
+   "vh": 380
+  },
+  "czas": 4242,
+  "fresk": false,
+  "aw": 601,
+  "ah": 381,
+  "dx": -0.20000000000003695,
+  "dy": -1.5631940186722205e-14
+ },
+ {
+  "nazwa": "powierzchnia",
+  "ziarno": 2,
+  "tik": 4000,
+  "kam": {
+   "x": 100,
+   "y": 27,
+   "zoom": 12,
+   "vw": 600,
+   "vh": 380
+  },
+  "czas": 31337,
+  "fresk": false,
+  "aw": 601,
+  "ah": 381,
+  "dx": 0,
+  "dy": 0
+ },
+ {
+  "nazwa": "fresk",
+  "ziarno": 1,
+  "tik": 9000,
+  "kam": {
+   "x": 100,
+   "y": 42,
+   "zoom": 14,
+   "vw": 600,
+   "vh": 380
+  },
+  "czas": 98765,
+  "fresk": true,
+  "aw": 601,
+  "ah": 381,
+  "dx": 0,
+  "dy": 0
+ }
+]
