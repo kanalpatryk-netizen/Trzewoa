@@ -28,17 +28,21 @@ namespace Trzewia.Rysunek
             Kucie.rysujKucie(ctx, sim, cam, teraz);
             // (3c) pokoje.rysujWnetrza, oltarz.rysuj, ruiny.rysuj
             RysLoch.rysujLoch(ctx, sim, cam, teraz);
-            // (3c) rysujSchodyDrogi, rysujBudoweSchodow, rysujKatedre
+            // (3c) rysujSchodyDrogi, rysujBudoweSchodow
+            // katedra na powierzchni nad szybem ze światłem — kamień (szkło rozety i płomienie świec — nad mrokiem)
+            Katedra.rysujKatedre(ctx, sim, cam);
             Shafts.smugiSwiatla(ctx, sim, cam, teraz);
             Overlay.drawParticles(ctx, sim, cam);
             RysTrupy.rysujTrupy(ctx, sim, cam, teraz);
             double grunt(double x) => World.SURFACE_Y - Grzbiet.wysokoscGrzbietu(sim.world, x);
             Konwoj.rysujKonwoj(ctx, sim, cam, teraz, grunt);
-            // (3c) rysujWiadra
+            RysWiadra.rysujWiadra(ctx, sim, cam, teraz);
             // mrok: świat widać tylko w świetle lampek, obozów, rdzenia i Cudu; żar i kryształy świecą przez ciemność
             RysMrok.rysujMrok(ctx, sim, cam, teraz, pauza);
             if (Nastawy.NastawyMrok.MROK.wlaczony) eng.poswiata(ctx, cam, false);
-            // (3c) rysujKatedreNad, rysujPromien
+            // katedra: witraże rozety i okien, płomienie świec — świecą przez mrok; z rozety pada promień na ołtarz
+            Katedra.rysujKatedreNad(ctx, sim, cam, teraz);
+            Promien.rysujPromien(ctx, sim, cam, teraz);
             Konwoj.rysujKonwojNad(ctx, sim, cam, teraz, grunt);
             // (3c) rysujPomnik — do czasu jego przeniesienia tylko demon wstający z gruzu (w TS rysuje go pomnik.ts)
             var pomnik = sim.lud.pomnik;
@@ -54,7 +58,9 @@ namespace Trzewia.Rysunek
             RysLoch.rysujLochNad(ctx, sim, cam, teraz);
             // (3c) plan drogi / droga pielgrzymów, rysujZarys, rysujZaznaczenie
             Figury.rysujStworzenia(ctx, sim, cam, teraz);
-            // (3c) pokoje.rysujPrzod, rysujPrzodWiader, polecenia na mapie, rysujEfekty, znaczniki ludu
+            // (3c) pokoje.rysujPrzod
+            RysWiadra.rysujPrzodWiader(ctx, sim, cam, teraz);
+            // (3c) polecenia na mapie, rysujEfekty, znaczniki ludu
             RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
             // (3c) rysujNadPomnikiem
             RysDlon.rysujDlon(ctx, sim, cam, teraz);
