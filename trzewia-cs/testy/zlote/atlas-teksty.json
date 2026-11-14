@@ -1,0 +1,461 @@
+[
+ {
+  "id": "rasa-0",
+  "grupa": "rasy",
+  "nazwa": "Pobożni",
+  "lacina": "Gens pia",
+  "opis": "Twój jedyny lud — stała drużyna: 3 robotników, 2 pobożnych i 1 rycerz. Nikt się w nim nie rodzi i skała nie wydaje nowych — każda śmierć to strata na całą partię. Mieszkają przy siedzibie, a odcięte grupki zakładają obozy.",
+  "kiedy": "Pilnuj, żeby zawsze był ktoś, kto się modli — bez pobożnych skorupa nie pęknie. Przy ołtarzu pobożny może oddać krew (słabnie, póki nie wyśpi się w sypialni) albo życie, a poległych da się tam wskrzesić.",
+  "koszt": null
+ },
+ {
+  "id": "ryt-zasiej",
+  "grupa": "ryty",
+  "nazwa": "Nakarm",
+  "lacina": "Situla de caelo",
+  "opis": "Dotknij płyty, a z góry, tym samym szybem co zawsze, zjedzie 8 porcji jedzenia więcej — wiadro jest jedno: gdy stoi albo zjeżdża, dosypują do niego, a gdy go nie ma, zjeżdża od razu. Gdzie dotkniesz, nie ma znaczenia.",
+  "kiedy": "Gdy jedzenia w wiadrze nie starcza do następnego zjazdu. Do tych, którzy zeszli w głąb, jedzenie dotrze tylko wtedy, gdy pogłębisz szyb pod wiadrem albo robotnicy im je zaniosą.",
+  "koszt": "wiadro 30 krwi"
+ },
+ {
+  "id": "ryt-szept",
+  "grupa": "ryty",
+  "nazwa": "Szepnij",
+  "lacina": "Susurrus",
+  "opis": "„Szepnij”, potem dotknij jednej postaci i wybierz słowo na jej karcie. „Módl się” posyła pobożnego pod twój rdzeń od razu, bez względu na wiarę ludu. „Przerwij modlitwę” zawraca spod rdzenia. Ofiary krwi i życia nie są już szeptami — odprawia się je przy ołtarzu.",
+  "kiedy": "Gdy droga do rdzenia jest gotowa, szepnij „módl się” obu pobożnym — skorupa pęka szybciej, gdy modlą się razem.",
+  "koszt": "módl się 8 wiary"
+ },
+ {
+  "id": "ryt-znak",
+  "grupa": "ryty",
+  "nazwa": "Cud",
+  "lacina": "Signum manifestum",
+  "opis": "Jawny cud widziany w promieniu 26 kafli. Każdy, kto go widzi, wierzy mocniej (+35%) i mniej się boi, a oddanie ludu rośnie o 20%. Zostaje świecący znak w skale, przy którym pobożni się modlą. Światło Cudu odpycha dłoń z otchłani (do 12 kafli).",
+  "kiedy": "Przy siedzibie, żeby lud uwierzył dość mocno i sam ruszył pod rdzeń — i zawsze tam, gdzie spod ziemi bije czerwona łuna.",
+  "koszt": "30 wiary"
+ },
+ {
+  "id": "krew",
+  "grupa": "zasoby",
+  "nazwa": "Krew",
+  "lacina": "Sanguis",
+  "opis": "Liczba w dużej ramce zasobów nad płytą, z ampułką: krew stoi w szkle tak wysoko, ile jej masz; pełna ampułka żarzy się, a nadmiar przepada, a gdy krwi za mało na rytuał, ampułka pulsuje czerwienią. Najedź na nią kursorem — zobaczysz, ile jej jest i co z tego wynika. Na Koszmarze zaczynasz z 80, mieści się jej najwyżej 150. Płaci ci ją każda śmierć — także Strażników Snu — i ofiary przy ołtarzu: krwi pobożnego (+25) i jego życia (+40).",
+  "kiedy": "Wydajesz ją na rytuały przy ołtarzu, na liny, na dodatkowe jedzenie rytem Nakarm i na wybory na kartach wydarzeń.",
+  "koszt": null
+ },
+ {
+  "id": "wiara",
+  "grupa": "zasoby",
+  "nazwa": "Wiara",
+  "lacina": "Fides",
+  "opis": "Liczba nad płytą — twój zapas, najwyżej 200. Rośnie za każdym razem, gdy ktoś się do ciebie modli: przy kapliczce (pobożni stawiają je sami), przy znaku po Cudzie, w modlitwie przy ołtarzu, a najmocniej pod rdzeniem; +15 za każdą pokonaną falę Strażników. Nie myl jej z oddaniem: wiara to twoja waluta, oddanie to to, jak mocno wierzy lud.",
+  "kiedy": "Płacisz nią za szepty, Cud i wybory na kartach wydarzeń.",
+  "koszt": null
+ },
+ {
+  "id": "wiadro",
+  "grupa": "zasoby",
+  "nazwa": "Wiadro z jedzeniem",
+  "lacina": "Situla panis",
+  "opis": "Jedyne jedzenie ludu — grzyba ani spiżarni nie ma. Co 40 sekund na powierzchnię przyjeżdża konwój — wóz z parą koni — i z drewnianego kozła nad szybem spuszcza na linie wiadro pełne jedzenia (1.6 porcji na każdego z ludu) — zawsze tym samym, węższym otworem obok szybu ze światłem, do sali z siedzibą; gdy poprzednie jeszcze tam stoi, zsyła do niego po linie worek. Wiadro jest jedno i ma jeden punkt, w który spada: na dno kolumny pod otworem. Pod wiadrem w podłodze sali da się kuć — kto wykopie tam dziurę, sprowadzi wiadro niżej (lina sięga do dna kolumny), ale wtedy ci z sali do niego nie sięgną. Do tych, którzy zeszli w głąb, wiadro samo nie zjedzie — nigdzie poza tym szybem się nie pojawia; wracają po jedzenie drogą wiernych (na jej zakrętach wiszą liny). Przed zjazdem ze stropu sypie się pył. Każdy może z niego jeść, i to do syta, robotnicy donoszą z niego jedzenie warcie; puste odjeżdża w górę. Kto umiera z głodu (85% głodu), a wiadro jeszcze jedzie, wspina się po linie, wsiada do niego i je w drodze w dół.",
+  "kiedy": "Liczba „jedzenie” nad płytą to porcje w wiadrze. Gdy nie starcza, dosyp rytem Nakarm; gdy lud pracuje głęboko, pogłęb szyb pod wiadrem.",
+  "koszt": null
+ },
+ {
+  "id": "kruszce",
+  "grupa": "zasoby",
+  "nazwa": "Kruszce",
+  "lacina": "Ferrum et aurum",
+  "opis": "Żelazo i złoto — dwie liczby nad płytą, obok wiary, krwi i jedzenia. Nikt ich nie nosi: gdy robotnik rozbije kafel rudy, okruch sam leci do licznika i dodaje 1 żelaza albo 1 złota. Żelazo leży w kępach rdzawej rudy w płytkiej warstwie, tuż pod salą; złoto — w żółtych grudkach pod dnami jaskiń w warstwie środkowej, głębiej i twardsze. Wskaż zaznaczonemu robotnikowi rudę, a wykuje całą kępę — kafel po kaflu, najdalej 10 kafli od wskazanego. W dół schodzi stopniami, a podłogi pod złotą kreską drogi wiernych nie rusza.",
+  "kiedy": "Kop, póki jest czas: z żelaza kuźnia wykuje zbroję dla rycerza, a ze złota warsztat zrobi krzyże i różańce, które zamienią się w wiarę. Po złoto trzeba zejść głęboko — a jedzenie jest tylko w sali, więc pilnuj, żeby robotnik miał którędy wrócić (schodami, po linie albo drogą wiernych).",
+  "koszt": null
+ },
+ {
+  "id": "warsztat",
+  "grupa": "zasoby",
+  "nazwa": "Warsztat",
+  "lacina": "Officina",
+  "opis": "Robotnik, któremu wskażesz gotowy warsztat, staje przy stole: topi złoto w tyglu i kuje z niego krzyż, różaniec albo krucyfiks. Na sztukę idzie 1 złota i 10 sekund pracy. Gotowa rozbłyskuje i od razu zamienia się w 12 wiary — krzyż leci do licznika. Dwóch przy stole pracuje szybciej. Bez złota robotnik czeka przy stole, a nad warsztatem stoi „brak złota”.",
+  "kiedy": "Złoto leży głęboko, pod dnami jaskiń — warsztat zamienia je w wiarę na Cud i szepty.",
+  "koszt": null
+ },
+ {
+  "id": "kuznia",
+  "grupa": "zasoby",
+  "nazwa": "Kuźnia",
+  "lacina": "Fabrica armorum",
+  "opis": "Robotnik przy kowadle wykuwa z żelaza kolejne części zbroi rycerza: hełm (3 żelaza), naramienniki (3 żelaza), napierśnik (6 żelaza), nakolanniki (3 żelaza), tarcza (5 żelaza). Palenisko bucha, młot dzwoni, iskry lecą w takt uderzeń, a gotowa część błyska nad kowadłem i trafia na wieszak. Bez żelaza robotnik czeka, a nad kuźnią widać, czego brakuje.",
+  "kiedy": "Kuj zbroję przed falami Strażników Snu. Gotowe części czekają na wieszaku, aż rycerz przyjdzie je założyć.",
+  "koszt": null
+ },
+ {
+  "id": "zbroja",
+  "grupa": "zasoby",
+  "nazwa": "Zbroja rycerza",
+  "lacina": "Armatura militis",
+  "opis": "Rycerz zaczyna w kolczudze, z mieczem i w płaszczu — bez hełmu, z odsłoniętą twarzą. Resztę wykuwa kuźnia, a każda część, którą nosi, coś mu daje: hełm — życie +15%, naramienniki — siła +15%, napierśnik — życie +25%, nakolanniki — szybkość +10%, tarcza — rany −20%. Gdy na wieszaku coś czeka, nie ma fali Strażników ani rozkazu, a rycerz jest syty, sam idzie do kuźni: staje pod wieszakiem, zdejmuje część, przykłada ją na miejsce i dopina — część błyska, a nad nim widać, co mu dała. Potem wraca na wartę. Każda część zajmuje mu 1,25 sekundy.",
+  "kiedy": "Nie chcesz czekać? Zaznacz rycerza i wskaż kuźnię — pójdzie od razu (gdy nic nie wisi, odmówi). Co nosi, widać na karcie postaci.",
+  "koszt": null
+ },
+ {
+  "id": "walkaRycerza",
+  "grupa": "zasoby",
+  "nazwa": "Walka rycerza",
+  "lacina": "Ars pugnandi",
+  "opis": "Rycerz walczy ruchami — każdy to osobna, długa animacja z zamachem, uderzeniem i powrotem do gardy, a rana pada dokładnie wtedy, gdy spada ostrze. Zawsze: cięcie z góry, pchnięcie, cięcie z boku, cięcie odwrotne, seria trzech cięć, cięcie od dołu. Tylko weteran: cięcie z obrotu, cios z wyskoku, młynek, finta i pchnięcie, cios dobijający. Tylko w zbroi z kuźni: uderzenie tarczą (tarcza), szarża z tarczą (tarcza + nakolanniki), taran barkiem (naramienniki), cios kolanem (nakolanniki), uderzenie hełmem (hełm), kontra na napierśniku (napierśnik). Broni się sam: z tarczą zasłania się blokiem (zostaje ułamek rany), weteran paruje ostrzem i od razu kontruje, w nakolannikach robi unik, w napierśniku przyjmuje cios na blachę i tnie. Mała rana tylko go wzdryga, duża przerywa atak, a najcięższe ciosy demona zwalają go z nóg — wstaje, podpierając się mieczem. Iskry, odpryski i odrzut są tym większe, im mocniejszy cios.",
+  "kiedy": "Weteranem zostaje po 4 minutach w ludzie — póki syty, a lud wierny. Kuj mu zbroję: każda część odblokowuje nowe ruchy.",
+  "koszt": null
+ },
+ {
+  "id": "pamiec",
+  "grupa": "prawa",
+  "nazwa": "Pamięć",
+  "lacina": "Memoria",
+  "opis": "Widzisz siebie tylko tam, gdzie ktoś jest albo był. Gdzie nikt nie chodzi, rysunek blaknie i pokazuje stan sprzed pokoleń, a potem ciemność.",
+  "kiedy": "Im dalej chodzą twoi mieszkańcy, tym więcej o sobie widzisz.",
+  "koszt": null
+ },
+ {
+  "id": "sen",
+  "grupa": "prawa",
+  "nazwa": "Przegrana",
+  "lacina": "Casus",
+  "opis": "Przegrywasz, gdy nie żyje już żaden pobożny — tylko ich modlitwa kruszy skorupę, a nowych nikt nie wyda. Przegrywasz też, gdy do rdzenia dojdzie ktoś, kto w ciebie nie wierzy. Najczęstsza droga do porażki to głód — lud rozproszony daleko od wiadra, bez robotników, którzy noszą jedzenie.",
+  "kiedy": "Trzymaj lud razem i robotników przy życiu — jedzenie jest tylko w wiadrze w sali, a warcie pod rdzeniem donoszą je robotnicy. Nie wysyłaj pod rdzeń ostatniego pobożnego.",
+  "koszt": null
+ },
+ {
+  "id": "droga",
+  "grupa": "prawa",
+  "nazwa": "Droga do wolności",
+  "lacina": "Via liberationis",
+  "opis": "Wygrywasz, gdy rycerz pokona demona, który spał w Wielkim Pomniku na dnie góry. Po kolei: pobożni się modlą (wiara); lud uwierzy na 50% albo sam poślesz pobożnych szeptem „módl się” (oddanie); robotnicy na twój rozkaz wykopią drogę wiernych — szyb ze schodami od wnęki przy sali do krypty (droga); pomnik słucha tylko tych, którzy zeszli wykopaną drogą: pobożni modlą się w krypcie i kruszą go, rycerz trzyma wartę, a fale Strażników Snu trzeba pokonać (pomnik); gdy pomnik pęknie do końca, z gruzów wstaje demon — jego śmierć to twoja wolność.",
+  "kiedy": "Chroń rycerza — bez niego demona biją robotnicy w hełmach albo pobożni księgami.",
+  "koszt": null
+ },
+ {
+  "id": "skorupa",
+  "grupa": "prawa",
+  "nazwa": "Wielki Pomnik",
+  "lacina": "Monumentum daemonis",
+  "opis": "Na dnie góry, w komorze pod kryptą, na cokole z wyrytymi znakami stoi olbrzymi kamienny demon z rękami wzniesionymi, z płomienną aureolą za głową i naszyjnikiem z czaszek, zakuty w łańcuchy — w środku śpi żywy. Kilof go nie ruszy; kruszy go tylko modlitwa: gdy w krypcie modli się co najmniej 1 pobożny z oddaniem od 35%. Pęka w trzech stanach: przy 20% biegną po nim rysy, przy 45% odpadają kawałki (czubki aureoli, palce, stopa), przy 70% rysy żarzą się czerwono od środka. Każde pęknięcie idzie wolniej od poprzedniego, a na Koszmarze pomnik jest twardszy (70% tempa). Przy 100% rozpada się w gruz, a z gruzu wstaje demon.",
+  "kiedy": "Trzymaj w krypcie pobożnych, najedzonych i wierzących. Przy 20, 45, 70% wychodzą Strażnicy Snu — dopóki żyją, pomnik nie pęka.",
+  "koszt": null
+ },
+ {
+  "id": "rdzen",
+  "grupa": "prawa",
+  "nazwa": "Ostatnie uderzenie",
+  "lacina": "Ictus ultimus",
+  "opis": "Gdy rycerz zada demonowi ostatnie uderzenie, czas na chwilę zwalnia, a kamera jedzie do demona. Cios odrzuca go w tył, złote światło rozsadza mu pierś; zatacza się z dłonią na piersi, po całym ciele biegną złote pęknięcia, a ogień aureoli gaśnie. Pada na kolana, kamienieje od stóp w górę — i rozpada się na kawałki, które obracają się w pył i popiół: fala światła po krypcie, gasnące iskry i kupka kamieni. Jesteś wolny — to koniec gry.",
+  "kiedy": "Ostatni cios zadaje rycerz (albo robotnik w hełmie, albo pobożny księgą, gdy walczących brak). W przyszłości będzie tu przerywnik filmowy.",
+  "koszt": null
+ },
+ {
+  "id": "warstwy",
+  "grupa": "prawa",
+  "nazwa": "Warstwy góry",
+  "lacina": "Strata montis",
+  "opis": "Góra ma piętra. Z powierzchni prowadzą dwa otwory: szerszy szyb pod katedrą, którym z jej rozety pada światło na ołtarz, i węższy, nad którym stoi kozioł — tędy konwój spuszcza wiadro z jedzeniem — oba do sali z siedzibą. Nad salą leży czapa skały nie do ruszenia, a całą górę otacza gruba rama, której nikt nie przekuje. Niżej trzy warstwy: płytka — miękka skała i kępy rdzawego żelaza; środkowa — zwykła skała, małe jaskinie ze złotem pod dnem i ruiny; głęboka — twarda skała, kuje się najwolniej. Na samym dole szeroka, niska krypta z płaską podłogą, a pod jej środkiem, w komorze, Wielki Pomnik demona — zawsze w tym samym miejscu.",
+  "kiedy": "Każda warstwa w dół to dłuższa droga z powrotem do wiadra. Żelazo leży tuż pod salą, po złoto trzeba zejść do środkowej, a droga wiernych prowadzi przez wszystkie trzy — z zakrętem przez starą komnatę z kotłem — aż do stalowej bramy lochu.",
+  "koszt": null
+ },
+ {
+  "id": "oddanie",
+  "grupa": "prawa",
+  "nazwa": "Oddanie i modlitwa",
+  "lacina": "Devotio",
+  "opis": "Oddanie to to, jak mocno lud w ciebie wierzy — od 0 do 100%, widać je w złożonych dłoniach pod płytą, które napełniają się złotem, i na karcie postaci. Kto wierzy, ten się modli: przy ołtarzu, przy znaku po Cudzie i w krypcie nad Wielkim Pomnikiem. Każda modlitwa daje ci wiarę i trochę podnosi oddanie. Najszybciej podniesie je Cud przy siedzibie. Przy 50% lud sam wyśle wartę do krypty.",
+  "kiedy": "Najprościej: Cud przy siedzibie, jedzenie dla warty — i szepnij „módl się” pobożnym (albo wybierz „poślij” na karcie warty).",
+  "koszt": null
+ },
+ {
+  "id": "pielgrzymka",
+  "grupa": "prawa",
+  "nazwa": "Warta w krypcie",
+  "lacina": "Peregrinatio",
+  "opis": "Gdy oddanie ludu przekroczy 50%, od 2 do 2 najwierniejszych, najedzonych pobożnych samo schodzi do krypty i modli się nad Wielkim Pomnikiem. Czekają przy obozie, aż robotnicy dokopią drogę (złotą kreskę), a rycerze idą z nimi na wartę. Szept „módl się” posyła pobożnego od razu, bez względu na wiarę ludu.",
+  "kiedy": "Warta głoduje pierwsza — wiadro jest tylko w sali, więc pilnuj, żeby robotnicy donosili jej jedzenie (i żeby w wiadrze było co nosić: dosyp rytem Nakarm).",
+  "koszt": null
+ },
+ {
+  "id": "wydarzenia",
+  "grupa": "prawa",
+  "nazwa": "Wydarzenia",
+  "lacina": "Aestus",
+  "opis": "Co 35–55 sekund coś się dzieje: nadchodzi zaraza, lud głoduje albo prosi o znak, pobożni chcą zejść do krypty, głębia proponuje układ, jedzenie w wiadrze gnije, strop nad drogą wiernych pęka. Czas wtedy staje, a karta pokazuje dwa albo trzy wybory — każdy z ceną i jednym zdaniem skutku.",
+  "kiedy": "Zgniłe jedzenie lepiej oczyścić albo wylać, niż zjeść. Podparty strop oszczędza robotnikom kopania.",
+  "koszt": null
+ },
+ {
+  "id": "role",
+  "grupa": "prawa",
+  "nazwa": "Role ludu",
+  "lacina": "Officia",
+  "opis": "Drużyna jest stała: 3 robotników, 2 pobożnych i 1 rycerz — nikt nie dochodzi i nikt się nie starzeje. Pobożni modlą się i kruszą Wielki Pomnik; stoją przy obozie najbliżej krypty. Robotnicy kopią tylko na twój rozkaz, a poza tym donoszą jedzenie z wiadra tym, którzy stoją na warcie. Rycerz jest jeden, ale ma miecz i 12 razy więcej życia; poza wartą pilnuje obozu, a w czasie fali walczy ze Strażnikami. Zaczyna w samej kolczudze — resztę zbroi wykuwa mu kuźnia. Gdy rycerza zabraknie, robotnicy zakładają hełmy i walczą zamiast niego.",
+  "kiedy": "Na karcie postaci widać jej zamiar i ile jeszcze go trzyma. Rozkazy wydajesz z medalionów pod płytą.",
+  "koszt": null
+ },
+ {
+  "id": "weterani",
+  "grupa": "prawa",
+  "nazwa": "Weterani i aureole",
+  "lacina": "Veterani",
+  "opis": "Kto przeżyje w ludzie 4 minuty, staje się weteranem: póki najedzony, a lud wierny, ma +30% siły, szybkości, kopania i modlitwy. Jasna aureola znaczy wzmocnienie (weteran, hełm), czerwona — osłabienie (okaleczony, zatruty).",
+  "kiedy": "Karta postaci mówi, jaki to stan i kiedy minie. Weterana warto karmić — głodny traci premię.",
+  "koszt": null
+ },
+ {
+  "id": "straznicy",
+  "grupa": "prawa",
+  "nazwa": "Strażnicy Snu",
+  "lacina": "Custodes somni",
+  "opis": "Pomnik ma strażników. Przy 20, 45, 70% skruszenia — razem z każdym stanem pękania — wychodzą ze skały wokół krypty fale, z każdą silniejsi. Przenikają skałę, nie odchodzą daleko od krypty i biją najpierw rycerzy. Dopóki fala trwa, pomnik nie pęka. Za pokonaną falę dostajesz 15 wiary. Ostatnia fala przychodzi z demonem.",
+  "kiedy": "W czasie fali pobożni i robotnicy sami odchodzą z krypty — walczą rycerze (a gdy ich brak, robotnicy w hełmach). Pasek nad płytą mówi, ilu zostało.",
+  "koszt": null
+ },
+ {
+  "id": "boss",
+  "grupa": "prawa",
+  "nazwa": "Demon z pomnika",
+  "lacina": "Daemon lapidis",
+  "opis": "Gdy Wielki Pomnik pęknie do końca, rozpada się w gruz, a z gruzu wstaje demon, który w nim spał: przebija się ręka, druga, kamienna głowa z zapalającymi się oczami; wstaje, kamień ożywa na nim od piersi w ciemną, żarzącą się skórę, aureola za jego głową bucha ogniem — i ryczy — a z nim wychodzą ostatni Strażnicy. To ten sam posąg, tylko żywy: wciąż ma na nadgarstkach i kostkach kajdany z zerwanymi łańcuchami. Przenika skałę i idzie do krypty. Rani go tylko rycerz albo robotnik w hełmie (500 życia). Walczy dziewiętnastoma ruchami (patrz „Walka demona”); co jakiś czas wznosi ręce z rykiem, wali pięściami w ziemię i zasypuje kawałek drogi wiernych. Dłoni z otchłani rozkazuje gestem. Ranny pęka i dymi, w szale drży i płonie. Gdy w krypcie modlą się pobożni, kuli się i zasłania twarz, a złoty pył parzy go do żywego — słabnie; bez modlitwy się zrasta. Gdy walczących brak, pobożni unoszą księgi i razią go z dystansu. Gdy padnie — jesteś wolny.",
+  "kiedy": "Rycerz na demona, pobożni do modlitwy, robotnicy przy drodze. Życie demona widać na pasku nad płytą.",
+  "koszt": null
+ },
+ {
+  "id": "walkaDemona",
+  "grupa": "prawa",
+  "nazwa": "Walka demona",
+  "lacina": "Furor daemonis",
+  "opis": "Demon walczy dziewiętnastoma ruchami, każdy z długim zamachem — widać, co nadchodzi. W zwarciu: cios z góry, zamach pazurami, podcięcie od dołu, podwójny zamach, zgniecenie oburącz, przygniecenie dłonią, odepchnięcie. Na obszar: tupnięcie, ogniste tchnienie (gdy życia mniej niż 65%), wybuch aureoli (gdy życia mniej niż 50%). Z dystansu: bicz z łańcucha, szarża. Do tego uderzenie w ziemię, ryk, rozkaz: rzut, rozkaz: tarcza, rozkaz: zawał. Gdy rycerz bierze zamach, czasem zasłania się przedramieniem (zostaje połowa rany — fintę przepuszcza); po ciężkim ciosie się chwieje i nie bije, a przy połowie i ćwierci życia pada na kolano, a potem ryczy. Ciosy z góry, podcięcie, szarża i wybuch aureoli mogą powalić rycerza, przygniecenie trzyma go pod dłonią.",
+  "kiedy": "Nie stój z rycerzem przed demonem, gdy ten wciąga powietrze (ogień) albo kuli się z rękami na piersi (wybuch aureoli) — a gdy klęknie, to twoja chwila.",
+  "koszt": null
+ },
+ {
+  "id": "brama",
+  "grupa": "prawa",
+  "nazwa": "Kocioł i stalowa brama",
+  "lacina": "Porta ferrea",
+  "opis": "Droga wiernych skręca: pierwszy szyb schodzi do starej komnaty z pajęczynami, w której stoi kocioł, komnatą idzie się w bok, a drugi szyb schodzi na przedproże lochu z Wielkim Pomnikiem. Do lochu wchodzi się tylko przez stalową bramę. Krata podnosi się, póki przy kotle rzuca zaklęcia co najmniej 2 pobożnych (rozkaz „Do kotła”) — pełne otwarcie po 40 s; gdy przestaną, krata powoli opada (110 s). Wyprostowanym przejdzie się od 60% otwarcia, niżej trzeba się przeczołgać — do 20%. Na nadprożu bramy pięć run zapala się kolejno, ile otwarta.",
+  "kiedy": "Najpierw postaw pod bramą tych, którzy mają wejść, potem poślij dwóch pobożnych do kotła. Po 40 s zaklinania pobożni zdążą zejść z komnaty i przejść, zanim krata opadnie. Wejście w mur lochu jest nie do przekucia — tylko brama.",
+  "koszt": null
+ },
+ {
+  "id": "modlitwaZaInnych",
+  "grupa": "prawa",
+  "nazwa": "Modlitwa za innych",
+  "lacina": "Oratio pro aliis",
+  "opis": "Pobożny, który się modli — na rozkaz „Módl się za innych”, przy obozie, przy ołtarzu albo w krypcie — błogosławi swoich w promieniu 8 kafli: rany się goją (1,1 życia na sekundę), a każdy dostaje dar swojej roli na 20 s po wyjściu z kręgu — rycerz bije mocniej i szybciej chodzi, robotnik szybciej kopie, pobożny mocniej się modli, a każdy wolniej głodnieje. Siebie nie błogosławi. Rzucający zaklęcia przy kotle się nie modlą.",
+  "kiedy": "Postaw modlącego się za innych za rycerzem w walce albo przy kopaczach drogi.",
+  "koszt": null
+ },
+ {
+  "id": "helmy",
+  "grupa": "prawa",
+  "nazwa": "Hełmy robotników",
+  "lacina": "Fossores armati",
+  "opis": "Gdy zginie rycerz, robotnicy zakładają żelazne hełmy i biorą kilofy do walki: mają 80% więcej życia i biją jak rycerze — trzymają wartę, bronią przed obcymi, walczą ze Strażnikami Snu i z bossem. Gdy rycerz wróci do ludu, hełmy zdejmują.",
+  "kiedy": "To ostatnia obrona, nie zastępstwo — w czasie fali robotnik w hełmie walczy zamiast kopać i nosić jedzenie.",
+  "koszt": null
+ },
+ {
+  "id": "trupy",
+  "grupa": "prawa",
+  "nazwa": "Trupy",
+  "lacina": "Corpora",
+  "opis": "Kto z ludu umrze, nie znika: jego ciało leży tam, gdzie padł. Tylko zabranych przez ciemność i przez dłoń z otchłani nie ma. Gdy ciał jest więcej niż 40, najstarsze rozsypują się w kości.",
+  "kiedy": "Trupy mówią, gdzie lud ginie — tam spuść wiadro albo poślij rycerza.",
+  "koszt": null
+ },
+ {
+  "id": "rozkazy",
+  "grupa": "prawa",
+  "nazwa": "Drużyna i rozkazy",
+  "lacina": "Imperium",
+  "opis": "Pod płytą trzy medaliony: robotnicy, pobożni i rycerz, z liczbą żywych. Dotknięcie medalionu zaznacza wszystkich z tej roli, drugie wiezie do nich kamerę; dotknięcie postaci na mapie zaznacza ją (z Shiftem dokładasz). Myszą możesz też przeciągnąć ramkę lewym przyciskiem: zaznacza wszystkich w środku, a gdy w ramce nikogo nie ma, a zaznaczeni są robotnicy — oznacza skałę w środku do wykucia (robotnicy kują ją kafel po kaflu; blok pod wiadrem tylko wtedy, gdy ramka go obejmuje). Widok przesuwasz wtedy prawym albo środkowym przyciskiem. Gdy ktoś jest zaznaczony, dotknięcie mapy to rozkaz „idź tam”: idzie i trzyma tam posterunek — pobożny się modli, rycerz pilnuje — aż rozkaz odwołasz. Pobożny i rycerz idą tylko tam, dokąd prowadzi droga; inaczej odmawiają — kręcą głową, a w dymku mówią dlaczego. Robotnik przekopuje się sam, a wskazana mu skała to „kop tam” (ruda — „kop żyłę”: wykuje całą kępę). Wskazany plan pomieszczenia robotnicy kują, w gotowym warsztacie i kuźni pracują, rycerz w kuźni zakłada zbroję z wieszaka, a w sypialni każdy śpi. „Kop drogę wiernych” każe robotnikom kopać szyb drogi wiernych. Stojący rozstawiają się, nie jeden w drugim, a idący razem dopasowują krok.",
+  "kiedy": "Klawisze: A — robotnicy, S — pobożni, D — rycerz, G — kop drogę wiernych, V — odwołaj rozkaz, B — wyznacz pomieszczenie; Esc albo prawy przycisk — odznacz. Bez rozkazu robotnicy nie kopią.",
+  "koszt": null
+ },
+ {
+  "id": "pomieszczenia",
+  "grupa": "prawa",
+  "nazwa": "Pomieszczenia",
+  "lacina": "Conclavia",
+  "opis": "„Wyznacz pomieszczenie” pod płytą (albo klawisz B) i szablon: sypialnia (5×3), warsztat i kuźnia (4×3), korytarz, szyb i lina (lina wisi od razu — nikt jej nie buduje). Pod kursorem widać obrys: jasny — wolno, czerwony — nie, i dlaczego. Pokój stoi na płaskiej, litej podłodze i ma wejście z boku, na poziomie podłogi albo o kafel wyżej lub niżej. Korytarz i szyb zaczynają się tam, gdzie stoi lud: korytarz ciągniesz palcem w bok (wysoki na 2 kafle), szyb w dół — to proste schody, więc da się nim wrócić. Planu nie położysz w skale nie do ruszenia ani pod złotą kreską drogi wiernych; prawy przycisk na planie go skreśla.",
+  "kiedy": "Plan kują tylko robotnicy, których zaznaczysz i którym go wskażesz — wolni sami nic nie biorą. Kując plan, robotnik sięga też nad głowę.",
+  "koszt": null
+ },
+ {
+  "id": "sypialnia",
+  "grupa": "prawa",
+  "nazwa": "Sypialnia",
+  "lacina": "Dormitorium",
+  "opis": "Każdy z ludu — robotnik, pobożny, rycerz — wskazany na gotową sypialnię kładzie się na posłaniu. Po 60 sekundach snu traci osłabienia: okaleczenie i zatrucie (czerwona aureola rozpływa się), wstaje wypoczęty i wraca do swoich zajęć. Głodny najpierw idzie jeść, a potem wraca spać.",
+  "kiedy": "Poślij tam pobożnego po ofierze krwi przy ołtarzu albo kogoś zatrutego — po minucie snu wróci do pełni sił.",
+  "koszt": null
+ },
+ {
+  "id": "oltarz",
+  "grupa": "prawa",
+  "nazwa": "Ołtarz",
+  "lacina": "Altare",
+  "opis": "Kamienny ołtarz z krzyżem stoi od początku na środku sali, w promieniu światła, który pada z rozety katedry na powierzchni, przez otwór w jej posadzce i szyb nad ołtarzem; jedzenie zjeżdża drugim, węższym otworem obok. Pod ołtarzem jest kamienny kopczyk, a podłoga sali — z kamienia, więc nikt go nie podkopie ani nie przetnie drogi do niego; w sali nic się nie zawali. Dotknij ołtarza: otworzy się okno z rytuałami i ich ceną we krwi. Rytuał odprawia pobożny, który stoi przy ołtarzu — zaznacz go i dotknij ołtarza albo w oknie „przywołaj pobożnego”. Klęczy, aż skończy; gdy odejdzie albo zginie, rytuał przepada, a krew wraca.",
+  "kiedy": "Krew to paliwo rytuałów — zbieraj ją z bitew i ofiar, a wydawaj na modlitwę, szał rycerza i wskrzeszanie poległych.",
+  "koszt": null
+ },
+ {
+  "id": "rytual-modlitwa",
+  "grupa": "prawa",
+  "nazwa": "Modlitwa przy ołtarzu",
+  "lacina": "Oratio ad altare",
+  "opis": "Pobożny klęczy przy ołtarzu, od krzyża biją promienie, a złote iskry płyną od niego do krzyża. Przez 15 sekund wiara rośnie — razem o 30.",
+  "kiedy": "Gdy masz krew, a brak ci wiary na szepty i Cud. Kosztuje 15 krwi.",
+  "koszt": null
+ },
+ {
+  "id": "rytual-szal",
+  "grupa": "prawa",
+  "nazwa": "Szał krwi",
+  "lacina": "Furor sanguinis",
+  "opis": "Pobożny unosi księgę, krew spływa po krzyżu do misy, a wokół ołtarza zapala się krąg czerwonych znaków. Na koniec czerwona smuga leci do rycerza: przez 1 minutę żarzy się czerwoną aurą i bije 1,6 raza mocniej. Gdy rycerza brak, szał rozpala robotnika w hełmie.",
+  "kiedy": "Przed falą Strażników albo bossem — odpraw go, gdy fala nadciąga. Kosztuje 30 krwi.",
+  "koszt": null
+ },
+ {
+  "id": "rytual-wskrzeszenie",
+  "grupa": "prawa",
+  "nazwa": "Wskrzeszenie",
+  "lacina": "Resurrectio",
+  "opis": "W oknie ołtarza wybierasz, kogo przywrócić — z poległych, których ciała jeszcze leżą. Ciało blednie i rozsypuje się w jasne iskry, które płyną do ołtarza; nad mensą unosi się ta sama postać, z szarej coraz barwniejsza, i po 15 sekundach staje obok ołtarza — z tą samą rolą i twarzą, zdrowa. Zabranych przez ciemność i dłoń z otchłani wskrzesić się nie da: nie zostaje po nich ciało.",
+  "kiedy": "Jedyny sposób, żeby drużyna znów była cała. Kosztuje 100 krwi.",
+  "koszt": null
+ },
+ {
+  "id": "rytual-ofiara-krwi",
+  "grupa": "prawa",
+  "nazwa": "Ofiara krwi",
+  "lacina": "Sacrificium sanguinis",
+  "opis": "Pobożny przy ołtarzu upuszcza krwi: krople spadają do misy, misa się napełnia, a kropla leci do licznika — +25 krwi. Potem jest okaleczony (−25% życia, siły i szybkości), póki nie prześpi 1 minuty w sypialni. Okaleczony drugi raz krwi nie odda.",
+  "kiedy": "Gdy brak krwi na rytuał, a pobożny może potem odpocząć.",
+  "koszt": null
+ },
+ {
+  "id": "rytual-ofiara-zycia",
+  "grupa": "prawa",
+  "nazwa": "Ofiara życia",
+  "lacina": "Sacrificium vitae",
+  "opis": "Pobożny oddaje życie na ołtarzu: krąg ciemnoczerwonych znaków, słup czerwonego światła — i +40 krwi. Ostatniego pobożnego ołtarz nie przyjmie: bez niego nikt nie odprawi rytuału ani nie pomodli się pod rdzeniem. Jego ciało zostaje przy ołtarzu — można go potem wskrzesić.",
+  "kiedy": "Ostateczność. Drużyna jest stała, a wskrzeszenie kosztuje więcej krwi, niż daje ofiara.",
+  "koszt": null
+ },
+ {
+  "id": "lina",
+  "grupa": "prawa",
+  "nazwa": "Lina",
+  "lacina": "Funis",
+  "opis": "„Wyznacz pomieszczenie” → „lina”: dotknij miejsca, gdzie ma wisieć hak (albo przeciągnij w górę). Jedyny warunek: lina nie trzyma się powietrza — jej górny koniec musi być uczepiony skały: stropu tuż nad nią, krawędzi półki obok albo ściany przy górze; bez tego obrys jest czerwony. Wskazana skała to strop — lina zawiśnie tuż pod nią. Wieszasz ją ty, od razu — nikt z ludu jej nie buduje: z żelaznego haka wbitego w skałę spada zwój, rozwija się aż do podłogi, a lina chwilę się kołysze. 5 pierwszych lin jest za darmo, każda następna kosztuje 10 krwi. Po linie każdy z ludu wchodzi i schodzi w obie strony. Na zakrętach drogi wiernych lina spada sama, gdy zakręt jest wykopany — za darmo.",
+  "kiedy": "Gdy ktoś zszedł w głąb i nie ma jak wrócić, albo gdy półka z rudą wisi za wysoko. Wieszaj przy krawędzi półki — po linie wchodzi się na nią. Darmowe liny szybko się kończą.",
+  "koszt": null
+ },
+ {
+  "id": "ruiny",
+  "grupa": "prawa",
+  "nazwa": "Ruiny",
+  "lacina": "Ruinae",
+  "opis": "W środkowej warstwie góry leżą zawalone budowle — 1–2 na górę: kaplica z łukami i filarami, stara kopalnia z odrzwiami z belek i porzuconym wózkiem albo kawałek miasta, dwa domy i ulica pod łukiem bramy. Zamurowane w skale, częściowo zawalone (gruz, zwalone belki) — trzeba się do nich przekopać. Mur z ciosów kuje się jak skała. W każdej leży zabytek; w ciemności czasem błyśnie.",
+  "kiedy": "Wyślij robotnika rozkazem „kop tam” do ruin — gdy ktoś z ludu stanie przy zabytku, odkryje go. Pamiętaj o drodze powrotnej: jedzenie jest tylko w sali.",
+  "koszt": null
+ },
+ {
+  "id": "zabytki",
+  "grupa": "prawa",
+  "nazwa": "Zabytki",
+  "lacina": "Reliquiae",
+  "opis": "Kto z ludu stanie przy zabytku, odkrywa go: z ruin sypie się kurz, zabytek rozbłyskuje i unosi się w świetle, a świat staje i pyta: „Weź” czy „Zostaw”. Weź — premia i kara dla całego ludu, na zawsze (sen w sypialni kary nie zdejmie): zabytek leci do rąk odkrywcy, ten unosi go nad głowę, a fala światła zapala każdemu jasną i czerwoną aureolę. Zostaw — zabytek opada i gaśnie. Relikwiarz świętego: modlitwa o 35% mocniejsza, ale kucie o 25% wolniejsze. Miecz krzyżowca: rycerz bije o 45% mocniej, ale rycerz chodzi o 20% wolniej. Kielich: rany goją się o 80% szybciej, ale głód rośnie o 22% szybciej. Księga: modlitwa daje o 30% więcej wiary, ale szaleństwo głębi przychodzi 2,5 raza częściej i mija dwa razy wolniej.",
+  "kiedy": "Bierz to, czego kara najmniej ci szkodzi: relikwiarz, gdy droga już wykopana; miecz przed bossem, jeśli drużyna trzyma się razem; kielich tylko przy pełnym wiadrze.",
+  "koszt": null
+ },
+ {
+  "id": "schody",
+  "grupa": "prawa",
+  "nazwa": "Schody",
+  "lacina": "Gradus",
+  "opis": "Lud nie ma lin ani klamer. W górę wchodzi najwyżej o jeden stopień — na wyższą półkę się nie wdrapie: musi wykuć sobie w skale schody albo wejść po linie, którą powiesisz. W dół zsuwa się szybem po ścianach albo zeskakuje z niewysokiej półki; kto spadnie z wysoka, potłucze się, a w głęboką przepaść sam nie skoczy.",
+  "kiedy": "Robotnik, któremu każesz iść tam, dokąd nie ma przejścia, sam wykuwa schody; kto utknie w dołku bez wyjścia, wkopuje się do jedzenia. Droga wiernych to szyb od wnęki przy sali do lochu: kopacze schodzą w głąb po drabinie, którą przedłużają za sobą, a przy wylocie kołowrót wyciąga kubłem urobek. Gdy odcinek jest wykopany do dna, robotnicy stawiają w nim od dołu schody kręcone: kołowrotem opuszczają ciosane stopnie, a murarze z rusztowania osadzają je jeden po drugim (rozkaz „Buduj schody drogi wiernych” — robotnicy, którzy długo nie mają co robić, idą pomóc sami). Do tego czasu szybem chodzi się po drabinie, w obie strony. Kafle szybu kuje się szybciej niż zwykłą skałę.",
+  "koszt": null
+ },
+ {
+  "id": "pauza",
+  "grupa": "prawa",
+  "nazwa": "Pauza",
+  "lacina": "Tempus suspensum",
+  "opis": "Czas możesz zatrzymać. Rozkazy wydane w pauzie (Nakarm, Cud) rysują się jako szkice, rezerwują koszt i dzieją się naraz, gdy puścisz czas. Przy kryzysach gra staje sama.",
+  "kiedy": "Zatrzymuj świat, gdy musisz trafić — i przy każdym kryzysie.",
+  "koszt": null
+ },
+ {
+  "id": "pismo",
+  "grupa": "prawa",
+  "nazwa": "Pismo w skale",
+  "lacina": "Scriptura ignota",
+  "opis": "W skale, do której nikt jeszcze nie zajrzał, widać znaki. Nikt z żyjących ich nie wyrył — były tu przed pierwszym z ludu. Gasną, gdy dojdzie do nich światło; w zatrzymanym czasie widać je wyraźniej.",
+  "kiedy": "Nie da się ich przeczytać. Można tylko pójść tam, gdzie są, i patrzeć, jak znikają.",
+  "koszt": null
+ },
+ {
+  "id": "dlon",
+  "grupa": "prawa",
+  "nazwa": "Dłoń z otchłani",
+  "lacina": "Manus ex abysso",
+  "opis": "Rzadko, najwcześniej po 6 minutach i najwyżej 2 razy w partii. Otchłań to nieznane — ta część góry, której nikt nie widział albo o której zapomniano. Gdy ktoś z ludu stanie daleko od obozu, a pod nim zaczyna się otchłań, spod ziemi sączy się czerwona łuna, a on (czasem dwoje naraz) staje jak wryty. Z głębi, zawsze od dołu, wznosi się ogromna dłoń — po 6 sekundach sięga, chwyta ich i zapada się z nimi w ciemność. Nie zostają nawet trupy — krew i tak spływa do ciebie.",
+  "kiedy": "Nie stawiaj ludu nad nieznanym daleko od obozu. Gdy otchłań pod kimś zaczerwieni się — rzuć Cud przy nim, zanim dłoń chwyci.",
+  "koszt": null
+ },
+ {
+  "id": "lina-wiadra",
+  "grupa": "prawa",
+  "nazwa": "Przecięta lina",
+  "lacina": "Funis praecisus",
+  "opis": "W Koszmarze (w Alphie zawsze) dłoń z otchłani poluje też na linę, na której zjeżdża jedzenie — najwcześniej po 5 minutach, najwyżej 3 razy w partii. Spod podłogi sali, tuż przy wiadrze, wznosi się obok liny, czeka z rozwartymi szponami i jednym zamachem przecina ją pazurem. Zjeżdżające wiadro spada i roztrzaskuje się — 50% jedzenia przepada, reszta leży rozsypana i da się ją zjeść; stojące zostaje bez liny. Póki nikt liny nie sklei, z góry nic nie zjedzie (także Nakarm). „Napraw linę wiadra” — przycisk pod płytą albo na karcie postaci: ktoś z ludu idzie pod szyb, wspina się po zwisającym końcu, owija i wiąże oba kawałki, lina się napina, a z góry od razu zjeżdża nowe wiadro z resztkami rozsypanego jedzenia.",
+  "kiedy": "Rzuć Cud przy wiadrze, zanim pazur przetnie linę — odpędzi dłoń. Jeśli nie zdążysz, wyślij kogoś do liny od razu: każda chwila bez wiadra to głód. Skleja jeden naraz.",
+  "koszt": null
+ },
+ {
+  "id": "dlon-anielska",
+  "grupa": "prawa",
+  "nazwa": "Dłoń anielska",
+  "lacina": "Manus angelica",
+  "opis": "Czasem — najwcześniej po 4 minutach, najwyżej 4 razy w partii — z góry, przez skałę, sączy się słup złotego światła i schodzi w nim jasna dłoń, palcami w dół. Daje dar, który sama wybiera, za darmo: podkop — kruszy palcami 14 kolejnych kafli drogi wiernych (droga idzie schodami, więc nikt nie utknie w przepaści, a ruda trafia do liczników); dar ludzi — stawia przy ołtarzu nowego robotnika, póki ludu jest mniej niż 9; dar krwi — wlewa do relikwiarza 45 krwi: struga spływa z jej dłoni prosto do ampułki. Potem wraca w światło.",
+  "kiedy": "Nie wywołasz jej — przychodzi sama. Dar ludzi to jedyna, poza wskrzeszeniem, droga do nowych rąk w drużynie.",
+  "koszt": null
+ },
+ {
+  "id": "dlon-rzut",
+  "grupa": "prawa",
+  "nazwa": "Rzut rycerzem",
+  "lacina": "Manus iaciens",
+  "opis": "W walce z demonem dłoń z otchłani mu pomaga. Gdy rycerz stoi przy demonie, podłoga obok niego pęka i wyrasta z niej dłoń — obejmuje go palcami jak naczynie (nie pięścią), podnosi, bierze zamach w tył i ciska nim w górę i w bok, z dala od demona; palce rozwierają się gwałtownie, odgięte do tyłu. Rycerz koziołkuje pod sam strop, uderza o niego i spada — traci 10% życia i leży ogłuszony 3 s (nad głową krążą gwiazdki).",
+  "kiedy": "Nie da się go uniknąć — ale ogłuszony rycerz wstaje sam. Pilnuj, żeby był najedzony i miał życie na taki upadek.",
+  "koszt": null
+ },
+ {
+  "id": "dlon-tarcza",
+  "grupa": "prawa",
+  "nazwa": "Tarcza z dłoni",
+  "lacina": "Manus scutum",
+  "opis": "Między rycerzem a demonem wyrasta z podłogi otwarta dłoń, wnętrzem do rycerza, palce rozczapierzone jak mur, i drży z wysiłku. Przez 5 s demona nic nie rani: każdy cios odbija się od dłoni (iskry, fala na wnętrzu dłoni) i odrzuca atakującego. Demon w tym czasie czeka za nią.",
+  "kiedy": "Przeczekaj — dłoń sama zapadnie się w podłogę. Bez modlitwy w krypcie demon za tarczą się zrasta.",
+  "koszt": null
+ },
+ {
+  "id": "dlon-zawal",
+  "grupa": "prawa",
+  "nazwa": "Zawał stropu",
+  "lacina": "Ruina fornicis",
+  "opis": "Gdy rycerz idzie na demona z daleka, strop krypty między nimi pęka i przebijają się przez niego szpony zagięte w hak. Drą skałę szarpnięciami, płaskie uderzenie — i kolumna stropu spada lawiną głazów. Zostaje ściana gruzu, która odcina demona: nie przechodzi na drugą stronę i zrasta się 3 razy szybciej. Rycerz staje, gdy przed nim sypie się strop. Po 15 s gruz kruszy się i osypuje sam.",
+  "kiedy": "Zaznacz robotników i wskaż im gruz — rozkują go wcześniej, a rycerz szybciej dojdzie do demona.",
+  "koszt": null
+ }
+]
