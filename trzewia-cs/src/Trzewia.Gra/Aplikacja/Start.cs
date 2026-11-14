@@ -14,13 +14,21 @@ namespace Trzewia.Aplikacja
     {
         /// <summary>
         /// Rejestruje ekran ładowania; ekrany gry powstają dopiero w jego etapach — samo ich zbudowanie generuje góry.
-        /// `zaslona` — póki zwraca true, film intro zasłania ekran (etap 6); null — bez filmu.
         /// </summary>
         /// <param name="cel">Narzędzie dewelopera (--ekran): po ładowaniu ten ekran zamiast menu („gra” — nowa partia).</param>
-        public static void Zbuduj(App app, Func<bool>? zaslona = null, string? cel = null)
+        public static void Zbuduj(App app, string? cel = null)
         {
             // okno obserwatorium: bot gra od razu, nic nie trafia do plików gracza
             Obserwowany.przygotujObserwowana();
+            // intro rusza od razu, góra ładuje się pod nim, a po filmie — menu; okno obserwatorium filmu nie puszcza
+            // (narzędzie dewelopera --ekran też nie — od razu do celu)
+            Func<bool>? zaslona = null;
+            if (!Obserwowany.BOT.wlaczony && cel == null)
+            {
+                app.intro = new Intro();
+                app.intro.puscIntro();
+                zaslona = app.intro.introTrwa;
+            }
             EkranGry gra = null!;
             EkranSamouczka samouczek = null!;
             EkranMenu menu = null!;

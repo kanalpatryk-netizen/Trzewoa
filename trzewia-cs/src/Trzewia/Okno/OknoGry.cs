@@ -33,6 +33,8 @@ public sealed unsafe class OknoGry : IOknoGry, IDisposable
     int oknoW = 1, oknoH = 1;
     /// <summary>Skala ekranu (Windows 125% → 1,25) — jak devicePixelRatio w przeglądarce.</summary>
     public double Dpr { get; private set; } = 1;
+    /// <summary>Rękawica jako kursor systemowy (core/kursor.ts).</summary>
+    readonly Kursor kursor = new Kursor();
     readonly SKPaint rozciagniecie = new();
     /// <summary>Okno dostało nową powierzchnię (zmiana rozmiaru) — App musi przeliczyć układ; App zeruje.</summary>
     public bool NowaPowierzchnia { get; set; }
@@ -214,6 +216,8 @@ public sealed unsafe class OknoGry : IOknoGry, IDisposable
     /// <summary>Zdarzenia z kolejki SDL do App. F11 przełącza pełny ekran (jak w electron/main.js — gra go nie widzi).</summary>
     public void Zdarzenia(App app)
     {
+        kursor.Ustaw(Dpr);
+        kursor.Krok();
         SDL_Event e;
         while (SDL_PollEvent(&e))
         {
@@ -232,9 +236,13 @@ public sealed unsafe class OknoGry : IOknoGry, IDisposable
                         else NowaPowierzchnia = true;
                         break;
                     }
+                case SDL_EventType.SDL_EVENT_WINDOW_FOCUS_LOST:
+                    kursor.Rozmycie();
+                    break;
                 case SDL_EventType.SDL_EVENT_MOUSE_MOTION:
                     {
                         var m = e.motion;
+                        kursor.Ruch(Przyciski((uint)m.state));
                         var mod = SDL_GetModState();
                         app.NaWskaznik(Faza.ruch, NaCss(m.x, true), NaCss(m.y, false), -1, Przyciski((uint)m.state),
                             (mod & SDL_Keymod.SDL_KMOD_SHIFT) != 0, (mod & SDL_Keymod.SDL_KMOD_CTRL) != 0, (mod & SDL_Keymod.SDL_KMOD_ALT) != 0);
@@ -244,6 +252,7 @@ public sealed unsafe class OknoGry : IOknoGry, IDisposable
                 case SDL_EventType.SDL_EVENT_MOUSE_BUTTON_UP:
                     {
                         var b = e.button;
+                        if (b.down) kursor.Wcisnij(); else kursor.Pusc();
                         var mod = SDL_GetModState();
                         app.NaWskaznik(b.down ? Faza.dol : Faza.gora, NaCss(b.x, true), NaCss(b.y, false), Przycisk(b.button), PrzyciskiTeraz(),
                             (mod & SDL_Keymod.SDL_KMOD_SHIFT) != 0, (mod & SDL_Keymod.SDL_KMOD_CTRL) != 0, (mod & SDL_Keymod.SDL_KMOD_ALT) != 0);
@@ -307,6 +316,7 @@ public sealed unsafe class OknoGry : IOknoGry, IDisposable
 
     public void Dispose()
     {
+        kursor.Dispose();
         powierzchnia?.Dispose(); powierzchnia = null;
         cel?.Dispose(); cel = null;
         Grafika.Kontekst?.Dispose(); Grafika.Kontekst = null;

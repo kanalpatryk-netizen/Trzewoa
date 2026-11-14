@@ -56,7 +56,7 @@ static class Program
             if (Uruchomienie.EkranStartowy == "proba") app.start("proba");
             else
             {
-                Start.Zbuduj(app, null, Uruchomienie.EkranStartowy);
+                Start.Zbuduj(app, Uruchomienie.EkranStartowy);
                 app.start("ladowanie");
             }
             Petla(okno, app);

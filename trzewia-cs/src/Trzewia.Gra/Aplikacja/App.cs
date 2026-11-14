@@ -26,6 +26,8 @@ public sealed class App : IKontekst
     public double w { get; private set; } = 1;
     public double h { get; private set; } = 1;
     public Dzwiek dzwiek { get; } = new Dzwiek();
+    /// <summary>Film intro na wierzchu (intro.ts) — null, gdy go nie ma.</summary>
+    public Intro? intro;
     public Muzyka muzyka { get; } = new Muzyka();
     public Gesty gesty { get; } = new Gesty();
     /// <summary>Rozmiar w pikselach CSS i mnożnik, z którego wyszła skala — po nich poznajemy zmianę.</summary>
@@ -127,6 +129,8 @@ public sealed class App : IKontekst
     {
         // F3: licznik wydajności — na każdym ekranie, bez względu na przypisane klawisze
         if (e.key == "F3") { ustaw(ref ustawienia.licznikWydajnosci, !ustawienia.licznikWydajnosci); return; }
+        // film intro: spacja i Esc go pomijają, a klawisz idzie dalej do gry
+        intro?.klawisz(e);
         obudzDzwiek();
         aktywny?.klawisz(Keybinds.akcjaDlaKlawisza(e.key), e);
     }
@@ -194,8 +198,18 @@ public sealed class App : IKontekst
             e.rysuj(ctx, w, h, teraz);
             Wydajnosc.licznik.klatka(teraz, Wydajnosc.Teraz() - t0);
             if (ustawienia.licznikWydajnosci) rysujLicznik();
+            rysujIntro(teraz);
             PokazPosrednie();
         }
+    }
+
+    /// <summary>Film intro w pikselach CSS (w TS: warstwa strony nad płótnem), potem zwykła skala z powrotem.</summary>
+    void rysujIntro(double teraz)
+    {
+        if (intro == null) return;
+        ctx.setTransform(dpr * rozdz, 0, 0, dpr * rozdz, 0, 0);
+        intro.rysuj(ctx, cssW, cssH, teraz);
+        ctx.setTransform(dpr * rozdz * SettingsStore.ekran.skala, 0, 0, dpr * rozdz * SettingsStore.ekran.skala, 0, 0);
     }
 
     /// <summary>Do ponownego rysowania od zera (pętla po przerwie: okno zminimalizowane) — czas nie skacze.</summary>
