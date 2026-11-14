@@ -44,16 +44,8 @@ namespace Trzewia.Rysunek
             Katedra.rysujKatedreNad(ctx, sim, cam, teraz);
             Promien.rysujPromien(ctx, sim, cam, teraz);
             Konwoj.rysujKonwojNad(ctx, sim, cam, teraz, grunt);
-            // (3c) rysujPomnik — do czasu jego przeniesienia tylko demon wstający z gruzu (w TS rysuje go pomnik.ts)
-            var pomnik = sim.lud.pomnik;
-            if (Nastawy.NastawyPomnik.POMNIK.wlaczony && pomnik != null && pomnik.faza == "wychodzi")
-            {
-                var m = Symulacja.Pomnik.miejscePomnika(sim);
-                ctx.save();
-                ctx.translate(cam.toScreenX(m.x), cam.toScreenY(m.y + 1));
-                Duszki.DuszkiDemona.rysujWstajacego(ctx, Duszki.DuszkiDemona.wysokoscDemona(cam.zoom), Math.Min(1, (sim.tick - pomnik.od) / Nastawy.NastawyPomnik.POMNIK.wyjscie));
-                ctx.restore();
-            }
+            // etap 5: Wielki Pomnik demona — nad mrokiem (żarzy się sam i trzeba go widzieć z krypty)
+            if (Nastawy.NastawyPomnik.POMNIK.wlaczony) RysPomnik.rysujPomnik(ctx, sim, cam, teraz);
             // (3c) urobki.rysujNaMapie, pokoje.rysujNad, oltarz.rysujNad, ruiny.rysujNad
             RysLoch.rysujLochNad(ctx, sim, cam, teraz);
             // (3c) plan drogi / droga pielgrzymów, rysujZarys, rysujZaznaczenie
@@ -62,7 +54,8 @@ namespace Trzewia.Rysunek
             RysWiadra.rysujPrzodWiader(ctx, sim, cam, teraz);
             // (3c) polecenia na mapie, rysujEfekty, znaczniki ludu
             RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
-            // (3c) rysujNadPomnikiem
+            // etap 5: błyski pomnika, rozpad i konanie demona (fala światła, popiół)
+            RysPomnik.rysujNadPomnikiem(ctx, sim, cam, teraz);
             RysDlon.rysujDlon(ctx, sim, cam, teraz);
             RysDlonDemona.rysujDlonDemona(ctx, sim, cam, teraz);
             RysAniol.rysujAniola(ctx, sim, cam, teraz);
