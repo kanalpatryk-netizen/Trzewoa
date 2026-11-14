@@ -13,13 +13,6 @@ using JsM = Trzewia.Js.JsMath;
 
 namespace Trzewia.Rysunek
 {
-    /// <summary>Płyta na ekranie (render/plate.ts: Plate) — prostokąt świata i marginesy.</summary>
-    public sealed class Plate
-    {
-        public double x, y, w, h, left, bottom, right, top;
-        public bool waski, niski;
-    }
-
     /// <summary>Okruchy w locie i błyski liczników — jedna para na ekran gry (render/kruszce.ts: Urobki).</summary>
     public sealed class Urobki
     {
