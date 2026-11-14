@@ -45,11 +45,20 @@ static class Program
             if (Uruchomienie.Licznik) ustawienia.licznikWydajnosci = true;
             using var ctx = new PlotnoSkia(okno.Canvas, okno.PikseleW, okno.PikseleH);
             var app = new App(okno, ctx);
+            Rdzen.Gospodarz.UstawPelnyEkran = v => { if (okno.PelnyEkran != v) okno.PrzelaczPelnyEkran(); };
+            Rdzen.Gospodarz.OtworzAdres = adres =>
+            {
+                try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(adres) { UseShellExecute = true }); }
+                catch (Exception e) { Dziennik.Pisz($"nie otworzę adresu {adres}: {e.Message}"); }
+            };
             app.zarejestruj(new EkranProby());
-            app.zarejestruj(new EkranGry(app));
-            // (etap 5d: intro → menu; do tego czasu ekran gry startuje od nowej partii)
-            if (Uruchomienie.EkranStartowy == "gra") app.idz("gra", "nowa");
-            else app.start(Uruchomienie.EkranStartowy ?? "proba");
+            // ekran próbny (--ekran proba) bez ładowania; inaczej ładowanie, potem menu (albo ekran z --ekran)
+            if (Uruchomienie.EkranStartowy == "proba") app.start("proba");
+            else
+            {
+                Start.Zbuduj(app, null, Uruchomienie.EkranStartowy);
+                app.start("ladowanie");
+            }
             Petla(okno, app);
             return 0;
         }
