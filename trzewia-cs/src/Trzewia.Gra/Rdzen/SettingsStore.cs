@@ -53,10 +53,7 @@ public sealed class Settings
     public double limitKlatek = 0;
     /// <summary>Wydajność: licznik klatek i czasu każdej części klatki (F3).</summary>
     public bool licznikWydajnosci = false;
-    /// <summary>
-    /// Wydajność (TS): rycina świata w osobnym wątku. W C# rycinę liczy karta graficzna (shader), więc tego
-    /// przełącznika nie ma w ustawieniach — pole zostaje, żeby plik miał ten sam format co w TS.
-    /// </summary>
+    /// <summary>Wydajność: rycina świata w osobnym wątku (w C# — zadanie w puli wątków, patrz Rysunek/Swiat/Rycina.cs).</summary>
     public bool rycinaWWatku = true;
     /// <summary>
     /// C# (10.11, zamiast wymuszania karty z Electrona): droga do karty graficznej — 'auto' (Windows: ANGLE na Direct3D 11,

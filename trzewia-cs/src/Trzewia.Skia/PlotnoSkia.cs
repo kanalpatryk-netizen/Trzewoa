@@ -380,7 +380,7 @@ namespace Trzewia.Skia
         /// w pikselach płótna (Chrome: CompositedDraw) — cień i filtr nie zależą wtedy od przekształcenia.
         /// Zwraca, czy otwarto warstwę (wtedy <see cref="Po"/> ją zamyka).
         /// </summary>
-        bool Przed(SKPaint p)
+        bool Przed(SKPaint p, SKRect? granice = null)
         {
             zmienione = true;
             bool cien = Cien;
@@ -390,6 +390,18 @@ namespace Trzewia.Skia
                 return false;
             }
             var ctm = c.TotalMatrix;
+            // Granice warstwy: rysowany kształt w pikselach płótna (z zapasem na obrys i wygładzanie). Bez nich Skia
+            // otwierała warstwę na cały ekran i rozmywała ją całą przy każdym cieniu — Chrome rozmywa tylko kształt.
+            // Cień i filtr i tak wychodzą poza te granice (Skia liczy wynik filtra poza warstwą). Tryby „bez granic”
+            // (source-in…) muszą objąć całe płótno, więc tam granic nie ma.
+            SKRect? urz = null;
+            if (granice is SKRect g && !s.bezGranic && !g.IsEmpty)
+            {
+                var zapas = p.Style != SKPaintStyle.Fill ? p.StrokeWidth * Math.Max(1f, p.StrokeMiter) / 2 + 1 : 1;
+                var r = ctm.MapRect(SKRect.Inflate(g, zapas, zapas));
+                r.Inflate(2, 2);
+                urz = r;
+            }
             c.ResetMatrix();
             warstwa.BlendMode = s.tryb;
             SKImageFilter? cienF = null;
@@ -400,7 +412,7 @@ namespace Trzewia.Skia
                 cienF = SKImageFilter.CreateDropShadow((float)s.shadowX, (float)s.shadowY, sig, sig, (SKColor)Macierz.Sk(s.shadowColor), s.filtr);
             }
             warstwa.ImageFilter = cienF ?? s.filtr;
-            c.SaveLayer(warstwa);
+            if (urz is SKRect ur && !BezGranicWarstw) c.SaveLayer(ur, warstwa); else c.SaveLayer(warstwa);
             warstwa.ImageFilter = null;
             cienF?.Dispose();
             c.SetMatrix(ctm);
@@ -410,10 +422,13 @@ namespace Trzewia.Skia
 
         void Po(bool otwarta) { if (otwarta) c.Restore(); }
 
+        /// <summary>Do testu: warstwy bez granic (jak dawniej) — obraz ma być ten sam.</summary>
+        public static bool BezGranicWarstw;
+
         void RysujSciezke(SKPath sc, bool obrys)
         {
             if (!UstawFarbe(obrys ? s.stroke : s.fill, obrys)) return;
-            var w = Przed(farba);
+            var w = Przed(farba, sc.Bounds);
             c.DrawPath(sc, farba);
             Po(w);
         }
@@ -447,8 +462,9 @@ namespace Trzewia.Skia
         {
             if (!S4(x, y, w, h) || w == 0 || h == 0) return;
             if (!UstawFarbe(s.fill, false)) return;
-            var o = Przed(farba);
-            c.DrawRect(Prostokat(x, y, w, h), farba);
+            var pr = Prostokat(x, y, w, h);
+            var o = Przed(farba, pr);
+            c.DrawRect(pr, farba);
             Po(o);
         }
 
@@ -494,7 +510,16 @@ namespace Trzewia.Skia
             float w = u.Szerokosc;
             float dx = s.textAlign switch { "center" => -w / 2, "right" => -w, "end" => -w, _ => 0 };
             float dy = s.kroj.PrzesuniecieBazowej(s.textBaseline);
-            var o = Przed(farba);
+            // granice napisu: prostokąt glifów (TextBlob.Bounds) w miejscu rysowania, przy ściśnięciu — ściśnięty
+            var gb = u.Blob.Bounds;
+            SKRect gr;
+            if (maxWidth is double mm && w > mm)
+            {
+                var k = (float)(mm / w);
+                gr = new SKRect((float)x + (gb.Left + dx) * k, (float)y + gb.Top + dy, (float)x + (gb.Right + dx) * k, (float)y + gb.Bottom + dy);
+            }
+            else gr = new SKRect((float)x + dx + gb.Left, (float)y + dy + gb.Top, (float)x + dx + gb.Right, (float)y + dy + gb.Bottom);
+            var o = Przed(farba, gr);
             if (maxWidth is double m && w > m)
             {
                 // za szeroki napis przeglądarka ściska w poziomie
@@ -565,7 +590,7 @@ namespace Trzewia.Skia
             p.ColorF = new SKColorF(0, 0, 0, (float)s.alpha);
             var m = c.TotalMatrix;
             bool zmniejsza = Math.Abs(cel.Width * m.ScaleX) < zr.Width || Math.Abs(cel.Height * m.ScaleY) < zr.Height;
-            var o = Przed(p);
+            var o = Przed(p, cel);
             c.DrawImage(img, zr, cel, Probkowanie(zmniejsza), p);
             Po(o);
         }

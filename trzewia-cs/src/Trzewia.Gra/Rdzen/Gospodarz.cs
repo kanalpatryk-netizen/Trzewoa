@@ -30,6 +30,10 @@ namespace Trzewia.Rdzen
     {
         public static IPlikiGracza Pliki = new PlikiWPamieci();
         public static IDaneGry Dane = new BezDanych();
+        /// <summary>Otwiera adres w przeglądarce systemu (w TS: window.open) — gospodarz ustawia; null — nic.</summary>
+        public static System.Action<string>? OtworzAdres;
+        /// <summary>Pełny ekran włącz/wyłącz (ustawienia → Obraz) — gospodarz ustawia; null — nic.</summary>
+        public static System.Action<bool>? UstawPelnyEkran;
 
         sealed class PlikiWPamieci : IPlikiGracza
         {

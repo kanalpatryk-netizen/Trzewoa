@@ -15,6 +15,8 @@ namespace Trzewia.Aplikacja
         /// <summary>Oddech rdzenia z dźwięku (render/tajemnica.ts: oddechRdzenia) — bez dźwięku: null, oddech z zegara.</summary>
         public double? oddech(double sen) => null;
         public void update(double glebia, double kopanie, double wiara, double ludnosc, double sen, bool stoi) { }
+        public void start() { }
+        public void odswiezGlosnosc() { }
     }
 
     /// <summary>core/music.ts: Muzyka.</summary>
@@ -24,6 +26,9 @@ namespace Trzewia.Aplikacja
         public void ustawNapiecie(double n) { }
         public void otchlan() { }
         public void zabranie() { }
+        public void glosnosc(double g) { }
+        public void start() { }
+        public void stop() { }
     }
 
     /// <summary>core/gesty.ts: Gesty — dźwięki gestów, głosy ludu, dzwony.</summary>
@@ -50,6 +55,8 @@ namespace Trzewia.Aplikacja
         public void skresl(bool wszystko) { }
         public void kartka() { }
         public void tablica() { }
+        public void start() { }
+        public void odswiezGlosnosc() { }
     }
 
     /// <summary>core/mikser.ts: mikser.</summary>
