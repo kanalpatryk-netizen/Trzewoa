@@ -210,6 +210,18 @@ zmieniają (oprawa księgi, ramy, tablice), nagrywa raz jako `SKPicture` i odtwa
 
 ### 3.4 Rycina świata jako shader (oraz mrok i poświata)
 
+> **Zmiana w trakcie etapu 3 (13–14.11): rycina liczona na procesorze, nie shaderem.** Kod `engrave.ts`
+> przeniosłem dosłownie (`Rysunek/Swiat/Engraver.cs`) i liczy ją procesor — wiersze płyty równolegle, bit w bit jak
+> w TS (test `RycinaTesty`: 8 scen, 0 różnych pikseli w obrazie i w buforze źródeł światła). Powody: wierność bez
+> „drobnych różnic jasności” (punkt 1 w części 5), przenośność do Unity/Godota (zwykły kod C#, bez SkSL) i czas —
+> pełna odbitka 1920×1080 ok. 83 ms na 4 słabych rdzeniach, po ruchu kamery ok. 8 ms (pamięć kafli i przesunięcie
+> całych pikseli), przy stojącej kamerze ok. 4 ms. Pełna odbitka liczy się w tle (`Rycina.cs`: zadanie w puli wątków,
+> jak wątek ryciny w TS), a płyta pokazuje do tego czasu poprzedni obraz pod nową kamerą; od razu — gdy poprzedni
+> obraz pokrywa mniej niż 30% płyty albo wątek jest wyłączony w ustawieniach. Zgrubnej odbitki z TS nie ma (nie była
+> potrzebna). Wątek czyta świat na żywo, bez migawki (w TS — migawka wysyłana do wątku); różnica możliwa tylko
+> o jedną klatkę zmian w trakcie liczenia. Opis niżej to pierwotny plan — zostaje jako plan B, gdyby procesor
+> nie wystarczał.
+
 `render/engrave.ts` (1 959 linii) liczy obraz piksel po pikselu na procesorze. Układ jest już „shaderowy”:
 
 1. **Na kafel** (`computeLight`, `swiatloLudu`, otoczenie 3×3): światło, pamięć (blaknięcie), kąt kreskowania,
@@ -385,9 +397,9 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
 
 ## 5. Świadome różnice (wstępna lista — każdą zgłaszam, gdy się pojawi)
 
-1. Rycina liczona shaderem w pełnej rozdzielczości: ostrzejsza przy dużym przybliżeniu i bez zgrubnej odbitki.
-   Możliwe drobne różnice jasności (karta liczy w 32 bitach, JS w 64).
-2. Znika ustawienie „Rycina w osobnym wątku” — w shaderze nie ma czego przenosić do wątku. Zamiast wymuszania karty
+1. Rycina liczona na procesorze jak w TS (bit w bit), ale bez zgrubnej odbitki; wątek ryciny czyta świat na żywo
+   zamiast migawki (zmiana 13–14.11, patrz 3.4).
+2. Ustawienie „Rycina w osobnym wątku” zostaje (rycina dalej liczy się na procesorze). Zamiast wymuszania karty
    z Electrona (`karta.json`) — wybór „ANGLE / OpenGL” z automatycznym powrotem, gdy jeden nie wstanie.
 3. Film intro jako klatki JPEG/WebP zamiast H.264 — ten sam obraz, inna kompresja, większy plik (zgoda użytkownika
    9.11).
@@ -407,6 +419,13 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
     graficznej, wysłanie do karty i czekanie na monitor, pamięć i sprzątania (GC); karta i droga (ANGLE/OpenGL) wprost.
 11. (etap 1) Ustawienie „karta” (`auto` / `angle` / `opengl`) zamiast wymuszania karty z Electrona; plik ustawień ma
     poza tym te same pola co w TS (także nieużywane `rycinaWWatku`).
+12. (etap 3) Postacie są duszkami (sekcja 9) — także wskrzeszany unoszący się nad ołtarzem (klatka „stoi”) i demon
+    wstający z gruzu; dawnej ryciny demona (`render/demon.ts` — rysunek zastępczy, póki obrazki wzoru się nie wczytały)
+    nie przenoszę, bo w C# obrazki są zawsze wczytane.
+13. (etap 3) Porównanie płyty z TS (`narzedzia/plyta`, test `PorownaniePlyty`, 6 scen 600×380): średnia różnica
+    ok. 1/255, pikseli różnych o więcej niż 24/255 — 0–0,6% (prawie wyłącznie postacie: duszki i inna faza kroku).
+14. (etap 3) Pojedyncze funkcje matematyczne w rysunku (np. `Math.acos` w ostrołukach katedry, `Math.log2`
+    w schodach — netstandard2.1 go nie ma) liczy .NET, nie V8 — różnica rzędu ostatniego bitu, niewidoczna.
 
 ---
 
@@ -415,7 +434,7 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
 | Ryzyko | Skutek | Co z tym robię |
 |---|---|---|
 | Rozjazd symulacji (funkcje matematyczne, sortowanie, kolejność kolekcji, `float`) | testy złote nie przechodzą, balans się zmienia | zasady z 3.5 od pierwszej linii; testy złote w etapie 2, zanim powstanie rysunek; zrzut stanu przy pierwszej różnicy |
-| SkSL za ciasny albo shader ryciny wygląda inaczej | dłuższy etap 3 | najpierw mały wycinek (kafel skały, pustka, nieznane) i porównanie ze zrzutem TS; plan B — GLSL bezpośrednio w GL |
+| SkSL za ciasny albo shader ryciny wygląda inaczej | dłuższy etap 3 | **nieaktualne (13.11):** rycina liczona na procesorze bit w bit jak w TS (3.4); shader zostaje planem B |
 | Słabe sterowniki OpenGL na laptopach z Intelem | czarny ekran albo błędy | ANGLE (Direct3D 11) domyślnie, OpenGL jako zapas, powrót automatyczny |
 | Tekst inaczej złożony | przesunięte napisy, nakładanie | HarfBuzz; test nakładania; zrzuty |
 | Brzmienie syntezy (kompresor, oscylatory) | inny dźwięk | wierne wzory z Chromium; porównanie offline |
