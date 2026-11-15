@@ -1,5 +1,19 @@
 # Zmiany
 
+## Trailer Alphy 1 — 15.11
+Folder `alpha-1/trailer/`: zwiastun [`trzewia-trailer.mp4`](alpha-1/trailer/trzewia-trailer.mp4) (2:35, 1920×1080, 30 kl/s,
+dźwięk −14 LUFS) i cały kod, który go składa — gra bez zmian.
+- **Obraz z gry:** reżyser (`rezyser.ts`) wstrzykiwany do gry w trybie deweloperskim przewija partię bota (ziarno 3,
+  Uwolnienie po 15,3 min) i rysuje kadr kinowy — sam świat na całym ekranie, bez księgi i ramy, bez znaczków stanu;
+  nagrywarka (`nagraj.mjs`) liczy każdą klatkę pod sztucznym zegarem Playwrighta, z kamerą po kluczach, gładką ścieżką
+  (zejście drogą wiernych z rozmyciem ruchu), śledzeniem walki, przyspieszeniem (schody, brama) i zwolnieniem (rzut).
+- **Scenariusz** (`scenariusz.mjs`): 48 taktów 75 BPM — hak, życie ludu, przełom, tajemnica pomnika, demon, finał;
+  36 ujęć, 13 napisów, plansza tytułowa.
+- **Montaż** (`montaz.ts`): przejścia (cięcia, z czerni, błyski na uderzenia), napisy krojami gry z ozdobnikami menu,
+  plansza z logo i sercem bijącym w rytm muzyki, korekcja barw, winieta, ziarno, wstrząsy na zdarzeniach.
+- **Muzyka** (`muzyka.ts`): synteza WebAudio w języku muzycznym gry (frygijskie D, kamienny akord, dzwon FM, chór
+  formantowy, serce), efekty zsynchronizowane z tikami gry i ruchami walki; na złotym świetle przejście w D-dur.
+
 ## TRZEWIA Alpha 1 (komputer) — 5.11
 Folder `alpha-1/`: Propozycja 1 (wszystkie propozycje Pawła z 24.10) + nowe menu i ustawienia z Alphy 0.2 + funkcje
 z pliku `trzewia6.html` (build „Propozycji 1” z nowym dołem ekranu; źródło odtworzone z builda — każda nazwa

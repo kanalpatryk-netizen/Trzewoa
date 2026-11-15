@@ -5,6 +5,7 @@ Wygrywasz, gdy wierni dokopią się do twojego rdzenia.
 
 | | |
 |---|---|
+| 🎬 **Trailer** | [**trzewia-trailer.mp4**](alpha-1/trailer/trzewia-trailer.mp4) — 2:35, 1080p: zwiastun Alphy 1 złożony wyłącznie z klatek gry i kodu (napisy krojami gry, logo z bijącym sercem, muzyka syntezowana w przeglądarce) · [jak powstał](alpha-1/trailer) |
 | 📱 Android | [**Trzewia.apk**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/download/android-apk/Trzewia.apk) |
 | 🅰️ **TRZEWIA Alpha 1** (komputer, najnowsza) | [**trzewia-alpha-1.html**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-1.html) — Alpha 0.2 z nowym menu i ustawieniami + wszystkie funkcje spoza oficjalnego builda: propozycje Pawła (szyb drogi wiernych, ramka, pomieszczenia gdziekolwiek, blok pod wiadrem) i nowy dół ekranu — księga z ludem i zasobami, okno postaci z możliwościami, menu „Budowa”, Cud jako objawienie · [**obserwatorium**](https://github.com/kanalpatryk-netizen/Trzewoa/releases/latest/download/trzewia-alpha-1-obserwatorium.html) · [więcej](alpha-1) |
 | 🧪 **Propozycja 1** (komputer, próbna, na bazie Alphy 0.2) | [**propozycja-1/trzewia.html**](propozycja-1/trzewia.html) — propozycje Pawła z 24.10: blok pod wiadrem tylko na wyraźny rozkaz, droga wiernych jako szeroki szyb ze schodami, zaznaczanie ramką jak w Twierdzy, pomieszczenia gdziekolwiek, nowy interfejs (zasoby w dwóch ramkach, płótno, księga kroniki, panel przycisków — placeholdery) · [więcej](propozycja-1) |

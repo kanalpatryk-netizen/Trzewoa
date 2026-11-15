@@ -1,0 +1,6 @@
+# klatki robocze trailera (nagrania ujęć, montaż, dźwięk) — odtwarzalne skryptami
+klatki/
+wyjscie/
+dane/os-*.json
+dane/walki-*.json
+dane/kandydaci-*.json
