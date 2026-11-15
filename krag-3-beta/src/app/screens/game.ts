@@ -2164,7 +2164,7 @@ export class EkranGry implements Ekran {
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
     // Krąg Trzeci: w planszach kliknięcie — dalej; w scenie wejścia gracz nie ma jeszcze władzy
-    if (this.wstep.trwa()) { if (faza === 'dol') this.wstep.dalej(performance.now()); return; }
+    if (this.wstep.trwa()) return;
     const { ui, sim } = this;
     ui.pointer.x = e.clientX; ui.pointer.y = e.clientY;
     // tryb deweloperski: kafel pod kursorem, a Shift+klik wybiera postać do inspektora
@@ -2479,7 +2479,7 @@ export class EkranGry implements Ekran {
   klawiszPuszczony(k: string): void { if (k === 'Tab') this.liczby = false; }
 
   klawisz(akcja: Akcja | null, _e?: KeyboardEvent): void {
-    if (this.wstep.trwa()) { if (akcja === 'pauza') this.wstep.dalej(performance.now()); return; }
+    if (this.wstep.trwa()) { if (akcja === 'menu') this.wstep.pomin(); return; }
     if (_e?.key === 'Tab') { this.liczby = true; return; }
     const { ui, sim } = this;
     if (this.atlas.otwarte && _e) { this.atlas.klawisz(_e.key); return; }

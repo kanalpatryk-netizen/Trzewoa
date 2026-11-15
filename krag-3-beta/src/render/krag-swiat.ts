@@ -16,6 +16,8 @@ import { wysokoscGrzbietu } from './grzbiet';
 import { wolnoRuszac } from './nastroj';
 import { rysujCerbera, pozaCerbera } from './cerber';
 import { bloczekWiadra, placKonwoju } from './konwoj';
+import { scenaZabijania } from './zabijanie';
+import { ustawienia } from '../core/settings-store';
 
 const TUSZ = 'rgba(14,10,8,0.95)';
 const los = (n: number): number => {
@@ -279,27 +281,10 @@ export function rysujCerberaNaKregu(ctx: CanvasRenderingContext2D, sim: Sim, cam
   ctx.translate(sx, sy);
   ctx.scale(c.zwrot, 1);
   if (c.szarpie > 0) {
-    // szarpie potępionego: głowy w dół, paszcze kłapią, ofiara się rzuca, krew
-    const sz = c.szarpie;
-    const rzut = Math.sin(t * 9) * (sz < 0.8 ? 1 : 0.2);
-    ctx.save();
-    ctx.translate(h * 0.95, 0);
-    ctx.rotate(rzut * 0.25);
-    zarlok(ctx, z * 1.7, 1, t * 3, 7, -1);
+    // zabija żarłoka leżącego przed nim — jeden z pięciu sposobów (render/zabijanie.ts)
+    scenaZabijania(ctx, h, Math.max(16, z * 1.9 * ustawienia.wielkoscSylwetek), z * 4, c.wariant, c.szarpie, teraz);
     ctx.restore();
-    ctx.fillStyle = 'rgba(130,16,12,0.8)';
-    for (let i = 0; i < 6; i++) {
-      const f = (t * 1.5 + i / 6) % 1;
-      ctx.beginPath(); ctx.arc(h * (0.85 + (los(i) - 0.5) * 0.4), -h * (0.1 + f * 0.25) + f * f * h * 0.3, z * 0.12, 0, Math.PI * 2); ctx.fill();
-    }
-    p.glowy.forEach((g, i) => {
-      g.pochyl = 0.7 + 0.15 * Math.sin(t * 9 + i * 1.7);
-      g.paszcza = 0.4 + 0.5 * Math.abs(Math.sin(t * 7 + i * 2));
-      g.wysun = 0.25 + 0.2 * Math.sin(t * 6 + i);
-    });
-    // co jakiś czas jedna głowa wyje w deszcz
-    const wyje = Math.floor(t / 3) % 3;
-    if ((t % 3) < 1.2) { p.glowy[wyje].pochyl = -0.8; p.glowy[wyje].paszcza = 1; p.glowy[wyje].wysun = 0; }
+    return;
   }
   rysujCerbera(ctx, h, p);
   ctx.restore();

@@ -18,11 +18,12 @@ import { makeCreature, type Creature } from '../sim/creatures';
 import { Race } from '../sim/races';
 import { SURFACE_Y } from '../sim/world';
 import { ustawienia } from '../core/settings-store';
-import { rysujPostac, type Czynnosc } from './figury';
 import { ukladKatedry } from './katedra';
 import { bloczekWiadra, placKonwoju } from './konwoj';
 import { gruntKregu, WIDOK_KREGU } from './krag-swiat';
-import { cerberNaPowierzchni } from '../sim/krag';
+import { cerberNaPowierzchni, zabiciaCerbera } from '../sim/krag';
+import { rysujLudzika, pozaLezy, pozaWyje, pozaZre, pozaCzolga, pozaSzarpie, pozaIdzie, type PozaLudzika } from './ludzik';
+import { rysujSzczatki } from './zabijanie';
 import { wolnoRuszac } from './nastroj';
 
 const los = (n: number): number => {
@@ -35,7 +36,6 @@ const los = (n: number): number => {
 export const OBRYS = 'rgba(150,162,128,0.82)';
 
 type Typ = 'lezy' | 'wyje' | 'zre' | 'grzebie' | 'blaka' | 'szarpie';
-const CZYN: Record<Typ, Czynnosc> = { lezy: 'spi', wyje: 'modli', zre: 'je', grzebie: 'kopie', blaka: 'idzie', szarpie: 'walczy' };
 
 interface Potepiony {
   c: Creature; typ: Typ;
@@ -122,7 +122,9 @@ export function rysujPotepionych(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
   const dt = Math.min(0.1, Math.max(0, (czas - ostatniCzas) / 1000));
   ostatniCzas = czas;
   const ruch = wolnoRuszac();
-  const cer = cerberNaPowierzchni(sim, WIDOK_KREGU.tik ?? undefined);
+  const tik = WIDOK_KREGU.tik ?? sim.tick;
+  const cer = cerberNaPowierzchni(sim, tik);
+  const zabicia = zabiciaCerbera(sim, tik).filter((q) => tik < q.do);
   const lud = sim.creatures.filter((c) => !c.dead && c.race === Race.GOBLIN);
   const xL = cam.toWorldX(0) - 2, xP = cam.toWorldX(cam.vw) + 2, yG = cam.toWorldY(0) - 3, yD = cam.toWorldY(cam.vh) + 2;
   ctx.save();
@@ -139,16 +141,31 @@ export function rysujPotepionych(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
     if (!p.gora && (!w.passable(Math.floor(p.x), p.y) || w.passable(Math.floor(p.x), p.y + 1))) continue;
     if (p.gora && cer.jest && Math.abs(p.x - cer.x) < 2.6) continue;
     if (lud.some((c) => Math.abs(c.x - p.x) < 0.8 && Math.abs(c.y - p.y) < 1.5)) continue;
+    // przy świeżym zabójstwie Cerbera — tu leżą szczątki, nie żywy (cień odrodzi się, gdy szczątki znikną)
+    if (p.gora && zabicia.some((q) => Math.abs(q.x - p.x) < 1.9)) continue;
     p.c.x = p.x; p.c.y = yStopy - 1;
     const sx = cam.toScreenX(p.x), sy = cam.toScreenY(yStopy);
+    const tt = czas / 1000 + p.c.id * 0.37;
+    const poza = pozaTlumu(p.typ, tt, p.c.id);
+    const lezy = Math.abs(poza.tulow) > 1.1;
     ctx.save();
-    ctx.translate(sx, sy);
+    ctx.translate(sx, sy - h * (lezy ? 0.08 : poza.udoL > 1 ? 0.25 : 0.5));
     ctx.scale(p.c.face, 1);
-    rysujPostac(ctx, sim, p.c, h, czas, CZYN[p.typ]);
+    rysujLudzika(ctx, h, poza, tt);
     ctx.restore();
     // błoto oblepia stopy (na tarasie — kałuża)
     ctx.fillStyle = p.gora ? 'rgba(44,42,30,0.85)' : 'rgba(40,36,28,0.6)';
-    ctx.beginPath(); ctx.ellipse(sx, sy, h * (p.typ === 'lezy' ? 0.55 : 0.28), h * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(sx, sy, h * (lezy ? 0.6 : 0.3), h * 0.05, 0, 0, Math.PI * 2); ctx.fill();
+  }
+  // szczątki ofiar Cerbera i kałuże krwi
+  for (const q of zabicia) {
+    if (tik < q.od + (q.zabite - q.od) * 2.25 || q.x < xL || q.x > xP) continue;
+    const a = Math.min(1, (q.do - tik) / 1500);
+    ctx.save();
+    ctx.translate(cam.toScreenX(q.x), cam.toScreenY(gruntKregu(sim, q.x)));
+    ctx.scale(q.zwrot, 1);
+    rysujSzczatki(ctx, h, q.wariant, a, czas / 1000, q.k);
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -156,4 +173,16 @@ export function rysujPotepionych(ctx: CanvasRenderingContext2D, sim: Sim, cam: C
 /** Ilu potępionych zalega krąg (do testów i podpisu). */
 export function liczbaPotepionych(sim: Sim): number {
   return tlumy.get(sim)?.lista.length ?? 0;
+}
+
+/** Poza żarłoka z tłumu według jego czynności (rysunek: render/ludzik.ts). */
+function pozaTlumu(typ: Typ, t: number, z: number): PozaLudzika {
+  switch (typ) {
+    case 'lezy': return pozaLezy(t, z);
+    case 'wyje': return pozaWyje(t, z);
+    case 'zre': return pozaZre(t, z);
+    case 'grzebie': return pozaCzolga(t * 0.35, 0.6, z);
+    case 'blaka': return pozaIdzie(t, z);
+    default: return pozaSzarpie(t, z);
+  }
 }

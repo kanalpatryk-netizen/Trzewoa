@@ -148,7 +148,11 @@ function nazwaRoli(c: Creature): string {
 // ---------------------------------------------------------------- Cerber na powierzchni kręgu
 
 /** Odcinek obchodu Cerbera (tiki): idzie do celu przez `CH` części odcinka, potem szarpie potępionego w błocie. */
-const ODC = 1100, CH = 0.55;
+const ODC = 760, CH = 0.42;
+/** Szczątki po ofierze leżą tyle tików, potem cień żarłoka znów leży w błocie (potępieni się odradzają). */
+export const SZCZATKI_TIKOW = 9000;
+/** Sposoby zabijania: 0 szarpie i ciska, 1 rozrywa na pół, 2 połyka, 3 miażdży łapą i żre, 4 podrzuca i chwyta. */
+export const SPOSOBOW_ZABIJANIA = 5;
 function hasz(n: number): number {
   let h = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
   h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
@@ -161,16 +165,44 @@ export interface CerberNaKregu {
   idzie: number; szarpie: number;
   /** czy jest na powierzchni (po rozbiciu pieczęci zszedł za potępionymi w trzewia) */
   jest: boolean;
+  /** numer postoju i sposób zabijania przy nim */
+  k: number; wariant: number;
+}
+
+/** Ofiara Cerbera przy postoju `k`: gdzie leżała (x — przed paszczami), kiedy zginęła, do kiedy leżą szczątki. */
+export interface ZabicieCerbera { k: number; x: number; zwrot: number; od: number; zabite: number; do: number; wariant: number }
+
+export function wariantZabicia(sim: Sim, k: number): number {
+  return Math.floor(hasz(k * 131 + 7 + (sim.seed | 0)) * SPOSOBOW_ZABIJANIA);
+}
+
+/** Ostatnie zabójstwa (do `ile` postojów wstecz), których szczątki jeszcze leżą — rysunek tłumu i szczątków. */
+export function zabiciaCerbera(sim: Sim, tik = sim.tick, ile = 14): ZabicieCerbera[] {
+  const out: ZabicieCerbera[] = [];
+  const faza = sim.lud.pomnik?.faza;
+  if (faza && faza !== 'stoi' && faza !== 'rozpada') return out;
+  const k0 = Math.floor(tik / ODC);
+  for (let k = k0; k > k0 - ile && k >= 1; k--) {
+    const x0 = celCerbera(sim, k - 1), x1 = celCerbera(sim, k);
+    const zwrot = x1 >= x0 ? 1 : -1;
+    const od = k * ODC + CH * ODC;
+    if (od > tik) continue;
+    out.push({ k, x: x1 + zwrot * 4, zwrot, od, zabite: od + (1 - CH) * ODC * 0.45, do: od + SZCZATKI_TIKOW, wariant: wariantZabicia(sim, k) });
+  }
+  return out;
 }
 
 /**
  * Cerber krąży po powierzchni kręgu nad trzewiami (Piekło, pieśń VI: stoi nad żarłokami, szarpie ich i obdziera
  * ze skóry). Pozycja wynika z samego tiku — obchód od celu do celu, przy każdym postój nad kimś w błocie.
  */
+function celCerbera(sim: Sim, k: number): number {
+  const xa = 22, xb = sim.world.w - 26;
+  return xa + (xb - xa) * hasz(k * 7919 + (sim.seed | 0));
+}
+
 export function cerberNaPowierzchni(sim: Sim, tik = sim.tick): CerberNaKregu {
-  const w = sim.world;
-  const xa = 22, xb = w.w - 26;
-  const cel = (k: number): number => xa + (xb - xa) * hasz(k * 7919 + (sim.seed | 0));
+  const cel = (k: number): number => celCerbera(sim, k);
   const k = Math.floor(tik / ODC), u = (tik % ODC) / ODC;
   const x0 = cel(k - 1), x1 = cel(k);
   const f = Math.min(1, u / CH);
@@ -181,6 +213,7 @@ export function cerberNaPowierzchni(sim: Sim, tik = sim.tick): CerberNaKregu {
     zwrot: x1 >= x0 ? 1 : -1,
     idzie: u < CH ? 1 : 0, szarpie: u < CH ? 0 : (u - CH) / (1 - CH),
     jest: !faza || faza === 'stoi' || faza === 'rozpada',
+    k, wariant: wariantZabicia(sim, k),
   };
 }
 

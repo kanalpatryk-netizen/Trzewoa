@@ -1,5 +1,12 @@
 # Zmiany
 
+## TRZEWIA — Krąg Trzeci (beta), 3. podejście — 15.11
+- **Film zamiast slajdów** (`src/app/film-kregu.ts`): ok. 75 s ruchomego komiksu z historią od zjazdu na krąg, przez rzeź
+  Cerbera, Dantego i Wergiliusza, aż po sześciu wstających z błota i Cerbera, który zapamiętuje ich zapach. Esc pomija.
+- **Żarłok ze stawami** (`src/render/ludzik.ts`) w filmie i w tłumie w grze: pozy, kikuty, rozdarcie na pół, trzewia, krew.
+- **Brutalny Cerber** (`src/render/zabijanie.ts`): na kręgu zabija przy każdym postoju (co ok. 6 s gry) na jeden z pięciu
+  sposobów; zostają szczątki i kałuże krwi, cienie odradzają się po ok. minucie.
+
 ## TRZEWIA — Krąg Trzeci (beta), 2. podejście — 15.11
 Po uwagach użytkownika („gdzie każdy potępiony… nie ma to nic wspólnego z piekłem Dantego… Cerber nie był w żadnym
 lochu zamknięty”; potem: cutscenki i scena wejścia bez sterowania; potępieni proporcjonalni, animowani, wszędzie):
