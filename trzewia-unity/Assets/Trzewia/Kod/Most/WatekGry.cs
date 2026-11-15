@@ -122,7 +122,8 @@ namespace Trzewia.Most
                 Wstan();
                 while (dziala)
                 {
-                    prosba.WaitOne(100);
+                    // klatka tylko na prośbę silnika — pauza edytora albo zatrzymane Update zatrzymują też grę
+                    if (!prosba.WaitOne(100)) continue;
                     if (!dziala) break;
                     Krok();
                 }
