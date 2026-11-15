@@ -1,5 +1,16 @@
 # Zmiany
 
+## TRZEWIA — Krąg Trzeci (beta, komputer) — 15.11
+Folder `krag-3-beta/`: Alpha 1 przeniesiona do trzeciego kręgu piekła Dantego (krąg żarłoków). Osobne zapisy
+(`trzewia-krag-3-beta:`), `alpha-1/` bez zmian. Opis: `krag-3-beta/README.md`.
+- **Fabuła:** lud to potępieni, prolog na początku partii, zakończenia „Zejście do kręgu czwartego” i „Błoto”.
+- **Boss — Cerber** (`src/render/cerber.ts`, `src/render/cerber-boss.ts`): kamienny posąg w lochu budzi się głowa po głowie,
+  wstaje z gruzu, walczy ruchami dawnego demona (kłapnięcia głów, stawanie dęba, ogień, ogon jak bicz), kona w złotym świetle.
+- **Mechaniki** (`src/sim/krag.ts`, `src/nastawy/krag.ts`): obżarstwo (obżarty wolniejszy, przejedzony pada w błoto),
+  ulewa (głód i błoto), okup dla Cerbera (garść jedzenia w paszczę — Cerber żre i nie gryzie).
+- **Wygląd** (`src/render/krag.ts`): brzeg kręgu z turniami i szczeliną światła zamiast katedry, wieczny deszcz, grad,
+  śnieg, błyskawice, krople ze stropów, żarłocy w błocie, zgniła zieleń zamiast sepii, Cienie Żarłoków zamiast Strażników Snu.
+
 ## TRZEWIA Alpha 1 (komputer) — 5.11
 Folder `alpha-1/`: Propozycja 1 (wszystkie propozycje Pawła z 24.10) + nowe menu i ustawienia z Alphy 0.2 + funkcje
 z pliku `trzewia6.html` (build „Propozycji 1” z nowym dołem ekranu; źródło odtworzone z builda — każda nazwa

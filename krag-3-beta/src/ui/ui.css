@@ -1,0 +1,4 @@
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: #0d0908; overflow: hidden; }
+body { color: #d8d2c8; touch-action: none; user-select: none; }
+#screen { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
