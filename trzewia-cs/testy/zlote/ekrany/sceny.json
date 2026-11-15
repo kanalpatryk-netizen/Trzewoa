@@ -1,0 +1,45 @@
+{
+ "w": 1366,
+ "h": 820,
+ "sceny": [
+  {
+   "nazwa": "menu",
+   "rodzaj": "ekran",
+   "po": 6000
+  },
+  {
+   "nazwa": "ustawienia",
+   "rodzaj": "ekran",
+   "po": 3000
+  },
+  {
+   "nazwa": "osiagniecia",
+   "rodzaj": "ekran",
+   "po": 3000
+  },
+  {
+   "nazwa": "bestiariusz",
+   "rodzaj": "ekran",
+   "po": 3000
+  },
+  {
+   "nazwa": "gra-12345-1800",
+   "rodzaj": "gra",
+   "ziarno": 12345,
+   "tik": 1800
+  },
+  {
+   "nazwa": "gra-777-7200",
+   "rodzaj": "gra",
+   "ziarno": 777,
+   "tik": 7200
+  },
+  {
+   "nazwa": "kronika",
+   "rodzaj": "kronika",
+   "po": 5000,
+   "ziarno": 777,
+   "tik": 7200
+  }
+ ]
+}

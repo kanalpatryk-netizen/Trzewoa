@@ -1,8 +1,8 @@
 // Wspólne dla narzędzi duszków: pakuje plik TS (z importami z alpha-1/src) w jeden skrypt dla Chromium i otwiera stronę.
 // Gra TS jest budowana Vite'em — tu esbuild, więc trzy rzeczy z Vite'a trzeba dorobić:
 //   • import obrazków (także z dopiskiem ?url) → adres data: (loader dataurl),
-//   • import.meta.glob(...) → pusty obiekt (własne grafiki z src/grafiki/pliki — folder jest pusty; freski i ikony
-//     nie są potrzebne do rysunku postaci),
+//   • import.meta.glob(...) → obiekt z obrazkami jak w Vite (freski, ikony, src/grafiki/pliki) — klucze to ścieżki
+//     w postaci ze wzorca, wartości to adresy data:; wzorce dźwięków (.mp3) → pusty obiekt,
 //   • podmiany modułów (opcja `podmiany`): moduł gry zastąpiony nakładką z tego folderu, która eksportuje wszystko
 //     z oryginału i nadpisuje wybrane funkcje — tak piekarnia steruje np. szumem, nie ruszając alpha-1/.
 import { createRequire } from 'node:module';
@@ -45,11 +45,39 @@ function wtyczkaVite(podmiany) {
       b.onLoad({ filter: /\.ts$/ }, (a) => {
         const kod = fs.readFileSync(a.path, 'utf8');
         if (!kod.includes('import.meta.glob')) return null;
-        // import.meta.glob('wzorzec', { … }) → ({})
-        return { contents: kod.replace(/import\.meta\.glob\((?:[^()]|\([^()]*\))*\)/g, '({})'), loader: 'ts' };
+        // import.meta.glob('wzorzec', { eager: true, import: 'default' }) → obiekt { 'ścieżka jak we wzorcu': adres data: }
+        // (obrazki — loader dataurl); dźwięki (.mp3) → ({}) — dźwięk w narzędziach niepotrzebny
+        const importy = [];
+        let nr = 0;
+        const nowy = kod.replace(/import\.meta\.glob\((?:[^()]|\([^()]*\))*\)/g, (wywolanie) => {
+          const wz = /import\.meta\.glob\(\s*'([^']+)'/.exec(wywolanie)?.[1];
+          if (!wz || /mp3/.test(wz)) return '({})';
+          const pola = rozwinGlob(path.dirname(a.path), wz).map((wzgl) => {
+            const nazwa = `__glob${nr++}`;
+            importy.push(`import ${nazwa} from ${JSON.stringify(wzgl)};`);
+            return `${JSON.stringify(wzgl)}: ${nazwa}`;
+          });
+          return `({ ${pola.join(', ')} })`;
+        });
+        return { contents: importy.join('\n') + '\n' + nowy, loader: 'ts', resolveDir: path.dirname(a.path) };
       });
     },
   };
+}
+
+/**
+ * Pliki pasujące do wzorca Vite (`./pliki/*.{png,webp}`, `../grafiki/freski/*.jpg`) względem folderu `od` — ścieżki
+ * w tej samej postaci co we wzorcu (tak klucze tworzy Vite). Gwiazdka tylko w nazwie pliku, klamry — na końcu.
+ */
+function rozwinGlob(od, wzorzec) {
+  const folderWz = wzorzec.slice(0, wzorzec.lastIndexOf('/') + 1);
+  const plikWz = wzorzec.slice(folderWz.length);
+  const klamry = /\{([^}]*)\}/.exec(plikWz);
+  const warianty = klamry ? klamry[1].split(',').map((k) => plikWz.replace(klamry[0], k)) : [plikWz];
+  const re = new RegExp('^(?:' + warianty.map((w) => w.replace(/[.+^$()|[\]\\]/g, '\\$&').replace(/\*/g, '[^/]*')).join('|') + ')$');
+  const folder = path.resolve(od, folderWz);
+  if (!fs.existsSync(folder)) return [];
+  return fs.readdirSync(folder).filter((f) => re.test(f)).sort().map((f) => folderWz + f);
 }
 
 /** Kod strony: wszystko, co eksportuje `wejscie`, pod globalną nazwą PIEKARNIA. */

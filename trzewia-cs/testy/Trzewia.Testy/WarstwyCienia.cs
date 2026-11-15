@@ -66,4 +66,27 @@ public class WarstwyCienia
         // piksele krawędzi, różnica do ~26/255); ucięty cień albo kształt dałby różnice rzędu 100–255 na wielu pikselach
         Assert.True(maks <= 40 && rozne < 400, $"różnych pikseli: {rozne}, największa różnica {maks}, w prostokącie ({x0},{y0})–({x1},{y1})");
     }
+
+    /// <summary>
+    /// Po rysunku z cieniem przekształcenie zostaje (błąd z 15.11: zamknięcie warstwy cienia zerowało przesunięcie
+    /// i skalę aż do najbliższego restore — w księdze krzyż wiary tracił poprzeczkę i obrys).
+    /// </summary>
+    [Fact]
+    public void PrzeksztalcenieZostajePoCieniu()
+    {
+        Plotno.Fabryka ??= new FabrykaSkia();
+        using var p = new PlotnoSkia(80, 80);
+        p.fillStyle = "#e8dcc4"; p.fillRect(0, 0, 80, 80);
+        p.scale(2, 2);
+        Ksiega.ikonaZasobu(p, "wiara", 20, 20, 15, 0);
+        var f = Path.Combine(Path.GetTempPath(), "trzewia-krzyz.png");
+        Assert.True(p.ZapiszPng(f));
+        using var b = SKBitmap.Decode(f);
+        // poprzeczka krzyża (fillRect po prostokącie z cieniem) w miejscu ze skalą 2
+        Assert.Equal(new SKColor(232, 196, 110), b.GetPixel(34, 35));
+        // obrys z tuszu (po wyzerowaniu cienia) też na miejscu
+        int ciemne = 0;
+        for (int y = 0; y < 80; y++) for (int x = 0; x < 80; x++) if (b.GetPixel(x, y).Red < 80) ciemne++;
+        Assert.True(ciemne > 40, $"ciemnych pikseli obrysu: {ciemne}");
+    }
 }

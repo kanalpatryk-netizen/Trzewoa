@@ -416,11 +416,20 @@ namespace Trzewia.Skia
             warstwa.ImageFilter = null;
             cienF?.Dispose();
             c.SetMatrix(ctm);
+            // Restore warstwy wraca do stanu sprzed SaveLayer — a tam przekształcenie było wyzerowane; Po() je przywraca
+            ctmPrzedWarstwa = ctm;
             p.BlendMode = SKBlendMode.SrcOver;
             return true;
         }
 
-        void Po(bool otwarta) { if (otwarta) c.Restore(); }
+        SKMatrix ctmPrzedWarstwa;
+
+        void Po(bool otwarta)
+        {
+            if (!otwarta) return;
+            c.Restore();
+            c.SetMatrix(ctmPrzedWarstwa);
+        }
 
         /// <summary>Do testu: warstwy bez granic (jak dawniej) — obraz ma być ten sam.</summary>
         public static bool BezGranicWarstw;
