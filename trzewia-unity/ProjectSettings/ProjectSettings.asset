@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!129 &1
+PlayerSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 26
+  productGUID: 7f4d801703f99711d39209e5e62aa642
+  companyName: Trzewia
+  productName: Trzewia
+  defaultCursor: {fileID: 0}
+  cursorHotspot: {x: 0, y: 0}
+  m_ShowUnitySplashScreen: 0
+  m_ShowUnitySplashLogo: 0
+  defaultScreenWidth: 1280
+  defaultScreenHeight: 800
+  defaultScreenWidthWeb: 1280
+  defaultScreenHeightWeb: 800
+  m_ActiveColorSpace: 0
+  m_MTRendering: 1
+  runInBackground: 1
+  captureSingleScreen: 0
+  usePlayerLog: 1
+  resizableWindow: 1
+  fullscreenMode: 2
+  allowFullscreenSwitch: 1
+  visibleInBackground: 1
+  macRetinaSupport: 1
+  forceSingleInstance: 0
+  gcIncremental: 1
+  activeInputHandler: 0
+  bundleVersion: 0.1.0

@@ -29,9 +29,9 @@ namespace Trzewia.Skia
             // obrót: ścieżka do układu elipsy, elipsa, z powrotem (Chrome: Path::AddEllipse z przekształceniem)
             var m = SKMatrix.CreateRotation(obrot).PostConcat(SKMatrix.CreateTranslation(cx, cy));
             if (!m.TryInvert(out var odwr)) return;
-            Sciezka.Transform(odwr);
+            Sciezka.Transform(in odwr);
             DodajElipse(0, 0, rx, ry, start, koniec);
-            Sciezka.Transform(m);
+            Sciezka.Transform(in m);
         }
 
         void DodajElipse(float x, float y, float rx, float ry, float start, float koniec)

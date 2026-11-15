@@ -1,0 +1,47 @@
+{
+ "opis": "Przyciski menu: biała kreska na przezroczystości (zabarwić na barwę napisu). Ozdobniki mają 300 px wysokości we wszystkich plikach, środek ozdobników = środek wysokości obrazka.",
+ "przyciski": {
+  "wroc": {
+   "plik": "graj-dalej.png",
+   "szerokosc": 1642,
+   "wysokosc": 329,
+   "ozdobnik": 300
+  },
+  "nowa": {
+   "plik": "nowa-gra.png",
+   "szerokosc": 1660,
+   "wysokosc": 329,
+   "ozdobnik": 300
+  },
+  "wczytaj": {
+   "plik": "wczytaj-gre.png",
+   "szerokosc": 1828,
+   "wysokosc": 329,
+   "ozdobnik": 300
+  },
+  "samouczek": {
+   "plik": "samouczek.png",
+   "szerokosc": 1729,
+   "wysokosc": 329,
+   "ozdobnik": 300
+  },
+  "bestiariusz": {
+   "plik": "atlas.png",
+   "szerokosc": 1215,
+   "wysokosc": 329,
+   "ozdobnik": 300
+  },
+  "osiagniecia": {
+   "plik": "osiagniecia.png",
+   "szerokosc": 1862,
+   "wysokosc": 329,
+   "ozdobnik": 300
+  },
+  "ustawienia": {
+   "plik": "ustawienia.png",
+   "szerokosc": 1831,
+   "wysokosc": 328,
+   "ozdobnik": 300
+  }
+ }
+}

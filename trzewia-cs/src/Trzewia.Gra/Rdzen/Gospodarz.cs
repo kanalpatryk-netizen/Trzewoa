@@ -103,6 +103,8 @@ namespace Trzewia.Rdzen
         static readonly object Zamek = new object();
         static StreamWriter? plik;
         static readonly System.Diagnostics.Stopwatch Zegar = System.Diagnostics.Stopwatch.StartNew();
+        /// <summary>Każdy wpis także tutaj (gospodarz w silniku — np. konsola Unity); wołane z wątku, który pisze.</summary>
+        public static System.Action<string>? Sluchacz;
 
         public static void Otworz(string folder, string naglowek)
         {
@@ -126,6 +128,7 @@ namespace Trzewia.Rdzen
                 try { plik?.WriteLine(linia); } catch { /* dziennik nie może zatrzymać gry */ }
             }
             if (Tryb.Dev || Tryb.NaKonsole) Console.Error.WriteLine(linia);
+            try { Sluchacz?.Invoke(tekst); } catch { /* jak wyżej */ }
         }
 
         public static void Zamknij()

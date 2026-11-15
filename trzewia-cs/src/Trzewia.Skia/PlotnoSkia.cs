@@ -260,13 +260,14 @@ namespace Trzewia.Skia
         {
             if (sciezka.Pusta || stara == nowa) return;
             if (!nowa.TryInvert(out var odwr)) return;
-            sciezka.Sciezka.Transform(SKMatrix.Concat(odwr, stara));
+            var przejscie = SKMatrix.Concat(odwr, stara);
+            sciezka.Sciezka.Transform(in przejscie);
         }
 
         void UstawMacierz(SKMatrix nowa)
         {
             var stara = c.TotalMatrix;
-            c.SetMatrix(nowa);
+            c.SetMatrix(in nowa);
             PrzeliczSciezke(stara, nowa);
         }
 
@@ -415,7 +416,7 @@ namespace Trzewia.Skia
             if (urz is SKRect ur && !BezGranicWarstw) c.SaveLayer(ur, warstwa); else c.SaveLayer(warstwa);
             warstwa.ImageFilter = null;
             cienF?.Dispose();
-            c.SetMatrix(ctm);
+            c.SetMatrix(in ctm);
             // Restore warstwy wraca do stanu sprzed SaveLayer — a tam przekształcenie było wyzerowane; Po() je przywraca
             ctmPrzedWarstwa = ctm;
             p.BlendMode = SKBlendMode.SrcOver;
@@ -428,7 +429,7 @@ namespace Trzewia.Skia
         {
             if (!otwarta) return;
             c.Restore();
-            c.SetMatrix(ctmPrzedWarstwa);
+            c.SetMatrix(in ctmPrzedWarstwa);
         }
 
         /// <summary>Do testu: warstwy bez granic (jak dawniej) — obraz ma być ten sam.</summary>

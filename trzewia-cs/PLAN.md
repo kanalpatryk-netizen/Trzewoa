@@ -455,7 +455,7 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
     pismo: HarfBuzz a Chrome, postacie: duszki i faza kroku).
 23. (etap 5–6) Dźwięk przyszedł na końcu (decyzja użytkownika 14.11) — z plików, punkt 25.
 24. (15.11, decyzja użytkownika) Przyciski menu to odręczne grafiki (`dane/grafika/menu/przyciski/`, oryginały w
-    `oryginaly/`, kopie dla Unity w `unity/Assets/Trzewia/Menu/Przyciski/`) zamiast napisów pismem z ozdobnikami
+    `oryginaly/`, kopie dla Unity w `trzewia-unity/Assets/Trzewia/Menu/Przyciski/`) zamiast napisów pismem z ozdobnikami
     rysowanymi kodem. Wybrany — jaśniejszy, z poświatą wzdłuż kreski; nieaktywny — przygaszony, jak dawniej.
 25. (15.11, decyzja użytkownika: „nie chcę już, żeby dźwięk był ładowany skryptami”) Cały dźwięk to pliki MP3 w
     `dane/dzwieki/` (329 plików, spis w `SPIS.md` i `spis.json`): nagrania głosów nazwane i poukładane według roli
@@ -578,7 +578,7 @@ W Unity wystarczy największy poziom (albo wszystkie).
 ### 9.5 Odtwarzanie (`Trzewia.Gra/Rysunek/Duszki/`)
 Wybór animacji i klatki to przeniesione `czynnosc()` i `ruch()` z `render/figury.ts` oraz `stanWalki` rycerza; wynik to
 „duszek + klatka + położenie + odbicie” — rysuje to `IPlotno.drawImage`, a w silniku tym samym steruje się
-`SpriteRenderer`-ami (importer do Unity: `trzewia-cs/unity/`, nieuruchamiany — tu nie ma Unity). Cień pod stopami,
+`SpriteRenderer`-ami (importer do Unity: `trzewia-unity/Assets/Trzewia/Editor/`, nieuruchamiany — tu nie ma Unity). Cień pod stopami,
 aureola modlitwy, znaki stanów, pierścień zaznaczenia i ciepła krawędź od cudzego światła zostają rysunkiem kodu.
 Test: `DuszkiTesty` — ta sama scena narysowana grą TS (postacie kodem) i grą C# (duszki), 9 scen.
 Czego duszki nie mają (świadome uproszczenia): płynnego mieszania póz przy zmianie czynności, przysiadu po
@@ -611,7 +611,7 @@ klatki są pamiętane (72 kroki na animację). `Dlon.cs`, `DlonDemona.cs`, `Anio
 Różnice wobec TS (świadome): ruch dłoni jest płynny (TS: 10 klatek na animację), światło liczone w wierzchołkach, bez
 mikrofaktury porów; skóra między pozami ugina się wagami kości, nie zlewaniem brył (przy stawach różnice rzędu ułamka
 jednostki); szpara w zaciśniętej pięści jest zatykana ciemnym wnętrzem. W silniku: zwykły `SkinnedMeshRenderer`
-(Unity: pakiet glTFast; Godot czyta `.glb` sam) — opis w `trzewia-cs/unity/README.md`. Drugiego formatu (FBX) nie ma:
+(Unity: pakiet glTFast; Godot czyta `.glb` sam) — opis w `trzewia-unity/Assets/Trzewia/Duszki/README-duszki-i-dlon.md`. Drugiego formatu (FBX) nie ma:
 glTF jest standardem, a ręcznie pisany FBX byłby nie do sprawdzenia bez Unity.
 
 ---
@@ -907,3 +907,33 @@ który z nich korzysta.
 | Plik TS | Linie | Plik C# | Etap |
 |---|---:|---|---|
 | `ui/ui.ts` | 611 | `Trzewia.Gra/Interfejs/Ui.cs` | 5 |
+
+---
+
+## 10. Projekt Unity — decyzja użytkownika 15.11
+
+„Będę chciał dalej rozwijać grę właśnie tam … zrób nowy folder, który będzie gotowym projektem pod Unity (najlepiej po
+prostu przekopiuj z poprzedniej paczki)”. Projekt: `trzewia-unity/` (opis: `trzewia-unity/README.md`).
+
+- Kod gry przechodzi bez zmian: `Trzewia.Symulacja`, `Trzewia.Gra`, `Trzewia.Skia` skopiowane jako assembly Unity
+  (`.asmdef`, C# 9, .NET Standard 2.1, `csc.rsp` z `-nullable:enable`); dane w `Assets/StreamingAssets/dane`;
+  SkiaSharp, HarfBuzz, NLayer i ANGLE jako wtyczki (Windows i Linux x64). Kopiuje `trzewia-unity/narzedzia/kopiuj_z_trzewia_cs.py`.
+- Rysowanie procesorem (najprostsza droga: Skia w pamięci → tekstura) odpadło: ekran gry 1366×820 to ok. 230 ms na klatkę
+  (test PomiarEkranuGry). Dlatego `Trzewia.Most.WatekGry`: gra we własnym wątku z własnym kontekstem karty — EGL
+  (Windows: ANGLE/Direct3D 11 jak w Trzewia.exe; Linux: systemowy libEGL, gdy nie ma ekranu — Mesa bez okien), Skia na
+  nim, obraz klatki odczytany do pamięci (trzy bufory) i wkładany przez Unity do tekstury pokazywanej przez kamerę
+  (`OnRenderImage`, wbudowany potok renderowania). Wejście kolejką do wątku gry, klatka na prośbę z każdego Update.
+- Unity: `GraTrzewia` (MonoBehaviour: kamera, AudioListener, `OnAudioFilterRead` → mikser gry, F11, pełny ekran
+  z ustawień), `WejscieUnity` (mysz z Input, klawisze ze zdarzeń IMGUI → `key`/`code` jak w przeglądarce, z powtórzeniem;
+  znak z Shift/AltGr z osobnego zdarzenia znaku), `KursorUnity` (rękawica przez `Cursor.SetCursor`).
+- Zmiany w kodzie gry przy tej okazji (w obu miejscach): `Dziennik.Sluchacz` (wpisy do konsoli Unity); w warstwie Skia
+  wywołania `SetMatrix(in …)` / `Transform(in …)` — biblioteka SkiaSharp, z którą kompiluje Unity (pełna, nie
+  „referencyjna” jak w dotnet), ma stare przeciążenia oznaczone jako błąd. Działanie bez zmian (130 testów przechodzi).
+- Sprawdzone tutaj: kompilacja wszystkich assembly z bibliotekami Unity 2021.3 (UnityEngine, UnityEditor) — bez błędów,
+  bez ostrzeżeń w nowym kodzie; wątek gry na EGL (Mesa): ekran gry, zmiana rozmiaru na 1920×1080 przy gęstości 1,25,
+  F3, dźwięk przez przeliczanie 48 → 44,1 kHz, kursor. Niesprawdzone (brak Unity tutaj): edytor, ANGLE w procesie Unity,
+  wejście, dźwięk i kursor w samym Unity.
+- Różnice względem Trzewia.exe: obraz o klatkę później (wątek gry rysuje następną, gdy Unity pokazuje poprzednią); gra nie
+  przestaje rysować w zminimalizowanym oknie (Unity nie mówi o zminimalizowaniu); „Karta graficzna” w ustawieniach nic
+  nie zmienia (zawsze EGL: ANGLE na Windows); bez macOS.
+

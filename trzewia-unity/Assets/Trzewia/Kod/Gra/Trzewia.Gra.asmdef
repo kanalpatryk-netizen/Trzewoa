@@ -1,0 +1,16 @@
+{
+    "name": "Trzewia.Gra",
+    "rootNamespace": "Trzewia",
+    "references": [
+        "Trzewia.Symulacja"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": true
+}

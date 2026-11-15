@@ -23,6 +23,12 @@ public class NastawyTesty
         Assert.True(porownan > 2000, $"porównań: {porownan}");
     }
 
+    /// <summary>
+    /// Nastawy, których w TS nie ma, bo w C# świadomie zmieniło się zachowanie (PLAN.md, część 5):
+    /// przyciskOzdobnik — odręczne przyciski menu z obrazków zamiast napisów (decyzja użytkownika 15.11).
+    /// </summary>
+    static readonly HashSet<string> TylkoWCs = new() { "wyglad-menu.MENU.przyciskOzdobnik" };
+
     static void Porownaj(JsonElement ts, JsonElement cs, string gdzie, ref int n)
     {
         switch (ts.ValueKind)
@@ -34,7 +40,8 @@ public class NastawyTesty
                     Assert.True(cs.TryGetProperty(w.Name, out var c), $"{gdzie}.{w.Name}: brak w C#");
                     Porownaj(w.Value, c, $"{gdzie}.{w.Name}", ref n);
                 }
-                foreach (var w in cs.EnumerateObject()) Assert.True(ts.TryGetProperty(w.Name, out _), $"{gdzie}.{w.Name}: nadmiarowe w C#");
+                foreach (var w in cs.EnumerateObject())
+                    Assert.True(ts.TryGetProperty(w.Name, out _) || TylkoWCs.Contains($"{gdzie}.{w.Name}"), $"{gdzie}.{w.Name}: nadmiarowe w C#");
                 break;
             case JsonValueKind.Array:
                 Assert.Equal(ts.GetArrayLength(), cs.GetArrayLength());

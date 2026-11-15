@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Przyciski menu (odręczne, 15.11) — z oryginałów w dane/grafika/menu/przyciski/oryginaly/ (czarny tusz na białym)
-robi pliki do gry i do Unity: dane/grafika/menu/przyciski/<nazwa>.png i unity/Assets/Trzewia/Menu/Przyciski/<nazwa>.png.
+robi pliki do gry i do Unity: dane/grafika/menu/przyciski/<nazwa>.png i ../trzewia-unity/Assets/Trzewia/Menu/Przyciski/<nazwa>.png.
 
   • tusz → biała kreska, papier → przezroczystość (jak logo: gra zabarwia obrazek na barwę napisu),
   • każdy przycisk przeskalowany tak, żeby ozdobniki po bokach miały WYSOKOSC_OZDOBNIKA px — wtedy wszystkie siedem
@@ -19,7 +19,7 @@ from PIL import Image
 TU = Path(__file__).resolve().parent
 KORZEN = TU.parent.parent
 ZRODLA = KORZEN / 'dane/grafika/menu/przyciski/oryginaly'
-CELE = [KORZEN / 'dane/grafika/menu/przyciski', KORZEN / 'unity/Assets/Trzewia/Menu/Przyciski']
+CELE = [KORZEN / 'dane/grafika/menu/przyciski', KORZEN.parent / 'trzewia-unity/Assets/Trzewia/Menu/Przyciski']
 WYSOKOSC_OZDOBNIKA = 300
 ZAPAS = 12          # px (po przeskalowaniu) wokół rysunku
 PAPIER, TUSZ = 245, 40   # jasność: od PAPIER w górę — przezroczyste, do TUSZ — pełny tusz

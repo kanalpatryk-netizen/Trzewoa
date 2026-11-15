@@ -12,7 +12,8 @@ w końcowym porównaniu z grą TS (`narzedzia/ekrany`, test `PorownanieEkranow`)
 Postacie to duszki (sprite'y) z arkuszy PNG (`dane/grafika/duszki/`), a dłonie (z otchłani, demona, anielska) —
 model 3D (`dane/grafika/modele/*.glb`). Świadome różnice względem TS: `PLAN.md`, część 5.
 
-Duszki i model dłoni nadają się też do Unity i Godota — opis i importer: [`unity/README.md`](unity/README.md).
+**Unity:** gotowy projekt z całą grą to [`../trzewia-unity/`](../trzewia-unity/README.md) (te same pliki gry, dane i zapis;
+Unity daje okno, wejście, dźwięk i budowanie). Duszki i model dłoni do pracy w samym Unity: `trzewia-unity/Assets/Trzewia/Duszki/`.
 
 ## Warstwy (żeby dało się potem przenieść grę do Unity albo Godota)
 

@@ -1,0 +1,19 @@
+{
+    "name": "Trzewia.Unity",
+    "rootNamespace": "Trzewia",
+    "references": [
+        "Trzewia.Symulacja",
+        "Trzewia.Gra",
+        "Trzewia.Skia",
+        "Trzewia.Most"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
