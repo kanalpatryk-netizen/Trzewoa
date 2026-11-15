@@ -48,21 +48,22 @@ export function rysujBrzegKregu(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
   const lw = Math.max(1.2, z * 0.09);
   // dwie turnie po bokach szybu i łuk nad nim
   const turnia = (xa: number, xb: number, wys: number, ziarno: number): [number, number][] => {
-    const pts: [number, number][] = [[xa, g + 0.3]];
-    const n = 9;
+    // poszarpana turnia: zęby skały, występy, szczeliny
+    const pts: [number, number][] = [[xa - 0.6, g + 0.3]];
+    const n = 16;
     for (let i = 0; i <= n; i++) {
       const u = i / n;
       const x = xa + (xb - xa) * u;
-      const prof = Math.sin(u * Math.PI) ** 0.7;
-      const y = g - wys * prof - (los(ziarno + i) - 0.5) * 1.6 * prof;
-      pts.push([x + (los(ziarno + i * 7) - 0.5) * 0.8, y]);
+      const prof = Math.pow(Math.sin(u * Math.PI), 0.55);
+      const zab = (i % 2 ? 1 : -1) * (0.6 + los(ziarno + i * 3) * 1.6) * prof;
+      pts.push([x + (los(ziarno + i * 7) - 0.5) * 1.1, g - wys * prof * (0.82 + 0.25 * los(ziarno + i)) + zab]);
     }
-    pts.push([xb, g + 0.3]);
+    pts.push([xb + 0.6, g + 0.3]);
     return pts;
   };
-  const wysL = (g - k.szczyt) * 0.95, wysP = (g - k.szczyt) * 0.75;
-  const lewa = turnia(k.x0 - 2, cx - 1.2, wysL, 11);
-  const prawa = turnia(cx + 1.2, k.x1 + 1, wysP, 37);
+  const wysL = (g - r.y) + r.r + 2.6, wysP = ((g - r.y) + r.r + 2.6) * 0.92;
+  const lewa = turnia(cx - 9, cx - 1.2, wysL, 11);
+  const prawa = turnia(cx + 1.2, cx + 7, wysP, 37);
   const luk: [number, number][] = [];
   {
     // łuk: od lewej turni ponad rozetą do prawej, gruby i poszarpany
@@ -81,8 +82,8 @@ export function rysujBrzegKregu(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     pts.forEach(([x, y], i) => (i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))));
     ctx.closePath();
     const gr = ctx.createLinearGradient(0, Y(k.szczyt), 0, Y(g));
-    gr.addColorStop(0, `rgba(${150 * jas},${156 * jas},${142 * jas},1)`);
-    gr.addColorStop(1, `rgba(${62 * jas},${66 * jas},${58 * jas},1)`);
+    gr.addColorStop(0, `rgba(${78 * jas},${80 * jas},${72 * jas},1)`);
+    gr.addColorStop(1, `rgba(${30 * jas},${31 * jas},${28 * jas},1)`);
     ctx.fillStyle = gr; ctx.fill();
     ctx.strokeStyle = TUSZ; ctx.lineWidth = lw; ctx.stroke();
     // spękania i warstwy — kreska tuszem
@@ -113,7 +114,7 @@ export function rysujBrzegKregu(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
   ctx.strokeStyle = TUSZ; ctx.lineWidth = lw; ctx.stroke();
   // martwe, poskręcane drzewo na lewej turni
   {
-    const tx = k.x0 + 0.5, ty = lewa[2][1] + 0.6;
+    const tx = cx - 7.5, ty = lewa[2][1] + 0.6;
     ctx.strokeStyle = 'rgba(20,16,12,0.95)';
     const galaz = (x: number, y: number, kat: number, dl: number, gr: number, n: number): void => {
       if (n <= 0 || dl < 0.25) return;

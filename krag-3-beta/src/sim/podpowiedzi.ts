@@ -90,7 +90,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     if (w.brama.x1 >= w.brama.x0 && !(b?.wolne) && !(b && b.zaklina >= BRAMA.potrzeba)
       && sim.creatures.some((c) => !c.dead && !c.straznik && c.race === Race.GOBLIN && w.wPrzedprozu(c.x, c.y))) {
       kandydaci.push({
-        tekst: `Pod stalową bramą lochu czekają twoi. Zaznacz ${BRAMA.potrzeba} pobożnych i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.`,
+        tekst: `Pod stalową bramą lochu czekają twoi. Zaznacz ${BRAMA.potrzeba} mnichów i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.`,
         cel: { x: w.kociol.x + 0.5, y: w.kociol.y, r: 5, tekst: 'kocioł' },
         waga: 88,
       });
@@ -101,7 +101,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   const najwierniejszy = sim.clans.filter((k) => !k.dead && k.pop > 2).sort((a, b) => b.devotion - a.devotion)[0];
   if (sim.rytual.postep > 0.02 || sim.rytual.wierni >= RYTUAL.potrzebaWiernych) {
     kandydaci.push({
-      tekst: 'Twoi wierni modlą się w krypcie i kruszą posąg Cerbera. Nie przeszkadzaj im — i nie daj im umrzeć z głodu.',
+      tekst: 'Twoi wierni modlą się w krypcie i kruszą pieczęć zejścia. Nie przeszkadzaj im — i nie daj im umrzeć z głodu.',
       cel: { x: sim.world.coreX, y: sim.world.przedsionekY, r: 7, tekst: 'rytuał' },
       waga: 85,
     });
@@ -121,13 +121,13 @@ export function podpowiedz(sim: Sim): Podpowiedz {
       if (plan && plan.kopac.length) {
         const i = plan.kopac[plan.kopac.length - 1];
         kandydaci.push({
-          tekst: `${sim.clans[plan.klan].name} schodzą do krypty. Jeśli chcesz, żeby wracali, zaznacz robotników i każ im kopać drogę wiernych — szyb ze schodami od wnęki przy sali.`,
+          tekst: `${sim.clans[plan.klan].name} schodzą do krypty. Jeśli chcesz, żeby wracali, zaznacz grabarzy i każ im kopać drogę wiernych — szyb ze schodami od wnęki przy sali.`,
           cel: { x: (i % w.w) + 0.5, y: ((i / w.w) | 0) + 0.5, r: 3, tekst: 'drąż tutaj' },
           waga: 35,
         });
       } else {
         kandydaci.push({
-          tekst: `${najwierniejszy.name} schodzą do krypty pod posągiem Cerbera. ${REMAKE ? 'Pilnuj, żeby wiadra docierały do warty przy przedsionku.' : 'Pilnuj, żeby grzyb przy przedsionku nie zniknął.'}`,
+          tekst: `${najwierniejszy.name} schodzą do krypty pod pieczęcią zejścia. ${REMAKE ? 'Pilnuj, żeby wiadra docierały do warty przy przedsionku.' : 'Pilnuj, żeby grzyb przy przedsionku nie zniknął.'}`,
           cel: { x: w.coreX, y: w.przedsionekY, r: 7, tekst: 'przedsionek' },
           waga: 35,
         });
@@ -142,8 +142,8 @@ export function podpowiedz(sim: Sim): Podpowiedz {
   if (sim.tick > 3000 && !walka && sim.rytual.pekniecia === 0 && duzeWierne && duzeWierne.devotion <= PIELGRZYMKA.oddanieNacji) {
     kandydaci.push({
       tekst: REMAKE
-        ? 'Żeby cię uwolnić, lud musi uwierzyć mocniej. Zrób Cud przy siedzibie albo szepnij pobożnym „módl się”.'
-        : `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij pobożnym „módl się”.`,
+        ? 'Żeby cię uwolnić, lud musi uwierzyć mocniej. Zrób Cud przy siedzibie albo szepnij mnichem „módl się”.'
+        : `Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. ${duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij mnichem „módl się”.`,
       cel: { x: duzeWierne.hx, y: duzeWierne.hy, r: 5, tekst: REMAKE ? podpisSiedziby(sim, duzeWierne) : duzeWierne.name, klan: duzeWierne.id },
       waga: 25,
     });
@@ -165,7 +165,7 @@ export function podpowiedz(sim: Sim): Podpowiedz {
     }
     if (best) {
       kandydaci.push({
-        tekst: 'Pod salą leży rdzawa ruda. Zaznacz robotnika i wskaż ją — wykuje całą kępę, a żelazo samo spłynie do licznika.',
+        tekst: 'Pod salą leży rdzawa ruda. Zaznacz grabarza i wskaż ją — wykuje całą kępę, a żelazo samo spłynie do licznika.',
         cel: { x: best[0], y: best[1], r: 3, tekst: 'żelazo' },
         waga: 40,
       });

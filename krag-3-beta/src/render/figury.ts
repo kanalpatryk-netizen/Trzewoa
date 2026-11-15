@@ -716,8 +716,8 @@ function szczegoly(ctx: CanvasRenderingContext2D, rasa: Race, s: Szkielet, b: Bu
     ctx.lineTo(s.barkX * 0.6 + s.biodroX * 0.4 + nx * h * 0.04, s.barkY * 0.6 + s.biodroY * 0.4 + ny * h * 0.04);
     ctx.lineTo(s.biodroX - nx * h * 0.03, s.biodroY - ny * h * 0.02);
     ctx.stroke();
-  } else if (rasa === Race.HUMAN) {
-    // twarz w cieniu kaptura i pochodnia
+  } else if (rasa === Race.HUMAN && !(c as { obrys?: string }).obrys) {
+    // twarz w cieniu kaptura i pochodnia (Krąg Trzeci: potępieni z tłumu pochodni nie mają)
     ctx.fillStyle = 'rgba(232,214,186,0.8)';
     ctx.fillRect(s.glowaX + gr * 0.35, s.glowaY - gr * 0.1, Math.max(1, gr * 0.3), Math.max(1, gr * 0.2));
     const [, , hx, hy] = s.rekaA;
@@ -858,7 +858,8 @@ export function rysujPostac(
     rysujLud(ctx, sim, c, rola, h, czas, czyn, r.faza, r.fazaPion, r.zegar);
     return czyn;
   }
-  const obrys = rola ? BARWA_ROLI[rola] : barwaKlanu(sim.clans[c.clan]);
+  // Krąg Trzeci: potępieni z tłumu mają własny, przygaszony obrys (render/potepieni.ts)
+  const obrys = rola ? BARWA_ROLI[rola] : (c as { obrys?: string }).obrys ?? barwaKlanu(sim.clans[c.clan]);
   const f = fakturaRasy(ctx, c.race);
   if (c.race === Race.SPINNER) {
     przadka(ctx, h, r, czyn, czas, c, f, obrys);

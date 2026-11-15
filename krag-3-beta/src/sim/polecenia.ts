@@ -148,7 +148,7 @@ export function wydajPolecenie(sim: Sim, c: Creature, typ: 'idz' | 'droga', x: n
   const rola = rolaPostaci(c);
   if (c.dead || !rola) return 'To nie twój lud.';
   if (typ === 'droga') {
-    if (rola !== 'robotnik') return odmow(sim, c, 'kopią tylko robotnicy');
+    if (rola !== 'robotnik') return odmow(sim, c, 'kopią tylko grabarze');
     const cz = czoloDrogi(sim);
     if (cz < 0) {
       // 6.11: wykopana — rozkaz przechodzi w budowę schodów (sim/budowa-schodow.ts), póki trwa
@@ -436,7 +436,7 @@ export function wydajNaPomieszczenie(sim: Sim, ids: readonly number[], pom: Pomi
   for (const c of lud) {
     const rola = rolaPostaci(c);
     let powod: string | null;
-    if (!pom.gotowe) powod = rola === 'robotnik' ? kujPlan(sim, c, pom) : odmow(sim, c, 'kują tylko robotnicy');
+    if (!pom.gotowe) powod = rola === 'robotnik' ? kujPlan(sim, c, pom) : odmow(sim, c, 'kują tylko grabarze');
     else if (pom.rodzaj === 'sypialnia') powod = doPomieszczenia(sim, c, pom, 'sen', zajete);
     else if (rola === 'robotnik') powod = doPomieszczenia(sim, c, pom, 'praca', zajete);
     else if (rola === 'rycerz' && pom.rodzaj === 'kuznia') powod = poZbroje(sim, c, pom);
@@ -573,7 +573,7 @@ export function przywolajDoOltarza(sim: Sim): string | null {
   const o = sim.world.oltarz;
   const pobozni = sim.creatures.filter((c) => !c.dead && rolaPostaci(c) === 'pobozny')
     .sort((a, b) => Math.hypot(a.x - o.x, a.y - o.y) - Math.hypot(b.x - o.x, b.y - o.y));
-  if (!pobozni.length) return 'nie żyje żaden pobożny';
+  if (!pobozni.length) return 'nie żyje żaden mnich';
   let powod: string | null = 'nie dojdzie';
   for (const c of pobozni) {
     powod = wydajPolecenie(sim, c, 'idz', o.x + (c.x < o.x + 0.5 ? -2 : 2), o.y);

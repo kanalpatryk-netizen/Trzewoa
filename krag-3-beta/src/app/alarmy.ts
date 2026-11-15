@@ -129,10 +129,10 @@ export class Straznik {
       return {
         rodzaj: `fala-${fal}`, kryzys: true,
         tytul: def?.boss ? `Ostatnia fala — ${aktywnyBoss().nazwa}` : `Cienie Żarłoków — fala ${fal} z ${STRAZNICY.fale.length}`,
-        tekst: def?.boss ? `Z gruzów posągu Cerbera wstał Cerber. ${aktywnyBoss().opis}`
-          : `Ze skały wokół krypty wychodzą Strażnicy (${def?.straznikow ?? '?'}). Dopóki żyją, pomnik nie pęka. Pobożni i robotnicy odchodzą z krypty — walczy rycerz.`,
-        rada: def?.boss ? 'Rycerz na Cerbera, obaj pobożni do modlitwy w krypcie — wtedy Cerber słabnie. Robotnicy muszą odkopywać zasypaną drogę.'
-          : 'Rycerz walczy sam; gdy zginie, robotnicy założą hełmy. Pilnuj, żeby był najedzony.',
+        tekst: def?.boss ? `Z gruzów pieczęci zejścia wstał Cerber. ${aktywnyBoss().opis}`
+          : `Ze skały wokół krypty wychodzą Strażnicy (${def?.straznikow ?? '?'}). Dopóki żyją, pomnik nie pęka. Pobożni i grabarze odchodzą z krypty — walczy rycerz.`,
+        rada: def?.boss ? 'Rycerz na Cerbera, obaj mnisi do modlitwy w krypcie — wtedy Cerber słabnie. Grabarze muszą odkopywać zasypaną drogę.'
+          : 'Rycerz walczy sam; gdy zginie, grabarze założą hełmy. Pilnuj, żeby był najedzony.',
         cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, tekst: 'przedsionek' },
       };
     }
@@ -156,9 +156,9 @@ export class Straznik {
       if (r.pekniecia !== 1) return null;
       return {
         rodzaj: 'pekniecie-pierwsze', kryzys: true,
-        tytul: `posąg Cerbera zaczął pękać — ${procentSkorupy(sim)}%`,
-        tekst: `Modlitwa pobożnych kruszy kamiennego Cerbera, którego nie ruszy żaden kilof. Góra oddaje ci za to ${RYTUAL.nagrodaWiary} wiary. Gdy pomnik pęknie do końca, Cerber w nim się obudzi.`,
-        rada: 'Pilnuj, żeby robotnicy donosili jedzenie warcie w krypcie, a rycerz był najedzony — przy każdym pęknięciu wychodzą Strażnicy.',
+        tytul: `pieczęć zejścia zaczął pękać — ${procentSkorupy(sim)}%`,
+        tekst: `Modlitwa mnichów kruszy pieczęć, którego nie ruszy żaden kilof. Góra oddaje ci za to ${RYTUAL.nagrodaWiary} wiary. Gdy pomnik pęknie do końca, Cerber w nim się obudzi.`,
+        rada: 'Pilnuj, żeby grabarze donosili jedzenie warcie w krypcie, a rycerz był najedzony — przy każdym pęknięciu wychodzą Strażnicy.',
         cel: { x: w.coreX + 0.5, y: w.przedsionekY + 0.5, tekst: 'przedsionek' },
       };
     }

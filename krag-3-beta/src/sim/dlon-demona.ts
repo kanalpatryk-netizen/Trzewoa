@@ -307,7 +307,7 @@ function zawal(sim: Sim, st: StanDloniDemona): void {
   for (let k = 0; k < 12; k++) sim.spark(st.x + sim.rng.range(0, D.zawal.szer), st.strop + 1 + sim.rng.range(0, st.dno - st.strop - 1), 'dust');
   st.sciana = { kafle, x: st.x, strop: st.strop, dno: st.dno, od: sim.tick, do: sim.tick + D.zawal.trwa };
   sim.stat.zawalow = (sim.stat.zawalow ?? 0) + 1;
-  sim.gdzie(st.x + 1, st.dno - 1).log('Strop krypty zawalił się między rycerzem a Cerberem. Cerber jest odcięty — i zrasta się szybciej. Robotnicy mogą rozkuć gruz.', 'krew', 'zawal');
+  sim.gdzie(st.x + 1, st.dno - 1).log('Strop krypty zawalił się między rycerzem a Cerberem. Cerber jest odcięty — i zrasta się szybciej. Grabarze mogą rozkuć gruz.', 'krew', 'zawal');
   zapisz(sim, 'swiat', `zawał: ściana gruzu ${kafle.length} kafli`, st.x, st.dno - 1);
 }
 

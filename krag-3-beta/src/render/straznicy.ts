@@ -152,7 +152,7 @@ export function rysujPasekFali(ctx: CanvasRenderingContext2D, sim: Sim, x: numbe
   // (Alpha, etap 5: pomnik zamiast skorupy; przy demonie — co da wygraną)
   const tekst = kona ? 'CERBER KONA — DROGA W DÓŁ STOI OTWOREM'
     : `FALA CIENI ŻARŁOKÓW ${st.fala + 1}/${S.fale.length}` + (zwykli ? ` · zostało ${zwykli}` : '')
-    + (boss && POMNIK.wlaczony ? ' · pokonaj Cerbera — zejdziecie niżej' : POMNIK.wlaczony ? ' · posąg Cerbera nie pęka' : ' · skorupa nie pęka');
+    + (boss && POMNIK.wlaczony ? ' · pokonaj Cerbera — zejdziecie niżej' : POMNIK.wlaczony ? ' · pieczęć zejścia nie pęka' : ' · skorupa nie pęka');
   ctx.save();
   ctx.font = `${roz}px ${SERIF}`;
   ctx.textAlign = 'center';

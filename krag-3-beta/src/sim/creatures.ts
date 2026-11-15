@@ -938,7 +938,7 @@ function planujLud(sim: Sim, c: Creature): void {
       }
       if (stanPrzyObozie(sim, c, naDroge, droga)) {
         c.modliPrzyObozie = true;
-        zamiar('czeka przy obozie, aż robotnicy dokopią drogę do krypty', Job.STOI, Z);
+        zamiar('czeka przy obozie, aż grabarze dokopią drogę do krypty', Job.STOI, Z);
         return;
       }
     }
@@ -1001,7 +1001,7 @@ function planujLud(sim: Sim, c: Creature): void {
       if (d || (!REMAKE && budzetDrog() > 0)) {
         c.jx = kx; c.jy = ky;
         if (d) naDroge(d, c.jx, c.jy);
-        zamiar(`niesie jedzenie: ${komu.rola === 'rycerz' ? 'rycerz' : 'pobożny'} #${komu.id}`, Job.DOSTAWA, d ? podroz(d) : Z);
+        zamiar(`niesie jedzenie: ${komu.rola === 'rycerz' ? 'rycerz' : 'mnich'} #${komu.id}`, Job.DOSTAWA, d ? podroz(d) : Z);
         return;
       }
       if (budzetDrog() <= 0) { zamiar('zastanawia się, którędy iść', Job.STOI, 30); return; }
@@ -1037,7 +1037,7 @@ function planujLud(sim: Sim, c: Creature): void {
       // sam, wykuwając szyby w dół, a rycerz i robotnicy z jedzeniem nie mieli jak za nim zejść ani wrócić)
       if (drogaNiegotowa(sim, c) && stanPrzyObozie(sim, c, naDroge, droga)) {
         c.modliPrzyObozie = true;
-        zamiar('czeka przy obozie, aż robotnicy dokopią drogę do krypty', Job.STOI, Z);
+        zamiar('czeka przy obozie, aż grabarze dokopią drogę do krypty', Job.STOI, Z);
         return;
       }
       c.jx = miejsceWSzeregu(sim, c); c.jy = w.przedsionekY; c.dig = 0;
@@ -1196,7 +1196,7 @@ function planRobotnika(sim: Sim, c: Creature,
       const d = droga((x, y) => Math.abs(x - sp.x) <= 1 && Math.abs(y - sp.y) <= 1, LUD.dostawaLimit);
       if (d) {
         naDroge(d, sp.x, sp.y); c.dostawaDla = komu.id; c.bezczynnyOd = undefined;
-        zamiar(`bierze jedzenie z wiadra dla: ${komu.rola === 'rycerz' ? 'rycerz' : 'pobożny'} #${komu.id}`, Job.ZBIERA, podroz(d));
+        zamiar(`bierze jedzenie z wiadra dla: ${komu.rola === 'rycerz' ? 'rycerz' : 'mnich'} #${komu.id}`, Job.ZBIERA, podroz(d));
         return;
       }
     }
@@ -2157,7 +2157,7 @@ function doPielgrzym(sim: Sim, c: Creature): void {
   // zaklęciami przy kotle); kto jest w drodze, idzie dalej — stanie tu samo
   if (!wPrzedsionku && REMAKE && w.brama.x1 >= w.brama.x0 && !w.wLochu(c.x, c.y) && w.wPrzedprozu(Math.floor(c.x), Math.floor(c.y)) && !bramaOtwarta(sim)) {
     c.droga = undefined;
-    c.zamiar = 'czeka pod stalową bramą lochu — podniosą ją pobożni zaklęciami przy kotle';
+    c.zamiar = 'czeka pod stalową bramą lochu — podniosą ją mnisi zaklęciami przy kotle';
     c.zamiarDo = sim.tick + 120;
     return;
   }

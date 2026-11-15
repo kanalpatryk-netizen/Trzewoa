@@ -885,11 +885,11 @@ function zzz(ctx: CanvasRenderingContext2D, x: number, y: number, z: number, ter
 
 /** Co zrobią zaznaczeni po dotknięciu tego pomieszczenia (podpis nad nim). */
 export function akcjaNaPomieszczeniu(pom: Pomieszczenie, robotnikow: number, innych: number, rycerzy = 0, naWieszaku = 0): { akcja: string; ok: boolean } {
-  if (!pom.gotowe) return robotnikow ? { akcja: 'kujcie ten plan', ok: true } : { akcja: 'kują tylko robotnicy', ok: false };
+  if (!pom.gotowe) return robotnikow ? { akcja: 'kujcie ten plan', ok: true } : { akcja: 'kują tylko grabarze', ok: false };
   const r: RodzajPomieszczenia = pom.rodzaj;
   if (r === 'sypialnia') return { akcja: 'idźcie spać — sen zdejmie osłabienia', ok: true };
   // etap 3f: rycerz w kuźni zakłada części z wieszaka
   if (r === 'kuznia' && rycerzy && !robotnikow) return naWieszaku ? { akcja: `załóż zbroję z wieszaka (${naWieszaku} ${naWieszaku === 1 ? 'część' : 'części'})`, ok: true } : { akcja: 'nie ma części na wieszaku', ok: false };
   if (robotnikow) return { akcja: r === 'warsztat' ? 'pracuj: krzyże ze złota' : rycerzy ? 'pracuj: zbroja z żelaza (rycerz ją założy)' : 'pracuj: zbroja z żelaza', ok: true };
-  return { akcja: innych ? `wejdź do środka (pracują tu robotnicy)` : '', ok: true };
+  return { akcja: innych ? `wejdź do środka (pracują tu grabarze)` : '', ok: true };
 }

@@ -7,7 +7,8 @@ import type { Creature } from './creatures';
 import { KRAG } from '../nastawy/krag';
 import { Race } from './races';
 import { rolaPostaci } from './lud';
-import { porcjiWWiadrach, zabierzPorcje } from './wiadro';
+import { porcjiWWiadrach, zabierzPorcje, wiadra } from './wiadro';
+import { SURFACE_Y } from './world';
 
 export interface StanKregu {
   /** Ulewa: od kiedy do kiedy trwa bieżąca (albo ostatnia) i kiedy następna. */
@@ -16,6 +17,8 @@ export interface StanKregu {
   okupT: number; okupX: number; okupY: number; okupKto: number;
   /** Ile razy ktoś padł w błoto z przejedzenia, ile okupów. */
   upadkow: number; okupow: number;
+  /** Ostatnie wiadro, przy którym sprawdzono Cerbera (żeby podjadał raz na dostawę), ile razy podjadł. */
+  wiadroSpr?: number; podjadl?: number;
 }
 
 export function stanKregu(sim: Sim): StanKregu {
@@ -75,6 +78,7 @@ export function zarloczy(sim: Sim, c: Creature, glodPrzed: number, wez: (n: numb
 /** Krok kręgu — raz na tik, z sim.step. */
 export function tikKregu(sim: Sim): void {
   const k = stanKregu(sim);
+  cerberPodjada(sim, k);
   // ulewa
   if (sim.tick >= k.nastepna) {
     k.ulewaOd = sim.tick; k.ulewaDo = sim.tick + KRAG.deszcz.trwa;
@@ -138,5 +142,57 @@ export function cerberZre(sim: Sim, c: Creature): number {
 
 function nazwaRoli(c: Creature): string {
   const r = rolaPostaci(c);
-  return r === 'robotnik' ? 'Robotnik' : r === 'rycerz' ? 'Rycerz' : 'Pokutnik';
+  return r === 'robotnik' ? 'Grabarz' : r === 'rycerz' ? 'Rycerz' : 'Mnich';
+}
+
+// ---------------------------------------------------------------- Cerber na powierzchni kręgu
+
+/** Odcinek obchodu Cerbera (tiki): idzie do celu przez `CH` części odcinka, potem szarpie potępionego w błocie. */
+const ODC = 1100, CH = 0.55;
+function hasz(n: number): number {
+  let h = Math.imul(n ^ 0x9e3779b9, 0x85ebca6b);
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35);
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
+}
+
+export interface CerberNaKregu {
+  x: number; y: number; zwrot: number;
+  /** 0…1 — idzie (1) albo stoi i szarpie (0); szarpie: postęp 0…1 od początku postoju */
+  idzie: number; szarpie: number;
+  /** czy jest na powierzchni (po rozbiciu pieczęci zszedł za potępionymi w trzewia) */
+  jest: boolean;
+}
+
+/**
+ * Cerber krąży po powierzchni kręgu nad trzewiami (Piekło, pieśń VI: stoi nad żarłokami, szarpie ich i obdziera
+ * ze skóry). Pozycja wynika z samego tiku — obchód od celu do celu, przy każdym postój nad kimś w błocie.
+ */
+export function cerberNaPowierzchni(sim: Sim, tik = sim.tick): CerberNaKregu {
+  const w = sim.world;
+  const xa = 22, xb = w.w - 26;
+  const cel = (k: number): number => xa + (xb - xa) * hasz(k * 7919 + (sim.seed | 0));
+  const k = Math.floor(tik / ODC), u = (tik % ODC) / ODC;
+  const x0 = cel(k - 1), x1 = cel(k);
+  const f = Math.min(1, u / CH);
+  const e = f * f * (3 - 2 * f);
+  const faza = sim.lud.pomnik?.faza;
+  return {
+    x: x0 + (x1 - x0) * e, y: SURFACE_Y - 1,
+    zwrot: x1 >= x0 ? 1 : -1,
+    idzie: u < CH ? 1 : 0, szarpie: u < CH ? 0 : (u - CH) / (1 - CH),
+    jest: !faza || faza === 'stoi' || faza === 'rozpada',
+  };
+}
+
+/** Cerber nad szybem wiadra podjada dostawę, zanim zjedzie (raz na wiadro). */
+function cerberPodjada(sim: Sim, k: StanKregu): void {
+  const wd = wiadra(sim).find((q) => q.faza === 'zapowiedz' && q.szyb);
+  if (!wd || wd.id === k.wiadroSpr) return;
+  k.wiadroSpr = wd.id;
+  const c = cerberNaPowierzchni(sim);
+  if (!c.jest || Math.abs(c.x - wd.x) > KRAG.cerber.podjadaOd || wd.porcje < 2) return;
+  const ile = Math.max(1, Math.floor(wd.porcje * KRAG.cerber.podjada));
+  wd.porcje -= ile;
+  k.podjadl = (k.podjadl ?? 0) + 1;
+  sim.gdzie(wd.x, SURFACE_Y).log(`Cerber dopadł kosza nad szybem i pożarł ${ile} porcji, zanim kosz zjechał w trzewia.`, 'otchlan', 'cerber-kosz');
 }

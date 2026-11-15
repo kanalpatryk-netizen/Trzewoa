@@ -163,7 +163,7 @@ export function tikStraznikow(sim: Sim): void {
       const w = sim.world;
       sim.gdzie(w.coreX, w.przedsionekY).log(
         st.fala >= S.fale.length ? 'Ostatni Cień Żarłoka rozsypał się w pył. Nikt już nie strzeże twojego snu.'
-          : `Fala Cieni Żarłoków pokonana. ${POMNIK.wlaczony ? 'Pomnik' : 'Skorupa'} znów pęka pod modlitwą (+${S.nagrodaWiary} wiary).`, 'wiara', `fala-koniec-${st.fala}`);
+          : `Fala Cieni Żarłoków pokonana. ${POMNIK.wlaczony ? 'Pieczęć' : 'Skorupa'} znów pęka pod modlitwą (+${S.nagrodaWiary} wiary).`, 'wiara', `fala-koniec-${st.fala}`);
       zapisz(sim, 'rytual', `fala ${st.fala} pokonana`, w.coreX, w.przedsionekY);
     }
     // zwykła fala bez walki zasypia — skorupa się zrasta (inaczej bez rycerzy fala trwała wiecznie, a lud głodował, czekając)
@@ -243,9 +243,9 @@ function zacznijFale(sim: Sim, st: StanStraznikow): void {
   sim.lud.straznicy!.od = sim.tick;
   const w = sim.world;
   sim.gdzie(w.coreX, w.przedsionekY).log(
-    def.boss && POMNIK.wlaczony ? `Z gruzów posągu Cerbera wstaje ${aktywnyBoss().nazwa} — a z nim Cienie Żarłoków (${def.straznikow}). Rani go tylko rycerz; gdy padnie, droga w dół stoi otworem.`
+    def.boss && POMNIK.wlaczony ? `Z kręgu nad trzewiami zeskakuje do rozbitej pieczęci ${aktywnyBoss().nazwa} — a z nim Cienie Żarłoków (${def.straznikow}). Rani go tylko rycerz; gdy padnie, droga w dół stoi otworem.`
       : def.boss ? `Ostatnia fala: ze ściany przedsionka wynurza się ${aktywnyBoss().nazwa}. Skorupa nie pęknie, dopóki stoi.`
-      : `Cienie Żarłoków wychodzą ze skały (${def.straznikow}). Dopóki żyją, ${POMNIK.wlaczony ? 'pomnik' : 'skorupa'} nie pęka.`, 'krew', `fala-${st.fala}`);
+      : `Cienie Żarłoków wychodzą ze skały (${def.straznikow}). Dopóki żyją, ${POMNIK.wlaczony ? 'pieczęć' : 'skorupa'} nie pęka.`, 'krew', `fala-${st.fala}`);
   zapisz(sim, 'rytual', `fala ${st.fala + 1}: ${def.straznikow} Strażników${def.boss ? ' + boss' : ''}`, w.coreX, w.przedsionekY);
 }
 

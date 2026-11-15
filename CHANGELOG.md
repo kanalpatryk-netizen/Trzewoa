@@ -1,5 +1,17 @@
 # Zmiany
 
+## TRZEWIA — Krąg Trzeci (beta), 2. podejście — 15.11
+Po uwagach użytkownika („gdzie każdy potępiony… nie ma to nic wspólnego z piekłem Dantego… Cerber nie był w żadnym
+lochu zamknięty”; potem: cutscenki i scena wejścia bez sterowania; potępieni proporcjonalni, animowani, wszędzie):
+- **Wstęp** (`src/app/wstep-kregu.ts`): pięć plansz fabularnych (lej, krąg żarłoków, Dante i Wergiliusz, sześciu wstaje,
+  „Ty jesteś trzewiami”) i scena wejścia bez sterowania: szóstka wstaje z błota, idzie przez krąg i schodzi po linie do sali.
+- **Krąg** (`src/render/krag-swiat.ts`): wnętrze leja nad tarasem (wyższe kręgi jak rzędy amfiteatru, wicher, Otchłań),
+  przepaść do kręgu czwartego na skraju, twarze i ręce żarłoków w ścianach tuneli.
+- **Potępieni** (`src/render/potepieni.ts`): ok. 200 żarłoków na tarasie i pod nim, wzrostu szóstki, rysowani rysunkiem
+  postaci gry, każdy z własną czynnością (leży, wyje, żre błoto, grzebie, błąka się, szarpie się o resztki).
+- **Cerber krąży po kręgu** i szarpie potępionych, podjada kosz nad szybem; w lochu zamiast posągu **pieczęć zejścia** —
+  gdy pęknie, Cerber zeskakuje z góry. Wóz ciągną potępieni zamiast koni. Role: grabarze, mnisi, rycerz.
+
 ## TRZEWIA — Krąg Trzeci (beta, komputer) — 15.11
 Folder `krag-3-beta/`: Alpha 1 przeniesiona do trzeciego kręgu piekła Dantego (krąg żarłoków). Osobne zapisy
 (`trzewia-krag-3-beta:`), `alpha-1/` bez zmian. Opis: `krag-3-beta/README.md`.

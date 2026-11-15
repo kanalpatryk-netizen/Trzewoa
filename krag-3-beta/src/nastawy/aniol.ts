@@ -38,6 +38,6 @@ export const ANIOL = {
 /** Co dał (kronika, atlas). */
 export const DAR: Record<DarAniola, { nazwa: string; opis: string }> = {
   podkop: { nazwa: 'Podkop', opis: `kruszy palcami ${ANIOL.dary.podkop.kafli} kolejnych kafli drogi wiernych` },
-  ludzie: { nazwa: 'Dar ludzi', opis: 'stawia przy ołtarzu nowego robotnika' },
+  ludzie: { nazwa: 'Dar ludzi', opis: 'stawia przy ołtarzu nowego grabarza' },
   krew: { nazwa: 'Dar krwi', opis: `wlewa do relikwiarza ${ANIOL.dary.krew.ile} krwi` },
 };

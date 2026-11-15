@@ -145,7 +145,7 @@ function darTik(sim: Sim, s: StanAniola, t: number): void {
 function koniecDaru(sim: Sim, s: StanAniola): void {
   sim.stat.darow = (sim.stat.darow ?? 0) + 1;
   const txt = s.dar === 'podkop' ? `Dłoń anielska wykruszyła palcami ${s.wykute ?? 0} kafli drogi wiernych.`
-    : s.dar === 'ludzie' ? 'Dłoń anielska postawiła przy ołtarzu nowego robotnika.'
+    : s.dar === 'ludzie' ? 'Dłoń anielska postawiła przy ołtarzu nowego grabarza.'
     : `Z dłoni anielskiej spłynęło do relikwiarza ${s.krewDana ?? 0} krwi.`;
   sim.gdzie(s.x + 0.5, s.y).log(txt, 'wiara', 'aniol-dar');
 }

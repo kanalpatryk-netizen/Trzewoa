@@ -102,7 +102,7 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'kamera' && z.rodzaj === 'powrot',
       },
     ],
-    koniec: 'To Pobożni — pobożni, robotnicy i rycerze. Mieszkają przy siedzibie; jej znak stoi nad nimi.',
+    koniec: 'To Pobożni — mnisi, grabarze i rycerze. Mieszkają przy siedzibie; jej znak stoi nad nimi.',
     czasowniki: [],
   },
   {
@@ -111,11 +111,11 @@ export const ROZDZIALY: Rozdzial[] = [
     przygotuj: (g) => { g.sim.krew += 60; g.sim.wiara += 40; },
     etapy: [
       {
-        tekst: 'Wiara rośnie, gdy pobożni się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrze, które zjeżdża z góry do sali. Wiarę i krew wydajesz na ryty i wybory na kartach.',
+        tekst: 'Wiara rośnie, gdy mnisi się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrze, które zjeżdża z góry do sali. Wiarę i krew wydajesz na ryty i wybory na kartach.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarZasobow(s.gra.plate, s.vh) }),
       },
       {
-        tekst: `Oddanie: jak mocno lud w ciebie wierzy. Złożone dłonie napełniają się złotem — od kreski (${PROG}) pobożni sami idą pod twój rdzeń.`,
+        tekst: `Oddanie: jak mocno lud w ciebie wierzy. Złożone dłonie napełniają się złotem — od kreski (${PROG}) mnisi sami idą pod twój rdzeń.`,
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOddania(s.gra.plate, s.vh) }),
       },
     ],
@@ -124,11 +124,11 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Lud i jego role',
-    wstep: `Twoi potępieni to stała drużyna: ${LUD.start.robotnik} robotników, ${LUD.start.pobozny} pobożnych i ${LUD.start.rycerz} rycerz. Nikt się nie rodzi i nikt nowy nie przyjdzie.`,
+    wstep: `Twoi potępieni to stała drużyna: ${LUD.start.robotnik} grabarzy, ${LUD.start.pobozny} mnichów i ${LUD.start.rycerz} rycerz. Nikt się nie rodzi i nikt nowy nie przyjdzie.`,
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę i donoszą jedzenie z wiadra. Rycerz broni i walczy ze Strażnikami Snu — a gdy zginie, robotnicy zakładają hełmy i walczą sami.',
+        tekst: 'Pobożni modlą się i kruszą skorupę rdzenia. Grabarze kopią drogę i donoszą jedzenie z wiadra. Rycerz broni i walczy ze Strażnikami Snu — a gdy zginie, grabarze zakładają hełmy i walczą sami.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
       {
@@ -140,7 +140,7 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Pomieszczenia',
-    wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb — kują je robotnicy, którym plan wskażesz. Linę wieszasz sam, od razu.',
+    wstep: 'W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb — kują je grabarze, którym plan wskażesz. Linę wieszasz sam, od razu.',
     czasowniki: [],
     etapy: [
       {
@@ -155,12 +155,12 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'plan',
       },
       {
-        tekst: 'Zaznacz robotników (ich miniatura w księdze albo A) i dotknij planu — wykują go.', klawisz: 'robotnicy',
+        tekst: 'Zaznacz grabarzy (ich miniatura w księdze albo A) i dotknij planu — wykują go.', klawisz: 'robotnicy',
         wejdz: (g) => g.ustawSzablon(null),
         gotowe: (_g, z) => z?.typ === 'polecenie' && z.rodzaj === 'pomieszczenie' && z.przyjeli > 0,
       },
       {
-        tekst: `Gotowy warsztat zamienia złoto w wiarę (${POMIESZCZENIA.warsztat.zlotoNaSztuke} złota — ${POMIESZCZENIA.warsztat.wiaraZaSztuke} wiary), kuźnia — żelazo w zbroję rycerza (rycerz sam ją zakłada, gdy nie ma fali), a sen w sypialni zdejmuje osłabienia. Wolni robotnicy sami nic nie biorą: pracują ci, którym wskażesz.`,
+        tekst: `Gotowy warsztat zamienia złoto w wiarę (${POMIESZCZENIA.warsztat.zlotoNaSztuke} złota — ${POMIESZCZENIA.warsztat.wiaraZaSztuke} wiary), kuźnia — żelazo w zbroję rycerza (rycerz sam ją zakłada, gdy nie ma fali), a sen w sypialni zdejmuje osłabienia. Wolni grabarze sami nic nie biorą: pracują ci, którym wskażesz.`,
         rozumiem: true,
       },
     ],
@@ -168,22 +168,22 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Ołtarz',
-    wstep: 'Na środku sali, w smudze światła z góry, stoi ołtarz. Przy nim pobożny odprawia rytuały — płacisz za nie krwią.',
+    wstep: 'Na środku sali, w smudze światła z góry, stoi ołtarz. Przy nim mnich odprawia rytuały — płacisz za nie krwią.',
     przygotuj: (g) => { g.sim.krew = Math.max(g.sim.krew, 60); },
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Zaznacz pobożnych — ich miniatura w księdze pod płytą albo S.', klawisz: 'pobozni',
+        tekst: 'Zaznacz mnichów — ich miniatura w księdze pod płytą albo S.', klawisz: 'pobozni',
         wskaz: (s) => { const p = s.gra.miejscePolaDruzyny('rola', 'pobozny'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: Math.max(p.w, p.h) / 2 + 4 } : null; },
         gotowe: (g) => g.zaznaczeniRoli('pobozny') > 0,
       },
       {
-        tekst: 'Dotknij ołtarza — pobożny pójdzie do niego, a otworzy się okno rytuałów.',
+        tekst: 'Dotknij ołtarza — mnich pójdzie do niego, a otworzy się okno rytuałów.',
         wskaz: (s) => { const o = s.gra.sim.world.oltarz; return { typ: 'swiat', cel: { x: o.x + 0.5, y: o.y - 1.5, r: 3, tekst: 'ołtarz' } }; },
         gotowe: (_g, z) => z?.typ === 'oltarz' && z.rodzaj === 'okno',
       },
       {
-        tekst: `Gdy pobożny stanie przy ołtarzu, wybierz „Modlitwa” (${OLTARZ.rytualy.modlitwa.krew} krwi) — od krzyża biją promienie, a wiara rośnie.`,
+        tekst: `Gdy mnich stanie przy ołtarzu, wybierz „Modlitwa” (${OLTARZ.rytualy.modlitwa.krew} krwi) — od krzyża biją promienie, a wiara rośnie.`,
         wskaz: (s) => { const p = s.gra.poleOltarza('modlitwa'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: Math.min(p.w, p.h) / 2 + 4 } : null; },
         gotowe: (_g, z) => z?.typ === 'oltarz' && z.rodzaj === 'modlitwa',
       },
@@ -192,7 +192,7 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true,
       },
     ],
-    koniec: 'Ołtarz i każdy rytuał mają swoją tablicę w atlasie. Rytuał przepada, gdy pobożny odejdzie od ołtarza — krew wtedy wraca.',
+    koniec: 'Ołtarz i każdy rytuał mają swoją tablicę w atlasie. Rytuał przepada, gdy mnich odejdzie od ołtarza — krew wtedy wraca.',
   },
   {
     tytul: 'Jedzenie z góry',
@@ -201,7 +201,7 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: ['zasiej'],
     etapy: [
       {
-        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — węższym otworem do sali, na dno kolumny pod nim. Kto wykopie pod wiadrem dziurę, sprowadzi je niżej. Do tych w głębi samo nie zjedzie — zaniosą im robotnicy, a kto zszedł drogą wiernych, wróci nią po linach na zakrętach. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
+        tekst: `Co ${Math.round(WIADRO.co / 120)} s z góry zjeżdża wiadro pełne jedzenia — węższym otworem do sali, na dno kolumny pod nim. Kto wykopie pod wiadrem dziurę, sprowadzi je niżej. Do tych w głębi samo nie zjedzie — zaniosą im grabarze, a kto zszedł drogą wiernych, wróci nią po linach na zakrętach. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.`,
         rozumiem: true,
         wskaz: (s) => { const c = s.najblizszeWiadro(); return c ? { typ: 'swiat', cel: c } : null; },
       },
@@ -226,12 +226,12 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Zrób cud',
-    wstep: 'Cud sprowadza pobożny: światło spada z góry tuż przy nim. Widzą go wszyscy dookoła — i ich wiara w ciebie rośnie.',
+    wstep: 'Cud sprowadza mnich: światło spada z góry tuż przy nim. Widzą go wszyscy dookoła — i ich wiara w ciebie rośnie.',
     przygotuj: (g) => { g.sim.wiara += 60; },
     czasowniki: ['znak'],
     etapy: [
       {
-        tekst: 'Zaznacz pobożnego — dotknij go albo jego miniatury w księdze.', klawisz: 'pobozni', tylko: 'komputer',
+        tekst: 'Zaznacz mnicha — dotknij go albo jego miniatury w księdze.', klawisz: 'pobozni', tylko: 'komputer',
         wskaz: (s) => { const p = s.gra.miejscePolaDruzyny('rola', 'pobozny'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: Math.max(p.w, p.h) / 2 + 4 } : null; },
         gotowe: (g) => g.zaznaczeniRoli('pobozny') > 0,
       },
@@ -251,17 +251,17 @@ export const ROZDZIALY: Rozdzial[] = [
         gotowe: (_g, z) => z?.typ === 'moc' && z.czasownik === 'znak',
       },
     ],
-    koniec: `Oddanie Pobożnych skoczyło w górę — zobacz złożone dłonie. Przy ${PROG} sami pójdą pod twój rdzeń. Światło Cudu przegania też to, co patrzy z ciemności.`,
+    koniec: `Oddanie Mnichów skoczyło w górę — zobacz złożone dłonie. Przy ${PROG} sami pójdą pod twój rdzeń. Światło Cudu przegania też to, co patrzy z ciemności.`,
   },
   {
     tytul: 'Poślij wiernego',
-    wstep: 'Szept dotyka jednej głowy. „Módl się” posyła pobożnego pod twój rdzeń — od razu.',
+    wstep: 'Szept dotyka jednej głowy. „Módl się” posyła mnicha pod twój rdzeń — od razu.',
     przygotuj: (g) => { g.sim.wiara += 40; },
     czasowniki: ['szept'],
     stopCzasu: true,
     etapy: [
       {
-        tekst: 'Zaznacz pobożnego — dotknij go albo jego miniatury w księdze.', klawisz: 'pobozni', tylko: 'komputer',
+        tekst: 'Zaznacz mnicha — dotknij go albo jego miniatury w księdze.', klawisz: 'pobozni', tylko: 'komputer',
         wskaz: (s) => { const p = s.gra.miejscePolaDruzyny('rola', 'pobozny'); return p ? { typ: 'punkt', x: p.x + p.w / 2, y: p.y + p.h / 2, r: Math.max(p.w, p.h) / 2 + 4 } : null; },
         gotowe: (g) => g.zaznaczeniRoli('pobozny') > 0,
       },
@@ -276,7 +276,7 @@ export const ROZDZIALY: Rozdzial[] = [
       },
       {
         tylko: 'telefon',
-        tekst: 'Dotknij zaznaczonego pobożnego.', cofa: true,
+        tekst: 'Dotknij zaznaczonego mnicha.', cofa: true,
         wskaz: (s) => { const c = s.wskazanyGoblin('dotknij go', 'pobozny'); return c ? { typ: 'swiat', cel: c } : null; },
         gotowe: (g) => g.ui.verb === 'szept' && !!g.ui.selected && !g.ui.selected.dead,
       },
@@ -331,7 +331,7 @@ export const ROZDZIALY: Rozdzial[] = [
         rozumiem: true,
       },
       {
-        tekst: 'Gdy zginie rycerz, robotnicy zakładają hełmy i walczą zamiast niego. A kto umrze, nie znika — jego ciało leży tam, gdzie padł.',
+        tekst: 'Gdy zginie rycerz, grabarze zakładają hełmy i walczą zamiast niego. A kto umrze, nie znika — jego ciało leży tam, gdzie padł.',
         rozumiem: true,
       },
     ],
@@ -355,12 +355,12 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Dopóki fala trwa, skorupa nie pęka. Rycerz (albo robotnicy w hełmach) walczy sam; pobożni i reszta robotników odchodzą spod rdzenia.',
+        tekst: 'Dopóki fala trwa, skorupa nie pęka. Rycerz (albo grabarze w hełmach) walczy sam; mnisi i reszta grabarzy odchodzą spod rdzenia.',
         rozumiem: true,
         wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
       },
       {
-        tekst: 'Śniącego Kamienia ranią tylko walczący — rycerz idzie na niego sam. Boss słabnie, gdy pod rdzeniem modlą się pobożni, a zasypaną przez niego drogę odkopują robotnicy. Gdy walczących brak, pobożni razią go księgami.',
+        tekst: 'Śniącego Kamienia ranią tylko walczący — rycerz idzie na niego sam. Boss słabnie, gdy pod rdzeniem modlą się mnisi, a zasypaną przez niego drogę odkopują grabarze. Gdy walczących brak, mnisi razią go księgami.',
         rozumiem: true,
       },
     ],
@@ -368,22 +368,22 @@ export const ROZDZIALY: Rozdzial[] = [
   },
   {
     tytul: 'Droga do wolności',
-    wstep: 'Tak wygrywasz: pobożni schodzą pod rdzeń i modlą się, aż kamień pęknie.',
+    wstep: 'Tak wygrywasz: mnisi schodzą pod rdzeń i modlą się, aż kamień pęknie.',
     czasowniki: [],
     przygotuj: (g, s) => { const d = s.gniazdoGoblinow(); if (d) g.pokazMiejsce(d.x, d.y, 12, true); },
     etapy: [
       {
-        tekst: 'Najpierw robotnicy kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu. Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.',
+        tekst: 'Najpierw grabarze kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu. Wysłani mnisi czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.',
         rozumiem: true,
       },
       {
-        tekst: 'Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch pobożnych przy kotle („Do kotła” w oknie pobożnego) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać.',
+        tekst: 'Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch mnichów przy kotle („Do kotła” w oknie mnicha) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać.',
         rozumiem: true,
         wejdz: (g) => { const w = g.sim.world; g.pokazMiejsce(w.kociol.x, w.kociol.y, 10, true); },
         wskaz: (s) => { const w = s.gra.sim.world; return { typ: 'swiat', cel: { x: w.kociol.x + 0.5, y: w.kociol.y, r: 5, tekst: 'kocioł' } }; },
       },
       {
-        tekst: `Przy ${PROG} oddania pobożni sami pójdą pod rdzeń. Karta „chcą zejść pod twój rdzeń” albo szept „módl się” zrobią to od razu.`,
+        tekst: `Przy ${PROG} oddania mnisi sami pójdą pod rdzeń. Karta „chcą zejść pod twój rdzeń” albo szept „módl się” zrobią to od razu.`,
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarOddania(s.gra.plate, s.vh) }),
       },
       {
@@ -401,11 +401,11 @@ export const ROZDZIALY: Rozdzial[] = [
     czasowniki: [],
     etapy: [
       {
-        tekst: 'Gdy nie zostanie żaden pobożny — to koniec: nikt inny nie skruszy skorupy, a nowych nikt nie wyda. Najczęściej zabija głód: lud rozproszony daleko od wiadra.',
+        tekst: 'Gdy nie zostanie żaden mnich — to koniec: nikt inny nie skruszy skorupy, a nowych nikt nie wyda. Najczęściej zabija głód: lud rozproszony daleko od wiadra.',
         rozumiem: true, wskaz: (s) => ({ typ: 'obszar', o: obszarSpisu(s.gra.plate, s.vh) }),
       },
     ],
-    koniec: 'Trzymaj lud razem, pilnuj, żeby robotnicy donosili jedzenie z wiadra, i nie wysyłaj pod rdzeń ostatniego pobożnego. Wszystko, co tu było, znajdziesz w atlasie.',
+    koniec: 'Trzymaj lud razem, pilnuj, żeby grabarze donosili jedzenie z wiadra, i nie wysyłaj pod rdzeń ostatniego mnicha. Wszystko, co tu było, znajdziesz w atlasie.',
   },
 ];
 

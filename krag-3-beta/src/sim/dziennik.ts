@@ -47,7 +47,7 @@ export function zapisz(sim: Sim, kat: KategoriaWpisu, tekst: string, x?: number,
 
 /** „Ślepy Lud #12 (Grzmotowie)”. */
 export function kto(sim: Sim, c: Creature): string {
-  const rola = c.race === 0 ? ({ pobozny: 'Pobożny', robotnik: 'Robotnik', rycerz: 'Rycerz' } as Record<string, string>)[c.rola ?? 'pobozny'] : null;
+  const rola = c.race === 0 ? ({ pobozny: 'Mnich', robotnik: 'Grabarz', rycerz: 'Rycerz' } as Record<string, string>)[c.rola ?? 'pobozny'] : null;
   return `${rola ?? RACES[c.race].name} #${c.id} (${sim.clans[c.clan]?.name ?? '?'})`;
 }
 

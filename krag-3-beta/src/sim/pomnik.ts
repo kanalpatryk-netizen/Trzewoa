@@ -66,9 +66,9 @@ export function stanPekania(proc: number): number {
 
 const LOG_STANU = [
   '',
-  'posąg Cerbera pęka pod modlitwą — po kamiennym Cerberze biegną pierwsze rysy.',
-  'Z pomnika odpadają kawałki kamienia. Coś w środku się porusza.',
-  'Przez szczeliny pomnika bije czerwone światło. Cerber w środku się budzi.',
+  'Pieczęć zejścia pęka pod modlitwą — po kamieniu biegną pierwsze rysy, a spod nich bije czerwone światło.',
+  'Z pieczęci odpadają kawałki. Gdzieś nad kręgiem Cerber podnosi trzy łby i węszy.',
+  'Przez szczeliny pieczęci bije łuna kręgu czwartego. Cerber już wie — i idzie po nich.',
 ];
 
 /** Co tik symulacji (z tikLudu). */
@@ -82,12 +82,12 @@ export function tikPomnika(sim: Sim): void {
       s.stan = nowy; s.stanT = sim.tick;
       for (let k = 0; k < 8; k++) sim.spark(w.coreX + 0.5 + sim.rng.range(-3, 3), w.coreY + sim.rng.range(-4, 3), 'dust');
       sim.gdzie(w.coreX + 0.5, w.coreY).log(LOG_STANU[nowy] ?? LOG_STANU[3], 'otchlan', `pomnik-${nowy}`);
-      zapisz(sim, 'rytual', `posąg Cerbera — stan pękania ${nowy} z ${POMNIK.stany.length}`, w.coreX, w.coreY);
+      zapisz(sim, 'rytual', `pieczęć zejścia — stan pękania ${nowy} z ${POMNIK.stany.length}`, w.coreX, w.coreY);
     }
     if (pomnikRozbity(sim)) {
       s.faza = 'rozpada'; s.od = sim.tick; s.stan = POMNIK.stany.length; s.stanT = sim.tick;
-      sim.gdzie(w.coreX + 0.5, w.coreY).log('posąg Cerbera rozpada się w gruz. Spod kamienia coś wstaje.', 'krew', 'pomnik-rozpad');
-      zapisz(sim, 'rytual', 'posąg Cerbera rozpada się', w.coreX, w.coreY);
+      sim.gdzie(w.coreX + 0.5, w.coreY).log('Pieczęć zejścia pęka na kawałki — otwiera się zejście do kręgu czwartego. Nad kręgiem rozlega się wycie na trzy gardła.', 'krew', 'pomnik-rozpad');
+      zapisz(sim, 'rytual', 'pieczęć zejścia rozpada się', w.coreX, w.coreY);
     }
     return;
   }

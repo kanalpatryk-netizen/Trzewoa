@@ -119,7 +119,7 @@ export function krewZOfiary(rodzaj: RodzajRytualu): number {
 export function czemuNie(sim: Sim, rodzaj: RodzajRytualu, cel?: number): string | null {
   if (sim.ending) return 'gra skończona';
   if (rytualOltarza(sim)) return 'trwa już inny rytuał';
-  if (!pobozniPrzyOltarzu(sim).length) return 'przy ołtarzu nie stoi żaden pobożny';
+  if (!pobozniPrzyOltarzu(sim).length) return 'przy ołtarzu nie stoi żaden mnich';
   const cena = cenaRytualu(rodzaj);
   if (sim.krew - sim.rezerwa.krew < cena) return `za mało krwi (trzeba ${cena})`;
   switch (rodzaj) {
@@ -129,8 +129,8 @@ export function czemuNie(sim: Sim, rodzaj: RodzajRytualu, cel?: number): string 
       if (cel !== undefined && !polegli(sim).some((t) => t.id === cel)) return 'tego ciała już nie ma';
       break;
     }
-    case 'ofiaraKrwi': if (!odprawiajacy(sim, rodzaj)) return 'pobożny przy ołtarzu jest już okaleczony'; break;
-    case 'ofiaraZycia': if (liczRole(sim).pobozny <= 1) return 'to ostatni pobożny — bez niego nikt nie odprawi rytuału'; break;
+    case 'ofiaraKrwi': if (!odprawiajacy(sim, rodzaj)) return 'mnich przy ołtarzu jest już okaleczony'; break;
+    case 'ofiaraZycia': if (liczRole(sim).pobozny <= 1) return 'to ostatni mnich — bez niego nikt nie odprawi rytuału'; break;
   }
   if ((rodzaj === 'ofiaraKrwi' || rodzaj === 'ofiaraZycia') && sim.krew >= GORA.krewMax) return 'krwi masz pełno';
   return null;
@@ -210,7 +210,7 @@ function zakoncz(sim: Sim, r: RytualOltarza, c: Creature): void {
   let cx: number | undefined, cy: number | undefined;
   switch (r.rodzaj) {
     case 'modlitwa':
-      tu.log(`Pobożny odmówił modlitwę przy ołtarzu: +${O.rytualy.modlitwa.wiara} wiary.`, 'wiara');
+      tu.log(`Mnich odmówił modlitwę przy ołtarzu: +${O.rytualy.modlitwa.wiara} wiary.`, 'wiara');
       break;
     case 'szal': {
       const rycerz = sim.creatureById(r.cel ?? -1);
@@ -219,7 +219,7 @@ function zakoncz(sim: Sim, r: RytualOltarza, c: Creature): void {
         cel.szalDo = sim.tick + O.rytualy.szal.trwa;
         cx = cel.x; cy = cel.y;
         r.cel = cel.id;
-        tu.log(`Szał krwi: ${rolaPostaci(cel) === 'rycerz' ? 'rycerz' : 'robotnik w hełmie'} przez minutę bije mocniej.`, 'krew');
+        tu.log(`Szał krwi: ${rolaPostaci(cel) === 'rycerz' ? 'rycerz' : 'grabarz w hełmie'} przez minutę bije mocniej.`, 'krew');
       } else {
         sim.krew += r.krew;
         tu.log('Szał krwi nie miał kogo rozpalić — krew wróciła.', 'krew');
@@ -237,12 +237,12 @@ function zakoncz(sim: Sim, r: RytualOltarza, c: Creature): void {
       c.hp = Math.min(c.hp, maxHp(sim, c));
       sim.krew += LUD.okaleczenieKrew;
       sim.efekt(c.x, c.y, 'mysl', `+${LUD.okaleczenieKrew} krwi`);
-      tu.log(`Pobożny upuścił krwi do misy: +${LUD.okaleczenieKrew} krwi. Słabnie, póki nie wyśpi się w sypialni.`, 'krew');
+      tu.log(`Mnich upuścił krwi do misy: +${LUD.okaleczenieKrew} krwi. Słabnie, póki nie wyśpi się w sypialni.`, 'krew');
       break;
     case 'ofiaraZycia':
       sim.krew += LUD.ofiaraKrew;
       sim.efekt(c.x, c.y, 'mysl', `+${LUD.ofiaraKrew} krwi`);
-      tu.log(`Pobożny oddał życie na ołtarzu: +${LUD.ofiaraKrew} krwi.`, 'krew');
+      tu.log(`Mnich oddał życie na ołtarzu: +${LUD.ofiaraKrew} krwi.`, 'krew');
       sim.kill(c, 'w ofierze na ołtarzu', 'ofiara');
       break;
   }

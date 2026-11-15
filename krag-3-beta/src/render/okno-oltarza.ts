@@ -37,14 +37,14 @@ function wiersze(sim: Sim): Wiersz[] {
   const out: Wiersz[] = [];
   const nikogo = !pobozniPrzyOltarzu(sim).length && !rytualOltarza(sim);
   if (nikogo && liczRole(sim).pobozny > 0) {
-    out.push({ akcja: 'przywolaj', tekst: 'Przywołaj pobożnego', cena: 'za darmo', daje: false, skutek: 'Najbliższy pobożny przyjdzie do ołtarza i zostanie przy nim, modląc się.', powod: null });
+    out.push({ akcja: 'przywolaj', tekst: 'Przywołaj mnicha', cena: 'za darmo', daje: false, skutek: 'Najbliższy mnich przyjdzie do ołtarza i zostanie przy nim, modląc się.', powod: null });
   }
   const skutki: Record<RodzajRytualu, string> = {
-    modlitwa: `Pobożny klęczy, od krzyża biją promienie. +${R.modlitwa.wiara} wiary przez ${Math.round(R.modlitwa.tikow / 120)} s.`,
+    modlitwa: `Mnich klęczy, od krzyża biją promienie. +${R.modlitwa.wiara} wiary przez ${Math.round(R.modlitwa.tikow / 120)} s.`,
     szal: `Krew spływa do misy, płonie krąg znaków. Rycerz przez ${Math.round(R.szal.trwa / 7200)} min bije ${String(R.szal.sila).replace('.', ',')} raza mocniej.`,
     wskrzeszenie: 'Ciało wstaje przy ołtarzu i wraca do drużyny.',
-    ofiaraKrwi: `Pobożny upuszcza krwi do misy (+${LUD.okaleczenieKrew} krwi). Słabnie, póki nie wyśpi się w sypialni.`,
-    ofiaraZycia: `Pobożny oddaje życie na ołtarzu (+${LUD.ofiaraKrew} krwi). Jego ciało można potem wskrzesić.`,
+    ofiaraKrwi: `Mnich upuszcza krwi do misy (+${LUD.okaleczenieKrew} krwi). Słabnie, póki nie wyśpi się w sypialni.`,
+    ofiaraZycia: `Mnich oddaje życie na ołtarzu (+${LUD.ofiaraKrew} krwi). Jego ciało można potem wskrzesić.`,
   };
   for (const rodzaj of RYTUALY) {
     const daje = krewZOfiary(rodzaj) > 0;
@@ -65,10 +65,10 @@ function wiersze(sim: Sim): Wiersz[] {
 /** Co dzieje się przy ołtarzu — jedno zdanie pod tytułem. */
 function stanOltarza(sim: Sim): string {
   const r = rytualOltarza(sim);
-  if (r) return `Trwa rytuał: ${NAZWA_RYTUALU[r.rodzaj].toLowerCase()} — ${Math.round(Math.min(1, (sim.tick - r.od) / Math.max(1, r.do - r.od)) * 100)}%. Pobożny klęczy przy ołtarzu.`;
+  if (r) return `Trwa rytuał: ${NAZWA_RYTUALU[r.rodzaj].toLowerCase()} — ${Math.round(Math.min(1, (sim.tick - r.od) / Math.max(1, r.do - r.od)) * 100)}%. Mnich klęczy przy ołtarzu.`;
   const n = pobozniPrzyOltarzu(sim).length;
-  if (n) return `Przy ołtarzu stoi ${n > 1 ? `${n} pobożnych` : 'pobożny'}. Wybierz rytuał — zapłacisz krwią (masz ${Math.floor(sim.krew)}).`;
-  return 'Przy ołtarzu nie stoi żaden pobożny. Przywołaj go albo zaznacz pobożnego i dotknij ołtarza.';
+  if (n) return `Przy ołtarzu stoi ${n > 1 ? `${n} pobożnych` : 'mnich'}. Wybierz rytuał — zapłacisz krwią (masz ${Math.floor(sim.krew)}).`;
+  return 'Przy ołtarzu nie stoi żaden mnich. Przywołaj go albo zaznacz mnicha i dotknij ołtarza.';
 }
 
 /** Rysuje okno ołtarza; zwraca pola do dotknięcia (podświetla to pod wskaźnikiem). */

@@ -26,7 +26,7 @@ export const OSIAGNIECIA: Osiagniecie[] = [
   { id: 'skromny', nazwa: 'Bez jałmużny', opis: 'Wygraj, ani razu nie spuszczając wiadra rytem Nakarm.', sprawdz: (s, w) => w && s.stat.nakarm === 0 },
   { id: 'wspinaczka', nazwa: 'Ostatkiem sił', opis: 'Niech umierający z głodu wespnie się po linie do zjeżdżającego wiadra.', sprawdz: (s) => s.stat.wspinaczek > 0 },
   { id: 'druzyna', nazwa: 'Cała drużyna', opis: 'Wygraj, nie tracąc nikogo z ludu.', sprawdz: (s, w) => w && s.stat.ludZgonow === 0 },
-  { id: 'helmy', nazwa: 'Kilofy zamiast mieczy', opis: 'Wygraj partię, w której robotnicy musieli założyć hełmy.', sprawdz: (s, w) => w && s.stat.helmy > 0 },
+  { id: 'helmy', nazwa: 'Kilofy zamiast mieczy', opis: 'Wygraj partię, w której grabarze musieli założyć hełmy.', sprawdz: (s, w) => w && s.stat.helmy > 0 },
   { id: 'weterani', nazwa: 'Stara gwardia', opis: `Miej naraz ${CELE.weteranow} weteranów.`, sprawdz: (s) => s.stat.weteranowMax >= CELE.weteranow },
   { id: 'ludna', nazwa: 'Ludna góra', opis: `Miej naraz ${CELE.lud} postaci ludu.`, sprawdz: (s) => s.stat.ludMax >= CELE.lud },
   { id: 'dlon', nazwa: 'Wyrwani z dłoni', opis: 'Odepchnij Cudem dłoń z otchłani, zanim kogoś chwyci.', sprawdz: (s) => s.stat.odepchnieta > 0 },

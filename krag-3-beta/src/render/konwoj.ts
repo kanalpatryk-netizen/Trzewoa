@@ -264,7 +264,8 @@ function woz(ctx: CanvasRenderingContext2D, cam: Camera, teraz: number, s: Stan,
   // dalszy koń, za nim dyszel; potem wóz i bliższy koń
   ctx.save();
   ctx.translate(konD, pod(konD) - 0.13);
-  kon_(ctx, faza + 0.6, tempo, teraz, lw, KON_DALSZY, (dx) => pod(konD + dx) - pod(konD), stoja, 1);
+  zaprzegnieci(ctx, faza + 0.6, tempo, teraz, lw, true);
+  void KON_DALSZY; void kon_;
   ctx.restore();
   const osP = U.zWozu(kolaP, yT + rT - rP);
   ctx.strokeStyle = 'rgba(60,42,26,1)'; ctx.lineWidth = 0.1;
@@ -322,7 +323,8 @@ function woz(ctx: CanvasRenderingContext2D, cam: Camera, teraz: number, s: Stan,
   // bliższy koń, postronek do skrzyni i lejce do rąk woźnicy
   ctx.save();
   ctx.translate(kon, pod(kon));
-  kon_(ctx, faza, tempo, teraz, lw, KON_BLISKI, (dx) => pod(kon + dx) - pod(kon), stoja, 0);
+  zaprzegnieci(ctx, faza, tempo, teraz, lw, false);
+  void stoja;
   ctx.restore();
   const przodSkrzyni = U.zWozu(ogon + 3.95, dno - 0.16);
   ctx.strokeStyle = 'rgba(40,26,16,1)'; ctx.lineWidth = 0.05;
@@ -559,4 +561,51 @@ export function rysujKonwojNad(ctx: CanvasRenderingContext2D, sim: Sim, cam: Cam
   ctx.fillStyle = 'rgba(255,232,170,0.9)';
   ctx.beginPath(); ctx.ellipse(x, y, z * 0.05, z * 0.08, 0, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
+}
+
+/**
+ * Krąg Trzeci: zamiast koni wóz z resztkami ciągną potępieni w uprzęży — dwóch obok siebie, pochyleni, z pasem
+ * przez pierś (jednostki: kafle, stopy w y = 0, przód w +x). Dalsi ciemniejsi.
+ */
+function zaprzegnieci(ctx: CanvasRenderingContext2D, faza: number, tempo: number, teraz: number, lw: number, dalsi: boolean): void {
+  const sk = dalsi ? 'rgb(96,92,78)' : 'rgb(140,134,112)';
+  const tusz = 'rgba(14,10,8,0.95)';
+  for (const [dx, przes] of [[-0.55, 0], [0.75, Math.PI * 0.7]] as const) {
+    const f = faza + przes;
+    const krok = Math.sin(f) * 0.32 * Math.max(0.2, tempo);
+    const unies = Math.max(0, Math.cos(f)) * 0.18 * Math.max(0.2, tempo);
+    const bob = -Math.abs(Math.sin(f)) * 0.04;
+    const pochyl = 0.62 + 0.04 * Math.sin(teraz * 0.002 + dx);
+    ctx.save();
+    ctx.translate(dx, 0);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    // nogi
+    const biodro: [number, number] = [0, -0.95 + bob];
+    for (const [s0, kol] of [[1, sk], [-1, sk]] as const) {
+      const stopa: [number, number] = [krok * s0, -(s0 > 0 ? unies : 0)];
+      const kolano: [number, number] = [(biodro[0] + stopa[0]) / 2 + 0.16, (biodro[1] + stopa[1]) / 2];
+      ctx.strokeStyle = tusz; ctx.lineWidth = 0.2 + lw;
+      ctx.beginPath(); ctx.moveTo(...biodro); ctx.lineTo(...kolano); ctx.lineTo(...stopa); ctx.stroke();
+      ctx.strokeStyle = kol; ctx.lineWidth = 0.16;
+      ctx.beginPath(); ctx.moveTo(...biodro); ctx.lineTo(...kolano); ctx.lineTo(...stopa); ctx.stroke();
+    }
+    // tułów pochylony do przodu
+    const bark: [number, number] = [biodro[0] + Math.sin(pochyl) * 0.72, biodro[1] - Math.cos(pochyl) * 0.72];
+    ctx.strokeStyle = tusz; ctx.lineWidth = 0.42 + lw;
+    ctx.beginPath(); ctx.moveTo(...biodro); ctx.lineTo(...bark); ctx.stroke();
+    ctx.strokeStyle = sk; ctx.lineWidth = 0.38;
+    ctx.beginPath(); ctx.moveTo(...biodro); ctx.lineTo(...bark); ctx.stroke();
+    // łachman na biodrach
+    ctx.fillStyle = dalsi ? 'rgb(48,40,32)' : 'rgb(70,58,44)';
+    ctx.beginPath(); ctx.ellipse(biodro[0] + 0.05, biodro[1] + 0.05, 0.24, 0.16, pochyl * 0.5, 0, Math.PI * 2); ctx.fill();
+    // głowa nisko
+    ctx.fillStyle = sk; ctx.strokeStyle = tusz; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.arc(bark[0] + 0.2, bark[1] + 0.02, 0.15, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // ręce zaciśnięte na pasie przy piersi, pas do tyłu (do wozu)
+    ctx.strokeStyle = sk; ctx.lineWidth = 0.12;
+    ctx.beginPath(); ctx.moveTo(bark[0], bark[1] + 0.05); ctx.lineTo(bark[0] + 0.12, bark[1] + 0.35); ctx.lineTo(bark[0] - 0.08, bark[1] + 0.3); ctx.stroke();
+    ctx.strokeStyle = 'rgba(60,42,26,1)'; ctx.lineWidth = 0.06;
+    ctx.beginPath(); ctx.moveTo(bark[0] - 0.05, bark[1] + 0.25); ctx.lineTo(-1.2, -0.95); ctx.stroke();
+    ctx.restore();
+  }
 }

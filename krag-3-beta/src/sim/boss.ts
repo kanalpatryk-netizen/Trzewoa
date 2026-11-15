@@ -40,7 +40,7 @@ function modlacych(sim: Sim): number { return sim.rytual.wierni ?? 0; }
 const sniacyKamien: Boss = {
   id: 'sniacyKamien',
   nazwa: K.nazwa,
-  opis: 'Rani go tylko rycerz. Zasypuje drogę wiernych. Słabnie, gdy pod rdzeniem modli się trzech pobożnych — bez modlitwy się zrasta.',
+  opis: 'Rani go tylko rycerz. Zasypuje drogę wiernych. Słabnie, gdy pod rdzeniem modli się trzech mnichów — bez modlitwy się zrasta.',
   rozmiar: K.rozmiar,
   pojaw(sim) {
     const w = sim.world;
@@ -96,7 +96,7 @@ function przyjmijKamienny(sim: Sim, _c: Creature, od: Creature, rana: number): n
 const demon: Boss = {
   id: 'demon',
   nazwa: DEMON.nazwa,
-  opis: 'Trójgłowy pies, strażnik kręgu żarłoków — spał w kamieniu w lochu. Rani go tylko rycerz; garść jedzenia w paszczę na chwilę go zajmuje. Zasypuje drogę wiernych. Słabnie, gdy pobożni się modlą — bez modlitwy się zrasta. Gdy padnie, droga w dół stoi otworem.',
+  opis: 'Trójgłowy pies, strażnik kręgu żarłoków — spał w kamieniu w lochu. Rani go tylko rycerz; garść jedzenia w paszczę na chwilę go zajmuje. Zasypuje drogę wiernych. Słabnie, gdy mnisi się modlą — bez modlitwy się zrasta. Gdy padnie, droga w dół stoi otworem.',
   rozmiar: DEMON.rozmiar,
   pojaw(sim) {
     const m = miejscePomnika(sim);
@@ -150,7 +150,7 @@ export function zasypDroge(sim: Sim, c: Creature): void {
   if (!ile) return;
   const i = kandydaci[start];
   sim.efekt(c.x, c.y, 'cud');
-  sim.gdzie(i % w.w, (i / w.w) | 0).log(`${K.nazwa} uderza w ziemię — zasypał kawałek drogi wiernych. Robotnicy muszą ją odkopać.`, 'swiat', 'boss-zasyp');
+  sim.gdzie(i % w.w, (i / w.w) | 0).log(`${K.nazwa} uderza w ziemię — zasypał kawałek drogi wiernych. Grabarze muszą ją odkopać.`, 'swiat', 'boss-zasyp');
 }
 
 export const BOSSOWIE: Record<IdBossa, Boss> = { sniacyKamien, demon };

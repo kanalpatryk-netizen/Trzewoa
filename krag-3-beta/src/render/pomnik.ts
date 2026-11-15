@@ -312,24 +312,21 @@ export function rysujPomnik(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
     const top = cokol(ctx, bx, by, H, k >= PEK, z);
     const drga = ruch ? Math.sin(teraz * 0.11) * H * 0.012 * gladko(k / PEK) : 0;
     if (k < PEK) {
-      const p = posagCerbera(3, teraz, gladko(k / PEK), ruch);
-      p.rany = 0.6 + 0.4 * gladko(k / PEK);
-      const pk = cerberNaCokole(ctx, bx + drga, top, H, p);
-      lancuch(ctx, pk.obroza, [bx + H * 0.29, top + H * 0.02], z);
-      lancuch(ctx, pk.brzuch, [bx - H * 0.29, top + H * 0.02], z);
+      // pieczęć drży, rysy płoną, łańcuchy się naprężają
+      pieczec(ctx, bx + drga, top, H, z, 3, teraz, gladko(k / PEK), 1 + gladko(k / PEK));
     } else {
       const kk = (k - PEK) / (1 - PEK);
+      otworZejscia(ctx, bx, top, H, teraz, gladko(kk * 2));
       gruz(ctx, bx, by, H, gladko(kk * 1.6), teraz, z);
-      const p = posagCerbera(3, teraz, 1, ruch);
-      p.rany = 1;
-      const L = warstwaCerbera(ctx, H, p);
-      rozbite(ctx, bx, top - H * 0.35, H * 0.62, kk, 300, 1, () => { ctx.drawImage(L.c, 0, 0, L.cw, L.ch, bx - L.ox, top - L.oy, L.W, L.Hh); });
-      lancuch(ctx, [bx + H * 0.15, top - H * 0.3], [bx + H * 0.29, top + H * 0.02], z, gladko(kk * 2));
-      lancuch(ctx, [bx - H * 0.1, top - H * 0.3], [bx - H * 0.29, top + H * 0.02], z, gladko(kk * 2));
+      const L = warstwaPieczeci(ctx, H, z, teraz);
+      rozbite(ctx, bx, top - H * 0.42, H * 0.5, kk, 300, 1, () => { ctx.drawImage(L.c, 0, 0, L.cw, L.ch, bx - L.ox, top - L.oy, L.W, L.Hh); });
+      lancuch(ctx, [bx - H * 0.2, top - H * 0.6], [bx - H * 0.29, top + H * 0.02], z, gladko(kk * 2));
+      lancuch(ctx, [bx + H * 0.2, top - H * 0.6], [bx + H * 0.29, top + H * 0.02], z, gladko(kk * 2));
     }
   } else {
-    // gruz po pomniku zostaje do końca gry; z niego wstaje demon (dalej rysuje go mapa jako bossa)
-    cokol(ctx, bx, by, H, true, z);
+    // Krąg Trzeci: pieczęć rozbita — otwarte zejście do kręgu czwartego; z góry zeskakuje Cerber
+    const top = cokol(ctx, bx, by, H, true, z);
+    otworZejscia(ctx, bx, top, H, teraz, 1);
     gruz(ctx, bx, by, H, 1, teraz, z);
     if (faza === 'wychodzi') wstajacyDemon(ctx, sim, cam, bx, by, H, teraz);
   }
@@ -342,14 +339,118 @@ export function rysujPomnik(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera
  * pył i odłamki). Stopy cokołu w (bx, by). Także rycina w atlasie.
  */
 export function rysujPosag(ctx: CanvasRenderingContext2D, bx: number, by: number, H: number, z: number, stan: number, teraz: number, swieze = 0, ruch = true): void {
-  // Krąg Trzeci: w lochu leży kamienny Cerber zakuty w łańcuchy; modlitwa budzi po kolei jego głowy (oczy się żarzą)
+  // Krąg Trzeci: na dnie trzewi — zapieczętowane zejście do kręgu czwartego; modlitwa kruszy pieczęć
   const drga = ruch && swieze > 0 ? Math.sin(teraz * 0.09) * H * 0.006 * swieze : 0;
   const top = cokol(ctx, bx, by, H, false, z);
-  const pk = cerberNaCokole(ctx, bx + drga, top, H, posagCerbera(stan, teraz, swieze, ruch));
-  lancuch(ctx, pk.obroza, [bx + H * 0.29, top + H * 0.02], z);
-  lancuch(ctx, pk.brzuch, [bx - H * 0.29, top + H * 0.02], z);
+  pieczec(ctx, bx + drga, top, H, z, stan, ruch ? teraz : 0, swieze, 1);
   if (swieze > 0) odlamki(ctx, bx, top, H, 1 - swieze, stan, z);
   if (stan >= 2) gruz(ctx, bx + H * 0.24, top, H * 0.35, 1, teraz, z);
+}
+
+/**
+ * Pieczęć zejścia: kamienne koło stojące na cokole, w nim wyryty trójgłowy pies, dookoła runy, na krzyż dwa łańcuchy.
+ * Rysy (`stan` 0…3) świecą czerwono — spod spodu bije łuna kręgu czwartego. `napiecie` > 1 — łańcuchy pękają.
+ */
+function pieczec(ctx: CanvasRenderingContext2D, bx: number, top: number, H: number, z: number, stan: number, teraz: number, swieze: number, napiecie: number): void {
+  const R = H * 0.4, cx = bx, cy = top - R - H * 0.02;
+  const t = teraz / 1000;
+  ctx.save();
+  ctx.lineJoin = 'round';
+  // koło
+  const g = ctx.createRadialGradient(cx - R * 0.3, cy - R * 0.4, R * 0.1, cx, cy, R);
+  g.addColorStop(0, 'rgb(128,126,116)'); g.addColorStop(1, 'rgb(58,56,50)');
+  ctx.fillStyle = g; ctx.strokeStyle = 'rgba(14,10,8,0.95)'; ctx.lineWidth = Math.max(1.5, H * 0.012);
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgb(74,72,64)';
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.78, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  // runy w pierścieniu
+  ctx.strokeStyle = 'rgba(20,14,10,0.7)'; ctx.lineWidth = Math.max(1, H * 0.006);
+  for (let i = 0; i < 24; i++) {
+    const a = (i / 24) * Math.PI * 2, r1 = R * 0.83, r2 = R * 0.95;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+    ctx.lineTo(cx + Math.cos(a + 0.08 * (los(i) - 0.5)) * r2, cy + Math.sin(a + 0.1) * r2);
+    if (los(i * 3) < 0.5) ctx.lineTo(cx + Math.cos(a + 0.12) * (r1 + r2) / 2, cy + Math.sin(a + 0.12) * (r1 + r2) / 2);
+    ctx.stroke();
+  }
+  // płaskorzeźba: trójgłowy pies (oczy żarzą się z kolejnymi rysami)
+  ctx.save();
+  ctx.beginPath(); ctx.arc(cx, cy, R * 0.74, 0, Math.PI * 2); ctx.clip();
+  ctx.globalAlpha = 0.85;
+  ctx.translate(cx - R * 0.12, cy + R * 0.5);
+  const p = pozaCerbera();
+  p.czas = teraz; p.kamien = 1; p.lezy = 0;
+  p.glowy.forEach((gl, i) => { gl.oczy = stan > i ? 0.4 + 0.4 * (0.5 + 0.5 * Math.sin(t * 4 + i)) : 0; gl.paszcza = 0.3; gl.pochyl = -0.2; });
+  rysujCerbera(ctx, R * 1.15, p);
+  ctx.restore();
+  // rysy — świecą czerwono od spodu
+  if (stan > 0 || swieze > 0) {
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const n = stan * 4 + 2;
+    for (let i = 0; i < n; i++) {
+      const a = los(i * 13 + 5) * Math.PI * 2;
+      let x = cx + Math.cos(a) * R * 0.1, y = cy + Math.sin(a) * R * 0.1;
+      ctx.strokeStyle = `rgba(255,${80 + 40 * Math.sin(t * 3 + i)},40,${0.35 + 0.15 * stan + 0.3 * swieze})`;
+      ctx.lineWidth = Math.max(1, H * (0.006 + 0.003 * stan));
+      ctx.beginPath(); ctx.moveTo(x, y);
+      for (let j = 0; j < 5; j++) {
+        const d = R * (0.18 + 0.17 * j);
+        x = cx + Math.cos(a + (los(i * 7 + j) - 0.5) * 0.5) * d; y = cy + Math.sin(a + (los(i * 11 + j) - 0.5) * 0.5) * d;
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    if (stan >= 3) {
+      const lg = ctx.createRadialGradient(cx, cy, 0, cx, cy, R * 1.4);
+      lg.addColorStop(0, `rgba(255,80,30,${0.18 + 0.08 * Math.sin(t * 5)})`); lg.addColorStop(1, 'rgba(255,40,10,0)');
+      ctx.fillStyle = lg; ctx.fillRect(cx - R * 1.4, cy - R * 1.4, R * 2.8, R * 2.8);
+    }
+    ctx.restore();
+  }
+  // łańcuchy na krzyż, uwiązane do cokołu
+  const dr = napiecie > 1 ? Math.sin(t * 40) * H * 0.004 * (napiecie - 1) : 0;
+  lancuch(ctx, [cx - R * 0.95, cy - R * 0.55 + dr], [bx + H * 0.29, top + H * 0.02], z);
+  lancuch(ctx, [cx + R * 0.95, cy - R * 0.55 - dr], [bx - H * 0.29, top + H * 0.02], z);
+  ctx.restore();
+}
+
+let warstwaP: HTMLCanvasElement | null = null;
+/** Pieczęć na osobnej warstwie — rozpad kroi ją na bryły. */
+function warstwaPieczeci(ctx: CanvasRenderingContext2D, H: number, z: number, teraz: number): { c: HTMLCanvasElement; cw: number; ch: number; W: number; Hh: number; ox: number; oy: number } {
+  const m = ctx.getTransform(), dpr = Math.max(1, Math.hypot(m.a, m.b));
+  const W = Math.ceil(H * 1.2), Hh = Math.ceil(H * 1.0), ox = W / 2, oy = H * 0.95;
+  warstwaP ??= document.createElement('canvas');
+  const cw = Math.ceil(W * dpr), ch = Math.ceil(Hh * dpr);
+  if (warstwaP.width < cw || warstwaP.height < ch) { warstwaP.width = cw; warstwaP.height = ch; }
+  const g = warstwaP.getContext('2d')!;
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.clearRect(0, 0, warstwaP.width, warstwaP.height);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  pieczec(g, ox, oy, H, z, 3, teraz, 1, 1);
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  return { c: warstwaP, cw, ch, W, Hh, ox, oy };
+}
+
+/** Otwarte zejście do kręgu czwartego w miejscu pieczęci: czarna studnia, z dołu czerwona łuna i iskry. */
+function otworZejscia(ctx: CanvasRenderingContext2D, bx: number, top: number, H: number, teraz: number, k: number): void {
+  if (k <= 0) return;
+  const t = teraz / 1000;
+  const R = H * 0.36, cy = top - R;
+  ctx.save();
+  ctx.globalAlpha = k;
+  ctx.fillStyle = 'rgb(6,4,4)';
+  ctx.beginPath(); ctx.ellipse(bx, cy, R, R * 1.05, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.globalCompositeOperation = 'lighter';
+  const g = ctx.createRadialGradient(bx, cy + R * 0.6, 0, bx, cy + R * 0.6, R * 1.3);
+  g.addColorStop(0, `rgba(220,70,30,${0.55 + 0.1 * Math.sin(t * 3)})`); g.addColorStop(1, 'rgba(160,30,10,0)');
+  ctx.fillStyle = g; ctx.fillRect(bx - R * 1.4, cy - R * 1.2, R * 2.8, R * 2.6);
+  for (let i = 0; i < 10; i++) {
+    const f = (t * 0.4 + los(i)) % 1;
+    ctx.fillStyle = `rgba(255,${150 - f * 80},60,${0.8 * (1 - f)})`;
+    ctx.fillRect(bx + (los(i * 3) - 0.5) * R * 1.4, cy + R * 0.8 - f * R * 2.4, 2, 2);
+  }
+  ctx.restore();
 }
 
 /** Kamienny Cerber na cokole w danym stanie pękania: oczy budzących się głów, rysy. */
@@ -420,44 +521,51 @@ function wstajacyDemon(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, bx:
 
 /** Demon wstaje z gruzu (`k` 0…1): stopy w (bx, by), `Hp` — wysokość posągu (kopiec), `h` — demona. Także w atlasie. */
 export function rysujWstajacego(ctx: CanvasRenderingContext2D, bx: number, by: number, Hp: number, h: number, k: number, teraz: number): void {
-  // Krąg Trzeci: z gruzu wstaje Cerber — głowy budzą się po kolei, kamień ożywa, trzy paszcze wyją
-  const wzlot = gladko(k / 0.6);
+  // Krąg Trzeci: pieczęć pękła — Cerber zeskakuje z góry za potępionymi, ląduje, przysiada i wyje na trzy gardła
+  const SKOK = 0.4;
   const p = pozaCerbera();
   p.czas = teraz;
-  p.kamien = 1 - gladko((k - 0.4) / 0.3);
-  p.lezy = 1 - gladko((k - 0.35) / 0.35);
-  p.glowy.forEach((g, i) => { g.oczy = gladko((k - 0.28 - i * 0.07) / 0.06); });
-  if (k > 0.78 && k < 0.95) {
-    const w = Math.sin(((k - 0.78) / 0.17) * Math.PI);
-    p.glowy.forEach((g) => { g.pochyl -= 0.8 * w; g.paszcza = w; });
-    p.deba = 0.3 * w;
+  let dy = 0;
+  if (k < SKOK) {
+    const f = k / SKOK;
+    dy = -h * 5 * (1 - f * f);
+    p.deba = 0.25; p.krok = 0;
+    p.glowy.forEach((g) => { g.pochyl = 0.4; g.paszcza = 0.6; });
+  } else {
+    p.przysiad = Math.max(0, 1 - (k - SKOK) / 0.2);
+    if (k > 0.62 && k < 0.94) {
+      const w = Math.sin(((k - 0.62) / 0.32) * Math.PI);
+      p.glowy.forEach((g, i) => { g.pochyl = -0.85 * w + 0.05 * i; g.paszcza = w; });
+      p.deba = 0.25 * w;
+    }
   }
   ctx.save();
-  ctx.beginPath();
-  ctx.rect(bx - Hp * 1.5, by - Hp * 2, Hp * 3, Hp * 2 - Hp * 0.07);
-  ctx.clip();
-  ctx.translate(bx - h * 0.15, by + (1 - wzlot) * h * 0.9);
+  ctx.translate(bx - h * 0.15, by + dy);
   rysujCerbera(ctx, h, p);
   ctx.restore();
-  // ryk (oczy rozbłyskują, odrzucona głowa): czerwony błysk wokół
-  if (k > 0.78 && k < 0.95) {
-    const a = Math.sin(((k - 0.78) / 0.17) * Math.PI);
-    const r = h * 1.2;
-    const g = ctx.createRadialGradient(bx, by - h * 0.7, 0, bx, by - h * 0.7, r);
-    g.addColorStop(0, `rgba(255,110,60,${0.35 * a})`); g.addColorStop(1, 'rgba(255,60,30,0)');
-    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(bx - r, by - h * 0.7 - r, r * 2, r * 2); ctx.restore();
+  // lądowanie: fala pyłu i odłamki
+  if (k >= SKOK && k < SKOK + 0.2) {
+    const f = (k - SKOK) / 0.2;
+    ctx.save();
+    ctx.strokeStyle = `rgba(170,150,130,${0.6 * (1 - f)})`; ctx.lineWidth = Math.max(2, h * 0.02);
+    ctx.beginPath(); ctx.ellipse(bx, by, h * (0.4 + f * 1.4), h * (0.06 + f * 0.15), 0, 0, Math.PI * 2); ctx.stroke();
+    for (let i = 0; i < 12; i++) {
+      const a = Math.PI + los(i + 50) * Math.PI;
+      const x = bx + Math.cos(a) * h * 1.2 * f, y = by + Math.sin(a) * h * 0.8 * f + f * f * h * 0.6;
+      ctx.fillStyle = `rgba(110,98,86,${1 - f})`;
+      ctx.fillRect(x - 2, Math.min(by, y) - 2, 4, 4);
+    }
+    ctx.restore();
   }
-  // osypujący się z niego gruz
-  ctx.save();
-  for (let i = 0; i < 8; i++) {
-    const t = ((k * 3 + los(i + 120)) % 1);
-    const x = bx + (los(i + 130) - 0.5) * h * 0.4;
-    const y = by - h * (0.2 + los(i + 140) * 0.5) * wzlot + t * t * h * 0.8;
-    ctx.fillStyle = `rgba(110,98,86,${1 - t})`;
-    const r = Math.max(1.5, h * 0.012);
-    ctx.fillRect(x - r, Math.min(by - 2, y) - r, r * 2, r * 2);
+  // wycie: czerwony błysk
+  if (k > 0.62 && k < 0.94) {
+    const a = Math.sin(((k - 0.62) / 0.32) * Math.PI);
+    const r = h * 1.3;
+    const g = ctx.createRadialGradient(bx + h * 0.4, by - h * 0.8, 0, bx + h * 0.4, by - h * 0.8, r);
+    g.addColorStop(0, `rgba(255,110,60,${0.3 * a})`); g.addColorStop(1, 'rgba(255,60,30,0)');
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.fillStyle = g; ctx.fillRect(bx - r, by - h * 0.8 - r, r * 2.6, r * 2); ctx.restore();
   }
-  ctx.restore();
+  void Hp;
 }
 
 /**
@@ -601,4 +709,4 @@ export function rysujNadPomnikiem(ctx: CanvasRenderingContext2D, sim: Sim, cam: 
 }
 
 // Krąg Trzeci: dawny posąg demona (Alpha 1) zostaje w kodzie na wzór — rysuje się Cerber (render/cerber.ts)
-void [posagZUbytkami, pozaPosagu];
+void [posagZUbytkami, pozaPosagu, posagCerbera, cerberNaCokole];

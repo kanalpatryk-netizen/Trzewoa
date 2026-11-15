@@ -429,7 +429,7 @@ function brama(sim: Sim): void {
         if (sim.wiara < 8 || !whisper(sim, 'modl', c)) wydajPolecenie(sim, c, 'idz', w.coreX + (c.id % 2 ? -3 : 3), w.przedsionekY);
       }
       for (const c of zRola(sim, 'rycerz')) if (!wLochu(c)) wPosterunku(c);
-      mysl(sim, 'brama lochu podniesiona — pobożni z kotła schodzą pod pomnik, rycerze wchodzą do lochu');
+      mysl(sim, 'brama lochu podniesiona — mnisi z kotła schodzą pod pomnik, rycerze wchodzą do lochu');
       return;
     }
     // przy kotle za mało rąk (drugiego zabrał np. rytuał przy ołtarzu) — krata stoi w miejscu: dosyła wolnego pobożnego
@@ -439,7 +439,7 @@ function brama(sim: Sim): void {
       const wolni = pobozni.filter((c) => !c.polecenie && !wLochu(c) && c.hunger < 0.6)
         .sort((a, b) => Math.hypot(a.x - k.x, a.y - k.y) - Math.hypot(b.x - k.x, b.y - k.y))
         .slice(0, BRAMA.potrzeba - zaklinaja.length);
-      if (wolni.length && wydajDoKotla(sim, wolni.map((c) => c.id)).przyjeli) mysl(sim, 'przy kotle zaklina za mało pobożnych — dosyłam drugiego');
+      if (wolni.length && wydajDoKotla(sim, wolni.map((c) => c.id)).przyjeli) mysl(sim, 'przy kotle zaklina za mało mnichów — dosyłam drugiego');
     }
     return;
   }
@@ -461,7 +461,7 @@ function brama(sim: Sim): void {
   // rycerze — na przedproże, pod bramę
   const pp = w.przedproze;
   for (const c of zRola(sim, 'rycerz')) if (!wLochu(c)) wydajPolecenie(sim, c, 'idz', pp.x1 - 1 - (c.id % 3), pp.y1);
-  mysl(sim, 'brama lochu zamknięta — dwóch pobożnych do kotła, rycerze pod bramę');
+  mysl(sim, 'brama lochu zamknięta — dwóch mnichów do kotła, rycerze pod bramę');
 }
 
 function rycerzNaFale(sim: Sim): void {
@@ -571,7 +571,7 @@ function potrzebnyRytual(sim: Sim, styl: StylBota): { rodzaj: RodzajRytualu; zDa
   if (trup && wolna >= 100 && !walkaZDemonem(sim)) return { rodzaj: 'wskrzeszenie', zDaleka: true, czemu: `wskrzeszam poległego (${NAZWA_ROLI[trup.rola].toLowerCase()} #${trup.id})` };
   // ofiara życia, gdy krwi prawie nie ma (decyzja użytkownika: także ta ofiara) — ołtarz nie przyjmie ostatniego
   const p = pamiec(sim);
-  if (sim.krew < 10 && sim.tick - (p.krewNiskoOd ?? sim.tick) > M && sim.tick - (p.wydalKrewT ?? -1e9) > 2 * M && role(sim).pobozny >= 2 && proc < 60) return { rodzaj: 'ofiaraZycia', zDaleka: false, czemu: 'krwi prawie nie ma — pobożny oddaje życie na ołtarzu' };
+  if (sim.krew < 10 && sim.tick - (p.krewNiskoOd ?? sim.tick) > M && sim.tick - (p.wydalKrewT ?? -1e9) > 2 * M && role(sim).pobozny >= 2 && proc < 60) return { rodzaj: 'ofiaraZycia', zDaleka: false, czemu: 'krwi prawie nie ma — mnich oddaje życie na ołtarzu' };
   // ofiara krwi, gdy krwi mało, a jest gdzie potem się wyspać
   if (sim.krew < 30 && gotowy(sim, 'sypialnia')) return { rodzaj: 'ofiaraKrwi', zDaleka: false, czemu: 'krwi mało — ofiara krwi, potem sen w sypialni' };
   // modlitwa, gdy wiary brakuje, a krwi jest zapas — tylko pobożny, który i tak jest na górze
@@ -678,7 +678,7 @@ function dopomnika(sim: Sim, maxGlod: number): void {
     if (c.polecenie || p.wezwany === c.id || p.odprawia?.kto === c.id || p.odeslani.has(c.id)) continue;
     if (whisper(sim, 'modl', c)) poslal++;
   }
-  if (poslal) mysl(sim, `pobożni schodzą pod pomnik i się modlą (${procentSkorupy(sim)}%)`);
+  if (poslal) mysl(sim, `mnisi schodzą pod pomnik i się modlą (${procentSkorupy(sim)}%)`);
 }
 
 function rozsadny(sim: Sim, k: number): void {
@@ -697,7 +697,7 @@ function budowniczy(sim: Sim, k: number): void {
   // wymarsz pod pomnik, gdy droga gotowa i jest co jeść (albo po 8 minutach)
   if (!p.wymarsz) {
     const gotowy = jedzenie(sim) >= 12 && sim.krew >= 40 && czoloDrogi(sim) < 0;
-    if (gotowy || sim.tick > 8 * M) { p.wymarsz = sim.tick; mysl(sim, 'wymarsz — pobożni schodzą pod pomnik'); }
+    if (gotowy || sim.tick > 8 * M) { p.wymarsz = sim.tick; mysl(sim, 'wymarsz — mnisi schodzą pod pomnik'); }
   }
   if (p.wymarsz && k % 10 === 0) dopomnika(sim, 0.5);
 }
@@ -753,10 +753,10 @@ export function myslBota(sim: Sim, styl: StylBota): string {
   if (p.mysl && sim.tick - p.myslOd < MYSL_TIKOW) return p.mysl;
   const faza = stanPomnika(sim).faza;
   if (faza === 'walka' || faza === 'wychodzi' || faza === 'rozpada') return 'walka z Cerberem — rycerz na Cerbera, reszta z dala';
-  if (falaTrwa(sim)) return 'fala Strażników — rycerz broni pobożnych pod pomnikiem';
+  if (falaTrwa(sim)) return 'fala Strażników — rycerz broni mnichów pod pomnikiem';
   if (czoloDrogi(sim) >= 0) return `kopiemy drogę wiernych — zostało ${nieWykopane(sim).length} kafli`;
   if (styl === 'budowniczy' && !p.wymarsz) return 'przygotowania przed wymarszem pod pomnik';
   const kuz = pokoj(sim, 'kuznia');
   const zbroja = `zbroja ${sim.zbroja.length}/${POMIESZCZENIA.kuznia.czesci.length}`;
-  return `pobożni kruszą pomnik — ${procentSkorupy(sim)}%${kuz ? ` · ${zbroja}` : ''}`;
+  return `mnisi kruszą pomnik — ${procentSkorupy(sim)}%${kuz ? ` · ${zbroja}` : ''}`;
 }

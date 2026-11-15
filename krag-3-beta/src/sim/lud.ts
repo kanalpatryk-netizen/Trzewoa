@@ -33,8 +33,8 @@ import { mnoznikKregu, type StanKregu } from './krag';
 
 export type { Rola } from '../nastawy/lud';
 
-export const NAZWA_ROLI: Record<Rola, string> = { pobozny: 'Pobożny', robotnik: 'Robotnik', rycerz: 'Rycerz' };
-export const NAZWA_ROLI_MNOGA: Record<Rola, string> = { pobozny: 'pobożni', robotnik: 'robotnicy', rycerz: 'rycerze' };
+export const NAZWA_ROLI: Record<Rola, string> = { pobozny: 'Mnich', robotnik: 'Grabarz', rycerz: 'Rycerz' };
+export const NAZWA_ROLI_MNOGA: Record<Rola, string> = { pobozny: 'mnisi', robotnik: 'grabarze', rycerz: 'rycerz' };
 
 /** Stan ludu w symulacji (trafia do zapisu). */
 export interface StanLudu {
@@ -244,8 +244,8 @@ function pilnujHelmow(sim: Sim): void {
   }
   if (helmy !== !!sim.lud.helmy) {
     sim.lud.helmy = helmy;
-    if (helmy && robotnikow) sim.log('Nie został ani jeden rycerz. Robotnicy zakładają hełmy i biorą kilofy do walki.', 'krew');
-    else if (!helmy && robotnikow) sim.log('Rycerze znów są w ludzie — robotnicy zdejmują hełmy i wracają do kopania.', 'swiat');
+    if (helmy && robotnikow) sim.log('Nie został ani jeden rycerz. Grabarze zakładają hełmy i biorą kilofy do walki.', 'krew');
+    else if (!helmy && robotnikow) sim.log('Rycerze znów są w ludzie — grabarze zdejmują hełmy i wracają do kopania.', 'swiat');
   }
 }
 
@@ -459,7 +459,7 @@ function sprawdzPrzegrana(sim: Sim): void {
   if (sim.ending) return;
   if (liczRole(sim).pobozny > 0) return;
   sim.ending = 'upadek';
-  sim.log('Nie został nikt, kto by się modlił. Posąg Cerbera już nie pęknie.', 'koniec');
+  sim.log('Nie został nikt, kto by się modlił. Pieczęć zejścia już nie pęknie.', 'koniec');
 }
 
 /**

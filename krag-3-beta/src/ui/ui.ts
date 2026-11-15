@@ -592,7 +592,7 @@ function lifeLine(c: Creature, sim: Sim): string {
   if (c.job === Job.DIG || c.job === Job.DESCEND) return 'Drąży. Nie wie, że drąży w kimś.';
   if (c.job === Job.PRAY) return 'Modli się do ściany, która słucha.';
   if (c.job === Job.FIGHT) return 'Właśnie próbuje kogoś zabić.';
-  if (c.job === Job.PIELGRZYM) return 'Idzie do krypty pod posągiem Cerbera. Sam nie wie po co.';
+  if (c.job === Job.PIELGRZYM) return 'Idzie do krypty pod pieczęcią zejścia. Sam nie wie po co.';
   if (c.job === Job.EAT || c.hunger > 0.6) return 'Głodny. To u nich stan domyślny.';
   if (c.carry > 0) return 'Niesie rudę do gniazda.';
   return clan.devotion > 0.6 ? 'Wierzy w ciebie bez powodu.' : 'Żyje, bo jeszcze nie umarł.';

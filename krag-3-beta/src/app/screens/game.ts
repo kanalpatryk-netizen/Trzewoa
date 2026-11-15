@@ -58,7 +58,10 @@ import { rysujBudoweSchodow } from '../../render/budowa-schodow';
 import { aktualnyPlan, najwierniejsza } from '../../sim/pielgrzymka';
 import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
-import { rysujBrzegKregu, rysujBrzegKreguNad, rysujBlotoPowierzchni, rysujNieboKregu, rysujKrople, rysujZarlokow, barwaKregu, rysujProlog } from '../../render/krag';
+import { rysujLej, rysujPrzepasc, rysujCerberaNaKregu, rysujCialaWScianach } from '../../render/krag-swiat';
+import { rysujPotepionych } from '../../render/potepieni';
+import { rysujBrzegKregu, rysujBrzegKreguNad, rysujNieboKregu, rysujKrople, rysujZarlokow, barwaKregu } from '../../render/krag';
+import { WstepKregu } from '../wstep-kregu';
 import { rysujPromien } from '../../render/promien';
 import { rysujKonwoj, rysujKonwojNad } from '../../render/konwoj';
 import { wysokoscGrzbietu } from '../../render/grzbiet';
@@ -216,6 +219,8 @@ export class EkranGry implements Ekran {
   zapisujAuto = true;
 
   camTarget = { x: 0, y: 0 };
+  /** Krąg Trzeci: plansze fabularne i scena wejścia na początku partii (app/wstep-kregu.ts). */
+  wstep = new WstepKregu();
   private dirty = true;
   /** Kamera z chwili ostatniego przerysowania ryciny. */
   private rysKam = [NaN, NaN, NaN];
@@ -376,6 +381,7 @@ export class EkranGry implements Ekran {
     this.cam.zoom = KAMERA.start;
     this.doSerca(true);
     this.dirty = true;
+    this.wstep.zacznij();
   }
 
   /** Wraca do najgęstszego skupiska i oddaje kamerę automatowi. */
@@ -480,7 +486,7 @@ export class EkranGry implements Ekran {
     const t = TOOLS.szept.find((x) => x.id === narzedzie)!;
     if (this.pauza) ui.say('Szept czeka — usłyszą go, gdy puścisz czas.', sim.tick);
     else {
-      sim.log(ile === 1 ? `Szepnąłeś pobożnemu: „${t.label}". Usłyszał.` : `Szepnąłeś ${ile} pobożnym: „${t.label}". Usłyszeli.`, 'wiara');
+      sim.log(ile === 1 ? `Szepnąłeś mnichowi: „${t.label}". Usłyszał.` : `Szepnąłeś ${ile} mnichem: „${t.label}". Usłyszeli.`, 'wiara');
       ui.say(narzedzie === 'modl' ? (ile === 1 ? 'Idzie modlić się pod pomnikiem.' : `Idą modlić się pod pomnikiem: ${ile}.`) : 'Wraca do swoich.', sim.tick);
     }
     this.app.gesty.klik();
@@ -1185,7 +1191,7 @@ export class EkranGry implements Ekran {
     this.glosyLudu(teraz);
     this.patrzNaPomnik();
     this.sluchajDloniDemona();
-    if (!this.zamrozone()) {
+    if (!this.zamrozone() && !this.wstep.trwa()) {
       // zwykły czas: tyle tików na sekundę, niezależnie od tego, ile klatek pokazuje ekran
       let kroki: number;
       if (dev && DEV.pauza) { kroki = DEV.krokow; DEV.krokow = 0; }
@@ -1324,6 +1330,13 @@ export class EkranGry implements Ekran {
   // --------------------------------------------------------------------- obraz
 
   rysuj(ctx: CanvasRenderingContext2D, w: number, h: number, teraz: number): void {
+    // Krąg Trzeci: plansze fabularne zamiast gry; potem scena wejścia (kamera i szóstka w rękach sceny)
+    if (this.wstep.plansze()) { this.wstep.rysujPlansze(ctx, this.sim, w, h, teraz); return; }
+    if (this.wstep.trwa()) {
+      this.recznaKamera = true;
+      if (this.wstep.krok(this.sim, this.cam, teraz)) { this.recznaKamera = false; this.camTarget.x = this.cam.x; this.camTarget.y = this.cam.y; }
+      this.dirty = true;
+    }
     const { plate, cam, eng, sim } = this;
     if (ustawienia.jakosc === 'auto' && !jakoscAuto.taniej && eng.scale === 1 && this.straz.klatka(teraz)) {
       jakoscAuto.taniej = true;
@@ -1376,6 +1389,9 @@ export class EkranGry implements Ekran {
     if (eng.fresk) tynkSwiata(ctx, cam);
     // Krąg Trzeci: zgniła zieleń i sina szarość zamiast ciepłej sepii
     barwaKregu(ctx, 0, 0, plate.w, plate.h);
+    // wnętrze leja piekła nad tarasem trzeciego kręgu i przepaść do czwartego na skraju
+    rysujLej(ctx, sim, cam, teraz);
+    rysujPrzepasc(ctx, sim, cam, teraz);
     this.poswiata.nalozy(ctx, eng.emis, eng.dx, eng.dy, bw, bh, 0.5);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     rysujRdzen(ctx, sim, cam, teraz);
@@ -1398,8 +1414,9 @@ export class EkranGry implements Ekran {
     rysujBudoweSchodow(ctx, sim, cam, teraz);
     // katedra na powierzchni nad szybem ze światłem — kamień (szkło rozety i płomienie świec — nad mrokiem)
     // Krąg Trzeci: żarłocy w błocie, krople ze stropów (brzeg kręgu — nad niebem, niżej)
-    rysujBlotoPowierzchni(ctx, sim, cam, teraz);
+    rysujPotepionych(ctx, sim, cam, teraz);
     rysujKrople(ctx, sim, cam, teraz);
+    rysujCialaWScianach(ctx, sim, cam, teraz);
     smugiSwiatla(ctx, sim, cam, teraz);
     drawParticles(ctx, sim, cam);
     // Remake v2: trupy leżą tam, gdzie padli; wiadra z jedzeniem zjeżdżają na linach
@@ -1419,6 +1436,8 @@ export class EkranGry implements Ekran {
     // zamiast katedry — skalny brzeg kręgu ze szczeliną światła (po niebie, żeby chmury go nie zakryły)
     rysujBrzegKregu(ctx, sim, cam);
     rysujBrzegKreguNad(ctx, sim, cam, teraz);
+    // Cerber krąży po tarasie kręgu (przed skałami brzegu, pod deszczem już nie — deszcz jest za nim)
+    rysujCerberaNaKregu(ctx, sim, cam, teraz);
     // etap 5: Wielki Pomnik demona — nad mrokiem (żarzy się sam i trzeba go widzieć z krypty)
     if (POMNIK.wlaczony) rysujPomnik(ctx, sim, cam, teraz);
     // etap 3b: rozbity kafel rudy błyska (złoto) albo sypie iskry (żelazo) — to światło, więc nad mrokiem —
@@ -1631,8 +1650,8 @@ export class EkranGry implements Ekran {
       this.maxPrzewin = r.maxPrzewin;
     }
     this.atlas.rysuj(ctx, w, h, teraz);
-    // Krąg Trzeci: prolog na początku partii
-    rysujProlog(ctx, sim, w, h, teraz);
+    // Krąg Trzeci: napisy sceny wejścia (bez sterowania)
+    this.wstep.rysujNapisy(ctx, this.plate, teraz);
   }
 
   /** Prostokąty interfejsu — dla automatycznego testu nakładania (narzędzie deweloperskie). */
@@ -1775,7 +1794,7 @@ export class EkranGry implements Ekran {
   private kopDroge(): void {
     const { sim, ui } = this;
     const robotnicy = this.zaznaczeniZywi().filter((c) => rolaPostaci(c) === 'robotnik');
-    if (!robotnicy.length) { ui.say('Kopią tylko robotnicy — zaznacz robotnika.', sim.tick); this.app.gesty.odmowa(); return; }
+    if (!robotnicy.length) { ui.say('Kopią tylko grabarze — zaznacz grabarza.', sim.tick); this.app.gesty.odmowa(); return; }
     const { przyjeli } = drogaGrupie(sim, robotnicy.map((c) => c.id));
     if (przyjeli) { ui.say(przyjeli === 1 ? 'Idzie kopać drogę wiernych.' : `Idą kopać drogę wiernych (${przyjeli}).`, sim.tick); this.app.gesty.klik(); }
     else { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
@@ -1861,7 +1880,7 @@ export class EkranGry implements Ekran {
     const pom = k ? pomieszczenieW(this.sim, k[0], k[1]) : null;
     if (!pom) return null;
     const lud = this.zaznaczeniZywi();
-    if (!lud.length) return { pom, akcja: pom.gotowe ? `${NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż` : 'plan — zaznacz robotników i wskaż go', ok: true };
+    if (!lud.length) return { pom, akcja: pom.gotowe ? `${NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż` : 'plan — zaznacz grabarzy i wskaż go', ok: true };
     const rob = lud.filter((c) => rolaPostaci(c) === 'robotnik').length;
     const ryc = lud.filter((c) => rolaPostaci(c) === 'rycerz').length;
     const { akcja, ok } = akcjaNaPomieszczeniu(pom, rob, lud.length - rob, ryc, naWieszaku(this.sim).length);
@@ -1884,13 +1903,13 @@ export class EkranGry implements Ekran {
     if (b.akcja === 'przywolaj') {
       const powod = przywolajDoOltarza(sim);
       if (powod) { ui.say(`Nikt nie przyjdzie: ${powod}.`, sim.tick); this.app.gesty.odmowa(); }
-      else { ui.say('Pobożny idzie do ołtarza.', sim.tick); this.app.gesty.klik(); }
+      else { ui.say('Mnich idzie do ołtarza.', sim.tick); this.app.gesty.klik(); }
       return;
     }
     if (!b.rodzaj) return;
     const powod = odprawRytual(sim, b.rodzaj, b.cel);
     if (powod) { ui.say(`${NAZWA_RYTUALU[b.rodzaj]} — teraz nie: ${powod}.`, sim.tick); this.app.gesty.odmowa(); return; }
-    ui.say(`${NAZWA_RYTUALU[b.rodzaj]} — pobożny klęka przy ołtarzu.`, sim.tick);
+    ui.say(`${NAZWA_RYTUALU[b.rodzaj]} — mnich klęka przy ołtarzu.`, sim.tick);
     this.app.gesty.klik();
     this.oknoOltarza = false;
     this.nasluch?.({ typ: 'oltarz', rodzaj: b.rodzaj });
@@ -1923,7 +1942,7 @@ export class EkranGry implements Ekran {
     }
     polozPlan(sim, p);
     this.falaRozkazu = { x: p.x + p.w / 2, y: p.y + p.h, t: performance.now(), ok: true };
-    ui.say(`Wyznaczyłeś ${BIERNIK_POMIESZCZENIA[p.rodzaj]}. Zaznacz robotników i dotknij planu — wykują go.`, sim.tick);
+    ui.say(`Wyznaczyłeś ${BIERNIK_POMIESZCZENIA[p.rodzaj]}. Zaznacz grabarzy i dotknij planu — wykują go.`, sim.tick);
     this.app.gesty.klik();
     this.nasluch?.({ typ: 'plan', rodzaj: p.rodzaj });
     this.dirty = true;
@@ -1991,7 +2010,7 @@ export class EkranGry implements Ekran {
       this.app.gesty.klik();
       return;
     }
-    if (!rob.length) { ui.say('Zaznacz robotników — wtedy ramka oznaczy skałę do wykucia.', sim.tick); return; }
+    if (!rob.length) { ui.say('Zaznacz grabarzy — wtedy ramka oznaczy skałę do wykucia.', sim.tick); return; }
     const { przyjeli, odmowy, kafli } = wydajObszar(sim, rob.map((c) => c.id), lite);
     this.falaRozkazu = { x: (k.x0 + k.x1 + 1) / 2, y: (k.y0 + k.y1 + 1) / 2, t: performance.now(), ok: przyjeli > 0 };
     if (!przyjeli) { this.krzyzykPodKursorem(); this.app.gesty.odmowa(); }
@@ -2039,7 +2058,7 @@ export class EkranGry implements Ekran {
     }
     // etap 3c: plan albo pomieszczenie pod palcem — robotnicy kują plan, pracują w warsztacie i kuźni, każdy śpi w sypialni
     const pom = pomieszczenieW(sim, Math.floor(fx), Math.floor(fy));
-    if (pom && !ids.length) { ui.say(pom.gotowe ? `${NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż.` : 'Plan — zaznacz robotników i wskaż go, a wykują.', sim.tick); return; }
+    if (pom && !ids.length) { ui.say(pom.gotowe ? `${NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż.` : 'Plan — zaznacz grabarzy i wskaż go, a wykują.', sim.tick); return; }
     if (!ids.length) return;
     const { przyjeli, odmowy } = pom ? wydajNaPomieszczenie(sim, ids, pom) : wydajGrupie(sim, ids, Math.floor(fx), Math.floor(fy));
     this.falaRozkazu = { x: fx, y: fy, t: performance.now(), ok: przyjeli > 0 };
@@ -2144,6 +2163,8 @@ export class EkranGry implements Ekran {
   }
 
   dotyk(e: PointerEvent, faza: 'dol' | 'ruch' | 'gora'): void {
+    // Krąg Trzeci: w planszach kliknięcie — dalej; w scenie wejścia gracz nie ma jeszcze władzy
+    if (this.wstep.trwa()) { if (faza === 'dol') this.wstep.dalej(performance.now()); return; }
     const { ui, sim } = this;
     ui.pointer.x = e.clientX; ui.pointer.y = e.clientY;
     // tryb deweloperski: kafel pod kursorem, a Shift+klik wybiera postać do inspektora
@@ -2438,6 +2459,7 @@ export class EkranGry implements Ekran {
   }
 
   kolko(e: WheelEvent): void {
+    if (this.wstep.trwa()) return;
     if (this.atlas.otwarte) { this.atlas.kolko(e.deltaY > 0 ? 70 : -70); return; }
     if (this.zapiski) {
       this.przewinZapiskow = Math.max(0, Math.min(this.maxPrzewin, this.przewinZapiskow + (e.deltaY > 0 ? 3 : -3)));
@@ -2457,6 +2479,7 @@ export class EkranGry implements Ekran {
   klawiszPuszczony(k: string): void { if (k === 'Tab') this.liczby = false; }
 
   klawisz(akcja: Akcja | null, _e?: KeyboardEvent): void {
+    if (this.wstep.trwa()) { if (akcja === 'pauza') this.wstep.dalej(performance.now()); return; }
     if (_e?.key === 'Tab') { this.liczby = true; return; }
     const { ui, sim } = this;
     if (this.atlas.otwarte && _e) { this.atlas.klawisz(_e.key); return; }
@@ -2508,7 +2531,7 @@ export class EkranGry implements Ekran {
         else if (akcja === 'zasiej') this.nakarmTeraz();
         else if (akcja === 'znak') {
           if (this.zaznaczeniZywi().find((c) => rolaPostaci(c) === 'pobozny')) this.wykonajMozliwosc('cud');
-          else { ui.say('Cud sprowadza pobożny — zaznacz pobożnego (S) i wybierz „Cud” w jego oknie.', sim.tick); this.app.gesty.odmowa(); }
+          else { ui.say('Cud sprowadza mnich — zaznacz mnicha (S) i wybierz „Cud” w jego oknie.', sim.tick); this.app.gesty.odmowa(); }
         } else this.wykonajMozliwosc('modl');
         break;
       case 'narzedzie1': case 'narzedzie2': case 'narzedzie3': case 'narzedzie4': this.wybierzNarzedzie(Number(akcja.slice(-1)) - 1); break;

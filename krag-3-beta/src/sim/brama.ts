@@ -93,7 +93,7 @@ export function tikBramy(sim: Sim): void {
   else b.otwarcie = Math.max(0, b.otwarcie - 1 / BRAMA.opadanie);
   const x = w.brama.x0, y = w.brama.y1;
   if (b.otwarcie > przed) {
-    if (przed === 0) sim.gdzie(w.kociol.x, w.kociol.y).log('Nad kotłem w starej komnacie pobożni rzucają zaklęcia. W dole, w murze lochu, drgnęła stalowa brama.', 'wiara', 'brama-drgnela');
+    if (przed === 0) sim.gdzie(w.kociol.x, w.kociol.y).log('Nad kotłem w starej komnacie mnisi rzucają zaklęcia. W dole, w murze lochu, drgnęła stalowa brama.', 'wiara', 'brama-drgnela');
     b.szczyt = Math.max(b.szczyt ?? 0, b.otwarcie);
     if (przed < BRAMA.idzieOd && b.otwarcie >= BRAMA.idzieOd) sim.gdzie(x, y).log('Brama lochu podniesiona — można przejść wyprostowanym.', 'wiara', 'brama-idzie');
     if (przed < 1 && b.otwarcie >= 1) sim.gdzie(x, y).log('Brama lochu podniesiona do końca. Gdy zaklęcia ucichną, zacznie powoli opadać.', 'wiara', 'brama-pelna');

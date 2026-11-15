@@ -36,22 +36,22 @@ export function wyrok(sim: Sim): Wyrok {
   const pek = sim.rytual.pekniecia;
 
   const etap = rodzaj === 'uwolnienie' ? `Droga przebyta w ${minut} min.`
-    : sim.lud.pomnik && sim.lud.pomnik.faza !== 'stoi' ? 'Najdalej: Posąg Cerbera legł w gruzach, a Cerber wstał — zabrakło tylko ostatniego uderzenia.'
-    : pek > 0 ? `Najdalej: Posąg Cerbera pękł do ${procentSkorupy(sim)}%. Brakowało niewiele.`
+    : sim.lud.pomnik && sim.lud.pomnik.faza !== 'stoi' ? 'Najdalej: Pieczęć zejścia legł w gruzach, a Cerber wstał — zabrakło tylko ostatniego uderzenia.'
+    : pek > 0 ? `Najdalej: Pieczęć zejścia pękł do ${procentSkorupy(sim)}%. Brakowało niewiele.`
     : oddanie > 0.6 ? 'Najdalej: ktoś uwierzył dość mocno, ale nie zszedł do krypty — zabrakło drogi.'
     : 'Najdalej: nikt nie uwierzył w ciebie dość mocno, by zejść do krypty.';
 
   if (rodzaj === 'uwolnienie') {
     return {
-      przyczyna: 'Pobożni skruszyli modlitwą posąg Cerbera, a rycerz pokonał Cerbera, który w nim spał.',
+      przyczyna: 'Pobożni skruszyli modlitwą pieczęć zejścia, a rycerz pokonał Cerbera, który w nim spał.',
       rada: 'Spróbuj szybciej — i tak, żeby jak najmniej ludu zostało na ziemi jako trupy. Osiągnięcia podpowiadają, co jeszcze da się zrobić.',
       etap, statystyki: statystyki(sim),
     };
   }
   if (rodzaj === 'upadek') {
     return {
-      przyczyna: 'Zabrakło pobożnych — nikt już nie skruszy posągu Cerbera.',
-      rada: 'Drużyna jest stała: pilnuj obu pobożnych jak oka w głowie — karm ich, trzymaj z dala od ciemności i nie zostawiaj samych w krypcie w czasie fali.',
+      przyczyna: 'Zabrakło mnichów — nikt już nie skruszy pieczęci zejścia.',
+      rada: 'Drużyna jest stała: pilnuj obu mnichów jak oka w głowie — karm ich, trzymaj z dala od ciemności i nie zostawiaj samych w krypcie w czasie fali.',
       etap, statystyki: statystyki(sim),
     };
   }

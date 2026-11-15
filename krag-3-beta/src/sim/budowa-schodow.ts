@@ -259,8 +259,8 @@ export function tikBudowySchodow(sim: Sim): void {
     if (b.od === undefined) {
       b.od = sim.tick;
       sim.gdzie(sp.c, sp.ye - 1).log(n === 0
-        ? 'Szyb do starej komnaty wykopany do dna. Robotnicy stawiają rusztowanie i od dołu osadzają kamienne stopnie.'
-        : 'Szyb na przedproże lochu wykopany do dna. Robotnicy stawiają rusztowanie i od dołu osadzają kamienne stopnie.', 'swiat', `schody-start-${n}`);
+        ? 'Szyb do starej komnaty wykopany do dna. Grabarze stawiają rusztowanie i od dołu osadzają kamienne stopnie.'
+        : 'Szyb na przedproże lochu wykopany do dna. Grabarze stawiają rusztowanie i od dołu osadzają kamienne stopnie.', 'swiat', `schody-start-${n}`);
     }
     if (!murarzy) return;
     b.postep += Math.min(murarzy, B.murarzy) * (b.kreci ? 1 : B.bezKolowrotu) / B.tikowNaStopien;

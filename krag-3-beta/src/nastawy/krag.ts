@@ -32,6 +32,11 @@ export const KRAG = {
     /** W ulewie: głód × glod (zimno), szybkość × szybkosc (błoto). */
     glod: 1.15, szybkosc: 0.9,
   },
+  cerber: {
+    /** Cerber krąży po powierzchni kręgu: gdy kosz z jedzeniem rusza w dół, a on jest bliżej niż tyle kafli od szybu,
+     * pożera taką część porcji. */
+    podjadaOd: 18, podjada: 0.25,
+  },
   okup: {
     /** Co tyle tików potępieni mogą rzucić Cerberowi okup — jeśli w wiadrach jest choć `porcji` porcji. */
     co: 600, porcji: 2,

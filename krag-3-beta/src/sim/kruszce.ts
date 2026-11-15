@@ -30,6 +30,6 @@ export function wykutyKafel(sim: Sim, t: number, x: number, y: number): void {
   u.push({ x, y, rodzaj, ile, tik: sim.tick });
   // kronika sumuje urobek z krótkiego okna w jeden wpis
   const nazwa = rodzaj === 'zelazo' ? 'żelaza' : 'złota';
-  sim.gdzie(x + 0.5, y + 0.5).log(`Robotnicy wykuli kruszec: +${ile} ${nazwa}.`, 'swiat',
-    'urobek-' + rodzaj, (n) => `Robotnicy wykuli kruszec: +${n * ile} ${nazwa}.`);
+  sim.gdzie(x + 0.5, y + 0.5).log(`Grabarze wykuli kruszec: +${ile} ${nazwa}.`, 'swiat',
+    'urobek-' + rodzaj, (n) => `Grabarze wykuli kruszec: +${n * ile} ${nazwa}.`);
 }

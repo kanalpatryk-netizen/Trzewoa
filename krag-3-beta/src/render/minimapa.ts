@@ -89,7 +89,7 @@ export function rysujMinimape(ctx: CanvasRenderingContext2D, sim: Sim, cam: Came
   ctx.font = `${Math.max(12, o.w * 0.17)}px ${SERIF}`;
   ctx.fillStyle = rgba(BARWA.atramentCichy, 0.6);
   ctx.textAlign = 'center';
-  ctx.fillText('pomnik', o.x + o.w / 2, o.y + o.h - 4);
+  ctx.fillText('pieczęć', o.x + o.w / 2, o.y + o.h - 4);
   ctx.restore();
 }
 

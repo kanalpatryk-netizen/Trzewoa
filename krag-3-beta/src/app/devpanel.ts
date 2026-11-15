@@ -340,7 +340,7 @@ export class PanelDewelopera {
     const t = DEV.mnoznik === 1 ? 'czas zwykły' : `czas ×${mnoznikNapis(DEV.mnoznik)}`;
     const linie = [
       `${czas(sim.tick)} · tik ${sim.tick} · ${DEV.pauza ? 'pauza dewelopera' : t} · ${this.tikowNaSek} tik/s · ${this.fps} kl/s · krok ${DEV.msKroku.toFixed(2)} ms`,
-      `lud ${r.pobozny + r.robotnik + r.rycerz}: pobożni ${r.pobozny} · robotnicy ${r.robotnik} · rycerze ${r.rycerz} · jedzenie ${porcjiWWiadrach(sim)} porcji · wiadro za ${Math.ceil(doNastepnego(sim) / 120)} s`,
+      `lud ${r.pobozny + r.robotnik + r.rycerz}: mnisi ${r.pobozny} · grabarze ${r.robotnik} · rycerze ${r.rycerz} · jedzenie ${porcjiWWiadrach(sim)} porcji · wiadro za ${Math.ceil(doNastepnego(sim) / 120)} s`,
       `wiara ${Math.floor(sim.wiara)} · krew ${Math.floor(sim.krew)} · żelazo ${sim.zelazo} · złoto ${sim.zloto} · oddanie ${Math.round((wierni?.devotion ?? 0) * 100)}% · sen ${Math.round(sim.sen * 100)}% · pęknięć ${sim.rytual.pekniecia}${sim.rytual.otwarta ? ' · rdzeń otwarty' : ''}`,
       opisDloni(sim),
     ];

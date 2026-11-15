@@ -202,7 +202,7 @@ export function polozPlan(sim: Sim, p: ProbaPlanu): Pomieszczenie {
   const pom: Pomieszczenie = { id: sim.nrPomieszczenia++, rodzaj: p.rodzaj, x: p.x, y: p.y, w: p.w, h: p.h, kafle: [...p.kafle], kier: p.kier, od: sim.tick, gotowe: false };
   pom.doKucia = zostaloKafli(sim, pom);
   sim.pomieszczenia.push(pom);
-  if (pom.doKucia) sim.gdzie(p.x + p.w / 2, p.y + p.h / 2).log(`Wyznaczyłeś ${BIERNIK_POMIESZCZENIA[p.rodzaj]} — zaznacz robotników i wskaż im plan.`, 'swiat');
+  if (pom.doKucia) sim.gdzie(p.x + p.w / 2, p.y + p.h / 2).log(`Wyznaczyłeś ${BIERNIK_POMIESZCZENIA[p.rodzaj]} — zaznacz grabarzy i wskaż im plan.`, 'swiat');
   pom.postep = 0;
   return pom;
 }
@@ -306,7 +306,7 @@ export function tikPomieszczen(sim: Sim): void {
       }
       zdarzenie(sim, { rodzaj: 'gotowe', pom: pom.id, tik: sim.tick });
       // (plan w pustce nikt nie kuł — pomieszczenie urządza się od razu)
-      sim.gdzie(pom.x + pom.w / 2, pom.y + pom.h / 2).log(pom.doKucia === 0 ? `Urządziłeś ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.` : `Robotnicy wykuli ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.`, 'swiat');
+      sim.gdzie(pom.x + pom.w / 2, pom.y + pom.h / 2).log(pom.doKucia === 0 ? `Urządziłeś ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.` : `Grabarze wykuli ${BIERNIK_POMIESZCZENIA[pom.rodzaj]}.`, 'swiat');
       for (const c of sim.creatures) {
         if (c.polecenie?.pom !== pom.id || c.polecenie.typ !== 'kop') continue;
         c.polecenie = undefined; c.czynnosc = undefined; c.jt = 0;

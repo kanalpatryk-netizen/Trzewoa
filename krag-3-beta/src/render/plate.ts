@@ -300,7 +300,7 @@ function censusLine(sim: Sim): string {
     const n = liczRole(sim);
     const wszyscy = n.pobozny + n.robotnik + n.rycerz;
     if (!wszyscy) return 'W górze nie został nikt z twoich.';
-    return `Twoi potępieni: ${n.pobozny} pobożnych, ${n.robotnik} robotników, ${n.rycerz} rycerzy.`;
+    return `Twoi potępieni: ${n.pobozny} mnichów, ${n.robotnik} grabarzy, ${n.rycerz} rycerzy.`;
   }
   const dom = sim.dominance;
   if (sim.domRace < 0) return 'Zadna krew nie goruje. Karmisz sie z wielu naraz.'.replace('Zadna', 'Żadna').replace('goruje', 'góruje').replace('sie', 'się');

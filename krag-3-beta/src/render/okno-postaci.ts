@@ -35,7 +35,7 @@ export interface Mozliwosc { akcja: AkcjaMozliwosci; nazwa: string; opis: string
 export interface PoleOkna extends Prostokat { akcja: AkcjaMozliwosci | 'tlo' | 'zamknij'; }
 
 /** Odmiana nazwy roli: 1 robotnik, 2 robotników… (jedna, dopełniacz, mnoga). */
-const ODMIANA_ROLI: Record<Rola, [string, string, string]> = { robotnik: ["robotnik", "robotnik\xF3w", "robotnicy"], pobozny: ["pobo\u017Cny", "pobo\u017Cnych", "pobo\u017Cni"], rycerz: ["rycerz", "rycerzy", "rycerze"] };
+const ODMIANA_ROLI: Record<Rola, [string, string, string]> = { robotnik: ["grabarz", "grabarzy", "grabarze"], pobozny: ["mnich", "mnichów", "mnisi"], rycerz: ["rycerz", "rycerzy", "rycerze"] };
 function liczebnik(A: number, M: Rola): string {
   const [g, B, C] = ODMIANA_ROLI[M], o = A % 10, E = A % 100;
   return `${A} ${A === 1 ? g : o >= 2 && o <= 4 && (E < 12 || E > 14) ? C : B}`;
@@ -97,7 +97,7 @@ function mozliwosciPoboznych6_11(sim: Sim, pobozni: Creature[]): Mozliwosc[] {
   const nieModla = pobozni.filter((c) => !c.polecenie?.zaInnych);
   if (nieModla.length) out.push({
     akcja: 'zaInnych', nazwa: 'Módl się za innych',
-    opis: `zostaje, gdzie stoi, i modli się za tych wokół (${BLOGOSLAWIENSTWO.promien} kafli): rany się goją, rycerz bije mocniej i szybciej chodzi, robotnik szybciej kopie, pobożny mocniej się modli`,
+    opis: `zostaje, gdzie stoi, i modli się za tych wokół (${BLOGOSLAWIENSTWO.promien} kafli): rany się goją, rycerz bije mocniej i szybciej chodzi, grabarz szybciej kopie, mnich mocniej się modli`,
     ids: nieModla.map((c) => c.id), ok: true,
   });
   return out;

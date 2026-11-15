@@ -40,7 +40,7 @@ export class EkranKroniki implements Ekran {
     const e = this.sim?.ending ?? 'sen';
     const [rodzaj, kto] = e.split(':');
     if (rodzaj === 'sen') return { tytul: 'Zasnąłeś', podtytul: 'Nikt już o tobie nie myślał.' };
-    if (rodzaj === 'uwolnienie') return { tytul: 'Zejście do kręgu czwartego', podtytul: `${kto} zbudzili modlitwą kamiennego Cerbera i powalili go. Droga w dół, jedyna droga z piekła, stoi otworem.` };
+    if (rodzaj === 'uwolnienie') return { tytul: 'Zejście do kręgu czwartego', podtytul: `${kto} zbudzili modlitwą pieczęć i powalili go. Droga w dół, jedyna droga z piekła, stoi otworem.` };
     if (rodzaj === 'upadek') return { tytul: 'Błoto', podtytul: 'Ostatni z potępionych legł w błocie trzeciego kręgu. Deszcz pada dalej.' };
     return { tytul: 'Zabili cię', podtytul: `${kto} dokopali się do rdzenia. Nie modlili się.` };
   }
