@@ -4,9 +4,8 @@ Stan na 9.11.2026. Plan zaakceptowany przez użytkownika 9.11 — jego odpowiedz
 Aktualizacja 10.11: środowisko ma już sieć do NuGet i npm, a .NET 10 SDK jest z archiwum Ubuntu (punkt 7) — etap 1 ruszył.
 Decyzja użytkownika 10.11: plan i kod tak, „żeby potem wszystko łatwo można było przenieść pod jakiś silnik (np. Unity albo
 Godot)” — gra w warstwach przenośnych (punkt 3.0).
-**Stan na 15.11:** etapy 1–6 i 8 zrobione, z wyjątkiem dźwięku (decyzja użytkownika 14.11: „wstrzymaj się z dźwiękiem
-… zrobimy to dopiero gdy wszystko inne będzie dopięte na ostatni guzik” — miejsca dźwięku to zaślepki w
-`Trzewia.Gra/Aplikacja/BezDzwieku.cs`, punkt 3.6 czeka). Etap 7 (wydanie) — paczki budowane, czeka na test u użytkownika.
+**Stan na 15.11:** etapy 1–8 zrobione, z dźwiękiem: na decyzję użytkownika cały dźwięk to pliki MP3 nagrane kodem TS,
+a gra C# je odtwarza (część 5, punkt 25 — zamiast syntezy z punktu 3.6). Czeka test u użytkownika.
 Końcowe porównanie ekranów z TS — część 5, punkt 22.
 Zadanie: przepisać grę z `alpha-1/` (TypeScript, Canvas 2D, Electron) na C# (.NET 10 LTS) z SkiaSharp,
 wiernie, jako program na Windows w folderze jak gry na Steamie.
@@ -454,8 +453,7 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
     atlas z menu, gra na dwóch ziarnach (1 800 i 7 200 tików) i kronika, w 1366×820 i 1920×1080 — średnia różnica
     0,2–2,7/255, pikseli różnych o więcej niż 24/255 — 0,2–1,3% (rycina i kreskowanie: wygładzanie Chrome a Skii,
     pismo: HarfBuzz a Chrome, postacie: duszki i faza kroku).
-23. (etap 5–6) Bez dźwięku na razie (decyzja użytkownika 14.11) — muzyka, odgłosy świata, gesty i głosy ludu nie grają;
-    ustawienia dźwięku są i zapisują się, ale niczego nie zmieniają, dopóki dźwięk nie przyjdzie.
+23. (etap 5–6) Dźwięk przyszedł na końcu (decyzja użytkownika 14.11) — z plików, punkt 25.
 24. (15.11, decyzja użytkownika) Przyciski menu to odręczne grafiki (`dane/grafika/menu/przyciski/`, oryginały w
     `oryginaly/`, kopie dla Unity w `unity/Assets/Trzewia/Menu/Przyciski/`) zamiast napisów pismem z ozdobnikami
     rysowanymi kodem. Wybrany — jaśniejszy, z poświatą wzdłuż kreski; nieaktywny — przygaszony, jak dawniej.
@@ -463,8 +461,13 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
     `dane/dzwieki/` (329 plików, spis w `SPIS.md` i `spis.json`): nagrania głosów nazwane i poukładane według roli
     (oryginały bez zmian) i gotowe do grania, a wszystko, co gra TS składała w locie (rezonans skały, kucie, gesty,
     zdarzenia, akordy, dzwony, niepokój), nagrane jej własnym kodem w Chromium (`narzedzia/dzwieki/nagraj.mjs`).
-    Warstwy ciągłe są pętlami w kilku stopniach (głębokość, głód, wiara, napięcie) — gra przenika między najbliższymi;
-    dźwięki losowe — po kilka wariantów. Odtwarzanie tych plików w grze C# jeszcze nie jest zrobione.
+    Gra C# je odtwarza (`Trzewia.Gra/Dzwiek/` — mikser, MP3 przez NLayer; `Aplikacja/Dzwiek.cs` — kiedy co gra, ta
+    sama logika co w TS; wyjście SDL3 w `Trzewia/Okno/WyjscieDzwieku.cs`). Przybliżenia względem syntezy w locie:
+    dudnienie skały — przenikanie między 5 nagranymi głębokościami, głód — najbliższy z 3 stopni, „życie” zmienia już
+    tylko szum korytarzy (filtr dudnienia nagrany przy 50%); modlitwa — przenikanie między 4 stopniami wiary; akordy —
+    nagrane w stopniach napięcia (gra 5, samouczek 3), przy zmianie stopnia przenikają (w TS każdy akord brał bieżące
+    napięcie); stuk kilofa — wysokość zaokrąglona do 10 Hz; panorama dzwonu obejmuje też jego pogłos. Dźwięk rusza
+    z pierwszym ekranem po ładowaniu (w TS dopiero z pierwszym gestem — wymóg przeglądarki).
 
 ---
 

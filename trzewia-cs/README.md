@@ -3,8 +3,8 @@
 Przeniesienie gry z [`alpha-1/`](../alpha-1/) (TypeScript, Canvas 2D, Electron) na C# — szybki program na Windows
 w folderze jak gry ze Steama. Plan, etapy, decyzje i ryzyka: [`PLAN.md`](PLAN.md). `alpha-1/` zostaje bez zmian jako wzorzec.
 
-**Stan (15.11):** przeniesione wszystko poza dźwiękiem (na prośbę użytkownika dźwięk przychodzi na końcu — na razie
-gra jest cicha, a miejsca, w których coś gra, wołają puste zaślepki z `src/Trzewia.Gra/Aplikacja/BezDzwieku.cs`):
+**Stan (15.11):** przeniesione wszystko, z dźwiękiem — cały dźwięk to pliki MP3 w `dane/dzwieki/` (spis: `SPIS.md`),
+nagrane kodem gry TS, a gra C# je odtwarza (`src/Trzewia.Gra/Dzwiek/`, `src/Trzewia.Gra/Aplikacja/Dzwiek.cs`):
 film intro, ekran ładowania, menu, gra (świat, lud, księga, okno postaci, budowa, ołtarz, karty wydarzeń, alarmy,
 zapiski, atlas, panel dewelopera), samouczek (15 rozdziałów), ustawienia, osiągnięcia, atlas z menu, kronika końca,
 zapis do plików gracza i kursor-rękawica. Symulacja jest bit w bit taka sama jak w TS (testy złote), a ekrany —
@@ -48,6 +48,7 @@ Trzewia/
 ├── *.dll          (gra, .NET, SkiaSharp, SDL3, ANGLE, HarfBuzz)
 └── dane/
     ├── czcionki/  (kroje pisma, TTF)
+    ├── dzwieki/   (cały dźwięk gry w MP3 i spis — SPIS.md)
     ├── grafika/   (duszki, freski, tekstury, ikony, modele dłoni, menu, kursor)
     └── filmy/     (intro.klatki — film intro jako klatki WebP)
 ```
@@ -77,6 +78,10 @@ dotnet test --filter PorownanieEkranow         # C#: miary różnicy i obrazy po
 ```
 
 Film intro: `node narzedzia/intro/spakuj.mjs` (ffmpeg) składa `alpha-1/filmy/intro.mp4` w `dane/filmy/intro.klatki`.
+
+Dźwięk: `node narzedzia/dzwieki/nagraj.mjs` (ffmpeg z LAME) nagrywa od nowa cały dźwięk gry TS do `dane/dzwieki/` —
+nadpisuje pliki, więc podmienione ręcznie dźwięki trzeba potem włożyć jeszcze raz. Podmiana jednego dźwięku: wystarczy
+położyć nowy MP3 (48 kHz, stereo) pod tą samą nazwą; nowe warianty (`-5`, `-6`…) trzeba też dopisać do `spis.json`.
 
 ## Kroje pisma
 

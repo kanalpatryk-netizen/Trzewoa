@@ -79,7 +79,9 @@ for (const g of glosy) {
   spis.push({ plik: `nagrania/${g.nazwa}`, grupa: 'nagrania', zrodlo: `alpha-1/gra222/dzwieki/${g.zrodlo}`, kiedy: g.opis, uwagi: 'oryginał bez zmian' });
   if (!g.uzywane) continue;
   const url = `data:audio/mpeg;base64,${fs.readFileSync(path.join(ZRODLA, g.zrodlo)).toString('base64')}`;
+  const mowa = await s.wolaj('mowa', url, g.nazwa, g.rodzaj, g.kto);
   await nagraj(`glosy/${g.nazwa}`, 'glos', [url, g.nazwa, g.rodzaj, g.kto], {
+    mowaSekundy: mowa === null ? null : +mowa.toFixed(3),
     grupa: 'glosy', zrodlo: `nagrania/${g.nazwa}`, kiedy: g.opis,
     uwagi: g.rodzaj === 'odmowa'
       ? 'po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)'

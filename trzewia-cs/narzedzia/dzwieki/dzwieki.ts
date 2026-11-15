@@ -264,3 +264,17 @@ export async function glos(daneUrl: string, nazwa: string, rodzaj: 'odmowa' | 'l
   src.start(0.02, n.od, n.dl);
   return jednorazowy(await off.startRendering());
 }
+
+/** Ile trwa sama mowa w gotowym pliku głosu (s, od początku pliku; bez ogona pogłosu) — gra wie, do kiedy postać mówi. */
+export async function mowa(daneUrl: string, nazwa: string, rodzaj: 'odmowa' | 'ludu', kto: 'rycerz' | 'pobozny'): Promise<number | null> {
+  const G = rodzaj === 'odmowa' ? (kto === 'rycerz' ? GLOS_RYCERZA : GLOS_POBOZNEGO) : GLOSY_LUDU;
+  const dekoder = new OfflineAudioContext(2, 1, SR);
+  const z = new ZestawNagran(nazwa, { [nazwa]: daneUrl }, G as any, () => null);
+  z.wczytaj(dekoder as any);
+  const zz = z as any;
+  for (let i = 0; i < 200 && !zz.gotowe.length; i++) await new Promise((ok) => setTimeout(ok, 25));
+  const n = zz.gotowe[0];
+  if (!n) return null;
+  return 0.02 + n.dl / 2 ** ((GLOSY_LUDU.wysokosc as any)[kto] / 1200);
+}
+

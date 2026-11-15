@@ -59,8 +59,13 @@ public sealed class App : IKontekst
     {
         if (!ekrany.TryGetValue(nazwa, out var nowy)) return;
         aktywny?.wyjdz();
-        // nowy ekran zaczyna od czystego dźwięku — pauza z gry nie może zostać w menu (dźwięk: etap 6)
+        // nowy ekran zaczyna od czystego dźwięku — pauza z gry nie może zostać w menu
+        Mikser.zawies(0);
+        gesty.tonPauzy(false);
         aktywny = nowy;
+        // C#: dźwięk rusza z pierwszym ekranem po ładowaniu (w TS dopiero z pierwszym kliknięciem albo klawiszem —
+        // przeglądarka nie pozwala wcześniej; tak samo jak pełny ekran, PLAN.md część 5)
+        if (nazwa != "ladowanie") obudzDzwiek();
         nowy.rozmiar(w, h);
         nowy.wejdz(dane);
     }
@@ -140,11 +145,18 @@ public sealed class App : IKontekst
         if (e.key == "Tab") aktywny?.klawiszPuszczony(e.key);
     }
 
-    /// <summary>
-    /// W przeglądarce dźwięk rusza dopiero po pierwszym dotknięciu albo klawiszu. Program na Windows nie ma tego
-    /// ograniczenia — zostaje jako miejsce, w którym etap 6 włączy dźwięk.
-    /// </summary>
-    void obudzDzwiek() { }
+    bool dzwiekRuszyl;
+
+    /// <summary>Pierwszy gest (albo pierwszy ekran po ładowaniu) budzi dźwięk: gesty, rezonans świata i muzykę.</summary>
+    void obudzDzwiek()
+    {
+        if (dzwiekRuszyl) { Mikser.wznow(); return; }
+        dzwiekRuszyl = true;
+        gesty.start();
+        if (ustawienia.rezonans) dzwiek.start();
+        if (ustawienia.muzyka) muzyka.start();
+        Mikser.wznow();
+    }
 
     // ───────────────────────────── klatka ─────────────────────────────
 
@@ -194,6 +206,8 @@ public sealed class App : IKontekst
         if (e != null)
         {
             var t0 = Wydajnosc.Teraz();
+            // muzyka planuje akordy, dzwony i niepokój co 250 ms (w TS — setInterval)
+            muzyka.krok();
             e.krok(dt, teraz);
             e.rysuj(ctx, w, h, teraz);
             Wydajnosc.licznik.klatka(teraz, Wydajnosc.Teraz() - t0);

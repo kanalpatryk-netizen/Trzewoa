@@ -44,6 +44,7 @@ static class Program
             Fonts.zaladujKroje();
             if (Uruchomienie.Licznik) ustawienia.licznikWydajnosci = true;
             using var ctx = new PlotnoSkia(okno.Canvas, okno.PikseleW, okno.PikseleH);
+            using var dzwiek = WyjscieDzwieku.Otworz();
             var app = new App(okno, ctx);
             Rdzen.Gospodarz.UstawPelnyEkran = v => { if (okno.PelnyEkran != v) okno.PrzelaczPelnyEkran(); };
             Rdzen.Gospodarz.OtworzAdres = adres =>
@@ -105,9 +106,9 @@ static class Program
         {
             okno.Zdarzenia(app);
             if (okno.Zamkniete) break;
-            if (okno.Uspione) { okno.Czekaj(50); uspione = true; continue; }
+            if (okno.Uspione) { if (!uspione) Mikser.usnij(); okno.Czekaj(50); uspione = true; continue; }
             var teraz = Wydajnosc.Teraz();
-            if (uspione) { app.Wznow(teraz); uspione = false; }
+            if (uspione) { app.Wznow(teraz); uspione = false; Mikser.wznow(); }
             if (!app.Pora(teraz))
             {
                 var ms = app.DoNastepnej(teraz);

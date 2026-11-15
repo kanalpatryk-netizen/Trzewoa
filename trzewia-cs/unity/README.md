@@ -88,3 +88,11 @@ daje pole `Color` w `Image` albo `SpriteRenderer` (gra C#: zwykły `#a9a49c`, wy
 we wszystkich plikach 300 px wysokości, a ich środek jest w środku wysokości obrazka — ta sama skala dla wszystkich daje
 litery jednej wielkości. Wymiary są w `przyciski.json`. Pliki robi z oryginałów `python3 trzewia-cs/narzedzia/menu/przyciski.py`.
 
+## Dźwięk (15.11)
+
+Cały dźwięk gry to pliki MP3 w `trzewia-cs/dane/dzwieki/` — w podfolderach według rodzaju (`gesty/`, `zdarzenia/`,
+`swiat/`, `muzyka/`, `glosy/`, oryginały nagrań w `nagrania/`); co gra kiedy, czy jest pętlą i jak głośno — `SPIS.md`
+(dla ludzi) i `spis.json` (dla kodu). W Unity można je wrzucić jako zwykłe AudioClipy (pętle: Loop, a przy MP3 —
+„Load Type: Streaming”) albo użyć miksera gry C#: `Trzewia.Dzwieki.Silnik.Ten.Mieszaj(bufor, ramek)` z
+`OnAudioFilterRead` (48 kHz, stereo) i klas `Trzewia.Aplikacja.Dzwiek`, `Muzyka`, `Gesty` — ta sama logika, co w grze.
+

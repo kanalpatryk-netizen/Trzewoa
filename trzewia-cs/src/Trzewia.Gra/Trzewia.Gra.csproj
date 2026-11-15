@@ -15,4 +15,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Trzewia.Symulacja\Trzewia.Symulacja.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="NLayer" Version="3.0.1" />
+  </ItemGroup>
 </Project>

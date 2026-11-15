@@ -13,7 +13,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-pospolita-01.mp3",
   "kiedy": "odmowa rycerza na głos (pospolita)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.472
  },
  {
   "plik": "nagrania/rycerz/odmowa-pospolita-02.mp3",
@@ -29,7 +30,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-pospolita-02.mp3",
   "kiedy": "odmowa rycerza na głos (pospolita)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.257
  },
  {
   "plik": "nagrania/rycerz/odmowa-pospolita-03.mp3",
@@ -45,7 +47,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-pospolita-03.mp3",
   "kiedy": "odmowa rycerza na głos (pospolita)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 0.906
  },
  {
   "plik": "nagrania/rycerz/odmowa-pospolita-04.mp3",
@@ -61,7 +64,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-pospolita-04.mp3",
   "kiedy": "odmowa rycerza na głos (pospolita)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.352
  },
  {
   "plik": "nagrania/rycerz/odmowa-rzadsza-01.mp3",
@@ -77,7 +81,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-rzadsza-01.mp3",
   "kiedy": "odmowa rycerza na głos (rzadsza)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.619
  },
  {
   "plik": "nagrania/rycerz/odmowa-rzadsza-02.mp3",
@@ -93,7 +98,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-rzadsza-02.mp3",
   "kiedy": "odmowa rycerza na głos (rzadsza)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.342
  },
  {
   "plik": "nagrania/rycerz/odmowa-rzadsza-03.mp3",
@@ -109,7 +115,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-rzadsza-03.mp3",
   "kiedy": "odmowa rycerza na głos (rzadsza)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.542
  },
  {
   "plik": "nagrania/rycerz/odmowa-bardzo-rzadka-01.mp3",
@@ -125,7 +132,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-bardzo-rzadka-01.mp3",
   "kiedy": "odmowa rycerza na głos (bardzo rzadka)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 0.988
  },
  {
   "plik": "nagrania/rycerz/odmowa-bardzo-rzadka-02.mp3",
@@ -141,7 +149,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-bardzo-rzadka-02.mp3",
   "kiedy": "odmowa rycerza na głos (bardzo rzadka)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 0.955
  },
  {
   "plik": "nagrania/rycerz/odmowa-bardzo-rzadka-03.mp3",
@@ -157,7 +166,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-bardzo-rzadka-03.mp3",
   "kiedy": "odmowa rycerza na głos (bardzo rzadka)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 0.405
  },
  {
   "plik": "nagrania/rycerz/odmowa-ekstremalnie-rzadka-01.mp3",
@@ -173,7 +183,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/odmowa-ekstremalnie-rzadka-01.mp3",
   "kiedy": "odmowa rycerza na głos (ekstremalnie rzadka)",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 0.675
  },
  {
   "plik": "nagrania/pobozny/odmowa-01.mp3",
@@ -196,7 +207,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-02.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.631
  },
  {
   "plik": "nagrania/pobozny/odmowa-03.mp3",
@@ -212,7 +224,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-03.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.386
  },
  {
   "plik": "nagrania/pobozny/odmowa-04.mp3",
@@ -228,7 +241,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-04.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.802
  },
  {
   "plik": "nagrania/pobozny/odmowa-05.mp3",
@@ -244,7 +258,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-05.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.937
  },
  {
   "plik": "nagrania/pobozny/odmowa-06.mp3",
@@ -260,7 +275,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-06.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 0.562
  },
  {
   "plik": "nagrania/pobozny/odmowa-07.mp3",
@@ -276,7 +292,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-07.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.873
  },
  {
   "plik": "nagrania/pobozny/odmowa-08.mp3",
@@ -292,7 +309,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-08.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.323
  },
  {
   "plik": "nagrania/pobozny/odmowa-09.mp3",
@@ -308,7 +326,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-09.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 2.98
  },
  {
   "plik": "nagrania/pobozny/odmowa-10.mp3",
@@ -324,7 +343,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-10.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 2.382
  },
  {
   "plik": "nagrania/pobozny/odmowa-11.mp3",
@@ -340,7 +360,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/odmowa-11.mp3",
   "kiedy": "odmowa pobożnego na głos",
-  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)",
+  "mowaSekundy": 1.624
  },
  {
   "plik": "nagrania/pobozny/atak-01.mp3",
@@ -391,7 +412,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/atak-01.mp3",
   "kiedy": "atak (rycerz)",
-  "uwagi": "okrzyk do walki (waga 3)"
+  "uwagi": "okrzyk do walki (waga 3)",
+  "mowaSekundy": 0.81
  },
  {
   "plik": "nagrania/rycerz/atak-02.mp3",
@@ -407,7 +429,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/atak-02.mp3",
   "kiedy": "atak (rycerz)",
-  "uwagi": "okrzyk do walki (waga 3)"
+  "uwagi": "okrzyk do walki (waga 3)",
+  "mowaSekundy": 1.17
  },
  {
   "plik": "nagrania/rycerz/atak-03.mp3",
@@ -423,7 +446,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/atak-03.mp3",
   "kiedy": "atak (rycerz)",
-  "uwagi": "okrzyk do walki (waga 3)"
+  "uwagi": "okrzyk do walki (waga 3)",
+  "mowaSekundy": 1.556
  },
  {
   "plik": "nagrania/rycerz/atak-04.mp3",
@@ -439,7 +463,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/atak-04.mp3",
   "kiedy": "atak (rycerz)",
-  "uwagi": "okrzyk do walki (waga 3)"
+  "uwagi": "okrzyk do walki (waga 3)",
+  "mowaSekundy": 1.71
  },
  {
   "plik": "nagrania/rycerz/atak-05.mp3",
@@ -455,7 +480,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/atak-05.mp3",
   "kiedy": "atak (rycerz)",
-  "uwagi": "okrzyk do walki (waga 3)"
+  "uwagi": "okrzyk do walki (waga 3)",
+  "mowaSekundy": 1.43
  },
  {
   "plik": "nagrania/rycerz/atak-06.mp3",
@@ -471,7 +497,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/atak-06.mp3",
   "kiedy": "atak (rycerz)",
-  "uwagi": "okrzyk do walki (waga 3)"
+  "uwagi": "okrzyk do walki (waga 3)",
+  "mowaSekundy": 1.89
  },
  {
   "plik": "nagrania/rycerz/atak-07.mp3",
@@ -487,7 +514,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/atak-07.mp3",
   "kiedy": "atak (rycerz)",
-  "uwagi": "okrzyk do walki (waga 3)"
+  "uwagi": "okrzyk do walki (waga 3)",
+  "mowaSekundy": 2.21
  },
  {
   "plik": "nagrania/pobozny/bol-01.mp3",
@@ -503,7 +531,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/bol-01.mp3",
   "kiedy": "bol (pobozny)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 0.838
  },
  {
   "plik": "nagrania/pobozny/bol-02.mp3",
@@ -519,7 +548,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/bol-02.mp3",
   "kiedy": "bol (pobozny)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 0.598
  },
  {
   "plik": "nagrania/pobozny/bol-03.mp3",
@@ -535,7 +565,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/bol-03.mp3",
   "kiedy": "bol (pobozny)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 0.772
  },
  {
   "plik": "nagrania/pobozny/bol-04.mp3",
@@ -551,7 +582,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/bol-04.mp3",
   "kiedy": "bol (pobozny)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 1.056
  },
  {
   "plik": "nagrania/pobozny/bol-05.mp3",
@@ -567,7 +599,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/bol-05.mp3",
   "kiedy": "bol (pobozny)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 0.838
  },
  {
   "plik": "nagrania/pobozny/bol-06.mp3",
@@ -583,7 +616,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/bol-06.mp3",
   "kiedy": "bol (pobozny)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 0.707
  },
  {
   "plik": "nagrania/rycerz/bol-01.mp3",
@@ -599,7 +633,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/bol-01.mp3",
   "kiedy": "bol (rycerz)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 0.43
  },
  {
   "plik": "nagrania/rycerz/bol-02.mp3",
@@ -615,7 +650,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/bol-02.mp3",
   "kiedy": "bol (rycerz)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 0.42
  },
  {
   "plik": "nagrania/rycerz/bol-03.mp3",
@@ -631,7 +667,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/bol-03.mp3",
   "kiedy": "bol (rycerz)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 0.57
  },
  {
   "plik": "nagrania/rycerz/bol-04.mp3",
@@ -647,7 +684,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/bol-04.mp3",
   "kiedy": "bol (rycerz)",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 0.61
  },
  {
   "plik": "nagrania/rycerz/bol-rzadkie.mp3",
@@ -663,7 +701,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/bol-rzadkie.mp3",
   "kiedy": "bol (rycerz), rzadkie — szansa 0,5% przy każdym razie",
-  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)",
+  "mowaSekundy": 8.11
  },
  {
   "plik": "nagrania/pobozny/glod-01.mp3",
@@ -679,7 +718,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/glod-01.mp3",
   "kiedy": "glod (pobozny)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 2.714
  },
  {
   "plik": "nagrania/pobozny/glod-02.mp3",
@@ -695,7 +735,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/glod-02.mp3",
   "kiedy": "glod (pobozny)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 3.193
  },
  {
   "plik": "nagrania/pobozny/glod-03.mp3",
@@ -711,7 +752,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/glod-03.mp3",
   "kiedy": "glod (pobozny)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 3.193
  },
  {
   "plik": "nagrania/pobozny/glod-04.mp3",
@@ -727,7 +769,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/glod-04.mp3",
   "kiedy": "glod (pobozny)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 1.71
  },
  {
   "plik": "nagrania/pobozny/glod-05.mp3",
@@ -743,7 +786,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/glod-05.mp3",
   "kiedy": "glod (pobozny)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 2.648
  },
  {
   "plik": "nagrania/pobozny/glod-06.mp3",
@@ -759,7 +803,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/glod-06.mp3",
   "kiedy": "glod (pobozny)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 2.605
  },
  {
   "plik": "nagrania/pobozny/glod-07.mp3",
@@ -775,7 +820,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/glod-07.mp3",
   "kiedy": "glod (pobozny)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 3.259
  },
  {
   "plik": "nagrania/pobozny/glod-08.mp3",
@@ -791,7 +837,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/glod-08.mp3",
   "kiedy": "glod (pobozny)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 3.019
  },
  {
   "plik": "nagrania/pobozny/glod-09.mp3",
@@ -807,7 +854,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/glod-09.mp3",
   "kiedy": "glod (pobozny)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 2.037
  },
  {
   "plik": "nagrania/rycerz/glod-01.mp3",
@@ -823,7 +871,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/glod-01.mp3",
   "kiedy": "glod (rycerz)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 3.356
  },
  {
   "plik": "nagrania/rycerz/glod-02.mp3",
@@ -839,7 +888,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/glod-02.mp3",
   "kiedy": "glod (rycerz)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 1.92
  },
  {
   "plik": "nagrania/rycerz/glod-03.mp3",
@@ -855,7 +905,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/glod-03.mp3",
   "kiedy": "glod (rycerz)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 2.26
  },
  {
   "plik": "nagrania/rycerz/glod-04.mp3",
@@ -871,7 +922,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/glod-04.mp3",
   "kiedy": "glod (rycerz)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 1.429
  },
  {
   "plik": "nagrania/rycerz/glod-05.mp3",
@@ -887,7 +939,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/glod-05.mp3",
   "kiedy": "glod (rycerz)",
-  "uwagi": "marudzenie z głodu (waga 1)"
+  "uwagi": "marudzenie z głodu (waga 1)",
+  "mowaSekundy": 1.09
  },
  {
   "plik": "nagrania/pobozny/potwierdzenie-01.mp3",
@@ -903,7 +956,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/potwierdzenie-01.mp3",
   "kiedy": "potwierdzenie (pobozny)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 1.379
  },
  {
   "plik": "nagrania/pobozny/potwierdzenie-02.mp3",
@@ -919,7 +973,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/potwierdzenie-02.mp3",
   "kiedy": "potwierdzenie (pobozny)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 1.383
  },
  {
   "plik": "nagrania/pobozny/potwierdzenie-03.mp3",
@@ -935,7 +990,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/potwierdzenie-03.mp3",
   "kiedy": "potwierdzenie (pobozny)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 1.693
  },
  {
   "plik": "nagrania/pobozny/potwierdzenie-04.mp3",
@@ -951,7 +1007,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/potwierdzenie-04.mp3",
   "kiedy": "potwierdzenie (pobozny)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 1.907
  },
  {
   "plik": "nagrania/pobozny/potwierdzenie-05.mp3",
@@ -967,7 +1024,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/potwierdzenie-05.mp3",
   "kiedy": "potwierdzenie (pobozny)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 2.266
  },
  {
   "plik": "nagrania/pobozny/potwierdzenie-06.mp3",
@@ -983,7 +1041,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/potwierdzenie-06.mp3",
   "kiedy": "potwierdzenie (pobozny)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 2.67
  },
  {
   "plik": "nagrania/pobozny/potwierdzenie-07.mp3",
@@ -999,7 +1058,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/pobozny/potwierdzenie-07.mp3",
   "kiedy": "potwierdzenie (pobozny)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 1.361
  },
  {
   "plik": "nagrania/rycerz/potwierdzenie-01.mp3",
@@ -1015,7 +1075,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/potwierdzenie-01.mp3",
   "kiedy": "potwierdzenie (rycerz)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 0.79
  },
  {
   "plik": "nagrania/rycerz/potwierdzenie-02.mp3",
@@ -1031,7 +1092,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/potwierdzenie-02.mp3",
   "kiedy": "potwierdzenie (rycerz)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 0.747
  },
  {
   "plik": "nagrania/rycerz/potwierdzenie-03.mp3",
@@ -1047,7 +1109,8 @@
   "grupa": "glosy",
   "zrodlo": "nagrania/rycerz/potwierdzenie-03.mp3",
   "kiedy": "potwierdzenie (rycerz)",
-  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)",
+  "mowaSekundy": 0.57
  },
  {
   "plik": "gesty/klik.mp3",
