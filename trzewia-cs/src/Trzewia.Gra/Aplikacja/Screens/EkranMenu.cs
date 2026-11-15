@@ -1,4 +1,6 @@
 // Port: alpha-1/src/app/screens/menu.ts — menu główne.
+// Różnica (decyzja użytkownika 15.11): pozycje spisu to odręczne przyciski z rysunku (dane/grafika/menu/przyciski/*.png)
+// zamiast napisów pismem z ozdobnikami rysowanymi kodem; gdy pliku brak — dawny napis.
 // Obrazki z alpha-1/obrazy/menu są w dane/grafika/menu (te same pliki). Znaki zespołu mają w nastawach pusty link —
 // kliknięcie nic nie robi; wpisany adres otwiera gospodarz (Gospodarz.OtworzAdres — w Trzewia.exe przeglądarka systemu).
 using System;
@@ -85,7 +87,26 @@ namespace Trzewia.Aplikacja
             return s;
         }
 
-        sealed class Pozycja { public string id = "", etykieta = ""; public Func<bool> aktywna = () => true; }
+        sealed class Pozycja { public string id = "", etykieta = "", plik = ""; public Func<bool> aktywna = () => true; }
+
+        /// <summary>
+        /// Przycisk z rysunku (decyzja użytkownika 15.11): biała kreska na przezroczystości, zabarwiona raz na barwę napisu
+        /// i napisu wybranego. Ozdobniki mają w pliku OZDOBNIK_PX px wysokości (narzedzia/menu/przyciski.py).
+        /// </summary>
+        sealed class Przycisk { public IPlotno zwykly = null!, wybrany = null!; public double w, h; }
+        const double OZDOBNIK_PX = 300;
+        readonly Dictionary<string, Przycisk?> przyciski = new Dictionary<string, Przycisk?>();
+
+        Przycisk? przycisk(Pozycja p)
+        {
+            if (przyciski.TryGetValue(p.id, out var gotowy)) return gotowy;
+            Przycisk? wynik = null;
+            var img = Plotno.Wczytaj($"grafika/menu/przyciski/{p.plik}.png");
+            if (img.complete && img.width > 0)
+                wynik = new Przycisk { zwykly = zabarw(img, M.napis), wybrany = zabarw(img, M.napisWybrany), w = img.width, h = img.height };
+            przyciski[p.id] = wynik;      // brak pliku — zostaje dawny napis pismem z ozdobnikami
+            return wynik;
+        }
         sealed class Trafienie { public double x, y, w, h; public int i; }
         sealed class Znak { public Typ_MENU_zespol z = null!; public IObraz obraz = null!; public double podsw; public Obszar? traf; }
 
@@ -112,13 +133,13 @@ namespace Trzewia.Aplikacja
             zespol = M.zespol.Select(z => new Znak { z = z, obraz = Plotno.Wczytaj($"grafika/menu/zespol-{z.plik}.png") }).ToList();
             pozycje = new List<Pozycja>
             {
-                new Pozycja { id = "wroc", etykieta = M.pozycje.wroc.etykieta, aktywna = () => trwaGra() },
-                new Pozycja { id = "nowa", etykieta = M.pozycje.nowa.etykieta },
-                new Pozycja { id = "wczytaj", etykieta = M.pozycje.wczytaj.etykieta, aktywna = () => Zapisy.hasSave() },
-                new Pozycja { id = "samouczek", etykieta = M.pozycje.samouczek.etykieta },
-                new Pozycja { id = "bestiariusz", etykieta = M.pozycje.bestiariusz.etykieta },
-                new Pozycja { id = "osiagniecia", etykieta = M.pozycje.osiagniecia.etykieta },
-                new Pozycja { id = "ustawienia", etykieta = M.pozycje.ustawienia.etykieta },
+                new Pozycja { id = "wroc", etykieta = M.pozycje.wroc.etykieta, plik = "graj-dalej", aktywna = () => trwaGra() },
+                new Pozycja { id = "nowa", etykieta = M.pozycje.nowa.etykieta, plik = "nowa-gra" },
+                new Pozycja { id = "wczytaj", etykieta = M.pozycje.wczytaj.etykieta, plik = "wczytaj-gre", aktywna = () => Zapisy.hasSave() },
+                new Pozycja { id = "samouczek", etykieta = M.pozycje.samouczek.etykieta, plik = "samouczek" },
+                new Pozycja { id = "bestiariusz", etykieta = M.pozycje.bestiariusz.etykieta, plik = "atlas" },
+                new Pozycja { id = "osiagniecia", etykieta = M.pozycje.osiagniecia.etykieta, plik = "osiagniecia" },
+                new Pozycja { id = "ustawienia", etykieta = M.pozycje.ustawienia.etykieta, plik = "ustawienia" },
             };
         }
 
@@ -212,9 +233,10 @@ namespace Trzewia.Aplikacja
             }
             var y0 = start();
             ctx.font = $"{JS.S(r)}px {Ink.SERIF}";
-            var najszersza = pozycje.Max(p => ctx.measureText(p.etykieta).width);
             double oz = r * M.ozdobnikSzer, ozOd = r * M.ozdobnikOdstep;
-            var szerWiersza = najszersza + 2 * (oz + ozOd) + r;
+            // przycisk z rysunku: wysokość tak, żeby ozdobnik miał r × przyciskOzdobnik; szerokość z proporcji pliku
+            double wysPrzycisku(Przycisk b) => r * M.przyciskOzdobnik * b.h / OZDOBNIK_PX;
+            var szerWiersza = pozycje.Max(p => przycisk(p) is { } b ? wysPrzycisku(b) * b.w / b.h : ctx.measureText(p.etykieta).width + 2 * (oz + ozOd)) + r;
             trafienia = new List<Trafienie>();
             ctx.textAlign = "center";
             ctx.textBaseline = "alphabetic";
@@ -226,6 +248,25 @@ namespace Trzewia.Aplikacja
                 var y = y0 + i * odstep;
                 var wejscieP = wygladz((odWejscia - M.spisOd - i * M.pozycjaOpoznienie) / M.pozycjaCzas);
                 var alfa = (dostepna ? 1 : M.alfaNieaktywnej) * wejscieP;
+                var b = przycisk(p);
+                if (b != null)
+                {
+                    // rysunek: cały w barwie napisu (wybrany — jaśniejszy, z poświatą wzdłuż kreski), środek ozdobników
+                    // na wysokości środka małych liter — tam, gdzie stały ozdobniki przy napisie pismem
+                    double bh = wysPrzycisku(b), bw = bh * b.w / b.h;
+                    ctx.save();
+                    ctx.globalAlpha = alfa;
+                    if (wybrane)
+                    {
+                        var puls = ruch ? 0.8 + 0.2 * JsMath.Sin(teraz * 0.003) : 1;
+                        ctx.shadowColor = $"rgba({M.poswiata},{JS.S(0.85 * puls)})";
+                        ctx.shadowBlur = r * M.poswiataRozmycie;
+                    }
+                    ctx.drawImage(wybrane ? b.wybrany : b.zwykly, w / 2 - bw / 2, y - r * 0.3 - bh / 2, bw, bh);
+                    ctx.restore();
+                    trafienia.Add(new Trafienie { x = w / 2 - szerWiersza / 2, y = y - odstep * 0.5 - r * 0.3, w = szerWiersza, h = odstep, i = i });
+                    continue;
+                }
                 ctx.font = $"{JS.S(r)}px {Ink.SERIF}";
                 var szer = ctx.measureText(p.etykieta).width;
                 ctx.save();

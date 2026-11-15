@@ -456,6 +456,15 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
     pismo: HarfBuzz a Chrome, postacie: duszki i faza kroku).
 23. (etap 5–6) Bez dźwięku na razie (decyzja użytkownika 14.11) — muzyka, odgłosy świata, gesty i głosy ludu nie grają;
     ustawienia dźwięku są i zapisują się, ale niczego nie zmieniają, dopóki dźwięk nie przyjdzie.
+24. (15.11, decyzja użytkownika) Przyciski menu to odręczne grafiki (`dane/grafika/menu/przyciski/`, oryginały w
+    `oryginaly/`, kopie dla Unity w `unity/Assets/Trzewia/Menu/Przyciski/`) zamiast napisów pismem z ozdobnikami
+    rysowanymi kodem. Wybrany — jaśniejszy, z poświatą wzdłuż kreski; nieaktywny — przygaszony, jak dawniej.
+25. (15.11, decyzja użytkownika: „nie chcę już, żeby dźwięk był ładowany skryptami”) Cały dźwięk to pliki MP3 w
+    `dane/dzwieki/` (329 plików, spis w `SPIS.md` i `spis.json`): nagrania głosów nazwane i poukładane według roli
+    (oryginały bez zmian) i gotowe do grania, a wszystko, co gra TS składała w locie (rezonans skały, kucie, gesty,
+    zdarzenia, akordy, dzwony, niepokój), nagrane jej własnym kodem w Chromium (`narzedzia/dzwieki/nagraj.mjs`).
+    Warstwy ciągłe są pętlami w kilku stopniach (głębokość, głód, wiara, napięcie) — gra przenika między najbliższymi;
+    dźwięki losowe — po kilka wariantów. Odtwarzanie tych plików w grze C# jeszcze nie jest zrobione.
 
 ---
 

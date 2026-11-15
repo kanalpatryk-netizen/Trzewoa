@@ -66,3 +66,25 @@ Co warto wiedzieć:
 
 Modele buduje `trzewia-cs/narzedzia/dlon3d/buduj.mjs` z oryginalnego modelu brył gry TS
 (`alpha-1/scripts/dlon/model.html`).
+
+## Przyciski menu (odręczne, 15.11)
+
+Pliki: `Assets/Trzewia/Menu/Przyciski/` w tym katalogu (te same co w grze C#: `trzewia-cs/dane/grafika/menu/przyciski/`) —
+skopiuj razem z resztą `Assets/Trzewia`. Oryginały, tak jak przyszły (czarny tusz na białym):
+`trzewia-cs/dane/grafika/menu/przyciski/oryginaly/`.
+
+| Plik | Pozycja menu |
+|---|---|
+| `graj-dalej.png` | Graj dalej |
+| `nowa-gra.png` | Nowa gra |
+| `wczytaj-gre.png` | Wczytaj grę |
+| `samouczek.png` | Samouczek |
+| `atlas.png` | Atlas |
+| `osiagniecia.png` | Osiągnięcia |
+| `ustawienia.png` | Ustawienia |
+
+Każdy to biała kreska na przezroczystości — w Unity: Texture Type **Sprite (2D and UI)**, Alpha Is Transparency, a barwę
+daje pole `Color` w `Image` albo `SpriteRenderer` (gra C#: zwykły `#a9a49c`, wybrany `#ffffff` z poświatą). Ozdobniki mają
+we wszystkich plikach 300 px wysokości, a ich środek jest w środku wysokości obrazka — ta sama skala dla wszystkich daje
+litery jednej wielkości. Wymiary są w `przyciski.json`. Pliki robi z oryginałów `python3 trzewia-cs/narzedzia/menu/przyciski.py`.
+
