@@ -1,4 +1,5 @@
 // Port: alpha-1/src/main.ts (start gry) — na razie etap 1: okno, pętla, wejście, licznik F3 i ekran próbny.
+using System.Reflection;
 using System.Runtime;
 using SkiaSharp;
 using Trzewia.Aplikacja;
@@ -23,6 +24,17 @@ static class Program
     [STAThread]
     static int Main(string[] args)
     {
+        // najpierw: czy wszystkie pliki gry są z jednej paczki (nowa rozpakowana na starą zostawia stare biblioteki
+        // i gra pada dopiero w środku — „Could not load type…”, zgłoszenie użytkownika 15.11)
+        if (!JednaPaczka(out var pliki))
+        {
+            var tresc = "Pliki gry są z różnych wersji Trzewi — nowa paczka została chyba rozpakowana na folder ze starą.\n\n" +
+                        "Usuń cały folder gry i rozpakuj paczkę jeszcze raz do pustego folderu. Zapis i ustawienia leżą gdzie " +
+                        "indziej (Dokumenty\\My Games\\Trzewia, na Linuksie ~/.local/share/Trzewia) — nic nie przepadnie.\n\n" + pliki;
+            Console.Error.WriteLine(tresc);
+            try { OknoGry.Komunikat("Trzewia — pliki z różnych wersji", tresc); } catch { /* bez okna — zostaje konsola */ }
+            return 1;
+        }
         Uruchomienie.Ustaw(args);
         var sciezki = new Sciezki();
         Rdzen.Gospodarz.Pliki = sciezki;
@@ -75,6 +87,28 @@ static class Program
             return 1;
         }
         finally { Dziennik.Zamknij(); }
+    }
+
+    /// <summary>
+    /// Znacznik budowy (Directory.Build.props, ZnacznikBudowy) programu i bibliotek gry — w jednej paczce wszędzie ten sam.
+    /// Biblioteki ładowane po nazwie, bez sięgania do ich typów (stara biblioteka mogłaby nie mieć tych, których szukamy).
+    /// </summary>
+    static bool JednaPaczka(out string opis)
+    {
+        static string Znacznik(Assembly a) => a.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion ?? "bez znacznika";
+        var moj = Znacznik(typeof(Program).Assembly);
+        var sb = new System.Text.StringBuilder($"Trzewia.dll: {moj}\n");
+        bool zgodne = true;
+        foreach (var n in new[] { "Trzewia.Symulacja", "Trzewia.Gra", "Trzewia.Skia" })
+        {
+            string z;
+            try { z = Znacznik(Assembly.Load(new AssemblyName(n))); }
+            catch (Exception e) { z = "nie wczytuje się (" + e.Message + ")"; }
+            if (z != moj) zgodne = false;
+            sb.Append($"{n}.dll: {z}\n");
+        }
+        opis = sb.ToString();
+        return zgodne;
     }
 
     /// <summary>--wypisz-nastawy: wszystkie liczby gry do dane/nastawy/*.json (istniejące pliki zostają nietknięte).</summary>

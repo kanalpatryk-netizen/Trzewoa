@@ -11,13 +11,15 @@ RID="${1:-win-x64}"
 TRYB="${2:-folder}"
 CEL="publikacja/$RID"
 rm -rf "$CEL"
+# ten sam znacznik we wszystkich bibliotekach paczki (Program sprawdza, czy pliki gry są z jednej paczki)
+ZNACZNIK="$(date -u +%Y%m%d%H%M%S)"
 if [ "$TRYB" = "jeden-plik" ]; then
-  dotnet publish src/Trzewia/Trzewia.csproj -c Release -r "$RID" --self-contained -p:JedenPlik=true -o "$CEL/Trzewia-jeden-plik"
+  dotnet publish src/Trzewia/Trzewia.csproj -c Release -r "$RID" --self-contained -p:ZnacznikBudowy=$ZNACZNIK -p:JedenPlik=true -o "$CEL/Trzewia-jeden-plik"
   echo "Jeden plik: $CEL/Trzewia-jeden-plik/"
   ls -la "$CEL/Trzewia-jeden-plik/"
   exit 0
 fi
-dotnet publish src/Trzewia/Trzewia.csproj -c Release -r "$RID" --self-contained -o "$CEL/Trzewia"
+dotnet publish src/Trzewia/Trzewia.csproj -c Release -r "$RID" --self-contained -p:ZnacznikBudowy=$ZNACZNIK -o "$CEL/Trzewia"
 # symbole do szukania błędów zostają obok, nie w paczce dla gracza
 mkdir -p "$CEL/symbole"
 find "$CEL/Trzewia" -maxdepth 1 -name "*.pdb" -exec mv {} "$CEL/symbole/" \;

@@ -10,6 +10,14 @@
     <Company>Trzewia</Company>
     <Copyright>Trzewia</Copyright>
     <Version>0.1.0</Version>
+    <!--
+      Znacznik budowy (buduj.sh/ps1 podają czas budowania): ten sam we wszystkich bibliotekach jednej paczki. Program przy
+      starcie porównuje znaczniki i gdy w folderze gry leżą pliki z różnych paczek (nowa rozpakowana na starą), mówi to
+      wprost zamiast paść na „Could not load type…” (zgłoszenie użytkownika 15.11).
+    -->
+    <ZnacznikBudowy Condition="'$(ZnacznikBudowy)' == ''">dev</ZnacznikBudowy>
+    <InformationalVersion>$(Version)+$(ZnacznikBudowy)</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <NoWarn>$(NoWarn);CS1591</NoWarn>
   </PropertyGroup>
 

@@ -7,12 +7,14 @@ $ErrorActionPreference = "Stop"
 Set-Location $PSScriptRoot
 $cel = "publikacja\$Rid"
 if (Test-Path $cel) { Remove-Item -Recurse -Force $cel }
+# ten sam znacznik we wszystkich bibliotekach paczki (Program sprawdza, czy pliki gry są z jednej paczki)
+$znacznik = (Get-Date).ToUniversalTime().ToString("yyyyMMddHHmmss")
 if ($JedenPlik) {
-  dotnet publish src\Trzewia\Trzewia.csproj -c Release -r $Rid --self-contained -p:JedenPlik=true -o "$cel\Trzewia-jeden-plik"
+  dotnet publish src\Trzewia\Trzewia.csproj -c Release -r $Rid --self-contained -p:ZnacznikBudowy=$znacznik -p:JedenPlik=true -o "$cel\Trzewia-jeden-plik"
   Write-Host "Jeden plik: $cel\Trzewia-jeden-plik\Trzewia.exe"
   exit 0
 }
-dotnet publish src\Trzewia\Trzewia.csproj -c Release -r $Rid --self-contained -o "$cel\Trzewia"
+dotnet publish src\Trzewia\Trzewia.csproj -c Release -r $Rid --self-contained -p:ZnacznikBudowy=$znacznik -o "$cel\Trzewia"
 New-Item -ItemType Directory -Force "$cel\symbole" | Out-Null
 Get-ChildItem "$cel\Trzewia\*.pdb" | Move-Item -Destination "$cel\symbole"
 $zip = "publikacja\Trzewia-$Rid.zip"
