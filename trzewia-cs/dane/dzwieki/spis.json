@@ -1,0 +1,2643 @@
+[
+ {
+  "plik": "nagrania/rycerz/odmowa-pospolita-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-02.mp3",
+  "kiedy": "odmowa rycerza na głos (pospolita)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-pospolita-01.mp3",
+  "sekundy": 3.64,
+  "szczytDb": -1.9,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-pospolita-01.mp3",
+  "kiedy": "odmowa rycerza na głos (pospolita)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-pospolita-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-04.mp3",
+  "kiedy": "odmowa rycerza na głos (pospolita)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-pospolita-02.mp3",
+  "sekundy": 3.9,
+  "szczytDb": -2.4,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-pospolita-02.mp3",
+  "kiedy": "odmowa rycerza na głos (pospolita)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-pospolita-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-06.mp3",
+  "kiedy": "odmowa rycerza na głos (pospolita)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-pospolita-03.mp3",
+  "sekundy": 3.58,
+  "szczytDb": -3,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-pospolita-03.mp3",
+  "kiedy": "odmowa rycerza na głos (pospolita)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-pospolita-04.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-08.mp3",
+  "kiedy": "odmowa rycerza na głos (pospolita)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-pospolita-04.mp3",
+  "sekundy": 3.89,
+  "szczytDb": -1.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-pospolita-04.mp3",
+  "kiedy": "odmowa rycerza na głos (pospolita)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-rzadsza-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-10.mp3",
+  "kiedy": "odmowa rycerza na głos (rzadsza)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-rzadsza-01.mp3",
+  "sekundy": 4.17,
+  "szczytDb": -2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-rzadsza-01.mp3",
+  "kiedy": "odmowa rycerza na głos (rzadsza)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-rzadsza-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-12.mp3",
+  "kiedy": "odmowa rycerza na głos (rzadsza)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-rzadsza-02.mp3",
+  "sekundy": 3.73,
+  "szczytDb": -2.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-rzadsza-02.mp3",
+  "kiedy": "odmowa rycerza na głos (rzadsza)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-rzadsza-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-14.mp3",
+  "kiedy": "odmowa rycerza na głos (rzadsza)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-rzadsza-03.mp3",
+  "sekundy": 4.03,
+  "szczytDb": -1.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-rzadsza-03.mp3",
+  "kiedy": "odmowa rycerza na głos (rzadsza)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-bardzo-rzadka-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-15.mp3",
+  "kiedy": "odmowa rycerza na głos (bardzo rzadka)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-bardzo-rzadka-01.mp3",
+  "sekundy": 3.6,
+  "szczytDb": -3.3,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-bardzo-rzadka-01.mp3",
+  "kiedy": "odmowa rycerza na głos (bardzo rzadka)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-bardzo-rzadka-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-17.mp3",
+  "kiedy": "odmowa rycerza na głos (bardzo rzadka)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-bardzo-rzadka-02.mp3",
+  "sekundy": 3.49,
+  "szczytDb": -3.1,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-bardzo-rzadka-02.mp3",
+  "kiedy": "odmowa rycerza na głos (bardzo rzadka)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-bardzo-rzadka-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-19.mp3",
+  "kiedy": "odmowa rycerza na głos (bardzo rzadka)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-bardzo-rzadka-03.mp3",
+  "sekundy": 3.08,
+  "szczytDb": -2.9,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-bardzo-rzadka-03.mp3",
+  "kiedy": "odmowa rycerza na głos (bardzo rzadka)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/odmowa-ekstremalnie-rzadka-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/rycerz/dziweki_part-20.mp3",
+  "kiedy": "odmowa rycerza na głos (ekstremalnie rzadka)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/odmowa-ekstremalnie-rzadka-01.mp3",
+  "sekundy": 3.24,
+  "szczytDb": -2.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/odmowa-ekstremalnie-rzadka-01.mp3",
+  "kiedy": "odmowa rycerza na głos (ekstremalnie rzadka)",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-01.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-02.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-02.mp3",
+  "sekundy": 4.02,
+  "szczytDb": -4.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-02.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-03.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-03.mp3",
+  "sekundy": 3.61,
+  "szczytDb": -3.7,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-03.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-04.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-04.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-04.mp3",
+  "sekundy": 4.33,
+  "szczytDb": -1.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-04.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-05.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-05.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-05.mp3",
+  "sekundy": 4.32,
+  "szczytDb": -3.7,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-05.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-06.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-06.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-06.mp3",
+  "sekundy": 3.19,
+  "szczytDb": -2.6,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-06.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-07.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-07.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-07.mp3",
+  "sekundy": 4.24,
+  "szczytDb": -2.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-07.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-08.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-08.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-08.mp3",
+  "sekundy": 3.91,
+  "szczytDb": -1.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-08.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-09.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-09.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-09.mp3",
+  "sekundy": 5.38,
+  "szczytDb": -3,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-09.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-10.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-10.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-10.mp3",
+  "sekundy": 4.85,
+  "szczytDb": -2.9,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-10.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/odmowa-11.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/odmowy/pobozny/2026-10-21 19-13-53_part-11.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/odmowa-11.mp3",
+  "sekundy": 3.99,
+  "szczytDb": -2.1,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/odmowa-11.mp3",
+  "kiedy": "odmowa pobożnego na głos",
+  "uwagi": "po głuchym stuku odmowy, z opóźnieniem 0,12 s; najwyżej co 500 ms; mówi jeden naraz (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/atak-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakP/2026-10-24 14-17-47_part-02.mp3",
+  "kiedy": "atak (pobozny) — w grze TS pominięte (nastawy GLOSY_LUDU.pomin)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "nagrania/pobozny/atak-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakP/2026-10-24 14-17-47_part-04.mp3",
+  "kiedy": "atak (pobozny) — w grze TS pominięte (nastawy GLOSY_LUDU.pomin)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "nagrania/pobozny/atak-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakP/2026-10-24 14-17-47_part-06.mp3",
+  "kiedy": "atak (pobozny) — w grze TS pominięte (nastawy GLOSY_LUDU.pomin)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "nagrania/pobozny/atak-04.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakP/2026-10-24 14-17-47_part-07.mp3",
+  "kiedy": "atak (pobozny) — w grze TS pominięte (nastawy GLOSY_LUDU.pomin)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "nagrania/pobozny/atak-05.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakP/2026-10-24 14-17-47_part-08.mp3",
+  "kiedy": "atak (pobozny) — w grze TS pominięte (nastawy GLOSY_LUDU.pomin)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "nagrania/rycerz/atak-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakR/2026-10-22 21-48-18_part-13.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/atak-01.mp3",
+  "sekundy": 3.44,
+  "szczytDb": -3.3,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/atak-01.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "okrzyk do walki (waga 3)"
+ },
+ {
+  "plik": "nagrania/rycerz/atak-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakR/2026-10-22 21-48-18_part-14.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/atak-02.mp3",
+  "sekundy": 3.73,
+  "szczytDb": -2.9,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/atak-02.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "okrzyk do walki (waga 3)"
+ },
+ {
+  "plik": "nagrania/rycerz/atak-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakR/2026-10-22 21-48-18_part-15.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/atak-03.mp3",
+  "sekundy": 4.18,
+  "szczytDb": -1.7,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/atak-03.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "okrzyk do walki (waga 3)"
+ },
+ {
+  "plik": "nagrania/rycerz/atak-04.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakR/2026-10-22 21-48-18_part-16.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/atak-04.mp3",
+  "sekundy": 4.31,
+  "szczytDb": -2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/atak-04.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "okrzyk do walki (waga 3)"
+ },
+ {
+  "plik": "nagrania/rycerz/atak-05.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakR/2026-10-22 21-48-18_part-17.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/atak-05.mp3",
+  "sekundy": 4.06,
+  "szczytDb": -2.5,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/atak-05.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "okrzyk do walki (waga 3)"
+ },
+ {
+  "plik": "nagrania/rycerz/atak-06.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakR/2026-10-22 21-48-18_part-18.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/atak-06.mp3",
+  "sekundy": 4.43,
+  "szczytDb": -1.1,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/atak-06.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "okrzyk do walki (waga 3)"
+ },
+ {
+  "plik": "nagrania/rycerz/atak-07.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/atakR/2026-10-22 21-48-18_part-19.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/atak-07.mp3",
+  "sekundy": 4.77,
+  "szczytDb": -2.9,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/atak-07.mp3",
+  "kiedy": "atak (rycerz)",
+  "uwagi": "okrzyk do walki (waga 3)"
+ },
+ {
+  "plik": "nagrania/pobozny/bol-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolP/2026-10-24 14-17-47_part-09.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/bol-01.mp3",
+  "sekundy": 3.33,
+  "szczytDb": -3,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/bol-01.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/pobozny/bol-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolP/2026-10-24 14-17-47_part-10.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/bol-02.mp3",
+  "sekundy": 3.21,
+  "szczytDb": -2.4,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/bol-02.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/pobozny/bol-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolP/2026-10-24 14-17-47_part-11.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/bol-03.mp3",
+  "sekundy": 3.42,
+  "szczytDb": -6.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/bol-03.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/pobozny/bol-04.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolP/2026-10-24 14-17-47_part-12.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/bol-04.mp3",
+  "sekundy": 3.62,
+  "szczytDb": -5.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/bol-04.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/pobozny/bol-05.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolP/2026-10-24 14-17-47_part-13.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/bol-05.mp3",
+  "sekundy": 3.46,
+  "szczytDb": -4.3,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/bol-05.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/pobozny/bol-06.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolP/2026-10-24 14-17-47_part-14.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/bol-06.mp3",
+  "sekundy": 3.36,
+  "szczytDb": -4.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/bol-06.mp3",
+  "kiedy": "bol (pobozny)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/rycerz/bol-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolR/2026-10-22 21-48-18_part-21.mp3",
+  "kiedy": "bol (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/bol-01.mp3",
+  "sekundy": 3.08,
+  "szczytDb": -3.6,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/bol-01.mp3",
+  "kiedy": "bol (rycerz)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/rycerz/bol-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolR/2026-10-22 21-48-18_part-22.mp3",
+  "kiedy": "bol (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/bol-02.mp3",
+  "sekundy": 3.11,
+  "szczytDb": -4.6,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/bol-02.mp3",
+  "kiedy": "bol (rycerz)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/rycerz/bol-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolR/2026-10-22 21-48-18_part-23.mp3",
+  "kiedy": "bol (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/bol-03.mp3",
+  "sekundy": 3.23,
+  "szczytDb": -4,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/bol-03.mp3",
+  "kiedy": "bol (rycerz)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/rycerz/bol-04.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolR/2026-10-22 21-48-18_part-24.mp3",
+  "kiedy": "bol (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/bol-04.mp3",
+  "sekundy": 3.24,
+  "szczytDb": -3.7,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/bol-04.mp3",
+  "kiedy": "bol (rycerz)",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/rycerz/bol-rzadkie.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/bolR/rzadkie.mp3",
+  "kiedy": "bol (rycerz), rzadkie — szansa 0,5% przy każdym razie",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/bol-rzadkie.mp3",
+  "sekundy": 10.63,
+  "szczytDb": -3,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/bol-rzadkie.mp3",
+  "kiedy": "bol (rycerz), rzadkie — szansa 0,5% przy każdym razie",
+  "uwagi": "ból, rana, śmierć (waga 4 — ucina inne)"
+ },
+ {
+  "plik": "nagrania/pobozny/glod-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodP/2026-10-24 14-20-10_part-02.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/glod-01.mp3",
+  "sekundy": 5.11,
+  "szczytDb": -2.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/glod-01.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/pobozny/glod-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodP/2026-10-24 14-20-10_part-03.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/glod-02.mp3",
+  "sekundy": 5.81,
+  "szczytDb": -3.6,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/glod-02.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/pobozny/glod-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodP/2026-10-24 14-20-10_part-04.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/glod-03.mp3",
+  "sekundy": 5.65,
+  "szczytDb": -4.3,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/glod-03.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/pobozny/glod-04.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodP/2026-10-24 14-20-10_part-05.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/glod-04.mp3",
+  "sekundy": 4.21,
+  "szczytDb": -3.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/glod-04.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/pobozny/glod-05.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodP/2026-10-24 14-20-10_part-06.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/glod-05.mp3",
+  "sekundy": 4.42,
+  "szczytDb": -3.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/glod-05.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/pobozny/glod-06.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodP/2026-10-24 14-20-10_part-07.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/glod-06.mp3",
+  "sekundy": 4.33,
+  "szczytDb": -3.3,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/glod-06.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/pobozny/glod-07.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodP/2026-10-24 14-20-10_part-08.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/glod-07.mp3",
+  "sekundy": 5.68,
+  "szczytDb": -3.4,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/glod-07.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/pobozny/glod-08.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodP/2026-10-24 14-20-10_part-09.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/glod-08.mp3",
+  "sekundy": 5.52,
+  "szczytDb": -2.9,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/glod-08.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/pobozny/glod-09.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodP/2026-10-24 14-20-10_part-10.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/glod-09.mp3",
+  "sekundy": 4.52,
+  "szczytDb": -4.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/glod-09.mp3",
+  "kiedy": "glod (pobozny)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/rycerz/glod-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodR/2026-10-22 21-48-18_part-03.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/glod-01.mp3",
+  "sekundy": 6.12,
+  "szczytDb": -2.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/glod-01.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/rycerz/glod-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodR/2026-10-22 21-48-18_part-04.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/glod-02.mp3",
+  "sekundy": 4.6,
+  "szczytDb": -2.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/glod-02.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/rycerz/glod-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodR/2026-10-22 21-48-18_part-05.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/glod-03.mp3",
+  "sekundy": 4.76,
+  "szczytDb": -2.2,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/glod-03.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/rycerz/glod-04.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodR/2026-10-22 21-48-18_part-06.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/glod-04.mp3",
+  "sekundy": 3.99,
+  "szczytDb": -1.5,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/glod-04.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/rycerz/glod-05.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/glodR/2026-10-22 21-48-18_part-07.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/glod-05.mp3",
+  "sekundy": 3.58,
+  "szczytDb": -2.4,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/glod-05.mp3",
+  "kiedy": "glod (rycerz)",
+  "uwagi": "marudzenie z głodu (waga 1)"
+ },
+ {
+  "plik": "nagrania/pobozny/potwierdzenie-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieP/2026-10-24 14-20-10_part-12.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/potwierdzenie-01.mp3",
+  "sekundy": 3.8,
+  "szczytDb": -2.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/potwierdzenie-01.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/potwierdzenie-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieP/2026-10-24 14-20-10_part-13.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/potwierdzenie-02.mp3",
+  "sekundy": 4,
+  "szczytDb": -2.8,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/potwierdzenie-02.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/potwierdzenie-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieP/2026-10-24 14-20-10_part-14.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/potwierdzenie-03.mp3",
+  "sekundy": 3.62,
+  "szczytDb": -1.9,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/potwierdzenie-03.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/potwierdzenie-04.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieP/2026-10-24 14-20-10_part-15.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/potwierdzenie-04.mp3",
+  "sekundy": 4.35,
+  "szczytDb": -2.9,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/potwierdzenie-04.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/potwierdzenie-05.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieP/2026-10-24 14-20-10_part-16.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/potwierdzenie-05.mp3",
+  "sekundy": 4.37,
+  "szczytDb": -2.5,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/potwierdzenie-05.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/potwierdzenie-06.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieP/2026-10-24 14-20-10_part-17.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/potwierdzenie-06.mp3",
+  "sekundy": 4.37,
+  "szczytDb": -1.9,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/potwierdzenie-06.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "nagrania/pobozny/potwierdzenie-07.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieP/2026-10-24 14-20-10_part-18.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/pobozny/potwierdzenie-07.mp3",
+  "sekundy": 3.86,
+  "szczytDb": -3.5,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/pobozny/potwierdzenie-07.mp3",
+  "kiedy": "potwierdzenie (pobozny)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/potwierdzenie-01.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieR/2026-10-22 21-48-18_part-09.mp3",
+  "kiedy": "potwierdzenie (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/potwierdzenie-01.mp3",
+  "sekundy": 3.18,
+  "szczytDb": -1.6,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/potwierdzenie-01.mp3",
+  "kiedy": "potwierdzenie (rycerz)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/potwierdzenie-02.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieR/2026-10-22 21-48-18_part-10.mp3",
+  "kiedy": "potwierdzenie (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/potwierdzenie-02.mp3",
+  "sekundy": 3.26,
+  "szczytDb": -1.6,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/potwierdzenie-02.mp3",
+  "kiedy": "potwierdzenie (rycerz)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "nagrania/rycerz/potwierdzenie-03.mp3",
+  "grupa": "nagrania",
+  "zrodlo": "alpha-1/gra222/dzwieki/jednostki/potwierdzenieR/2026-10-22 21-48-18_part-11.mp3",
+  "kiedy": "potwierdzenie (rycerz)",
+  "uwagi": "oryginał bez zmian"
+ },
+ {
+  "plik": "glosy/rycerz/potwierdzenie-03.mp3",
+  "sekundy": 3.17,
+  "szczytDb": -4,
+  "grupa": "glosy",
+  "zrodlo": "nagrania/rycerz/potwierdzenie-03.mp3",
+  "kiedy": "potwierdzenie (rycerz)",
+  "uwagi": "po rozkazie, z opóźnieniem 0,06 s, najwyżej co 1,5 s (waga 2)"
+ },
+ {
+  "plik": "gesty/klik.mp3",
+  "sekundy": 2.17,
+  "szczytDb": -17.6,
+  "grupa": "gesty",
+  "kiedy": "wybór rytu, narzędzia, przycisku, pozycji",
+  "uwagi": "najwyżej co 60 ms"
+ },
+ {
+  "plik": "gesty/szkic-1.mp3",
+  "sekundy": 2.32,
+  "szczytDb": -10.5,
+  "grupa": "gesty",
+  "kiedy": "rozkaz naszkicowany w pauzie (rylec po miedzi)",
+  "uwagi": "najwyżej co 85 ms; wariant losowy"
+ },
+ {
+  "plik": "gesty/szkic-2.mp3",
+  "sekundy": 2.35,
+  "szczytDb": -11.8,
+  "grupa": "gesty",
+  "kiedy": "rozkaz naszkicowany w pauzie (rylec po miedzi)",
+  "uwagi": "najwyżej co 85 ms; wariant losowy"
+ },
+ {
+  "plik": "gesty/szkic-3.mp3",
+  "sekundy": 2.4,
+  "szczytDb": -10.5,
+  "grupa": "gesty",
+  "kiedy": "rozkaz naszkicowany w pauzie (rylec po miedzi)",
+  "uwagi": "najwyżej co 85 ms; wariant losowy"
+ },
+ {
+  "plik": "gesty/szkic-4.mp3",
+  "sekundy": 2.37,
+  "szczytDb": -8.7,
+  "grupa": "gesty",
+  "kiedy": "rozkaz naszkicowany w pauzie (rylec po miedzi)",
+  "uwagi": "najwyżej co 85 ms; wariant losowy"
+ },
+ {
+  "plik": "gesty/szkic-5.mp3",
+  "sekundy": 2.44,
+  "szczytDb": -9.2,
+  "grupa": "gesty",
+  "kiedy": "rozkaz naszkicowany w pauzie (rylec po miedzi)",
+  "uwagi": "najwyżej co 85 ms; wariant losowy"
+ },
+ {
+  "plik": "gesty/skreslenie-1.mp3",
+  "sekundy": 2.43,
+  "szczytDb": -7,
+  "grupa": "gesty",
+  "kiedy": "szkic skreślony",
+  "uwagi": "najwyżej co 90 ms"
+ },
+ {
+  "plik": "gesty/skreslenie-2.mp3",
+  "sekundy": 2.54,
+  "szczytDb": -6.3,
+  "grupa": "gesty",
+  "kiedy": "szkic skreślony",
+  "uwagi": "najwyżej co 90 ms"
+ },
+ {
+  "plik": "gesty/skreslenie-wszystkiego-1.mp3",
+  "sekundy": 2.61,
+  "szczytDb": -6.7,
+  "grupa": "gesty",
+  "kiedy": "cały plan skreślony",
+  "uwagi": ""
+ },
+ {
+  "plik": "gesty/skreslenie-wszystkiego-2.mp3",
+  "sekundy": 2.61,
+  "szczytDb": -4.5,
+  "grupa": "gesty",
+  "kiedy": "cały plan skreślony",
+  "uwagi": ""
+ },
+ {
+  "plik": "gesty/odmowa-1.mp3",
+  "sekundy": 2.67,
+  "szczytDb": -9.6,
+  "grupa": "gesty",
+  "kiedy": "rozkaz się nie udał (głuchy stuk w skałę)",
+  "uwagi": "najwyżej co 280 ms"
+ },
+ {
+  "plik": "gesty/odmowa-2.mp3",
+  "sekundy": 2.68,
+  "szczytDb": -9.4,
+  "grupa": "gesty",
+  "kiedy": "rozkaz się nie udał (głuchy stuk w skałę)",
+  "uwagi": "najwyżej co 280 ms"
+ },
+ {
+  "plik": "gesty/czas-staje-1.mp3",
+  "sekundy": 14,
+  "szczytDb": -10.9,
+  "grupa": "gesty",
+  "kiedy": "pauza: czas staje (kamień osiada)",
+  "uwagi": "potem ton pauzy (pętla); przy pauzie z alarmu bez tego uderzenia"
+ },
+ {
+  "plik": "gesty/czas-staje-2.mp3",
+  "sekundy": 14,
+  "szczytDb": -10.7,
+  "grupa": "gesty",
+  "kiedy": "pauza: czas staje (kamień osiada)",
+  "uwagi": "potem ton pauzy (pętla); przy pauzie z alarmu bez tego uderzenia"
+ },
+ {
+  "plik": "gesty/czas-rusza-1.mp3",
+  "sekundy": 2.91,
+  "szczytDb": -12.7,
+  "grupa": "gesty",
+  "kiedy": "pauza puszczona: czas rusza",
+  "uwagi": "ton pauzy gaśnie (stała 0,15 s)"
+ },
+ {
+  "plik": "gesty/czas-rusza-2.mp3",
+  "sekundy": 2.83,
+  "szczytDb": -12.9,
+  "grupa": "gesty",
+  "kiedy": "pauza puszczona: czas rusza",
+  "uwagi": "ton pauzy gaśnie (stała 0,15 s)"
+ },
+ {
+  "plik": "gesty/alarm-kryzys.mp3",
+  "sekundy": 5.51,
+  "szczytDb": -3.1,
+  "grupa": "gesty",
+  "kiedy": "karta sytuacji — kryzys (dwa dzwony o pół tonu)",
+  "uwagi": "przycisza świat i muzykę do 35% na 2,6 s"
+ },
+ {
+  "plik": "gesty/alarm-wydarzenie.mp3",
+  "sekundy": 4.44,
+  "szczytDb": -8.3,
+  "grupa": "gesty",
+  "kiedy": "karta sytuacji — wydarzenie (czysta kwinta)",
+  "uwagi": "przycisza świat i muzykę do 55% na 1,6 s"
+ },
+ {
+  "plik": "gesty/kartka-1.mp3",
+  "sekundy": 2.2,
+  "szczytDb": -7,
+  "grupa": "gesty",
+  "kiedy": "kartka atlasu (szelest)",
+  "uwagi": "najwyżej co 150 ms"
+ },
+ {
+  "plik": "gesty/kartka-2.mp3",
+  "sekundy": 2.22,
+  "szczytDb": -8,
+  "grupa": "gesty",
+  "kiedy": "kartka atlasu (szelest)",
+  "uwagi": "najwyżej co 150 ms"
+ },
+ {
+  "plik": "gesty/kartka-3.mp3",
+  "sekundy": 2.15,
+  "szczytDb": -8.5,
+  "grupa": "gesty",
+  "kiedy": "kartka atlasu (szelest)",
+  "uwagi": "najwyżej co 150 ms"
+ },
+ {
+  "plik": "gesty/kartka-4.mp3",
+  "sekundy": 2.23,
+  "szczytDb": -9,
+  "grupa": "gesty",
+  "kiedy": "kartka atlasu (szelest)",
+  "uwagi": "najwyżej co 150 ms"
+ },
+ {
+  "plik": "gesty/nowa-tablica-1.mp3",
+  "sekundy": 4.06,
+  "szczytDb": -7.7,
+  "grupa": "gesty",
+  "kiedy": "nowa tablica w atlasie: kartka i dwa dzwonki",
+  "uwagi": ""
+ },
+ {
+  "plik": "gesty/nowa-tablica-2.mp3",
+  "sekundy": 4.12,
+  "szczytDb": -6.1,
+  "grupa": "gesty",
+  "kiedy": "nowa tablica w atlasie: kartka i dwa dzwonki",
+  "uwagi": ""
+ },
+ {
+  "plik": "zdarzenia/pekniecie-pomnika-1.mp3",
+  "sekundy": 3.35,
+  "szczytDb": -2.5,
+  "grupa": "zdarzenia",
+  "kiedy": "Wielki Pomnik pęka",
+  "uwagi": ""
+ },
+ {
+  "plik": "zdarzenia/pekniecie-pomnika-2.mp3",
+  "sekundy": 3.38,
+  "szczytDb": -2.7,
+  "grupa": "zdarzenia",
+  "kiedy": "Wielki Pomnik pęka",
+  "uwagi": ""
+ },
+ {
+  "plik": "zdarzenia/rozpad-pomnika-1.mp3",
+  "sekundy": 4.56,
+  "szczytDb": -4,
+  "grupa": "zdarzenia",
+  "kiedy": "pomnik rozpada się w gruz",
+  "uwagi": "przycisza świat i muzykę do 50% na 3 s"
+ },
+ {
+  "plik": "zdarzenia/rozpad-pomnika-2.mp3",
+  "sekundy": 4.57,
+  "szczytDb": -3.5,
+  "grupa": "zdarzenia",
+  "kiedy": "pomnik rozpada się w gruz",
+  "uwagi": "przycisza świat i muzykę do 50% na 3 s"
+ },
+ {
+  "plik": "zdarzenia/rozpad-pomnika-3.mp3",
+  "sekundy": 4.53,
+  "szczytDb": -3.1,
+  "grupa": "zdarzenia",
+  "kiedy": "pomnik rozpada się w gruz",
+  "uwagi": "przycisza świat i muzykę do 50% na 3 s"
+ },
+ {
+  "plik": "zdarzenia/ostatnie-uderzenie.mp3",
+  "sekundy": 7.46,
+  "szczytDb": -2,
+  "grupa": "zdarzenia",
+  "kiedy": "ostatnie uderzenie w demona",
+  "uwagi": "przycisza świat i muzykę do 30% na 5 s"
+ },
+ {
+  "plik": "zdarzenia/dlon-wyrasta-z-podlogi-1.mp3",
+  "sekundy": 3.36,
+  "szczytDb": -4,
+  "grupa": "zdarzenia",
+  "kiedy": "dłoń z otchłani wyrasta z podłogi",
+  "uwagi": ""
+ },
+ {
+  "plik": "zdarzenia/dlon-wyrasta-z-podlogi-2.mp3",
+  "sekundy": 3.4,
+  "szczytDb": -3.5,
+  "grupa": "zdarzenia",
+  "kiedy": "dłoń z otchłani wyrasta z podłogi",
+  "uwagi": ""
+ },
+ {
+  "plik": "zdarzenia/dlon-wyrasta-ze-stropu-1.mp3",
+  "sekundy": 3.34,
+  "szczytDb": -4.4,
+  "grupa": "zdarzenia",
+  "kiedy": "dłoń wyrasta ze stropu",
+  "uwagi": ""
+ },
+ {
+  "plik": "zdarzenia/dlon-wyrasta-ze-stropu-2.mp3",
+  "sekundy": 3.41,
+  "szczytDb": -4.1,
+  "grupa": "zdarzenia",
+  "kiedy": "dłoń wyrasta ze stropu",
+  "uwagi": ""
+ },
+ {
+  "plik": "zdarzenia/rzut-dloni-1.mp3",
+  "sekundy": 2.76,
+  "szczytDb": -15.5,
+  "grupa": "zdarzenia",
+  "kiedy": "dłoń ciska rycerzem w górę (świst)",
+  "uwagi": ""
+ },
+ {
+  "plik": "zdarzenia/rzut-dloni-2.mp3",
+  "sekundy": 2.78,
+  "szczytDb": -15.7,
+  "grupa": "zdarzenia",
+  "kiedy": "dłoń ciska rycerzem w górę (świst)",
+  "uwagi": ""
+ },
+ {
+  "plik": "zdarzenia/upadek-1.mp3",
+  "sekundy": 3.11,
+  "szczytDb": -8.7,
+  "grupa": "zdarzenia",
+  "kiedy": "ciśnięty spada na ziemię",
+  "uwagi": "najwyżej co 300 ms"
+ },
+ {
+  "plik": "zdarzenia/upadek-2.mp3",
+  "sekundy": 3.07,
+  "szczytDb": -8.5,
+  "grupa": "zdarzenia",
+  "kiedy": "ciśnięty spada na ziemię",
+  "uwagi": "najwyżej co 300 ms"
+ },
+ {
+  "plik": "zdarzenia/odbicie-od-dloni-1.mp3",
+  "sekundy": 2.94,
+  "szczytDb": -15.1,
+  "grupa": "zdarzenia",
+  "kiedy": "cios odbija się od tarczy z dłoni",
+  "uwagi": "najwyżej co 200 ms"
+ },
+ {
+  "plik": "zdarzenia/odbicie-od-dloni-2.mp3",
+  "sekundy": 2.94,
+  "szczytDb": -15.3,
+  "grupa": "zdarzenia",
+  "kiedy": "cios odbija się od tarczy z dłoni",
+  "uwagi": "najwyżej co 200 ms"
+ },
+ {
+  "plik": "zdarzenia/zawal-stropu-1.mp3",
+  "sekundy": 3.87,
+  "szczytDb": -2.8,
+  "grupa": "zdarzenia",
+  "kiedy": "dłoń drze strop — lawina kamieni",
+  "uwagi": "przycisza świat i muzykę do 60% na 2 s"
+ },
+ {
+  "plik": "zdarzenia/zawal-stropu-2.mp3",
+  "sekundy": 3.86,
+  "szczytDb": -3.1,
+  "grupa": "zdarzenia",
+  "kiedy": "dłoń drze strop — lawina kamieni",
+  "uwagi": "przycisza świat i muzykę do 60% na 2 s"
+ },
+ {
+  "plik": "zdarzenia/zawal-stropu-3.mp3",
+  "sekundy": 3.8,
+  "szczytDb": -3.6,
+  "grupa": "zdarzenia",
+  "kiedy": "dłoń drze strop — lawina kamieni",
+  "uwagi": "przycisza świat i muzykę do 60% na 2 s"
+ },
+ {
+  "plik": "gesty/ton-pauzy-petla.mp3",
+  "sekundy": 30.77,
+  "szczytDb": -15.2,
+  "grupa": "gesty",
+  "petla": true,
+  "kiedy": "czas stoi (pauza): ton zawieszenia, kwinta D–A wysoko",
+  "uwagi": "wchodzi po 0,4 s ze stałą 1,4 s (do pełna ok. 4 s), gaśnie ze stałą 0,15 s, gdy czas rusza"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-0-nieudane-1.mp3",
+  "sekundy": 2.58,
+  "szczytDb": -9,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 0 rozkazów udanych, 1 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-0-nieudane-2.mp3",
+  "sekundy": 2.85,
+  "szczytDb": -8.8,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 0 rozkazów udanych, 2 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-0-nieudane-3.mp3",
+  "sekundy": 2.95,
+  "szczytDb": -8.8,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 0 rozkazów udanych, 3 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-1-nieudane-0.mp3",
+  "sekundy": 3.62,
+  "szczytDb": -17.1,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 1 rozkazów udanych, 0 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-1-nieudane-1.mp3",
+  "sekundy": 3.56,
+  "szczytDb": -5.6,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 1 rozkazów udanych, 1 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-1-nieudane-2.mp3",
+  "sekundy": 3.58,
+  "szczytDb": -5.4,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 1 rozkazów udanych, 2 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-1-nieudane-3.mp3",
+  "sekundy": 3.52,
+  "szczytDb": -5.6,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 1 rozkazów udanych, 3 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-2-nieudane-0.mp3",
+  "sekundy": 3.63,
+  "szczytDb": -14.3,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 2 rozkazów udanych, 0 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-2-nieudane-1.mp3",
+  "sekundy": 3.76,
+  "szczytDb": -9.9,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 2 rozkazów udanych, 1 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-2-nieudane-2.mp3",
+  "sekundy": 3.69,
+  "szczytDb": -6.2,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 2 rozkazów udanych, 2 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-2-nieudane-3.mp3",
+  "sekundy": 3.68,
+  "szczytDb": -6.2,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 2 rozkazów udanych, 3 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-3-nieudane-0.mp3",
+  "sekundy": 3.54,
+  "szczytDb": -12.8,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 3 rozkazów udanych, 0 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-3-nieudane-1.mp3",
+  "sekundy": 3.64,
+  "szczytDb": -8.3,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 3 rozkazów udanych, 1 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-3-nieudane-2.mp3",
+  "sekundy": 3.63,
+  "szczytDb": -8.5,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 3 rozkazów udanych, 2 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-3-nieudane-3.mp3",
+  "sekundy": 3.63,
+  "szczytDb": -8.2,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 3 rozkazów udanych, 3 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-4-nieudane-0.mp3",
+  "sekundy": 3.76,
+  "szczytDb": -13.4,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 4 rozkazów udanych, 0 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-4-nieudane-1.mp3",
+  "sekundy": 3.48,
+  "szczytDb": -8.3,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 4 rozkazów udanych, 1 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-4-nieudane-2.mp3",
+  "sekundy": 3.59,
+  "szczytDb": -7.9,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 4 rozkazów udanych, 2 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-4-nieudane-3.mp3",
+  "sekundy": 3.75,
+  "szczytDb": -7.1,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 4 rozkazów udanych, 3 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-5-nieudane-0.mp3",
+  "sekundy": 3.88,
+  "szczytDb": -12.8,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 5 rozkazów udanych, 0 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-5-nieudane-1.mp3",
+  "sekundy": 3.81,
+  "szczytDb": -8.7,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 5 rozkazów udanych, 1 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-5-nieudane-2.mp3",
+  "sekundy": 3.86,
+  "szczytDb": -6.4,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 5 rozkazów udanych, 2 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-5-nieudane-3.mp3",
+  "sekundy": 3.97,
+  "szczytDb": -6,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 5 rozkazów udanych, 3 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-6-nieudane-0.mp3",
+  "sekundy": 3.98,
+  "szczytDb": -12.8,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 6 rozkazów udanych, 0 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-6-nieudane-1.mp3",
+  "sekundy": 3.81,
+  "szczytDb": -9.1,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 6 rozkazów udanych, 1 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-6-nieudane-2.mp3",
+  "sekundy": 3.73,
+  "szczytDb": -8.7,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 6 rozkazów udanych, 2 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-6-nieudane-3.mp3",
+  "sekundy": 3.98,
+  "szczytDb": -7.5,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 6 rozkazów udanych, 3 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-7-nieudane-0.mp3",
+  "sekundy": 4.01,
+  "szczytDb": -12.8,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 7 rozkazów udanych, 0 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-7-nieudane-1.mp3",
+  "sekundy": 3.79,
+  "szczytDb": -7,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 7 rozkazów udanych, 1 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-7-nieudane-2.mp3",
+  "sekundy": 4.04,
+  "szczytDb": -6,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 7 rozkazów udanych, 2 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-7-nieudane-3.mp3",
+  "sekundy": 3.89,
+  "szczytDb": -5.8,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 7 rozkazów udanych, 3 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-8-nieudane-0.mp3",
+  "sekundy": 3.84,
+  "szczytDb": -12.8,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 8 rozkazów udanych, 0 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-8-nieudane-1.mp3",
+  "sekundy": 3.9,
+  "szczytDb": -6.8,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 8 rozkazów udanych, 1 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-8-nieudane-2.mp3",
+  "sekundy": 4.19,
+  "szczytDb": -7.6,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 8 rozkazów udanych, 2 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "gesty/wykonanie/udane-8-nieudane-3.mp3",
+  "sekundy": 4.19,
+  "szczytDb": -7.9,
+  "grupa": "gesty",
+  "kiedy": "plan z pauzy wykonany: 8 rozkazów udanych, 3 nieudanych (kaskada stuków w górę i dzwon)",
+  "uwagi": "więcej niż 8 udanych gra jak 8, więcej niż 3 nieudane — jak 3; także zaliczony krok samouczka (3, 0)"
+ },
+ {
+  "plik": "swiat/wiadro-1.mp3",
+  "sekundy": 3.32,
+  "szczytDb": -20.1,
+  "grupa": "swiat",
+  "kiedy": "wiadro z jedzeniem wyłania się ze stropu (skrzyp kołowrotu, stuk drewna)"
+ },
+ {
+  "plik": "swiat/wiadro-2.mp3",
+  "sekundy": 3.29,
+  "szczytDb": -20.2,
+  "grupa": "swiat",
+  "kiedy": "wiadro z jedzeniem wyłania się ze stropu (skrzyp kołowrotu, stuk drewna)"
+ },
+ {
+  "plik": "swiat/wiadro-3.mp3",
+  "sekundy": 3.36,
+  "szczytDb": -19.9,
+  "grupa": "swiat",
+  "kiedy": "wiadro z jedzeniem wyłania się ze stropu (skrzyp kołowrotu, stuk drewna)"
+ },
+ {
+  "plik": "swiat/kruszec-zelazo.mp3",
+  "sekundy": 0.21,
+  "szczytDb": -39.2,
+  "grupa": "swiat",
+  "kiedy": "okruch żelaza wpada do licznika"
+ },
+ {
+  "plik": "swiat/kruszec-zloto.mp3",
+  "sekundy": 0.46,
+  "szczytDb": -29.2,
+  "grupa": "swiat",
+  "kiedy": "okruch złota wpada do licznika"
+ },
+ {
+  "plik": "swiat/kropla.mp3",
+  "sekundy": 0.19,
+  "szczytDb": -40.8,
+  "grupa": "swiat",
+  "kiedy": "kropla krwi wpada do misy albo do licznika"
+ },
+ {
+  "plik": "swiat/zawal-1.mp3",
+  "sekundy": 4.03,
+  "szczytDb": -9.2,
+  "grupa": "swiat",
+  "kiedy": "góra zawala się nad ludem (łoskot)"
+ },
+ {
+  "plik": "swiat/zawal-2.mp3",
+  "sekundy": 4.12,
+  "szczytDb": -10.6,
+  "grupa": "swiat",
+  "kiedy": "góra zawala się nad ludem (łoskot)"
+ },
+ {
+  "plik": "swiat/zawal-3.mp3",
+  "sekundy": 4.13,
+  "szczytDb": -9.1,
+  "grupa": "swiat",
+  "kiedy": "góra zawala się nad ludem (łoskot)"
+ },
+ {
+  "plik": "swiat/cud.mp3",
+  "sekundy": 3.34,
+  "szczytDb": -13.3,
+  "grupa": "swiat",
+  "kiedy": "Cud — uderzenie w skałę (trzy stuki)"
+ },
+ {
+  "plik": "swiat/rytual/start-zwykly.mp3",
+  "sekundy": 2.7,
+  "szczytDb": -23.6,
+  "grupa": "swiat",
+  "kiedy": "rytuał przy ołtarzu — start"
+ },
+ {
+  "plik": "swiat/rytual/start-krwi.mp3",
+  "sekundy": 2.7,
+  "szczytDb": -23.8,
+  "grupa": "swiat",
+  "kiedy": "rytuał przy ołtarzu — start (rytuał krwi: niżej, mała tercja)"
+ },
+ {
+  "plik": "swiat/rytual/koniec-zwykly.mp3",
+  "sekundy": 3.34,
+  "szczytDb": -24.2,
+  "grupa": "swiat",
+  "kiedy": "rytuał przy ołtarzu — koniec"
+ },
+ {
+  "plik": "swiat/rytual/koniec-krwi.mp3",
+  "sekundy": 3.33,
+  "szczytDb": -24.6,
+  "grupa": "swiat",
+  "kiedy": "rytuał przy ołtarzu — koniec (rytuał krwi: niżej, mała tercja)"
+ },
+ {
+  "plik": "swiat/rytual/przerwany-zwykly.mp3",
+  "sekundy": 0.81,
+  "szczytDb": -33.6,
+  "grupa": "swiat",
+  "kiedy": "rytuał przy ołtarzu — przerwany"
+ },
+ {
+  "plik": "swiat/rytual/przerwany-krwi.mp3",
+  "sekundy": 0.8,
+  "szczytDb": -33.6,
+  "grupa": "swiat",
+  "kiedy": "rytuał przy ołtarzu — przerwany (rytuał krwi: niżej, mała tercja)"
+ },
+ {
+  "plik": "swiat/kucie/stuk-100hz.mp3",
+  "sekundy": 2.64,
+  "szczytDb": -27.2,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-110hz.mp3",
+  "sekundy": 2.7,
+  "szczytDb": -26.8,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-120hz.mp3",
+  "sekundy": 2.71,
+  "szczytDb": -26.9,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-130hz.mp3",
+  "sekundy": 2.66,
+  "szczytDb": -26.8,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-140hz.mp3",
+  "sekundy": 2.68,
+  "szczytDb": -26.5,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-150hz.mp3",
+  "sekundy": 2.68,
+  "szczytDb": -26.6,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-160hz.mp3",
+  "sekundy": 2.64,
+  "szczytDb": -26.6,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-170hz.mp3",
+  "sekundy": 2.63,
+  "szczytDb": -27,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-180hz.mp3",
+  "sekundy": 2.71,
+  "szczytDb": -27.2,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-190hz.mp3",
+  "sekundy": 2.63,
+  "szczytDb": -27.8,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-200hz.mp3",
+  "sekundy": 2.56,
+  "szczytDb": -27.9,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-210hz.mp3",
+  "sekundy": 2.6,
+  "szczytDb": -27.7,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-220hz.mp3",
+  "sekundy": 2.69,
+  "szczytDb": -27.2,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-230hz.mp3",
+  "sekundy": 2.64,
+  "szczytDb": -27.6,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-240hz.mp3",
+  "sekundy": 2.65,
+  "szczytDb": -27.5,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/kucie/stuk-250hz.mp3",
+  "sekundy": 2.65,
+  "szczytDb": -26.9,
+  "grupa": "swiat",
+  "kiedy": "rytm pracy: stuk kilofa (Resonance.knock)",
+  "uwagi": "w grze wysokość 160–250 Hz minus głębokość × 60, losowo; głośność (0,05 + praca × 0,06) / 0,11 tego pliku; panorama losowa ±0,6; odstęp (0,9 − min(0,75; praca × 0,8)) × 0,7–1,3 s; w pauzie milknie"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-000-glod-000-petla.mp3",
+  "sekundy": 25.13,
+  "szczytDb": -6.4,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 0% i głodzie 0% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-000-glod-050-petla.mp3",
+  "sekundy": 29.32,
+  "szczytDb": -6,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 0% i głodzie 50% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-000-glod-100-petla.mp3",
+  "sekundy": 30.16,
+  "szczytDb": -8.2,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 0% i głodzie 100% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-025-glod-000-petla.mp3",
+  "sekundy": 25.13,
+  "szczytDb": -7.8,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 25% i głodzie 0% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-025-glod-050-petla.mp3",
+  "sekundy": 29.32,
+  "szczytDb": -6.8,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 25% i głodzie 50% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-025-glod-100-petla.mp3",
+  "sekundy": 30.16,
+  "szczytDb": -8.4,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 25% i głodzie 100% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-050-glod-000-petla.mp3",
+  "sekundy": 25.13,
+  "szczytDb": -7.8,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 50% i głodzie 0% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-050-glod-050-petla.mp3",
+  "sekundy": 29.32,
+  "szczytDb": -8.1,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 50% i głodzie 50% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-050-glod-100-petla.mp3",
+  "sekundy": 30.16,
+  "szczytDb": -7.7,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 50% i głodzie 100% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-075-glod-000-petla.mp3",
+  "sekundy": 25.13,
+  "szczytDb": -7.9,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 75% i głodzie 0% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-075-glod-050-petla.mp3",
+  "sekundy": 29.32,
+  "szczytDb": -8.4,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 75% i głodzie 50% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-075-glod-100-petla.mp3",
+  "sekundy": 30.16,
+  "szczytDb": -5.8,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 75% i głodzie 100% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-100-glod-000-petla.mp3",
+  "sekundy": 25.13,
+  "szczytDb": -7.9,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 100% i głodzie 0% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-100-glod-050-petla.mp3",
+  "sekundy": 29.32,
+  "szczytDb": -7.5,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 100% i głodzie 50% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/dudnienie/glebokosc-100-glod-100-petla.mp3",
+  "sekundy": 30.16,
+  "szczytDb": -8.4,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "rezonans skały: dudnienie przy głębokości widoku 100% i głodzie 100% (oddech skały szybszy z głodem)",
+  "uwagi": "gra przenika między najbliższymi plikami; życie w górze przyjęte 50%; przy wyłączonych odgłosach — cisza"
+ },
+ {
+  "plik": "swiat/szum-korytarzy-petla.mp3",
+  "sekundy": 30,
+  "szczytDb": -19.1,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "szum powietrza w korytarzach",
+  "uwagi": "nagrany przy życiu 100% (poziom 0,15); w grze głośność (0,03 + życie × 0,12) / 0,15, w pauzie × 0,4"
+ },
+ {
+  "plik": "swiat/modlitwa/wiara-025-petla.mp3",
+  "sekundy": 30,
+  "szczytDb": -53.2,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "szum modlitwy przy wierze 25% (pasmo i głośność rosną z wiarą)",
+  "uwagi": "gra przenika między najbliższymi; w pauzie × 0,3; przy wierze 0 — cisza"
+ },
+ {
+  "plik": "swiat/modlitwa/wiara-050-petla.mp3",
+  "sekundy": 30,
+  "szczytDb": -46.7,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "szum modlitwy przy wierze 50% (pasmo i głośność rosną z wiarą)",
+  "uwagi": "gra przenika między najbliższymi; w pauzie × 0,3; przy wierze 0 — cisza"
+ },
+ {
+  "plik": "swiat/modlitwa/wiara-075-petla.mp3",
+  "sekundy": 30,
+  "szczytDb": -44.4,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "szum modlitwy przy wierze 75% (pasmo i głośność rosną z wiarą)",
+  "uwagi": "gra przenika między najbliższymi; w pauzie × 0,3; przy wierze 0 — cisza"
+ },
+ {
+  "plik": "swiat/modlitwa/wiara-100-petla.mp3",
+  "sekundy": 30,
+  "szczytDb": -42.3,
+  "grupa": "swiat",
+  "petla": true,
+  "kiedy": "szum modlitwy przy wierze 100% (pasmo i głośność rosną z wiarą)",
+  "uwagi": "gra przenika między najbliższymi; w pauzie × 0,3; przy wierze 0 — cisza"
+ },
+ {
+  "plik": "muzyka/akordy/menu-napiecie-000-petla.mp3",
+  "sekundy": 44,
+  "szczytDb": -12.2,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „menu”, napięcie 0% — cały obieg progresji",
+  "uwagi": "przy zmianie sceny stary akord gaśnie szybciej (do 30%), nowy wchodzi po 1,6 s"
+ },
+ {
+  "plik": "muzyka/akordy/samouczek-napiecie-000-petla.mp3",
+  "sekundy": 44,
+  "szczytDb": -12.3,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „samouczek”, napięcie 0% — cały obieg progresji",
+  "uwagi": "przy zmianie sceny stary akord gaśnie szybciej (do 30%), nowy wchodzi po 1,6 s"
+ },
+ {
+  "plik": "muzyka/akordy/samouczek-napiecie-050-petla.mp3",
+  "sekundy": 44,
+  "szczytDb": -12.3,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „samouczek”, napięcie 50% — cały obieg progresji",
+  "uwagi": "przy zmianie sceny stary akord gaśnie szybciej (do 30%), nowy wchodzi po 1,6 s"
+ },
+ {
+  "plik": "muzyka/akordy/samouczek-napiecie-100-petla.mp3",
+  "sekundy": 44,
+  "szczytDb": -12.3,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „samouczek”, napięcie 100% — cały obieg progresji",
+  "uwagi": "przy zmianie sceny stary akord gaśnie szybciej (do 30%), nowy wchodzi po 1,6 s"
+ },
+ {
+  "plik": "muzyka/akordy/gra-napiecie-000-petla.mp3",
+  "sekundy": 65,
+  "szczytDb": -12.2,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „gra”, napięcie 0% — cały obieg progresji",
+  "uwagi": "napięcie skraca akordy (13 → 9 s) i otwiera filtr — gra przenika między najbliższymi"
+ },
+ {
+  "plik": "muzyka/akordy/gra-napiecie-025-petla.mp3",
+  "sekundy": 60,
+  "szczytDb": -12.3,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „gra”, napięcie 25% — cały obieg progresji",
+  "uwagi": "napięcie skraca akordy (13 → 9 s) i otwiera filtr — gra przenika między najbliższymi"
+ },
+ {
+  "plik": "muzyka/akordy/gra-napiecie-050-petla.mp3",
+  "sekundy": 55,
+  "szczytDb": -12.3,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „gra”, napięcie 50% — cały obieg progresji",
+  "uwagi": "napięcie skraca akordy (13 → 9 s) i otwiera filtr — gra przenika między najbliższymi"
+ },
+ {
+  "plik": "muzyka/akordy/gra-napiecie-075-petla.mp3",
+  "sekundy": 50,
+  "szczytDb": -12.2,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „gra”, napięcie 75% — cały obieg progresji",
+  "uwagi": "napięcie skraca akordy (13 → 9 s) i otwiera filtr — gra przenika między najbliższymi"
+ },
+ {
+  "plik": "muzyka/akordy/gra-napiecie-100-petla.mp3",
+  "sekundy": 45,
+  "szczytDb": -12.2,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „gra”, napięcie 100% — cały obieg progresji",
+  "uwagi": "napięcie skraca akordy (13 → 9 s) i otwiera filtr — gra przenika między najbliższymi"
+ },
+ {
+  "plik": "muzyka/akordy/koniec-napiecie-020-petla.mp3",
+  "sekundy": 22,
+  "szczytDb": -12.3,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "akordy kamienia: scena „koniec”, napięcie 20% — cały obieg progresji",
+  "uwagi": "przy zmianie sceny stary akord gaśnie szybciej (do 30%), nowy wchodzi po 1,6 s"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-4.mp3",
+  "sekundy": 5.08,
+  "szczytDb": -16.2,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 4 skali (220.0 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-5.mp3",
+  "sekundy": 4.75,
+  "szczytDb": -16.5,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 5 skali (233.1 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-6.mp3",
+  "sekundy": 4.58,
+  "szczytDb": -17.3,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 6 skali (261.6 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-7.mp3",
+  "sekundy": 5.08,
+  "szczytDb": -15.7,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 7 skali (293.7 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-8.mp3",
+  "sekundy": 4.86,
+  "szczytDb": -17.4,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 8 skali (311.1 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-9.mp3",
+  "sekundy": 4.76,
+  "szczytDb": -17.1,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 9 skali (349.2 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-10.mp3",
+  "sekundy": 4.58,
+  "szczytDb": -16.9,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 10 skali (392.0 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-11.mp3",
+  "sekundy": 4.67,
+  "szczytDb": -17,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 11 skali (440.0 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-12.mp3",
+  "sekundy": 5.05,
+  "szczytDb": -16.1,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 12 skali (466.2 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/stopien-13.mp3",
+  "sekundy": 5.08,
+  "szczytDb": -18.2,
+  "grupa": "muzyka",
+  "kiedy": "dzwon nad akordem: stopień 13 skali (523.2 Hz)",
+  "uwagi": "co 6 s w grze, 9 s w menu (+ do 7 s losowo, − napięcie × 3, najmniej 2,5 s); stopień losowy z bieżącego akordu + 7; głośność ×1–1,5 losowo; panorama losowa ±0,55; w scenie „koniec” co drugi"
+ },
+ {
+  "plik": "muzyka/dzwony/zejscie-do-gory.mp3",
+  "sekundy": 7.54,
+  "szczytDb": -12.9,
+  "grupa": "muzyka",
+  "kiedy": "z menu do gry albo samouczka: jedno niskie uderzenie"
+ },
+ {
+  "plik": "muzyka/dzwony/koniec.mp3",
+  "sekundy": 6.1,
+  "szczytDb": -14,
+  "grupa": "muzyka",
+  "kiedy": "wejście w kronikę końca"
+ },
+ {
+  "plik": "muzyka/niepokoj/pomruk-petla.mp3",
+  "sekundy": 30,
+  "szczytDb": -11.2,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "pomruk za ścianą — gra bez przerwy pod muzyką",
+  "uwagi": "nagrany przy poziomie 0,105 (gra przy napięciu 100%); w grze: menu 0,05, gra 0,045 + napięcie × 0,06, koniec 0,063 — czyli głośność pliku × poziom / 0,105 (zmiana ze stałą 2,5 s)"
+ },
+ {
+  "plik": "muzyka/niepokoj/pisk-petla.mp3",
+  "sekundy": 30,
+  "szczytDb": -34.3,
+  "grupa": "muzyka",
+  "petla": true,
+  "kiedy": "pisk w uszach — tylko w grze przy napięciu > 45%",
+  "uwagi": "nagrany przy poziomie 0,0035 (napięcie 100%); w grze głośność pliku × (napięcie − 0,45) / 0,55 (stała 4 s)"
+ },
+ {
+  "plik": "muzyka/niepokoj/oddech-1.mp3",
+  "sekundy": 5.34,
+  "szczytDb": -33.6,
+  "grupa": "muzyka",
+  "kiedy": "oddech góry (szum, pasmo w dół przy wydechu)",
+  "uwagi": "co 11–20 s × (1 − napięcie × 0,55); głośność ×(0,7 + napięcie × 0,8) / 0,7 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/oddech-2.mp3",
+  "sekundy": 5.28,
+  "szczytDb": -32.5,
+  "grupa": "muzyka",
+  "kiedy": "oddech góry (szum, pasmo w dół przy wydechu)",
+  "uwagi": "co 11–20 s × (1 − napięcie × 0,55); głośność ×(0,7 + napięcie × 0,8) / 0,7 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/oddech-3.mp3",
+  "sekundy": 5.26,
+  "szczytDb": -32.6,
+  "grupa": "muzyka",
+  "kiedy": "oddech góry (szum, pasmo w dół przy wydechu)",
+  "uwagi": "co 11–20 s × (1 − napięcie × 0,55); głośność ×(0,7 + napięcie × 0,8) / 0,7 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/oddech-4.mp3",
+  "sekundy": 5.32,
+  "szczytDb": -34.1,
+  "grupa": "muzyka",
+  "kiedy": "oddech góry (szum, pasmo w dół przy wydechu)",
+  "uwagi": "co 11–20 s × (1 − napięcie × 0,55); głośność ×(0,7 + napięcie × 0,8) / 0,7 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/oddech-5.mp3",
+  "sekundy": 5.39,
+  "szczytDb": -34.3,
+  "grupa": "muzyka",
+  "kiedy": "oddech góry (szum, pasmo w dół przy wydechu)",
+  "uwagi": "co 11–20 s × (1 − napięcie × 0,55); głośność ×(0,7 + napięcie × 0,8) / 0,7 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/oddech-6.mp3",
+  "sekundy": 5.35,
+  "szczytDb": -32.9,
+  "grupa": "muzyka",
+  "kiedy": "oddech góry (szum, pasmo w dół przy wydechu)",
+  "uwagi": "co 11–20 s × (1 − napięcie × 0,55); głośność ×(0,7 + napięcie × 0,8) / 0,7 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-1.mp3",
+  "sekundy": 2.02,
+  "szczytDb": -47.7,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-2.mp3",
+  "sekundy": 2.19,
+  "szczytDb": -40.8,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-3.mp3",
+  "sekundy": 2.25,
+  "szczytDb": -38.5,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-4.mp3",
+  "sekundy": 1.92,
+  "szczytDb": -45.8,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-5.mp3",
+  "sekundy": 2.24,
+  "szczytDb": -40.6,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-6.mp3",
+  "sekundy": 2.19,
+  "szczytDb": -41.8,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-7.mp3",
+  "sekundy": 2.1,
+  "szczytDb": -42.7,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-8.mp3",
+  "sekundy": 2.22,
+  "szczytDb": -41.8,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-9.mp3",
+  "sekundy": 2.19,
+  "szczytDb": -41.8,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/trzask-10.mp3",
+  "sekundy": 2.05,
+  "szczytDb": -43.1,
+  "grupa": "muzyka",
+  "kiedy": "trzask skały w głębi",
+  "uwagi": "1–3 naraz co 0,08–0,33 s; co 7–21 s × (1 − napięcie × 0,55)"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-1.mp3",
+  "sekundy": 10.36,
+  "szczytDb": -33.2,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-2.mp3",
+  "sekundy": 8.01,
+  "szczytDb": -31.6,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-3.mp3",
+  "sekundy": 11.37,
+  "szczytDb": -31.1,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-4.mp3",
+  "sekundy": 7.94,
+  "szczytDb": -34.8,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-5.mp3",
+  "sekundy": 8.35,
+  "szczytDb": -30.8,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-6.mp3",
+  "sekundy": 7.56,
+  "szczytDb": -30.7,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-7.mp3",
+  "sekundy": 7.69,
+  "szczytDb": -32.4,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-8.mp3",
+  "sekundy": 7.21,
+  "szczytDb": -34.1,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-9.mp3",
+  "sekundy": 8.92,
+  "szczytDb": -28.8,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-10.mp3",
+  "sekundy": 9.21,
+  "szczytDb": -31.6,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-11.mp3",
+  "sekundy": 7.95,
+  "szczytDb": -33.3,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/chor-12.mp3",
+  "sekundy": 11.47,
+  "szczytDb": -30.4,
+  "grupa": "muzyka",
+  "kiedy": "chór bez słów (jeden głos fałszuje o pół tonu), przechodzi z boku na bok",
+  "uwagi": "co 38–68 s × (1 − napięcie × 0,55), nie w samouczku; głośność ×(0,8 + napięcie × 0,9) / 0,8 względem pliku"
+ },
+ {
+  "plik": "muzyka/niepokoj/szept-z-lewej-1.mp3",
+  "sekundy": 3.94,
+  "szczytDb": -28,
+  "grupa": "muzyka",
+  "kiedy": "szept z ciemności z lewej (przy dłoni z otchłani)",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/szept-z-lewej-2.mp3",
+  "sekundy": 3.54,
+  "szczytDb": -28.9,
+  "grupa": "muzyka",
+  "kiedy": "szept z ciemności z lewej (przy dłoni z otchłani)",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/szept-z-lewej-3.mp3",
+  "sekundy": 4.06,
+  "szczytDb": -28.9,
+  "grupa": "muzyka",
+  "kiedy": "szept z ciemności z lewej (przy dłoni z otchłani)",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/szept-z-lewej-4.mp3",
+  "sekundy": 4,
+  "szczytDb": -27,
+  "grupa": "muzyka",
+  "kiedy": "szept z ciemności z lewej (przy dłoni z otchłani)",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/szept-z-prawej-1.mp3",
+  "sekundy": 3.99,
+  "szczytDb": -26.5,
+  "grupa": "muzyka",
+  "kiedy": "szept z ciemności z prawej",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/szept-z-prawej-2.mp3",
+  "sekundy": 3.65,
+  "szczytDb": -26.9,
+  "grupa": "muzyka",
+  "kiedy": "szept z ciemności z prawej",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/szept-z-prawej-3.mp3",
+  "sekundy": 3.97,
+  "szczytDb": -28.9,
+  "grupa": "muzyka",
+  "kiedy": "szept z ciemności z prawej",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/szept-z-prawej-4.mp3",
+  "sekundy": 4.31,
+  "szczytDb": -29.9,
+  "grupa": "muzyka",
+  "kiedy": "szept z ciemności z prawej",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/otchlan-1.mp3",
+  "sekundy": 6.06,
+  "szczytDb": -1.8,
+  "grupa": "muzyka",
+  "kiedy": "otchłań otwiera oczy: narastający pomruk i szept",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/otchlan-2.mp3",
+  "sekundy": 6.03,
+  "szczytDb": -1.9,
+  "grupa": "muzyka",
+  "kiedy": "otchłań otwiera oczy: narastający pomruk i szept",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/otchlan-3.mp3",
+  "sekundy": 6.14,
+  "szczytDb": -1.9,
+  "grupa": "muzyka",
+  "kiedy": "otchłań otwiera oczy: narastający pomruk i szept",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/zabranie-1.mp3",
+  "sekundy": 3.64,
+  "szczytDb": -11.2,
+  "grupa": "muzyka",
+  "kiedy": "ktoś poszedł w ciemność: głuche uderzenie i szept z obu stron",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/zabranie-2.mp3",
+  "sekundy": 4.21,
+  "szczytDb": -11.1,
+  "grupa": "muzyka",
+  "kiedy": "ktoś poszedł w ciemność: głuche uderzenie i szept z obu stron",
+  "uwagi": ""
+ },
+ {
+  "plik": "muzyka/niepokoj/zabranie-3.mp3",
+  "sekundy": 4.24,
+  "szczytDb": -10.4,
+  "grupa": "muzyka",
+  "kiedy": "ktoś poszedł w ciemność: głuche uderzenie i szept z obu stron",
+  "uwagi": ""
+ }
+]
