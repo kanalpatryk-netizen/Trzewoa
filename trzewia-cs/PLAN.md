@@ -4,6 +4,10 @@ Stan na 9.11.2026. Plan zaakceptowany przez użytkownika 9.11 — jego odpowiedz
 Aktualizacja 10.11: środowisko ma już sieć do NuGet i npm, a .NET 10 SDK jest z archiwum Ubuntu (punkt 7) — etap 1 ruszył.
 Decyzja użytkownika 10.11: plan i kod tak, „żeby potem wszystko łatwo można było przenieść pod jakiś silnik (np. Unity albo
 Godot)” — gra w warstwach przenośnych (punkt 3.0).
+**Stan na 15.11:** etapy 1–6 i 8 zrobione, z wyjątkiem dźwięku (decyzja użytkownika 14.11: „wstrzymaj się z dźwiękiem
+… zrobimy to dopiero gdy wszystko inne będzie dopięte na ostatni guzik” — miejsca dźwięku to zaślepki w
+`Trzewia.Gra/Aplikacja/BezDzwieku.cs`, punkt 3.6 czeka). Etap 7 (wydanie) — paczki budowane, czeka na test u użytkownika.
+Końcowe porównanie ekranów z TS — część 5, punkt 22.
 Zadanie: przepisać grę z `alpha-1/` (TypeScript, Canvas 2D, Electron) na C# (.NET 10 LTS) z SkiaSharp,
 wiernie, jako program na Windows w folderze jak gry na Steamie.
 
@@ -426,6 +430,32 @@ Grywalną całość widać po etapie 5; wcześniej — okno z F3 (1), testy (2),
     ok. 1/255, pikseli różnych o więcej niż 24/255 — 0–0,6% (prawie wyłącznie postacie: duszki i inna faza kroku).
 14. (etap 3) Pojedyncze funkcje matematyczne w rysunku (np. `Math.acos` w ostrołukach katedry, `Math.log2`
     w schodach — netstandard2.1 go nie ma) liczy .NET, nie V8 — różnica rzędu ostatniego bitu, niewidoczna.
+15. (etap 5) Okienko dewelopera (punkt 7) w szczegółach: „zapisz .txt” zapisuje dziennik do folderu gracza zamiast
+    pobierania z przeglądarki; położenie i zwinięcie pamięta `panel-dewelopera.json` (w TS — localStorage); paski
+    przewijania tylko do oka (przewija kółko); klawisze bierze tylko pole tekstowe z kursorem (w DOM-ie także kliknięty
+    przycisk); tekstu nie da się zaznaczać myszą; lista „wymuś kartę…” to rozwijana lista rysowana przez grę.
+16. (etap 5) Warstwa cienia i filtra w Skii (`PlotnoSkia.Przed`) ma granice rysowanego kształtu — wcześniej obejmowała
+    cały ekran i każdy cień rozmywał całą klatkę (interfejs gry: 2,2 s → 0,18 s na klatkę przy rysowaniu procesorem).
+    Obraz ten sam; przy obrocie z nierówną skalą Skia wygładza brzeg kształtu o piksel inaczej (test `WarstwyCienia`).
+    Przy okazji (15.11) naprawiony błąd: zamknięcie warstwy cienia zerowało przekształcenie do najbliższego `restore`
+    (przy skali ekranu ≠ 1 rysunki po cieniu wypadały w złym miejscu — np. krzyż wiary w księdze bez poprzeczki).
+17. (etap 5) Ustawienia → Wydajność mają piąty wiersz „Karta graficzna” (auto / ANGLE / OpenGL, działa od następnego
+    uruchomienia) — punkt 2 i 11; „Pełny ekran” przełącza okno przez gospodarza.
+18. (etap 5) `render/frontyspis.ts` nie jest przeniesiony — w TS nic go nie woła (martwy kod; nastawy FRONTYSPIS
+    zostają, bo są w spisie nastaw).
+19. (etap 5) Ekran ładowania: etap biegnie na początku następnej klatki zamiast w mikrozadaniu Promise po narysowaniu
+    — kolejność ta sama (klatka pokazuje nazwę etapu, potem etap, potem kolejny).
+20. (etap 5) Znaki zespołu w menu mają w nastawach puste linki (jak w TS); wpisany adres otworzy przeglądarka systemu.
+21. (etap 6) Kursor (punkt 6): rękawice przycięte i zmniejszone jak w TS, w pikselach ekranu (rozmiar × gęstość
+    ekranu); czubek palca w punkcie myszy. Film intro (punkt 3): 274 klatki WebP (jakość 82, PSNR 56–60 dB względem
+    filmu), plik 2,9 MB; dekodowane w osobnym wątku do 6 klatek do przodu.
+22. (etap 8) Końcowe porównanie ekranów z grą TS (`narzedzia/ekrany`, test `PorownanieEkranow`; TS w Chromium —
+    narzędzie umie już `import.meta.glob`, więc freski i medaliony są po obu stronach): menu, ustawienia, osiągnięcia,
+    atlas z menu, gra na dwóch ziarnach (1 800 i 7 200 tików) i kronika, w 1366×820 i 1920×1080 — średnia różnica
+    0,2–2,7/255, pikseli różnych o więcej niż 24/255 — 0,2–1,3% (rycina i kreskowanie: wygładzanie Chrome a Skii,
+    pismo: HarfBuzz a Chrome, postacie: duszki i faza kroku).
+23. (etap 5–6) Bez dźwięku na razie (decyzja użytkownika 14.11) — muzyka, odgłosy świata, gesty i głosy ludu nie grają;
+    ustawienia dźwięku są i zapisują się, ale niczego nie zmieniają, dopóki dźwięk nie przyjdzie.
 
 ---
 

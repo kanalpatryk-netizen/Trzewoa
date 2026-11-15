@@ -3,12 +3,14 @@
 Przeniesienie gry z [`alpha-1/`](../alpha-1/) (TypeScript, Canvas 2D, Electron) na C# — szybki program na Windows
 w folderze jak gry ze Steama. Plan, etapy, decyzje i ryzyka: [`PLAN.md`](PLAN.md). `alpha-1/` zostaje bez zmian jako wzorzec.
 
-**Stan (13.11):** etap 1 (okno, pętla, wejście, publikacja) i etap 2 (symulacja — bit w bit jak w TS, testy złote,
-zapis, bot) są gotowe. Z etapu 3 zrobione są **postacie**: nie rysuje ich już kod gry, tylko gotowe duszki (sprite'y)
-z arkuszy PNG (`dane/grafika/duszki/`, podglądy JPG w `duszki-podglad/`), a **dłoń** (z otchłani, demona, anielska)
-jest modelem 3D (`dane/grafika/modele/*.glb`) rysowanym na żywo. Na ekranie jest ekran próbny: prawdziwa góra z botem,
-postacie z duszków i dłonie (spacja — pauza, + − tempo, N — następna góra, L — kropki zamiast duszków). Świat
-(rycina skały, mrok, budowle, interfejs) — dalsza część etapu 3 i kolejne etapy.
+**Stan (15.11):** przeniesione wszystko poza dźwiękiem (na prośbę użytkownika dźwięk przychodzi na końcu — na razie
+gra jest cicha, a miejsca, w których coś gra, wołają puste zaślepki z `src/Trzewia.Gra/Aplikacja/BezDzwieku.cs`):
+film intro, ekran ładowania, menu, gra (świat, lud, księga, okno postaci, budowa, ołtarz, karty wydarzeń, alarmy,
+zapiski, atlas, panel dewelopera), samouczek (15 rozdziałów), ustawienia, osiągnięcia, atlas z menu, kronika końca,
+zapis do plików gracza i kursor-rękawica. Symulacja jest bit w bit taka sama jak w TS (testy złote), a ekrany —
+w końcowym porównaniu z grą TS (`narzedzia/ekrany`, test `PorownanieEkranow`) różnią się o najwyżej 1,3% pikseli.
+Postacie to duszki (sprite'y) z arkuszy PNG (`dane/grafika/duszki/`), a dłonie (z otchłani, demona, anielska) —
+model 3D (`dane/grafika/modele/*.glb`). Świadome różnice względem TS: `PLAN.md`, część 5.
 
 Duszki i model dłoni nadają się też do Unity i Godota — opis i importer: [`unity/README.md`](unity/README.md).
 
@@ -45,7 +47,9 @@ Trzewia/
 ├── Trzewia.exe
 ├── *.dll          (gra, .NET, SkiaSharp, SDL3, ANGLE, HarfBuzz)
 └── dane/
-    └── czcionki/  (dalej: grafika/, dzwieki/, filmy/, nastawy/)
+    ├── czcionki/  (kroje pisma, TTF)
+    ├── grafika/   (duszki, freski, tekstury, ikony, modele dłoni, menu, kursor)
+    └── filmy/     (intro.klatki — film intro jako klatki WebP)
 ```
 
 Zapis, ustawienia, klawisze i dziennik (`dziennik.txt` — karta graficzna i błędy) trafiają do
@@ -58,7 +62,21 @@ Na Linuksie (np. Mint): `tar -xzf Trzewia-linux-x64.tar.gz`, potem `./Trzewia/Tr
 
 `Trzewia.exe --pomoc` wypisuje wszystkie. Najważniejsze: `--dev` (tryb deweloperski), `--opengl` / `--angle` (droga do
 karty), `--okno`, `--rozmiar 1920x1080`, `--licznik` (F3 od startu), `--po 10 --pomiar` (po 10 s wypisz wynik licznika),
-`--zrzut plik.png`.
+`--zrzut plik.png`, `--ekran gra` (bez intro, po ładowaniu od razu nowa partia; też `samouczek`, `ustawienia`…).
+
+## Porównanie z grą TS
+
+Narzędzia w `narzedzia/` rysują to samo oryginalnym kodem TS w Chromium (esbuild + Playwright), a testy C# kładą obrazy
+obok siebie (`testy/wyniki/*.png`: TS | C# | różnica ×4):
+
+```bash
+node narzedzia/ekrany/porownaj.mjs             # ekrany 1366×820 → testy/zlote/ekrany/
+node narzedzia/ekrany/porownaj.mjs 1920x1080   # to samo w Full HD (skala ≈ 1,32)
+node narzedzia/plyta/porownaj.mjs              # sama płyta świata, 6 scen
+dotnet test --filter PorownanieEkranow         # C#: miary różnicy i obrazy porównania
+```
+
+Film intro: `node narzedzia/intro/spakuj.mjs` (ffmpeg) składa `alpha-1/filmy/intro.mp4` w `dane/filmy/intro.klatki`.
 
 ## Kroje pisma
 

@@ -113,7 +113,8 @@ public static class Uruchomienie
           --po N           zamknij po N sekundach (pomiary, testy)
           --zrzut plik.png przed zamknięciem zapisz obraz ostatniej klatki
           --pomiar         przed zamknięciem wypisz wynik licznika F3
-          --ekran nazwa    ekran na start (etap 1: „proba”)
+          --ekran nazwa    bez filmu intro, po ładowaniu od razu ten ekran: gra (nowa partia), samouczek, ustawienia,
+                           osiagniecia, bestiariusz (atlas), menu; „proba” — ekran próbny bez ładowania
           --wypisz-nastawy zapisz wszystkie liczby gry do dane/nastawy/*.json (punkt wyjścia do zmian) i zakończ
         """;
 
