@@ -40,6 +40,8 @@ static class ZrzutyWalki
     const double ODSTEP_TRAFIEN_MS = 4000;
     /// <summary>Pas akcji: od tylu kafli nad stopami bossa do tylu pod nimi (cała szerokość pola gry).</summary>
     const double PAS_GORA = 5, PAS_DOL = 1.5;
+    /// <summary>„Akcja”: ten sam pas, ale tylko tyle kafli w lewo i w prawo od bossa — korytarz walki bez pustki za nim.</summary>
+    const double AKCJA_BOK = 16;
     /// <summary>Najdłużej (s gry) od początku zapisu i najdłużej (tików) szukania pęknięcia.</summary>
     const double NAJDLUZEJ_S = 300, SZUKAJ_TIKOW = 120 * 60 * 40;
 
@@ -67,6 +69,8 @@ static class ZrzutyWalki
         public string? zdarzenie { get; set; }
         public double[] plyta { get; set; } = Array.Empty<double>();
         public double[] pas { get; set; } = Array.Empty<double>();
+        public double[] akcja { get; set; } = Array.Empty<double>();
+        public double zoom { get; set; }
         public double[]? boss { get; set; }
         public double? bossHp { get; set; }
         public bool oprawa { get; set; }
@@ -79,6 +83,8 @@ static class ZrzutyWalki
         int W = Uruchomienie.RozmiarW > 0 ? Uruchomienie.RozmiarW : 1920, H = Uruchomienie.RozmiarH > 0 ? Uruchomienie.RozmiarH : 1080;
         double ziarno = Uruchomienie.Ziarno ?? 3, coIle = Uruchomienie.CoIleS > 0 ? Uruchomienie.CoIleS : 0.5;
         if (Uruchomienie.Oprawa is bool op) VisualConfig.Wlaczone = op;
+        // okno zapisu (s od początku zapisu): --od, --najdluzej — do szybkich prób strojenia
+        double odS = Math.Max(0, Uruchomienie.OdS), najdluzejS = Uruchomienie.NajdluzejS > 0 ? Uruchomienie.NajdluzejS : NAJDLUZEJ_S;
 
         // ustawienia: domyślne (Gospodarz.Pliki zostaje w pamięci), gra obserwowana, rycina w wątku gry, stała jakość
         var u = SettingsStore.ustawienia;
@@ -124,6 +130,7 @@ static class ZrzutyWalki
         double teraz = 1000, czas0 = 0, nastRegularna = 0, seriaDo = -1, ostatnieTrafienie = -1e9, koniecOd = -1;
         int trafienieF = -1000;
         double msRysunku = 0, msZapisu = 0;
+        SwiatloOprawy.Mierz = true;
         var sw = new System.Diagnostics.Stopwatch();
         string ostatniaFaza = faza(sim);
         double? ostatnieHp = null;
@@ -150,7 +157,8 @@ static class ZrzutyWalki
             if (sim.ending != null && koniecOd < 0) { koniecOd = czas; zd = "koniec:" + sim.ending; }
             if (zd != null && zd != "trafienie") seriaDo = czas + SERIA_MS;
 
-            bool zapisz = czas >= nastRegularna || czas <= seriaDo || zd != null || Array.IndexOf(PO_TRAFIENIU, f - trafienieF) >= 0;
+            bool zapisz = (czas >= nastRegularna || czas <= seriaDo || zd != null || Array.IndexOf(PO_TRAFIENIU, f - trafienieF) >= 0)
+                          && czas >= odS * 1000;
             if (czas >= nastRegularna) nastRegularna += coIle * 1000;
             if (zapisz)
             {
@@ -166,13 +174,14 @@ static class ZrzutyWalki
                 if (zd != null) Console.WriteLine($"  {czas / 1000,7:F2} s  tik {sim.tick,7}  {zd}");
             }
             if (koniecOd >= 0 && czas - koniecOd >= PO_KONCU_S * 1000) break;
-            if (czas - czas0 >= NAJDLUZEJ_S * 1000) { Console.WriteLine("  (koniec czasu zapisu — walka trwa dalej)"); break; }
+            if (czas - czas0 >= (odS + najdluzejS) * 1000) { Console.WriteLine("  (koniec czasu zapisu)"); break; }
         }
 
         var json = JsonSerializer.Serialize(new
         {
             ziarno, szerokosc = W, wysokosc = H, oprawa = VisualConfig.Wlaczone, tikPekniecia,
             pas = new { opis = $"cała szerokość pola gry, od {PAS_GORA} kafli nad stopami bossa (albo pomnika) do {PAS_DOL} kafla pod nimi" },
+            akcja = new { opis = $"ten sam pas, tylko {AKCJA_BOK} kafli w lewo i w prawo od bossa (albo pomnika)" },
             klatki,
         }, new JsonSerializerOptions { WriteIndented = true });
         File.WriteAllText(Path.Combine(katalog, "klatki.json"), json);
@@ -180,6 +189,12 @@ static class ZrzutyWalki
         if (klatki.Count > 0)
             Console.WriteLine($"  na klatkę: rysunek programowy {msRysunku / klatki.Count:F0} ms, zapis PNG {msZapisu / klatki.Count:F0} ms " +
                               "(rysunek procesorem, nie kartą — to nie jest czas klatki w grze; ten mierzy F3 / --pomiar)");
+        if (SwiatloOprawy.KlatekPomiaru > 0)
+        {
+            Console.WriteLine($"  warstwa światła (etap 1), średnio na klatkę z {SwiatloOprawy.KlatekPomiaru}:");
+            for (int i = 0; i < SwiatloOprawy.CZESCI.Length; i++)
+                Console.WriteLine($"    {SwiatloOprawy.CZESCI[i],-13} {SwiatloOprawy.CzasyMs[i] / SwiatloOprawy.KlatekPomiaru,7:F1} ms");
+        }
         return 0;
     }
 
@@ -216,11 +231,14 @@ static class ZrzutyWalki
         else { var m = Pomnik.miejscePomnika(sim); bx = m.x; by = m.y; }
         double sy0 = pl.y + cam.toScreenY(by - PAS_GORA), sy1 = pl.y + cam.toScreenY(by + PAS_DOL);
         sy0 = Math.Max(pl.y, sy0); sy1 = Math.Min(pl.y + pl.h, sy1);
+        double ax0 = Math.Max(pl.x, pl.x + cam.toScreenX(bx - AKCJA_BOK)), ax1 = Math.Min(pl.x + pl.w, pl.x + cam.toScreenX(bx + AKCJA_BOK));
         return new Klatka
         {
             plik = plik, klatka = f, czasS = Math.Round(czasS, 4), tick = sim.tick, faza = faza(sim), zdarzenie = zd,
             plyta = new[] { pl.x, pl.y, pl.w, pl.h },
             pas = new[] { pl.x, sy0, pl.w, Math.Max(0, sy1 - sy0) },
+            akcja = new[] { ax0, sy0, Math.Max(0, ax1 - ax0), Math.Max(0, sy1 - sy0) },
+            zoom = Math.Round(cam.zoom, 3),
             boss = new[] { Math.Round(pl.x + cam.toScreenX(bx), 1), Math.Round(pl.y + cam.toScreenY(by), 1) },
             bossHp = boss?.hp, oprawa = VisualConfig.Wlaczone,
         };

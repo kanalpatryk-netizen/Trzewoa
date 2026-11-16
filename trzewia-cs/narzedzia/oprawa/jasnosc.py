@@ -5,6 +5,7 @@ Oprawa walki z bossem (docs/plan-oprawy-cerber.md), etap 0: średnia jasność k
 Liczy dla każdej klatki średnią jasność (luma BT.709 z wartości RGB 0–255, tak jak Y' w wideo) w trzech miejscach:
   - pole  — całe pole gry (płyta świata),
   - pas   — pas akcji: pas pola gry, w którym stoją boss i walczący (korytarz / loch),
+  - akcja — ten sam pas, tylko wokół bossa (±16 kafli): korytarz walki bez pustki i skały za jego końcem,
   - tlo   — pole gry bez pasa akcji.
 Do tego najmniejszą, największą i średnią wartość w całej serii oraz największą zmianę między kolejnymi klatkami
 (tak jak w pomiarze nagrania: „34–38, zmiana najwyżej ~1,6”).
@@ -16,6 +17,7 @@ z prostokątami podanymi ręcznie (--pole, --pas w pikselach: x,y,szer,wys).
   python3 jasnosc.py PRZED PO                      # dwie serie z tym samym ziarnem: obok siebie i różnica
   python3 jasnosc.py klatki/*.png --pole 0,0,1280,720 --pas 0,300,1280,200
   python3 jasnosc.py KATALOG --csv wynik.csv       # też do pliku CSV
+  python3 jasnosc.py BAZA WYL --rowne               # czy pole gry jest identyczne co do piksela (oprawa wył. = 1:1)
 
 Potrzebuje Pillow i numpy (pip install pillow numpy).
 """
@@ -43,7 +45,7 @@ def prostokat(p, szer, wys):
     return slice(y0, max(y0, y1)), slice(x0, max(x0, x1))
 
 
-def zmierz(plik, pole, pas):
+def zmierz(plik, pole, pas, akcja=None):
     Y = luma(Image.open(plik))
     wys, szer = Y.shape
     pole = pole or [0, 0, szer, wys]
@@ -58,6 +60,9 @@ def zmierz(plik, pole, pas):
         wynik["pas"] = float(Y[mpas].mean()) if mpas.any() else float("nan")
         reszta = maska & ~mpas
         wynik["tlo"] = float(Y[reszta].mean()) if reszta.any() else float("nan")
+    if akcja:
+        sa = prostokat(akcja, szer, wys)
+        wynik["akcja"] = float(Y[sa].mean()) if Y[sa].size else float("nan")
     return wynik
 
 
@@ -71,7 +76,8 @@ def wczytaj_serie(zrodla, pole_r, pas_r):
                 dane = json.load(f)
             seria = []
             for k in dane["klatki"]:
-                m = zmierz(os.path.join(katalog, k["plik"]), pole_r or k.get("plyta"), pas_r or k.get("pas"))
+                m = zmierz(os.path.join(katalog, k["plik"]), pole_r or k.get("plyta"), pas_r or k.get("pas"),
+                           None if (pole_r or pas_r) else k.get("akcja"))
                 seria.append((k["plik"], k.get("czasS"), k.get("zdarzenie"), k.get("faza"), m))
             return seria, dane
         zrodla = sorted(os.path.join(katalog, n) for n in os.listdir(katalog) if n.lower().endswith(".png"))
@@ -93,15 +99,38 @@ def liczba(v):
 
 def drukuj_serie(nazwa, seria, dane):
     print(f"\n== {nazwa}" + (f"  (ziarno {dane['ziarno']}, oprawa {'wł.' if dane['oprawa'] else 'wył.'})" if dane else ""))
-    print(f"{'klatka':<18}{'czas s':>8}  {'pole':>6}  {'pas':>6}  {'tło':>6}  zdarzenie / faza")
+    print(f"{'klatka':<18}{'czas s':>8}  {'pole':>6}  {'pas':>6}  {'akcja':>6}  {'tło':>6}  zdarzenie / faza")
     for plik, czas, zd, faza, m in seria:
         c = f"{czas:8.2f}" if czas is not None else "       —"
-        print(f"{plik:<18}{c}  {liczba(m.get('pole'))}  {liczba(m.get('pas'))}  {liczba(m.get('tlo'))}  {zd or ''}{' · ' + faza if faza else ''}")
+        print(f"{plik:<18}{c}  {liczba(m.get('pole'))}  {liczba(m.get('pas'))}  {liczba(m.get('akcja'))}  {liczba(m.get('tlo'))}  {zd or ''}{' · ' + faza if faza else ''}")
     print("podsumowanie (min / max / średnia / największa zmiana między klatkami):")
-    for k in ("pole", "pas", "tlo"):
+    for k in ("pole", "pas", "akcja", "tlo"):
         s = podsumuj(seria, k)
         if s:
             print(f"  {k:<5} {s['min']:6.1f} / {s['max']:6.1f} / {s['srednia']:6.1f} / {s['skok']:5.2f}")
+
+
+def rowne(zrodla):
+    """Pole gry identyczne co do piksela w klatkach o tej samej nazwie? Kod wyjścia 0 — tak, 1 — nie."""
+    if len(zrodla) != 2 or not all(os.path.isdir(z) for z in zrodla):
+        print("--rowne: podaj dwa katalogi zrzutów")
+        return 2
+    a, b = zrodla
+    with open(os.path.join(a, "klatki.json"), encoding="utf-8") as f:
+        opis = {k["plik"]: k for k in json.load(f)["klatki"]}
+    pliki = sorted(set(opis) & set(n for n in os.listdir(b) if n.endswith(".png")))
+    rozne = 0
+    for n in pliki:
+        x, y, w, h = (int(round(v)) for v in opis[n]["plyta"])
+        A = np.asarray(Image.open(os.path.join(a, n)).convert("RGB"))[y:y + h, x:x + w]
+        B = np.asarray(Image.open(os.path.join(b, n)).convert("RGB"))[y:y + h, x:x + w]
+        if A.shape != B.shape or (A != B).any():
+            rozne += 1
+            if rozne <= 5:
+                d = np.abs(A.astype(int) - B.astype(int)).max() if A.shape == B.shape else -1
+                print(f"  różni się: {n} (największa różnica {d})")
+    print(f"klatek wspólnych: {len(pliki)}, z różnicą w polu gry: {rozne}")
+    return 0 if rozne == 0 and pliki else 1
 
 
 def main():
@@ -110,7 +139,11 @@ def main():
     ap.add_argument("--pole", help="x,y,szer,wys pola gry (zamiast z klatki.json)")
     ap.add_argument("--pas", help="x,y,szer,wys pasa akcji (zamiast z klatki.json)")
     ap.add_argument("--csv", help="zapisz pomiary do pliku CSV")
+    ap.add_argument("--rowne", action="store_true",
+                    help="dwa katalogi: sprawdź, czy pole gry jest w nich identyczne co do piksela (bez pomiaru jasności)")
     a = ap.parse_args()
+    if a.rowne:
+        return rowne(a.zrodla)
     pole = [float(v) for v in a.pole.split(",")] if a.pole else None
     pas = [float(v) for v in a.pas.split(",")] if a.pas else None
 
@@ -126,7 +159,7 @@ def main():
             drukuj_serie(n, s, d)
         wspolne = {p: m for p, *_, m in s2}
         print(f"\n== różnica (po − przed) dla klatek o tej samej nazwie ({sum(1 for p, *_ in s1 if p in wspolne)} wspólnych)")
-        for k in ("pole", "pas", "tlo"):
+        for k in ("pole", "pas", "akcja", "tlo"):
             r = [wspolne[p][k] - m[k] for p, *_, m in s1 if p in wspolne and k in m and k in wspolne[p]]
             if r:
                 r = np.array(r)
@@ -135,10 +168,10 @@ def main():
     if a.csv:
         with open(a.csv, "w", newline="", encoding="utf-8") as f:
             w = csv.writer(f)
-            w.writerow(["seria", "klatka", "czas_s", "zdarzenie", "faza", "pole", "pas", "tlo"])
+            w.writerow(["seria", "klatka", "czas_s", "zdarzenie", "faza", "pole", "pas", "akcja", "tlo"])
             for n, (s, _) in zip(nazwy, serie):
                 for plik, czas, zd, faza, m in s:
-                    w.writerow([n, plik, czas, zd or "", faza or "", m.get("pole"), m.get("pas"), m.get("tlo")])
+                    w.writerow([n, plik, czas, zd or "", faza or "", m.get("pole"), m.get("pas"), m.get("akcja"), m.get("tlo")])
         print(f"\nCSV: {a.csv}")
 
 

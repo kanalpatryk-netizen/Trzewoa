@@ -105,6 +105,8 @@ public static class Uruchomienie
     /// <summary>Ziarno partii zrzutów (domyślnie 3) i odstęp zwykłych zrzutów w sekundach gry (domyślnie 0,5).</summary>
     public static double? Ziarno;
     public static double CoIleS;
+    /// <summary>Okno zapisu zrzutów walki: od tylu sekund od początku zapisu, najdłużej tyle sekund (0 — do końca).</summary>
+    public static double OdS, NajdluzejS;
     /// <summary>Nowa oprawa walki (Visual/VisualConfig.cs) na starcie: true/false; null — domyślnie (włączona). W grze: F9.</summary>
     public static bool? Oprawa;
 
@@ -129,6 +131,8 @@ public static class Uruchomienie
                            oprawy przed/po; rozmiar z --rozmiar, domyślnie 1920x1080); z nim:
           --ziarno N       ziarno partii (domyślnie 3)
           --co-ile S       zwykłe zrzuty co S sekund gry (domyślnie 0.5); przy zdarzeniach — seria klatka po klatce
+          --od S, --najdluzej S
+                           zapisuj dopiero od S sekund zapisu / kończ po S sekundach (szybkie próby strojenia)
         """;
 
     public static void Ustaw(string[] args)
@@ -156,6 +160,8 @@ public static class Uruchomienie
                 case "--zrzuty-walki": ZrzutyWalki = nast; i++; break;
                 case "--ziarno": Ziarno = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
                 case "--co-ile": CoIleS = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
+                case "--od": OdS = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
+                case "--najdluzej": NajdluzejS = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
                 case "--oprawa":
                     Oprawa = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Oprawa == null) Console.Error.WriteLine($"--oprawa: nie rozumiem „{nast}” (wl albo wyl)");
