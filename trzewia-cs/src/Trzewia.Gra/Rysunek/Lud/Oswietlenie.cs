@@ -65,6 +65,19 @@ namespace Trzewia.Rysunek.Lud
                 if (Math.Abs(o.x - cx) > 4 || Math.Abs(o.y - c.y) > 4) continue;
                 dodaj(o.x, o.y + 1 - wys * 0.5, 3.6, SWIECA, 0.55);
             }
+            // oprawa walki (etap 1): ogień lochu, piec (komora bossa), aura modlących się i żar bossa — ze wspólnej listy
+            // źródeł tej klatki (Visual/SwiatloOprawy.cs); bez oprawy lista jest pusta i nic się nie zmienia
+            var ileZ = Visual.SwiatloOprawy.Ile;
+            for (int i = 0; i < ileZ; i++)
+            {
+                ref readonly var z = ref Visual.SwiatloOprawy.Zrodlo(i);
+                if (z.rodzaj == Visual.RodzajSwiatla.Lampa) continue;
+                // własna aura modlącego się się nie liczy (jak własna lampka) — świeci z jego miejsca
+                if (z.rodzaj == Visual.RodzajSwiatla.Aura && Math.Abs(z.x - (c.x + 0.5)) < 0.05 && Math.Abs(z.y - (c.y + 0.2)) < 0.05) continue;
+                var barwa = z.rodzaj == Visual.RodzajSwiatla.Piec ? Visual.VisualConfig.Swiatla.BarwaPieca
+                    : z.rodzaj == Visual.RodzajSwiatla.Aura ? Visual.VisualConfig.Swiatla.BarwaAury : Visual.VisualConfig.Swiatla.BarwaOgnia;
+                dodaj(z.x, z.y, z.r * Visual.VisualConfig.Swiatla.KrawedzZasieg, barwa, z.sila * Visual.VisualConfig.Swiatla.KrawedzMoc);
+            }
             var dl = JS.Hypot(vx, vy);
             if (waga < 0.04 || dl < 0.03) return null;
             var sila = Math.Min(1, dl * 1.5);
