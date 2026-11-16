@@ -4,8 +4,8 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 
 ## Stan
 
-- [x] Etap 0 — rozpoznanie i narzędzia (czeka na „dalej”)
-- [ ] Etap 1 — światło i kontrast (system ogólny, na walce z demonem)
+- [x] Etap 0 — rozpoznanie i narzędzia
+- [x] Etap 1 — światło i kontrast (system ogólny, na walce z demonem) (czeka na „dalej”)
 - [ ] Etap P — przeniesienie kręgu trzeciego (Cerber) z `krag-3-beta/` do C# (nowy etap, patrz „Decyzje”)
 - [ ] Etap 2 — czytelność
 - [ ] Etap 3 — „uderzenie”
@@ -110,28 +110,39 @@ Gotowe, gdy: raport z mapą kodu i odpowiedziami, klawisz debug działa, zrzuty 
 
 ## Etap 1 — światło i kontrast
 
-- [ ] Trzy plany: tło (ściany, dusze w tle) przyciemnione i lekko odbarwione; plan akcji (korytarz, postacie, boss)
-      jaśniejszy i bardziej kontrastowy; UI osobno, bez wpływu świateł.
-- [ ] Mapa świateł na osobnym płótnie w połowie rozdzielczości: czyszczona ciemnym kolorem otoczenia; światła jako
-      gradienty promieniste mieszane addytywnie (`lighter` / `SKBlendMode.Plus`); nakładana na scenę przez `multiply`,
-      a poświata ognia i aury dodatkowo przez `screen`; scena przed mnożeniem lekko rozjaśniona (macierz koloru).
-- [ ] Źródła światła: pochodnie (migotanie ±5–8%, gładki szum 6–10 Hz), piec, aura mnichów, pękająca pieczęć. Promienie
-      i siły w `VisualConfig`.
-- [ ] Jasna krawędź na postaciach od strony najbliższego światła: pod sprite'em jego sylwetka przesunięta o 1–2 px
-      w stronę światła, w kolorze ognia.
-- [ ] Na końcu winieta i lekka korekta kontrastu całego kadru.
-- [ ] Światło reaguje na zdarzenia (`LightEvents.Flash(kolor, siła, ms)`): pęknięcie pieczęci — czerwony błysk z pieca;
-      ścięcie głowy — krótki biały błysk; śmierć bossa — przygaszenie wszystkiego poza bossem.
-- [ ] Opcja „mniej błysków” w ustawieniach.
+Zrobione w `src/Trzewia.Gra/Visual/SwiatloOprawy.cs` (warstwa), `Visual/LightEvents.cs` (błyski), liczby
+w `Visual/VisualConfig.cs` (`VisualConfig.Swiatla`). Wszystko za F9 (`VisualConfig.Swiatlo`).
 
-Gotowe, gdy: według narzędzia z etapu 0 pas akcji jest wyraźnie jaśniejszy niż „przed”, a tło poza światłami ciemniejsze;
-zdarzenia z listy wyraźnie rozjaśniają kadr na 100–200 ms; gra trzyma 60 fps; F9 przełącza przed/po.
+- [x] Trzy plany: tło (rycina — skała, ściany, korytarze) rysowane z filtrem `FiltrTla` (ciemniej, mniej koloru,
+      trochę kontrastu); plan akcji rozjaśnia mapa świateł; interfejs leży poza płytą świata i światło go nie dotyka.
+      (Dusze w tle są dopiero w kręgu trzecim — w etapie P pójdą do planu tła.)
+- [x] Mapa świateł w połowie rozdzielczości: czyszczona barwą otoczenia, światła jako gotowe plamki z gradientu
+      promienistego (rysowane raz) dodawane `lighter`, nakładana `multiply`; poświata ognia, pieca i aury dodatkowo
+      `screen`. „Scena przed mnożeniem rozjaśniona” zrobiona jako druga mapa nakładana `color-dodge` (jasność /
+      (1 − blask)): to samo mnożenie jasności co macierz koloru, ale bez kopii całej klatki, a tam, gdzie świeci, mocniej.
+- [x] Źródła: pochodnie, kosze ognia, kocioł i świece lochu (migotanie ±6,5%, gładki szum z sinusów 6,3 / 8,1 /
+      9,7 Hz), piec (komora bossa — żar rośnie z każdym stanem pękania, najmocniejszy przy rozpadzie), aura modlących się
+      mnichów; do tego lampki ludu, siedziba, obozy, rdzeń, ołtarz, pomieszczenia (te same co w mroku) i żar ciała bossa.
+- [x] Jasna krawędź od najbliższego światła: gra już ją miała (`Duszek.Krawedz` — sylwetka w barwie światła,
+      przesunięta ku niemu, pod duszkiem); z oprawą łapie też ogień, piec i aurę i jest mocniejsza. Tylko lud — boss
+      i Cienie rysują się inaczej (kukiełka), dla nich krawędź w etapie P/2.
+- [x] Winieta (wpisana w mapę świateł, bez osobnego przejścia). Kontrast: `contrast(1.1)` w filtrze tła; osobnej
+      krzywej kontrastu na całą klatkę nie ma — wymagałaby kopii klatki w każdej klatce.
+- [x] Światło reaguje na zdarzenia: `LightEvents.Flash(barwa, siła, ms)` (+ wersja z miejscem i promieniem):
+      pęknięcie pieczęci — czerwony błysk z pieca (i słabszy na całą płytę), każdy wcześniejszy stan pękania — mniejszy;
+      ostatni cios — krótki biały (w kręgu trzecim podepnie się pod ścięcie głowy); konanie bossa — wszystko poza nim
+      przygasa do 50% (otwór światła wokół bossa), po końcu gry wraca.
+- [x] „Mniej błysków” w ustawieniach (Obraz): każdy błysk × 0,3.
+
+Pomiar (ziarno 3, 1920×1080, `jasnosc.py`, „akcja” = pas walki ±16 kafli wokół bossa): w walce akcja 32,2 → 42,4
+(+32%), tło 26,0 → 17,7 (−32%); błysk pęknięcia +15 przez ~150 ms, ostatni cios +62 przez ~220 ms (biały 130 ms +
+złota eksplozja konania z Alphy 1); z oprawą wyłączoną pole gry identyczne z etapem 0 (228/228 klatek).
 
 ## Etap P — krąg trzeci (Cerber) w C#
 
 Przeniesienie z `krag-3-beta/` (TS) do `trzewia-cs/` tak jak reszta portu: te same nazwy, ta sama logika i liczby,
 symulacja bit w bit (testy złote z TS), rysunek porównany z TS. To nie zmienia balansu — to ta sama gra, tylko w C#.
-- [ ] Do ustalenia przed startem: czy krąg trzeci zastępuje w C# Alphę 1, czy jest obok niej (osobny tryb / wersja).
+- [x] Krąg trzeci stoi w C# **obok** Alphy 1, jako osobny tryb (decyzja użytkownika 16.11).
 - [ ] Symulacja kręgu (obżarstwo, ulewa, okup, Cerber podjada kosz, zabijanie żarłoków), Cerber jako boss: trzy paski
       głów, ścinanie, dłoń przy Cerberze.
 - [ ] Rysunek: krąg (lej, deszcz, błoto, potępieni), loch z pieczęcią, Cerber składany z wypieczonych obrazków
