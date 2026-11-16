@@ -72,6 +72,8 @@ public class PorownanieEkranow
         Gospodarz.Dane = new DaneZFolderu(Path.Combine(Sciezka.Testy, "..", "dane"));
         Plotno.Fabryka ??= new FabrykaSkia();
         SettingsStore.ustawienia.rycinaWWatku = false;
+        // porównanie z TS: bez nowej oprawy walki (Visual/VisualConfig.cs) — TS jej nie ma
+        using var bezOprawy = new BezOprawy();
         Fonts.zaladujKroje();
         int W = spis.w, H = spis.h;
         double lw = spis.lw ?? W, lh = spis.lh ?? H, sk = W / lw;

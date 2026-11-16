@@ -32,6 +32,8 @@ public class PodgladPlyty
         if (Environment.GetEnvironmentVariable("TRZEWIA_PODGLAD") != "1") return;
         Rdzen.Gospodarz.Dane = new DaneZFolderu(Path.Combine(Sciezka.Testy, "..", "dane"));
         Plotno.Fabryka ??= new FabrykaSkia();
+        // porównanie z TS: bez nowej oprawy walki (Visual/VisualConfig.cs) — TS jej nie ma
+        using var bezOprawy = new BezOprawy();
         Rdzen.SettingsStore.ustawienia.rycinaWWatku = false;
         var tik = int.Parse(Environment.GetEnvironmentVariable("TRZEWIA_TIK") ?? "9000");
         var sim = new Sim(1);

@@ -41,6 +41,8 @@ public class PorownaniePlyty
         Rdzen.Gospodarz.Dane = new DaneZFolderu(Path.Combine(Sciezka.Testy, "..", "dane"));
         Plotno.Fabryka ??= new FabrykaSkia();
         Rdzen.SettingsStore.ustawienia.rycinaWWatku = false;
+        // porównanie z TS: bez nowej oprawy walki (Visual/VisualConfig.cs) — TS jej nie ma
+        using var bezOprawy = new BezOprawy();
         var sceny = JsonSerializer.Deserialize<List<Scena>>(File.ReadAllText(plik))!;
         var katalog = Path.Combine(Sciezka.Testy, "wyniki");
         Directory.CreateDirectory(katalog);

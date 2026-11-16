@@ -105,4 +105,39 @@ public class OprawaTesty
     [InlineData("0", false)]
     [InlineData("może", null)]
     public void PrzelacznikOprawa(string napis, bool? oczekiwane) => Assert.Equal(oczekiwane, VisualConfig.Czytaj(napis));
+
+    /// <summary>Etap 1: pula błysków — stała wielkość, nowy błysk wypiera najstarszy, słaby (siła 0) się nie zapisuje.</summary>
+    [Fact]
+    public void PulaBlyskow()
+    {
+        LightEvents.Wyczysc();
+        var czerwony = new double[] { 255, 54, 24 };
+        LightEvents.Zegar = 1000;
+        LightEvents.Flash(czerwony, 0, 100);
+        Assert.DoesNotContain(LightEvents.Pula, b => b.jest);
+        for (int i = 0; i < LightEvents.MAKS + 3; i++)
+        {
+            LightEvents.Zegar = 1000 + i;
+            LightEvents.Flash(czerwony, 0.5, 10000, 10, 20, 5);
+        }
+        Assert.Equal(LightEvents.MAKS, LightEvents.Pula.Count(b => b.jest));
+        // trzy najstarsze wyparte: zostały błyski od 1003 do 1010
+        Assert.Equal(1003, LightEvents.Pula.Min(b => b.od));
+        Assert.Equal("rgb(255,54,24)", LightEvents.Pula[0].styl);
+        LightEvents.Flash(czerwony, 3, 50);
+        Assert.Contains(LightEvents.Pula, b => b.jest && b.sila == 1 && b.promien == 0);
+        LightEvents.Wyczysc();
+        Assert.DoesNotContain(LightEvents.Pula, b => b.jest);
+    }
+}
+
+/// <summary>
+/// Na czas porównania z grą TS (PorownanieEkranow, PorownaniePlyty, PodgladPlyty): nowa oprawa walki wyłączona — TS jej
+/// nie ma, a z wyłączoną oprawą gra C# ma wyglądać 1:1 jak dotąd. <c>using var _ = new BezOprawy();</c>
+/// </summary>
+sealed class BezOprawy : IDisposable
+{
+    readonly bool bylo = VisualConfig.Wlaczone;
+    public BezOprawy() { VisualConfig.Wlaczone = false; }
+    public void Dispose() => VisualConfig.Wlaczone = bylo;
 }
