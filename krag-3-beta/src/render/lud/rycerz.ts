@@ -659,7 +659,9 @@ function pochwa(r: Rysunek, T: Tulow): void {
  * łączymy po okręgu — wychodzi sierp, który zanika ku tyłowi. W szale krwi czerwona.
  */
 function smuga(g: CanvasRenderingContext2D, slad: { x: number; y: number }[], bark: Pkt, h: number, sila0: number, szal: boolean): void {
-  const pol = slad.map((q) => ({ a: Math.atan2(q.y - bark.y, q.x - bark.x), r: Math.hypot(q.x - bark.x, q.y - bark.y) }));
+  // tylko próbki w zasięgu ręki z mieczem (ok. 0,9 wzrostu od barku)
+  const pol = slad.map((q) => ({ a: Math.atan2(q.y - bark.y, q.x - bark.x), r: Math.hypot(q.x - bark.x, q.y - bark.y) })).filter((q) => q.r < h * 0.95);
+  if (pol.length < 2) return;
   const pk: { a: number; r: number }[] = [pol[0]];
   for (let i = 1; i < pol.length; i++) {
     let d = pol[i].a - pol[i - 1].a;

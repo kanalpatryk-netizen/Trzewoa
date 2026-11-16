@@ -685,7 +685,7 @@ export function rysujNadPomnikiem(ctx: CanvasRenderingContext2D, sim: Sim, cam: 
     if (k < 0.25) {
       const a = 1 - k / 0.25, r = h * (0.5 + k * 2);
       const g = ctx.createRadialGradient(dx, dy, 0, dx, dy, r);
-      g.addColorStop(0, `rgba(110,4,2,${0.7 * a})`); g.addColorStop(1, 'rgba(80,0,0,0)');
+      g.addColorStop(0, `rgba(110,4,2,${0.35 * a})`); g.addColorStop(0.6, `rgba(90,2,1,${0.15 * a})`); g.addColorStop(1, 'rgba(80,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(dx - r, dy - r, r * 2, r * 2);
     }
     ctx.restore();

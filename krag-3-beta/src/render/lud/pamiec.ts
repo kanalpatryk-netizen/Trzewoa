@@ -132,7 +132,12 @@ export function przejscie(m: Pamiec, cz: string, p: Poza, czas: number): Poza {
 export function sladBroni(m: Pamiec, czubek: Pkt, h: number, czas: number, zapisz: boolean): Pkt[] {
   if (zapisz) {
     const ost = m.slad[m.slad.length - 1];
-    if (!ost || ost.t !== czas) m.slad.push({ x: czubek.x / h, y: czubek.y / h, t: czas });
+    const x = czubek.x / h, y = czubek.y / h;
+    // czubek przeskoczył (ta sama postać narysowana gdzie indziej, np. w medalionie, albo nowy kadr po przerwie) —
+    // smuga od nowa, zamiast kreski przez pół ekranu
+    if (ost && (Math.hypot(x - ost.x, y - ost.y) > 0.45 || czas - ost.t > 160 || czas < ost.t)) m.slad.length = 0;
+    const ost2 = m.slad[m.slad.length - 1];
+    if (!ost2 || ost2.t !== czas) m.slad.push({ x, y, t: czas });
   }
   while (m.slad.length && czas - m.slad[0].t > 110) m.slad.shift();
   if (m.slad.length > 10) m.slad.splice(0, m.slad.length - 10);
