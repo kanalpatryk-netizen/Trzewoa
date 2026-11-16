@@ -18,6 +18,8 @@ wyglądały tylko trochę gorzej”, „usuń napisy grrr, gulp — to nie komik
 - **Film bez komiksu** (`src/app/film-kregu.ts`): bez wyrazów dźwiękonaśladowczych, dymków, ramek, rastra i linii pędu —
   kinowe napisy, ziarno, winieta, ujęcia po kolei zamiast kadrów. Rzeź brutalniejsza: wypatroszenie, rozdarcie na pół
   z najazdem kamery i fontanną krwi, zmiażdżenie z odpadającą głową, oderwana ręka.
+- **Cerber stoi na posadzce** (`src/render/figury.ts`): dawny demon lewitował nad otworem pieczęci; pies, gdy nie skacze,
+  rysuje się na posadzce pod swoim miejscem (symulacja bez zmian).
 
 ## TRZEWIA — Krąg Trzeci (beta), 3. podejście — 15.11
 - **Film zamiast slajdów** (`src/app/film-kregu.ts`): ok. 75 s ruchomego komiksu z historią od zjazdu na krąg, przez rzeź

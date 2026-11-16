@@ -1182,13 +1182,20 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
     const dx = n > 1 ? 0 : przesuniecieX(c);
     const sx = (c.x + dx - left) * z;
     // (6.11: na schodach kręconych dalsza strona spirali leży wyżej — render/schody.ts)
-    const sy = (c.y + 1 + (n > 1 ? 0 : przesuniecieY(c)) - top) * z;
+    // Krąg Trzeci: Cerber nie lewituje jak dawny demon — gdy nie skacze, stoi na posadzce pod swoim miejscem
+    let podloga = 0;
+    if (c.boss === 'demon' && Math.abs(c.vy) < 0.3) {
+      const fx = Math.floor(c.x);
+      while (podloga < 8 && sim.world.passable(fx, Math.floor(c.y) + 1 + podloga)) podloga++;
+      if (podloga >= 8) podloga = 0;
+    }
+    const sy = (c.y + 1 + podloga + (n > 1 ? 0 : przesuniecieY(c)) - top) * z;
     const zw = n > 1 ? 0 : zwrotNaRysunku(c);
     const kier = zw || (c.face >= 0 ? 1 : -1);
     const tlo = n > 1 ? 0 : wTle(c);
 
     // cień kontaktowy — tylko na ziemi: miękka plama, najciemniejsza tuż pod stopami
-    const naZiemi = c.vy <= 0.3 && sim.world.solid(Math.floor(c.x + dx), Math.floor(c.y) + 1);
+    const naZiemi = (c.vy <= 0.3 && sim.world.solid(Math.floor(c.x + dx), Math.floor(c.y) + 1)) || podloga > 0;
     if (naZiemi && !(tlum && wybrany !== c.id)) cienKontaktowy(ctx, sx, sy, h);
     // 6.11: na schodach kręconych — cień na stopnicy pod stopami (i słabiej na następnej niższej), przycięty do niej
     const naSchodach = n === 1 && !!chodNaSchodach(c);
