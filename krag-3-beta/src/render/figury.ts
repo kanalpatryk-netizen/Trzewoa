@@ -1,3 +1,6 @@
+import { aktywnyBoss } from '../sim/boss';
+import { tikZUlamkiem } from './zegar-gry';
+import { rysujScietaGlowe } from './cerber-sprite';
 import type { Sim, Clan } from '../sim/sim';
 import { rolaPostaci, stanyPostaci, type Rola } from '../sim/lud';
 import { rysujStraznika } from './straznicy';
@@ -1223,6 +1226,22 @@ export function rysujStworzenia(ctx: CanvasRenderingContext2D, sim: Sim, cam: Ca
       ctx.fillStyle = ga; ctx.fillRect(sx - R, sy - h * 0.5 - R, R * 2, R * 2);
     }
 
+    // Krąg Trzeci (16.11): ścięte głowy Cerbera — spadają z karku po łuku, koziołkując, i leżą na posadzce we krwi
+    if (c.boss === 'demon' && c.glowyOdciete?.length) {
+      const hRys = h * aktywnyBoss().rozmiar * 0.6;
+      const tF = tikZUlamkiem(sim, czas);
+      for (const o of c.glowyOdciete) {
+        const ms = Math.max(0, (tF - o.tick) * (1000 / 120));
+        const f = Math.min(1, ms / 650);
+        const wx = o.x0 + (o.x - o.x0) * f, wy = o.y0 + (o.y + 1 - o.y0) * f - Math.sin(f * Math.PI) * 1.2;
+        ctx.save();
+        ctx.translate((wx - left) * z, (wy - top) * z);
+        ctx.scale(o.zwrot, 1);
+        if (f < 1) ctx.rotate(f * 5.5);
+        rysujScietaGlowe(ctx, o.nr, hRys, Math.max(0, ms - 650));
+        ctx.restore();
+      }
+    }
     let cz: Czynnosc;
     // cudze światło z otoczenia kładzie ciepłą krawędź po swojej stronie sylwetki (render/lud/oswietlenie.ts)
     const szkic = tlum && wybrany !== c.id && !c.straznik && !c.odmowa && !(c.ruch && c.rola === 'rycerz');

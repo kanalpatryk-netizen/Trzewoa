@@ -37,11 +37,16 @@ export function punktGlowy(i: number, kot: V3, kat: number, x: number, y: number
   return [kot[0] + rx, kot[1] + ry, kot[2] + z * L];
 }
 
+/** Jak mocno łapa uderza w danej fazie szarpnięcia (0 — wznosi albo wraca, 1 — cios). */
+export const uderzenieLapy = (lapa: number): number => Math.sin(Math.PI * Math.min(1, Math.max(0, (lapa - 0.25) / 0.5)));
+
 export function rigCerbera(p: PozaCerbera): Rig {
   const lez = p.lezy;
-  const dy = 0.27 * lez + 0.09 * p.przysiad - 0.01 * Math.sin(p.faza * 2) * p.krok + 0.005 * (p.oddech - 0.5);
-  const dx = -0.1 * p.odrzut;
-  const deba = p.deba * 0.5;
+  const kleka = p.kleka ?? 0, skok = p.skok ?? 0, lapa = uderzenieLapy(p.lapa ?? 0);
+  const dy = 0.27 * lez + 0.09 * p.przysiad + 0.05 * kleka - 0.07 * skok - 0.01 * Math.sin(p.faza * 2) * p.krok + 0.005 * (p.oddech - 0.5);
+  const dx = -0.1 * p.odrzut + 0.06 * skok;
+  // pochylenie tułowia wokół bioder: dęba w górę; cios łapą, przypadnięcie i skok przodem w dół
+  const deba = p.deba * 0.5 - 0.1 * lapa - 0.26 * kleka - 0.05 * skok;
   const piv: P2 = [-0.3 + dx, -0.47 + dy];
   const SX = 0.92;
   const T = (x: number, y: number, z: number): V3 => {

@@ -91,7 +91,7 @@ export interface Model {
 }
 
 /** Buduje bryły Cerbera w pozie `p` (jednostki: wysokość = 1). */
-export function modelCerbera(p: PozaCerbera): Model {
+export function modelCerbera(p: PozaCerbera, opcje: { martweOczy?: boolean } = {}): Model {
   const t = p.czas / 1000;
   const kam = p.kamien > 0.5;
   const krew = kam ? 0 : p.krew ?? 0.6;
@@ -183,12 +183,25 @@ export function modelCerbera(p: PozaCerbera): Model {
 
   // ---------------------------------------------------------------- łapy
   const krok = 0.12 * p.krok, unies = 0.055 * p.krok;
-  const stopa = (x0: number, faza: number, przednia: boolean): P2 => {
+  const skok = p.skok ?? 0;
+  const stopa = (x0: number, faza: number, przednia: boolean, blizsza = false): P2 => {
     if (lez > 0.5) return przednia ? [x0 * SX + 0.2, 0] : [x0 * SX + 0.22, 0];
     const s = Math.sin(p.faza + faza), c = Math.cos(p.faza + faza);
     let x = x0 * SX + s * krok + dx * 0.5;
     let y = -Math.max(0, c) * unies;
     if (przednia && p.deba > 0) { const q = T(x0 + 0.08, -0.15, 0); x = mix(x, q[0], p.deba); y = mix(y, Math.min(0, q[1]), p.deba); }
+    // skok: przednie łapy wyciągnięte naprzód nad ziemią, tylne odbijają się w tył
+    if (skok > 0) { if (przednia) { x += 0.22 * skok; y -= 0.13 * skok; } else { x -= 0.17 * skok; y -= 0.05 * skok; } }
+    // szarpnięcie bliższą łapą: w górę i w tył, cios naprzód w dół, powrót na ziemię
+    const L = p.lapa ?? 0;
+    if (przednia && blizsza && L > 0) {
+      const g = (v: number): number => { const t = Math.max(0, Math.min(1, v)); return t * t * (3 - 2 * t); };
+      let tx: number, ty: number;
+      if (L < 0.35) { const k = g(L / 0.35); tx = x + 0.03 * k; ty = mix(y, -0.42, k); }
+      else if (L < 0.6) { const k = g((L - 0.35) / 0.25); tx = x + 0.03 + 0.38 * k; ty = -0.42 + 0.25 * k; }
+      else { const k = g((L - 0.6) / 0.4); tx = x + 0.41 - 0.41 * k; ty = mix(-0.17, y, k); }
+      x = tx; y = ty;
+    }
     return [x, y];
   };
   const lapa = (out: Prym[], f: P2, z: number, kr: number, s: number): void => {
@@ -227,7 +240,7 @@ export function modelCerbera(p: PozaCerbera): Model {
     return out;
   };
   const lPD = lapaPrzednia(0.105, T(0.2, -0.44, 0.08), stopa(0.19, 0, true));
-  const lPB = lapaPrzednia(-0.105, T(0.22, -0.43, -0.08), stopa(0.24, Math.PI, true));
+  const lPB = lapaPrzednia(-0.105, T(0.22, -0.43, -0.08), stopa(0.24, Math.PI, true, true));
   const lTD = lapaTylna(0.09, T(-0.29, -0.45, 0.065), stopa(-0.34, Math.PI, false));
   const lTB = lapaTylna(-0.09, T(-0.27, -0.45, -0.065), stopa(-0.28, 0, false));
 
@@ -253,6 +266,8 @@ export function modelCerbera(p: PozaCerbera): Model {
     // szyja: rdzeń, grzebień karku, gardło
     const ns = rig.nasady[i];
     const glKon = rig.konce[i];
+    // kręgosłup szyi (niewidoczny — barwi przekrój po ścięciu na kość)
+    szyja.push({ typ: 5, a: ns, b: glKon, r1: 0.032, mat: MAT.kosc, kol: [0.75, 0.68, 0.55] });
     const osN = norm([glKon[0] - ns[0], glKon[1] - ns[1], glKon[2] - ns[2]]);
     const gora: V3 = norm([osN[1], -osN[0], 0]).map((v, k) => (k === 1 ? -Math.abs(v) : v)) as V3;
     const dN = Math.hypot(glKon[0] - ns[0], glKon[1] - ns[1], glKon[2] - ns[2]);
@@ -304,7 +319,8 @@ export function modelCerbera(p: PozaCerbera): Model {
     for (const s of [-1, 1]) {
       const [ox, oy, oz] = r.oko;
       const o = H(ox, oy, s * oz);
-      twarz.push({ typ: 0, a: o, r1: 0.032 * L, k: 0.003, mat: MAT.oko, kol: kam && g.oczy < 0.05 ? KAMIEN : OKO });
+      if (opcje.martweOczy) twarz.push({ typ: 0, a: o, r1: 0.032 * L, k: 0.003, mat: MAT.skora, kol: [0.09, 0.02, 0.018] });
+      else twarz.push({ typ: 0, a: o, r1: 0.032 * L, k: 0.003, mat: MAT.oko, kol: kam && g.oczy < 0.05 ? KAMIEN : OKO });
       twarz.push(E(H(ox + 0.01, oy - 0.027, s * (oz + 0.007)), [0.055, 0.02, 0.035], -0.35, fk, 0.006));
       twarz.push(E(H(ox, oy + 0.025, s * (oz + 0.008)), [0.05, 0.016, 0.03], 0.2, fk, 0.006));
     }

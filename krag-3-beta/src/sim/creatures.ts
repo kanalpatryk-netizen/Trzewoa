@@ -213,6 +213,9 @@ ksiegaT?: number;
   rozkazOd?: number;
   /** Alpha 1: demon — tik ostatniego zachwiania (potem chwilę się nie chwieje). */
   chwiejT?: number;
+  /** Krąg Trzeci (16.11): Cerber — głowy ścięte przez rycerza (0 doberman, 1 wilk, 2 pitbull): tik, skąd spadła
+   * (x0, y0 — kafle, w chwili cięcia), gdzie leży (x, y — kafel nad posadzką) i w którą stronę patrzył pies. */
+  glowyOdciete?: { nr: number; tick: number; x0: number; y0: number; x: number; y: number; zwrot: number }[];
   /** Remake v2: skrajnie głodny biegnie pod linę tego wiadra (id), wspina się po niej (naLinie) i wsiada do niego (naWiadrze). */
   linaDo?: number;
   naLinie?: number;

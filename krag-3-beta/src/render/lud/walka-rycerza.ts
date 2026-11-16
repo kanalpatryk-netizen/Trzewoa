@@ -152,6 +152,23 @@ const A: Record<IdRuchuRycerza, Anim> = {
     ci.kat = 0.12 * w;
     void c;
   },
+  // Krąg Trzeci (16.11): ścięcie głowy Cerbera — przysiad, wyskok z mieczem oburącz za plecami, cięcie w poprzek karku
+  sciecieGlowy: (p, u, t, ci, tryb) => {
+    tryb.oburacz = true; tryb.chwyt = 0.07;
+    klucze(p, u, kl(156, [
+      [34, { uA: 1.05, kA: 1.45, uB: 0.05, kB: 1.25, tulow: 0.38, glowa: 0.22, rA: 2.3, eA: 1.25, narz: 3.9, wysilek: 0.85 }, wejWyj],
+      [48, { uA: 0.3, kA: 0.2, uB: -0.4, kB: 0.45, sA: -0.5, sB: -0.5, tulow: -0.12, glowa: -0.2, rA: 3.0, eA: 0.9, narz: 4.6, wysilek: 1, usta: 0.6 }, (x) => wej(x, 1.6)],
+      [82, { uA: 0.95, kA: 1.25, uB: 0.2, kB: 1.35, sA: -0.2, sB: -0.2, tulow: -0.28, glowa: -0.32, rA: 3.15, eA: 0.75, narz: 4.95, wysilek: 1, usta: 0.85 }, wyj],
+      [100, { uA: 1.0, kA: 1.15, uB: -0.3, kB: 1.0, sA: 0, sB: 0, tulow: 0.42, glowa: 0.1, rA: 1.5, eA: 0.12, narz: 1.55, smuga: 1, cios: 1, wysilek: 1, usta: 1 }, (x) => wej(x, 3)],
+      [114, { rA: 0.6, eA: 0.3, narz: 0.5, tulow: 0.58, glowa: 0.25, smuga: 0, cios: 0, wysilek: 0.7, usta: 0.4 }],
+      [140, { uA: 0.5, kA: 0.45, uB: -0.35, kB: 0.3, tulow: 0.22, glowa: 0.08, rA: 0.8, eA: 0.9, narz: 1.9 }, wejWyj],
+    ]));
+    // lot: wybicie w 48, szczyt w 82 (na wysokości karku Cerbera), cięcie w 100, lądowanie w 108
+    const w = t < 48 || t > 108 ? 0 : sin(PI * (t - 48) / 60);
+    ci.y = -0.62 * w * (0.7 + 0.3 * w);
+    ci.kat = t < 82 ? -0.1 * w : 0.14 * w;
+    ci.x = 0.1 * dzwonU(u, 0.28, 0.75);
+  },
   mlynek: (p, u, t) => {
     klucze(p, u, kl(180, [
       [18, { rA: 1.3, eA: 0.3, narz: 2.4, tulow: 0.22, uA: 0.45, kA: 0.4, uB: -0.38, kB: 0.3, wysilek: 0.8, usta: 0.2 }, wejWyj],
@@ -436,6 +453,15 @@ export function efektyWalkiRycerza(ctx: CanvasRenderingContext2D, sim: Sim, c: C
     if (id === 'ciosZWyskoku') { pyl(46, 0, 0.6); pyl(96, 0.08, 1.3); }
     if (id === 'szarzaZTarcza') { pyl(20, -0.05, 0.7); pyl(84, 0.15, 1.0); }
     if (id === 'egzekucja') pyl(114, 0.25, 1.4);
+    if (id === 'sciecieGlowy') {
+      pyl(48, 0, 0.8); pyl(110, 0.1, 1.4);
+      // ścięta głowa: fontanna krwi z karku w punkcie cięcia
+      if (przeszedl(100) && (R.zadane[0] ?? 0) > 0) {
+        const q = punktTrafienia(id, s, h);
+        pm.efekty.push({ x: q.x / h, y: q.y / h, t: czas, sila: 3, typ: 'krew' });
+        pm.efekty.push({ x: q.x / h + 0.08, y: q.y / h - 0.05, t: czas + 60, sila: 2.4, typ: 'krew' });
+      }
+    }
     if (id === 'powalony') { pyl(22, -0.4, 1.2); pyl(R.dl - 30, 0.05, 0.6); }
     if (id === 'unik') pyl(24, 0, 0.6);
     if (id === 'blokTarcza' && przeszedl(4)) pm.efekty.push({ x: s.dlonB.x / h + 0.06, y: s.dlonB.y / h - 0.03, t: czas, sila: 1 + (R.sila ?? 0) * 6, typ: 'tarcza' });

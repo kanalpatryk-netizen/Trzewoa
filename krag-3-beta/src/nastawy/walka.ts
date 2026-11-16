@@ -24,7 +24,9 @@ export type IdRuchuRycerza =
   // obrona i reakcje (6)
   | 'blokTarcza' | 'parowanie' | 'unik' | 'trafionyLekko' | 'trafionyMocno' | 'powalony'
   // postawa i podejście (2)
-  | 'garda' | 'podejscie';
+  | 'garda' | 'podejscie'
+  // Krąg Trzeci (16.11): przeciw Cerberowi (1)
+  | 'sciecieGlowy';
 
 export interface RuchRycerza {
   nazwa: string;
@@ -156,7 +158,16 @@ export const RUCHY_RYCERZA: Record<IdRuchuRycerza, RuchRycerza> = {
     nazwa: 'Podejście w gardzie', rodzaj: 'postawa', dl: 0,
     opis: 'Do wroga: krótkie, ostrożne kroki, nie opuszczając gardy.',
   },
+  sciecieGlowy: {
+    nazwa: 'Ścięcie głowy', rodzaj: 'atak', dl: 156, traf: [[100, 2.8]], waga: 2.6, wrogPonizej: 0.8, nieDoZablokowania: true, chwieje: true,
+    doskok: [0.7, 40, 96], zDaleka: 1.6,
+    opis: 'Gdy Cerber słabnie: przysiad, wyskok z mieczem oburącz za plecami i cięcie w poprzek karku — jedna z trzech '
+      + 'głów spada na posadzkę (najpierw najniższa; ostatniej nie da się ściąć). Ścięta głowa odbiera mu siłę kłów.',
+  },
 };
+
+/** Krąg Trzeci: ile głów rycerz może ściąć Cerberowi i od jakiego życia (ułamek) — pierwszą, drugą. */
+export const SCIECIE_GLOW = { najwiecej: 2, zycieDo: [0.8, 0.45], rana: 0.1, slabszeKly: 0.15 };
 
 /** Obrona i reakcje rycerza. */
 export const OBRONA_RYCERZA = {
@@ -224,60 +235,60 @@ export interface RuchBossa {
 
 export const RUCHY_BOSSA: Record<IdRuchuBossa, RuchBossa> = {
   zGory: {
-    nazwa: 'Cios z góry', rodzaj: 'atak', dl: 150, traf: [[70, 1.35]], zasieg: 2.4, powala: 0.5, waga: 1,
-    opis: 'Ręka nad głowę, odchylenie i cios pięścią w dół — powala rycerza, jeśli się nie obroni.',
+    nazwa: 'Kłapnięcie z góry', rodzaj: 'atak', dl: 150, traf: [[70, 1.35]], zasieg: 2.4, powala: 0.5, waga: 1,
+    opis: 'Staje lekko dęba, łeb w górę i z całej siły paszczą w dół — powala rycerza, jeśli się nie obroni.',
   },
   zamach: {
-    nazwa: 'Zamach pazurami', rodzaj: 'atak', dl: 130, traf: [[64, 1.1]], zasieg: 2.7, luk: true, waga: 1,
-    opis: 'Ręka przez pierś i łukiem przed siebie — pazury ciągną smugę ognia i trafiają każdego w zasięgu.',
+    nazwa: 'Szarpnięcie łapą', rodzaj: 'atak', dl: 130, traf: [[64, 1.1]], zasieg: 2.7, luk: true, waga: 1,
+    opis: 'Przednia łapa wysoko w górę i łukiem przed siebie — pazury rozdzierają każdego w zasięgu.',
   },
   podciecie: {
-    nazwa: 'Podcięcie od dołu', rodzaj: 'atak', dl: 140, traf: [[70, 1.2]], zasieg: 2.3, powala: 0.45, odrzut: 0.8, waga: 0.9,
-    opis: 'Przysiad, ręka przy ziemi i cios w górę — wyrzuca rycerza z nóg.',
+    nazwa: 'Chwyt za nogi', rodzaj: 'atak', dl: 140, traf: [[70, 1.2]], zasieg: 2.3, powala: 0.45, odrzut: 0.8, waga: 0.9,
+    opis: 'Przysiad i najniższa głowa nisko nad ziemią — zęby w łydki i szarpnięcie, wyrzuca rycerza z nóg.',
   },
   podwojnyZamach: {
-    nazwa: 'Podwójny zamach', rodzaj: 'atak', dl: 190, traf: [[70, 0.75], [118, 0.75]], zasieg: 2.6, waga: 0.8,
-    opis: 'Najpierw jedna ręka, zaraz druga — dwa zamachy pazurami z obrotem tułowia.',
+    nazwa: 'Dwie paszcze', rodzaj: 'atak', dl: 190, traf: [[70, 0.75], [118, 0.75]], zasieg: 2.6, waga: 0.8,
+    opis: 'Najpierw kłapie jedna głowa, zaraz druga — dwa ugryzienia jedno po drugim.',
   },
   zgniecenie: {
-    nazwa: 'Zgniecenie oburącz', rodzaj: 'atak', dl: 170, traf: [[92, 1.5]], zasieg: 2.3, ogluszenie: 60, waga: 0.7,
-    opis: 'Obie ręce rozłożone szeroko i klaśnięcie na rycerzu — fala uderzeniowa, rycerz ogłuszony.',
+    nazwa: 'Trzy paszcze naraz', rodzaj: 'atak', dl: 170, traf: [[92, 1.5]], zasieg: 2.3, ogluszenie: 60, waga: 0.7,
+    opis: 'Przysiad i trzy głowy jednocześnie w jedno miejsce — kły zamykają się na rycerzu, ogłuszony.',
   },
   przygniecenie: {
-    nazwa: 'Przygniecenie dłonią', rodzaj: 'atak', dl: 230, traf: [[80, 1.0], [150, 0.45]], zasieg: 2.4, przygniata: 110, waga: 0.35,
-    opis: 'Otwarta dłoń spada na rycerza i przygniata go do ziemi — dociska jeszcze raz, potem puszcza.',
+    nazwa: 'Łapa na piersi', rodzaj: 'atak', dl: 230, traf: [[80, 1.0], [150, 0.45]], zasieg: 2.4, przygniata: 110, waga: 0.35,
+    opis: 'Przednia łapa spada na rycerza i przygniata go do ziemi, głowy szarpią — dociska jeszcze raz, potem puszcza.',
   },
   odepchniecie: {
-    nazwa: 'Odepchnięcie', rodzaj: 'atak', dl: 100, traf: [[50, 0.8]], zasieg: 1.7, odrzut: 1.6, waga: 0.6,
-    opis: 'Gdy rycerz podejdzie za blisko: grzbietem dłoni na odlew — odrzuca go daleko.',
+    nazwa: 'Uderzenie łbem', rodzaj: 'atak', dl: 100, traf: [[50, 0.8]], zasieg: 1.7, odrzut: 1.6, waga: 0.6,
+    opis: 'Gdy rycerz podejdzie za blisko: skok do przodu i łbem w pierś — odrzuca go daleko.',
   },
   tupniecie: {
     nazwa: 'Tupnięcie', rodzaj: 'obszar', dl: 140, traf: [[76, 0.75]], promien: 3.2, ogluszenie: 40, waga: 0.8,
-    opis: 'Kolano w górę i stopa w posadzkę — fala ziemi rani i chwieje każdego wokół.',
+    opis: 'Staje dęba i oboma przednimi łapami w posadzkę — fala ziemi rani i chwieje każdego wokół.',
   },
   tchnienie: {
     nazwa: 'Ogniste tchnienie', rodzaj: 'obszar', dl: 220, oddech: [84, 174, 10], podmuch: 0.13, zasieg: 5.2, zycieDo: 0.65, waga: 0.9,
-    opis: 'Gdy słabnie: wciąga powietrze, odchyla głowę i zieje ogniem przed siebie — pali każdego w płomieniach.',
+    opis: 'Gdy słabnie: środkowa głowa wciąga powietrze, odchyla się i zieje ogniem przed siebie — pali każdego w płomieniach.',
   },
   wybuchAureoli: {
-    nazwa: 'Wybuch aureoli', rodzaj: 'obszar', dl: 200, traf: [[118, 0.95]], promien: 4.6, powalaDo: 2.6, odrzut: 1.2, zycieDo: 0.5, waga: 0.7,
-    opis: 'Od połowy życia: skulony zbiera ogień w aureoli — i rozrzuca ręce, a krąg ognia zwala z nóg tych blisko.',
+    nazwa: 'Wycie trzech gardeł', rodzaj: 'obszar', dl: 200, traf: [[118, 0.95]], promien: 4.6, powalaDo: 2.6, odrzut: 1.2, zycieDo: 0.5, waga: 0.7,
+    opis: 'Od połowy życia: kuli się, a potem trzy łby wyją w górę — fala wycia i żaru zwala z nóg tych blisko.',
   },
   biczLancucha: {
-    nazwa: 'Bicz z łańcucha', rodzaj: 'dystans', dl: 160, traf: [[86, 1.0]], zasieg: 5.6, od: 2.2, waga: 1.1,
-    opis: 'Zerwany łańcuch z kajdanów jak bicz — sięga rycerza z pięciu kafli.',
+    nazwa: 'Bicz z ogona', rodzaj: 'dystans', dl: 160, traf: [[86, 1.0]], zasieg: 5.6, od: 2.2, waga: 1.1,
+    opis: 'Wężowy ogon w łuskach smaga jak bicz — sięga rycerza z pięciu kafli.',
   },
   szarza: {
     nazwa: 'Szarża', rodzaj: 'dystans', dl: 170, przemieszcza: [48, 104, 5], traf: [[0, 1.3]], zasieg: 7, od: 3, powala: 0.8, odrzut: 1.6, waga: 0.8,
-    opis: 'Pochyla głowę i rusza na rycerza z kilku kafli — przy zderzeniu go powala i odrzuca.',
+    opis: 'Przysiada, łby nisko — i rzuca się na rycerza z kilku kafli; przy zderzeniu go powala i odrzuca.',
   },
   uderzenieWZiemie: {
     nazwa: 'Uderzenie w ziemię', rodzaj: 'zdolnosc', dl: 220, traf: [[110, 0]], promien: 3, ogluszenie: 30,
-    opis: 'Co jakiś czas: ręce w górę z rykiem i obie pięści w ziemię — zasypuje kawałek drogi wiernych.',
+    opis: 'Co jakiś czas: staje dęba z rykiem i całym ciężarem spada przednimi łapami — zasypuje kawałek drogi wiernych.',
   },
   ryk: {
     nazwa: 'Ryk', rodzaj: 'zdolnosc', dl: 130,
-    opis: 'Po zabiciu kogoś, po klęknięciu i w ciszy: głowa w tył, szczęka otwarta, ręce szeroko.',
+    opis: 'Po zabiciu kogoś, po klęknięciu i w ciszy: trzy łby w górę, paszcze rozwarte, wyje na trzy gardła.',
   },
   rozkazRzut: {
     nazwa: 'Rozkaz: rzut', rodzaj: 'zdolnosc', dl: 0,
@@ -292,12 +303,12 @@ export const RUCHY_BOSSA: Record<IdRuchuBossa, RuchBossa> = {
     opis: 'Ręce do stropu, drze go pazurami i ściąga w dół — szpony dłoni rwą skałę.',
   },
   blok: {
-    nazwa: 'Blok przedramieniem', rodzaj: 'obrona', dl: 0,
-    opis: 'Gdy rycerz bierze zamach, czasem zasłania się przedramieniem — cios zostawia połowę rany (fintę przepuszcza).',
+    nazwa: 'Zasłona łapą', rodzaj: 'obrona', dl: 0,
+    opis: 'Gdy rycerz bierze zamach, czasem unosi przednią łapę i odbija ostrze pazurami — cios zostawia połowę rany (fintę przepuszcza).',
   },
   zachwianie: {
     nazwa: 'Zachwianie', rodzaj: 'reakcja', dl: 96,
-    opis: 'Po ciężkim ciosie zatacza się i nie bije; przy połowie i ćwierci życia pada na kolano, a potem ryczy.',
+    opis: 'Po ciężkim ciosie zatacza się i nie gryzie; przy połowie i ćwierci życia pada na przednie łapy, a potem ryczy.',
   },
 };
 

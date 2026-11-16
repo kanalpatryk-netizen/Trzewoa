@@ -18,7 +18,7 @@ import { RACES } from './races';
 import { rolaPostaci, mnoznik, maxHp, walczacy, oznaczCios, weteranAktywny } from './lud';
 import { nosi, ranyZbroi } from './zbroja';
 import {
-  RUCHY_RYCERZA as RR, OBRONA_RYCERZA as OB, RUCHY_BOSSA as RB, WALKA_BOSSA as WB,
+  RUCHY_RYCERZA as RR, OBRONA_RYCERZA as OB, RUCHY_BOSSA as RB, WALKA_BOSSA as WB, SCIECIE_GLOW as SG,
   type IdRuchuRycerza, type IdRuchuBossa, type RuchRycerza, type RuchBossa,
 } from '../nastawy/walka';
 import { STRAZNICY as S } from '../nastawy/straznicy';
@@ -90,6 +90,7 @@ function wybierzAtak(sim: Sim, c: Creature, s: Creature, d: number): IdRuchuRyce
   for (const id of atakiRycerza(sim, c)) {
     const def = RR[id];
     if (def.wrogPonizej !== undefined && zycieWroga >= def.wrogPonizej) continue;
+    if (id === 'sciecieGlowy' && !mozeSciac(s)) continue;
     const blisko = d <= zasieg + (def.zasieg ?? 0);
     const zDaleka = !!def.zDaleka && d <= zasieg + def.zDaleka && Math.abs(s.y - c.y) < 1.2;
     if (!blisko && !zDaleka) continue;
@@ -184,6 +185,7 @@ export function krokRuchuRycerza(sim: Sim, c: Creature): boolean {
     let zad = 0;
     if (zyje && !s!.dead && Math.hypot(s!.x - c.x, s!.y - c.y) <= zasiegRycerza(s!) + (def.zasieg ?? 0) + 0.6) zad = zadajCios(sim, c, s!, mn, def);
     R.zadane.push(zad);
+    if (R.id === 'sciecieGlowy' && zad > 0 && !s!.dead && mozeSciac(s!)) ucinaGlowe(sim, s!, c);
   }
   return true;
 }
@@ -314,7 +316,8 @@ function ciosBossa(sim: Sim, b: Creature, cel: Creature, mn: number, def: RuchBo
   if (cel.dead) return;
   if (sim.lud.straznicy) sim.lud.straznicy.cios = sim.tick;
   const kier = Math.sign(cel.x - b.x) || b.face;
-  let rana = DEMON.sila * mn * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel);
+  // Krąg Trzeci: każda ścięta głowa to mniej kłów
+  let rana = DEMON.sila * mn * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel) * (1 - SG.slabszeKly * (b.glowyOdciete?.length ?? 0));
   const powala = sim.rng.chance(o.powala ?? def.powala ?? 0);
   rana = przyjmijCios(sim, cel, rana, { kier: -kier, powala, odrzut: def.odrzut, przygniata: def.przygniata, ogien: o.ogien });
   if (!czyRycerz(cel) && def.odrzut && rana > 0) przesun(sim, cel, kier * def.odrzut * 0.6);
@@ -330,6 +333,48 @@ function ciosBossa(sim: Sim, b: Creature, cel: Creature, mn: number, def: RuchBo
     return;
   }
   if (!walczacy(cel)) ranStraznika(sim, b, cel, RACES[cel.race].strength * mnoznik(sim, cel, 'sila') * S.oddajeCios);
+}
+
+// ======================================================================== Krąg Trzeci: ścięcie głowy Cerbera
+
+/** Czy rycerz może teraz ściąć Cerberowi kolejną głowę (najwyżej dwie; druga dopiero, gdy słabszy). */
+export function mozeSciac(b: Creature): boolean {
+  if (b.boss !== 'demon' || b.dead) return false;
+  const n = b.glowyOdciete?.length ?? 0;
+  if (n >= SG.najwiecej) return false;
+  return zycieBossa(b) < SG.zycieDo[n];
+}
+
+/** Wysokość szyi głowy nad stopami Cerbera (kafle) — skąd spada ścięta głowa. */
+const WYS_GLOWY = [3.1, 2.6, 1.9];
+
+/**
+ * Rycerz ściął głowę: najniższa (pitbull), potem środkowa (wilk); doberman zostaje. Głowa spada przed psa na posadzkę,
+ * pies traci kawał życia, chwieje się i pada na przednie łapy, a potem wyje pozostałymi gardłami.
+ */
+function ucinaGlowe(sim: Sim, b: Creature, r: Creature): void {
+  const odc = b.glowyOdciete ?? (b.glowyOdciete = []);
+  const nr = [2, 1, 0].find((i) => !odc.some((o) => o.nr === i));
+  if (nr === undefined) return;
+  const zwrot = b.face || (r.x > b.x ? 1 : -1);
+  const w = sim.world;
+  // stopy psa: pierwsza posadzka pod nim (demon bywa w powietrzu — pies nie)
+  let yp = Math.floor(b.y);
+  while (yp < w.h - 2 && w.passable(Math.floor(b.x), yp + 1)) yp++;
+  const x0 = b.x + zwrot * 1.0, y0 = yp + 1 - WYS_GLOWY[nr];
+  let x = b.x + zwrot * (1.5 + sim.rng.next() * 0.9);
+  x = Math.max(1, Math.min(w.w - 2, x));
+  let y = Math.floor(y0);
+  while (y < w.h - 2 && w.passable(Math.floor(x), y + 1)) y++;
+  odc.push({ nr, tick: sim.tick, x0, y0, x, y, zwrot });
+  const max = Math.max(1, b.hpMax ?? DEMON.hp);
+  b.hp = Math.max(1, b.hp - max * SG.rana);
+  for (let k = 0; k < 14; k++) sim.spark(x0 + sim.rng.range(-0.6, 0.6), y0 + sim.rng.range(-0.6, 0.6), 'hit');
+  const imie = ['dobermana', 'wilka', 'pitbulla'][nr];
+  sim.log(`Rycerz ściął Cerberowi głowę ${imie}! ${3 - odc.length === 1 ? 'Zostało mu jedno gardło' : 'Zostały mu dwa gardła'}.`, 'krew');
+  b.chwiejT = sim.tick;
+  b.rykPo = true;
+  zacznijRuchBossa(sim, b, 'zachwianie', null, WB.dlKleku, { wariant: 2 });
 }
 
 /** Lud w promieniu wokół demona. */

@@ -473,23 +473,6 @@ function cerberNaCokole(ctx: CanvasRenderingContext2D, x: number, top: number, H
   return { obroza: t(pk.obroza), brzuch: t(pk.brzuch), paszcze: [t(pk.paszcze[0]), t(pk.paszcze[1]), t(pk.paszcze[2])] };
 }
 
-let warstwaC: HTMLCanvasElement | null = null;
-/** Cerber na osobnej warstwie (rozpad i konanie kroją go na bryły — jeden rysunek na klatkę, nie trzydzieści). */
-function warstwaCerbera(ctx: CanvasRenderingContext2D, H: number, p: PozaCerbera, przes = 0.18): { c: HTMLCanvasElement; cw: number; ch: number; W: number; Hh: number; ox: number; oy: number } {
-  const m = ctx.getTransform(), dpr = Math.max(1, Math.hypot(m.a, m.b));
-  const W = Math.ceil(H * 2.2), Hh = Math.ceil(H * 1.4), ox = W / 2, oy = H * 1.25;
-  warstwaC ??= document.createElement('canvas');
-  const cw = Math.ceil(W * dpr), ch = Math.ceil(Hh * dpr);
-  if (warstwaC.width < cw || warstwaC.height < ch) { warstwaC.width = cw; warstwaC.height = ch; }
-  const g = warstwaC.getContext('2d')!;
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  g.clearRect(0, 0, warstwaC.width, warstwaC.height);
-  g.setTransform(dpr, 0, 0, dpr, 0, 0);
-  g.translate(ox - H * przes, oy);
-  rysujCerbera(g, przes ? H * 0.85 : H, p);
-  g.setTransform(1, 0, 0, 1, 0, 0);
-  return { c: warstwaC, cw, ch, W, Hh, ox, oy };
-}
 
 /** Odłamki i pył po świeżym pęknięciu (`k` 0…1 od pęknięcia). */
 function odlamki(ctx: CanvasRenderingContext2D, bx: number, top: number, H: number, k: number, stan: number, z: number): void {
@@ -575,34 +558,52 @@ export function rysujWstajacego(ctx: CanvasRenderingContext2D, bx: number, by: n
 export function rysujDemonaBossa(ctx: CanvasRenderingContext2D, sim: Sim, c: Creature, h: number, czas: number): void {
   // Krąg Trzeci: boss to Cerber
   const s = sim.lud.pomnik;
-  if (s?.faza === 'kona') { rysujKonajacego(ctx, h, Math.min(1, (sim.tick - s.od) / POMNIK.konanie), czas); return; }
+  if (s?.faza === 'kona') { rysujKonajacego(ctx, h, Math.min(1, (sim.tick - s.od) / POMNIK.konanie), czas, c.glowyOdciete?.map((o) => o.nr)); return; }
   rysujCerbera(ctx, h, pozaBossa(sim, c, czas));
 }
 
 /** Cerber kona po ostatnim uderzeniu (`k` 0…1), stopami w (0, 0): złote pęknięcia, pada, gasną oczy, rozpada się. */
-export function rysujKonajacego(ctx: CanvasRenderingContext2D, h: number, k: number, czas: number): void {
-  const PEK = 0.55;
-  const poza = (kk: number): PozaCerbera => {
-    const p = pozaCerbera();
-    p.czas = czas;
-    p.lezy = gladko((kk - 0.1) / 0.4);
-    p.swiatlo = gladko(kk / 0.45);
-    p.odrzut = kk < 0.15 ? Math.sin((kk / 0.15) * Math.PI) : 0;
-    p.glowy.forEach((g, i) => {
-      g.oczy = 1 - gladko((kk - 0.3 - i * 0.05) / 0.2);
-      g.pochyl = 0.6 * gladko((kk - 0.2) / 0.4) - (kk < 0.2 ? 0.6 * Math.sin((kk / 0.2) * Math.PI) : 0);
-      g.paszcza = kk < 0.25 ? 0.9 : 0.25;
-    });
-    return p;
-  };
-  const drga = wolnoRuszac() ? Math.sin(czas * 0.12) * h * 0.01 * gladko(k / PEK) : 0;
-  if (k < PEK) {
-    ctx.save(); ctx.translate(drga, 0); rysujCerbera(ctx, h, poza(k)); ctx.restore();
-  } else {
-    const kk = (k - PEK) / (1 - PEK);
-    const L = warstwaCerbera(ctx, h, poza(k), 0);
-    rozbite(ctx, 0, -h * 0.4, h * 0.75, kk, 700, -0.5, () => { ctx.drawImage(L.c, 0, 0, L.cw, L.ch, -L.ox, -L.oy, L.W, L.Hh); });
+export function rysujKonajacego(ctx: CanvasRenderingContext2D, h: number, k: number, czas: number, odciete?: number[]): void {
+  // Krąg Trzeci (16.11): Cerber z krwi i mięsa — nie pęka od światła: wyje, wali się na przednie łapy, pada w kałużę
+  // krwi, łby opadają, ślepia gasną, z paszcz i kikutów leje się krew
+  const p = pozaCerbera();
+  p.czas = czas; p.krew = 1;
+  if (odciete?.length) { p.odciete = odciete; p.odcieteMs = odciete.map(() => 6000 + k * 20000); }
+  const wyje = k < 0.2 ? Math.sin((k / 0.2) * Math.PI) : 0;
+  p.odrzut = k < 0.12 ? Math.sin((k / 0.12) * Math.PI) * 0.7 : 0;
+  p.kleka = gladko((k - 0.1) / 0.12) * (1 - gladko((k - 0.3) / 0.1));
+  p.lezy = gladko((k - 0.28) / 0.15);
+  p.glowy.forEach((g, i) => {
+    g.oczy = 1 - gladko((k - 0.35 - i * 0.06) / 0.25);
+    g.pochyl = -0.7 * wyje + 0.85 * gladko((k - 0.25) / 0.3) + 0.08 * Math.sin(i * 2.1);
+    g.paszcza = k < 0.2 ? 0.6 + 0.4 * wyje : 0.45 - 0.1 * i;
+  });
+  // kałuża krwi rośnie spod piersi i paszcz
+  const kal = gladko((k - 0.22) / 0.78);
+  if (kal > 0) {
+    ctx.save();
+    ctx.fillStyle = 'rgba(64,3,2,0.92)';
+    ctx.beginPath(); ctx.ellipse(h * 0.08, 0, h * (0.15 + 0.8 * kal), h * (0.025 + 0.06 * kal), 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = 'rgba(150,26,20,0.22)';
+    ctx.beginPath(); ctx.ellipse(h * 0.02, -h * 0.004, h * 0.5 * kal, h * 0.012 * kal, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
   }
+  // drgawki gasną
+  const drga = wolnoRuszac() ? Math.sin(czas * 0.09) * h * 0.006 * (1 - gladko((k - 0.3) / 0.5)) : 0;
+  ctx.save(); ctx.translate(drga, 0);
+  const pk = rysujCerbera(ctx, h, p);
+  // krew leje się z paszcz strugami do kałuży
+  if (k > 0.15) {
+    ctx.strokeStyle = 'rgba(96,5,3,0.8)'; ctx.lineCap = 'round';
+    pk.paszcze.forEach(([x, y], i) => {
+      if (odciete?.includes(i)) return;
+      ctx.lineWidth = Math.max(1, h * 0.008);
+      ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + h * 0.02, (y + 0) / 2, x + h * 0.01, 0); ctx.stroke();
+      ctx.fillStyle = 'rgba(110,6,4,0.9)';
+      for (let j = 0; j < 3; j++) { const f = ((czas / 500) + j * 0.33 + i * 0.2) % 1; ctx.beginPath(); ctx.ellipse(x + h * 0.01, y + (0 - y) * f, h * 0.005, h * 0.01, 0, 0, Math.PI * 2); ctx.fill(); }
+    });
+  }
+  ctx.restore();
 }
 
 /**
@@ -648,62 +649,16 @@ export function rysujNadPomnikiem(ctx: CanvasRenderingContext2D, sim: Sim, cam: 
     const k = (sim.tick - s.od) / POMNIK.konanie;
     const h = wysokoscDemona(z);
     const dx = cam.toScreenX(s.cios.x), dy = cam.toScreenY(s.cios.y + 1) - h * 0.55;
-    // błysk uderzenia
-    if (k < 0.12) {
-      const a = 1 - k / 0.12, r = h * 0.9;
+    // Krąg Trzeci (16.11): śmierć psa piekła — czerwona mgła krwi po ostatnim ciosie, żadnego świętego światła
+    ctx.globalCompositeOperation = 'source-over';
+    if (k < 0.25) {
+      const a = 1 - k / 0.25, r = h * (0.5 + k * 2);
       const g = ctx.createRadialGradient(dx, dy, 0, dx, dy, r);
-      g.addColorStop(0, `rgba(255,250,230,${0.9 * a})`); g.addColorStop(1, 'rgba(255,220,150,0)');
+      g.addColorStop(0, `rgba(110,4,2,${0.7 * a})`); g.addColorStop(1, 'rgba(80,0,0,0)');
       ctx.fillStyle = g; ctx.fillRect(dx - r, dy - r, r * 2, r * 2);
     }
-    // światło z wnętrza rośnie, potem rozbłysk i fala po krypcie
-    const PEK = 0.55;
-    const swiat = k < PEK ? gladko(k / PEK) * 0.5 : Math.max(0, 1 - (k - PEK) / 0.3);
-    if (swiat > 0) {
-      const r = h * (0.8 + swiat);
-      const g = ctx.createRadialGradient(dx, dy, 0, dx, dy, r);
-      g.addColorStop(0, `rgba(255,236,180,${0.6 * swiat})`); g.addColorStop(1, 'rgba(255,200,120,0)');
-      ctx.fillStyle = g; ctx.fillRect(dx - r, dy - r, r * 2, r * 2);
-    }
-    if (k > PEK) {
-      const kk = (k - PEK) / (1 - PEK);
-      // światło zalewa kryptę: rosnąca, miękka łuna i snopy promieni rytych kreską
-      // (dawniej cienka biała elipsa przez pół ekranu — jak z gry na telefon)
-      const R = h * (1.2 + kk * 7), moc = 1 - kk * 0.65;
-      const g2 = ctx.createRadialGradient(dx, dy, 0, dx, dy, R);
-      g2.addColorStop(0, `rgba(255,236,190,${0.45 * moc})`);
-      g2.addColorStop(0.5, `rgba(255,222,160,${0.2 * moc})`);
-      g2.addColorStop(1, 'rgba(255,210,140,0)');
-      ctx.fillStyle = g2; ctx.fillRect(dx - R, dy - R, R * 2, R * 2);
-      ctx.save();
-      ctx.globalCompositeOperation = 'lighter';
-      ctx.lineCap = 'round';
-      ctx.strokeStyle = `rgba(255,236,196,${0.3 * (1 - kk)})`;
-      ctx.lineWidth = Math.max(1, h * 0.012);
-      ctx.beginPath();
-      for (let i = 0; i < 40; i++) {
-        const kat = (i / 40) * Math.PI * 2 + los(i + 300) * 0.08;
-        const r0 = h * 0.35, r1 = R * (0.45 + 0.4 * los(i + 310));
-        ctx.moveTo(dx + Math.cos(kat) * r0, dy + Math.sin(kat) * r0);
-        ctx.lineTo(dx + Math.cos(kat) * r1, dy + Math.sin(kat) * r1);
-      }
-      ctx.stroke();
-      ctx.restore();
-      // popiół i iskry wznoszą się i gasną
-      for (let i = 0; i < 26; i++) {
-        const t = Math.min(1, kk * (0.7 + los(i + 200) * 0.6));
-        const x = dx + (los(i + 210) - 0.5) * h * 0.8 + (los(i + 220) - 0.5) * h * 0.6 * t;
-        const y = dy + (los(i + 230) - 0.3) * h * 0.6 - t * h * (0.6 + los(i + 240));
-        const r = Math.max(1, h * 0.012 * (1 - t * 0.5));
-        ctx.fillStyle = i % 3 ? `rgba(255,190,110,${0.8 * (1 - t)})` : `rgba(180,170,160,${0.6 * (1 - t)})`;
-        ctx.fillRect(x - r, y - r, r * 2, r * 2);
-      }
-    }
-    // cały ekran rozjaśnia się w chwili rozbłysku
-    if (k > PEK - 0.02 && k < PEK + 0.12) {
-      const a = Math.sin(((k - (PEK - 0.02)) / 0.14) * Math.PI) * 0.35;
-      ctx.fillStyle = `rgba(255,240,210,${a})`;
-      ctx.fillRect(0, 0, cam.vw, cam.vh);
-    }
+    ctx.restore();
+    return;
   }
   ctx.restore();
 }

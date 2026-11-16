@@ -18,6 +18,8 @@ export interface GlowaCerbera {
   pochyl: number; paszcza: number; wysun: number;
   /** oczy 0…1 (żar) */
   oczy: number;
+  /** walka (16.11): smuga szybkiego ruchu łba 0…1 i ugryzienie, które trafiło (krew z paszczy) 0…1 */
+  smuga?: number; ugryz?: number;
 }
 
 export interface PozaCerbera {
@@ -38,6 +40,15 @@ export interface PozaCerbera {
   oddech: number;
   /** ogień ze środkowej paszczy 0…1 */
   ogien: number;
+  /** Krąg Trzeci (16.11): głowy ścięte przez rycerza (0 doberman, 1 wilk, 2 pitbull) i ile ms temu (fontanna krwi) */
+  odciete?: number[]; odcieteMs?: number[];
+  /** która głowa zieje ogniem (domyślnie środkowa) */
+  ogienGlowa?: number;
+  /** walka (16.11): szarpnięcie bliższą przednią łapą 0…1 (wzniesienie, cios, powrót), skok naprzód 0…1, przypadnięcie
+   * na przednie łapy 0…1 (po ciężkiej ranie, po ścięciu głowy, po uderzeniu w ziemię) */
+  lapa?: number; skok?: number; kleka?: number;
+  /** fala uderzenia albo wycia rozchodząca się od psa 0…1 (tupnięcie, uderzenie w ziemię, wycie trzech gardeł) */
+  fala?: number;
   /** krew na pyskach, piersi i przednich łapach 0…1 */
   krew?: number;
   czas: number;

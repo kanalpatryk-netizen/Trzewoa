@@ -5,7 +5,7 @@
  *
  * Wymaga działającego `npm run dev` i Chromium z Playwright oraz ffmpeg (libwebp).
  *   node scripts/wypiek-cerbera.mjs [adres-serwera] [przedrostek-nazw] [--zarlok]
- * np. `node scripts/wypiek-cerbera.mjs http://localhost:5180 glowa-1` — tylko głowy wilka.
+ * np. `node scripts/wypiek-cerbera.mjs http://localhost:5180 glowa-1` — tylko głowy wilka (kilka przedrostków po przecinku).
  * Z `--zarlok` wypieka części potępionego żarłoka i rany (src/render/czlowiek3d.ts) do obrazy/zarlok/
  * i src/render/zarlok-wypiek.ts (składa je src/render/ludzik.ts).
  */
@@ -40,6 +40,10 @@ zad.push({ nazwa: 'cialo-stoi', czesc: 'cialo', S: S_C, poza: { krok: 0 } });
 for (const d of [1, 2, 3, 4]) zad.push({ nazwa: `cialo-deba-${d}`, czesc: 'cialo', S: S_C, poza: { deba: d * 0.25 } });
 for (const d of [1, 2]) zad.push({ nazwa: `cialo-przysiad-${d}`, czesc: 'cialo', S: S_C, poza: { przysiad: d * 0.5 } });
 zad.push({ nazwa: 'cialo-lezy', czesc: 'cialo', S: S_C, poza: { lezy: 1 } });
+// walka (16.11): szarpnięcie łapą, skok, przypadnięcie na przednie łapy
+for (const [n, v] of [[1, 0.18], [2, 0.35], [3, 0.48], [4, 0.62], [5, 0.82]]) zad.push({ nazwa: `cialo-lapa-${n}`, czesc: 'cialo', S: S_C, poza: { lapa: v } });
+for (const [n, v] of [[1, 0.5], [2, 1]]) zad.push({ nazwa: `cialo-skok-${n}`, czesc: 'cialo', S: S_C, poza: { skok: v } });
+zad.push({ nazwa: 'cialo-kleka', czesc: 'cialo', S: S_C, poza: { kleka: 1 } });
 zad.push({ nazwa: 'cialo-odrzut', czesc: 'cialo', S: S_C, poza: { odrzut: 1 } });
 zad.push({ nazwa: 'cialo-kamien', czesc: 'cialo', S: S_C, poza: { kamien: 1 } });
 zad.push({ nazwa: 'cialo-kamien-lezy', czesc: 'cialo', S: S_C, poza: { kamien: 1, lezy: 1 } });
@@ -50,6 +54,11 @@ zad.push({ nazwa: 'ogon-kamien', czesc: 'ogon', S: S_C, poza: { kamien: 1 } });
 for (const i of [0, 1, 2]) {
   zad.push({ nazwa: `szyja-${i}`, czesc: 'szyja', nr: i, S: S_C });
   zad.push({ nazwa: `szyja-${i}-kamien`, czesc: 'szyja', nr: i, S: S_C, poza: { kamien: 1 } });
+}
+// ścięcie głowy (Krąg Trzeci, 16.11): kikut szyi i ścięta głowa
+for (const i of [0, 1, 2]) {
+  zad.push({ nazwa: `szyja-${i}-kikut`, czesc: 'kikut', nr: i, S: S_C });
+  zad.push({ nazwa: `glowa-${i}-odcieta`, czesc: 'odcieta', nr: i, S: S_G });
 }
 const KATY = [-0.6, 0, 0.6, 1.2], PASZCZE = [0, 0.25, 0.5, 0.75, 1], KREW = [0.5, 1];
 for (const i of [0, 1, 2]) {
@@ -86,7 +95,7 @@ const strona = await b.newPage();
 strona.on('pageerror', (e) => { console.error('błąd strony:', e.message); process.exit(1); });
 await strona.goto(`${ADRES}/narzedzia/wypiek-cerbera.html`, { waitUntil: 'commit', timeout: 300000 });
 await strona.waitForFunction(() => window.gotowe, null, { timeout: 300000 });
-const doZrobienia = (ZARLOK ? zadZ : zad).filter((z) => z.nazwa.startsWith(FILTR));
+const doZrobienia = (ZARLOK ? zadZ : zad).filter((z) => FILTR.split(',').some((f) => z.nazwa.startsWith(f)));
 let n = 0;
 for (const z of doZrobienia) {
   const t0 = Date.now();

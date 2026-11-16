@@ -14,7 +14,7 @@ import * as Z from '../render/czlowiek3d';
 
 export interface Zadanie {
   nazwa: string;
-  czesc: 'cialo' | 'ogon' | 'szyja' | 'glowa' | 'zarlok';
+  czesc: 'cialo' | 'ogon' | 'szyja' | 'glowa' | 'zarlok' | 'kikut' | 'odcieta';
   /** dla żarłoka: część ciała albo rana (render/czlowiek3d.ts), krew, usta, ciemniejsza (dalsza kończyna) */
   element?: string; krew?: number; usta?: number; ciemny?: boolean;
   /** numer szyi / głowy (0 — doberman, 1 — wilk, 2 — pitbull) */
@@ -78,6 +78,7 @@ function wypiecz(z: Zadanie): Wynik | null {
     return doObrazka(gr, z.S, { czas: 1000, swiatlo: z.ciemny ? 0.62 : 1, bloto, ciecie });
   }
   YAW = YAW_CERBERA;
+  if (z.czesc === 'kikut' || z.czesc === 'odcieta') return sciete(z);
   const p: PozaCerbera = Object.assign(pozaCerbera(), { czas: 1000, oddech: 0.5 }, z.poza ?? {});
   p.glowy.forEach((g) => { g.oczy = p.kamien > 0.5 ? 0 : 1; g.paszcza = 0.15; });
   const nr = z.nr ?? 0;
@@ -95,6 +96,35 @@ function wypiecz(z: Zadanie): Wynik | null {
   else if (z.czesc === 'szyja') gr = przesun(m.czesci.szyje[nr], rig.nasady[nr]);
   else gr = przesun(m.czesci.glowy[nr], rig.kotwice[nr]);
   return doObrazka(gr, z.S, { czas: p.czas, swiatlo: 1, bloto });
+}
+
+/**
+ * Ścięcie głowy (Krąg Trzeci, 16.11): kikut szyi — szyja ucięta w połowie, przekrój pochylony ku widzowi (futro, mięso,
+ * kręgi); ścięta głowa — z kawałkiem szyi, paszcza rozwarta, oczy zgasłe. Kikut zaczepiony w nasadzie szyi, głowa
+ * w swojej kotwicy (jak zwykłe części).
+ */
+function sciete(z: Zadanie): Wynik | null {
+  const nr = z.nr ?? 0;
+  const p: PozaCerbera = Object.assign(pozaCerbera(), { czas: 1000, oddech: 0.5, krew: 1 });
+  p.glowy.forEach((g) => { g.oczy = 1; g.paszcza = 0.15; });
+  if (z.czesc === 'odcieta') p.glowy[nr].paszcza = 0.62;
+  const m = modelCerbera(p, { martweOczy: z.czesc === 'odcieta' });
+  const rig = rigCerbera(p);
+  const a = rig.nasady[nr], b = rig.konce[nr];
+  const dl = Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+  const os: V3 = [(b[0] - a[0]) / dl, (b[1] - a[1]) / dl, (b[2] - a[2]) / dl];
+  const ciecie: V3 = [a[0] + os[0] * dl * 0.5, a[1] + os[1] * dl * 0.5, a[2] + os[2] * dl * 0.5];
+  const norm = (v: V3): V3 => { const l = Math.hypot(v[0], v[1], v[2]) || 1; return [v[0] / l, v[1] / l, v[2] / l]; };
+  const dot = (u: V3, v: V3): number => u[0] * v[0] + u[1] * v[1] + u[2] * v[2];
+  if (z.czesc === 'kikut') {
+    const n = norm([os[0], os[1], os[2] - 0.6]);
+    const gr = przesun(m.czesci.szyje[nr], a);
+    return doObrazka(gr, z.S, { czas: 1000, swiatlo: 1, bloto: 99, ciecie: { n, d: dot([ciecie[0] - a[0], ciecie[1] - a[1], ciecie[2] - a[2]], n), szarp: 0.012 } });
+  }
+  const kot = rig.kotwice[nr];
+  const n = norm([-os[0], -os[1], -os[2] - 0.6]);
+  const gr = przesun([...m.czesci.glowy[nr], ...m.czesci.szyje[nr]], kot);
+  return doObrazka(gr, z.S, { czas: 1000, swiatlo: 1, bloto: 99, ciecie: { n, d: dot([ciecie[0] - kot[0], ciecie[1] - kot[1], ciecie[2] - kot[2]], n), szarp: 0.012 } });
 }
 
 function doObrazka(gr: Prym[][], S: number, o: { czas: number; swiatlo: number; bloto: number; ciecie?: { n: V3; d: number; szarp: number } }): Wynik | null {

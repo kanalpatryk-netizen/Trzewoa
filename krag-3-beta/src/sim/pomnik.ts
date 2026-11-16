@@ -114,7 +114,7 @@ export function ostatnieUderzenie(sim: Sim, demon: Creature, od: Creature): bool
   s.cios = { kto: od.id, x: demon.x, y: demon.y };
   sim.target.delete(demon.id);
   for (let k = 0; k < 10; k++) sim.spark(demon.x + sim.rng.range(-0.8, 0.8), demon.y - sim.rng.range(0, 2.5), 'hit');
-  sim.gdzie(demon.x, demon.y).log(`${kto(sim, od).split(' (')[0]} zadaje ostatnie uderzenie. Cerber pęka od środka.`, 'koniec', 'Cerber-cios');
+  sim.gdzie(demon.x, demon.y).log(`${kto(sim, od).split(' (')[0]} zadaje ostatnie uderzenie. Cerber wyje na trzy gardła i wali się we własną krew.`, 'koniec', 'Cerber-cios');
   zapisz(sim, 'rytual', `ostatnie uderzenie: ${kto(sim, od)}`, Math.floor(demon.x), Math.floor(demon.y));
   return true;
 }
@@ -125,7 +125,7 @@ function koniecDemona(sim: Sim, s: StanPomnika): void {
   const klan = klanLudu(sim);
   sim.ending = `uwolnienie:${klan?.name ?? 'Lud'}`;
   const x = s.cios?.x ?? sim.world.coreX, y = s.cios?.y ?? sim.world.przedsionekY;
-  sim.gdzie(x, y).log('Cerber rozsypał się w pył. Nikt już nie strzeże zejścia — potępieni schodzą do kręgu czwartego.', 'koniec');
+  sim.gdzie(x, y).log('Cerber leży martwy w kałuży krwi. Nikt już nie strzeże zejścia — potępieni schodzą do kręgu czwartego.', 'koniec');
 }
 
 /** Narzędzie dewelopera: pomnik od razu w gruz (dalej jak zwykle: demon wstaje i walka). */
