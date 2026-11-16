@@ -45,6 +45,8 @@ namespace Trzewia.Skia
             public string font, textAlign, textBaseline;
             public string filter;
             public SKImageFilter? filtr;
+            /// <summary>Ten sam filtr jako jeden filtr koloru — gdy składa się wyłącznie z funkcji barwnych (bez blur).</summary>
+            public SKColorFilter? kolorFiltr;
             public bool smoothing;
             public string smoothingQuality;
         }
@@ -234,11 +236,12 @@ namespace Trzewia.Skia
             set
             {
                 if (value == s.filter) return;
-                if (value == "none") { s.filter = value; s.filtr = null; return; }
+                if (value == "none") { s.filter = value; s.filtr = null; s.kolorFiltr = null; return; }
                 var f = Filtry.Czytaj(value, out var dobry);
                 if (!dobry) return;
                 s.filter = value;
                 s.filtr = f;
+                s.kolorFiltr = Filtry.Kolorowy(value);
             }
         }
 
@@ -385,8 +388,17 @@ namespace Trzewia.Skia
         {
             zmienione = true;
             bool cien = Cien;
+            p.ColorFilter = null;
             if (!s.bezGranic && s.filtr == null && !cien)
             {
+                p.BlendMode = s.tryb;
+                return false;
+            }
+            // filtr z samych funkcji barwnych (jasność, kontrast, nasycenie, szarość, krycie) bez cienia: ten sam wynik
+            // jako filtr koloru na farbie — bez warstwy (warstwa na całą płytę to dodatkowe przejście w każdej klatce)
+            if (!s.bezGranic && !cien && s.kolorFiltr != null)
+            {
+                p.ColorFilter = s.kolorFiltr;
                 p.BlendMode = s.tryb;
                 return false;
             }
@@ -695,6 +707,71 @@ namespace Trzewia.Skia
         static readonly Dictionary<string, SKImageFilter?> Pamiec = new Dictionary<string, SKImageFilter?>();
 
         static SKColorFilter Macierz5(params float[] m) => SKColorFilter.CreateColorMatrix(m);
+
+        static readonly Dictionary<string, SKColorFilter?> PamiecKoloru = new Dictionary<string, SKColorFilter?>();
+
+        /// <summary>
+        /// Filtr złożony wyłącznie z funkcji barwnych jako jeden filtr koloru (kolejno od lewej, jak w CSS); null — gdy jest
+        /// w nim coś innego (blur) albo napis jest zły. Nakładany na farbę zamiast warstwy (PlotnoSkia.Przed).
+        /// </summary>
+        public static SKColorFilter? Kolorowy(string napis)
+        {
+            if (PamiecKoloru.TryGetValue(napis, out var f)) return f;
+            SKColorFilter? wynik = null;
+            int i = 0;
+            var t = napis.Trim();
+            while (i < t.Length)
+            {
+                while (i < t.Length && t[i] == ' ') i++;
+                if (i >= t.Length) break;
+                int nawias = t.IndexOf('(', i), koniec = t.IndexOf(')', i);
+                if (nawias < 0 || koniec < nawias) { wynik = null; break; }
+                var nazwa = t.Substring(i, nawias - i).Trim();
+                var arg = t.Substring(nawias + 1, koniec - nawias - 1).Trim();
+                i = koniec + 1;
+                bool proc = arg.EndsWith("%", StringComparison.Ordinal);
+                if (!double.TryParse(arg.Replace("px", "").TrimEnd('%'), System.Globalization.NumberStyles.Float,
+                        System.Globalization.CultureInfo.InvariantCulture, out var v)) { wynik = null; break; }
+                if (proc) v /= 100;
+                var cf = Barwny(nazwa, v);
+                if (cf == null) { wynik = null; break; }
+                wynik = wynik == null ? cf : SKColorFilter.CreateCompose(cf, wynik);
+            }
+            PamiecKoloru[napis] = wynik;
+            return wynik;
+        }
+
+        /// <summary>Funkcja barwna filtra CSS jako macierz koloru; null — to nie jest funkcja barwna (blur) albo nieznana.</summary>
+        static SKColorFilter? Barwny(string nazwa, double v)
+        {
+            float k = (float)v;
+            switch (nazwa)
+            {
+                case "brightness": return Macierz5(k, 0, 0, 0, 0, 0, k, 0, 0, 0, 0, 0, k, 0, 0, 0, 0, 0, 1, 0);
+                case "contrast":
+                    {
+                        float p = (float)(0.5 - 0.5 * v);
+                        return Macierz5(k, 0, 0, 0, p, 0, k, 0, 0, p, 0, 0, k, 0, p, 0, 0, 0, 1, 0);
+                    }
+                case "grayscale":
+                    {
+                        float a = (float)(1 - Math.Min(1, v));
+                        return Macierz5(
+                            0.2126f + 0.7874f * a, 0.7152f - 0.7152f * a, 0.0722f - 0.0722f * a, 0, 0,
+                            0.2126f - 0.2126f * a, 0.7152f + 0.2848f * a, 0.0722f - 0.0722f * a, 0, 0,
+                            0.2126f - 0.2126f * a, 0.7152f - 0.7152f * a, 0.0722f + 0.9278f * a, 0, 0,
+                            0, 0, 0, 1, 0);
+                    }
+                case "saturate":
+                    return Macierz5(
+                        0.213f + 0.787f * k, 0.715f - 0.715f * k, 0.072f - 0.072f * k, 0, 0,
+                        0.213f - 0.213f * k, 0.715f + 0.285f * k, 0.072f - 0.072f * k, 0, 0,
+                        0.213f - 0.213f * k, 0.715f - 0.715f * k, 0.072f + 0.928f * k, 0, 0,
+                        0, 0, 0, 1, 0);
+                case "opacity": return Macierz5(1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, (float)Math.Clamp(v, 0, 1), 0);
+                default: return null;
+            }
+        }
 
         public static SKImageFilter? Czytaj(string napis, out bool dobry)
         {
