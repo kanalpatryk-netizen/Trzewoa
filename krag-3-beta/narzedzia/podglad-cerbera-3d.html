@@ -1,0 +1,24 @@
+<!doctype html>
+<!-- Narzędzie (tylko npm run dev): Podgląd modelu 3D Cerbera (render na żywo, WebGL2). Układy: #maly, #jeden, #glowy, #glowa; ?ss — nadpróbkowanie 2×. --><html><body style="margin:0;background:#2a2c2c"><canvas id="c" width="1600" height="900"></canvas>
+<script type="module">
+import { rysujCerbera3d } from '../src/render/cerber3d.ts';
+import { pozaCerbera } from '../src/render/cerber.ts';
+const ctx = document.getElementById('c').getContext('2d');
+const g = ctx.createLinearGradient(0,0,0,900); g.addColorStop(0,'#14171a'); g.addColorStop(1,'#34322a'); ctx.fillStyle=g; ctx.fillRect(0,0,1600,900);
+const t0 = performance.now();
+const pozy = [];
+let p = pozaCerbera(); p.czas = 1000; p.glowy.forEach(g=>{g.paszcza=0.15;}); pozy.push(p);
+p = pozaCerbera(); p.czas = 1000; p.glowy.forEach((g,i)=>{g.paszcza=0.75+0.1*i; g.pochyl=-0.15;}); p.krew=1; pozy.push(p);
+const kadrG = [0.1, -1.2, 0.86, -0.38];
+const h = window.location.hash.replace(/\?.*/, '');
+const uklad = h === '#jeden' ? [[300, 860, 820]] : h === '#maly' ? [[260, 520, 440], [1000, 520, 440]]
+  : h === '#glowy' ? [[-90, 1240, 1000, kadrG], [710, 1240, 1000, kadrG]]
+  : h === '#glowa' ? [[-260, 2050, 1700, [0.15, -1.2, 0.62, -0.72]]]
+  : [[60+330, 840, 760], [860+330, 840, 760]];
+const SS = location.search.includes('ss') ? 2 : 1;
+const c2 = document.createElement('canvas'); c2.width = 1600 * SS; c2.height = 900 * SS; const x2 = c2.getContext('2d');
+uklad.forEach(([x,y,hh,kadr], i) => { x2.save(); x2.translate(x * SS, y * SS); rysujCerbera3d(x2, hh * SS, pozy[i], 1, kadr); x2.restore(); });
+ctx.imageSmoothingQuality = 'high'; ctx.drawImage(c2, 0, 0, 1600, 900);
+window.czas = performance.now() - t0;
+window.gotowe = true;
+</script></body></html>

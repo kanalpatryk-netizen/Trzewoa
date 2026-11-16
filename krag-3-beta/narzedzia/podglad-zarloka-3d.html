@@ -1,0 +1,64 @@
+<!doctype html>
+<!-- Narzędzie (tylko npm run dev): Podgląd modelu 3D żarłoka: #postac — złożone pozy, #rany — części z ranami, #glowa — zbliżenie głowy. --><html><body style="margin:0;background:#2a2c2c"><canvas id="c" width="1600" height="900"></canvas>
+<script type="module">
+import { renderuj3d, nalozRender } from '../src/render/gl3d.ts';
+import * as Z from '../src/render/czlowiek3d.ts';
+import { pozaStoi, pozaCzolga, pozaWyje, pozaLezy, pozaWPaszczy } from '../src/render/ludzik.ts';
+const ctx = document.getElementById('c').getContext('2d');
+const g = ctx.createLinearGradient(0,0,0,900); g.addColorStop(0,'#1c1d1e'); g.addColorStop(1,'#3a362c'); ctx.fillStyle=g; ctx.fillRect(0,0,1600,900);
+const YAW = 0.3;
+const obr = (x,y,k) => [x*Math.cos(k)-y*Math.sin(k), x*Math.sin(k)+y*Math.cos(k)];
+function uloz(pr, kat, t, dz=0) {
+  return pr.map(q => {
+    const m = (v) => { const [x,y] = obr(v[0], v[1], kat); return [x+t[0], y+t[1], v[2]+dz]; };
+    const o = { ...q, a: m(q.a) };
+    if (q.b && (q.typ === 1 || q.typ === 5)) o.b = m(q.b);
+    if (q.typ === 2) o.r2 = (q.r2 ?? 0) + kat;
+    if (q.kier) { const [x,y] = obr(q.kier[0], q.kier[1], kat); o.kier = [x,y,q.kier[2]]; }
+    return o;
+  });
+}
+const od = (a, k, d) => [a[0]+Math.sin(k)*d, a[1]+Math.cos(k)*d];
+function postac(p, o) {
+  const biodro=[0,0], tulKat = Math.PI - p.tulow, kark = od(biodro, tulKat, 0.34);
+  const barkL=[kark[0]-Math.cos(p.tulow)*0.03, kark[1]+0.02], barkP=[kark[0]+Math.cos(p.tulow)*0.03, kark[1]+0.02];
+  const lokL=od(barkL,p.ramieL,0.17), lokP=od(barkP,p.ramieP,0.17), kolL=od(biodro,p.udoL,0.25), kolP=od(biodro,p.udoP,0.25);
+  return [
+    uloz(Z.tulowZarloka(o), p.tulow, biodro),
+    uloz(Z.glowaZarloka(o), p.tulow + p.glowa, kark),
+    uloz(Z.ramieZarloka(o), -p.ramieL, barkL, 0.1), uloz(Z.przedramieZarloka(o), -(p.ramieL+p.lokiecL), lokL, 0.1),
+    uloz(Z.ramieZarloka(o), -p.ramieP, barkP, -0.1), uloz(Z.przedramieZarloka(o), -(p.ramieP+p.lokiecP), lokP, -0.1),
+    uloz(Z.udoZarloka(o), -p.udoL, biodro, 0.055), uloz(Z.podudzieZarloka(o), -(p.udoL-p.kolanoL), kolL, 0.055),
+    uloz(Z.udoZarloka(o), -p.udoP, biodro, -0.055), uloz(Z.podudzieZarloka(o), -(p.udoP-p.kolanoP), kolP, -0.055),
+  ];
+}
+function rysuj(gr, x, y, h, ciecie, bloto=99) {
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  for (const gg of gr) for (const q of gg) { if (q.typ>=3) continue; const pts = q.b && q.typ===1 ? [q.a,q.b] : [q.a]; const r = (q.typ===2&&q.b?Math.max(...q.b):Math.max(q.r1,q.r2??0)) + (q.wlos??0) + 0.01;
+    for (const p of pts) { const sx = p[0]*Math.cos(YAW)+p[2]*Math.sin(YAW); x0=Math.min(x0,sx-r); x1=Math.max(x1,sx+r); y0=Math.min(y0,p[1]-r); y1=Math.max(y1,p[1]+r); } }
+  const r = renderuj3d(gr, { x0, y0, w: x1-x0, h: y1-y0, skala: h, yaw: YAW, czas: 1000, swiatlo: 1, ziarno: 1.3, jakosc: 1, bloto, mokry: 0.7, ciecie });
+  if (r) nalozRender(ctx, r, x + x0*h, y + y0*h, (x1-x0)*h, (y1-y0)*h);
+}
+const t0 = performance.now();
+const tryb = location.hash;
+if (tryb === '#rany') {
+  const H = 900;
+  const a = Z.tulowGora({ krew: 1 }); rysuj(a.grupy, 150, 330, H, a.ciecie);
+  const b = Z.tulowDol({ krew: 1 }); rysuj(b.grupy, 430, 330, H, b.ciecie);
+  rysuj(Z.tulowRozpruty({ krew: 1 }), 720, 400, H);
+  const c = Z.glowaOderwana({}); rysuj(c.grupy, 1050, 320, H * 1.3, c.ciecie);
+  const k = Z.kikutZarloka(false); rysuj(k.grupy, 1300, 250, H * 1.3, k.ciecie);
+  rysuj(Z.kupaTrzewi(), 1250, 700, H);
+} else if (tryb === '#glowa') {
+  rysuj([Z.glowaZarloka({ usta: 0.9 })], 300, 700, 2600);
+  rysuj([Z.glowaZarloka({ usta: 0.1, krew: 0.8 })], 1000, 700, 2600);
+} else {
+  const H = 420;
+  rysuj(postac(pozaStoi(), {}), 200, 560, H);
+  rysuj(postac(pozaWyje(1.0, 0), { usta: 0.9 }), 520, 600, H);
+  rysuj(postac(pozaCzolga(0.3, 1, 0), { usta: 0.7 }), 900, 680, H);
+  rysuj(postac(pozaLezy(0, 0), {}), 1250, 760, H);
+}
+window.czas = performance.now() - t0;
+window.gotowe = true;
+</script></body></html>

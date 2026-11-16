@@ -97,7 +97,8 @@ Przy okupie głowy żrą, a na koniec Cerber kona w złotym świetle i rozpada s
 
 **Nowy wypiek** (po zmianie modelu): `npm run dev`, potem
 `node scripts/wypiek-cerbera.mjs http://localhost:5180` (Cerber) albo `... --zarlok` (żarłok i rany); drugi argument
-zawęża do części o danym przedrostku (np. `glowa-1`). Podgląd części: `narzedzia/wypiek-cerbera.html`.
+zawęża do części o danym przedrostku (np. `glowa-1`). Podglądy w `narzedzia/`: model Cerbera i żarłoka
+na żywo (`podglad-cerbera-3d.html`, `podglad-zarloka-3d.html`) i składanie z obrazków (`podglad-skladania.html`).
 
 ## Próby bota (`node scripts/proby-graczy.mjs $PWD <ziarno> rozsadny 40 plik.log`)
 Ziarna 3, 5, 11 i 13 kończą się wygraną w ok. 15 minut gry, ziarno 7 przegrywa z głodu (po zmianach z 2. podejścia, z Cerberem podjadającym kosz). W Alphie 1 bot wygrywa na tych

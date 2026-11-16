@@ -1,0 +1,41 @@
+<!doctype html>
+<!-- Narzędzie (tylko npm run dev): Podgląd składania z wypieczonych obrazków: żarłocy w pozach i z ranami (domyślnie), #cerber — Cerber; ?maly — mała skala. --><html><body style="margin:0;background:#2a2c2c"><canvas id="c" width="1600" height="900"></canvas>
+<script type="module">
+import { rysujLudzika, pozaStoi, pozaLezy, pozaWyje, pozaZre, pozaCzolga, pozaSzarpie, pozaIdzie, pozaWPaszczy, pozaTrup } from '../src/render/ludzik.ts';
+import { zarlokZWypieku } from '../src/render/zarlok-sprite.ts';
+import { cerberZWypieku } from '../src/render/cerber-sprite.ts';
+import { rysujCerbera, pozaCerbera } from '../src/render/cerber.ts';
+const ctx = document.getElementById('c').getContext('2d');
+const czekaj = () => new Promise(r => { const f = () => (zarlokZWypieku() && (location.hash !== '#cerber' || cerberZWypieku())) ? r() : setTimeout(f, 50); f(); });
+await czekaj();
+const g = ctx.createLinearGradient(0,0,0,900); g.addColorStop(0,'#15181b'); g.addColorStop(0.6,'#2c2b25'); g.addColorStop(1,'#3a3328'); ctx.fillStyle=g; ctx.fillRect(0,0,1600,900);
+ctx.fillStyle = '#2b261d'; ctx.fillRect(0, 640, 1600, 260);
+const t = 1.3;
+const H = location.search.includes('maly') ? 70 : 230;
+function czl(x, y, poza, sk = 1) { ctx.save(); ctx.translate(x, y); ctx.scale(sk, 1); rysujLudzika(ctx, H, poza, t); ctx.restore(); }
+const t0 = performance.now();
+if (location.hash === '#cerber') {
+  const pozy = [];
+  let p = pozaCerbera(); p.czas = 1000; p.krok = 1; p.faza = 1.2; pozy.push(p);
+  p = pozaCerbera(); p.czas = 1000; p.glowy.forEach((g,i)=>{ g.paszcza = 0.8; g.pochyl = -0.3 + 0.2*i; }); p.krew = 1; pozy.push(p);
+  p = pozaCerbera(); p.czas = 1000; p.deba = 0.7; p.glowy.forEach(g=>{ g.paszcza = 1; g.pochyl = -0.5; }); pozy.push(p);
+  ctx.save(); ctx.translate(330, 640); rysujCerbera(ctx, 520, pozy[0]); ctx.restore();
+  ctx.save(); ctx.translate(900, 640); rysujCerbera(ctx, 520, pozy[1]); ctx.restore();
+  ctx.save(); ctx.translate(1380, 640); ctx.scale(-1, 1); rysujCerbera(ctx, 420, pozy[2]); ctx.restore();
+} else {
+  czl(150, 560, pozaStoi());
+  czl(390, 610, pozaWyje(t, 0));
+  czl(640, 610, pozaZre(t, 1));
+  czl(880, 600, pozaIdzie(t, 2));
+  czl(1120, 640, pozaCzolga(t, 1, 0));
+  czl(1400, 650, pozaLezy(t, 1));
+  // rany
+  czl(200, 820, { ...pozaTrup(1), brak: { polowa: 'gora' } });
+  czl(470, 830, { ...pozaTrup(2), brak: { polowa: 'dol' } });
+  czl(760, 840, { ...pozaTrup(3), brak: { glowa: true, rekaP: true } });
+  czl(1050, 840, { ...pozaTrup(1), brak: { trzewia: true } });
+  czl(1350, 760, pozaWPaszczy(t, 1));
+}
+window.czas = performance.now() - t0;
+window.gotowe = true;
+</script></body></html>
