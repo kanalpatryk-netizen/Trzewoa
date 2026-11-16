@@ -124,11 +124,17 @@ ugryzieniu i bryzgiem krwi z paszczy), łapa zamachuje się i wali z góry, Cerb
 staje dęba i uderza w ziemię (fala uderzeniowa), przyciska ofiarę łapą, zieje ogniem, smaga ogonem, wyje na trzy
 gardła. Nowe klatki ciała (zamach łapą, skok, przypadnięcie) są wypieczone z modelu 3D.
 
-**Ścięcie głowy:** rycerz ma cios „Ścięcie głowy” — doskok i cięcie z wyskoku (nie do zablokowania). Działa, gdy
-Cerber ma mniej niż 80% życia (pierwsza głowa) i mniej niż 45% (druga). Spada pitbull, potem wilk — doberman zostaje.
-Z kikuta szyi tryska krew (przekrój: futro, mięso, kręgi), ścięta głowa spada na ziemię w kałużę, Cerber chwieje się
-i słabiej gryzie (−15% na każdą głowę), a kronika to odnotowuje. Na koniec Cerber wyje, osuwa się na kolana i pada
-we własną krew (bez dawnej złotej poświaty).
+**Trzy paski życia — po jednym na głowę (prośba użytkownika 16.11):** życie Cerbera dzieli się na trzy równe paski,
+widoczne na górze ekranu w kolejności ścinania: pitbull, wilk, doberman (`SCIECIE_GLOW` w `src/nastawy/walka.ts`,
+paski w `src/sim/walka.ts`: `glowyCerbera`, `pasekGlowy`). Rany zbijają pasek bieżącej głowy, ale nie niżej niż do
+zera — **pustą głowę trzeba ściąć**: łeb zwisa bezwładnie z rozdziawioną paszczą i gasnącymi oczami (nie gryzie), pies
+pada na przednie łapy, a na pasku miga „zetnij!”. Rycerz rzuca się wtedy do ciosu „Ścięcie głowy” (doskok i cięcie
+z wyskoku, nie do zablokowania; wolno go użyć, gdy z paska zostało najwyżej 30%, a cios zabiera resztę paska). Gdy
+rycerza nie ma już wśród żywych, pustą głowę odrąbie każdy, kto w nią trafi (walka nie utknie). Z kikuta szyi tryska krew
+(przekrój: futro, mięso, kręgi), ścięta głowa spada na ziemię w kałużę, Cerber chwieje się i słabiej gryzie (−15% na
+każdą głowę), a kronika to odnotowuje. Bez modlitwy wiernych pies zrasta się, ale tylko w pasku bieżącej głowy — ścięte
+nie odrastają. **Wygrywa się, ścinając wszystkie trzy głowy:** po trzeciej bezgłowe cielsko wali się we własną krew
+(bez dawnej złotej poświaty) i potępieni schodzą do kręgu czwartego.
 
 Dawny rysunek 2D (`src/render/cerber.ts`) zostaje tylko na chwilę wczytywania obrazków.
 

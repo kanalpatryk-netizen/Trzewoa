@@ -1,5 +1,17 @@
 # Zmiany
 
+## TRZEWIA — Krąg Trzeci (beta): trzy paski życia Cerbera — 16.11
+Po prośbie użytkownika („niech Cerber ma trzy paski życia, każdy pasek to jedna głowa, wygrywa się, odcinając każdą
+z głów”):
+- **Paski głów** (`src/nastawy/walka.ts`: `SCIECIE_GLOW`, `src/sim/walka.ts`, `src/sim/straznicy.ts`, `src/sim/boss.ts`):
+  życie Cerbera to trzy równe paski — pitbull, wilk, doberman. Rany nie zbijają paska bieżącej głowy poniżej zera; pustą
+  głowę trzeba ściąć („Ścięcie głowy” rycerza — przy pustym pasku rycerz wybiera je prawie zawsze; bez rycerza odrąbie
+  ją ktokolwiek trafi). Ścięcie trzeciej głowy to ostatnie uderzenie i Uwolnienie. Zrastanie tylko w pasku bieżącej
+  głowy.
+- **Na ekranie** (`src/render/straznicy.ts`, `src/render/cerber-boss.ts`): trzy paski z imionami głów, bieżący
+  w złotej ramce, pusty pulsuje „zetnij!”, ścięte przekreślone; głowa z pustym paskiem zwisa i nie gryzie.
+- **Test** (`scripts/test-pomnika.mjs`): walka kończy się dopiero po ścięciu trzech głów (12/12 światów).
+
 ## TRZEWIA — Krąg Trzeci (beta), 5. podejście: walka, ścięcie głowy, piekło Dantego, ludzie, gore — 16.11
 Po uwadze użytkownika („animacje walki Cerbera popraw, daj rycerzowi możliwość odcięcia mu którejś głowy, całość
 grafiki dużo mocniej w klimacie piekła Dantego, ludzi jeszcze bardziej realistycznych, jeszcze więcej gore”):

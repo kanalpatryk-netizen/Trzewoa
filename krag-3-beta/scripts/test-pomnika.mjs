@@ -1,7 +1,8 @@
 /**
  * Test Wielkiego Pomnika (Alpha, etap 5): czy modlitwa wiernych kruszy pomnik w trzech stanach, czy przy 100%
  * pomnik się rozpada, a z gruzów wstaje demon, i czy ostatnie uderzenie rycerza kończy grę Uwolnieniem
- * (po animacji konania).
+ * (po animacji konania). Krąg Trzeci: Cerber ma trzy paski — po jednym na głowę; pustą głowę rycerz ścina,
+ * a dopiero ścięcie trzeciej kończy walkę (test sprawdza też, że zwykłe rany nie zabijają go bez ścinania).
  *
  *   node scripts/test-pomnika.mjs [ile światów]
  */
@@ -21,6 +22,7 @@ writeFileSync(wejscie, `
 import { Sim } from ${src('sim/sim.ts')};
 import { T } from ${src('sim/tiles.ts')};
 import { ranStraznika } from ${src('sim/straznicy.ts')};
+import { glowaCzeka, ucinaGlowe } from ${src('sim/walka.ts')};
 import { miejscePomnika } from ${src('sim/pomnik.ts')};
 import { POMNIK } from ${src('nastawy/pomnik.ts')};
 
@@ -50,6 +52,7 @@ export function sprawdz(ile: number) {
     const stany: [number, number][] = [];
     const fazy: [string, number][] = [];
     let bossStart: any = null;
+    let scietych = 0;
     let i = 0;
     for (; i < 200000 && !sim.ending; i++) {
       sim.step();
@@ -65,7 +68,9 @@ export function sprawdz(ile: number) {
       // demon: po 5 s walki rycerz bije go aż do ostatniego uderzenia
       if (boss && p?.faza === 'walka' && i - fazy[fazy.length - 1][1] > 600 && i % 30 === 0) {
         const r = sim.creatures.find((c: any) => !c.dead && c.rola === 'rycerz');
-        if (r) ranStraznika(sim, boss, r, 60);
+        // pusty pasek głowy: rana już go nie zbija — rycerz ścina głowę (trzecia kończy walkę)
+        if (r && glowaCzeka(boss)) { scietych++; ucinaGlowe(sim, boss, r); }
+        else if (r) ranStraznika(sim, boss, r, 60);
       }
       klan.devotion = 1;
       klan.dead = false;
@@ -84,7 +89,7 @@ export function sprawdz(ile: number) {
       }
       sim.sen = 0;
     }
-    wyniki.push({ ziarno: z, pekniecia: sim.rytual.pekniecia, stany, fazy, bossStart, koniec: sim.ending ?? 'brak', tikow: i, pekniec: POMNIK.pekniec });
+    wyniki.push({ ziarno: z, pekniecia: sim.rytual.pekniecia, stany, fazy, bossStart, koniec: sim.ending ?? 'brak', tikow: i, pekniec: POMNIK.pekniec, scietych });
   }
   return wyniki;
 }
@@ -99,11 +104,13 @@ for (const w of wyniki) {
   const okFazy = w.fazy.map((f) => f[0]).join(',') === 'stoi,rozpada,wychodzi,walka,kona';
   const okBoss = !!w.bossStart && Math.abs(w.bossStart.x - w.bossStart.m.x) < 0.01 && Math.abs(w.bossStart.y - w.bossStart.m.y) < 0.5;
   const okKoniec = String(w.koniec).startsWith('uwolnienie') && w.pekniecia === w.pekniec;
-  const ok = okStany && okFazy && okBoss && okKoniec;
+  // trzy paski: Cerber pada dopiero po ścięciu trzech głów
+  const okGlowy = w.scietych === 3;
+  const ok = okStany && okFazy && okBoss && okKoniec && okGlowy;
   if (!ok) zle++;
   console.log(`ziarno ${w.ziarno}: pęknięć ${w.pekniecia} · stany ${w.stany.map((s) => `${s[0]}@${s[1]}`).join(' ')}` +
     ` · fazy ${w.fazy.map((f) => `${f[0]}@${f[1]}`).join(' ')} · demon wstał ${w.bossStart ? `(${w.bossStart.x.toFixed(1)}, ${w.bossStart.y.toFixed(1)})` : 'NIE'}` +
-    ` · koniec ${w.koniec} po ${w.tikow} tikach${ok ? '' : '  ← ŹLE'}`);
+    ` · ściętych głów ${w.scietych} · koniec ${w.koniec} po ${w.tikow} tikach${ok ? '' : '  ← ŹLE'}`);
 }
-console.log(`\n${ILE - zle}/${ILE} światów w normie (3 stany pękania, rozpad, demon z gruzów, ostatnie uderzenie i Uwolnienie).`);
+console.log(`\n${ILE - zle}/${ILE} światów w normie (3 stany pękania, rozpad, demon z gruzów, trzy ścięte głowy, ostatnie uderzenie i Uwolnienie).`);
 process.exit(zle === 0 ? 0 : 1);

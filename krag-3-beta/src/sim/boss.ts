@@ -18,7 +18,7 @@ import { DLON } from '../nastawy/dlon';
 import { STRAZNICY as S } from '../nastawy/straznicy';
 import { nowyStraznik, ruchStraznika, celStraznika, ciosStraznika, trybWiernych } from './straznicy';
 import { rolaPostaci, walczacy } from './lud';
-import { tikDemona } from './walka';
+import { tikDemona, glowyCerbera } from './walka';
 
 export interface Boss {
   id: IdBossa;
@@ -64,7 +64,8 @@ const sniacyKamien: Boss = {
 /** Krok bossa z kamienia (Śniący Kamień, demon z pomnika): zrasta się bez modlitwy, zasypuje drogę, idzie i bije. */
 function tikKamienny(sim: Sim, c: Creature, L: { hp: number; sila: number; ciosCo: number; zasieg: number; szybkosc: number }): void {
   // bez modlitwy pod rdzeniem kamień się zrasta
-  if (modlacych(sim) < K.modlitwaWiernych) c.hp = Math.min(c.hpMax ?? L.hp, c.hp + K.zrastanie);
+  // (Krąg Trzeci: Cerber zrasta się tylko w pasku bieżącej głowy — ścięte nie odrastają)
+  if (modlacych(sim) < K.modlitwaWiernych) c.hp = Math.min(c.boss === 'demon' ? glowyCerbera(c).gora : c.hpMax ?? L.hp, c.hp + K.zrastanie);
   if (sim.tick - (c.zasypT ?? 0) >= K.zasypCo) { c.zasypT = sim.tick; zasypDroge(sim, c); }
   let cel = sim.creatureById(sim.target.get(c.id) ?? -1);
   if (!cel || cel.dead || sim.tick % 90 === 0) {
@@ -120,7 +121,7 @@ const demon: Boss = {
     if (sc) {
       const lewa = sc.x - 0.7, prawa = sc.x + DLON.demon.zawal.szer + 0.7;
       if (c.x < (lewa + prawa) / 2) c.x = Math.min(c.x, lewa); else c.x = Math.max(c.x, prawa);
-      c.hp = Math.min(c.hpMax ?? DEMON.hp, c.hp + K.zrastanie * (DLON.demon.zawal.zrastanie - 1));
+      c.hp = Math.min(c.boss === 'demon' ? glowyCerbera(c).gora : c.hpMax ?? DEMON.hp, c.hp + K.zrastanie * (DLON.demon.zawal.zrastanie - 1));
     }
   },
   ksiega: { zasieg: K.ksiegaZasieg, co: K.ksiegaCo, rana: K.ksiegaRana, cofa: K.ksiegaCofa, widzi: K.ksiegaWidzi },

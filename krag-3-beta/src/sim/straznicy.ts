@@ -18,7 +18,7 @@ import { LUD } from '../nastawy/lud';
 import { POMNIK } from '../nastawy/pomnik';
 import { demonKona, ostatnieUderzenie, miejscePomnika } from './pomnik';
 import { tarczaChroni, odbijOdTarczy } from './dlon-demona';
-import { walkaRycerza, przyjmijCios, bossPrzyjmuje } from './walka';
+import { walkaRycerza, przyjmijCios, bossPrzyjmuje, glowyCerbera, rycerzDoSciecia, ucinaGlowe } from './walka';
 
 export interface StanStraznikow {
   /** numer następnej (albo trwającej) fali w STRAZNICY.fale */
@@ -316,8 +316,28 @@ export function ranStraznika(sim: Sim, s: Creature, od: Creature, dmg: number, c
   if (s.boss && demonKona(sim)) return;
   // (etap 5b: przed demonem stoi tarcza z dłoni — cios odbija się od niej i odrzuca atakującego)
   if (s.boss && tarczaChroni(sim)) { odbijOdTarczy(sim, od); return; }
-  const d = s.boss ? aktywnyBoss().przyjmij(sim, s, od, dmg) : dmg;
+  let d = s.boss ? aktywnyBoss().przyjmij(sim, s, od, dmg) : dmg;
   if (d <= 0) return;
+  // Krąg Trzeci: trzy paski — po jednym na głowę. Rana nie zbija paska bieżącej głowy poniżej zera: pustą głowę trzeba
+  // ściąć (rycerz — sim/walka.ts). Gdy rycerza nie ma wśród żywych, głowę odrąbie ten, kto trafi w pusty pasek.
+  if (s.boss === 'demon') {
+    const g = glowyCerbera(s);
+    if (g.biezaca !== null) {
+      // (ostatni pasek: zostaje 1 punkt — pada dopiero od ścięcia trzeciej głowy)
+      const dno = Math.max(g.dno, 1);
+      const zapas = Math.max(0, s.hp - dno);
+      if (d >= zapas) {
+        d = zapas;
+        if (!rycerzDoSciecia(sim)) {
+          s.hp = dno;
+          sim.spark(s.x, s.y - 0.5, 'hit');
+          ucinaGlowe(sim, s, od);
+          return;
+        }
+      }
+    }
+    if (d <= 0) { sim.spark(s.x, s.y - 0.5, 'hit'); return; }
+  }
   const hp0 = s.hp;
   s.hp -= d;
   sim.spark(s.x, s.y - 0.5, 'hit');

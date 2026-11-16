@@ -159,15 +159,31 @@ export const RUCHY_RYCERZA: Record<IdRuchuRycerza, RuchRycerza> = {
     opis: 'Do wroga: krótkie, ostrożne kroki, nie opuszczając gardy.',
   },
   sciecieGlowy: {
-    nazwa: 'Ścięcie głowy', rodzaj: 'atak', dl: 156, traf: [[100, 2.8]], waga: 2.6, wrogPonizej: 0.8, nieDoZablokowania: true, chwieje: true,
+    nazwa: 'Ścięcie głowy', rodzaj: 'atak', dl: 156, traf: [[100, 2.8]], waga: 2.6, nieDoZablokowania: true, chwieje: true,
     doskok: [0.7, 40, 96], zDaleka: 1.6,
-    opis: 'Gdy Cerber słabnie: przysiad, wyskok z mieczem oburącz za plecami i cięcie w poprzek karku — jedna z trzech '
-      + 'głów spada na posadzkę (najpierw najniższa; ostatniej nie da się ściąć). Ścięta głowa odbiera mu siłę kłów.',
+    opis: 'Gdy pasek głowy Cerbera jest prawie pusty: przysiad, wyskok z mieczem oburącz za plecami i cięcie w poprzek '
+      + 'karku — głowa spada na posadzkę (pitbull, potem wilk, na końcu doberman). Ścięcie trzeciej głowy kończy walkę.',
   },
 };
 
-/** Krąg Trzeci: ile głów rycerz może ściąć Cerberowi i od jakiego życia (ułamek) — pierwszą, drugą. */
-export const SCIECIE_GLOW = { najwiecej: 2, zycieDo: [0.8, 0.45], rana: 0.1, slabszeKly: 0.15 };
+/**
+ * Krąg Trzeci (16.11, prośba użytkownika: „niech Cerber ma trzy paski życia, każdy pasek to jedna głowa, wygrywa się,
+ * odcinając każdą z głów”). Życie Cerbera dzieli się na trzy równe paski — pitbull, wilk, doberman (w tej kolejności).
+ * Rany zbijają pasek bieżącej głowy, ale nie niżej niż do zera: pustą głowę trzeba ściąć (rycerz: „Ścięcie głowy”;
+ * gdy rycerza nie ma wśród żywych — odrąbie ją każdy, kto trafi). Ścięcie trzeciej głowy kończy walkę.
+ */
+export const SCIECIE_GLOW = {
+  /** ile głów — po ostatniej Cerber pada */
+  najwiecej: 3,
+  /** kolejność ścinania (numery głów: 0 — doberman, 1 — wilk, 2 — pitbull) */
+  kolejnosc: [2, 1, 0],
+  /** od jakiej części paska bieżącej głowy rycerz może ją ściąć (wcześniej rany ją tylko zbijają) */
+  sciecieOd: 0.3,
+  /** o ile słabiej gryzie po każdej ściętej głowie */
+  slabszeKly: 0.15,
+  /** waga „Ścięcia głowy” w wyborze ataku, gdy pasek głowy jest pusty (rycerz rzuca się, by ją ściąć) */
+  wagaPustej: 40,
+};
 
 /** Obrona i reakcje rycerza. */
 export const OBRONA_RYCERZA = {

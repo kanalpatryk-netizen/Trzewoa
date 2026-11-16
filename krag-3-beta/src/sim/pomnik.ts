@@ -114,7 +114,10 @@ export function ostatnieUderzenie(sim: Sim, demon: Creature, od: Creature): bool
   s.cios = { kto: od.id, x: demon.x, y: demon.y };
   sim.target.delete(demon.id);
   for (let k = 0; k < 10; k++) sim.spark(demon.x + sim.rng.range(-0.8, 0.8), demon.y - sim.rng.range(0, 2.5), 'hit');
-  sim.gdzie(demon.x, demon.y).log(`${kto(sim, od).split(' (')[0]} zadaje ostatnie uderzenie. Cerber wyje na trzy gardła i wali się we własną krew.`, 'koniec', 'Cerber-cios');
+  const glow = demon.glowyOdciete?.length ?? 0;
+  sim.gdzie(demon.x, demon.y).log(glow >= 3
+    ? `${kto(sim, od).split(' (')[0]} ścina ostatnią głowę. Bezgłowe cielsko Cerbera wali się we własną krew.`
+    : `${kto(sim, od).split(' (')[0]} zadaje ostatnie uderzenie. Cerber wyje na trzy gardła i wali się we własną krew.`, 'koniec', 'Cerber-cios');
   zapisz(sim, 'rytual', `ostatnie uderzenie: ${kto(sim, od)}`, Math.floor(demon.x), Math.floor(demon.y));
   return true;
 }

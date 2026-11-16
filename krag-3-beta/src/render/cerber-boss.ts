@@ -6,7 +6,8 @@
  */
 import type { Sim } from '../sim/sim';
 import type { Creature } from '../sim/creatures';
-import { RUCHY_BOSSA } from '../nastawy/walka';
+import { RUCHY_BOSSA, SCIECIE_GLOW as SG } from '../nastawy/walka';
+import { glowaCzeka } from '../sim/walka';
 import { DEMON } from '../nastawy/pomnik';
 import { cerberZre } from '../sim/krag';
 import { pozaCerbera, type PozaCerbera, type GlowaCerbera } from './cerber';
@@ -71,7 +72,11 @@ export function pozaBossa(sim: Sim, c: Creature, czas: number): PozaCerbera {
     p.odciete = odc.map((o) => o.nr);
     p.odcieteMs = odc.map((o) => Math.max(0, (sim.tick - o.tick) * (1000 / 120)));
   }
-  const zywe = [0, 1, 2].filter((i) => !p.odciete?.includes(i));
+  // pusty pasek bieżącej głowy: łeb zwisa bezwładnie, paszcza rozdziawiona, oczy gasną, z pyska cieknie krew —
+  // nie gryzie, czeka na miecz (trzy paski życia, po jednym na głowę)
+  const czeka = glowaCzeka(c) ? SG.kolejnosc[odc.length] : -1;
+  const zywe = [0, 1, 2].filter((i) => !p.odciete?.includes(i) && i !== czeka);
+  if (!zywe.length) zywe.push(...[0, 1, 2].filter((i) => !p.odciete?.includes(i)));
 
   const R = c.ruch;
   if (R) {
@@ -197,6 +202,12 @@ export function pozaBossa(sim: Sim, c: Creature, czas: number): PozaCerbera {
       g.wysun = 0.15;
     });
     p.ogon = Math.sin(czas * 0.012) * 0.9;
+  }
+  if (czeka >= 0) {
+    const g = p.glowy[czeka];
+    g.pochyl = 0.95 + 0.08 * Math.sin(czas * 0.0021);
+    g.paszcza = 0.55; g.wysun = 0; g.smuga = 0; g.ugryz = 0;
+    g.oczy = 0.25;
   }
   return p;
 }

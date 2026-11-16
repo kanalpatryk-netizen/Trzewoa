@@ -12,6 +12,8 @@ import { RACES } from '../sim/races';
 import { ustawienia } from '../core/settings-store';
 import { rysujDemonaBossa } from './pomnik';
 import { POMNIK } from '../nastawy/pomnik';
+import { glowyCerbera, pasekGlowy, glowaCzeka } from '../sim/walka';
+import { SCIECIE_GLOW as SG } from '../nastawy/walka';
 
 /** Alpha 1 (6.11): Strażnik oberwał — odrzut w tył, przechył i odpryski kamienia, tym mocniej, im większa rana. */
 const trafieniaStraznikow = new WeakMap<Creature, { hp: number; t: number; sila: number }>();
@@ -152,12 +154,13 @@ export function rysujPasekFali(ctx: CanvasRenderingContext2D, sim: Sim, x: numbe
   // (Alpha, etap 5: pomnik zamiast skorupy; przy demonie — co da wygraną)
   const tekst = kona ? 'CERBER KONA — DROGA W DÓŁ STOI OTWOREM'
     : `FALA CIENI ŻARŁOKÓW ${st.fala + 1}/${S.fale.length}` + (zwykli ? ` · zostało ${zwykli}` : '')
-    + (boss && POMNIK.wlaczony ? ' · pokonaj Cerbera — zejdziecie niżej' : POMNIK.wlaczony ? ' · pieczęć zejścia nie pęka' : ' · skorupa nie pęka');
+    + (boss && POMNIK.wlaczony ? (boss.boss === 'demon' ? ' · zetnij Cerberowi trzy głowy — zejdziecie niżej' : ' · pokonaj Cerbera — zejdziecie niżej') : POMNIK.wlaczony ? ' · pieczęć zejścia nie pęka' : ' · skorupa nie pęka');
   ctx.save();
   ctx.font = `${roz}px ${SERIF}`;
   ctx.textAlign = 'center';
   const tw = ctx.measureText(tekst).width;
-  const bw = Math.max(tw + 28, boss ? 320 : 0), bh = boss ? roz * 3.6 : roz * 1.9;
+  const glowy = boss?.boss === 'demon';
+  const bw = Math.max(tw + 28, boss ? (glowy ? 460 : 320) : 0), bh = boss ? roz * (glowy ? 4.3 : 3.6) : roz * 1.9;
   const bx = x + szer / 2 - bw / 2;
   // barwy ryciny (ugier i kość) zamiast błękitnego neonu
   ctx.fillStyle = 'rgba(14,10,8,0.88)';
@@ -167,7 +170,9 @@ export function rysujPasekFali(ctx: CanvasRenderingContext2D, sim: Sim, x: numbe
   ctx.strokeRect(bx + 0.5, y + 0.5, bw - 1, bh - 1);
   ctx.fillStyle = 'rgba(239,227,198,0.95)';
   ctx.fillText(tekst, x + szer / 2, y + roz * 1.3);
-  if (boss) {
+  if (boss && glowy) {
+    paskiGlow(ctx, boss, bx + 14, y + roz * 1.9, bw - 28, roz);
+  } else if (boss) {
     const b = aktywnyBoss();
     const frac = Math.max(0, Math.min(1, boss.hp / (boss.hpMax ?? 1)));
     ctx.font = `italic ${roz * 0.85}px ${SERIF}`;
@@ -178,6 +183,44 @@ export function rysujPasekFali(ctx: CanvasRenderingContext2D, sim: Sim, x: numbe
     ctx.fillStyle = 'rgba(170,52,36,0.92)'; ctx.fillRect(px, py, pw * frac, ph);
   }
   ctx.restore();
+}
+
+/**
+ * Krąg Trzeci (16.11): trzy paski życia Cerbera — po jednym na głowę, w kolejności ścinania (pitbull, wilk, doberman).
+ * Bieżąca głowa jaśnieje; gdy jej pasek jest pusty, pulsuje „zetnij!”; ścięte — przekreślone, w zakrzepłej czerwieni.
+ */
+function paskiGlow(ctx: CanvasRenderingContext2D, boss: Creature, x: number, y: number, szer: number, roz: number): void {
+  const g = glowyCerbera(boss);
+  const czeka = glowaCzeka(boss);
+  const puls = 0.5 + 0.5 * Math.sin((typeof performance !== 'undefined' ? performance.now() : 0) * 0.008);
+  const odstep = 10, pw = (szer - odstep * 2) / 3, ph = roz * 0.62;
+  const NAZWY = ['Doberman', 'Wilk', 'Pitbull'];
+  SG.kolejnosc.forEach((nr, k) => {
+    const px = x + k * (pw + odstep), py = y + roz * 1.15;
+    const sciete = k < g.odcietych, biezaca = k === g.odcietych;
+    const f = pasekGlowy(boss, nr);
+    // podpis: imię głowy (i „zetnij!”, gdy pasek pusty)
+    ctx.font = `${biezaca ? '' : 'italic '}${roz * 0.82}px ${SERIF}`;
+    ctx.textAlign = 'center';
+    ctx.fillStyle = sciete ? 'rgba(200,104,86,0.92)' : biezaca && czeka ? `rgba(255,${(150 + 70 * puls) | 0},${(110 + 50 * puls) | 0},1)` : biezaca ? 'rgba(244,226,190,1)' : 'rgba(206,190,160,0.8)';
+    const podpis = sciete ? `${NAZWY[nr]} — ścięty` : biezaca && czeka ? `${NAZWY[nr]} — zetnij!` : NAZWY[nr];
+    ctx.fillText(podpis, px + pw / 2, py - roz * 0.3);
+    // tło i wypełnienie paska
+    ctx.fillStyle = 'rgba(40,30,26,0.95)'; ctx.fillRect(px, py, pw, ph);
+    if (!sciete) {
+      const gr = ctx.createLinearGradient(0, py, 0, py + ph);
+      gr.addColorStop(0, biezaca ? 'rgba(214,70,48,0.98)' : 'rgba(150,46,34,0.85)'); gr.addColorStop(1, biezaca ? 'rgba(130,24,16,0.98)' : 'rgba(96,24,18,0.85)');
+      ctx.fillStyle = gr; ctx.fillRect(px, py, pw * f, ph);
+    } else {
+      ctx.fillStyle = 'rgba(70,10,8,0.9)'; ctx.fillRect(px, py, pw, ph);
+      ctx.strokeStyle = 'rgba(200,90,70,0.8)'; ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.moveTo(px + 4, py + ph - 2); ctx.lineTo(px + pw - 4, py + 2); ctx.stroke();
+    }
+    // obwódka: bieżąca złota, pusta i czekająca na miecz — pulsuje czerwienią
+    ctx.lineWidth = biezaca ? 1.6 : 1;
+    ctx.strokeStyle = biezaca && czeka ? `rgba(255,${(90 + 80 * puls) | 0},${(60 + 40 * puls) | 0},${0.6 + 0.4 * puls})` : biezaca ? 'rgba(232,186,110,0.9)' : 'rgba(150,120,90,0.5)';
+    ctx.strokeRect(px - 0.5, py - 0.5, pw + 1, ph + 1);
+  });
 }
 
 /**
