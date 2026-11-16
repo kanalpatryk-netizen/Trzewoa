@@ -1,0 +1,263 @@
+# Plan: oprawa walki z Cerberem („Trzewia”)
+
+Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Raport po każdym etapie, dalej dopiero po „dalej”.
+
+## Stan
+
+- [x] Etap 0 — rozpoznanie i narzędzia (czeka na „dalej”)
+- [ ] Etap 1 — światło i kontrast (system ogólny, na walce z demonem)
+- [ ] Etap P — przeniesienie kręgu trzeciego (Cerber) z `krag-3-beta/` do C# (nowy etap, patrz „Decyzje”)
+- [ ] Etap 2 — czytelność
+- [ ] Etap 3 — „uderzenie”
+- [ ] Etap 4 — cutscenki
+- [ ] Etap 5 — jeden styl („rycina”)
+- [ ] Etap 6 — mechanika bossa (opcjonalnie, dopiero po „tak” użytkownika i po skończonym porcie)
+
+## Decyzje użytkownika (16.11, po raporcie etapu 0)
+
+1. **Gałąź:** nowa gałąź `oprawa/cerber`, założona od `claude/friendly-mayer-7sx7tn` (tam jest port C#).
+2. **Cerber:** kolejność dowolna, ale na końcu wszystko — bez wyjątku — ma być w C#. Przyjęta kolejność: etap 1
+   (światło) jako system ogólny na walce z demonem; potem **etap P**: krąg trzeci z `krag-3-beta/` przeniesiony do C#
+   tak jak reszta portu (ta sama logika i liczby, testy zgodności z TS); etapy 2–5 już na Cerberze, bo większość z nich
+   dotyczy właśnie jego (trzy głowy, ścinanie, pieczęć w piecu, dłoń).
+3. **Dłoń:** „zrobić tak, żeby wyglądało jak najlepiej”. W logice dłoń jest tarczą bossa (ciosy się od niej odbijają),
+   więc obraz ma to mówić, a nie udawać, że go trzyma: wyrasta ze światłem od dołu, przy każdym odbitym ciosie iskry
+   i drgnięcie, nad nią pierścień, który pokazuje, jak długo jeszcze stoi, na koniec rozpada się w iskry. „Dłoń jako cud
+   za wiarę, która trzyma bossa” to zmiana mechaniki — zostaje w etapie 6.
+4. **Nagranie było z obserwatorium (gra bota).** To tłumaczy zamrożony obraz po końcu gry (rycerz „celuje w pustkę”):
+   w obserwatorium świat stoi do restartu partii. Spadek wiary o 30 przy dłoni to Cud rzucony przez bota.
+
+## Ustalenia z etapu 0, które zmieniają plan
+
+- **Walki z Cerberem nie ma w `trzewia-cs/`.** Cerber jest tylko w `krag-3-beta/` (TypeScript, gałąź
+  `claude/youthful-wozniak-dqa6s9`). `trzewia-cs/` to port `alpha-1/`, a tam bossem jest demon z Wielkiego Pomnika.
+  Zgodnie z planem etapy 1–3 robią systemy ogólne w C# na walce z demonem (te same fazy: stoi → rozpada → wychodzi →
+  walka → kona). Podpięcie pod Cerbera czeka, aż krąg trzeci będzie w C#.
+- **`trzewia-cs/` nie ma na `main`.** Port jest tylko na gałęzi `claude/friendly-mayer-7sx7tn`, więc gałąź oprawy
+  `oprawa/cerber` stoi na niej.
+- **Gra rysuje przez `IPlotno` (polecenia Canvas 2D), nie przez SkiaSharp.** Warstwa `Trzewia.Gra` nie zna Skii
+  (żeby dało się ją przenieść do Unity/Godota). Efekty z planu idą przez `IPlotno`: `globalCompositeOperation`
+  (`multiply`, `screen`, `lighter`, `source-atop`), `createRadialGradient`, płótna poza ekranem (`Plotno.Nowe`),
+  `filter` (`brightness`, `contrast`, `saturate`, `grayscale`, `blur`). To odpowiedniki `SKBlendMode`, `SKShader`,
+  `SKSurface` i `SKColorFilter` z planu. Brakujące rzeczy (np. macierz koloru) dopisuje się w `Trzewia.Skia/PlotnoSkia.cs`.
+- **Mrok już jest mapą świateł** (`Rysunek/Swiat/Mrok.cs`): świat widać tylko w świetle lampek, obozów, rdzenia
+  i Cudu. Etap 1 rozbudowuje go, a nie stawia drugiej, równoległej mapy.
+- **Loty zasobów już są** (`urobki.rysujLoty`): okruchy rudy lecą do liczników w księdze. Etap 3 rozszerza ten
+  mechanizm na krew, jedzenie i wiarę.
+
+## Zasady pracy (obowiązkowe)
+
+1. Nowa gałąź. Nic do `main` bez wyraźnej zgody. PR tylko na prośbę.
+2. Małe commity z opisem: co i po co. W commitach żadnych identyfikatorów modelu (ani nazw, ani wersji, ani stopek typu
+   Co-Authored-By z modelem).
+3. Praca etapami. Po każdym etapie raport (wzór na końcu) i czekanie na „dalej”.
+4. Etapy 0–5 NIE zmieniają mechaniki ani balansu: obrażeń, HP, kosztów, czasów logiki, AI. Tylko wygląd. Jeśli coś
+   wymaga zmiany logiki — nie robić, opisać w raporcie.
+5. Stan wizualny oddzielony od logicznego: efekty mogą przesuwać miejsce rysowania, ale nie pozycję logiczną.
+6. Każdy nowy efekt za flagą w jednym pliku konfiguracji (`src/Trzewia.Gra/Visual/VisualConfig.cs`); tam też wszystkie
+   liczby do strojenia. Klawisz F9 włącza i wyłącza wszystkie nowe efekty naraz. Z wyłączonymi gra wygląda i działa 1:1
+   jak teraz.
+7. Wydajność: stałe 60 fps. Bez alokacji w każdej klatce w gorących miejscach (ponowne użycie pędzli, ścieżek,
+   gradientów; cząsteczki z puli). Mapa świateł w połowie rozdzielczości.
+8. Bez nowych pakietów NuGet bez pytania.
+9. Dostępność: w ustawieniach suwak siły wstrząsu (0–100%) i opcja „mniej błysków”.
+10. Po każdym etapie gra się buduje i działa, testy przechodzą. Jeśli czegoś nie da się sprawdzić tutaj — napisać wprost
+    i podać kroki do sprawdzenia u siebie.
+11. Nie zgadywać. Czego nie ma w kodzie — napisać w raporcie.
+12. Ten plan leży na gałęzi jako `docs/plan-oprawy-cerber.md`; etapy są tu odhaczane.
+
+## Diagnoza: co jest źle teraz (z 70-sekundowego nagrania walki z Cerberem, fala „Cienie żarłoków 4/4”)
+
+- Pomieszane style: Cerber to błyszczący render 3D, dłoń wygląda jak zdjęcie, ludzie jak wycinanki z białą obwódką,
+  dusze w tle to płaskie manekiny, złoty trójkąt na korytarzu to ikonka z UI, a w napisach jest systemowe emoji (⏩).
+  Spójna jest tylko księga (HUD) i to ona jest wzorem.
+- Za ciemno i płasko: średnia jasność kadru przez całą walkę 34–38 (skala wideo 0–255), między klatkami zmiana
+  najwyżej ok. 1,6. Żadne zdarzenie nie rozbłyska.
+- Czytelność: przy 720p ludzie ok. 45 px, Cerber ok. 190 px. Ciemne postacie giną na ciemnym bossie. Trzy głowy zlewają
+  się w jedną bryłę. Kikuty jak różowa wata, rany jak czerwone zygzaki markerem.
+- Etykiety nad ludźmi małe, ciemne, kursywą. Nachodzą na siebie („mnisi” na „na miejscu”), „garść jedzenia
+  w paszczę!” ginie na ciele bossa.
+- Pasek bossa to całe zdanie. Paski głów nie są połączone z głowami na modelu.
+- Samouczek „pieczęć pęka — Cerber ma trzy paski życia…” to czarny pas przez środek ekranu; przez ok. 3 s zakrywa piec
+  i połowę pękającej pieczęci.
+- Wejście bossa: Cerber pojawia się nad ekranem i spada przez podłogę korytarza do pieca, choć pieczęć pęka w piecu.
+- Dłoń pojawia się ok. 0,7 s po spadku wiary z 48 do 18, stoi prawie nieruchomo ok. 6 s i znika. Nie chwyta, boss się
+  nie szarpie.
+- Teleport: Cerber w jednej klatce przeskakuje z wnętrza pieca na szczyt łuku.
+- Ruch: kilka póz, ataki bez zapowiedzi. Przewrócony rycerz to ten sam obrazek obrócony o 90°, z kreskówkowymi
+  gwiazdkami.
+- Ścięcie głowy to tylko podmiana modelu: bez błysku, zatrzymania, wstrząsu.
+- Śmierć: trup i kałuża krwi znikają w jednej klatce. Krew w księdze rośnie 41 → 47 bez sygnału. Napis „droga w dół
+  stoi otworem”, ale nic się nie otwiera. Po zniknięciu trupa rycerz przez ok. 8 s celuje mieczem w pustkę.
+- Zasoby zmieniają się po cichu, tylko w księdze (jedzenie 40 → 16, krew 59 → 65 → 41 → 47).
+
+## Etap 0 — rozpoznanie i narzędzia (bez zmian w wyglądzie)
+
+- [x] Mapa kodu w raporcie: pętla gry i czas (dt), kamera, kolejność warstw, sprite'y i animacje, walka z bossem
+      (pojawienie, wejście, dłoń, ścinanie głów, śmierć, usuwanie trupa), napisy (samouczek, etykiety, pasek bossa),
+      księga/HUD i zmiany zasobów.
+- [x] Ustalić: czym jest dłoń (cud za wiarę czy skrypt); skąd i dlaczego Cerber spada z góry; czy rycerz w pozie ataku po
+      śmierci bossa to błąd AI czy animacji; co oznacza ⏩.
+- [x] Sprawdzić, czy walka z Cerberem jest w `trzewia-cs/` (nie ma — patrz „Ustalenia”).
+- [x] `VisualConfig` i klawisz F9 (bez efektów).
+- [x] Tryb bez okna: `Trzewia --zrzuty-walki KATALOG [--ziarno N] [--oprawa wl|wyl]` — deterministyczna partia bota
+      do walki z bossem, zapis wybranych klatek do PNG i `klatki.json`.
+- [x] Skrypt jasności: `narzedzia/oprawa/jasnosc.py` — średnia jasność pola gry, pasa akcji i tła, porównanie przed/po.
+- [x] Zrzuty „przed” (ziarno 3, 1920×1080): w walce pole gry 25,8–27,4 (cały kadr z interfejsem średnio 37,0),
+      pęknięcie pomnika i trafienia bez rozbłysku; `--oprawa wl` i `wyl` dają pole gry identyczne bit w bit.
+
+Gotowe, gdy: raport z mapą kodu i odpowiedziami, klawisz debug działa, zrzuty „przed” z pomiarem jasności.
+
+## Etap 1 — światło i kontrast
+
+- [ ] Trzy plany: tło (ściany, dusze w tle) przyciemnione i lekko odbarwione; plan akcji (korytarz, postacie, boss)
+      jaśniejszy i bardziej kontrastowy; UI osobno, bez wpływu świateł.
+- [ ] Mapa świateł na osobnym płótnie w połowie rozdzielczości: czyszczona ciemnym kolorem otoczenia; światła jako
+      gradienty promieniste mieszane addytywnie (`lighter` / `SKBlendMode.Plus`); nakładana na scenę przez `multiply`,
+      a poświata ognia i aury dodatkowo przez `screen`; scena przed mnożeniem lekko rozjaśniona (macierz koloru).
+- [ ] Źródła światła: pochodnie (migotanie ±5–8%, gładki szum 6–10 Hz), piec, aura mnichów, pękająca pieczęć. Promienie
+      i siły w `VisualConfig`.
+- [ ] Jasna krawędź na postaciach od strony najbliższego światła: pod sprite'em jego sylwetka przesunięta o 1–2 px
+      w stronę światła, w kolorze ognia.
+- [ ] Na końcu winieta i lekka korekta kontrastu całego kadru.
+- [ ] Światło reaguje na zdarzenia (`LightEvents.Flash(kolor, siła, ms)`): pęknięcie pieczęci — czerwony błysk z pieca;
+      ścięcie głowy — krótki biały błysk; śmierć bossa — przygaszenie wszystkiego poza bossem.
+- [ ] Opcja „mniej błysków” w ustawieniach.
+
+Gotowe, gdy: według narzędzia z etapu 0 pas akcji jest wyraźnie jaśniejszy niż „przed”, a tło poza światłami ciemniejsze;
+zdarzenia z listy wyraźnie rozjaśniają kadr na 100–200 ms; gra trzyma 60 fps; F9 przełącza przed/po.
+
+## Etap P — krąg trzeci (Cerber) w C#
+
+Przeniesienie z `krag-3-beta/` (TS) do `trzewia-cs/` tak jak reszta portu: te same nazwy, ta sama logika i liczby,
+symulacja bit w bit (testy złote z TS), rysunek porównany z TS. To nie zmienia balansu — to ta sama gra, tylko w C#.
+- [ ] Do ustalenia przed startem: czy krąg trzeci zastępuje w C# Alphę 1, czy jest obok niej (osobny tryb / wersja).
+- [ ] Symulacja kręgu (obżarstwo, ulewa, okup, Cerber podjada kosz, zabijanie żarłoków), Cerber jako boss: trzy paski
+      głów, ścinanie, dłoń przy Cerberze.
+- [ ] Rysunek: krąg (lej, deszcz, błoto, potępieni), loch z pieczęcią, Cerber składany z wypieczonych obrazków
+      (`obrazy/cerber/`, `cerber-rig.ts`), żarłok, rany.
+- [ ] Wstęp: film kręgu i scena wejścia.
+- [ ] Zrzuty bez okna (`--zrzuty-walki`) już na Cerberze.
+
+## Etap 2 — czytelność
+
+- [ ] Postać za bossem, która na niego nachodzi: po bossie jeszcze raz jako jasna sylwetka w kolorze pergaminu, ok. 35%
+      krycia. Postać przed bossem, która na niego nachodzi: jaśniejszy obrys.
+- [ ] Głowy bossa: punkty głów w danych animacji (po 3 na klatkę; kluczowe klatki ręcznie, reszta interpolowana); nad
+      każdą głową znak I / II / III w stylu księgi i ten sam znak przy jej pasku; głowa do ścięcia pulsuje.
+- [ ] Pasek bossa: duży tytuł, pod nim trzy paski ze znakami I/II/III; cel („zetnij trzy głowy”) jedną linijką przez 5 s;
+      informacja o fali do małego wskaźnika fali; pasek ściętej głowy pęka i gaśnie.
+- [ ] Samouczek: bez czarnego pasa przez środek; zdanie fabularne do cutscenki (etap 4); instrukcja w małym dymku na
+      pergaminie przy pasku bossa (najwyżej 2 linijki, znika po 6 s albo po kliknięciu).
+- [ ] Bez systemowych emoji w napisach; jeśli coś znaczyły — narysowana ikona w stylu gry.
+- [ ] Etykiety nad postaciami: krój księgi, co najmniej 18 px przy 1080p (skalowane z UI), jasny pergamin z ciemnym
+      obrysem 3 px (najpierw obrys, potem wypełnienie), pojawianie i znikanie w 150 ms.
+- [ ] Układ etykiet bez nachodzenia: prostokąty co klatkę, sortowanie (ważność, wiek), wypychanie w górę przecinających
+      się, przycięcie do ekranu. Etykieta na ciele bossa — ciemna, półprzezroczysta podkładka.
+- [ ] W walce z bossem kamera płynnie do ok. 1,25× (środek między bossem a najbliższymi postaciami), po walce wraca.
+- [ ] Za flagą, domyślnie wyłączone: w walce księga zwija się do wąskiego paska z najważniejszymi zasobami (zrzuty obu
+      wersji do raportu).
+- [ ] Minimapa: większy kontrast i czytelniejsza etykieta.
+
+Gotowe, gdy: żadne dwie etykiety nie nachodzą na siebie; postać przy bossie zawsze widać; na każdym zrzucie z walki widać,
+która głowa jest którą i którą teraz ścinamy; na ekranie nie ma emoji.
+
+## Etap 3 — „uderzenie”
+
+- [ ] Zatrzymanie trafień (symulacja stoi, rysunek działa): zwykłe ciosy 0; mocny cios 60 ms; ścięcie głowy 140 ms;
+      ostatni cios 200 ms. Czas symulacji oddzielony od rzeczywistego (UI, kamera, cząsteczki na rzeczywistym).
+- [ ] Błysk trafienia: boss biały na 60–80 ms (`source-atop`, krycie do zera).
+- [ ] Wstrząs kamery „trauma”: 0–1, siła = trauma², przesunięcie najwyżej 10 px przy 1080p, obrót najwyżej 1,5°, gładki
+      szum, zanik ok. 1,5/s; trauma: mocny cios 0,2, przewrócenie 0,25, lądowanie bossa 0,35, ścięcie głowy 0,5,
+      pęknięcie pieczęci 0,8, śmierć bossa 0,9; całość × suwak z ustawień (0–100%).
+- [ ] Cząsteczki z puli (bez alokacji, najwyżej ok. 500): iskry (addytywnie), krople krwi (spadają, plamy), pył
+      (przewrócenie, lądowanie), popiół.
+- [ ] Ścięta głowa leci: w bok 120–220 px/s, w górę 350 px/s, grawitacja 900 px/s², obrót 6–10 rad/s; jedno odbicie
+      (0,3), potem leży; smuga krwi, plama rośnie 0 → pełna w 400 ms.
+- [ ] Przewracanie: obrót do 90° w 140 ms (ease-out), odbicie 4 px, pył; wstawanie 220 ms; zamiast gwiazdek 2–3 kreski
+      krążące nad głową.
+- [ ] Zapowiedź ataku (tylko wizualna): jeśli atak ma osobny start i trafienie — odchylenie do tyłu, w trafieniu wyrzut
+      do przodu z rozciągnięciem; jeśli nie — w raporcie, że zapowiedź wymaga zmiany logiki.
+- [ ] „Oddech” bossa w spoczynku: skala w pionie ±1,5%, ok. 0,5 Hz.
+- [ ] Zasoby: zmiana ze źródłem w świecie — ikonka po łuku (Bézier, 0,7 s) do licznika; licznik pulsuje
+      (1,0 → 1,2 → 1,0 w 200 ms) i pokazuje „+N” / „−N”; wydatki lecą z księgi do celu.
+- [ ] Gdy cel znika, postacie wracają do spoczynku w najwyżej 0,3 s (jeśli to błąd AI — naprawić jako błąd, opisać).
+
+Gotowe, gdy: każde trafienie i ścięcie czuć bez dźwięku; F9 przełącza przed/po; przy maksimum cząsteczek 60 fps.
+
+## Etap 4 — cutscenki
+
+- [ ] `CutsceneDirector`: kolejka kroków z czasem i krzywą (`Wait`, `CameraTo`, `Letterbox`, `HideHud/ShowHud`,
+      `Shake`, `Flash`, `Light`, `PlayAnim`, `Caption`, `NameCard`, `TimeScale`); symulacja stoi, reżyser na czasie
+      rzeczywistym; pomijanie spacją / Esc / kliknięciem do stanu końcowego zgodnego z logiką; po pierwszym obejrzeniu
+      wersja skrócona.
+- [ ] Wejście bossa (ok. 5 s): pasy kinowe 10% (0,4 s), HUD chowa się, kamera na piec 1,4× (0,8 s); drżenie (trauma do
+      0,3), pieczęć pęka w 3 krokach po 0,3 s, iskry; błysk biały → czerwony (120 ms), trauma 0,8, gruz, 0,4 s ciszy;
+      wyjście z pieca (łapa, głowy, ryk, czerwona fala światła); karta z imieniem 1,5 s; powrót kamery, pasy znikają,
+      HUD wraca, walka i dymek samouczka.
+- [ ] „Pieczęć pęka.” jako podpis w dolnym pasie kinowym, nigdy na akcji.
+- [ ] Bez zmiany logiki wejścia: jeśli logika każe czekać w piecu — półmrok (dym, oczy); usunąć spadanie przez podłogę
+      (punkt pojawienia w piecu, jeśli to nie zmienia mechaniki, albo pozycja rysowania oddzielona od logicznej);
+      w razie wątpliwości pytać.
+- [ ] Teleport z pieca na łuk → skok: przysiad 150 ms (0,92 w pionie), lot po łuku 0,5–0,6 s, lądowanie ze
+      spłaszczeniem, pyłem i traumą 0,35.
+- [ ] Dłoń (cud za wiarę albo skrypt — patrz raport etapu 0): wyłania się ze światłem od dołu, spłaszcza się przy
+      kontakcie, pierścień i łańcuchy światła, boss szarpie się co 0,5–0,8 s, na koniec rozpada się w iskry; przy cudzie
+      także lecąca wiara i wskaźnik czasu.
+- [ ] Śmierć bossa: hit-stop 200 ms, potem 0,3× przez 0,8 s i powrót w 0,3 s; przechył 200 ms, lądowanie, trauma 0,9,
+      reszta przygasa do ok. 50%; trup nie znika od razu (obiekt tylko-wizualny rozsypuje się w popiół 1,2 s, krew leci
+      do księgi); kamera do pieca: zapada się gruz, otwiera się ciemne przejście z poświatą (proceduralnie, jeśli brak
+      grafiki — pozycja na liście „potrzebna grafika”); dopiero potem „Droga w dół stoi otworem.” w pasie kinowym,
+      powrót kamery, postacie w spoczynku.
+
+Gotowe, gdy: od pęknięcia pieczęci do śmierci bossa nic nie teleportuje się ani nie znika w jednej klatce; obie sceny da
+się pominąć; stan gry po pominięciu jest taki sam jak po obejrzeniu.
+
+## Etap 5 — jeden styl („rycina”)
+
+Kierunek: ryciny Gustave'a Doré do „Piekła” (domena publiczna). Kolory: czerń, pergamin, czerwień krwi, ogień.
+Kreskowanie zamiast miękkich cieni. Wzorem jest księga.
+
+- [ ] `Palette.cs` z jedną paletą (start: tusz `#0F0B0A`, cień `#1E1613`, kamień `#3A2C26`, pergamin `#E9DDC2`, kość
+      `#CFC2A6`, krew `#8C1C13`, jasna krew `#B8321F`, ogień `#E07A2C`, żar `#F2B35A`, złoto `#C9A25B`).
+- [ ] Narzędzie offline `tools/ink-pipeline/` (Python + Pillow): wersje „rycina” do nowego folderu (oryginały nietknięte);
+      odbarwienie → 4–6 tonów z palety → kreskowanie w ciemnych tonach (ukośne, w najciemniejszych krzyżowe) → ciemny
+      kontur 2 px zamiast białej obwódki; arkusz przed/po dla każdego sprite'a; zestaw grafik przełączany flagą.
+- [ ] Ludzie: ciemny kontur i jasna krawędź od światła z etapu 1 zamiast białej obwódki.
+- [ ] Boss: jeśli jest źródło 3D — render płaski, bez połysku, przez narzędzie; jeśli nie — klatki animacji przez
+      narzędzie i ocena w raporcie.
+- [ ] Kikuty i rany: kolory z palety, rany jako kreskowane nacięcia.
+- [ ] `docs/art-brief-cerber.md`: zlecenie dla grafika (Cerber, dłoń w 3 klatkach, otwarte przejście w dół; styl,
+      rozmiary, klatki, kierunek światła).
+- [ ] Złoty trójkąt na korytarzu i dusze-manekiny: opisać, czym są w kodzie, zaproponować wersję w stylu świata — bez
+      zmian bez zgody.
+- [ ] Nazwy głów (Pitbull, Wilk, Doberman): zostają; pytanie w raporcie.
+
+Gotowe, gdy: arkusze przed/po dla wszystkich sprite'ów z walki; w grze da się przełączać stary i nowy zestaw grafik; jest
+brief dla grafika.
+
+## Etap 6 — mechanika bossa (opcjonalnie: dopiero po „tak” i po skończonym porcie)
+
+Wszystko za flagą, liczby balansu w konfiguracji do akceptacji.
+- [ ] Każda głowa ma swój atak z zapowiedzią: gryzienie (czerwony łuk 0,5 s wcześniej), plucie ogniem (linia 0,7 s),
+      wycie (pierścień 0,8 s, ogłusza). Ścięta głowa nie atakuje, pozostałe przyspieszają.
+- [ ] Karmienie jako decyzja gracza: „garść w paszczę” usypia jedną głowę na kilka sekund; koszt w jedzeniu widoczny.
+- [ ] Dłoń jako cud z księgi: widoczny koszt, trzyma bossa przez określony czas.
+- [ ] Gracz wskazuje, którą głowę atakować.
+
+## Wzór raportu po każdym etapie
+
+- Co zrobione (krótko, w punktach).
+- Pliki i klasy.
+- Jak sprawdzić: flagi, klawisze, miejsce w grze.
+- Przed/po: zrzuty (jeśli są) i pomiar jasności z narzędzia.
+- Wydajność: fps, liczba cząsteczek, czas klatki.
+- Ryzyka oraz rzeczy niezrobione, z powodem.
+- Pytania.
+
+## Odpowiedniki w Canvas 2D (gra C# rysuje przez `IPlotno`, czyli Canvas 2D; to samo w `alpha-1/`)
+
+- `SKBlendMode.Multiply / Screen / Plus / SrcATop` → `globalCompositeOperation = 'multiply' / 'screen' / 'lighter' / 'source-atop'`
+- `SKShader.CreateRadialGradient` → `createRadialGradient`
+- osobna `SKSurface` → `Plotno.Nowe(w, h)` (w TS: `OffscreenCanvas`)
+- filtr koloru → `ctx.filter` albo rysowanie z `source-atop`
