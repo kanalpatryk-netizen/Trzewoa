@@ -3,13 +3,18 @@
  * slajdów oddzielanych spacją, tylko spójny filmik… ma pokazywać wydarzenie jedno po drugim albo cały przebieg
  * historii, tak jak normalnie są cutscenki w takich grach, coś w stylu komiksu”.
  *
- * Jeden ciągły film (ok. 75 s), rysowany w kodzie jak komiks w ruchu: kamera jedzie i najeżdża, cięcia, kadry
- * wjeżdżające na stronę, ramki narratora, dymki, wyrazy dźwiękonaśladowcze, rastrowa faktura druku. Przebieg:
+ * Druga uwaga (15.11): „usuń napisy grrr, gulp itp. — to nie jest komiks, tylko dość brutalna opowieść; potrzebujemy
+ * więcej brutalności; rany po rozszarpaniu przez Cerbera są nieporównywalnie mniejsze, niż powinny być”.
+ *
+ * Jeden ciągły film (ok. 75 s) jak przerywnik w grze: kamera jedzie, najeżdża i trzęsie się przy uderzeniach, cięcia
+ * między ujęciami, kinowe napisy (narrator kursywą, kwestie z myślnikiem), ziarno, zimna gradacja i winieta. Cerber
+ * i potępieni to obrazki wypieczone z modeli 3D (render/cerber-sprite.ts, render/zarlok-sprite.ts); rany są dosłowne:
+ * wypatroszenie, rozerwanie na pół z wypadającymi trzewiami, zmiażdżenie z odpadającą głową, oderwana ręka. Przebieg:
  *  1. zjazd z burzowego nieba na krąg żarłoków w deszczu;           2. dwóch żarłoków bije się o ochłap;
  *  3. ziemia drży, za wzgórzem wyrastają trzy łby;                   4. Cerber wpada w tłum — szarpie, rozrywa, pożera;
- *  5. dwóch wędrowców, Cerber ryczy na nich z zakrwawioną paszczą;  6. przewodnik rzuca mu ziemię w gardła (3 kadry);
+ *  5. dwóch wędrowców, Cerber ryczy na nich z zakrwawioną paszczą;  6. przewodnik rzuca mu ziemię w gardła (3 ujęcia);
  *  7. pies żre, a oni przechodzą i schodzą w dół;                   8. oko w błocie — ktoś to widział;
- *  9. grabarz, mnich, rycerz wstają z błota (3 kadry);              10. szóstka razem: „zejdziemy i my”;
+ *  9. grabarz, mnich, rycerz wstają z błota (3 ujęcia);             10. szóstka razem: „zejdziemy i my”;
  * 11. kamera schodzi pod ziemię: trzewia i pieczęć na dnie;         12. Cerber podnosi zakrwawiony pysk i węszy. Tytuł.
  * Esc — pomija film. Potem scena wejścia (app/wstep-kregu.ts).
  */
@@ -19,9 +24,10 @@ import { Race } from '../sim/races';
 import { rysujPostac, type Czynnosc } from '../render/figury';
 import { rysujCerbera, pozaCerbera, type PozaCerbera, type PunktyCerbera } from '../render/cerber';
 import {
-  rysujLudzika, pozaLezy, pozaCzolga, pozaWyje, pozaZre, pozaSzarpie, pozaWPaszczy, pozaTrup, pozaWstaje, pozaStoi,
+  rysujLudzika, pozaLezy, pozaCzolga, pozaWyje, pozaZre, pozaSzarpie, pozaWPaszczy, pozaTrup, pozaStoi,
   kaluzaKrwi, bryzgKrwi, type PozaLudzika,
 } from '../render/ludzik';
+import { rysujTrzewia, rysujOderwanaGlowe, rysujOderwanaReke } from '../render/zarlok-sprite';
 
 export const DLUGOSC_FILMU = 75;
 const KROJ = '"Trzewia Tekst", Georgia, serif';
@@ -117,10 +123,45 @@ function deszcz(ctx: CanvasRenderingContext2D, R: Prost, czas: number, moc = 1):
 function zarlok(ctx: CanvasRenderingContext2D, v: Widok, wx: number, p: PozaLudzika, zwrot = 1, skala = 1, wyBiodra?: number, t = 0): void {
   const lezy = Math.abs(p.tulow) > 1.1;
   const hb = wyBiodra ?? (lezy ? 0.08 : p.udoL > 1 ? 0.25 : 0.5);
+  // cień i muł pod ciałem — ciało leży w błocie, nie wisi nad nim
+  if (hb < 0.35) {
+    const sx = v.X(wx) + zwrot * (lezy ? 0.18 : 0.05) * v.k.s * skala, sy = v.Y(0.02);
+    const gc = ctx.createRadialGradient(sx, sy, 0, sx, sy, v.k.s * skala * (lezy ? 0.65 : 0.35));
+    gc.addColorStop(0, 'rgba(8,6,4,0.75)'); gc.addColorStop(1, 'rgba(8,6,4,0)');
+    ctx.save(); ctx.translate(sx, sy); ctx.scale(1, 0.18); ctx.translate(-sx, -sy);
+    ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(sx, sy, v.k.s * skala * (lezy ? 0.65 : 0.35), 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
   ctx.save();
   ctx.translate(v.X(wx), v.Y(-hb * skala));
   ctx.scale(zwrot, 1);
   rysujLudzika(ctx, v.k.s * skala, p, t);
+  ctx.restore();
+  // leżący tkwi w błocie: grzbiet mułu przed ciałem zakrywa dół (brzuch, uda, łydki)
+  if (lezy || hb < 0.3) blotoPrzed(ctx, v, wx - zwrot * 0.6 * skala, wx + zwrot * 0.62 * skala, skala, wx * 7.3);
+}
+
+/** Grzbiet mułu od x0 do x1 (jednostki świata) tuż przy gruncie: nierówny brzeg, mokre odblaski, kałuże. */
+function blotoPrzed(ctx: CanvasRenderingContext2D, v: Widok, x0: number, x1: number, skala: number, ziarno: number): void {
+  const a = Math.min(x0, x1) - 0.1 * skala, b = Math.max(x0, x1) + 0.1 * skala;
+  const yT = v.Y(-0.015 * skala), yD = v.Y(0.3 * skala);
+  ctx.save();
+  const g = ctx.createLinearGradient(0, yT, 0, yD);
+  g.addColorStop(0, 'rgb(50,46,34)'); g.addColorStop(1, 'rgb(38,35,26)');
+  ctx.fillStyle = g;
+  ctx.beginPath(); ctx.moveTo(v.X(a), yD);
+  const n = 18;
+  for (let i = 0; i <= n; i++) {
+    const u = i / n, x = v.X(a + (b - a) * u);
+    const brzeg = Math.sin(u * Math.PI) * 0.035 * skala + (los(ziarno * 13 + i) - 0.5) * 0.03 * skala;
+    ctx.lineTo(x, v.Y(-brzeg));
+  }
+  ctx.lineTo(v.X(b), yD); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(140,150,150,0.16)';
+  for (let i = 0; i < 4; i++) {
+    const x = v.X(a + (b - a) * (0.15 + los(ziarno + i * 3) * 0.7));
+    ctx.beginPath(); ctx.ellipse(x, v.Y(0.04 * skala), v.k.s * skala * (0.05 + 0.08 * los(ziarno + i)), v.k.s * skala * 0.008, 0, 0, Math.PI * 2); ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -187,12 +228,37 @@ function kapie(ctx: CanvasRenderingContext2D, m: P, s: number, czas: number, moc
 }
 
 /** Wędrowiec w szacie (żywy — czerwień i kaptur, przewodnik — szarość i wieniec). Stopy w (0, 0), wzrost h. */
+const sylw: { a: HTMLCanvasElement | null; b: HTMLCanvasElement | null } = { a: null, b: null };
+/** Wędrowiec jak w kinie: ciemna sylwetka w deszczu z chłodnym konturem światła (szata ledwie barwna). */
 function wedrowiec(ctx: CanvasRenderingContext2D, h: number, zywy: boolean, krok: number, reka: number, schyla = 0): void {
+  const W = Math.max(8, Math.ceil(h * 1.4)), Hh = Math.max(8, Math.ceil(h * 1.3));
+  if (typeof document === 'undefined') return;
+  if (!sylw.a || sylw.a.width < W || sylw.a.height < Hh) {
+    sylw.a = document.createElement('canvas'); sylw.b = document.createElement('canvas');
+    sylw.a.width = sylw.b.width = Math.max(W, sylw.a?.width ?? 0); sylw.a.height = sylw.b.height = Math.max(Hh, sylw.a?.height ?? 0);
+  }
+  const A = sylw.a, B = sylw.b!;
+  const a = A.getContext('2d')!, b = B.getContext('2d')!;
+  a.clearRect(0, 0, W, Hh);
+  a.save(); a.translate(W / 2, Hh - h * 0.04); wedrowiecRys(a, h, zywy, krok, reka, schyla); a.restore();
+  const ox = -W / 2, oy = -(Hh - h * 0.04);
+  // kontur światła (zza pleców, z góry)
+  b.clearRect(0, 0, W, Hh); b.globalCompositeOperation = 'source-over'; b.drawImage(A, 0, 0, W, Hh, 0, 0, W, Hh);
+  b.globalCompositeOperation = 'source-in'; b.fillStyle = 'rgba(176,190,200,0.38)'; b.fillRect(0, 0, W, Hh); b.globalCompositeOperation = 'source-over';
+  ctx.drawImage(B, 0, 0, W, Hh, ox - Math.max(1, Math.min(3, h * 0.004)), oy - Math.max(1, Math.min(3, h * 0.004)), W, Hh);
+  // sylwetka: ciemna, z odrobiną barwy szaty
+  b.clearRect(0, 0, W, Hh); b.drawImage(A, 0, 0, W, Hh, 0, 0, W, Hh);
+  b.globalCompositeOperation = 'source-atop'; b.fillStyle = zywy ? 'rgba(30,7,6,0.86)' : 'rgba(15,16,16,0.86)'; b.fillRect(0, 0, W, Hh); b.globalCompositeOperation = 'source-over';
+  ctx.drawImage(B, 0, 0, W, Hh, ox, oy, W, Hh);
+}
+function wedrowiecRys(ctx: CanvasRenderingContext2D, h: number, zywy: boolean, krok: number, reka: number, schyla = 0): void {
   ctx.save();
   ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(1, h * 0.022);
-  const szata = zywy ? 'rgb(150,36,30)' : 'rgb(86,92,84)';
-  const sk = 'rgb(214,190,160)';
+  ctx.strokeStyle = 'rgba(6,4,4,0.4)'; ctx.lineWidth = Math.max(0.6, h * 0.008);
+  const szataG = ctx.createLinearGradient(-h * 0.2, -h * 0.7, h * 0.2, 0);
+  szataG.addColorStop(0, zywy ? 'rgb(120,30,26)' : 'rgb(92,98,92)'); szataG.addColorStop(0.55, zywy ? 'rgb(84,18,16)' : 'rgb(60,64,60)'); szataG.addColorStop(1, zywy ? 'rgb(40,8,8)' : 'rgb(30,32,30)');
+  const szata: CanvasGradient | string = szataG;
+  const sk = 'rgb(176,150,124)';
   const n = Math.sin(krok) * h * 0.07;
   ctx.fillStyle = 'rgb(40,30,24)';
   ctx.beginPath(); ctx.ellipse(-h * 0.06 + n, -h * 0.02, h * 0.06, h * 0.025, 0, 0, Math.PI * 2); ctx.fill();
@@ -226,7 +292,7 @@ function wedrowiec(ctx: CanvasRenderingContext2D, h: number, zywy: boolean, krok
   ctx.restore();
 }
 
-// ---------------------------------------------------------------- komiks: ramki, dymki, dźwięki
+// ---------------------------------------------------------------- kino: napisy, ziarno, winieta (po uwadze 15.11: „to nie jest komiks")
 
 function zawin(ctx: CanvasRenderingContext2D, tekst: string, max: number): string[] {
   const out: string[] = []; let l = '';
@@ -235,112 +301,67 @@ function zawin(ctx: CanvasRenderingContext2D, tekst: string, max: number): strin
   return out;
 }
 
-/** Ramka narratora (żółtawy pergamin, czarny brzeg) — lewy górny róg w (x, y), wsuwa się z `a`. */
-function narrator(ctx: CanvasRenderingContext2D, x: number, y: number, tekst: string, a: number, maxW: number, r: number): void {
-  if (a <= 0) return;
+/** Napis kinowy: blada kursywa z miękkim cieniem, wyśrodkowana u dołu kadru (albo u góry, `gora`); wyłania się z `a`,
+ *  gaśnie przed `koniec` (sekundy do końca napisu, gdy podane). */
+function napis(ctx: CanvasRenderingContext2D, R: Prost, tekst: string, a: number, gora: boolean, r: number, koniec = 9): void {
+  if (a <= 0 || koniec <= 0) return;
+  const al = Math.min(1, a * 1.2) * Math.min(1, koniec * 2);
   ctx.save();
-  ctx.globalAlpha *= Math.min(1, a * 1.5);
-  ctx.font = `italic ${r}px ${KROJ}`;
-  const linie = zawin(ctx, tekst, maxW - r * 1.4);
-  const w = Math.max(...linie.map((l) => ctx.measureText(l).width)) + r * 1.4, h = linie.length * r * 1.3 + r * 0.8;
-  ctx.translate(x, y + (1 - gl(a)) * -r);
-  ctx.fillStyle = 'rgb(232,220,176)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = 2.5;
-  ctx.fillRect(0, 0, w, h); ctx.strokeRect(0, 0, w, h);
-  ctx.fillStyle = 'rgb(28,20,14)'; ctx.textBaseline = 'top'; ctx.textAlign = 'left';
-  linie.forEach((l, i) => ctx.fillText(l, r * 0.7, r * 0.45 + i * r * 1.3));
-  ctx.restore();
-}
-
-/** Dymek z ogonkiem do (ox, oy). */
-function dymek(ctx: CanvasRenderingContext2D, x: number, y: number, tekst: string, ox: number, oy: number, a: number, r: number, krzyk = false): void {
-  if (a <= 0) return;
-  ctx.save();
-  ctx.globalAlpha *= Math.min(1, a * 2);
-  ctx.font = `${krzyk ? 'bold ' : ''}${r}px ${KROJ}`;
-  const linie = zawin(ctx, tekst, r * 14);
-  const w = Math.max(...linie.map((l) => ctx.measureText(l).width)) + r * 1.6, h = linie.length * r * 1.25 + r * 0.9;
-  const sk = 0.7 + 0.3 * gl(a * 3);
-  ctx.translate(x, y); ctx.scale(sk, sk);
-  ctx.fillStyle = 'rgb(246,242,232)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = 2.5;
-  ctx.beginPath();
-  if (krzyk) {
-    for (let i = 0; i < 18; i++) { const k = (i / 18) * Math.PI * 2, rr = i % 2 ? 1 : 1.18; ctx.lineTo(Math.cos(k) * w * 0.62 * rr, Math.sin(k) * h * 0.72 * rr); }
-  } else ctx.ellipse(0, 0, w * 0.6, h * 0.66, 0, 0, Math.PI * 2);
-  ctx.closePath(); ctx.fill(); ctx.stroke();
-  // ogonek
-  const tx = (ox - x) / sk, ty = (oy - y) / sk;
-  const kat = Math.atan2(ty, tx);
-  ctx.beginPath();
-  ctx.moveTo(Math.cos(kat + 0.25) * w * 0.45, Math.sin(kat + 0.25) * h * 0.5);
-  ctx.lineTo(tx * 0.8, ty * 0.8);
-  ctx.lineTo(Math.cos(kat - 0.25) * w * 0.45, Math.sin(kat - 0.25) * h * 0.5);
-  ctx.fill(); ctx.stroke();
-  ctx.fillStyle = 'rgb(22,16,12)'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  linie.forEach((l, i) => ctx.fillText(l, 0, (i - (linie.length - 1) / 2) * r * 1.25));
-  ctx.restore();
-}
-
-/** Wyraz dźwiękonaśladowczy: wielkie, postrzępione litery, wyskakują. */
-function sfx(ctx: CanvasRenderingContext2D, x: number, y: number, tekst: string, r: number, a: number, kat = -0.12, kolor = 'rgb(220,40,24)'): void {
-  if (a <= 0 || a >= 1) return;
-  ctx.save();
-  const sk = a < 0.25 ? 0.4 + 2.4 * a * 2.4 : 1;
-  ctx.globalAlpha *= a > 0.8 ? (1 - a) * 5 : 1;
-  ctx.translate(x, y); ctx.rotate(kat); ctx.scale(Math.min(1.15, sk), Math.min(1.15, sk));
-  ctx.font = `bold ${r}px Impact, "Arial Black", ${KROJ}`;
+  ctx.font = `italic ${r * 1.05}px ${KROJ}`;
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  ctx.lineJoin = 'round';
-  ctx.strokeStyle = TUSZ; ctx.lineWidth = r * 0.22; ctx.strokeText(tekst, 0, 0);
-  ctx.fillStyle = 'rgb(250,214,90)'; ctx.fillText(tekst, r * 0.04, r * 0.04);
-  ctx.fillStyle = kolor; ctx.fillText(tekst, 0, 0);
+  const linie = zawin(ctx, tekst, R.w * 0.62);
+  const lh = r * 1.45;
+  const y0 = gora ? R.y + R.h * 0.1 : R.y + R.h * 0.9 - (linie.length - 1) * lh;
+  ctx.globalAlpha = al;
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = r * 0.6; ctx.shadowOffsetY = r * 0.08;
+  ctx.fillStyle = 'rgb(224,218,200)';
+  linie.forEach((l, i) => ctx.fillText(l, R.x + R.w / 2, y0 + i * lh));
   ctx.restore();
 }
 
-/** Linie pędu (akcja) — promieniście od punktu. */
-function linieAkcji(ctx: CanvasRenderingContext2D, R: Prost, x: number, y: number, a: number): void {
-  if (a <= 0) return;
+/** Kwestia mówiona (dialog jak w napisach filmu): „— tekst”, cieplejsza barwa, u dołu kadru. */
+function kwestia(ctx: CanvasRenderingContext2D, R: Prost, tekst: string, a: number, r: number, koniec = 9): void {
+  if (a <= 0 || koniec <= 0) return;
   ctx.save();
-  ctx.strokeStyle = `rgba(240,236,220,${0.35 * a})`; ctx.lineWidth = 2;
-  for (let i = 0; i < 40; i++) {
-    const k = (i / 40) * Math.PI * 2 + los(i) * 0.1;
-    const r0 = R.h * (0.35 + los(i * 3) * 0.2);
-    ctx.beginPath(); ctx.moveTo(x + Math.cos(k) * r0, y + Math.sin(k) * r0); ctx.lineTo(x + Math.cos(k) * R.w, y + Math.sin(k) * R.w); ctx.stroke();
-  }
+  ctx.font = `${r * 1.1}px ${KROJ}`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.globalAlpha = Math.min(1, a * 1.5) * Math.min(1, koniec * 2);
+  ctx.shadowColor = 'rgba(0,0,0,0.95)'; ctx.shadowBlur = r * 0.6; ctx.shadowOffsetY = r * 0.08;
+  ctx.fillStyle = 'rgb(236,214,170)';
+  ctx.fillText('— ' + tekst, R.x + R.w / 2, R.y + R.h * 0.9);
   ctx.restore();
 }
 
-let raster: CanvasPattern | null = null;
-/** Faktura druku: drobny raster i winieta. */
-function druk(ctx: CanvasRenderingContext2D, R: Prost): void {
-  if (!raster) {
-    const c = document.createElement('canvas'); c.width = c.height = 5;
-    const g = c.getContext('2d')!; g.fillStyle = 'rgba(0,0,0,0.5)'; g.beginPath(); g.arc(2.5, 2.5, 1, 0, Math.PI * 2); g.fill();
-    raster = ctx.createPattern(c, 'repeat');
+let ziarnoFilmu: HTMLCanvasElement | null = null;
+/** Obraz filmowy: ziarno (drga z klatki na klatkę), zimna gradacja, winieta. */
+function kino(ctx: CanvasRenderingContext2D, R: Prost, czas: number): void {
+  if (!ziarnoFilmu && typeof document !== 'undefined') {
+    const c = document.createElement('canvas'); c.width = c.height = 192;
+    const g = c.getContext('2d')!; const d = g.createImageData(192, 192);
+    for (let i = 0; i < d.data.length; i += 4) { const v = (los(i * 0.37) * 255) | 0; d.data[i] = d.data[i + 1] = d.data[i + 2] = v; d.data[i + 3] = 11; }
+    g.putImageData(d, 0, 0); ziarnoFilmu = c;
   }
   ctx.save();
-  if (raster) { ctx.globalAlpha = 0.12; ctx.fillStyle = raster; ctx.fillRect(R.x, R.y, R.w, R.h); ctx.globalAlpha = 1; }
-  const v = ctx.createRadialGradient(R.x + R.w / 2, R.y + R.h / 2, R.h * 0.3, R.x + R.w / 2, R.y + R.h / 2, R.w * 0.65);
-  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.55)');
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.fillStyle = 'rgba(160,172,180,1)'; ctx.globalAlpha = 0.12; ctx.fillRect(R.x, R.y, R.w, R.h);
+  ctx.restore();
+  ctx.save();
+  if (ziarnoFilmu) {
+    const ox = (los(Math.floor(czas / 42)) * 192) | 0, oy = (los(Math.floor(czas / 42) + 7) * 192) | 0;
+    const pat = ctx.createPattern(ziarnoFilmu, 'repeat');
+    if (pat) { ctx.translate(-ox, -oy); ctx.fillStyle = pat; ctx.fillRect(R.x + ox, R.y + oy, R.w, R.h); ctx.translate(ox, oy); }
+  }
+  const v = ctx.createRadialGradient(R.x + R.w / 2, R.y + R.h / 2, R.h * 0.35, R.x + R.w / 2, R.y + R.h / 2, R.w * 0.62);
+  v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,0.6)');
   ctx.fillStyle = v; ctx.fillRect(R.x, R.y, R.w, R.h);
   ctx.restore();
 }
 
-/** Kadr: rysuje zawartość przyciętą do prostokąta i grubą komiksową ramkę. */
-function kadr(ctx: CanvasRenderingContext2D, R: Prost, a: number, rysuj: (R: Prost) => void): void {
-  if (a <= 0) return;
-  ctx.save();
-  ctx.globalAlpha = Math.min(1, a);
-  const dy = (1 - gl(a)) * R.h * 0.15;
-  const RR = { ...R, y: R.y + dy };
-  ctx.beginPath(); ctx.rect(RR.x, RR.y, RR.w, RR.h); ctx.clip();
-  rysuj(RR);
-  druk(ctx, RR);
-  ctx.restore();
-  ctx.save();
-  ctx.globalAlpha = Math.min(1, a);
-  ctx.strokeStyle = 'rgb(8,6,6)'; ctx.lineWidth = 6; ctx.strokeRect(R.x, R.y + dy, R.w, R.h);
-  ctx.strokeStyle = 'rgba(232,220,190,0.75)'; ctx.lineWidth = 1.5; ctx.strokeRect(R.x + 4, R.y + dy + 4, R.w - 8, R.h - 8);
-  ctx.restore();
+/** Ujęcia jedno po drugim w obrębie sceny (zamiast kadrów komiksu): [od, rysuj] — zwraca, które trwa i jego czas. */
+function ciecia(t: number, od: number[]): [number, number] {
+  let i = 0;
+  while (i + 1 < od.length && t >= od[i + 1]) i++;
+  return [i, t - od[i]];
 }
 
 // ---------------------------------------------------------------- postacie gry (szóstka) w filmie
@@ -392,8 +413,8 @@ const UJECIA: Pozycja[] = [
       tlo(ctx, v, { blysk });
       tlum(ctx, v, t);
       deszcz(ctx, R, czas, 1.2);
-      narrator(ctx, R.x + R.w * 0.04, R.y + R.h * 0.05, 'Piekło. Krąg trzeci — krąg żarłoków.', t - 1.2, R.w * 0.5, r);
-      narrator(ctx, R.x + R.w * 0.5, R.y + R.h * 0.78, 'Pada tu wieczny deszcz, zimny i ciężki. Nie ustaje nigdy.', t - 3.8, R.w * 0.46, r);
+      napis(ctx, R, 'Piekło. Krąg trzeci — krąg żarłoków.', t - 1.2, true, r);
+      napis(ctx, R, 'Pada tu wieczny deszcz, zimny i ciężki. Nie ustaje nigdy.', t - 3.8, false, r);
     },
   },
   // 2. Bójka o ochłap
@@ -414,8 +435,7 @@ const UJECIA: Pozycja[] = [
       ctx.restore();
       if (t > 3) { bryzgKrwi(ctx, v.X(-5.4), v.Y(-0.75), v.k.s, (t - 3) / 0.8, -0.5, 0.5, 3); }
       deszcz(ctx, R, czas, 1);
-      sfx(ctx, R.x + R.w * 0.62, R.y + R.h * 0.3, 'GRRR!', r * 2.4, (t - 1.2) / 1.5, 0.1, 'rgb(200,180,150)');
-      narrator(ctx, R.x + R.w * 0.04, R.y + R.h * 0.05, 'Leżą tu ci, którzy za życia służyli brzuchowi. Nawet tutaj biją się o ochłap.', t - 0.6, R.w * 0.5, r);
+      napis(ctx, R, 'Leżą tu ci, którzy za życia służyli brzuchowi. Nawet tutaj biją się o ochłap.', t - 0.6, true, r);
     },
   },
   // 3. Ziemia drży; za wzgórzem trzy łby
@@ -435,40 +455,43 @@ const UJECIA: Pozycja[] = [
       // żarłocy unoszą głowy
       tlum(ctx, v, t + 13);
       deszcz(ctx, R, czas, 1.2);
-      sfx(ctx, R.x + R.w * 0.62, R.y + R.h * 0.25, 'WRRRAAAUU!', r * 3.2, (t - 2.2) / 1.8);
     },
   },
-  // 4. Cerber wpada w tłum: szarpie, rozrywa, pożera
+  // 4. Cerber wpada w tłum: patroszy, rozrywa na pół, miażdży i połyka, odrywa rękę
   {
     od: 17, do: 27, rysuj(ctx, R, t, czas, _sim, r) {
       // pozycja Cerbera: wbiega z prawej i staje nad ofiarami
       const cx = mix(14, 3.2, zakres(t, 0, 1.5)) - zakres(t, 3.2, 3.8) * 0.8 - zakres(t, 6.2, 6.8) * 0.9;
-      const k = kamera(t, [[0, 8, -1.6, R.h / 6.5], [1.5, 2.2, -1.5, R.h / 5.2], [3.2, 1.6, -1.6, R.h / 5.4], [6, 1.3, -1.5, R.h / 5], [10, 1, -1.6, R.h / 5.4]]);
-      const uderzenia = [0.9, 1.6, 4.6, 6.9, 7.8];
+      const k0 = kamera(t, [[0, 8, -1.6, R.h / 6.5], [1.5, 2.2, -1.5, R.h / 5.2], [3.2, 1.6, -1.6, R.h / 5.4], [6, 1.3, -1.5, R.h / 5], [10, 1, -1.6, R.h / 5.4]]);
+      // najazd kamery na rozrywanie (ofiara 2)
+      const zbl = dzwon(t, 3.9, 5.9);
+      const k = { x: mix(k0.x, 1.1, zbl * 0.7), y: mix(k0.y, -2.1, zbl * 0.6), s: k0.s * (1 + 0.45 * zbl) };
+      const uderzenia = [0.9, 1.6, 4.6, 6.9, 7.6];
       let wstrzas = 0;
       for (const u of uderzenia) wstrzas = Math.max(wstrzas, dzwon(t, u - 0.05, u + 0.4) * 1.6);
       const v = new Widok(R, { ...k, s: k.s * (1 + 0.06 * wstrzas) }, wstrzas, czas);
       tlo(ctx, v);
       tlum(ctx, v, t + 17, -1, 6, 0.4, cx);
-      // ślady: kałuże krwi
-      kaluzaKrwi(ctx, v.X(-2.4), v.Y(0.05), v.k.s * 0.8, zakres(t, 3.1, 4), 1);
-      kaluzaKrwi(ctx, v.X(1.0), v.Y(0.08), v.k.s * 1.0, zakres(t, 4.7, 5.6), 2);
-      kaluzaKrwi(ctx, v.X(0.5), v.Y(0.05), v.k.s * 0.9, zakres(t, 6.9, 7.5), 3);
-      const p = pozaCerbera(); p.czas = czas;
-      p.krok = t < 1.5 ? 1 : 0; p.faza = czas / 90; p.szal = 0.5;
+      // kałuże krwi rosną
+      kaluzaKrwi(ctx, v.X(-2.4), v.Y(0.05), v.k.s * 1.1, zakres(t, 3.1, 4.2), 1);
+      kaluzaKrwi(ctx, v.X(1.0), v.Y(0.08), v.k.s * 1.6, zakres(t, 4.7, 6.0), 2);
+      kaluzaKrwi(ctx, v.X(0.5), v.Y(0.05), v.k.s * 1.2, zakres(t, 6.9, 7.8), 3);
+      kaluzaKrwi(ctx, v.X(cx - 2.2), v.Y(0.06), v.k.s * 0.9, zakres(t, 7.6, 8.6), 4);
+      const p = pozaCerbera(); p.czas = czas; p.krew = t > 2 ? 1 : 0.6;
+      p.krok = t < 1.5 ? 1 : 0; p.faza = czas / 90; p.szal = 0.6;
       p.glowy.forEach((g, i) => { g.pochyl = 0.1 * Math.sin(czas / 300 + i); g.paszcza = 0.5; });
-      // K1 (0.8–3.2): środkowa głowa chwyta i trzęsie, potem ciska
+      // K1 (0.8–3.2): środkowa głowa chwyta, trzęsie — brzuch pęka, trzewia lecą — potem ciska trupem
       const k1 = t > 0.8 && t < 3.2;
       if (k1) { const g = p.glowy[1]; g.wysun = 0.4; g.pochyl = 0.5 + Math.sin(czas / 40) * 0.35 * zakres(t, 1, 1.3); g.paszcza = 0.35; }
-      // K2 (3.6–6.0): lewa i prawa głowa rozrywają
+      // K2 (3.6–6.0): lewa i prawa głowa rozrywają na pół (wolniej — kamera najeżdża)
       const k2 = t > 3.6 && t < 6.0;
+      const roz = zakres(t, 4.1, 5.0);
       if (k2) {
-        const rozciag = zakres(t, 4.1, 4.7);
-        p.glowy[0].pochyl = 0.3 - rozciag * 0.9; p.glowy[0].paszcza = 0.3; p.glowy[0].wysun = 0.2;
-        p.glowy[2].pochyl = 0.5 + rozciag * 0.5; p.glowy[2].paszcza = 0.3; p.glowy[2].wysun = 0.5;
-        p.deba = 0.15 * rozciag;
+        p.glowy[0].pochyl = 0.3 - roz * 0.9; p.glowy[0].paszcza = 0.3; p.glowy[0].wysun = 0.2;
+        p.glowy[2].pochyl = 0.5 + roz * 0.5; p.glowy[2].paszcza = 0.3; p.glowy[2].wysun = 0.5;
+        p.deba = 0.15 * roz;
       }
-      // K3 (6.2–9.5): łapa przygniata pełzającego, głowa podnosi i połyka
+      // K3 (6.2–9.5): łapa miażdży pełzającego (głowa odpada), środkowa głowa podnosi resztę i połyka
       const k3 = t > 6.2;
       if (k3) {
         p.deba = dzwon(t, 6.2, 7.0) * 0.6;
@@ -477,53 +500,89 @@ const UJECIA: Pozycja[] = [
         g.paszcza = t < 7.4 ? 0.8 : t < 8.4 ? 0.35 : 0.2 + 0.6 * dzwon(t, 8.4, 9.2);
         g.wysun = t < 7.4 ? 0.5 : 0.2;
       }
+      // K4 (7.0–9.8): bliższa głowa (pitbull) odrywa rękę klęczącemu
+      const k4 = t > 7.0;
+      if (k4) {
+        const g = p.glowy[2];
+        g.wysun = t < 7.6 ? zakres(t, 7.0, 7.5) * 0.7 : mix(0.7, 0.3, zakres(t, 7.6, 8.4));
+        g.pochyl = t < 7.6 ? 0.9 : 0.9 - zakres(t, 7.6, 8.4) * 0.8 + Math.sin(czas / 45) * 0.25 * zakres(t, 8.4, 8.7);
+        g.paszcza = t < 7.55 ? 1 : 0.3;
+      }
       const m = cerber(ctx, v, cx, p, -1);
       // ofiara 1
       if (t < 0.8) zarlok(ctx, v, 1.0, pozaWyje(t, 1), 1, 1, undefined, t);
       else if (k1) {
-        wPaszczy(ctx, v, m[1], pozaWPaszczy(t, t < 2.5 ? 1 : 0.4), Math.PI / 2 + Math.sin(czas / 40) * 0.4, t);
-        bryzgKrwi(ctx, m[1][0], m[1][1], v.k.s, ((t - 1.0) % 0.7) / 0.7, -1.2 + Math.sin(t * 9), 1, Math.floor(t / 0.7));
-        if (t > 1.2) kapie(ctx, m[1], v.k.s, czas, 1.5);
+        const pek = t > 1.7;
+        wPaszczy(ctx, v, m[1], { ...pozaWPaszczy(t, t < 2.5 ? 1 : 0.4), krew: pek ? 1 : 0.6, brak: pek ? { trzewia: true } : undefined }, Math.PI / 2 + Math.sin(czas / 40) * 0.4, t);
+        bryzgKrwi(ctx, m[1][0], m[1][1], v.k.s * 0.9, ((t - 1.0) % 0.6) / 0.6, -1.2 + Math.sin(t * 9), 1.4, Math.floor(t / 0.6));
+        if (pek) bryzgKrwi(ctx, m[1][0], m[1][1] + v.k.s * 0.2, v.k.s * 1.0, (t - 1.7) / 0.9, Math.PI * 0.6, 2.0, 31);
+        if (t > 1.2) kapie(ctx, m[1], v.k.s, czas, 2);
       } else {
-        // ciśnięty — leci w lewo i pada
+        // ciśnięty — leci w lewo, pada wypatroszony, trzewia wloką się za nim
         const f = zakres(t, 3.2, 3.9);
         const x = mix(cx - 2.6, -2.4, f), y = -2.2 * dzwon(f, 0, 1) - 0.08;
+        if (f >= 1) { ctx.save(); ctx.translate(v.X(-1.75), v.Y(0)); rysujTrzewia(ctx, v.k.s * 1.1, 0.1); ctx.restore(); }
         ctx.save(); ctx.translate(v.X(x), v.Y(y)); ctx.rotate(f * 4);
-        rysujLudzika(ctx, v.k.s, pozaTrup(1), t); ctx.restore();
+        rysujLudzika(ctx, v.k.s, { ...pozaTrup(1), brak: { trzewia: true } }, t); ctx.restore();
       }
-      // ofiara 2 — rozrywana
+      // ofiara 2 — rozrywana na pół
+      const sr: P = [(m[0][0] + m[2][0]) / 2, (m[0][1] + m[2][1]) / 2];
       if (t < 3.6) zarlok(ctx, v, 1.6, pozaLezy(t, 2), -1, 1, undefined, t);
       else if (k2) {
-        const roz = zakres(t, 4.1, 4.7);
         if (roz < 0.5) {
-          wPaszczy(ctx, v, [(m[0][0] + m[2][0]) / 2, (m[0][1] + m[2][1]) / 2], pozaWPaszczy(t, 1), Math.PI / 2, t);
+          wPaszczy(ctx, v, sr, { ...pozaWPaszczy(t, 1), krew: 0.4 + roz }, Math.PI / 2, t);
         } else {
           wPaszczy(ctx, v, m[0], { ...pozaWPaszczy(t, 0.6), brak: { polowa: 'gora' } }, Math.PI / 2 + 0.6, t);
           wPaszczy(ctx, v, m[2], { ...pozaWPaszczy(t, 0.6), brak: { polowa: 'dol' } }, Math.PI / 2 - 0.4, t);
-          kapie(ctx, m[0], v.k.s, czas, 2); kapie(ctx, m[2], v.k.s, czas, 2);
+          kapie(ctx, m[0], v.k.s, czas, 3); kapie(ctx, m[2], v.k.s, czas, 3);
+          // trzewia wypadają z rozdartego tułowia i spadają w błoto
+          const sp = zakres(t, 4.6, 5.3);
+          ctx.save(); ctx.translate(sr[0], mix(sr[1] + v.k.s * 0.2, v.Y(0), sp)); rysujTrzewia(ctx, v.k.s * 1.2, sp * 1.5 - 0.6); ctx.restore();
         }
-        bryzgKrwi(ctx, (m[0][0] + m[2][0]) / 2, (m[0][1] + m[2][1]) / 2, v.k.s * 1.4, (t - 4.6) / 0.9, -Math.PI / 2, 2.2, 7);
+        // fontanna krwi i czerwona mgła w chwili rozdarcia
+        bryzgKrwi(ctx, sr[0], sr[1], v.k.s * 1.2, (t - 4.55) / 1.1, -Math.PI / 2, 2.4, 7);
+        bryzgKrwi(ctx, sr[0], sr[1], v.k.s * 1.0, (t - 4.6) / 1.0, Math.PI * 0.85, 1.8, 19);
+        bryzgKrwi(ctx, sr[0], sr[1], v.k.s * 1.0, (t - 4.62) / 1.0, Math.PI * 0.15, 1.8, 23);
+        const mg = dzwon(t, 4.5, 5.8);
+        if (mg > 0) {
+          const gm = ctx.createRadialGradient(sr[0], sr[1], 0, sr[0], sr[1], v.k.s * 1.6);
+          gm.addColorStop(0, `rgba(120,6,4,${0.5 * mg})`); gm.addColorStop(1, 'rgba(90,0,0,0)');
+          ctx.fillStyle = gm; ctx.fillRect(sr[0] - v.k.s * 1.6, sr[1] - v.k.s * 1.6, v.k.s * 3.2, v.k.s * 3.2);
+        }
       } else {
         zarlok(ctx, v, 0.4, { ...pozaTrup(2), brak: { polowa: 'gora' } }, 1, 1, 0.08, t);
         zarlok(ctx, v, 1.6, { ...pozaTrup(3), brak: { polowa: 'dol' } }, -1, 1, 0.1, t);
+        ctx.save(); ctx.translate(v.X(1.0), v.Y(0)); rysujTrzewia(ctx, v.k.s * 1.2, 0.3); ctx.restore();
       }
-      // ofiara 3 — pełznie, przygnieciona łapą, połknięta
+      // ofiara 3 — pełznie, zmiażdżona łapą (głowa odskakuje), podniesiona i połknięta
       if (t < 6.9) zarlok(ctx, v, mix(-0.4, 0.4, zakres(t, 4, 6.9)), pozaCzolga(t, 1.6, 4), 1, 1, undefined, t);
       else if (t < 7.4) {
-        zarlok(ctx, v, 0.5, pozaTrup(0), 1, 1, 0.06, t);
-        bryzgKrwi(ctx, v.X(0.5), v.Y(-0.1), v.k.s, (t - 6.9) / 0.6, -Math.PI / 2, 1.6, 9);
+        zarlok(ctx, v, 0.5, { ...pozaTrup(0), krew: 1, brak: { glowa: true, trzewia: true } }, 1, 1, 0.06, t);
+        bryzgKrwi(ctx, v.X(0.5), v.Y(-0.1), v.k.s * 1.0, (t - 6.9) / 0.6, -Math.PI / 2, 2.2, 9);
       } else if (t < 8.6) {
         const lyk = zakres(t, 8.0, 8.6);
-        wPaszczy(ctx, v, m[1], { ...pozaWPaszczy(t, 0.3), krew: 1 }, Math.PI / 2 - 0.9, t, 1 - lyk * 0.7);
+        wPaszczy(ctx, v, m[1], { ...pozaWPaszczy(t, 0.3), krew: 1, brak: { glowa: true, trzewia: true } }, Math.PI / 2 - 0.9, t, 1 - lyk * 0.7);
+      }
+      if (t > 6.9) {
+        const f = zakres(t, 6.9, 7.6);
+        ctx.save(); ctx.translate(v.X(mix(0.9, 2.6, f)), v.Y(-0.06 - Math.sin(f * Math.PI) * 1.4)); rysujOderwanaGlowe(ctx, v.k.s, f * 8 + 1.5); ctx.restore();
       }
       if (t > 7.4) kapie(ctx, m[1], v.k.s, czas, 2);
+      // ofiara 4 — klęczy przed nim i wyje; pitbull odrywa mu rękę
+      const x4 = cx - 2.15;
+      if (t > 4.5) {
+        if (t < 7.6) zarlok(ctx, v, x4, pozaWyje(t, 6), -1, 1, undefined, t);
+        else {
+          const pad = zakres(t, 7.8, 8.6);
+          zarlok(ctx, v, x4 - pad * 0.3, { ...(pad < 0.5 ? pozaWyje(t, 6) : pozaTrup(4)), krew: 1, brak: { rekaP: true } }, -1, 1, pad < 0.5 ? undefined : 0.08, t);
+          ctx.save(); ctx.translate(m[2][0], m[2][1]); ctx.rotate(-0.4 + Math.sin(czas / 45) * 0.3 * zakres(t, 8.4, 8.7)); rysujOderwanaReke(ctx, v.k.s, 1.2, 0.6); ctx.restore();
+          bryzgKrwi(ctx, v.X(x4 - 0.05), v.Y(-0.62), v.k.s * 0.9, (t - 7.6) / 0.9, -Math.PI * 0.8, 1.8, 41);
+          kapie(ctx, m[2], v.k.s, czas, 2);
+        }
+      }
       deszcz(ctx, R, czas, 1);
-      sfx(ctx, R.x + R.w * 0.66, R.y + R.h * 0.22, 'CHRUP!', r * 3, (t - 0.9) / 1.4, -0.15);
-      sfx(ctx, R.x + R.w * 0.62, R.y + R.h * 0.45, 'TRRRACH!', r * 3.4, (t - 4.5) / 1.5, 0.12);
-      sfx(ctx, R.x + R.w * 0.5, R.y + R.h * 0.78, 'ŁUP!', r * 2.6, (t - 6.85) / 1.0, -0.05);
-      sfx(ctx, R.x + R.w * 0.72, R.y + R.h * 0.25, 'GLUP.', r * 2.2, (t - 8.4) / 1.4, 0.1, 'rgb(150,30,24)');
-      narrator(ctx, R.x + R.w * 0.03, R.y + R.h * 0.04, 'Cerber. Trzy gardła, czerwone ślepia, tłusta czarna broda i brzuch szeroki.', t - 0.3, R.w * 0.42, r);
-      narrator(ctx, R.x + R.w * 0.03, R.y + R.h * 0.8, 'Szarpie potępionych, obdziera ze skóry, ćwiartuje. Nikt mu się nie wymknie.', t - 4.2, R.w * 0.5, r);
+      napis(ctx, R, 'Cerber. Trzy gardła, czerwone ślepia, tłusta czarna broda i brzuch szeroki.', t - 0.3, true, r, 4.0 - t);
+      napis(ctx, R, 'Szarpie potępionych, obdziera ze skóry, ćwiartuje. Nikt mu się nie wymknie.', t - 6.3, false, r);
     },
   },
   // 5. Dwóch wędrowców; Cerber ryczy na nich
@@ -547,59 +606,51 @@ const UJECIA: Pozycja[] = [
       ctx.save(); ctx.translate(v.X(-7.6), v.Y(0)); wedrowiec(ctx, h, true, 0, 0); ctx.restore();
       ctx.save(); ctx.translate(v.X(-6.7), v.Y(0)); wedrowiec(ctx, h * 1.04, false, 0, 0.1); ctx.restore();
       deszcz(ctx, R, czas, 1);
-      linieAkcji(ctx, R, m[1][0], m[1][1], ryk * 0.8);
-      sfx(ctx, R.x + R.w * 0.62, R.y + R.h * 0.2, 'GRRRAAAAH!', r * 3.4, (t - 1.2) / 2.2, -0.08);
-      dymek(ctx, v.X(-8.4), v.Y(-2.0), 'Mistrzu…!', v.X(-7.6), v.Y(-1.0), (t - 2.6) * 2, r * 1.1);
-      narrator(ctx, R.x + R.w * 0.03, R.y + R.h * 0.04, 'Wtedy przyszło ich dwóch. Jeden z nich rzucał cień — był żywy.', t - 0.2, R.w * 0.46, r);
+      kwestia(ctx, R, 'Mistrzu…!', (t - 2.6) * 2, r);
+      napis(ctx, R, 'Wtedy przyszło ich dwóch. Jeden z nich rzucał cień — był żywy.', t - 0.2, true, r);
     },
   },
-  // 6. Trzy kadry: przewodnik nabiera ziemi i rzuca w gardła
+  // 6. Przewodnik nabiera ziemi i rzuca w gardła — trzy ujęcia po sobie (schyla się, garście błota, rzut)
   {
     od: 32, do: 38.5, rysuj(ctx, R, t, czas, _sim, r) {
-      ctx.fillStyle = 'rgb(12,10,10)'; ctx.fillRect(R.x, R.y, R.w, R.h);
-      const g = R.w * 0.015, w3 = (R.w - g * 4) / 3, hh = R.h * 0.86;
-      const K = (i: number): Prost => ({ x: R.x + g + i * (w3 + g), y: R.y + R.h * 0.04, w: w3, h: hh });
-      // kadr 1: schyla się do błota
-      kadr(ctx, K(0), t * 2.5, (RR) => {
-        const v = new Widok(RR, { x: -6.6, y: -0.6, s: RR.h / 2.2 }, 0, czas);
+      const [nr, lt] = ciecia(t, [0, 1.9, 3.5]);
+      if (nr === 0) {
+        // schyla się do błota (półzbliżenie, kamera lekko najeżdża)
+        const v = new Widok(R, { x: -6.6, y: -0.75, s: (R.h / 2.6) * (1 + lt * 0.04) }, 0, czas);
         tlo(ctx, v);
-        ctx.save(); ctx.translate(v.X(-6.9), v.Y(0)); wedrowiec(ctx, v.k.s * 1.05, false, 0, 0, gl(t / 1.2) * 0.8); ctx.restore();
-        ctx.fillStyle = 'rgb(40,36,26)'; ctx.beginPath(); ctx.ellipse(v.X(-6.3), v.Y(0.02), v.k.s * 0.3, v.k.s * 0.06, 0, 0, Math.PI * 2); ctx.fill();
-        deszcz(ctx, RR, czas, 0.8);
-      });
-      // kadr 2: pełne garście błota
-      kadr(ctx, K(1), (t - 1.8) * 2.5, (RR) => {
-        ctx.fillStyle = 'rgb(30,30,28)'; ctx.fillRect(RR.x, RR.y, RR.w, RR.h);
-        const cx = RR.x + RR.w / 2, cy = RR.y + RR.h * 0.55, s = RR.w * 0.32;
-        for (const dx of [-0.55, 0.55]) {
-          ctx.fillStyle = 'rgb(206,180,150)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.ellipse(cx + dx * s, cy, s * 0.42, s * 0.3, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-          for (let i = 0; i < 4; i++) { ctx.beginPath(); ctx.moveTo(cx + dx * s - s * 0.3 + i * s * 0.18, cy - s * 0.1); ctx.lineTo(cx + dx * s - s * 0.3 + i * s * 0.18, cy + s * 0.2); ctx.stroke(); }
-          ctx.fillStyle = 'rgb(56,44,30)';
-          ctx.beginPath(); ctx.ellipse(cx + dx * s, cy - s * 0.32, s * 0.4, s * 0.22, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-          for (let i = 0; i < 3; i++) { const f = ((czas / 600) + i * 0.33) % 1; ctx.beginPath(); ctx.ellipse(cx + dx * s + (i - 1) * s * 0.2, cy + s * 0.3 + f * s * 0.6, s * 0.03, s * 0.06, 0, 0, Math.PI * 2); ctx.fill(); }
-        }
-        deszcz(ctx, RR, czas, 0.6);
-      });
-      // kadr 3: rzut w trzy gardła
-      kadr(ctx, K(2), (t - 3.6) * 2.5, (RR) => {
-        const v = new Widok(RR, { x: 1.6, y: -2.0, s: RR.h / 4.2 }, dzwon(t, 4.2, 5) * 0.6, czas);
+        tlum(ctx, v, t + 32, -9.5, -4.5);
+        ctx.save(); ctx.translate(v.X(-6.9), v.Y(0)); wedrowiec(ctx, v.k.s * 1.05, false, 0, 0, gl(lt / 1.2) * 0.8); ctx.restore();
+        ctx.fillStyle = 'rgb(34,30,22)'; ctx.beginPath(); ctx.ellipse(v.X(-6.3), v.Y(0.02), v.k.s * 0.32, v.k.s * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+        deszcz(ctx, R, czas, 0.9);
+      } else if (nr === 1) {
+        // z dołu: przewodnik prostuje się z pełnymi garściami błota, ciecze mu po rękach
+        const v = new Widok(R, { x: -6.75, y: -0.95, s: (R.h / 1.9) * (1 + lt * 0.05) }, 0, czas);
         tlo(ctx, v);
-        const p = pozaCerbera(); p.czas = czas;
-        p.glowy.forEach((g2) => { g2.pochyl = -0.25; g2.paszcza = 1; g2.wysun = 0.3; });
+        const h = v.k.s * 1.05;
+        ctx.save(); ctx.translate(v.X(-6.9), v.Y(0)); wedrowiec(ctx, h, false, 0, 0.35 + 0.45 * zakres(lt, 0.2, 1.1), 0.25 * (1 - zakres(lt, 0, 0.8))); ctx.restore();
+        const rx = v.X(-6.9) + h * (0.12 + 0.2 * (0.35 + 0.45 * zakres(lt, 0.2, 1.1))), ry = v.Y(0) - h * (0.42 + 0.38 * (0.35 + 0.45 * zakres(lt, 0.2, 1.1)));
+        ctx.fillStyle = 'rgb(40,32,22)'; ctx.beginPath(); ctx.ellipse(rx, ry - h * 0.02, h * 0.06, h * 0.035, 0, 0, Math.PI * 2); ctx.fill();
+        for (let i = 0; i < 5; i++) { const f = ((czas / 520) + i * 0.21) % 1; ctx.beginPath(); ctx.ellipse(rx + (i - 2) * h * 0.012, ry + f * h * 0.5, h * 0.006, h * 0.016, 0, 0, Math.PI * 2); ctx.fill(); }
+        deszcz(ctx, R, czas, 0.9);
+      } else {
+        // rzut w trzy rozwarte gardła — od dołu, pies nad kamerą
+        const v = new Widok(R, { x: 1.4, y: -1.9, s: R.h / 4.0 }, dzwon(lt, 0.6, 1.6) * 0.7, czas);
+        tlo(ctx, v);
+        const p = pozaCerbera(); p.czas = czas; p.krew = 1;
+        p.glowy.forEach((g2, i) => { g2.pochyl = -0.25 + 0.08 * i; g2.paszcza = 1; g2.wysun = 0.3; });
         const m = cerber(ctx, v, 2.6, p, -1);
-        const f = zakres(t, 3.9, 4.8);
-        for (let i = 0; i < 12; i++) {
+        m.forEach((q) => kapie(ctx, q, v.k.s, czas, 1.5));
+        const f = zakres(lt, 0.3, 1.3);
+        for (let i = 0; i < 16; i++) {
           const ff = Math.max(0, Math.min(1, f * 1.3 - (i % 4) * 0.08));
           if (ff <= 0 || ff >= 1) continue;
           const cel = m[i % 3];
-          const x = mix(RR.x - RR.w * 0.1, cel[0], ff), y = mix(RR.y + RR.h * 0.8, cel[1], ff) - Math.sin(ff * Math.PI) * RR.h * 0.2;
-          ctx.fillStyle = 'rgb(60,46,32)'; ctx.beginPath(); ctx.arc(x + (los(i) - 0.5) * 20, y, RR.h * 0.018, 0, Math.PI * 2); ctx.fill();
+          const x = mix(R.x - R.w * 0.05, cel[0], ff), y = mix(R.y + R.h * 0.95, cel[1], ff) - Math.sin(ff * Math.PI) * R.h * 0.2;
+          ctx.fillStyle = 'rgb(48,38,26)'; ctx.beginPath(); ctx.arc(x + (los(i) - 0.5) * 24, y, R.h * (0.012 + 0.01 * los(i * 3)), 0, Math.PI * 2); ctx.fill();
         }
-        deszcz(ctx, RR, czas, 0.8);
-        linieAkcji(ctx, RR, RR.x + RR.w * 0.75, RR.y + RR.h * 0.4, f > 0 && f < 1 ? 0.7 : 0);
-      });
-      narrator(ctx, R.x + R.w * 0.2, R.y + R.h * 0.8, 'Przewodnik schylił się, nabrał pełne garście ziemi i cisnął je w łapczywe gardła.', t - 0.5, R.w * 0.6, r);
+        deszcz(ctx, R, czas, 0.9);
+      }
+      napis(ctx, R, 'Przewodnik schylił się, nabrał pełne garście ziemi i cisnął je w łapczywe gardła.', t - 0.5, false, r);
     },
   },
   // 7. Pies żre; oni przechodzą i schodzą w dół
@@ -625,76 +676,55 @@ const UJECIA: Pozycja[] = [
       ctx.save(); ctx.translate(v.X(xw - 0.9), v.Y(Math.max(0, xw - 0.9 - 11.2) * 0.9)); wedrowiec(ctx, h, true, czas / 120, 0); ctx.restore();
       ctx.save(); ctx.translate(v.X(xw), v.Y(zejscie)); wedrowiec(ctx, h * 1.04, false, czas / 120 + 1, 0); ctx.restore();
       deszcz(ctx, R, czas, 1);
-      narrator(ctx, R.x + R.w * 0.03, R.y + R.h * 0.04, 'Pies zamilkł nad tą strawą jak głodny nad kością.', t - 0.3, R.w * 0.42, r);
-      narrator(ctx, R.x + R.w * 0.45, R.y + R.h * 0.78, 'A oni przeszli — i zeszli niżej. Bo z piekła wychodzi się tylko przez jego dno.', t - 2.4, R.w * 0.5, r);
+      napis(ctx, R, 'Pies zamilkł nad tą strawą jak głodny nad kością.', t - 0.3, true, r);
+      napis(ctx, R, 'A oni przeszli — i zeszli niżej. Bo z piekła wychodzi się tylko przez jego dno.', t - 2.4, false, r);
     },
   },
-  // 8. Oko w błocie
+  // 8. Ktoś to widział: żarłocy leżą twarzą w błocie; jeden powoli unosi głowę i patrzy tam, gdzie zeszli wędrowcy
   {
     od: 44.5, do: 47.5, rysuj(ctx, R, t, czas, _sim, r) {
-      ctx.fillStyle = 'rgb(46,42,30)'; ctx.fillRect(R.x, R.y, R.w, R.h);
-      const cx = R.x + R.w * 0.5, cy = R.y + R.h * 0.48, s = R.h * (0.42 + t * 0.02);
-      // twarz w błocie (zbliżenie)
-      ctx.fillStyle = 'rgb(128,118,96)'; ctx.beginPath(); ctx.ellipse(cx, cy, s * 1.6, s * 0.9, 0, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = 'rgba(46,42,30,0.9)';
-      for (let i = 0; i < 9; i++) { ctx.beginPath(); ctx.ellipse(cx + (los(i) - 0.5) * s * 3, cy + (los(i * 3) - 0.3) * s * 1.6, s * (0.3 + los(i * 5) * 0.4), s * 0.2, los(i) * 3, 0, Math.PI * 2); ctx.fill(); }
-      // oko otwiera się
-      const otw = zakres(t, 0.3, 1.0);
-      ctx.fillStyle = 'rgb(226,214,190)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.ellipse(cx, cy, s * 0.55, s * 0.28 * otw + 1, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      if (otw > 0.2) {
-        ctx.save(); ctx.beginPath(); ctx.ellipse(cx, cy, s * 0.55, s * 0.28 * otw, 0, 0, Math.PI * 2); ctx.clip();
-        ctx.fillStyle = 'rgb(70,60,40)'; ctx.beginPath(); ctx.arc(cx + s * 0.05, cy, s * 0.22, 0, Math.PI * 2); ctx.fill();
-        ctx.fillStyle = TUSZ; ctx.beginPath(); ctx.arc(cx + s * 0.05, cy, s * 0.1, 0, Math.PI * 2); ctx.fill();
-        // odbicie dwóch postaci
-        ctx.fillStyle = 'rgb(170,40,30)'; ctx.fillRect(cx - s * 0.02, cy - s * 0.1, s * 0.03, s * 0.08);
-        ctx.fillStyle = 'rgb(120,126,118)'; ctx.fillRect(cx + s * 0.04, cy - s * 0.11, s * 0.03, s * 0.09);
-        ctx.restore();
+      const k = { x: 0.3 + t * 0.06, y: -0.5, s: (R.h / 2.3) * (1 + t * 0.07) };
+      const v = new Widok(R, k, 0, czas);
+      tlo(ctx, v);
+      for (let j = 0; j < 6; j++) {
+        if (j === 3) continue;
+        zarlok(ctx, v, -3.3 + j * 1.35 + los(j * 7) * 0.4, pozaLezy(t + j * 0.7, j + 11), j % 2 ? 1 : -1, 0.95, undefined, t);
       }
-      deszcz(ctx, R, czas, 0.7);
-      druk(ctx, R);
-      narrator(ctx, R.x + R.w * 0.36, R.y + R.h * 0.82, 'Ktoś to widział.', t - 1.0, R.w * 0.3, r * 1.3);
+      // ten jeden: z leżenia unosi tułów na łokciach, głowa w górę i w prawo
+      const u = zakres(t, 0.4, 2.2);
+      const p: PozaLudzika = { ...pozaLezy(0, 3), tulow: Math.PI / 2 - 0.42 * u, glowa: mix(-0.1, -0.85, u), ramieL: mix(Math.PI / 2 + 0.3, 0.35, u), lokiecL: mix(0.3, 1.25, u), ramieP: mix(Math.PI / 2, 0.2, u), lokiecP: mix(0.4, 1.35, u), udoL: -Math.PI / 2 + 0.12, kolanoL: -0.1, udoP: -Math.PI / 2 + 0.2, kolanoP: -0.25, usta: 0.2, krew: 0.15 };
+      zarlok(ctx, v, 0.75, p, 1, 1.05, 0.06 + 0.07 * u, t);
+      deszcz(ctx, R, czas, 0.8);
+      napis(ctx, R, 'Ktoś to widział.', t - 1.2, false, r * 1.2);
     },
   },
-  // 9. Wstają: grabarz, mnich, rycerz (trzy kadry)
+  // 9. Wstają z błota: grabarz, mnich, rycerz — trzy ujęcia po sobie
   {
     od: 47.5, do: 57.5, rysuj(ctx, R, t, czas, sim, r) {
-      ctx.fillStyle = 'rgb(12,10,10)'; ctx.fillRect(R.x, R.y, R.w, R.h);
-      const g = R.w * 0.015, w3 = (R.w - g * 4) / 3, hh = R.h * 0.7;
-      const K = (i: number): Prost => ({ x: R.x + g + i * (w3 + g), y: R.y + R.h * 0.04, w: w3, h: hh });
       const opisy = [
         'Grabarz. Za życia kopał groby za miskę strawy. Kopie i teraz.',
         'Mnich. Modlił się z pełnymi ustami — ale słowa modlitwy pamięta.',
         'Rycerz. Przejadł cały majątek. Miecza nie oddał.',
       ];
       const role: ('robotnik' | 'pobozny' | 'rycerz')[] = ['robotnik', 'pobozny', 'rycerz'];
-      for (let i = 0; i < 3; i++) {
-        const t0 = i * 3.2;
-        kadr(ctx, K(i), (t - t0) * 2.5, (RR) => {
-          const v = new Widok(RR, { x: 0, y: -0.8, s: RR.h / 2.4 }, 0, czas);
-          tlo(ctx, v);
-          for (let j = 0; j < 3; j++) zarlok(ctx, v, -1.6 + j * 1.6, pozaLezy(t + j, j + i), j % 2 ? 1 : -1, 0.8, undefined, t);
-          const wst = zakres(t, t0 + 0.6, t0 + 2.2);
-          const lt = t - t0;
-          if (i === 0) {
-            // łopata tkwi w błocie; grabarz chwyta ją i wyciąga
-            const wyc = zakres(lt, 1.6, 2.6);
-            lopata(ctx, v.X(0.45), v.Y(-0.3 - wyc * 0.4), v.k.s, 0.25 - wyc * 0.2);
-          }
-          if (i === 2) {
-            const wyc = zakres(lt, 1.8, 2.8);
-            miecz(ctx, v.X(0.5), v.Y(0.15 - wyc * 0.9), v.k.s, 0.15 - wyc * 0.3);
-          }
-          postacGry(ctx, sim, role[i], 'film' + i, v.X(-0.1), v.Y(0), v.k.s * 1.0, czas + i * 300, i === 1 && lt > 2.4 ? 'modli' : 'stoi', 1, wst);
-          if (i === 1) dymek(ctx, RR.x + RR.w * 0.62, RR.y + RR.h * 0.18, '…Pater noster…', v.X(0), v.Y(-1), (lt - 2.4) * 2, r * 0.9);
-          deszcz(ctx, RR, czas, 0.7);
-        });
-        // podpis pod kadrem
-        ctx.save();
-        ctx.globalAlpha = gl((t - t0 - 0.8) * 2);
-        narrator(ctx, K(i).x, K(i).y + hh + R.h * 0.03, opisy[i], (t - t0 - 0.8) * 2, w3, r * 0.92);
-        ctx.restore();
+      const [i, lt] = ciecia(t, [0, 3.3, 6.6]);
+      const v = new Widok(R, { x: 0.1 + lt * 0.05, y: -0.85, s: (R.h / 2.7) * (1 + lt * 0.025) }, 0, czas);
+      tlo(ctx, v);
+      for (let j = 0; j < 4; j++) zarlok(ctx, v, -2.4 + j * 1.6 + (j > 1 ? 0.9 : 0), pozaLezy(t + j, j + i), j % 2 ? 1 : -1, 0.85, undefined, t);
+      const wst = zakres(lt, 0.5, 2.0);
+      if (i === 0) {
+        // łopata tkwi w błocie; grabarz chwyta ją i wyciąga
+        const wyc = zakres(lt, 1.6, 2.6);
+        lopata(ctx, v.X(0.45), v.Y(-0.3 - wyc * 0.4), v.k.s, 0.25 - wyc * 0.2);
       }
+      if (i === 2) {
+        const wyc = zakres(lt, 1.8, 2.8);
+        miecz(ctx, v.X(0.5), v.Y(0.15 - wyc * 0.9), v.k.s, 0.15 - wyc * 0.3);
+      }
+      postacGry(ctx, sim, role[i], 'film' + i, v.X(-0.1), v.Y(0), v.k.s * 1.0, czas + i * 300, i === 1 && lt > 2.2 ? 'modli' : 'stoi', 1, wst);
+      deszcz(ctx, R, czas, 0.8);
+      if (i === 1) kwestia(ctx, R, 'Pater noster, qui es in caelis…', (lt - 2.2) * 2, r, 3.3 - lt);
+      napis(ctx, R, opisy[i], (lt - 0.7) * 2, true, r, 3.3 - lt);
     },
   },
   // 10. Szóstka razem
@@ -714,54 +744,81 @@ const UJECIA: Pozycja[] = [
       const role: ('robotnik' | 'pobozny' | 'rycerz')[] = ['robotnik', 'robotnik', 'robotnik', 'pobozny', 'pobozny', 'rycerz'];
       role.forEach((rola, i) => postacGry(ctx, sim, rola, 'film' + (i === 0 ? 0 : i === 3 ? 1 : i === 5 ? 2 : 's' + i), v.X(-3.2 + i * 0.95), v.Y(0), v.k.s, czas + i * 211, 'stoi', 1));
       deszcz(ctx, R, czas, 1);
-      dymek(ctx, v.X(-2.6), v.Y(-2.4), 'Oni zeszli w dół. Zejdziemy i my.', v.X(-3.2), v.Y(-1.1), (t - 0.6) * 2, r);
-      dymek(ctx, v.X(1.2), v.Y(-2.5), 'Przez trzewia tej ziemi…', v.X(-0.4), v.Y(-1.1), (t - 2.6) * 2, r);
+      kwestia(ctx, R, 'Oni zeszli w dół. Zejdziemy i my.', (t - 0.6) * 2, r, 2.5 - t);
+      kwestia(ctx, R, 'Przez trzewia tej ziemi…', (t - 2.7) * 2, r);
     },
   },
-  // 11. Pod ziemię: trzewia i pieczęć
+  // 11. Pod ziemię: przekrój trzewi kręgu — warstwy mułu, kości, wciągane ciała, żyły ziemi; pieczęć na dnie
   {
     od: 62.5, do: 69, rysuj(ctx, R, t, czas, _sim, r) {
       const zjazd = zakres(t, 0.2, 4.5);
       const yG = R.y + R.h * mix(0.55, -0.6, zjazd);
-      ctx.fillStyle = 'rgb(20,22,24)'; ctx.fillRect(R.x, R.y, R.w, R.h);
+      ctx.fillStyle = 'rgb(18,20,22)'; ctx.fillRect(R.x, R.y, R.w, R.h);
       const g = ctx.createLinearGradient(0, yG, 0, yG + R.h * 1.6);
-      g.addColorStop(0, 'rgb(72,54,40)'); g.addColorStop(1, 'rgb(48,18,14)');
+      g.addColorStop(0, 'rgb(46,38,28)'); g.addColorStop(0.5, 'rgb(36,24,18)'); g.addColorStop(1, 'rgb(40,14,10)');
       ctx.fillStyle = g; ctx.fillRect(R.x, yG, R.w, R.h * 2);
-      // fałdy trzewi — oddychają
-      const odd = Math.sin(czas / 700);
-      ctx.strokeStyle = 'rgba(150,64,54,0.5)'; ctx.lineWidth = R.h * 0.016;
-      for (let i = 0; i < 14; i++) {
-        const y = yG + R.h * (0.1 + i * 0.1);
-        ctx.beginPath();
-        for (let x = 0; x <= R.w; x += 10) {
-          const yy = y + Math.sin(x / (R.w * 0.07) + i * 1.9 + czas / 1500) * R.h * (0.03 + 0.008 * odd);
-          if (x === 0) ctx.moveTo(R.x + x, yy); else ctx.lineTo(R.x + x, yy);
+      // warstwy: nierówne pasy mułu i gliny
+      for (let i = 0; i < 12; i++) {
+        const y = yG + R.h * (0.06 + i * 0.13);
+        ctx.fillStyle = i % 2 ? 'rgba(20,14,10,0.45)' : 'rgba(70,56,40,0.22)';
+        ctx.beginPath(); ctx.moveTo(R.x, y);
+        for (let x = 0; x <= R.w; x += R.w / 24) ctx.lineTo(R.x + x, y + Math.sin(x / (R.w * 0.11) + i * 2.3) * R.h * 0.018 + (los(i * 31 + x) - 0.5) * R.h * 0.01);
+        ctx.lineTo(R.x + R.w, y + R.h * 0.07); ctx.lineTo(R.x, y + R.h * 0.07); ctx.closePath(); ctx.fill();
+      }
+      // kamienie i kości w glinie
+      for (let i = 0; i < 26; i++) {
+        const x = R.x + los(i * 7 + 1) * R.w, y = yG + R.h * (0.1 + los(i * 13) * 1.35), rr = R.h * (0.01 + 0.025 * los(i * 3));
+        if (i % 3 === 0) {
+          ctx.save(); ctx.translate(x, y); ctx.rotate(los(i) * 3);
+          ctx.strokeStyle = 'rgba(176,164,140,0.75)'; ctx.lineWidth = rr * 0.5; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(-rr * 2, 0); ctx.lineTo(rr * 2, 0); ctx.stroke();
+          ctx.fillStyle = 'rgba(176,164,140,0.75)'; for (const e of [-2, 2]) { ctx.beginPath(); ctx.arc(rr * e, -rr * 0.25, rr * 0.4, 0, Math.PI * 2); ctx.arc(rr * e, rr * 0.25, rr * 0.4, 0, Math.PI * 2); ctx.fill(); }
+          ctx.restore();
+        } else {
+          const gk = ctx.createRadialGradient(x - rr * 0.3, y - rr * 0.3, rr * 0.1, x, y, rr);
+          gk.addColorStop(0, 'rgb(84,76,64)'); gk.addColorStop(1, 'rgb(32,28,22)');
+          ctx.fillStyle = gk; ctx.beginPath(); ctx.ellipse(x, y, rr * 1.3, rr, los(i) * 3, 0, Math.PI * 2); ctx.fill();
         }
+      }
+      // żyły ziemi — tętnią (trzewia kręgu trawią)
+      const odd = Math.sin(czas / 600);
+      for (let i = 0; i < 5; i++) {
+        const x0 = R.x + R.w * (0.1 + i * 0.2), y0 = yG + R.h * 0.15;
+        ctx.strokeStyle = `rgba(${110 + 30 * odd},${22},${18},0.55)`; ctx.lineWidth = R.h * (0.012 + 0.004 * odd) * (1 + (i % 2) * 0.5);
+        ctx.beginPath(); ctx.moveTo(x0, y0);
+        ctx.bezierCurveTo(x0 + R.w * 0.08, y0 + R.h * 0.4, x0 - R.w * 0.1, y0 + R.h * 0.8, R.x + R.w * 0.5 + (i - 2) * R.w * 0.04, yG + R.h * 1.3);
         ctx.stroke();
+      }
+      // ciała wciągane przez ziemię: całe, rozerwane, bez głów
+      const braki = [undefined, { polowa: 'gora' as const }, { glowa: true }, { trzewia: true }, { polowa: 'dol' as const }, undefined, { rekaP: true, nogaL: true }, undefined, { trzewia: true }];
+      for (let i = 0; i < 9; i++) {
+        const x = R.x + R.w * (0.08 + los(i * 7) * 0.84), y = yG + R.h * (0.2 + los(i * 3) * 1.0) - zjazd * R.h * 0.04 * (i % 3);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(los(i) * 6);
+        ctx.globalAlpha = 0.85;
+        rysujLudzika(ctx, R.h * 0.16, { ...pozaTrup(i), krew: 0.8, brak: braki[i] }, czas / 1000);
+        ctx.restore();
       }
       // szóstka wchodzi w otwór na górze
       ctx.fillStyle = 'rgb(6,4,4)'; ctx.beginPath(); ctx.ellipse(R.x + R.w * 0.55, yG, R.w * 0.03, R.h * 0.015, 0, 0, Math.PI * 2); ctx.fill();
       for (let i = 0; i < 6; i++) ctx.fillRect(R.x + R.w * (0.45 + i * 0.012), yG - R.h * 0.04, R.w * 0.006, R.h * 0.04);
-      // pieczęć na dnie
-      const py = yG + R.h * 1.35, px = R.x + R.w * 0.5, pr2 = R.h * 0.14;
-      const pg = ctx.createRadialGradient(px, py, 0, px, py, pr2 * 2.6);
+      // pieczęć na dnie: kamienne koło z płaskorzeźbą trójgłowego psa, skute łańcuchami, łuna spod spodu
+      const py = yG + R.h * 1.35, px = R.x + R.w * 0.5, pr2 = R.h * 0.16;
+      const pg = ctx.createRadialGradient(px, py, 0, px, py, pr2 * 2.8);
       pg.addColorStop(0, `rgba(230,60,30,${0.45 + 0.2 * odd})`); pg.addColorStop(1, 'rgba(230,60,30,0)');
       ctx.fillStyle = pg; ctx.fillRect(px - pr2 * 3, py - pr2 * 3, pr2 * 6, pr2 * 6);
-      ctx.fillStyle = 'rgb(96,92,84)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.arc(px, py, pr2, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
-      ctx.strokeStyle = 'rgb(60,56,52)'; ctx.lineWidth = 6;
-      ctx.beginPath(); ctx.moveTo(px - pr2 * 1.4, py - pr2); ctx.lineTo(px + pr2 * 1.4, py + pr2); ctx.moveTo(px + pr2 * 1.4, py - pr2); ctx.lineTo(px - pr2 * 1.4, py + pr2); ctx.stroke();
-      // ciała wciągane przez ziemię
-      for (let i = 0; i < 9; i++) {
-        const x = R.x + R.w * (0.1 + los(i * 7) * 0.8), y = yG + R.h * (0.2 + los(i * 3) * 1.0);
-        ctx.save(); ctx.translate(x, y); ctx.rotate(los(i) * 3);
-        rysujLudzika(ctx, R.h * 0.12, pozaTrup(i), czas / 1000);
-        ctx.restore();
-      }
-      druk(ctx, R);
-      narrator(ctx, R.x + R.w * 0.04, R.y + R.h * 0.05, 'Ziemia pod nimi drgnęła.', t - 0.4, R.w * 0.4, r);
-      narrator(ctx, R.x + R.w * 0.04, R.y + R.h * 0.2, 'Ty jesteś trzewiami tego kręgu — ziemią, która trawi żarłoków. Czujesz każdy ich krok.', t - 2.0, R.w * 0.5, r);
-      narrator(ctx, R.x + R.w * 0.46, R.y + R.h * 0.8, 'Na samym dnie czeka zapieczętowane zejście do kręgu czwartego.', t - 4.0, R.w * 0.5, r);
+      const gp = ctx.createRadialGradient(px - pr2 * 0.3, py - pr2 * 0.4, pr2 * 0.1, px, py, pr2);
+      gp.addColorStop(0, 'rgb(118,112,102)'); gp.addColorStop(1, 'rgb(58,54,50)');
+      ctx.fillStyle = gp; ctx.beginPath(); ctx.arc(px, py, pr2, 0, Math.PI * 2); ctx.fill();
+      ctx.save(); ctx.beginPath(); ctx.arc(px, py, pr2 * 0.88, 0, Math.PI * 2); ctx.clip();
+      ctx.translate(px - pr2 * 0.1, py + pr2 * 0.55);
+      const pc = pozaCerbera(); pc.czas = 0; pc.kamien = 1; pc.glowy.forEach((gg) => { gg.oczy = 0.6; gg.paszcza = 0.3; gg.pochyl = -0.2; });
+      rysujCerbera(ctx, pr2 * 1.3, pc);
+      ctx.restore();
+      ctx.strokeStyle = 'rgb(44,40,36)'; ctx.lineWidth = pr2 * 0.07;
+      ctx.beginPath(); ctx.moveTo(px - pr2 * 1.5, py - pr2); ctx.lineTo(px + pr2 * 1.5, py + pr2); ctx.moveTo(px + pr2 * 1.5, py - pr2); ctx.lineTo(px - pr2 * 1.5, py + pr2); ctx.stroke();
+      napis(ctx, R, 'Ziemia pod nimi drgnęła.', t - 0.4, true, r, 2.0 - t);
+      napis(ctx, R, 'Ty jesteś trzewiami tego kręgu — ziemią, która trawi żarłoków. Czujesz każdy ich krok.', t - 2.0, true, r);
+      napis(ctx, R, 'Na samym dnie czeka zapieczętowane zejście do kręgu czwartego.', t - 4.0, false, r);
     },
   },
   // 12. Cerber węszy; tytuł
@@ -782,8 +839,7 @@ const UJECIA: Pozycja[] = [
       for (const q of m) { const gg = ctx.createRadialGradient(q[0], q[1] - v.k.s * 0.2, 0, q[0], q[1] - v.k.s * 0.2, v.k.s * 0.8); gg.addColorStop(0, `rgba(255,40,20,${0.4 * dzwon(t, 2, 3.5)})`); gg.addColorStop(1, 'rgba(255,40,20,0)'); ctx.fillStyle = gg; ctx.fillRect(q[0] - v.k.s, q[1] - v.k.s * 1.2, v.k.s * 2, v.k.s * 2); }
       ctx.restore();
       deszcz(ctx, R, czas, 1);
-      sfx(ctx, R.x + R.w * 0.75, R.y + R.h * 0.2, 'sniff… sniff…', r * 1.8, (t - 1.2) / 2.0, 0.05, 'rgb(200,190,170)');
-      narrator(ctx, R.x + R.w * 0.03, R.y + R.h * 0.8, 'Cerber podniósł łby znad trupa. Zapamiętał ich zapach.', t - 1.6, R.w * 0.5, r);
+      napis(ctx, R, 'Cerber podniósł łby znad trupa. Zapamiętał ich zapach.', t - 1.6, false, r);
       // tytuł
       const a = zakres(t, 4.2, 5.0);
       if (a > 0) {
@@ -812,8 +868,8 @@ export function rysujFilm(ctx: CanvasRenderingContext2D, sim: Sim, w: number, h:
   ctx.save();
   ctx.beginPath(); ctx.rect(R.x, R.y, R.w, R.h); ctx.clip();
   u.rysuj(ctx, R, lt, czas, sim, r);
-  // faktura druku na pełnych ujęciach (kadry mają własną)
-  druk(ctx, R);
+  // obraz filmowy: ziarno, gradacja, winieta
+  kino(ctx, R, czas);
   ctx.restore();
   // cięcia: krótkie zaciemnienie na styku ujęć
   const doKonca = u.do - t;
@@ -825,4 +881,4 @@ export function rysujFilm(ctx: CanvasRenderingContext2D, sim: Sim, w: number, h:
   ctx.restore();
 }
 
-void pozaStoi; void pozaWstaje;
+void pozaStoi;

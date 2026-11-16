@@ -20,34 +20,40 @@ zapieczętowanego zejścia do kręgu czwartego. Kosz resztek spuszczają im inni
 pieczęć, Cerber zeskakuje za nimi. Wygrana to „Zejście do kręgu czwartego”.
 
 ## Wstęp: film i scena wejścia (`src/app/film-kregu.ts`, `src/app/wstep-kregu.ts`)
-- **Film (ok. 75 s)**: jeden ciągły, rysowany w kodzie film w stylu ruchomego komiksu. Ma ruch kamery, cięcia, kadry
-  wjeżdżające na stronę, ramki narratora, dymki, wyrazy dźwiękonaśladowcze i rastrową fakturę druku. Kolejne ujęcia:
+- **Film (ok. 75 s)**: jeden ciągły przerywnik jak w grach (po uwadze z 15.11 „to nie jest komiks, tylko dość brutalna
+  opowieść”): kamera jedzie, najeżdża i trzęsie się przy uderzeniach, cięcia między ujęciami, kinowe napisy (narrator
+  kursywą, kwestie z myślnikiem), ziarno, zimna gradacja i winieta. Bez dymków, ramek i wyrazów dźwiękonaśladowczych.
+  Kolejne ujęcia:
   1. zjazd z nieba na krąg w deszczu;
   2. dwóch żarłoków bije się o ochłap;
   3. ziemia drży i za wzgórzem wyrastają trzy łby;
-  4. Cerber wpada w tłum: jednego szarpie i ciska trupem, drugiego rozrywa na pół, trzeciego miażdży łapą i połyka;
-  5. pojawiają się Dante i Wergiliusz, Cerber ryczy z zakrwawioną paszczą;
-  6. trzy kadry: Wergiliusz nabiera ziemi i rzuca ją w gardła;
+  4. rzeź: Cerber patroszy jednego i ciska trupem, drugiego rozrywa na pół (kamera najeżdża, trzewia wypadają, fontanna
+     krwi), trzeciego miażdży łapą (głowa odskakuje) i połyka, czwartemu odrywa rękę;
+  5. pojawiają się Dante i Wergiliusz (ciemne sylwetki w deszczu), Cerber ryczy z zakrwawionymi paszczami;
+  6. trzy ujęcia: Wergiliusz schyla się, prostuje z garściami błota i ciska je w trzy gardła;
   7. pies żre, a wędrowcy schodzą w dół;
-  8. oko w błocie: „Ktoś to widział”;
-  9. trzy kadry: grabarz wyciąga łopatę, mnich się modli, rycerz wyciąga miecz;
+  8. żarłocy leżą twarzą w błocie — jeden unosi głowę: „Ktoś to widział”;
+  9. trzy ujęcia: grabarz wyciąga łopatę, mnich się modli, rycerz wyciąga miecz;
   10. szóstka razem: „Zejdziemy i my”;
-  11. kamera schodzi w trzewia, do pieczęci;
-  12. Cerber węszy, a na koniec pojawia się tytuł.
+  11. kamera schodzi w trzewia: warstwy mułu, kości, wciągane ciała, żyły ziemi, pieczęć z płaskorzeźbą Cerbera;
+  12. Cerber podnosi łby znad trupa, na koniec pojawia się tytuł.
 
   Esc pomija film.
 - **Scena wejścia bez sterowania**: szóstka wstaje z błota, idzie przez krąg i schodzi po linie do sali. Dopiero po
   „Teraz ty.” gracz przejmuje kontrolę.
-- Potępieni w filmie i w grze to ten sam nagi, umazany błotem żarłok ze stawami (`src/render/ludzik.ts`). Leży,
-  czołga się, wyje, żre, błąka się i bije o ochłap, a da się go też trzymać w paszczy, rozerwać i zjeść.
+- **Potępieni** w filmie i w grze to ten sam nagi, obrzmiały żarłok z modelu 3D (`src/render/czlowiek3d.ts`), składany
+  z wypieczonych części na stawach z `src/render/ludzik.ts` (`src/render/zarlok-sprite.ts`, obrazki w `obrazy/zarlok/`).
+  Leży, czołga się, wyje, żre, błąka się i bije o ochłap, a da się go też trzymać w paszczy, rozerwać i zjeść. Rany są
+  dosłowne: rozerwanie w pasie z poszarpanym przekrojem (tłuszcz, mięso, kręgosłup) i wywleczonymi jelitami, rozpruty
+  brzuch, oderwana głowa, kikuty, kupa trzewi.
 
 ## Krąg (`src/render/krag-swiat.ts`, `src/render/potepieni.ts`)
 - **Kształt leja:** nad powierzchnią widać wnętrze leja, czyli tarasy wyższych kręgów jak rzędy amfiteatru. Na kręgu
   drugim wicher niesie dusze, na pierwszym jest blask zamku Otchłani. Po prawej taras kończy się przepaścią do
   kręgu czwartego, z której bije łuna. Kamera sięga wysoko nad taras.
 - **Potępieni wszędzie:** ok. 200 żarłoków na tarasie i w pustkach pod nim (jaskinie, ruiny, sala, krypta przy pieczęci).
-  Mają wzrost naszych postaci i są rysowani tym samym rysunkiem postaci co gra (przygaszony, zielonkawy obrys, bez
-  pochodni). Każdy ma swoją czynność i rytm: leży i drga w błocie, klęczy i wyje w deszcz, żre błoto, grzebie
+  Mają wzrost naszych postaci; to ten sam żarłok z modelu 3D co w filmie (blada, brudna, mokra skóra). Każdy ma swoją
+  czynność i rytm: leży i drga w błocie, klęczy i wyje w deszcz, żre błoto, grzebie
   w nim, błąka się, dwóch szarpie się o resztki. W ścianach wykutych korytarzy tkwią twarze i ręce wciąganych przez
   ziemię żarłoków.
 - **Cerber nie siedzi w lochu.** Krąży po tarasie i przy każdym postoju (co ok. 6 s gry) zabija żarłoka jednym
@@ -68,16 +74,30 @@ pieczęć, Cerber zeskakuje za nimi. Wygrana to „Zejście do kręgu czwartego�
   przewodnik w pieśni VI. Głowy żrą i przez 2,5 s nie gryzą. Kosztuje to 2 porcje.
 - **Cerber podjada kosz** na tarasie (patrz wyżej).
 
-## Cerber (`src/render/cerber.ts`, `src/render/cerber-boss.ts`)
-Rysowany kodem, tuszem: trzy głowy z osobnymi szczękami i czerwonymi oczami, tłusta czarna broda, obroże z kolcami,
-szeroki brzuch i wężowy ogon. W walce odgrywa ruchy dawnego demona:
+## Cerber (`src/render/cerber3d.ts`, `src/render/cerber-sprite.ts`, `src/render/cerber-boss.ts`)
+Model 3D według obrazka referencyjnego (muskularny pies, krótka lśniąca sierść, kudły na piersi, kolce na grzbiecie,
+wężowy ogon w łuskach, łapy z pazurami) i trzy różne głowy: doberman z przyciętymi uszami, wilk z kryzą, pitbull
+z szeroką czaszką — z fałdami warg, dziąsłami, pełnym uzębieniem, językiem, śliną i krwią. Bryły zlewają się w jedno
+ciało (pola odległości, shader WebGL2 w `src/render/gl3d.ts`: sierść z połyskiem wzdłuż włosa, krótki włos na
+krawędziach, cienie, zacienienie, krew w zaciekach, przekroje ran).
+
+Render jest za wolny, by liczyć go w grze, więc model **wypieka się raz do obrazków** (`obrazy/cerber/`, położenia
+w `src/render/cerber-wypiek.ts`): klatki chodu, stania dęba, przysiadu, leżenia, odrzutu i kamienia, ogon, trzy szyje
+i głowy w 4 kątach × 5 rozwarciach paszczy × 2 stopniach krwi. Gra składa z nich Cerbera według szkieletu
+(`src/render/cerber-rig.ts`) — na kręgu, przy zabijaniu, na pieczęci (płaskorzeźba i posąg), w skoku, w walce
+i przy konaniu. W walce odgrywa ruchy dawnego demona:
 - ciosy to kłapnięcia jednej głowy;
 - tupnięcie to stanięcie dęba;
 - tchnienie to ogień ze środkowej paszczy;
 - bicz to smagnięcie ogonem;
 - ryk to wycie trzech gardeł.
 
-Przy okupie głowy żrą, a na koniec Cerber kona w złotym świetle i rozpada się na bryły.
+Przy okupie głowy żrą, a na koniec Cerber kona w złotym świetle i rozpada się na bryły. Dawny rysunek 2D
+(`src/render/cerber.ts`) zostaje tylko na chwilę wczytywania obrazków.
+
+**Nowy wypiek** (po zmianie modelu): `npm run dev`, potem
+`node scripts/wypiek-cerbera.mjs http://localhost:5180` (Cerber) albo `... --zarlok` (żarłok i rany); drugi argument
+zawęża do części o danym przedrostku (np. `glowa-1`). Podgląd części: `narzedzia/wypiek-cerbera.html`.
 
 ## Próby bota (`node scripts/proby-graczy.mjs $PWD <ziarno> rozsadny 40 plik.log`)
 Ziarna 3, 5, 11 i 13 kończą się wygraną w ok. 15 minut gry, ziarno 7 przegrywa z głodu (po zmianach z 2. podejścia, z Cerberem podjadającym kosz). W Alphie 1 bot wygrywa na tych

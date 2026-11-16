@@ -11,6 +11,7 @@
  */
 import { rysujCerbera, pozaCerbera, type PozaCerbera } from './cerber';
 import { rysujLudzika, pozaCzolga, pozaWPaszczy, pozaTrup, bryzgKrwi, kaluzaKrwi, type PozaLudzika } from './ludzik';
+import { rysujOderwanaGlowe, rysujTrzewia, rysujOderwanaReke } from './zarlok-sprite';
 
 type P = [number, number];
 const gl = (t: number): number => { const x = Math.max(0, Math.min(1, t)); return x * x * (3 - 2 * x); };
@@ -108,13 +109,13 @@ export function scenaZabijania(ctx: CanvasRenderingContext2D, hC: number, hV: nu
   if (wariant === 0) {
     if (u < 0.12) naZiemi(ctx, vx, hV, pozaCzolga(t, 1.8, 1), t, -1);
     else if (u < 0.7) {
-      wPaszczy(ctx, m[1], hV, pozaWPaszczy(t2, 1), Math.PI / 2 + potrzas * 0.5, t);
+      wPaszczy(ctx, m[1], hV, { ...pozaWPaszczy(t2, 1), brak: u > 0.4 ? { trzewia: true } : undefined }, Math.PI / 2 + potrzas * 0.5, t);
       bryzgKrwi(ctx, m[1][0], m[1][1], hV, ((u - 0.12) * 12) % 1, -1.2 + potrzas, 1.2, Math.floor(u * 12));
       kapie(ctx, m[1], hV, czas, 1.5);
     } else if (u < 0.85) {
       const f = zakres(u, 0.7, 0.85);
       ctx.save(); ctx.translate(mix(m[1][0], vx + hV * 0.5, f), mix(m[1][1], -hV * 0.1, f) - Math.sin(f * Math.PI) * hC * 0.5); ctx.rotate(f * 5);
-      rysujLudzika(ctx, hV, pozaTrup(1), t); ctx.restore();
+      rysujLudzika(ctx, hV, { ...pozaTrup(1), brak: { trzewia: true } }, t); ctx.restore();
     }
   } else if (wariant === 1) {
     const sr: P = [(m[0][0] + m[2][0]) / 2, (m[0][1] + m[2][1]) / 2];
@@ -153,6 +154,11 @@ export function scenaZabijania(ctx: CanvasRenderingContext2D, hC: number, hV: nu
       rysujLudzika(ctx, hV, { ...pozaWPaszczy(t2, 1), usta: 1 }, t); ctx.restore();
     } else if (u < 0.8) {
       wPaszczy(ctx, m[1], hV, { ...pozaWPaszczy(t2, 0.3), krew: 1, brak: u > 0.55 ? { glowa: true } : undefined }, Math.PI / 2 + potrzas * 0.4, t);
+      if (u > 0.55) {
+        // odgryziona głowa leci na ziemię
+        const f = zakres(u, 0.55, 0.7);
+        ctx.save(); ctx.translate(mix(m[1][0], vx + hV * 0.9, f), mix(m[1][1], -hV * 0.08, f) - Math.sin(f * Math.PI) * hV * 0.6); rysujOderwanaGlowe(ctx, hV, f * 7); ctx.restore();
+      }
       bryzgKrwi(ctx, m[1][0], m[1][1], hV * 1.3, zakres(u, 0.42, 0.62), -1.0, 2, 17);
       kapie(ctx, m[1], hV, czas, 2);
     } else {
@@ -170,13 +176,18 @@ export function rysujSzczatki(ctx: CanvasRenderingContext2D, hV: number, wariant
   ctx.save();
   ctx.globalAlpha *= a;
   kaluzaKrwi(ctx, 0, hV * 0.02, hV * (wariant === 3 || wariant === 1 ? 1.15 : 0.85), 1, ziarno);
-  if (wariant === 0) naZiemi(ctx, hV * 0.5, hV, pozaTrup(1), t, 1);
-  else if (wariant === 1) {
+  if (wariant === 0) {
+    naZiemi(ctx, hV * 0.5, hV, { ...pozaTrup(1), brak: { trzewia: true } }, t, 1);
+    ctx.save(); ctx.translate(hV * 0.95, -hV * 0.02); rysujTrzewia(ctx, hV, 0.1); ctx.restore();
+  } else if (wariant === 1) {
     naZiemi(ctx, -hV * 0.5, hV, { ...pozaTrup(2), brak: { polowa: 'gora' } }, t, 1);
     naZiemi(ctx, hV * 0.6, hV, { ...pozaTrup(4), brak: { polowa: 'dol' } }, t, -1);
+    ctx.save(); ctx.translate(hV * 0.05, -hV * 0.02); rysujTrzewia(ctx, hV * 1.2, -0.05); ctx.restore();
   } else if (wariant === 2) {
     // została tylko ręka
-    ctx.save(); ctx.translate(hV * 0.2, -hV * 0.05); ctx.rotate(1.3);
+    ctx.save(); ctx.translate(hV * 0.2, -hV * 0.06);
+    if (rysujOderwanaReke(ctx, hV, -1.45, 0.9)) { ctx.restore(); ctx.restore(); return; }
+    ctx.rotate(1.3);
     ctx.strokeStyle = 'rgba(16,10,8,0.96)'; ctx.lineWidth = hV * 0.09; ctx.lineCap = 'round';
     ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, hV * 0.3); ctx.stroke();
     ctx.strokeStyle = 'rgb(176,152,124)'; ctx.lineWidth = hV * 0.07;
@@ -184,12 +195,17 @@ export function rysujSzczatki(ctx: CanvasRenderingContext2D, hV: number, wariant
     ctx.fillStyle = 'rgb(128,14,10)'; ctx.beginPath(); ctx.arc(0, 0, hV * 0.05, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
   } else if (wariant === 3) {
-    naZiemi(ctx, 0, hV, { ...pozaTrup(3), krew: 1 }, t, 1, 0.6);
+    naZiemi(ctx, 0, hV, { ...pozaTrup(3), krew: 1, brak: { trzewia: true, rekaP: true } }, t, 1, 0.6);
+    for (const [x, k] of [[-0.75, 0.2], [0.7, -0.15]]) { ctx.save(); ctx.translate(hV * x, -hV * 0.01); rysujTrzewia(ctx, hV * 0.9, k); ctx.restore(); }
     ctx.fillStyle = 'rgb(110,10,8)';
     for (let i = 0; i < 6; i++) { ctx.beginPath(); ctx.ellipse(-hV * 0.8 + i * hV * 0.3, -hV * 0.02, hV * 0.05, hV * 0.025, i, 0, Math.PI * 2); ctx.fill(); }
   } else {
     naZiemi(ctx, 0, hV, { ...pozaTrup(5), brak: { glowa: true } }, t, 1);
     // odgryziona głowa obok
+    ctx.save(); ctx.translate(hV * 0.9, -hV * 0.06);
+    const jest = rysujOderwanaGlowe(ctx, hV, 1.9);
+    ctx.restore();
+    if (jest) { ctx.restore(); return; }
     ctx.fillStyle = 'rgb(176,152,124)'; ctx.strokeStyle = 'rgba(16,10,8,0.96)'; ctx.lineWidth = Math.max(1, hV * 0.012);
     ctx.beginPath(); ctx.arc(hV * 0.9, -hV * 0.08, hV * 0.085, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
     ctx.fillStyle = 'rgb(128,14,10)'; ctx.beginPath(); ctx.ellipse(hV * 0.9, -hV * 0.0, hV * 0.08, hV * 0.03, 0, 0, Math.PI * 2); ctx.fill();

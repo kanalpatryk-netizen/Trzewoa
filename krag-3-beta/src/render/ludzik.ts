@@ -5,6 +5,8 @@
  * Kąty kończyn są bezwzględne: 0 — w dół, dodatnie — do przodu (ku +x).
  */
 
+import { rysujLudzikaZWypieku } from './zarlok-sprite';
+
 export interface PozaLudzika {
   /** pochylenie tułowia od pionu (0 — prosto, π/2 — leży twarzą w prawo, −π/2 — na plecach w lewo) */
   tulow: number;
@@ -19,7 +21,7 @@ export interface PozaLudzika {
   /** błoto 0…1, krew 0…1 (rany, zachlapanie) */
   bloto: number; krew: number;
   /** odcięte: kończyny, głowa; połowy: 'gora' — rysuj tylko od pasa w górę, 'dol' — tylko nogi i miednicę */
-  brak?: { rekaL?: boolean; rekaP?: boolean; nogaL?: boolean; nogaP?: boolean; glowa?: boolean; polowa?: 'gora' | 'dol' };
+  brak?: { rekaL?: boolean; rekaP?: boolean; nogaL?: boolean; nogaP?: boolean; glowa?: boolean; polowa?: 'gora' | 'dol'; trzewia?: boolean };
 }
 
 export function pozaStoi(): PozaLudzika {
@@ -99,6 +101,9 @@ function rozdarcie(ctx: CanvasRenderingContext2D, a: P, b: P, h: number, wGore: 
 
 /** Rysuje żarłoka. `t` — czas (s) do drgań trzewi. Zwraca punkty ciała. */
 export function rysujLudzika(ctx: CanvasRenderingContext2D, h: number, p: PozaLudzika, t = 0): PunktyLudzika {
+  // żarłok z obrazków wypieczonych z modelu 3D (render/zarlok-sprite.ts); rysunek niżej — póki się nie wczytały
+  const zWypieku = rysujLudzikaZWypieku(ctx, h, p);
+  if (zWypieku) return zWypieku;
   const lw = Math.max(0.8, h * 0.012);
   const brak = p.brak ?? {};
   const gora = brak.polowa !== 'dol', dol = brak.polowa !== 'gora';
@@ -196,7 +201,7 @@ export function rysujLudzika(ctx: CanvasRenderingContext2D, h: number, p: PozaLu
 /** Leży twarzą w błocie, drga; `t` — sekundy. */
 export function pozaLezy(t: number, z = 0): PozaLudzika {
   const d = Math.sin(t * 1.3 + z) * 0.08;
-  return { ...pozaStoi(), tulow: Math.PI / 2 + 0.05, glowa: -0.2 + d, ramieL: Math.PI / 2 + 0.6, lokiecL: 0.4, ramieP: Math.PI / 2 - 0.2 + d, lokiecP: 0.8, udoL: -Math.PI / 2 + 0.1, kolanoL: -0.2, udoP: -Math.PI / 2 + 0.25, kolanoP: -0.5 + d, bloto: 1 };
+  return { ...pozaStoi(), tulow: Math.PI / 2 + 0.05, glowa: -0.2 + d, ramieL: Math.PI / 2 + 0.25, lokiecL: 0.25, ramieP: Math.PI / 2 - 0.25 + d, lokiecP: 0.55, udoL: -Math.PI / 2 + 0.1, kolanoL: -0.2, udoP: -Math.PI / 2 + 0.25, kolanoP: -0.5 + d, bloto: 1 };
 }
 /** Czołga się (ucieka), `t` — sekundy, `v` — tempo. */
 export function pozaCzolga(t: number, v = 1, z = 0): PozaLudzika {

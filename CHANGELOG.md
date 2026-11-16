@@ -1,5 +1,24 @@
 # Zmiany
 
+## TRZEWIA — Krąg Trzeci (beta), 4. podejście: grafika — 16.11
+Po uwagach użytkownika („Cerber musi wyglądać dużo, dużo lepiej”, „wygląda jak kukiełka”, „plastelina”, „gry na PS1
+wyglądały tylko trochę gorzej”, „usuń napisy grrr, gulp — to nie komiks”, „popraw ludzi i ich rany”):
+- **Cerber w 3D** (`src/render/cerber3d.ts`, silnik `src/render/gl3d.ts`): model z brył zlewanych w jedno ciało (pola
+  odległości, WebGL2) według obrazka referencyjnego — trzy różne głowy (doberman, wilk, pitbull) z czaszką, fałdami warg,
+  dziąsłami, pełnym uzębieniem, językiem i śliną; sierść z połyskiem wzdłuż włosa i krótkim włosem na krawędziach,
+  kolce na grzbiecie, wężowy ogon w łuskach, łapy z pazurami, krew w zaciekach.
+- **Wypiek i składanie** (`scripts/wypiek-cerbera.mjs`, `narzedzia/wypiek-cerbera.html`, `src/render/cerber-sprite.ts`,
+  szkielet `src/render/cerber-rig.ts`): model renderuje się raz do obrazków (`obrazy/cerber/`, 167 części: klatki chodu,
+  stawania dęba, przysiadu, leżenia, kamienia, ogon, szyje, głowy w 4 kątach × 5 rozwarciach paszczy × 2 stopniach krwi),
+  gra składa z nich Cerbera w każdej pozie (krąg, zabijanie, posąg i płaskorzeźba na pieczęci, skok, walka, konanie).
+- **Potępieni w 3D** (`src/render/czlowiek3d.ts`, `src/render/zarlok-sprite.ts`, `obrazy/zarlok/`): nagi, obrzmiały
+  żarłok — blada, brudna, mokra skóra, brzuch, fałdy, zlepione włosy — składany z części na stawach z `ludzik.ts`.
+  **Rany duże i dosłowne:** rozerwanie w pasie (poszarpany przekrój: tłuszcz, mięso, kręgosłup, wywleczone jelita),
+  rozpruty brzuch, oderwana głowa z kikutem szyi, kikuty, kupa trzewi — w zabijaniu na kręgu, w szczątkach i w filmie.
+- **Film bez komiksu** (`src/app/film-kregu.ts`): bez wyrazów dźwiękonaśladowczych, dymków, ramek, rastra i linii pędu —
+  kinowe napisy, ziarno, winieta, ujęcia po kolei zamiast kadrów. Rzeź brutalniejsza: wypatroszenie, rozdarcie na pół
+  z najazdem kamery i fontanną krwi, zmiażdżenie z odpadającą głową, oderwana ręka.
+
 ## TRZEWIA — Krąg Trzeci (beta), 3. podejście — 15.11
 - **Film zamiast slajdów** (`src/app/film-kregu.ts`): ok. 75 s ruchomego komiksu z historią od zjazdu na krąg, przez rzeź
   Cerbera, Dantego i Wergiliusza, aż po sześciu wstających z błota i Cerbera, który zapamiętuje ich zapach. Esc pomija.
