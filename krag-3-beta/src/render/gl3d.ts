@@ -121,9 +121,9 @@ float odl(int i, vec3 p, out int typ, out vec4 c){
   return 1e9;
 }
 
-float gDbez;
+float gDbez = 0.0;
 // płaszczyzna rozdarcia z poszarpanym brzegiem (strzępy mięsa, nierówna linia)
-float ciecie(vec3 p){ return dot(p, uCiecie.xyz) - uCiecie.w + uSzarp * (fbm(p * 38.0 + 2.0) - 0.5 + 0.6 * (szum(p * 140.0) - 0.5)); }
+float ciecie(vec3 p){ float brzeg = smoothstep(-0.012, -0.001, gDbez); return dot(p, uCiecie.xyz) - uCiecie.w + uSzarp * (fbm(p * 38.0 + 2.0) - 0.5 + (0.15 + 0.5 * brzeg) * (szum(p * 140.0) - 0.5)); }
 float mapa(vec3 p){
   float d = 1e9; float amp = 0.0; float najb = 1e9; gNaj = -1;
   for (int g = 0; g < ${MAX_GRUP}; g++) {
@@ -154,9 +154,9 @@ float mapa(vec3 p){
   return d;
 }
 
-vec3 gKol; float gMat; float gKrew; float gNaKosci; int gNajB; float gPasmo = 1.0;
+vec3 gKol; float gMat; float gKrew; float gNaKosci; int gNajB; float gPasmo = 1.0; float gRana = 1e9;
 void barwa(vec3 p){
-  vec3 kol = vec3(0.0); float suma = 0.0; float najb = 1e9; float mat = 0.0; float krew = 0.0; gNaKosci = 0.0; gNajB = -1;
+  vec3 kol = vec3(0.0); float suma = 0.0; float najb = 1e9; float mat = 0.0; float krew = 0.0; gNaKosci = 0.0; gNajB = -1; gRana = 1e9;
   for (int g = 0; g < ${MAX_GRUP}; g++) {
     if (g >= uG) break;
     if ((gMaska & (1 << g)) == 0) continue;
@@ -168,7 +168,7 @@ void barwa(vec3 p){
       float di = odl(i, p, typ, c);
       if (typ == 5) { if (di < 0.0) gNaKosci = max(gNaKosci, clamp(-di / max(P(i,0).w, 1e-4), 0.0, 1.0) + 0.001); continue; }
       if (typ == 4) continue;
-      if (typ == 3) { if (di < 0.012) { float w = 3.0; kol += vec3(0.4, 0.035, 0.03) * w; suma += w; if (di < najb) { najb = di; mat = 11.0; } } continue; }
+      if (typ == 3) { gRana = min(gRana, di); if (di < 0.012) { float w = 3.0; kol += vec3(0.4, 0.035, 0.03) * w; suma += w; if (di < najb) { najb = di; mat = 11.0; } } continue; }
       float w = exp(-max(di, 0.0) * 220.0);
       vec4 k3 = P(i, 3);
       kol += k3.rgb * w; krew += k3.a * w; suma += w;
@@ -307,12 +307,27 @@ void main(){
   if (naCieciu) {
     float gl = -gDbez;
     // przekrój warstwami: skóra, żółty tłuszcz w zrazikach, włókniste mięso, ciemniejsze trzewia; kość ze szpikiem
-    float n1 = szum(p * 90.0), n2 = szum(p * vec3(230.0, 60.0, 230.0) + 3.0), n3 = szum(p * 400.0 + 9.0);
-    if (gNaKosci > 0.0) { alb = mix(vec3(0.8, 0.74, 0.6), vec3(0.4, 0.05, 0.04), smoothstep(0.5, 0.8, gNaKosci)) * (0.85 + 0.3 * n3); mat = 12.0; spec = 0.3; polysk = 30.0; }
+    float n1 = szum(p * 90.0), n2 = szum(p * vec3(150.0, 34.0, 150.0) + 3.0), n3 = szum(p * 210.0 + 9.0);
+    if (gNaKosci > 0.0) { alb = mix(vec3(0.8, 0.74, 0.6), vec3(0.4, 0.05, 0.04), smoothstep(0.5, 0.8, gNaKosci)) * (0.9 + 0.2 * n3); mat = 12.0; spec = 0.3; polysk = 30.0; }
     else if (gl < 0.0022) { alb = vec3(0.16, 0.1, 0.085); mat = 10.0; spec = 0.3; }
-    else if (gl < 0.011 + 0.006 * n1) { alb = mix(vec3(0.7, 0.55, 0.28), vec3(0.52, 0.36, 0.17), n2) * (0.85 + 0.3 * n3); alb = mix(alb, vec3(0.35, 0.04, 0.03), smoothstep(0.7, 0.9, n3) * 0.6); mat = 14.0; spec = 0.55; polysk = 40.0; }
-    else if (gl < 0.034 + 0.012 * n1) { alb = vec3(0.3, 0.03, 0.024) * (0.5 + 0.8 * n2) * (0.85 + 0.3 * n3); mat = 11.0; spec = 0.7; polysk = 55.0; }
-    else { alb = mix(vec3(0.16, 0.02, 0.03), vec3(0.32, 0.12, 0.1), smoothstep(0.35, 0.7, n1)) * (0.8 + 0.4 * n3); mat = 13.0; spec = 0.85; polysk = 70.0; }
+    else if (gl < 0.011 + 0.006 * n1) {
+      // tłuszcz: żółte zraziki przedzielone cienkimi, czerwonymi przegrodami
+      float zr = smoothstep(0.08, 0.0, abs(szum(p * 120.0 + 1.0) - 0.5));
+      alb = mix(vec3(0.52, 0.36, 0.15), vec3(0.44, 0.29, 0.12), n2) * (0.93 + 0.14 * n3);
+      alb = mix(alb, vec3(0.3, 0.04, 0.03), max(zr * 0.55, smoothstep(0.45, 0.75, fbm(p * 30.0 + 8.0)) * 0.55));
+      mat = 14.0; spec = 0.6; polysk = 45.0;
+    }
+    else if (gl < 0.034 + 0.012 * n1) {
+      // mięsień: ciemnoczerwony, włókna wzdłuż, powięź jaśniejszymi pasmami
+      float wl = szum(p * vec3(260.0, 26.0, 260.0) + 5.0);
+      alb = vec3(0.3, 0.032, 0.026) * (0.72 + 0.4 * wl) * (0.92 + 0.16 * n3);
+      alb = mix(alb, vec3(0.42, 0.22, 0.2), smoothstep(0.86, 0.95, n2) * 0.5);
+      mat = 11.0; spec = 0.75; polysk = 60.0;
+    }
+    else { alb = mix(vec3(0.16, 0.02, 0.03), vec3(0.34, 0.14, 0.12), smoothstep(0.35, 0.7, n1)) * (0.88 + 0.24 * n3); mat = 13.0; spec = 0.85; polysk = 70.0; }
+    // krew zbiera się w zagłębieniach przekroju — ciemna, lśniąca
+    float zbior = smoothstep(0.52, 0.78, fbm(p * 24.0 + 6.0));
+    if (gNaKosci <= 0.0) alb = mix(alb, vec3(0.1, 0.004, 0.004), zbior * 0.65);
     mokre = 1.0;
   } else if (mat < 0.5 || abs(mat - 1.0) < 0.5 || abs(mat - 19.0) < 0.5) {
     // krótka sierść: drobne pasma wzdłuż włosa (w kolorze i w normalnej), połysk anizotropowy
@@ -357,19 +372,30 @@ void main(){
     spec = 0.55; polysk = 40.0;
   } else if (abs(mat - 8.0) < 0.5) { alb *= 0.8 + 0.4 * szum(p * vec3(30.0, 200.0, 30.0)); spec = 0.55; polysk = 45.0;
   } else if (abs(mat - 10.0) < 0.5) {
-    alb *= 0.85 + 0.3 * szum(p * 60.0);
-    alb = mix(alb, alb * vec3(0.8, 0.85, 1.05), smoothstep(0.5, 0.8, szum(p * 12.0 + 3.0)));
-    float zy = smoothstep(0.02, 0.0, abs(szum(p * vec3(40.0, 10.0, 40.0)) - 0.5)) * 0.25;
-    alb = mix(alb, vec3(0.3, 0.32, 0.45), zy);
-    // sine plamy (sińce, sinica), brud: smugi spływające z deszczem i błoto w zagłębieniach
-    alb = mix(alb, alb * vec3(0.75, 0.78, 0.95), smoothstep(0.55, 0.8, fbm(p * 9.0 + 11.0)) * 0.7);
+    // skóra człowieka: nierówny koloryt (zaczerwienienia, sine plamy), żyły płytko pod skórą, brud spływający
+    // z deszczem, z bliska pory i zmarszczki; mokra — krople deszczu połyskują
+    float lodS = smoothstep(1.5, 4.0, uKadr.z / 500.0);
+    alb *= 0.9 + 0.2 * szum(p * 60.0);
+    alb = mix(alb, alb * vec3(1.14, 0.84, 0.82), smoothstep(0.45, 0.8, fbm(p * 14.0 + 3.0)) * 0.6);
+    alb = mix(alb, alb * vec3(0.8, 0.85, 1.04), smoothstep(0.55, 0.85, fbm(p * 9.0 + 11.0)) * 0.55);
+    float zy = smoothstep(0.012, 0.0, abs(szum(p * vec3(34.0, 9.0, 34.0)) - 0.5)) * smoothstep(0.5, 0.75, szum(p * 7.0 + 5.0));
+    alb = mix(alb, alb * vec3(0.72, 0.8, 0.96), zy * 0.3);
     float smuga = fbm(p * vec3(26.0, 5.0, 26.0) + 4.0);
-    alb = mix(alb, vec3(0.06, 0.048, 0.034), smoothstep(0.52, 0.75, smuga) * 0.85);
-    alb = mix(alb, vec3(0.05, 0.04, 0.028), smoothstep(0.62, 0.85, fbm(p * 40.0 + 7.0)) * 0.6);
-    spec = 0.08 + 0.1 * uOgol.w; polysk = 16.0; mokre = uOgol.w * 0.3;
+    alb = mix(alb, alb * vec3(0.5, 0.42, 0.33), smoothstep(0.55, 0.78, smuga) * 0.7);
+    alb = mix(alb, vec3(0.07, 0.055, 0.04), smoothstep(0.66, 0.88, fbm(p * 40.0 + 7.0)) * 0.45);
+    float por = szum(p * 520.0);
+    n = normalize(n + lodS * 0.07 * (vec3(por, szum(p * 510.0 + 2.0), szum(p * 530.0 + 5.0)) - 0.5));
+    float kropla = smoothstep(0.8, 0.86, szum(p * 180.0 + 3.7)) * uOgol.w;
+    spec = 0.09 + 0.1 * uOgol.w + kropla * 1.2; polysk = mix(38.0, 110.0, kropla); mokre = uOgol.w * 0.35 + kropla * 0.5;
   } else if (abs(mat - 11.0) < 0.5) { float wl2 = szum(p * vec3(170.0, 40.0, 170.0)); alb *= 0.55 + 0.7 * wl2; spec = 0.75; polysk = 50.0; mokre = 1.0;
   } else if (abs(mat - 12.0) < 0.5) { alb *= 0.9 + 0.2 * szum(p * 120.0); spec = 0.3; polysk = 25.0;
-  } else if (abs(mat - 13.0) < 0.5) { alb *= 0.75 + 0.4 * szum(p * 90.0); alb = mix(alb, alb * vec3(0.7, 0.75, 0.95), smoothstep(0.5, 0.8, szum(p * 22.0 + 4.0))); alb = mix(alb, vec3(0.2, 0.02, 0.02), smoothstep(0.6, 0.8, szum(p * 30.0)) * 0.7); spec = 0.75; polysk = 60.0; mokre = 1.0;
+  } else if (abs(mat - 13.0) < 0.5) {
+    alb *= 0.85 + 0.25 * szum(p * 60.0);
+    alb = mix(alb, alb * vec3(0.72, 0.74, 0.98), smoothstep(0.45, 0.8, szum(p * 18.0 + 4.0)) * 0.8);
+    float nacz = smoothstep(0.03, 0.0, abs(szum(p * vec3(60.0, 160.0, 60.0)) - 0.5));
+    alb = mix(alb, vec3(0.16, 0.03, 0.06), nacz * 0.6);
+    alb = mix(alb, vec3(0.14, 0.008, 0.008), smoothstep(0.55, 0.8, fbm(p * 28.0 + 3.0)) * 0.75);
+    spec = 1.1; polysk = 85.0; mokre = 1.0;
   } else if (abs(mat - 14.0) < 0.5) { spec = 0.5; polysk = 30.0;
   } else if (abs(mat - 15.0) < 0.5) { alb *= 0.7 + 0.5 * szum(p * 50.0); spec = 0.5; polysk = 25.0; mokre = 0.6;
   } else if (abs(mat - 16.0) < 0.5) { alb *= 0.7 + 0.5 * fbm(p * 30.0); spec = 0.05; polysk = 8.0;
@@ -377,11 +403,17 @@ void main(){
   } else if (abs(mat - 18.0) < 0.5) { alb *= 0.75 + 0.4 * szum(p * vec3(20.0, 90.0, 20.0)); spec = 0.05; }
   float krewM = 0.0;
   if (gKrew > 0.01 && !naCieciu) {
-    // krew w plamach i zaciekach (więcej krwi = większe pole), świeża mokra i zaschnięta brunatna
+    // krew: plamy rozmazane (więcej krwi = większe pole), zacieki spływające w dół, rozbryzgi kropel;
+    // najgęściej przy ranach (kratery) i przy brzegu rozdarcia; świeża mokra i zaschnięta brunatna
+    float blisko = exp(-max(gRana, 0.0) * 60.0);
+    if (dot(uCiecie.xyz, uCiecie.xyz) > 0.0) blisko = max(blisko, exp(-abs(dot(p, uCiecie.xyz) - uCiecie.w) * 45.0));
     float fk = fbm(p * vec3(30.0, 11.0, 30.0) + 5.0) * 0.8 + szum(p * vec3(90.0, 30.0, 90.0)) * 0.2;
-    float prog = 0.66 - 0.21 * gKrew;
-    krewM = smoothstep(prog, prog + 0.05, fk);
-    float zasch = smoothstep(0.45, 0.7, szum(p * 35.0 + 1.0));
+    float prog = 0.74 - 0.17 * gKrew - 0.3 * blisko;
+    float pole = smoothstep(prog, prog + 0.05, fk);
+    float struga = smoothstep(0.86, 0.89, szum(vec3(p.x * 150.0, p.y * 5.0, p.z * 150.0) + 2.0)) * smoothstep(0.55, 0.75, fbm(p * 9.0 + 2.0) + 0.25 * gKrew) * 0.8;
+    float kropelki = smoothstep(0.86, 0.9, szum(p * 170.0 + 9.0)) * smoothstep(0.3, 0.6, gKrew + blisko);
+    krewM = max(pole, max(struga, kropelki) * clamp(gKrew * 1.4, 0.0, 1.0));
+    float zasch = smoothstep(0.45, 0.7, szum(p * 35.0 + 1.0)) * (1.0 - blisko);
     alb = mix(alb, mix(vec3(0.075, 0.005, 0.004), vec3(0.06, 0.016, 0.01), zasch) * (0.7 + 0.6 * szum(p * 140.0)), krewM);
     spec = mix(spec, mix(0.95, 0.3, zasch), krewM); polysk = mix(polysk, mix(80.0, 25.0, zasch), krewM); mokre = max(mokre, krewM * (1.0 - zasch)); aniz *= 1.0 - krewM;
   }
@@ -409,13 +441,14 @@ void main(){
   }
   float zw = clamp(ndl * 0.7 + 0.3, 0.0, 1.0);
   float zawin = aniz > 0.0 ? zw * zw : mix(dk, dw * dw, 0.35);
-  vec3 sss = (abs(mat - 2.0) < 0.5 || abs(mat - 3.0) < 0.5 || abs(mat - 5.0) < 0.5) ? alb * vec3(0.6, 0.14, 0.08) * (1.0 - dk) * 0.5 : abs(mat - 10.0) < 0.5 ? alb * vec3(0.4, 0.12, 0.08) * (1.0 - dk) * 0.3 : abs(mat - 4.0) < 0.5 ? alb * vec3(0.35, 0.25, 0.15) * (1.0 - dk) : vec3(0.0);
+  vec3 sss = (abs(mat - 2.0) < 0.5 || abs(mat - 3.0) < 0.5 || abs(mat - 5.0) < 0.5) ? alb * vec3(0.6, 0.14, 0.08) * (1.0 - dk) * 0.5 : abs(mat - 10.0) < 0.5 ? alb * vec3(0.62, 0.2, 0.12) * (1.0 - dk) * 0.42 : abs(mat - 4.0) < 0.5 ? alb * vec3(0.35, 0.25, 0.15) * (1.0 - dk) : vec3(0.0);
   float aoM = mix(1.0, ao, 0.85);
+  float obrysM = abs(mat - 10.0) < 0.5 ? 0.45 : 1.0;
   float fres5 = pow(1.0 - ndv, 5.0);
   vec3 kol = alb * (CK * (zawin + sAn2) * sh + CF * df + otoczenie(n, sw)) * aoM + sss * aoM
            + CK * (s1 + sAn) * sh * ao
-           + CR * fres * (0.1 + 0.9 * dr) * ao * mix(0.12, 0.35, max(aniz * 0.6, min(spec, 1.0)))
-           + vec3(1.0, 0.28, 0.08) * fres5 * max(dot(n, LP), 0.0) * 0.35 * ao
+           + CR * fres * (0.1 + 0.9 * dr) * ao * mix(0.12, 0.35, max(aniz * 0.6, min(spec, 1.0))) * obrysM
+           + vec3(1.0, 0.28, 0.08) * fres5 * max(dot(n, LP), 0.0) * 0.35 * ao * obrysM
            + emis;
   kol = wlKol + (1.0 - wlA) * kol;
   kol = aces(kol * 1.35);

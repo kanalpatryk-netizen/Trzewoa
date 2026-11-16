@@ -22,7 +22,9 @@ pieczęć, Cerber zeskakuje za nimi. Wygrana to „Zejście do kręgu czwartego�
 ## Wstęp: film i scena wejścia (`src/app/film-kregu.ts`, `src/app/wstep-kregu.ts`)
 - **Film (ok. 75 s)**: jeden ciągły przerywnik jak w grach (po uwadze z 15.11 „to nie jest komiks, tylko dość brutalna
   opowieść”): kamera jedzie, najeżdża i trzęsie się przy uderzeniach, cięcia między ujęciami, kinowe napisy (narrator
-  kursywą, kwestie z myślnikiem), ziarno, zimna gradacja i winieta. Bez dymków, ramek i wyrazów dźwiękonaśladowczych.
+  kursywą, kwestie z myślnikiem), ziarno, krwawa gradacja i winieta. Bez dymków, ramek i wyrazów dźwiękonaśladowczych.
+  Niebo i ląd jak w grze (5. podejście): burzowy strop z krwawym spodem, pioruny, tarasy leja z sylwetkami potępionych,
+  wicher kręgu II, łuna dna nad horyzontem, deszcz z gradem i brudnym śniegiem, w kałużach odbija się czerwień.
   Kolejne ujęcia:
   1. zjazd z nieba na krąg w deszczu;
   2. dwóch żarłoków bije się o ochłap;
@@ -41,16 +43,32 @@ pieczęć, Cerber zeskakuje za nimi. Wygrana to „Zejście do kręgu czwartego�
   Esc pomija film.
 - **Scena wejścia bez sterowania**: szóstka wstaje z błota, idzie przez krąg i schodzi po linie do sali. Dopiero po
   „Teraz ty.” gracz przejmuje kontrolę.
-- **Potępieni** w filmie i w grze to ten sam nagi, obrzmiały żarłok z modelu 3D (`src/render/czlowiek3d.ts`), składany
+- **Potępieni** w filmie i w grze to ten sam nagi, ciężki żarłok z modelu 3D (`src/render/czlowiek3d.ts`), składany
   z wypieczonych części na stawach z `src/render/ludzik.ts` (`src/render/zarlok-sprite.ts`, obrazki w `obrazy/zarlok/`).
+  Od 5. podejścia zbudowany jak prawdziwe ciało: ludzkie proporcje (głowa ~1/7,5 wzrostu), twarz z powiekami, gałkami
+  ocznymi, nosem, wargami, zębami i uszami, kilkudniowy zarost, krótkie mokre włosy; obojczyki, piersi, żebra pod
+  tłuszczem, brzuch nad łonem, pośladki, mięśnie kończyn, kolana, łokcie, dłonie z palcami i paznokciami, stopy
+  z palcami. Skóra żywa (twarz, dłonie i stopy czerwieńsze, żyły, brud, krople deszczu), oświetlona po piekielnemu:
+  słabe zimne światło z góry i czerwona łuna od dołu. Stawy chowają się pod rodzicem (kolano pod udem, łokieć pod
+  ramieniem) — bez „kulek” manekina.
   Leży, czołga się, wyje, żre, błąka się i bije o ochłap, a da się go też trzymać w paszczy, rozerwać i zjeść. Rany są
   dosłowne: rozerwanie w pasie z poszarpanym przekrojem (tłuszcz, mięso, kręgosłup) i wywleczonymi jelitami, rozpruty
   brzuch, oderwana głowa, kikuty, kupa trzewi.
 
 ## Krąg (`src/render/krag-swiat.ts`, `src/render/potepieni.ts`)
-- **Kształt leja:** nad powierzchnią widać wnętrze leja, czyli tarasy wyższych kręgów jak rzędy amfiteatru. Na kręgu
-  drugim wicher niesie dusze, na pierwszym jest blask zamku Otchłani. Po prawej taras kończy się przepaścią do
-  kręgu czwartego, z której bije łuna. Kamera sięga wysoko nad taras.
+- **Kształt leja (piekło Dantego, 5. podejście; `src/render/pieklo.ts`):** nad powierzchnią widać wnętrze leja —
+  tarasy wyższych kręgów jak poszarpane urwiska (filary skały, rysy, zacieki), od dołu rozgrzane czerwoną łuną
+  niższych kręgów. W Przedsionku nijacy biegną gęsiego za białą chorągwią, w Otchłani stoi zamek o siedmiu murach
+  w półkuli bladego światła, nad kręgiem II huczy wicher i niesie setki koziołkujących ciał, na drugim brzegu naszego
+  kręgu leżą w błocie żarłocy. Nad wszystkim burzowy strop z wymionami, podświetlony od spodu na krwawo; co kilka
+  sekund (w ulewie częściej) błyskawica wybiela lej i bije piorun. Z otchłani lecą iskry. Po prawej taras kończy się
+  przepaścią do kręgu czwartego: w dole żarzą się mury i wieże miasta Dis, bije łuna, kłębi się dym. Kamera sięga
+  wysoko nad taras.
+- **Deszcz i błoto:** wieczny deszcz w dwóch warstwach (w dole kadru krople łapią łunę), zawsze trochę gradu
+  i brudnego śniegu, rozpryski na błocie, mgła smrodu przy ziemi. Taras pokrywa cuchnące błoto z tłustym połyskiem,
+  kałuże odbijają czerwone niebo i drżą od kropel, w błocie leżą kości, czaszki (też wieprza — Ciacco), żebra,
+  gnijące ochłapy z robactwem, skorupy dzbanów, grad, a co kilkanaście kroków szczątki rozszarpanych (ręka, głowa,
+  trzewia) w kałużach krwi. Cały obraz ma krwawo-brunatną gradację.
 - **Potępieni wszędzie:** ok. 200 żarłoków na tarasie i w pustkach pod nim (jaskinie, ruiny, sala, krypta przy pieczęci).
   Mają wzrost naszych postaci; to ten sam żarłok z modelu 3D co w filmie (blada, brudna, mokra skóra). Każdy ma swoją
   czynność i rytm: leży i drga w błocie, klęczy i wyje w deszcz, żre błoto, grzebie
@@ -63,7 +81,20 @@ pieczęć, Cerber zeskakuje za nimi. Wygrana to „Zejście do kręgu czwartego�
   Gdy jest blisko szybu, kiedy kosz rusza w dół, pożera 25% porcji. W lochu na dnie jest **pieczęć zejścia**:
   kamienne koło z wyrytym trójgłowym psem, skute łańcuchami. Modlitwa ją kruszy (rysy świecą łuną kręgu czwartego),
   a gdy pęknie, Cerber zeskakuje z góry, ląduje i wyje na trzy gardła.
+- **Więcej krwi przy zabijaniu (5. podejście):** tętnice biją pulsującym łukiem i rozpryskują się w błocie, przy
+  rozerwaniu wybucha krwawa mgiełka, lecą strzępy mięsa, skóry z tłuszczem i jelit (lądują w błocie), między
+  rozrywanymi połówkami ciągnie się sznur jelit, krople rozpłaszczają się na ziemi, kałuże są większe i otacza je
+  rozbryzg. Przekroje ran wyglądają jak mięso: skóra, żółty tłuszcz w zrazikach, włókniste mięśnie, krew zbiera się
+  w zagłębieniach; krew na skórze to zacieki, smugi i krople — najgęściej przy ranie.
 - Wóz z resztkami ciągną zaprzęgnięci potępieni zamiast koni. Role w księdze to grabarze, mnisi i rycerz.
+
+## Loch, w którym walczy się z Cerberem (`src/render/pieklo-lochu.ts`, `src/render/pomnik.ts`)
+- Po murach spływa krew spod sklepienia (zacieki, odciski dłoni), nad koszami ognia ściany są okopcone, a ich żar
+  czerwieni mury i sypie iskry pod sklepienie.
+- W przęsłach wiszą na łańcuchach powieszeni za nadgarstki potępieni (kołyszą się, kapie z nich krew w kałuże), pod
+  murami leżą kopce czaszek i kości, posadzkę znaczą krwawe smugi wleczonych ciał.
+- Z rozbitej pieczęci (zejście do kręgu czwartego) buchają jęzory ognia, kłębi się dym, lecą iskry, a łuna oświetla
+  arenę od dołu.
 
 ## Mechaniki (`src/sim/krag.ts`, liczby: `src/nastawy/krag.ts`)
 - **Obżarstwo.** Gdy w koszu jest jedzenia w bród, szóstka je ponad głód. Obżarty jest wolniejszy, słabiej kuje
@@ -85,15 +116,21 @@ Render jest za wolny, by liczyć go w grze, więc model **wypieka się raz do ob
 w `src/render/cerber-wypiek.ts`): klatki chodu, stania dęba, przysiadu, leżenia, odrzutu i kamienia, ogon, trzy szyje
 i głowy w 4 kątach × 5 rozwarciach paszczy × 2 stopniach krwi. Gra składa z nich Cerbera według szkieletu
 (`src/render/cerber-rig.ts`) — na kręgu, przy zabijaniu, na pieczęci (płaskorzeźba i posąg), w skoku, w walce
-i przy konaniu. W walce odgrywa ruchy dawnego demona:
-- ciosy to kłapnięcia jednej głowy;
-- tupnięcie to stanięcie dęba;
-- tchnienie to ogień ze środkowej paszczy;
-- bicz to smagnięcie ogonem;
-- ryk to wycie trzech gardeł.
+i przy konaniu.
 
-Przy okupie głowy żrą, a na koniec Cerber kona w złotym świetle i rozpada się na bryły. Dawny rysunek 2D
-(`src/render/cerber.ts`) zostaje tylko na chwilę wczytywania obrazków.
+**Walka (5. podejście, `src/render/cerber-boss.ts`, ruchy w `src/nastawy/walka.ts`):** każdy cios Cerbera ma własną
+animację z tych samych tików co w symulacji — głowa cofa się, rzuca i kłapie (z rozmazaną smugą, szarpnięciem po
+ugryzieniu i bryzgiem krwi z paszczy), łapa zamachuje się i wali z góry, Cerber skacze, przypada na przednie łapy,
+staje dęba i uderza w ziemię (fala uderzeniowa), przyciska ofiarę łapą, zieje ogniem, smaga ogonem, wyje na trzy
+gardła. Nowe klatki ciała (zamach łapą, skok, przypadnięcie) są wypieczone z modelu 3D.
+
+**Ścięcie głowy:** rycerz ma cios „Ścięcie głowy” — doskok i cięcie z wyskoku (nie do zablokowania). Działa, gdy
+Cerber ma mniej niż 80% życia (pierwsza głowa) i mniej niż 45% (druga). Spada pitbull, potem wilk — doberman zostaje.
+Z kikuta szyi tryska krew (przekrój: futro, mięso, kręgi), ścięta głowa spada na ziemię w kałużę, Cerber chwieje się
+i słabiej gryzie (−15% na każdą głowę), a kronika to odnotowuje. Na koniec Cerber wyje, osuwa się na kolana i pada
+we własną krew (bez dawnej złotej poświaty).
+
+Dawny rysunek 2D (`src/render/cerber.ts`) zostaje tylko na chwilę wczytywania obrazków.
 
 **Nowy wypiek** (po zmianie modelu): `npm run dev`, potem
 `node scripts/wypiek-cerbera.mjs http://localhost:5180` (Cerber) albo `... --zarlok` (żarłok i rany); drugi argument

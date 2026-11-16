@@ -17,6 +17,10 @@ import { ulewa } from '../sim/krag';
 import { ukladKatedry } from './katedra';
 import { wysokoscGrzbietu } from './grzbiet';
 import { wolnoRuszac } from './nastroj';
+import { ustawienia } from '../core/settings-store';
+import { wygladzUlewe, luna, blyskawica, pasMgly, szum1 } from './pieklo';
+import { kaluzaKrwi } from './ludzik';
+import { rysujOderwanaReke, rysujOderwanaGlowe, rysujTrzewia } from './zarlok-sprite';
 
 const TUSZ = 'rgba(14,10,8,0.95)';
 const los = (n: number): number => {
@@ -25,13 +29,8 @@ const los = (n: number): number => {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
 };
 
-/** Ulewa na ekranie: wygładzona (żeby deszcz nie skakał). */
-let ulewaEkran = 0;
-function mocUlewy(sim: Sim): number {
-  const u = ulewa(sim);
-  ulewaEkran += (u - ulewaEkran) * 0.05;
-  return ulewaEkran;
-}
+/** Ulewa na ekranie: wygładzona w czasie (żeby deszcz nie skakał) — render/pieklo.ts. */
+const mocUlewy = (sim: Sim, teraz: number): number => wygladzUlewe(ulewa(sim), teraz);
 
 // ---------------------------------------------------------------- brzeg kręgu (zamiast katedry)
 
@@ -160,109 +159,323 @@ export function rysujBrzegKreguNad(ctx: CanvasRenderingContext2D, sim: Sim, cam:
 
 // ---------------------------------------------------------------- niebo, deszcz, grad, błyskawice
 
-/** Żarłocy leżący w błocie na powierzchni (przed mrokiem — w ciemności ledwo ich widać). */
-export function rysujBlotoPowierzchni(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
-  const w = sim.world, z = cam.zoom;
-  const k = ukladKatedry(w);
-  const x0 = Math.max(2, Math.floor(cam.toWorldX(0)) - 2), x1 = Math.min(w.w - 2, Math.ceil(cam.toWorldX(cam.vw)) + 2);
-  if (cam.toScreenY(SURFACE_Y - 6) > cam.vh || cam.toScreenY(SURFACE_Y + 2) < 0) return;
-  const t = wolnoRuszac() ? teraz / 1000 : 0;
-  ctx.save();
-  for (let x = x0 - (x0 % 5); x <= x1; x += 5) {
-    if (k && x > k.x0 - 3 && x < k.x1 + 2) continue;
-    if (los(x * 31) < 0.35) continue;
-    const gx = x + los(x) * 3, gy = SURFACE_Y - wysokoscGrzbietu(w, Math.floor(gx));
-    const sx = cam.toScreenX(gx), sy = cam.toScreenY(gy) + z * 0.15;
-    // kałuża błota
-    ctx.fillStyle = 'rgba(38,40,30,0.9)';
-    ctx.beginPath(); ctx.ellipse(sx, sy, z * 1.4, z * 0.22, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = 'rgba(120,140,130,0.16)';
-    ctx.beginPath(); ctx.ellipse(sx - z * 0.3, sy - z * 0.05, z * 0.8, z * 0.07, 0, 0, Math.PI * 2); ctx.fill();
-    // ciało zanurzone w błocie: grzbiet, głowa, ręka wyciągnięta
-    const kier = los(x * 7) < 0.5 ? -1 : 1;
-    const oddech = Math.sin(t * 0.8 + x) * z * 0.03;
-    ctx.fillStyle = 'rgba(52,46,40,0.95)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.7, z * 0.05);
-    ctx.beginPath(); ctx.ellipse(sx, sy - z * 0.12 - oddech, z * 0.75, z * 0.22, 0, Math.PI, Math.PI * 2); ctx.fill(); ctx.stroke();
-    ctx.beginPath(); ctx.arc(sx + kier * z * 0.85, sy - z * 0.15, z * 0.2, Math.PI, Math.PI * 2); ctx.fill(); ctx.stroke();
-    if (los(x * 13) < 0.5) {
-      ctx.beginPath(); ctx.moveTo(sx + kier * z * 0.9, sy - z * 0.1);
-      ctx.lineTo(sx + kier * z * 1.5, sy - z * (0.4 + 0.08 * Math.sin(t * 0.6 + x)));
-      ctx.lineWidth = Math.max(0.8, z * 0.12); ctx.strokeStyle = 'rgba(52,46,40,0.95)'; ctx.stroke();
-    }
-  }
-  ctx.restore();
-}
-
-/** Niebo nad kręgiem: chmury, deszcz (wieczny), w ulewie grad, brudny śnieg i błyskawice — nad mrokiem. */
+/**
+ * Niebo nad kręgiem (nad mrokiem): wieczny deszcz — dalsza warstwa gęsta i cienka, bliższa gruba; w dole kadru krople
+ * łapią czerwoną łunę. Zawsze trochę gradu i brudnego śniegu (pieśń VI), w ulewie dużo więcej. Rozpryski na błocie,
+ * przy ziemi mgła smrodu. Błyskawice — wspólny zegar (render/pieklo.ts): błysk na mgnienie wybiela cały krąg.
+ */
 export function rysujNieboKregu(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
-  const u = mocUlewy(sim);
+  const u = wygladzUlewe(ulewa(sim), teraz);
   const ruch = wolnoRuszac();
   const t = ruch ? teraz / 1000 : 0;
-  const yZiemi = cam.toScreenY(SURFACE_Y - 0.5);
-  if (yZiemi <= 0) return;
-  const W = cam.vw, H = Math.min(cam.vh, yZiemi);
+  const w = sim.world, z = cam.zoom;
+  const W = cam.vw;
+  const yNajnizej = cam.toScreenY(SURFACE_Y + 0.3);
+  if (yNajnizej <= 0) return;
+  const H = Math.min(cam.vh, yNajnizej);
+  const L = luna(teraz);
+  const b = blyskawica(teraz, u);
+  // obszar nad gruntem (deszcz nie pada w skałę przekroju)
+  const krok = Math.max(4, z * 0.5);
+  const grunt = (sx: number): number => cam.toScreenY(SURFACE_Y - wysokoscGrzbietu(w, cam.toWorldX(sx)));
   ctx.save();
-  ctx.beginPath(); ctx.rect(0, 0, W, H); ctx.clip();
-  // ciężkie chmury u góry
-  const chm = ctx.createLinearGradient(0, cam.toScreenY(0), 0, yZiemi);
-  chm.addColorStop(0, `rgba(18,22,22,${0.4 + 0.25 * u})`); chm.addColorStop(0.6, `rgba(36,42,40,${0.12 + 0.15 * u})`); chm.addColorStop(1, 'rgba(36,42,40,0)');
-  ctx.fillStyle = chm; ctx.fillRect(0, 0, W, H);
-  // deszcz: smugi ukośne
-  const n = Math.round(140 + 420 * u);
-  const dl = 14 + 16 * u, kat = 0.18 + 0.15 * u;
-  ctx.strokeStyle = `rgba(170,186,190,${0.18 + 0.2 * u})`; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(-10, -10); ctx.lineTo(W + 10, -10);
+  for (let x = W + krok; x >= -krok; x -= krok) ctx.lineTo(x, grunt(x) + z * 0.15);
+  ctx.closePath(); ctx.clip();
+  const wiatr = 0.2 + 0.2 * u + 0.07 * Math.sin(t * 0.37);
+  const kolorDeszczu = (a: number): CanvasGradient => {
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, `rgba(150,160,178,${a * 0.7})`);
+    g.addColorStop(0.6, `rgba(170,160,168,${a})`);
+    g.addColorStop(1, `rgba(${(210 * L) | 0},${(120 * L) | 0},${(100 * L) | 0},${a})`);
+    return g;
+  };
+  // dalsza warstwa: gęsta, cienka, wolniejsza
+  const n1 = Math.round((W / 1280) * (260 + 360 * u));
+  ctx.strokeStyle = kolorDeszczu(0.16 + 0.14 * u + 0.3 * b.a); ctx.lineWidth = 1;
   ctx.beginPath();
-  for (let i = 0; i < n; i++) {
-    const v = 0.9 + los(i * 3) * 0.6;
-    const x = ((los(i) * W * 1.3 + t * 220 * kat * v) % (W * 1.3)) - W * 0.15;
-    const y = (los(i * 7) * (H + 60) + t * 900 * v) % (H + 60) - 30;
-    ctx.moveTo(x, y); ctx.lineTo(x - dl * kat * v, y - dl * v);
+  for (let i = 0; i < n1; i++) {
+    const v = 0.8 + los(i * 3) * 0.4;
+    const dl = (10 + 8 * u) * v;
+    const x = ((los(i) * W * 1.3 + t * 700 * wiatr * v) % (W * 1.3)) - W * 0.15;
+    const y = (los(i * 7) * (H + 60) + t * 700 * v) % (H + 60) - 30;
+    ctx.moveTo(x, y); ctx.lineTo(x - dl * wiatr, y - dl);
   }
   ctx.stroke();
-  if (u > 0.05) {
-    // grad: białe ziarna
-    ctx.fillStyle = `rgba(226,232,232,${0.7 * u})`;
-    for (let i = 0; i < 90 * u; i++) {
-      const x = (los(i * 11 + 1) * W + t * 120) % W, y = (los(i * 13) * H + t * 1300 * (0.8 + los(i) * 0.4)) % H;
-      ctx.fillRect(x, y, 2, 2);
+  // bliższa warstwa: grube, długie strugi
+  const n2 = Math.round((W / 1280) * (90 + 170 * u));
+  ctx.strokeStyle = kolorDeszczu(0.28 + 0.16 * u + 0.4 * b.a); ctx.lineWidth = Math.max(1.3, Math.min(2.4, z * 0.06));
+  ctx.beginPath();
+  for (let i = 0; i < n2; i++) {
+    const v = 0.9 + los(i * 5 + 1) * 0.5;
+    const dl = (22 + 22 * u) * v;
+    const x = ((los(i * 11 + 3) * W * 1.3 + t * 1250 * wiatr * v) % (W * 1.3)) - W * 0.15;
+    const y = (los(i * 13 + 5) * (H + 80) + t * 1250 * v) % (H + 80) - 40;
+    ctx.moveTo(x, y); ctx.lineTo(x - dl * wiatr, y - dl);
+  }
+  ctx.stroke();
+  // grad: białe ziarna, szybkie; brudny śnieg: wolne, szarobrunatne płatki
+  ctx.fillStyle = `rgba(228,232,236,${0.55 + 0.3 * u})`;
+  const nGrad = Math.round((W / 1280) * (24 + 110 * u));
+  for (let i = 0; i < nGrad; i++) {
+    const x = (los(i * 11 + 1) * W + t * 260 * wiatr) % W, y = (los(i * 13) * H + t * 1400 * (0.8 + los(i) * 0.4)) % H;
+    const r = Math.max(1.5, z * (0.05 + 0.04 * los(i * 3)));
+    ctx.fillRect(x, y, r, r * 1.3);
+  }
+  ctx.fillStyle = `rgba(150,140,124,${0.4 + 0.3 * u})`;
+  const nSn = Math.round((W / 1280) * (30 + 70 * u));
+  for (let i = 0; i < nSn; i++) {
+    const x = (los(i * 17 + 5) * W + Math.sin(t * 1.3 + i) * 24 + t * 60 * wiatr) % W, y = (los(i * 19) * H + t * 110 * (0.8 + los(i * 7) * 0.5)) % H;
+    ctx.beginPath(); ctx.arc(x, y, Math.max(1.2, z * 0.06), 0, Math.PI * 2); ctx.fill();
+  }
+  // rozpryski na błocie: korona kropel tam, gdzie struga uderza w grunt
+  if (z >= 6) {
+    const xa = Math.floor(cam.toWorldX(0)), xb = Math.ceil(cam.toWorldX(W));
+    ctx.strokeStyle = `rgba(180,150,146,${0.22 + 0.14 * u})`; ctx.lineWidth = 1;
+    ctx.beginPath();
+    const gestosc = 3 + Math.round(3 * u);
+    for (let k = xa * gestosc; k <= xb * gestosc; k++) {
+      const okres = 0.35 + los(k * 7) * 0.4;
+      const f = ((t + los(k * 3) * okres) % okres) / okres;
+      if (f > 0.4) continue;
+      const cykl = Math.floor((t + los(k * 3) * okres) / okres);
+      const wx = k / gestosc + los(k * 13 + cykl * 7) / gestosc;
+      const sx = cam.toScreenX(wx), sy = cam.toScreenY(SURFACE_Y - wysokoscGrzbietu(w, wx));
+      const rr = z * (0.05 + 0.13 * f / 0.4), wys = z * 0.13 * Math.sin((f / 0.4) * Math.PI);
+      ctx.moveTo(sx - rr, sy); ctx.quadraticCurveTo(sx - rr * 0.8, sy - wys, sx - rr * 0.5, sy - wys * 0.6);
+      ctx.moveTo(sx + rr, sy); ctx.quadraticCurveTo(sx + rr * 0.8, sy - wys, sx + rr * 0.5, sy - wys * 0.6);
     }
-    // brudny śnieg: wolne, szare płatki
-    ctx.fillStyle = `rgba(150,148,136,${0.5 * u})`;
-    for (let i = 0; i < 60 * u; i++) {
-      const x = (los(i * 17 + 5) * W + Math.sin(t * 1.3 + i) * 20 + t * 40) % W, y = (los(i * 19) * H + t * 120) % H;
-      ctx.beginPath(); ctx.arc(x, y, 1.6, 0, Math.PI * 2); ctx.fill();
-    }
-    // błyskawica: raz na kilka sekund, krótki błysk nieba
-    const sek = Math.floor(t * 1.4);
-    if (ruch && los(sek * 977) < 0.18 * u) {
-      const f = t * 1.4 - sek;
-      if (f < 0.25) {
-        const a = (1 - f / 0.25) * 0.35 * u;
-        ctx.fillStyle = `rgba(210,226,240,${a})`; ctx.fillRect(0, 0, W, H);
-        // zygzak
-        ctx.strokeStyle = `rgba(240,248,255,${a * 2.4})`; ctx.lineWidth = 2;
-        let bx = los(sek * 31) * W, by = 0;
-        ctx.beginPath(); ctx.moveTo(bx, by);
-        while (by < H * 0.85) { bx += (los(sek * 7 + by) - 0.5) * 60; by += 20 + los(sek + by) * 30; ctx.lineTo(bx, by); }
-        ctx.stroke();
-      }
-    }
+    ctx.stroke();
+  }
+  // mgła smrodu przy ziemi: zgniła, żółtozielona, płynie z wiatrem
+  const yM = cam.toScreenY(SURFACE_Y - 0.6);
+  pasMgly(ctx, W, yM - z * 1.6, yM + z * 0.9, t * 14 + cam.x * z, 'rgb(92,96,70)', 0.12 + 0.08 * u);
+  pasMgly(ctx, W, yM - z * 0.9, yM + z * 0.7, t * 26 + cam.x * z + 400, 'rgb(70,60,48)', 0.18 + 0.08 * u);
+  // błysk: wszystko nad ziemią sine i jasne na mgnienie
+  if (b.a > 0.01) {
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = `rgba(96,106,136,${0.14 * b.a})`;
+    ctx.fillRect(0, 0, W, H);
+    ctx.globalCompositeOperation = 'source-over';
   }
   ctx.restore();
   // ulewa przygasza i oziębia cały świat
   if (u > 0.02) {
     ctx.save();
-    ctx.fillStyle = `rgba(30,44,52,${0.16 * u})`;
+    ctx.fillStyle = `rgba(22,28,40,${0.14 * u})`;
     ctx.fillRect(0, 0, cam.vw, cam.vh);
     ctx.restore();
   }
+}
+
+/**
+ * Grunt kręgu (po leju, przed tłumem): cuchnące błoto na całym tarasie — tłusty połysk z łuną, kałuże z kręgami
+ * deszczu, grad leżący w błocie, a w nim kości, czaszki, żebra, gnijące resztki uczt (to krąg żarłoków) i szczątki
+ * tych, których rozszarpał Cerber, w kałużach krwi.
+ */
+export function rysujGruntKregu(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
+  const w = sim.world, z = cam.zoom, W = cam.vw;
+  if (cam.toScreenY(SURFACE_Y - 4) > cam.vh || cam.toScreenY(SURFACE_Y + 1) < 0) return;
+  const t = wolnoRuszac() ? teraz / 1000 : 0;
+  const u = wygladzUlewe(ulewa(sim), teraz);
+  const L = luna(teraz);
+  const b = blyskawica(teraz, u);
+  const k = ukladKatedry(w);
+  const kraniec = w.w - 9;
+  const gy = (wx: number): number => cam.toScreenY(SURFACE_Y - wysokoscGrzbietu(w, wx));
+  const krok = Math.max(3, z * 0.4);
+  const xMax = Math.min(W + krok, cam.toScreenX(kraniec + 0.5));
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  // warstwa błota: gruba i tłusta u góry, w głąb przechodzi w ziemię
+  for (const [od, dno, a] of [[-0.14, 0.32, 0.9], [0.32, 0.95, 0.42]] as [number, number, number][]) {
+    ctx.beginPath();
+    let pierwszy = true;
+    for (let x = -krok; x <= xMax; x += krok) {
+      const wx = cam.toWorldX(x);
+      const fala = (szum1(wx * 2.3, 5) - 0.5) * 0.12;
+      const y = gy(wx) + z * (od + fala);
+      if (pierwszy) { ctx.moveTo(x, y); pierwszy = false; } else ctx.lineTo(x, y);
+    }
+    for (let x = xMax; x >= -krok; x -= krok) ctx.lineTo(x, gy(cam.toWorldX(x)) + z * dno);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(34,27,20,${a})`; ctx.fill();
+  }
+  // tłusty połysk na wierzchu błota: łuna, a w błysku — sino
+  ctx.strokeStyle = `rgba(${(170 * L + 160 * b.a) | 0},${(70 * L + 170 * b.a) | 0},${(44 + 200 * b.a) | 0},${0.32 + 0.4 * b.a})`;
+  ctx.lineWidth = Math.max(1, z * 0.05);
+  ctx.beginPath();
+  for (let x = -krok; x <= xMax; x += krok) {
+    const wx = cam.toWorldX(x);
+    if (szum1(wx * 1.7, 9) < 0.45) { ctx.moveTo(x + krok, gy(wx + krok / z) - z * 0.08); continue; }
+    ctx.lineTo(x, gy(wx) - z * 0.08 - (szum1(wx * 2.3, 5) - 0.5) * 0.12 * z);
+  }
+  ctx.stroke();
+  const xa = Math.max(2, Math.floor(cam.toWorldX(0)) - 2), xb = Math.min(kraniec - 1, Math.ceil(cam.toWorldX(W)) + 2);
+  const zajete = (x: number): boolean => !!k && x > k.x0 - 3 && x < k.x1 + 2;
+  // kałuże: czarna, tłusta woda, w niej czerwone niebo; deszcz bije kręgi
+  for (let kx = Math.floor(xa / 3); kx <= Math.ceil(xb / 3); kx++) {
+    if (los(kx * 71) > 0.42) continue;
+    const x = kx * 3 + los(kx) * 2;
+    if (zajete(x)) continue;
+    const sz = 0.7 + los(kx * 3) * 1.7;
+    const sx = cam.toScreenX(x), sy = gy(x) + z * 0.06;
+    const rx = sz * z, ry = Math.max(1.5, z * (0.12 + 0.05 * los(kx * 5)));
+    const g = ctx.createLinearGradient(0, sy - ry, 0, sy + ry);
+    g.addColorStop(0, `rgba(${(150 * L + 150 * b.a) | 0},${(48 * L + 160 * b.a) | 0},${(28 + 190 * b.a) | 0},0.85)`);
+    g.addColorStop(0.5, 'rgba(26,12,10,0.95)');
+    g.addColorStop(1, 'rgba(14,9,8,0.95)');
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.ellipse(sx, sy, rx, ry, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = 'rgba(16,10,8,0.8)'; ctx.lineWidth = Math.max(1, z * 0.04); ctx.stroke();
+    // kręgi od kropel
+    if (z >= 8) {
+      for (let r = 0; r < 4; r++) {
+        const okr = 0.9 + los(kx * 7 + r) * 0.6;
+        const f = ((t + los(kx * 11 + r * 3) * okr) % okr) / okr;
+        const cykl = Math.floor((t + los(kx * 11 + r * 3) * okr) / okr);
+        const px = sx + (los(kx * 13 + r * 5 + cykl) - 0.5) * rx * 1.4;
+        ctx.strokeStyle = `rgba(210,170,160,${0.45 * (1 - f)})`; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(px, sy, z * 0.05 + f * z * 0.35, (z * 0.05 + f * z * 0.35) * 0.28, 0, 0, Math.PI * 2); ctx.stroke();
+      }
+    }
+  }
+  // drobiazgi w błocie — dopiero z bliska (z daleka to i tak pył)
+  if (z >= 10) {
+    const h = Math.max(16, z * 1.9 * ustawienia.wielkoscSylwetek);
+    for (let x = xa; x <= xb; x++) {
+      if (zajete(x)) continue;
+      const r = los(x * 911 + 7);
+      const fx = x + 0.2 + los(x * 3) * 0.6;
+      const sx = cam.toScreenX(fx), sy = gy(fx) + z * 0.04;
+      ctx.save(); ctx.translate(sx, sy);
+      if (r < 0.1) czaszka(ctx, h, los(x * 5));
+      else if (r < 0.24) kosci(ctx, h, x);
+      else if (r < 0.29) zebra(ctx, h, los(x * 7));
+      else if (r < 0.35) zgnilizna(ctx, h, x, t);
+      else if (r < 0.39) skorupy(ctx, h, x);
+      else if (r < 0.42) czaszkaWieprza(ctx, h, los(x * 9));
+      ctx.restore();
+      // grad leży w błocie
+      ctx.fillStyle = 'rgba(214,218,222,0.7)';
+      for (let i = 0; i < 3 + Math.round(4 * u); i++) {
+        const gx = cam.toScreenX(x + los(x * 17 + i)), gyy = gy(x + los(x * 17 + i)) + z * (0.02 + los(x * 19 + i) * 0.12);
+        ctx.fillRect(gx, gyy, Math.max(1, z * 0.05), Math.max(1, z * 0.04));
+      }
+    }
+    // szczątki rozszarpanych: ręka, głowa, trzewia — w kałużach krwi (Cerber żre tu od wieków)
+    for (let kx = Math.floor(xa / 11); kx <= Math.ceil(xb / 11); kx++) {
+      if (los(kx * 523) > 0.62) continue;
+      const x = kx * 11 + 1 + los(kx * 5) * 8;
+      if (zajete(x) || x > kraniec - 2) continue;
+      const sx = cam.toScreenX(x), sy = gy(x) + z * 0.05;
+      if (sx < -h * 2 || sx > W + h * 2) continue;
+      ctx.save(); ctx.translate(sx, sy);
+      if (los(kx * 3) < 0.5) ctx.scale(-1, 1);
+      kaluzaKrwi(ctx, 0, h * 0.02, h * (0.55 + los(kx * 7) * 0.5), 1, kx);
+      const rodzaj = Math.floor(los(kx * 17) * 4);
+      if (rodzaj === 0) { ctx.translate(0, -h * 0.05); rysujOderwanaReke(ctx, h, -1.4 + los(kx) * 0.3, 0.4 + los(kx * 9) * 0.8); }
+      else if (rodzaj === 1) { ctx.translate(0, -h * 0.06); rysujOderwanaGlowe(ctx, h, 1.5 + los(kx) * 0.8); }
+      else if (rodzaj === 2) rysujTrzewia(ctx, h * 0.95, (los(kx) - 0.5) * 0.3);
+      else { rysujTrzewia(ctx, h * 0.8, 0.1); ctx.translate(h * 0.45, -h * 0.05); rysujOderwanaReke(ctx, h, -1.5, 1.1); }
+      ctx.restore();
+    }
+  }
+  ctx.restore();
+}
+
+const KOSC = 'rgb(176,162,134)', KOSC_C = 'rgb(120,106,84)';
+const BLOTO = 'rgba(34,27,20,0.92)';
+
+function czaszka(ctx: CanvasRenderingContext2D, h: number, r: number): void {
+  const s = h * 0.1;
+  ctx.rotate((r - 0.5) * 0.8);
+  ctx.fillStyle = KOSC; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.8, s * 0.12);
+  ctx.beginPath(); ctx.ellipse(0, -s * 0.55, s, s * 0.85, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(s * 0.35, -s * 0.1); ctx.lineTo(s * 1.05, -s * 0.05); ctx.lineTo(s * 0.95, s * 0.3); ctx.lineTo(s * 0.3, s * 0.25); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(14,8,6,0.95)';
+  ctx.beginPath(); ctx.ellipse(s * 0.45, -s * 0.55, s * 0.24, s * 0.2, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(s * 0.85, -s * 0.28, s * 0.08, s * 0.12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = 'rgba(14,8,6,0.9)'; ctx.lineWidth = Math.max(0.6, s * 0.06);
+  ctx.beginPath(); for (let i = 0; i < 4; i++) { ctx.moveTo(s * (0.45 + i * 0.15), s * 0.05); ctx.lineTo(s * (0.45 + i * 0.15), s * 0.25); } ctx.stroke();
+  ctx.fillStyle = BLOTO; ctx.beginPath(); ctx.ellipse(0, s * 0.3, s * 1.4, s * 0.32, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+function kosci(ctx: CanvasRenderingContext2D, h: number, x: number): void {
+  const n = 1 + Math.floor(los(x * 13) * 2);
+  for (let i = 0; i < n; i++) {
+    const dl = h * (0.22 + los(x * 3 + i) * 0.16), kat = (los(x * 7 + i) - 0.5) * 0.7, gr = h * 0.03;
+    ctx.save(); ctx.translate((i - 0.5) * h * 0.08, -gr * 0.6); ctx.rotate(kat);
+    ctx.strokeStyle = TUSZ; ctx.lineWidth = gr + Math.max(1.2, gr * 0.4);
+    ctx.beginPath(); ctx.moveTo(-dl / 2, 0); ctx.lineTo(dl / 2, 0); ctx.stroke();
+    ctx.strokeStyle = KOSC; ctx.lineWidth = gr;
+    ctx.beginPath(); ctx.moveTo(-dl / 2, 0); ctx.lineTo(dl / 2, 0); ctx.stroke();
+    ctx.fillStyle = KOSC;
+    for (const e of [-1, 1]) {
+      ctx.beginPath(); ctx.arc(e * dl / 2, -gr * 0.35, gr * 0.75, 0, Math.PI * 2); ctx.arc(e * dl / 2, gr * 0.35, gr * 0.75, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+function zebra(ctx: CanvasRenderingContext2D, h: number, r: number): void {
+  const s = h * 0.2;
+  ctx.scale(r < 0.5 ? 1 : -1, 1);
+  ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(1.6, s * 0.11);
+  ctx.beginPath(); ctx.moveTo(-s, -s * 0.15); ctx.lineTo(s, -s * 0.25); ctx.stroke();
+  for (let i = 0; i < 6; i++) { const x = -s * 0.8 + i * s * 0.32; ctx.beginPath(); ctx.moveTo(x, -s * 0.18); ctx.quadraticCurveTo(x + s * 0.3, -s * 0.9, x + s * 0.1, -s * (0.05 + 0.1 * (i % 2))); ctx.stroke(); }
+  ctx.strokeStyle = KOSC; ctx.lineWidth = Math.max(0.9, s * 0.06);
+  ctx.beginPath(); ctx.moveTo(-s, -s * 0.15); ctx.lineTo(s, -s * 0.25); ctx.stroke();
+  for (let i = 0; i < 6; i++) { const x = -s * 0.8 + i * s * 0.32; ctx.beginPath(); ctx.moveTo(x, -s * 0.18); ctx.quadraticCurveTo(x + s * 0.3, -s * 0.9, x + s * 0.1, -s * (0.05 + 0.1 * (i % 2))); ctx.stroke(); }
+  ctx.fillStyle = BLOTO; ctx.beginPath(); ctx.ellipse(0, s * 0.02, s * 1.2, s * 0.14, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+/** Gnijące resztki uczty: ochłap mięsa z robactwem, zielonkawy nalot. */
+function zgnilizna(ctx: CanvasRenderingContext2D, h: number, x: number, t: number): void {
+  const s = h * 0.13;
+  ctx.fillStyle = 'rgb(86,36,26)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.8, s * 0.1);
+  ctx.beginPath(); ctx.moveTo(-s, 0); ctx.quadraticCurveTo(-s * 0.9, -s * 0.8, 0, -s * 0.75); ctx.quadraticCurveTo(s * 1.1, -s * 0.9, s * 1.1, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(112,128,64,0.55)';
+  ctx.beginPath(); ctx.ellipse(-s * 0.3, -s * 0.5, s * 0.35, s * 0.15, 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgb(150,30,24)';
+  ctx.beginPath(); ctx.ellipse(s * 0.45, -s * 0.45, s * 0.3, s * 0.18, -0.2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = 'rgba(232,226,200,0.9)';
+  for (let i = 0; i < 7; i++) {
+    const px = (los(x * 3 + i) - 0.5) * s * 1.6 + Math.sin(t * 2 + i) * s * 0.06, py = -s * (0.2 + los(x * 5 + i) * 0.5);
+    ctx.fillRect(px, py, Math.max(1, s * 0.14), Math.max(1, s * 0.06));
+  }
+  ctx.fillStyle = BLOTO; ctx.beginPath(); ctx.ellipse(0, s * 0.05, s * 1.3, s * 0.18, 0, 0, Math.PI * 2); ctx.fill();
+}
+
+/** Skorupy dzbana po winie. */
+function skorupy(ctx: CanvasRenderingContext2D, h: number, x: number): void {
+  const s = h * 0.09;
+  ctx.fillStyle = 'rgb(122,62,40)'; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.8, s * 0.1);
+  for (let i = 0; i < 3; i++) {
+    const px = (i - 1) * s * 1.1 + (los(x + i) - 0.5) * s * 0.4;
+    ctx.save(); ctx.translate(px, -s * 0.15); ctx.rotate((los(x * 7 + i) - 0.5) * 1.2);
+    ctx.beginPath(); ctx.moveTo(-s * 0.6, 0); ctx.quadraticCurveTo(0, -s * (0.7 + 0.4 * los(x * 3 + i)), s * 0.6, 0); ctx.lineTo(s * 0.3, s * 0.15); ctx.lineTo(-s * 0.4, s * 0.12); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+}
+
+/** Czaszka wieprza — Ciacco, „Wieprz”, żarłok z pieśni VI. */
+function czaszkaWieprza(ctx: CanvasRenderingContext2D, h: number, r: number): void {
+  const s = h * 0.11;
+  ctx.scale(r < 0.5 ? 1 : -1, 1); ctx.rotate(-0.15);
+  ctx.fillStyle = KOSC; ctx.strokeStyle = TUSZ; ctx.lineWidth = Math.max(0.8, s * 0.1);
+  ctx.beginPath(); ctx.moveTo(-s, -s * 0.2); ctx.quadraticCurveTo(-s * 0.8, -s * 1.1, 0, -s * 0.9); ctx.lineTo(s * 1.6, -s * 0.35); ctx.lineTo(s * 1.65, s * 0.05); ctx.lineTo(-s * 0.7, s * 0.2); ctx.closePath(); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = 'rgba(14,8,6,0.95)'; ctx.beginPath(); ctx.ellipse(-s * 0.15, -s * 0.5, s * 0.22, s * 0.17, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = KOSC_C; ctx.lineWidth = Math.max(0.8, s * 0.12);
+  ctx.beginPath(); ctx.moveTo(s * 0.9, -s * 0.05); ctx.quadraticCurveTo(s * 1.2, -s * 0.6, s * 0.9, -s * 0.85); ctx.stroke();
+  ctx.fillStyle = BLOTO; ctx.beginPath(); ctx.ellipse(0, s * 0.25, s * 1.8, s * 0.3, 0, 0, Math.PI * 2); ctx.fill();
 }
 
 /** Krople ze stropów wykutych korytarzy (przed mrokiem — widać je tylko w świetle). */
 export function rysujKrople(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, teraz: number): void {
   if (!wolnoRuszac()) return;
   const w = sim.world, z = cam.zoom;
-  const u = mocUlewy(sim);
+  const u = mocUlewy(sim, teraz);
   const okres = 1100;
   const n = Math.round(28 + 50 * u);
   const xa = Math.max(1, Math.floor(cam.toWorldX(0))), xb = Math.min(w.w - 2, Math.ceil(cam.toWorldX(cam.vw)));
@@ -360,14 +573,20 @@ export function rysujZarlokow(ctx: CanvasRenderingContext2D, sim: Sim, cam: Came
   ctx.restore();
 }
 
-/** Barwa kręgu: zgniła zieleń i sina szarość nałożone na rycinę świata (zamiast ciepłej sepii). */
+/**
+ * Barwa kręgu (piekło Dantego, 16.11): rycina świata przygaszona i podgrzana — cienie w brunatnej czerwieni
+ * zakrzepłej krwi, światła w zgniłej żółci; od dołu kadru grzeje łuna niższych kręgów.
+ */
 export function barwaKregu(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number): void {
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
-  ctx.fillStyle = 'rgb(184,198,180)';
+  ctx.fillStyle = 'rgb(198,178,166)';
   ctx.fillRect(x, y, w, h);
   ctx.globalCompositeOperation = 'soft-light';
-  ctx.fillStyle = 'rgba(40,70,60,0.35)';
+  const g = ctx.createLinearGradient(0, y, 0, y + h);
+  g.addColorStop(0, 'rgba(70,20,18,0.3)');
+  g.addColorStop(1, 'rgba(140,34,14,0.42)');
+  ctx.fillStyle = g;
   ctx.fillRect(x, y, w, h);
   ctx.restore();
 }

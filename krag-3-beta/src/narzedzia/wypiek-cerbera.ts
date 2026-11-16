@@ -59,8 +59,8 @@ function zarlok(z: Zadanie): { gr: Prym[][]; ciecie?: { n: V3; d: number; szarp:
     case 'glowa': return { gr: [Z.glowaZarloka(o)], bloto: 99 };
     case 'ramie': return { gr: [Z.ramieZarloka(o)], bloto: 99 };
     case 'przedramie': return { gr: [Z.przedramieZarloka(o)], bloto: 0.13 };
-    case 'udo': return { gr: [Z.udoZarloka(o)], bloto: 0.17 };
-    case 'podudzie': return { gr: [Z.podudzieZarloka(o)], bloto: 0.08 };
+    case 'udo': return { gr: [Z.udoZarloka(o)], bloto: 99 };
+    case 'podudzie': return { gr: [Z.podudzieZarloka(o)], bloto: 0.12 };
     case 'tulow-gora': { const w = Z.tulowGora(o); return { gr: w.grupy, ciecie: w.ciecie, bloto: 99 }; }
     case 'tulow-dol': { const w = Z.tulowDol(o); return { gr: w.grupy, ciecie: w.ciecie, bloto: -0.07 }; }
     case 'tulow-rozpruty': return { gr: Z.tulowRozpruty(o), bloto: -0.07 };
@@ -75,7 +75,8 @@ function wypiecz(z: Zadanie): Wynik | null {
   if (z.czesc === 'zarlok') {
     YAW = YAW_ZARLOKA;
     const { gr, ciecie, bloto } = zarlok(z);
-    return doObrazka(gr, z.S, { czas: 1000, swiatlo: z.ciemny ? 0.62 : 1, bloto, ciecie });
+    // piekielne światło: słabe, zimne z góry (burza), czerwona łuna od dołu zostaje — potępieni nie świecą jak w atelier
+    return doObrazka(gr, z.S, { czas: 1000, swiatlo: z.ciemny ? 0.4 : 0.62, bloto, ciecie });
   }
   YAW = YAW_CERBERA;
   if (z.czesc === 'kikut' || z.czesc === 'odcieta') return sciete(z);

@@ -441,14 +441,45 @@ function otworZejscia(ctx: CanvasRenderingContext2D, bx: number, top: number, H:
   ctx.globalAlpha = k;
   ctx.fillStyle = 'rgb(6,4,4)';
   ctx.beginPath(); ctx.ellipse(bx, cy, R, R * 1.05, 0, 0, Math.PI * 2); ctx.fill();
+  // dym kłębi się z zejścia
+  for (let i = 0; i < 8; i++) {
+    const f = (t * 0.12 + los(i * 5)) % 1;
+    const px = bx + (los(i * 7) - 0.5) * R * 1.2 + Math.sin(t * 0.7 + i) * R * 0.2, py = cy - f * R * 3.2;
+    ctx.fillStyle = `rgba(22,10,8,${0.35 * Math.sin(f * Math.PI)})`;
+    ctx.beginPath(); ctx.arc(px, py, R * (0.3 + f * 0.6), 0, Math.PI * 2); ctx.fill();
+  }
   ctx.globalCompositeOperation = 'lighter';
+  // łuna niższych kręgów: ze środka zejścia na całą okolicę
+  const Ro = R * 4.5;
+  const go = ctx.createRadialGradient(bx, cy + R * 0.4, 0, bx, cy + R * 0.4, Ro);
+  go.addColorStop(0, `rgba(230,70,20,${0.32 + 0.06 * Math.sin(t * 2.3)})`); go.addColorStop(0.35, 'rgba(150,30,10,0.14)'); go.addColorStop(1, 'rgba(90,15,5,0)');
+  ctx.fillStyle = go; ctx.fillRect(bx - Ro, cy - Ro, Ro * 2, Ro * 2);
   const g = ctx.createRadialGradient(bx, cy + R * 0.6, 0, bx, cy + R * 0.6, R * 1.3);
-  g.addColorStop(0, `rgba(220,70,30,${0.55 + 0.1 * Math.sin(t * 3)})`); g.addColorStop(1, 'rgba(160,30,10,0)');
+  g.addColorStop(0, `rgba(255,110,40,${0.65 + 0.1 * Math.sin(t * 3)})`); g.addColorStop(1, 'rgba(160,30,10,0)');
   ctx.fillStyle = g; ctx.fillRect(bx - R * 1.4, cy - R * 1.2, R * 2.8, R * 2.6);
-  for (let i = 0; i < 10; i++) {
-    const f = (t * 0.4 + los(i)) % 1;
-    ctx.fillStyle = `rgba(255,${150 - f * 80},60,${0.8 * (1 - f)})`;
-    ctx.fillRect(bx + (los(i * 3) - 0.5) * R * 1.4, cy + R * 0.8 - f * R * 2.4, 2, 2);
+  // jęzory ognia liżą brzeg zejścia od dołu
+  ctx.save();
+  ctx.beginPath(); ctx.ellipse(bx, cy, R * 1.02, R * 1.07, 0, 0, Math.PI * 2); ctx.clip();
+  for (let i = 0; i < 9; i++) {
+    const fx = bx + (i / 8 - 0.5) * R * 1.6;
+    const fala = Math.sin(t * (5 + los(i) * 3) + i * 1.7) * 0.5 + Math.sin(t * 11 + i) * 0.2;
+    const wys = R * (0.7 + 0.5 * los(i * 3) + 0.35 * fala);
+    const sz = R * (0.16 + 0.08 * los(i * 5));
+    const y0 = cy + R * 1.05;
+    const pg = ctx.createLinearGradient(0, y0, 0, y0 - wys);
+    pg.addColorStop(0, 'rgba(255,220,140,0.85)'); pg.addColorStop(0.35, 'rgba(255,120,30,0.6)'); pg.addColorStop(0.75, 'rgba(200,40,10,0.3)'); pg.addColorStop(1, 'rgba(120,20,5,0)');
+    ctx.fillStyle = pg;
+    ctx.beginPath(); ctx.moveTo(fx - sz, y0);
+    ctx.bezierCurveTo(fx - sz * 0.9, y0 - wys * 0.45, fx + sz * fala, y0 - wys * 0.7, fx + sz * 0.4 * fala, y0 - wys);
+    ctx.bezierCurveTo(fx + sz * 0.6, y0 - wys * 0.6, fx + sz * 0.9, y0 - wys * 0.35, fx + sz, y0);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.restore();
+  for (let i = 0; i < 34; i++) {
+    const f = (t * (0.35 + los(i * 9) * 0.3) + los(i)) % 1;
+    ctx.fillStyle = `rgba(255,${(170 - f * 90) | 0},60,${0.85 * (1 - f)})`;
+    const r = 1.5 + los(i * 11) * 2;
+    ctx.fillRect(bx + (los(i * 3) - 0.5) * R * 1.6 + Math.sin(t * 2 + i) * R * 0.15, cy + R * 0.8 - f * R * 3.4, r, r);
   }
   ctx.restore();
 }

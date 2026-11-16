@@ -260,7 +260,7 @@ export function kaluzaKrwi(ctx: CanvasRenderingContext2D, x: number, y: number, 
 }
 
 /** Bryzg krwi z punktu (kropla po kropli, `k` 0…1 od chwili rany), kierunek `kat` (rad), siła `moc`. */
-export function bryzgKrwi(ctx: CanvasRenderingContext2D, x: number, y: number, h: number, k: number, kat: number, moc = 1, ziarno = 0): void {
+export function bryzgKrwi(ctx: CanvasRenderingContext2D, x: number, y: number, h: number, k: number, kat: number, moc = 1, ziarno = 0, dno = Infinity): void {
   if (k <= 0 || k >= 1) return;
   ctx.save();
   ctx.fillStyle = KREW;
@@ -271,6 +271,8 @@ export function bryzgKrwi(ctx: CanvasRenderingContext2D, x: number, y: number, h
     const v = h * (0.4 + r2 * 0.9) * moc;
     const px = x + Math.cos(a) * v * k, py = y + Math.sin(a) * v * k + k * k * h * 0.8;
     const r = Math.max(1, h * (0.008 + r2 * 0.014) * (1 - k * 0.5));
+    // kropla, która doleciała do gruntu, rozpłaszcza się na nim
+    if (py > dno) { ctx.beginPath(); ctx.ellipse(px, dno, r * 2.4, r * 0.5, 0, 0, Math.PI * 2); ctx.fill(); continue; }
     ctx.beginPath(); ctx.ellipse(px, py, r * 1.6, r, a, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();

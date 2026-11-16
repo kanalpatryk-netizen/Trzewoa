@@ -28,6 +28,7 @@ import {
   kaluzaKrwi, bryzgKrwi, type PozaLudzika,
 } from '../render/ludzik';
 import { rysujTrzewia, rysujOderwanaGlowe, rysujOderwanaReke } from '../render/zarlok-sprite';
+import { pasChmur, luna, blyskawica, piorun, iskry, szum1 } from '../render/pieklo';
 
 export const DLUGOSC_FILMU = 75;
 const KROJ = '"Trzewia Tekst", Georgia, serif';
@@ -68,54 +69,127 @@ class Widok {
   dy(): number { return this.wstrzas ? Math.cos(this.czas * 0.11) * this.wstrzas * this.k.s * 0.05 : 0; }
 }
 
-/** Niebo, ściany leja na horyzoncie, błotnisty taras. */
+/**
+ * Niebo i ląd filmu w klimacie piekła Dantego (16.11): burzowy strop podświetlony od spodu czerwoną łuną niższych
+ * kręgów, tarasy leja jak urwiska (z tłumami potępionych i wichrem kręgu II), błyski z piorunem, cuchnące błoto
+ * z kałużami, w których odbija się łuna. Te same środki co w grze (render/pieklo.ts).
+ */
 function tlo(ctx: CanvasRenderingContext2D, v: Widok, opts: { blysk?: number } = {}): void {
   const { R } = v;
   const yG = v.Y(0);
-  const g = ctx.createLinearGradient(0, v.Y(-14), 0, yG);
-  g.addColorStop(0, 'rgb(6,7,9)'); g.addColorStop(0.6, 'rgb(22,25,27)'); g.addColorStop(1, 'rgb(40,42,40)');
+  const L = luna(v.czas);
+  const t = v.czas / 1000;
+  // samoistne błyski burzy (co kilka sekund) i błysk zadany przez scenę
+  const b = Math.max(opts.blysk ? opts.blysk * 1.6 : 0, blyskawica(v.czas, 0.5).a);
+  const g = ctx.createLinearGradient(0, v.Y(-16), 0, yG);
+  g.addColorStop(0, 'rgb(3,2,4)'); g.addColorStop(0.5, 'rgb(12,7,9)');
+  g.addColorStop(0.82, `rgb(${(46 * L) | 0},${(16 * L) | 0},${(12 * L) | 0})`); g.addColorStop(1, `rgb(${(118 * L) | 0},${(36 * L) | 0},${(16 * L) | 0})`);
   ctx.fillStyle = g; ctx.fillRect(R.x, R.y, R.w, R.h);
-  // chmury
-  ctx.fillStyle = 'rgba(30,34,36,0.7)';
-  for (let i = 0; i < 9; i++) {
-    const x = v.X(-40 + i * 10 + Math.sin(v.czas / 7000 + i) * 2), y = v.Y(-10 - (i % 3) * 1.5);
-    ctx.beginPath(); ctx.ellipse(x, y, v.k.s * 7, v.k.s * 1.4, 0, 0, Math.PI * 2); ctx.fill();
-  }
-  // tarasy wyższych kręgów — rzędy wygięte ku brzegom (wnętrze leja)
-  const rzedy: [number, string][] = [[-7.5, 'rgb(26,26,28)'], [-5, 'rgb(34,34,34)'], [-2.6, 'rgb(44,44,42)']];
-  for (const [wy, kol] of rzedy) {
-    ctx.fillStyle = kol;
+  // tarasy wyższych kręgów — urwiska wygięte ku brzegom (wnętrze leja), od dołu rozgrzane łuną
+  const rzedy: [number, [number, number, number], [number, number, number]][] = [
+    [-7.5, [20, 18, 22], [80, 28, 19]], [-5, [25, 21, 25], [104, 36, 21]], [-2.6, [30, 26, 28], [134, 46, 25]],
+  ];
+  for (let r = 0; r < rzedy.length; r++) {
+    const [wy, kg, kd] = rzedy[r];
+    const krawedz = (sx: number): number => {
+      const u = (sx - (R.x + R.w / 2)) / R.w;
+      const k = (sx - v.X(0)) / v.k.s;
+      return v.Y(wy) - u * u * v.k.s * 6 - ((szum1(k * 0.9, r * 7 + 1) - 0.5) * 0.5 + (szum1(k * 3.1, r * 7 + 3) - 0.5) * 0.16) * v.k.s;
+    };
     ctx.beginPath();
-    for (let i = 0; i <= 30; i++) {
-      const sx = R.x + (R.w * i) / 30, u = (sx - (R.x + R.w / 2)) / R.w;
-      const y = v.Y(wy) - u * u * v.k.s * 6;
-      if (i === 0) ctx.moveTo(sx, y); else ctx.lineTo(sx, y);
+    for (let i = 0; i <= 60; i++) { const sx = R.x + (R.w * i) / 60; const y = krawedz(sx); if (i === 0) ctx.moveTo(sx, y); else ctx.lineTo(sx, y); }
+    ctx.lineTo(R.x + R.w, yG); ctx.lineTo(R.x, yG); ctx.closePath();
+    const yS = v.Y(wy);
+    const sg = ctx.createLinearGradient(0, yS, 0, yG);
+    sg.addColorStop(0, `rgb(${kg[0]},${kg[1]},${kg[2]})`); sg.addColorStop(0.55, `rgb(${(kg[0] * 1.15) | 0},${kg[1]},${kg[2]})`);
+    sg.addColorStop(1, `rgb(${(kd[0] * L) | 0},${(kd[1] * L) | 0},${(kd[2] * L) | 0})`);
+    ctx.fillStyle = sg; ctx.fill();
+    ctx.strokeStyle = `rgba(150,140,150,${0.28 + 0.5 * b})`; ctx.lineWidth = 1.5; ctx.stroke();
+    // potępieni na półce: drobne, blade sylwetki (na najniższej — leżą), nad środkowym — wicher kręgu II
+    // sylwetki pod światło łuny, w nieregularnych gromadach (nie w szeregu)
+    for (let i = 0; i < 46; i++) {
+      if (los(i * 13 + r * 5) < 0.35) continue;
+      const sx = R.x + los(i * 7 + r * 31) * R.w;
+      const y = krawedz(sx);
+      const s = v.k.s * (0.09 + 0.03 * r) * (0.7 + 0.6 * los(i * 3 + r));
+      ctx.fillStyle = `rgba(${16 + 10 * r},${9 + 4 * r},${9 + 3 * r},0.85)`;
+      const typ = los(i * 17 + r);
+      if (r === 2 || typ < 0.4) { ctx.beginPath(); ctx.ellipse(sx, y - s * 0.12, s * 0.55, s * 0.16, 0, 0, Math.PI * 2); ctx.fill(); }
+      else {
+        const pochyl = (los(i * 23 + r) - 0.5) * 0.6 + (typ > 0.8 ? 0.7 : 0);
+        ctx.save(); ctx.translate(sx, y); ctx.rotate(pochyl);
+        ctx.fillRect(-s * 0.13, -s * 1.15, s * 0.26, s * 1.15);
+        ctx.beginPath(); ctx.arc(0, -s * 1.32, s * 0.16, 0, Math.PI * 2); ctx.fill();
+        ctx.restore();
+      }
     }
-    ctx.lineTo(R.x + R.w, yG); ctx.lineTo(R.x, yG); ctx.closePath(); ctx.fill();
-    ctx.strokeStyle = 'rgba(140,140,124,0.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+    if (r === 1) {
+      for (let i = 0; i < 60; i++) {
+        const sx = R.x + ((los(i) * R.w * 1.4 + t * v.k.s * (1.2 + los(i * 3))) % (R.w * 1.4)) - R.w * 0.2;
+        const y = krawedz(sx) - v.k.s * (1.1 + 1.2 * los(i * 5)) + Math.sin(t * 1.4 + i) * v.k.s * 0.25;
+        const a = t * (2 + los(i * 9) * 3) + i, s = v.k.s * 0.18;
+        ctx.strokeStyle = 'rgba(40,20,18,0.7)'; ctx.lineWidth = Math.max(1, s * 0.22);
+        ctx.beginPath(); ctx.moveTo(sx - Math.cos(a) * s, y - Math.sin(a) * s); ctx.lineTo(sx + Math.cos(a) * s, y + Math.sin(a) * s); ctx.stroke();
+      }
+    }
   }
-  // grunt — błoto
+  // łuna dna rozlewa się nad horyzontem
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  const RR = R.w * 0.7;
+  const lg = ctx.createRadialGradient(R.x + R.w / 2, yG + v.k.s, 0, R.x + R.w / 2, yG + v.k.s, RR);
+  lg.addColorStop(0, `rgba(${(150 * L) | 0},${(44 * L) | 0},14,0.3)`); lg.addColorStop(1, 'rgba(60,14,6,0)');
+  ctx.fillStyle = lg; ctx.fillRect(R.x, yG - RR, R.w, RR + v.k.s);
+  if (b > 0.01) { ctx.fillStyle = `rgba(80,90,120,${0.45 * b})`; ctx.fillRect(R.x, R.y, R.w, yG - R.y); }
+  ctx.restore();
+  // burzowy strop: kłęby z krwawym spodem, płyną
+  const Hs = Math.max(40, yG - R.y);
+  pasChmur(ctx, R.x + R.w, R.y - Hs * 0.22, R.y + Hs * 0.42, t * 9 + v.k.x * v.k.s * 0.3, 1.2, 1);
+  pasChmur(ctx, R.x + R.w, R.y + Hs * 0.12, R.y + Hs * 0.55, t * 17 + v.k.x * v.k.s * 0.5 + 300, 0.8, 0.45);
+  if (b > 0.01) {
+    ctx.save(); ctx.globalCompositeOperation = 'lighter';
+    pasChmur(ctx, R.x + R.w, R.y - Hs * 0.22, R.y + Hs * 0.42, t * 9 + v.k.x * v.k.s * 0.3, 1.2, 0.6 * b);
+    ctx.restore();
+    if (b > 0.35) piorun(ctx, R.x + R.w * (0.25 + 0.5 * los(Math.floor(t * 2))), R.y + Hs * 0.3, v.Y(-2.6), Math.min(1, b), Math.floor(t * 2), Math.max(1.5, v.k.s * 0.03));
+  }
+  iskry(ctx, R.x, R.x + R.w, yG - v.k.s * 4, yG, Math.round(R.w / 40), t, 5);
+  // grunt — cuchnące błoto, w kałużach łuna
   const gg = ctx.createLinearGradient(0, yG, 0, R.y + R.h);
-  gg.addColorStop(0, 'rgb(54,50,38)'); gg.addColorStop(1, 'rgb(30,27,20)');
+  gg.addColorStop(0, 'rgb(46,34,26)'); gg.addColorStop(1, 'rgb(24,18,14)');
   ctx.fillStyle = gg; ctx.fillRect(R.x, yG, R.w, R.y + R.h - yG);
-  ctx.fillStyle = 'rgba(110,120,116,0.18)';
   for (let i = 0; i < 26; i++) {
     const x = v.X(-40 + los(i * 7) * 80), y = v.Y(0.15 + los(i * 3) * 2.5);
+    const kg = ctx.createLinearGradient(0, y - v.k.s * 0.06, 0, y + v.k.s * 0.06);
+    kg.addColorStop(0, `rgba(${(150 * L + 150 * b) | 0},${(48 * L + 160 * b) | 0},${(26 + 180 * b) | 0},0.55)`); kg.addColorStop(1, 'rgba(14,9,8,0.7)');
+    ctx.fillStyle = kg;
     ctx.beginPath(); ctx.ellipse(x, y, v.k.s * (0.6 + los(i) * 1.4), v.k.s * 0.06, 0, 0, Math.PI * 2); ctx.fill();
   }
-  if (opts.blysk) { ctx.fillStyle = `rgba(220,230,240,${opts.blysk})`; ctx.fillRect(R.x, R.y, R.w, R.h); }
+  if (opts.blysk) { ctx.fillStyle = `rgba(220,226,240,${opts.blysk * 0.3})`; ctx.fillRect(R.x, R.y, R.w, R.h); }
 }
 
 function deszcz(ctx: CanvasRenderingContext2D, R: Prost, czas: number, moc = 1): void {
   ctx.save();
-  ctx.strokeStyle = `rgba(176,190,196,${0.28 * moc + 0.1})`; ctx.lineWidth = 1.2;
+  const g = ctx.createLinearGradient(0, R.y, 0, R.y + R.h);
+  g.addColorStop(0, `rgba(150,160,178,${0.24 * moc + 0.08})`); g.addColorStop(1, `rgba(210,120,100,${0.3 * moc + 0.1})`);
+  ctx.strokeStyle = g; ctx.lineWidth = 1.2;
   ctx.beginPath();
-  for (let i = 0; i < 260 * moc; i++) {
+  for (let i = 0; i < 300 * moc; i++) {
     const x = R.x + ((los(i) * R.w * 1.3 + czas * 0.12) % (R.w * 1.3)) - R.w * 0.15;
     const y = R.y + ((los(i * 7) * R.h + czas * 1.1 * (0.8 + los(i * 3) * 0.5)) % R.h);
     ctx.moveTo(x, y); ctx.lineTo(x - 6, y - 22);
   }
   ctx.stroke();
+  // grad i brudny śnieg (pieśń VI)
+  ctx.fillStyle = 'rgba(226,230,234,0.7)';
+  for (let i = 0; i < 40 * moc; i++) {
+    const x = R.x + ((los(i * 11 + 1) * R.w + czas * 0.05) % R.w), y = R.y + ((los(i * 13) * R.h + czas * 1.4 * (0.8 + los(i) * 0.4)) % R.h);
+    ctx.fillRect(x, y, 2.4, 3);
+  }
+  ctx.fillStyle = 'rgba(150,140,124,0.55)';
+  for (let i = 0; i < 30 * moc; i++) {
+    const x = R.x + ((los(i * 17 + 5) * R.w + Math.sin(czas / 800 + i) * 24 + czas * 0.02) % R.w), y = R.y + ((los(i * 19) * R.h + czas * 0.11) % R.h);
+    ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI * 2); ctx.fill();
+  }
   ctx.restore();
 }
 
@@ -343,7 +417,11 @@ function kino(ctx: CanvasRenderingContext2D, R: Prost, czas: number): void {
   }
   ctx.save();
   ctx.globalCompositeOperation = 'multiply';
-  ctx.fillStyle = 'rgba(160,172,180,1)'; ctx.globalAlpha = 0.12; ctx.fillRect(R.x, R.y, R.w, R.h);
+  ctx.fillStyle = 'rgba(200,160,146,1)'; ctx.globalAlpha = 0.16; ctx.fillRect(R.x, R.y, R.w, R.h);
+  ctx.globalCompositeOperation = 'soft-light'; ctx.globalAlpha = 1;
+  const gk = ctx.createLinearGradient(0, R.y, 0, R.y + R.h);
+  gk.addColorStop(0, 'rgba(60,16,14,0.25)'); gk.addColorStop(1, 'rgba(130,30,12,0.35)');
+  ctx.fillStyle = gk; ctx.fillRect(R.x, R.y, R.w, R.h);
   ctx.restore();
   ctx.save();
   if (ziarnoFilmu) {

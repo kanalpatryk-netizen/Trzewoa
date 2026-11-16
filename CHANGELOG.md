@@ -1,5 +1,29 @@
 # Zmiany
 
+## TRZEWIA — Krąg Trzeci (beta), 5. podejście: walka, ścięcie głowy, piekło Dantego, ludzie, gore — 16.11
+Po uwadze użytkownika („animacje walki Cerbera popraw, daj rycerzowi możliwość odcięcia mu którejś głowy, całość
+grafiki dużo mocniej w klimacie piekła Dantego, ludzi jeszcze bardziej realistycznych, jeszcze więcej gore”):
+- **Animacje walki Cerbera** (`src/render/cerber-boss.ts`, `src/render/cerber-rig.ts`): kłapnięcia z cofnięciem, smugą,
+  szarpnięciem i bryzgiem z paszczy, zamach i uderzenie łapą, skok, przypadnięcie na przednie łapy, stawanie dęba
+  z falą uderzeniową, przyciśnięcie łapą; nowe klatki ciała wypieczone z modelu 3D.
+- **Ścięcie głowy** (`src/sim/walka.ts`, `src/nastawy/walka.ts`, `src/render/lud/walka-rycerza.ts`,
+  `src/render/cerber-sprite.ts`): cios rycerza „Ścięcie głowy” (doskok, cięcie z wyskoku) — do dwóch głów (poniżej 80%
+  i 45% życia); kikut szyi z przekrojem tryska krwią, głowa spada w kałużę, Cerber słabiej gryzie. Konanie bez złotej
+  poświaty: wycie, kolana, kałuża krwi.
+- **Piekło Dantego** (`src/render/pieklo.ts`, `src/render/krag-swiat.ts`, `src/render/krag.ts`): burzowy strop
+  z krwawym spodem, błyskawice z piorunem, tarasy leja jak urwiska rozgrzane łuną (Przedsionek z chorągwią, zamek
+  Otchłani, wicher kręgu II z ciałami, żarłocy na drugim brzegu), iskry z otchłani, miasto Dis w przepaści; deszcz
+  z gradem i brudnym śniegiem, rozpryski, mgła smrodu; błoto z kałużami, kośćmi, gnijącymi ochłapami i szczątkami;
+  krwawo-brunatna gradacja. Ten sam wygląd w filmie (`src/app/film-kregu.ts`).
+- **Loch walki** (`src/render/pieklo-lochu.ts`, `src/render/pomnik.ts`, `src/render/loch.ts`): krew na murach,
+  wisielcy na łańcuchach, kopce czaszek, krwawe smugi, żar i iskry z koszy ognia, ogień i dym z rozbitej pieczęci.
+- **Realistyczni ludzie** (`src/render/czlowiek3d.ts`, `src/render/gl3d.ts`, `src/render/zarlok-sprite.ts`): nowy
+  model ciała (proporcje, twarz z powiekami i uszami, obojczyki, żebra, mięśnie, dłonie i stopy z palcami, mokre
+  włosy), żywa skóra (koloryt, żyły, pory, krople), piekielne światło w wypieku, stawy schowane pod rodzicem.
+- **Więcej gore** (`src/render/zabijanie.ts`, `src/render/gl3d.ts`): tętnice, krwawa mgiełka, latające strzępy
+  i jelita, sznur jelit między połówkami, rozbryzgi na ziemi, większe kałuże; przekroje ran jak mięso; krew na
+  skórze w zaciekach i kroplach, najgęściej przy ranach.
+
 ## TRZEWIA — Krąg Trzeci (beta), 4. podejście: grafika — 16.11
 Po uwagach użytkownika („Cerber musi wyglądać dużo, dużo lepiej”, „wygląda jak kukiełka”, „plastelina”, „gry na PS1
 wyglądały tylko trochę gorzej”, „usuń napisy grrr, gulp — to nie komiks”, „popraw ludzi i ich rany”):

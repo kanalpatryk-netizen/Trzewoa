@@ -42,7 +42,7 @@ const TUSZ = 'rgba(6,5,8,0.9)';
 function cios(ctx: CanvasRenderingContext2D, cam: Camera, x: number, y: number, z: number, jas: number): void {
   const sx = cam.toScreenX(x), sy = cam.toScreenY(y);
   const r = los(x * 7919 + y * 104729);
-  const v = Math.round((84 + r * 16) * jas), g = Math.round((74 + r * 14) * jas), b = Math.round((64 + r * 12) * jas);
+  const v = Math.round((82 + r * 16) * jas), g = Math.round((62 + r * 12) * jas), b = Math.round((52 + r * 10) * jas);
   ctx.fillStyle = `rgb(${v},${g},${b})`;
   ctx.fillRect(sx, sy, z + 0.6, z + 0.6);
   if (z < 5) return;
@@ -64,7 +64,7 @@ function cios(ctx: CanvasRenderingContext2D, cam: Camera, x: number, y: number, 
 function tlo(ctx: CanvasRenderingContext2D, cam: Camera, x: number, y: number, z: number, jas: number, stare: boolean): void {
   const sx = cam.toScreenX(x), sy = cam.toScreenY(y);
   const r = los(x * 15485863 + y * 32452843);
-  const v = Math.round((52 + r * 9) * jas), g = Math.round((45 + r * 8) * jas), b = Math.round((40 + r * 7) * jas);
+  const v = Math.round((50 + r * 9) * jas), g = Math.round((37 + r * 7) * jas), b = Math.round((32 + r * 6) * jas);
   ctx.fillStyle = `rgb(${v},${g},${b})`;
   ctx.fillRect(sx, sy, z + 0.6, z + 0.6);
   if (z < 6) return;
@@ -131,7 +131,7 @@ function lancuch(ctx: CanvasRenderingContext2D, x: number, y: number, dl: number
 }
 
 /** Ciągła wysokość sklepienia lochu (kafle nad posadzką) — gładki łuk zamiast schodków z kafli. */
-function lukLochu(sim: Sim, x: number): number {
+export function lukLochu(sim: Sim, x: number): number {
   const w = sim.world, L = LOCH.loch;
   const f = ((((x - w.loch.x0) % L.przeslo) + L.przeslo) % L.przeslo) / L.przeslo;
   const luk = L.sklepienie + L.luk * Math.sin(Math.PI * f);
@@ -167,6 +167,8 @@ function widziany(sim: Sim, x: number, y: number): boolean {
   const w = sim.world;
   return w.inb(x, y) && w.ever[w.idx(x, y)] !== 0;
 }
+/** To samo dla rysunku piekła w lochu (render/pieklo-lochu.ts). */
+export const widzianyKafel = widziany;
 
 /**
  * Wnętrze i mur prostokąta: tylna ściana na pustych kaflach, ciosy na kamiennych kaflach muru dookoła
@@ -422,12 +424,12 @@ export function rysujLoch(ctx: CanvasRenderingContext2D, sim: Sim, cam: Camera, 
     for (let x = l.x0; x <= l.x1 + 1; x += L.przeslo) {
       if (Math.abs(x - w.coreX) < L.nawaSzer - 1 || !widziany(sim, Math.min(l.x1, x), l.y1)) continue;
       const px = cam.toScreenX(x), dol = cam.toScreenY(podloga), gora = cam.toScreenY(podloga - L.sklepienie);
-      ctx.fillStyle = 'rgb(92,82,72)'; ctx.fillRect(px - z * 0.45, gora, z * 0.9, dol - gora);
+      ctx.fillStyle = 'rgb(88,68,58)'; ctx.fillRect(px - z * 0.45, gora, z * 0.9, dol - gora);
       ctx.fillStyle = 'rgba(220,200,170,0.12)'; ctx.fillRect(px - z * 0.45, gora, z * 0.16, dol - gora);
-      ctx.fillStyle = 'rgb(104,92,80)'; ctx.fillRect(px - z * 0.6, gora, z * 1.2, z * 0.35); ctx.fillRect(px - z * 0.6, dol - z * 0.35, z * 1.2, z * 0.35);
+      ctx.fillStyle = 'rgb(100,78,66)'; ctx.fillRect(px - z * 0.6, gora, z * 1.2, z * 0.35); ctx.fillRect(px - z * 0.6, dol - z * 0.35, z * 1.2, z * 0.35);
     }
     // łuki sklepienia: pas klińców wzdłuż gładkiej linii
-    ctx.strokeStyle = 'rgb(98,88,76)'; ctx.lineWidth = z * 0.55;
+    ctx.strokeStyle = 'rgb(94,72,60)'; ctx.lineWidth = z * 0.55;
     ctx.beginPath();
     let pierwszy = true;
     for (let x = Math.max(l.x0, vl.x0); x <= Math.min(l.x1 + 1, vl.x1 + 1); x += 0.5) {

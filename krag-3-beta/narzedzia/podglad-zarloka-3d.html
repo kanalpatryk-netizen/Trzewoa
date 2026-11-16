@@ -42,13 +42,15 @@ function rysuj(gr, x, y, h, ciecie, bloto=99) {
 const t0 = performance.now();
 const tryb = location.hash;
 if (tryb === '#rany') {
-  const H = 900;
-  const a = Z.tulowGora({ krew: 1 }); rysuj(a.grupy, 150, 330, H, a.ciecie);
-  const b = Z.tulowDol({ krew: 1 }); rysuj(b.grupy, 430, 330, H, b.ciecie);
-  rysuj(Z.tulowRozpruty({ krew: 1 }), 720, 400, H);
-  const c = Z.glowaOderwana({}); rysuj(c.grupy, 1050, 320, H * 1.3, c.ciecie);
-  const k = Z.kikutZarloka(false); rysuj(k.grupy, 1300, 250, H * 1.3, k.ciecie);
-  rysuj(Z.kupaTrzewi(), 1250, 700, H);
+  const H = 780;
+  const a = Z.tulowGora({ krew: 1 }); rysuj(a.grupy, 170, 380, H, a.ciecie);
+  const b = Z.tulowDol({ krew: 1 }); rysuj(b.grupy, 450, 330, H, b.ciecie);
+  rysuj(Z.tulowRozpruty({ krew: 1 }), 760, 420, H);
+  const c = Z.glowaOderwana({}); rysuj(c.grupy, 1120, 330, H * 1.5, c.ciecie);
+  const k = Z.kikutZarloka(false); rysuj(k.grupy, 1400, 250, H * 1.5, k.ciecie);
+  const k2 = Z.kikutZarloka(true); rysuj(k2.grupy, 1400, 520, H * 1.3, k2.ciecie);
+  rysuj(Z.kupaTrzewi(), 1150, 760, H * 1.2);
+  rysuj([Z.przedramieZarloka({ krew: 0.6 })], 230, 560, H * 1.4);
 } else if (tryb === '#glowa') {
   rysuj([Z.glowaZarloka({ usta: 0.9 })], 300, 700, 2600);
   rysuj([Z.glowaZarloka({ usta: 0.1, krew: 0.8 })], 1000, 700, 2600);

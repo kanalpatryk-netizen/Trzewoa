@@ -60,7 +60,8 @@ import { rysujRdzen } from '../../render/rdzen';
 import { smugiSwiatla } from '../../render/shafts';
 import { rysujLej, rysujPrzepasc, rysujCerberaNaKregu, rysujCialaWScianach } from '../../render/krag-swiat';
 import { rysujPotepionych } from '../../render/potepieni';
-import { rysujBrzegKregu, rysujBrzegKreguNad, rysujNieboKregu, rysujKrople, rysujZarlokow, barwaKregu } from '../../render/krag';
+import { rysujPiekloLochu, rysujPiekloLochuNad } from '../../render/pieklo-lochu';
+import { rysujBrzegKregu, rysujBrzegKreguNad, rysujNieboKregu, rysujKrople, rysujZarlokow, barwaKregu, rysujGruntKregu } from '../../render/krag';
 import { WstepKregu } from '../wstep-kregu';
 import { rysujPromien } from '../../render/promien';
 import { rysujKonwoj, rysujKonwojNad } from '../../render/konwoj';
@@ -1392,6 +1393,8 @@ export class EkranGry implements Ekran {
     // wnętrze leja piekła nad tarasem trzeciego kręgu i przepaść do czwartego na skraju
     rysujLej(ctx, sim, cam, teraz);
     rysujPrzepasc(ctx, sim, cam, teraz);
+    // cuchnące błoto tarasu: kałuże, grad, kości, gnijące resztki i szczątki rozszarpanych
+    rysujGruntKregu(ctx, sim, cam, teraz);
     this.poswiata.nalozy(ctx, eng.emis, eng.dx, eng.dy, bw, bh, 0.5);
     this.znakowWidac = this.tajemnica.znaki(ctx, sim, cam, oddech, this.pauza);
     rysujRdzen(ctx, sim, cam, teraz);
@@ -1407,6 +1410,8 @@ export class EkranGry implements Ekran {
     this.ruiny.rysuj(ctx, sim, cam);
     // 6.11: loch za stalową bramą, przedproże i stara komnata z kotłem — mury, filary, pajęczyny, kocioł, krata
     rysujLoch(ctx, sim, cam, teraz);
+    // Krąg Trzeci: krew na murach, wisielcy na łańcuchach, kopce czaszek (render/pieklo-lochu.ts)
+    rysujPiekloLochu(ctx, sim, cam, teraz);
     // droga wiernych: schody kręcone — tylko to, co już zbudowano, w wykutych kaflach (ciemność je zakrywa); po lochu,
     // bo dół schodów stoi w komnacie z kotłem i na przedprożu, a ich tylna ściana ma być za schodami, nie na nich
     rysujSchodyDrogi(ctx, sim, cam, teraz);
@@ -1454,6 +1459,7 @@ export class EkranGry implements Ekran {
     this.ruiny.rysujNad(ctx, sim, cam, teraz);
     // 6.11: wywar w kotle i zaklinanie, płomienie, runy bramy, krąg modlitwy za innych — nad mrokiem
     rysujLochNad(ctx, sim, cam, teraz);
+    rysujPiekloLochuNad(ctx, sim, cam, teraz);
     const proba = this.probaPodKursorem();
     if (proba) this.pokoje.podglad(ctx, sim, cam, proba, teraz, this.szablon === 'lina' ? this.cenaLinyPodpis(!this.ciagniecie)
       : this.ciagniecie ? undefined : this.szablon && !czyPokoj(this.szablon) ? `${NAZWA_POMIESZCZENIA[this.szablon]} — przeciągnij` : undefined);

@@ -83,24 +83,25 @@ export function rysujLudzikaZWypieku(ctx: CanvasRenderingContext2D, h: number, p
   const kolL = od(biodro, p.udoL, h * 0.25), stopaL = od(kolL, p.udoL - p.kolanoL, h * 0.25);
   const kolP = od(biodro, p.udoP, h * 0.25), stopaP = od(kolP, p.udoP - p.kolanoP, h * 0.25);
   const glowaS = od(kark, tulKat - p.glowa, h * 0.1);
+  // stawy chowają się pod rodzicem: najpierw przedramię i podudzie, na nich ramię i udo (łokieć i kolano zakrywają
+  // początek dziecka), a tułów zakrywa nasady ud i dalszego ramienia — bez „kulek” w stawach jak u manekina
   const reka = (bark: P, lok: P, ramie: number, lokiec: number, d: string, bez?: boolean): void => {
     if (bez) { czesc(ctx, 'zarlok-kikut-reki', h, bark, -ramie); return; }
-    czesc(ctx, `zarlok-ramie${d}${k}`, h, bark, -ramie);
     czesc(ctx, `zarlok-przedramie${d}${k}`, h, lok, -(ramie + lokiec));
+    czesc(ctx, `zarlok-ramie${d}${k}`, h, bark, -ramie);
   };
   const noga = (kol: P, udo: number, kolano: number, d: string, bez?: boolean): void => {
     if (bez) { czesc(ctx, 'zarlok-kikut-nogi', h, biodro, -udo); return; }
-    czesc(ctx, `zarlok-udo${d}${k}`, h, biodro, -udo);
     czesc(ctx, `zarlok-podudzie${d}${k}`, h, kol, -(udo - kolano));
+    czesc(ctx, `zarlok-udo${d}${k}`, h, biodro, -udo);
   };
-  // dalsze kończyny
+  // dalsza ręka, obie nogi (bliższa przed dalszą), tułów na nasadach ud, głowa, bliższa ręka na wierzchu
   if (gora) reka(barkL, lokL, p.ramieL, p.lokiecL, '-d', brak.rekaL);
   if (dol) noga(kolL, p.udoL, p.kolanoL, '-d', brak.nogaL);
+  if (dol) noga(kolP, p.udoP, p.kolanoP, '', brak.nogaP);
   // tułów (cały, rozpruty, górna albo dolna połowa po rozerwaniu)
   const tulow = brak.polowa === 'gora' ? 'zarlok-tulow-gora' : brak.polowa === 'dol' ? 'zarlok-tulow-dol' : brak.trzewia ? 'zarlok-tulow-rozpruty' : `zarlok-tulow${k}`;
   czesc(ctx, tulow, h, biodro, p.tulow);
-  // bliższa noga
-  if (dol) noga(kolP, p.udoP, p.kolanoP, '', brak.nogaP);
   // głowa (usta: zamknięte, otwarte, krzyk) albo kikut szyi
   if (gora && !brak.glowa) czesc(ctx, `zarlok-glowa-u${p.usta > 0.7 ? 2 : p.usta > 0.25 ? 1 : 0}${k}`, h, kark, p.tulow + p.glowa);
   else if (gora) czesc(ctx, 'zarlok-kikut-nogi', h, kark, p.tulow + Math.PI);
