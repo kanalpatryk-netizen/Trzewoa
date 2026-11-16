@@ -184,8 +184,8 @@ namespace Trzewia.Rysunek
             return wynik;
         }
 
-        /// <summary>Czy lud już kiedyś widział ten kafel.</summary>
-        static bool widziany(Sim sim, double x, double y)
+        /// <summary>Czy lud już kiedyś widział ten kafel. (Też dla warstwy światła oprawy — Visual/SwiatloOprawy.cs.)</summary>
+        internal static bool widziany(Sim sim, double x, double y)
         {
             var w = sim.world;
             // (w TS: ułamkowy indeks tablicy daje undefined, a undefined !== 0 — kafel liczy się jako widziany)

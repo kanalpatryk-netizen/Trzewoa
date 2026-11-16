@@ -23,6 +23,7 @@ public sealed class Settings
     public bool autoZoom = false;
     public bool oddech = true;             // powolne falowanie całego rysunku
     public bool ograniczRuch = false;      // mniej drgań: dla oczu, które tego nie znoszą
+    public bool mniejBlyskow = false;      // oprawa walki: błyski zdarzeń słabsze (dostępność)
     public bool kronika = true;
     public bool spisRas = true;
     public bool skalaGlebokosci = true;
