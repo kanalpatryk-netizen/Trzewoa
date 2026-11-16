@@ -134,6 +134,8 @@ public sealed class App : IKontekst
     {
         // F3: licznik wydajności — na każdym ekranie, bez względu na przypisane klawisze
         if (e.key == "F3") { ustaw(ref ustawienia.licznikWydajnosci, !ustawienia.licznikWydajnosci); return; }
+        // F9: nowa oprawa walki (Visual/VisualConfig.cs) — wszystkie nowe efekty naraz, do porównania przed/po
+        if (e.key == "F9") { Visual.VisualConfig.Przelacz(Wydajnosc.Teraz()); return; }
         // film intro: spacja i Esc go pomijają, a klawisz idzie dalej do gry
         intro?.klawisz(e);
         obudzDzwiek();
@@ -212,9 +214,38 @@ public sealed class App : IKontekst
             e.rysuj(ctx, w, h, teraz);
             Wydajnosc.licznik.klatka(teraz, Wydajnosc.Teraz() - t0);
             if (ustawienia.licznikWydajnosci) rysujLicznik();
+            rysujNapisF9(teraz);
             rysujIntro(teraz);
             PokazPosrednie();
         }
+    }
+
+    static readonly string KROJ_F9 = "16px " + Fonts.KROJ;
+
+    /// <summary>Po F9: przez chwilę w rogu, czy nowa oprawa jest włączona (tylko wtedy, gdy ktoś nacisnął F9).</summary>
+    void rysujNapisF9(double teraz)
+    {
+        var od = teraz - Visual.VisualConfig.PrzelaczonoO;
+        if (!(od >= 0 && od < Visual.VisualConfig.NapisF9Ms)) return;
+        var a = Math.Min(1, (Visual.VisualConfig.NapisF9Ms - od) / 300);
+        var tekst = Visual.VisualConfig.Wlaczone ? "F9 · nowa oprawa: włączona" : "F9 · nowa oprawa: wyłączona (jak dotąd)";
+        ctx.save();
+        ctx.globalAlpha = a;
+        ctx.globalCompositeOperation = "source-over";
+        ctx.shadowBlur = 0;
+        ctx.font = KROJ_F9;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "top";
+        var sz = ctx.measureText(tekst).width + 24;
+        double x = w - 14, y = 14;
+        ctx.fillStyle = "rgba(8,6,5,0.84)";
+        ctx.fillRect(x - sz, y, sz, 30);
+        ctx.strokeStyle = "rgba(224,176,104,0.55)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x - sz + 0.5, y + 0.5, sz - 1, 29);
+        ctx.fillStyle = "rgba(233,221,194,1)";
+        ctx.fillText(tekst, x - 12, y + 7);
+        ctx.restore();
     }
 
     /// <summary>Film intro w pikselach CSS (w TS: warstwa strony nad płótnem), potem zwykła skala z powrotem.</summary>
