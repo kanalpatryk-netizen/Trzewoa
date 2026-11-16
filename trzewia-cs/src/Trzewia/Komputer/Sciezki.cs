@@ -100,6 +100,13 @@ public static class Uruchomienie
     public static string? Zrzut, EkranStartowy;
     /// <summary>Zapisz wszystkie nastawy do dane/nastawy/*.json i zakończ.</summary>
     public static bool WypiszNastawy;
+    /// <summary>Oprawa walki (Komputer/ZrzutyWalki.cs): katalog na zrzuty walki z bossem bez okna; null — zwykła gra.</summary>
+    public static string? ZrzutyWalki;
+    /// <summary>Ziarno partii zrzutów (domyślnie 3) i odstęp zwykłych zrzutów w sekundach gry (domyślnie 0,5).</summary>
+    public static double? Ziarno;
+    public static double CoIleS;
+    /// <summary>Nowa oprawa walki (Visual/VisualConfig.cs) na starcie: true/false; null — domyślnie (włączona). W grze: F9.</summary>
+    public static bool? Oprawa;
 
     public const string Pomoc = """
         Trzewia.exe [przełączniki]
@@ -116,6 +123,12 @@ public static class Uruchomienie
           --ekran nazwa    bez filmu intro, po ładowaniu od razu ten ekran: gra (nowa partia), samouczek, ustawienia,
                            osiagniecia, bestiariusz (atlas), menu; „proba” — ekran próbny bez ładowania
           --wypisz-nastawy zapisz wszystkie liczby gry do dane/nastawy/*.json (punkt wyjścia do zmian) i zakończ
+          --oprawa wl|wyl  nowa oprawa walki z bossem na starcie włączona albo wyłączona (w grze przełącza F9)
+          --zrzuty-walki KATALOG
+                           bez okna: bot gra partię do walki z bossem i zapisuje klatki PNG i klatki.json (porównania
+                           oprawy przed/po; rozmiar z --rozmiar, domyślnie 1920x1080); z nim:
+          --ziarno N       ziarno partii (domyślnie 3)
+          --co-ile S       zwykłe zrzuty co S sekund gry (domyślnie 0.5); przy zdarzeniach — seria klatka po klatce
         """;
 
     public static void Ustaw(string[] args)
@@ -140,6 +153,13 @@ public static class Uruchomienie
                     if (cz.Length == 2) { RozmiarW = int.Parse(cz[0]); RozmiarH = int.Parse(cz[1]); }
                     i++; break;
                 case "--wypisz-nastawy": WypiszNastawy = true; break;
+                case "--zrzuty-walki": ZrzutyWalki = nast; i++; break;
+                case "--ziarno": Ziarno = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
+                case "--co-ile": CoIleS = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
+                case "--oprawa":
+                    Oprawa = Trzewia.Visual.VisualConfig.Czytaj(nast);
+                    if (Oprawa == null) Console.Error.WriteLine($"--oprawa: nie rozumiem „{nast}” (wl albo wyl)");
+                    i++; break;
                 case "--pomoc": case "-h": case "--help": Console.WriteLine(Pomoc); Environment.Exit(0); break;
             }
         }

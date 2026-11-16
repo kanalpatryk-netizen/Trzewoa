@@ -36,7 +36,14 @@ static class Program
             return 1;
         }
         Uruchomienie.Ustaw(args);
+        if (Uruchomienie.Oprawa is bool oprawa) Trzewia.Visual.VisualConfig.Wlaczone = oprawa;
         var sciezki = new Sciezki();
+        // zrzuty walki bez okna: dane gry z folderu, ale ustawienia domyślne i nic w plikach gracza (Gospodarz.Pliki w pamięci)
+        if (Uruchomienie.ZrzutyWalki != null)
+        {
+            Rdzen.Gospodarz.Dane = sciezki;
+            return ZrzutyWalki.Uruchom();
+        }
         Rdzen.Gospodarz.Pliki = sciezki;
         Rdzen.Gospodarz.Dane = sciezki;
         Dziennik.Otworz(Sciezki.Gracz,

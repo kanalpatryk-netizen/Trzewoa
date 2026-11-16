@@ -66,6 +66,16 @@ Na Linuksie (np. Mint): `tar -xzf Trzewia-linux-x64.tar.gz`, potem `./Trzewia/Tr
 karty), `--okno`, `--rozmiar 1920x1080`, `--licznik` (F3 od startu), `--po 10 --pomiar` (po 10 s wypisz wynik licznika),
 `--zrzut plik.png`, `--ekran gra` (bez intro, po ładowaniu od razu nowa partia; też `samouczek`, `ustawienia`…).
 
+Oprawa walki z bossem (plan: [`../docs/plan-oprawy-cerber.md`](../docs/plan-oprawy-cerber.md)): wszystkie nowe efekty
+mają flagi w `src/Trzewia.Gra/Visual/VisualConfig.cs`, a **F9** w grze włącza i wyłącza je naraz (`--oprawa wl|wyl`
+ustawia stan na starcie). Porównania przed/po bez okna:
+
+```bash
+Trzewia --zrzuty-walki zrzuty/przed --ziarno 3 --oprawa wyl   # bot gra do walki z bossem, PNG + klatki.json
+Trzewia --zrzuty-walki zrzuty/po    --ziarno 3 --oprawa wl
+python3 narzedzia/oprawa/jasnosc.py zrzuty/przed zrzuty/po    # jasność pola gry, pasa akcji i tła, różnica
+```
+
 ## Porównanie z grą TS
 
 Narzędzia w `narzedzia/` rysują to samo oryginalnym kodem TS w Chromium (esbuild + Playwright), a testy C# kładą obrazy

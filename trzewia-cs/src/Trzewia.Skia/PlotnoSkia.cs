@@ -620,6 +620,23 @@ namespace Trzewia.Skia
             return true;
         }
 
+        /// <summary>
+        /// PNG bez strat, ale z szybką kompresją (zlib 1) — te same piksele, kilka razy szybciej. Do serii zrzutów
+        /// (Trzewia --zrzuty-walki), gdzie liczy się czas, a nie wielkość pliku.
+        /// </summary>
+        public bool ZapiszPngSzybko(string plik)
+        {
+            using var img = wlasna?.Snapshot();
+            if (img == null) return false;
+            using var raster = img.ToRasterImage(true);
+            using var piksele = raster.PeekPixels();
+            if (piksele == null) return false;
+            using var d = piksele.Encode(new SKPngEncoderOptions(SKPngEncoderFilterFlags.Sub, 1));
+            if (d == null) return false;
+            File.WriteAllBytes(plik, d.ToArray());
+            return true;
+        }
+
         public void Dispose()
         {
             migawka?.Dispose();
