@@ -59,7 +59,8 @@ namespace Trzewia.Rysunek.Duszki
         {
             var tF = ZegarGry.tikZUlamkiem(sim, czas);
             var R = c.ruch;
-            if (R != null && Typ_RUCHY_RYCERZA.klucze.Contains(R.id) && tF - R.od < R.dl + 0.5 && tF >= R.od)
+            // (Krąg Trzeci: dochodzi „Ścięcie głowy” — osobny arkusz rycerz-6-zK-sciecie, zob. rysujLud)
+            if (R != null && (Typ_RUCHY_RYCERZA.klucze.Contains(R.id) || (Krag.Wlaczony && R.id == "sciecieGlowy")) && tF - R.od < R.dl + 0.5 && tF >= R.od)
             {
                 var t = Math.Max(0, tF - R.od);
                 return new StanWalki { id = R.id, u = Math.Max(0, Math.Min(1, t / R.dl)), t = t, dl = R.dl };
@@ -220,7 +221,12 @@ namespace Trzewia.Rysunek.Duszki
         {
             var d = Duszek.Daj(nazwaDuszka(c, rola));
             if (d == null || d.klatek == 0) { Zastepczo(ctx, c, h); return; }
-            int k = klatka(d, sim, c, rola, czas, cz, faza, fazaPion, zegar);
+            int k = -1;
+            // Krąg Trzeci: „Ścięcie głowy” Cerbera — sam ten ruch upieczony w osobnym arkuszu (narzedzia/duszki: rycerz-6-zK-sciecie)
+            if (Krag.Wlaczony && rola == "rycerz" && c.ruch?.id == "sciecieGlowy" && stanWalki(sim, c, cz, czas) is { id: "sciecieGlowy" } st
+                && Duszek.Daj(nazwaDuszka(c, rola) + "-sciecie") is { } ds && ds.Animacja("sciecieGlowy") is { } sc)
+            { d = ds; k = sc.Klatka(st.u); }
+            if (k < 0) k = klatka(d, sim, c, rola, czas, cz, faza, fazaPion, zegar);
             if (k < d.glowa.Length && d.glowa[k] is { } gl && gl.Length >= 3) { glowy.Remove(c); glowy.Add(c, gl); }
             // cudze światło z otoczenia kładzie ciepłą krawędź po swojej stronie sylwetki (render/lud/oswietlenie.ts)
             d.Rysuj(ctx, k, h, true, Lud.Oswietlenie.swiatloOtoczenia());

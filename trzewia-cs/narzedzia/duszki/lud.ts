@@ -38,7 +38,11 @@ const OKRES_KROKU = 1000 / KROKOW_NA_S;
 const krok = (rola: Rola): number => 0.8 * 1.9 * 1.15 * (rola === 'rycerz' ? 1.3 : 1);
 const OKRES_ODDECHU = TAU / 0.0021;
 
-export interface Opcje { niesie?: boolean; helm?: boolean; zbroja?: number }
+export interface Opcje {
+  niesie?: boolean; helm?: boolean; zbroja?: number;
+  /** Krąg Trzeci: tylko ruch „Ścięcie głowy” (osobny arkusz rycerz-6-zK-sciecie; nakladki/walka-rycerza.ts) */
+  sciecie?: boolean;
+}
 
 /** Ustawia postać i rysunek sceny dla roli. Zwraca listę animacji. */
 export function lud(s: Scena, rola: Rola, id: number, o: Opcje = {}): Anim[] {
@@ -338,6 +342,12 @@ export function lud(s: Scena, rola: Rola, id: number, o: Opcje = {}): Anim[] {
         },
       });
     };
+    if (o.sciecie) {
+      // Krąg Trzeci: sam ruch „Ścięcie głowy” (156 tików), cięcie trafia — z karku Cerbera bije krew
+      A.length = 0;
+      ruch('sciecieGlowy', 'sciecieGlowy', 156, 0, 156, 16, { zadane: [30] });
+      return A;
+    }
     for (const [idRuchu, def] of Object.entries(RUCHY_RYCERZA) as [string, any][]) {
       if (idRuchu === 'garda' || idRuchu === 'podejscie' || idRuchu === 'powalony') continue;
       // ruch wymagający części zbroi, której w tym stanie nie ma — nie wystąpi

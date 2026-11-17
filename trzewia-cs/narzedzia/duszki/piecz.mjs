@@ -19,11 +19,17 @@ export const ZLECENIA = [
   // rycerz: stan zbroi z0…z5 = ile części z kuźni nosi (hełm, naramienniki, napierśnik, nakolanniki, tarcza)
   'rycerz-6-z0', 'rycerz-6-z1', 'rycerz-6-z2', 'rycerz-6-z3', 'rycerz-6-z4', 'rycerz-6-z5',
   'straznik', 'demon',
+  // Krąg Trzeci: Cienie Żarłoków (zielonkawy kamień) i ścięcie głowy Cerbera — osobne arkusze, Alpha 1 ich nie czyta
+  'straznik-krag',
+  'rycerz-6-z0-sciecie', 'rycerz-6-z1-sciecie', 'rycerz-6-z2-sciecie', 'rycerz-6-z3-sciecie', 'rycerz-6-z4-sciecie', 'rycerz-6-z5-sciecie',
 ];
 const PODMIANY = {
   'render/lud/matma': 'nakladki/matma.ts',
   'render/lud/rozstep': 'nakladki/rozstep.ts',
   'sim/brama': 'nakladki/brama.ts',
+  // Krąg Trzeci: ruch „Ścięcie głowy” rycerza i Strażnicy w barwie Cieni Żarłoków (dla Alphy 1 bez zmian)
+  'render/lud/walka-rycerza': 'nakladki/walka-rycerza.ts',
+  'render/straznicy': 'nakladki/straznicy.ts',
 };
 
 // Paleta 256 barw z alfą (pngquant, apt-get install pngquant): arkusz ok. 4× mniejszy, różnicy nie widać (średnio

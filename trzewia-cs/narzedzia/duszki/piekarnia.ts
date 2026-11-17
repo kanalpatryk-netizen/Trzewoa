@@ -26,17 +26,21 @@ interface Zlecenie {
 
 /** Rozbiera nazwę zlecenia: robotnik-3, robotnik-3-helm, pobozny-1, rycerz-6-z2. */
 function zlecenie(nazwa: string): Zlecenie {
-  const [postac, wzorTxt, wariant = ''] = nazwa.split('-');
+  const [postac, wzorTxt, wariant = '', dopisek = ''] = nazwa.split('-');
   const wzor = Number(wzorTxt);
   if (postac === 'robotnik' || postac === 'pobozny' || postac === 'rycerz') {
     const zbroja = wariant.startsWith('z') ? Number(wariant.slice(1)) : 0;
     return {
       postac, wzor, wariant, mnoznik: postac === 'rycerz' ? 1.3 : 1,
-      anim: (s) => lud(s, postac as Rola, wzor, { helm: wariant === 'helm', zbroja }),
+      anim: (s) => lud(s, postac as Rola, wzor, { helm: wariant === 'helm', zbroja, sciecie: dopisek === 'sciecie' }),
     };
   }
   // Strażnik Snu: sylwetka dwa razy wyższa niż postać ludu (rasa „trol”, size 2)
-  if (postac === 'straznik') return { postac, wzor: 0, wariant: '', mnoznik: 2, anim: (s) => straznik(s) };
+  if (postac === 'straznik') {
+    // Krąg Trzeci: „straznik-krag” — ten sam Strażnik w barwie Cieni Żarłoków (nakladki/straznicy.ts: PIEK_KRAG)
+    (globalThis as any).PIEK_KRAG = wzorTxt === 'krag';
+    return { postac, wzor: 0, wariant: wzorTxt === 'krag' ? 'krag' : '', mnoznik: 2, anim: (s) => straznik(s) };
+  }
   // Demon: sylwetka Strażnika × 3,2 × 0,6 (render/straznicy.ts) — kukła z obrazków, więc jeden poziom wielkości:
   // h0 = 80 px to demon wysoki na ok. 154 px, tyle co przy zwykłym przybliżeniu gry w 1080p
   if (postac === 'demon') return { postac, wzor: 0, wariant: '', mnoznik: 2, anim: (s) => demon(s), poziomy: [40], przed: czekajNaKukle };
