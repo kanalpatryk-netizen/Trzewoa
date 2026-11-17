@@ -20,6 +20,8 @@ namespace Trzewia.Aplikacja
         {
             // okno obserwatorium: bot gra od razu, nic nie trafia do plików gracza
             Obserwowany.przygotujObserwowana();
+            // tryb ostatnio wybrany w menu: Krąg Trzeci (Cerber) albo Alpha 1 — zanim powstanie pierwsza góra
+            if (SettingsStore.ustawienia.krag && !Obserwowany.BOT.wlaczony && !Symulacja.Krag.Wlaczony) Symulacja.Krag.Ustaw(true);
             // intro rusza od razu, góra ładuje się pod nim, a po filmie — menu; okno obserwatorium filmu nie puszcza
             // (narzędzie dewelopera --ekran też nie — od razu do celu)
             Func<bool>? zaslona = null;

@@ -19,15 +19,17 @@ namespace Trzewia.Atlas
     /// </summary>
     public sealed class Odkrycia
     {
-        const string PLIK = "atlas.json";
+        /// <summary>Plik gracza — osobny dla trybu Kręgu Trzeciego (w TS kręgu: localStorage „trzewia-krag-3-beta:atlas”).</summary>
+        readonly string PLIK;
         readonly List<string> znane = new List<string>();
         /// <summary>Odkryte w tej sesji, jeszcze niepokazane.</summary>
         public readonly List<string> kolejka = new List<string>();
         /// <summary>Odkryte po cichu, a gracz jeszcze nie zajrzał do atlasu — przycisk świeci.</summary>
         public int niezobaczone;
 
-        public Odkrycia()
+        public Odkrycia(string plik = "atlas.json")
         {
+            PLIK = plik;
             try
             {
                 var raw = Gospodarz.Pliki.Czytaj(PLIK);
@@ -56,7 +58,9 @@ namespace Trzewia.Atlas
             try { Gospodarz.Pliki.Zapisz(PLIK, Json.Pisz(znane.Cast<object?>().ToList())); } catch { /* bez pamięci */ }
         }
 
-        public static readonly Odkrycia odkrycia = new Odkrycia();
+        static Odkrycia? alfa, kregu;
+        /// <summary>Odkrycia bieżącego trybu: Alpha 1 i Krąg Trzeci mają osobne atlasy (osobne gry w TS).</summary>
+        public static Odkrycia odkrycia => Symulacja.Krag.Wlaczony ? kregu ??= new Odkrycia("atlas-krag.json") : alfa ??= new Odkrycia("atlas.json");
     }
 
     public sealed class PoleTablicy { public string akcja = ""; public double x, y, w, h; }

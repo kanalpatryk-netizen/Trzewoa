@@ -252,7 +252,8 @@ namespace Trzewia.Aplikacja
             glosyLudu(teraz);
             patrzNaPomnik();
             sluchajDloniDemona();
-            if (!zamrozone())
+            // (Krąg Trzeci: w filmie i scenie wejścia symulacja stoi)
+            if (!zamrozone() && !wstep.trwa())
             {
                 // zwykły czas: tyle tików na sekundę, niezależnie od tego, ile klatek pokazuje ekran
                 double kroki;

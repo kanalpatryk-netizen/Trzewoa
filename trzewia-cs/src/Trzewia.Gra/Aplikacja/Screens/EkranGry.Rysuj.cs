@@ -61,6 +61,14 @@ namespace Trzewia.Aplikacja
 
         public override void rysuj(IPlotno ctx, double w, double h, double teraz)
         {
+            // Krąg Trzeci: film zamiast gry; potem scena wejścia (kamera i szóstka w rękach sceny)
+            if (wstep.plansze()) { wstep.rysujPlansze(ctx, sim, w, h, teraz); return; }
+            if (wstep.trwa())
+            {
+                recznaKamera = true;
+                if (wstep.krok(sim, cam, teraz)) { recznaKamera = false; camTarget.x = cam.x; camTarget.y = cam.y; }
+                dirty = true;
+            }
             // licznik wydajności (F3): kolejne odcinki klatki doliczane do swoich części
             var L = Wydajnosc.licznik;
             var t = Wydajnosc.Teraz();
@@ -206,6 +214,8 @@ namespace Trzewia.Aplikacja
             }
             atlas.rysuj(ctx, w, h, teraz);
             panelDev?.rysuj(ctx, w, h, teraz);
+            // Krąg Trzeci: napisy sceny wejścia (bez sterowania)
+            wstep.rysujNapisy(ctx, plate.x, plate.y, plate.w, plate.h, teraz);
             L.znacz(Czesc.interfejs, t);
         }
 
