@@ -681,12 +681,60 @@ namespace Trzewia.Rysunek
                 var def = RUCHY_BOSSA[R.id];
                 var dl = Math.Max(1, R.dl != 0 ? R.dl : def?.dl is double d0 && d0 != 0 ? d0 : 100);
                 var u = obetnij((sim.tick - R.od) / dl, 0, 1);
+                ruchNaPoze(p, R.id, u, def, dl, zywe[(JS.ToInt32(R.od) >> 3) % nz], nz, R.zadane, R.wariant);
+            }
+            // okup: trzy głowy żrą rzuconą garść jedzenia
+            if (Krag.cerberZre(sim, c) > 0)
+            {
+                for (int i = 0; i < 3; i++)
+                {
+                    var g = p.glowy[i];
+                    g.pochyl = 0.55 + 0.08 * Math.Sin(czas * 0.01 + i);
+                    g.paszcza = 0.15 + 0.35 * Math.Abs(Math.Sin(czas * 0.018 + i * 1.3));
+                    g.wysun = 0.15;
+                }
+                p.ogon = Math.Sin(czas * 0.012) * 0.9;
+            }
+            if (czeka >= 0)
+            {
+                var g = p.glowy[czeka];
+                g.pochyl = 0.95 + 0.08 * Math.Sin(czas * 0.0021);
+                g.paszcza = 0.55; g.wysun = 0; g.smuga = 0; g.ugryz = 0;
+                g.oczy = 0.25;
+            }
+            return p;
+        }
+
+        static readonly System.Collections.Generic.List<double> trafionePodglad = new System.Collections.Generic.List<double> { 1, 1 };
+
+        /// <summary>
+        /// Podgląd ruchu walki Cerbera na tablicy atlasu (jak DuszkiDemona.podgladWalki dla demona): stopami w (0, 0),
+        /// klatka `t` z `dl` tików ruchu `id`, wszystkie głowy całe, kły trafiają. False — nie ma takiego ruchu.
+        /// </summary>
+        public static bool podgladWalki(IPlotno ctx, double h, string id, double t, double dl, double czas, double wariant = 1)
+        {
+            var def = RUCHY_BOSSA[id];
+            if (def == null) return false;
+            var p = pozaB.Zeruj();
+            p.czas = czas;
+            p.oddech = 0.5 + 0.5 * Math.Sin(czas * 0.004);
+            for (int i = 0; i < 3; i++) { var g = p.glowy[i]; g.pochyl = 0.12 * Math.Sin(czas * 0.0016 + i * 2.1) - 0.05; g.paszcza = 0.12 + 0.1 * Math.Max(0, Math.Sin(czas * 0.006 + i * 1.7)); }
+            zywe[0] = 0; zywe[1] = 1; zywe[2] = 2;
+            var d = Math.Max(1, dl > 0 ? dl : def.dl != 0 ? def.dl : 100);
+            ruchNaPoze(p, id, obetnij(t / d, 0, 1), def, d, 1, 3, trafionePodglad, wariant);
+            rysujCerbera(ctx, h, p);
+            return true;
+        }
+
+        /// <summary>Poza z ruchu walki `id` w chwili `u` (0…1): kłapnięcia, łapa, dęba, skok, wycie, ogień, bicz, szarża.</summary>
+        static void ruchNaPoze(PozaCerbera p, string id, double u, Nastawy.RuchBossa? def, double dl, int glowaNr, int nz, System.Collections.Generic.List<double> zadane, double? wariant)
+        {
+            {
                 double traf(int k) => def?.traf != null && k < def.traf.Length ? def.traf[k][0] / dl : double.NaN;
                 var hit = double.IsNaN(traf(0)) ? 0.5 : traf(0);
-                var glowaNr = zywe[(JS.ToInt32(R.od) >> 3) % nz];
-                bool trafil(int k) => k < R.zadane.Count && R.zadane[k] > 0;
+                bool trafil(int k) => k < zadane.Count && zadane[k] > 0;
                 var niska = zywe[nz - 1];
-                switch (R.id)
+                switch (id)
                 {
                     case "zGory":
                         // staje lekko dęba, łeb w górę — i z całej siły paszczą w dół
@@ -784,7 +832,7 @@ namespace Trzewia.Rysunek
                     case "rozkazTarcza":
                     case "rozkazZawal":
                         {
-                            var w = R.id == "ryk" ? dzwon(u, 0.1, 0.9) : 0.8;
+                            var w = id == "ryk" ? dzwon(u, 0.1, 0.9) : 0.8;
                             foreach (var g in p.glowy) { g.pochyl -= 0.75 * w; g.paszcza = Math.Max(g.paszcza, w); }
                             p.deba = 0.2 * w;
                             break;
@@ -795,7 +843,7 @@ namespace Trzewia.Rysunek
                         foreach (var g in p.glowy) { g.pochyl -= 0.2; g.paszcza = Math.Max(g.paszcza, 0.5); }
                         break;
                     case "zachwianie":
-                        if (R.wariant == 2)
+                        if (wariant == 2)
                         {
                             // przypada na przednie łapy (połowa, ćwierć życia, ścięta głowa) — wstaje powoli
                             p.kleka = u < 0.15 ? gladko(u / 0.15) : 1 - gladko((u - 0.62) / 0.38);
@@ -809,26 +857,6 @@ namespace Trzewia.Rysunek
                         break;
                 }
             }
-            // okup: trzy głowy żrą rzuconą garść jedzenia
-            if (Krag.cerberZre(sim, c) > 0)
-            {
-                for (int i = 0; i < 3; i++)
-                {
-                    var g = p.glowy[i];
-                    g.pochyl = 0.55 + 0.08 * Math.Sin(czas * 0.01 + i);
-                    g.paszcza = 0.15 + 0.35 * Math.Abs(Math.Sin(czas * 0.018 + i * 1.3));
-                    g.wysun = 0.15;
-                }
-                p.ogon = Math.Sin(czas * 0.012) * 0.9;
-            }
-            if (czeka >= 0)
-            {
-                var g = p.glowy[czeka];
-                g.pochyl = 0.95 + 0.08 * Math.Sin(czas * 0.0021);
-                g.paszcza = 0.55; g.wysun = 0; g.smuga = 0; g.ugryz = 0;
-                g.oczy = 0.25;
-            }
-            return p;
         }
     }
 }

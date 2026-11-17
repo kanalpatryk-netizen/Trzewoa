@@ -252,6 +252,8 @@ namespace Trzewia.Atlas
             RysPomnik.cokol(ctx, w / 2, y, H, true, H / POMNIK.wysokosc);
             RysPomnik.gruz(ctx, w / 2, y, H, 1, t, H / POMNIK.wysokosc);
             var k = Math.Min(1, (t % 5200) / 4200);
+            // Krąg Trzeci: pieczęć pękła — z góry zeskakuje Cerber, ląduje w pyle i wyje (render/pomnik.ts kręgu)
+            if (Krag.Wlaczony) { RysPomnik.rysujWstajacegoCerbera(ctx, w / 2, y, h * 0.62, k, t); return; }
             ctx.save(); ctx.translate(w / 2, y);
             DuszkiDemona.rysujWstajacego(ctx, h * 0.62, k);
             ctx.restore();
@@ -275,7 +277,8 @@ namespace Trzewia.Atlas
             ctx.save();
             ctx.translate(x, y);
             ctx.scale(-1, 1);
-            DuszkiDemona.rysujKonajacego(ctx, hh, k);
+            if (Krag.Wlaczony) RysPomnik.rysujKonajacegoCerbera(ctx, hh, k, t, null);
+            else DuszkiDemona.rysujKonajacego(ctx, hh, k);
             ctx.restore();
             // ostrze rycerza: jasna smuga cięcia na początku
             if (k < 0.15)
@@ -627,7 +630,11 @@ namespace Trzewia.Atlas
             while (k >= dl(POKAZ_DEMONA[i])) { k -= dl(POKAZ_DEMONA[i]); i++; }
             var id0 = POKAZ_DEMONA[i]; var def = RUCHY_BOSSA[id0];
             var dlR = def.dl != 0 ? def.dl : 120;
-            ctx.save(); ctx.translate(w * 0.5, h * 0.9); DuszkiDemona.podgladWalki(ctx, h * 0.6, id0, Math.Min(k, dlR - 1), dlR, 1); ctx.restore();
+            ctx.save(); ctx.translate(w * 0.5, h * 0.9);
+            // Krąg Trzeci: ruchy odgrywa Cerber (szkielet z Rysunek/Krag/Cerber.cs), pyskami w prawo jak demon
+            if (Krag.Wlaczony) { ctx.translate(-h * 0.1, 0); RysCerber.podgladWalki(ctx, h * 0.55, id0, Math.Min(k, dlR - 1), dlR, t); }
+            else DuszkiDemona.podgladWalki(ctx, h * 0.6, id0, Math.Min(k, dlR - 1), dlR, 1);
+            ctx.restore();
             ctx.save();
             ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 4;
             ctx.fillStyle = "rgba(240,228,204,0.95)"; ctx.font = $"{Js.Js.S(Math.Floor(h * 0.06 + 0.5))}px Georgia, serif"; ctx.textAlign = "center";
