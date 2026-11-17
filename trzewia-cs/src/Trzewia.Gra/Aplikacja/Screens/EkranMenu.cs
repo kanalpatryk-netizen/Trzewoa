@@ -138,12 +138,12 @@ namespace Trzewia.Aplikacja
                 new Pozycja { id = "wroc", etykieta = M.pozycje.wroc.etykieta, plik = "graj-dalej", aktywna = () => trwaGra() },
                 new Pozycja { id = "nowa", etykieta = M.pozycje.nowa.etykieta, plik = "nowa-gra" },
                 new Pozycja { id = "wczytaj", etykieta = M.pozycje.wczytaj.etykieta, plik = "wczytaj-gre", aktywna = () => Zapisy.hasSave() },
-                // Krąg Trzeci (Cerber) obok Alphy 1 — osobny tryb: własne nastawy, zapis, atlas i osiągnięcia
-                new Pozycja { id = "tryb", etykieta = etykietaTrybu(), plik = "" },
                 new Pozycja { id = "samouczek", etykieta = M.pozycje.samouczek.etykieta, plik = "samouczek" },
                 new Pozycja { id = "bestiariusz", etykieta = M.pozycje.bestiariusz.etykieta, plik = "atlas" },
                 new Pozycja { id = "osiagniecia", etykieta = M.pozycje.osiagniecia.etykieta, plik = "osiagniecia" },
                 new Pozycja { id = "ustawienia", etykieta = M.pozycje.ustawienia.etykieta, plik = "ustawienia" },
+                // Krąg Trzeci (Cerber) obok Alphy 1 — osobny tryb: własne nastawy, zapis, atlas i osiągnięcia
+                new Pozycja { id = "tryb", etykieta = etykietaTrybu(), plik = "" },
             };
         }
 
