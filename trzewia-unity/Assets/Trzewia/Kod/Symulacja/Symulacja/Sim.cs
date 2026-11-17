@@ -1332,6 +1332,8 @@ namespace Trzewia.Symulacja
             tikPomieszczen(this);
             tikZbroi(this);
             tikOltarza(this);
+            // Krąg Trzeci (tryb): ulewa, obżarstwo, okup dla Cerbera
+            if (Krag.Wlaczony) Krag.tikKregu(this);
             if (wiara > GORA.wiaraMax) wiara = GORA.wiaraMax;
             if (krew > GORA.krewMax) krew = GORA.krewMax;
         }

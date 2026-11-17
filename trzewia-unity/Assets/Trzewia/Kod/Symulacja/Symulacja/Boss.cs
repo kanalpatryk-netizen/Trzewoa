@@ -27,8 +27,9 @@ namespace Trzewia.Symulacja
     {
         public string id = "";
         public string nazwa = "";
-        /// <summary>opis na karcie i w atlasie</summary>
-        public string opis = "";
+        /// <summary>opis na karcie i w atlasie (Alpha 1) i w trybie kręgu — `opis` daje ten z bieżącego trybu</summary>
+        public string opisAlfa = "", opisKregu = "";
+        public string opis => Krag.Wlaczony && opisKregu != "" ? opisKregu : opisAlfa;
         /// <summary>wielkość rysunku (× zwykła postać)</summary>
         public double rozmiar;
         public Func<Sim, Creature?> pojaw = _ => null;
@@ -50,6 +51,12 @@ namespace Trzewia.Symulacja
 
         static BossDef? sniacyKamien, demon;
 
+        /// <summary>
+        /// Opisy bossów biorą nazwę i liczby z nastaw w chwili utworzenia — po zmianie trybu (Krag.Ustaw: „Cerber” zamiast
+        /// „Demon z pomnika”) trzeba je utworzyć od nowa.
+        /// </summary>
+        public static void odswiezBossow() { sniacyKamien = null; demon = null; }
+
         static BossDef SniacyKamien
         {
             get
@@ -59,7 +66,7 @@ namespace Trzewia.Symulacja
                 {
                     id = "sniacyKamien",
                     nazwa = K.nazwa,
-                    opis = "Rani go tylko rycerz. Zasypuje drogę wiernych. Słabnie, gdy pod rdzeniem modli się trzech pobożnych — bez modlitwy się zrasta.",
+                    opisAlfa = "Rani go tylko rycerz. Zasypuje drogę wiernych. Słabnie, gdy pod rdzeniem modli się trzech pobożnych — bez modlitwy się zrasta.", opisKregu = "Rani go tylko rycerz. Zasypuje drogę wiernych. Słabnie, gdy pod rdzeniem modli się trzech mnichów — bez modlitwy się zrasta.",
                     rozmiar = K.rozmiar,
                     ksiega = ksiegaK(),
                     przyjmij = przyjmijKamienny,
@@ -91,7 +98,7 @@ namespace Trzewia.Symulacja
                 {
                     id = "demon",
                     nazwa = DEMON.nazwa,
-                    opis = "Spał w Wielkim Pomniku. Rani go tylko rycerz. Zasypuje drogę wiernych. Słabnie, gdy pobożni się modlą — bez modlitwy się zrasta. Gdy padnie, jesteś wolny.",
+                    opisAlfa = "Spał w Wielkim Pomniku. Rani go tylko rycerz. Zasypuje drogę wiernych. Słabnie, gdy pobożni się modlą — bez modlitwy się zrasta. Gdy padnie, jesteś wolny.", opisKregu = "Trójgłowy pies, strażnik kręgu żarłoków — spał w kamieniu w lochu. Rani go tylko rycerz; garść jedzenia w paszczę na chwilę go zajmuje. Zasypuje drogę wiernych. Słabnie, gdy mnisi się modlą — bez modlitwy się zrasta. Gdy padnie, droga w dół stoi otworem.",
                     rozmiar = DEMON.rozmiar,
                     ksiega = ksiegaK(),
                     przyjmij = przyjmijKamienny,
@@ -119,7 +126,7 @@ namespace Trzewia.Symulacja
                     {
                         double lewa = sc.x - 0.7, prawa = sc.x + DLON.demon.zawal.szer + 0.7;
                         if (c.x < (lewa + prawa) / 2) c.x = Math.Min(c.x, lewa); else c.x = Math.Max(c.x, prawa);
-                        c.hp = Math.Min(c.hpMax ?? DEMON.hp, c.hp + K.zrastanie * (DLON.demon.zawal.zrastanie - 1));
+                        c.hp = Math.Min(Krag.Wlaczony && c.boss == "demon" ? Walka.glowyCerbera(c).gora : c.hpMax ?? DEMON.hp, c.hp + K.zrastanie * (DLON.demon.zawal.zrastanie - 1));
                     }
                 };
                 return demon = b;
@@ -129,7 +136,8 @@ namespace Trzewia.Symulacja
         /// <summary>Krok bossa z kamienia: zrasta się bez modlitwy, zasypuje drogę, idzie i bije.</summary>
         static void tikKamienny(Sim sim, Creature c, double hp, double sila, double ciosCo, double zasieg, double szybkosc)
         {
-            if (modlacych(sim) < K.modlitwaWiernych) c.hp = Math.Min(c.hpMax ?? hp, c.hp + K.zrastanie);
+            // (Krąg Trzeci: Cerber zrasta się tylko w pasku bieżącej głowy — ścięte nie odrastają)
+            if (modlacych(sim) < K.modlitwaWiernych) c.hp = Math.Min(Krag.Wlaczony && c.boss == "demon" ? Walka.glowyCerbera(c).gora : c.hpMax ?? hp, c.hp + K.zrastanie);
             if (sim.tick - (c.zasypT ?? 0) >= K.zasypCo) { c.zasypT = sim.tick; zasypDroge(sim, c); }
             var cel = sim.creatureById(sim.target.getOr(c.id, -1));
             if (cel == null || cel.dead || sim.tick % 90 == 0)
@@ -179,7 +187,7 @@ namespace Trzewia.Symulacja
             if (ile == 0) return;
             var i0 = kandydaci[start];
             sim.efekt(c.x, c.y, "cud");
-            sim.gdzie(i0 % w.w, JS.ToInt32(i0 / w.w)).log($"{K.nazwa} uderza w ziemię — zasypał kawałek drogi wiernych. Robotnicy muszą ją odkopać.", "swiat", "boss-zasyp");
+            sim.gdzie(i0 % w.w, JS.ToInt32(i0 / w.w)).log($"{K.nazwa}{Krag.T(" uderza w ziemię — zasypał kawałek drogi wiernych. Robotnicy muszą ją odkopać.", " uderza w ziemię — zasypał kawałek drogi wiernych. Grabarze muszą ją odkopać.")}", "swiat", "boss-zasyp");
         }
 
         public static BossDef bossowie(string id) => id == "demon" ? Demon : SniacyKamien;

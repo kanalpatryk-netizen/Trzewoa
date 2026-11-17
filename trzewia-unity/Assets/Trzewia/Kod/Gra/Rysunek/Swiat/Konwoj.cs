@@ -294,7 +294,9 @@ namespace Trzewia.Rysunek
             // dalszy koń, za nim dyszel; potem wóz i bliższy koń
             ctx.save();
             ctx.translate(konD, pod(konD) - 0.13);
-            kon_(ctx, faza + 0.6, tempo, teraz, lw, KON_DALSZY, dx => pod(konD + dx) - pod(konD), stoja, 1);
+            // Krąg Trzeci: zamiast koni wóz ciągną potępieni w uprzęży (Rysunek/Krag/Konwoj — zaprzegnieci)
+            if (Krag.Wlaczony) zaprzegnieci(ctx, faza + 0.6, tempo, teraz, lw, true);
+            else kon_(ctx, faza + 0.6, tempo, teraz, lw, KON_DALSZY, dx => pod(konD + dx) - pod(konD), stoja, 1);
             ctx.restore();
             var osP = U.zWozu(kolaP, yT + rT - rP);
             ctx.strokeStyle = "rgba(60,42,26,1)"; ctx.lineWidth = 0.1;
@@ -353,7 +355,8 @@ namespace Trzewia.Rysunek
             // bliższy koń, postronek do skrzyni i lejce do rąk woźnicy
             ctx.save();
             ctx.translate(kon, pod(kon));
-            kon_(ctx, faza, tempo, teraz, lw, KON_BLISKI, dx => pod(kon + dx) - pod(kon), stoja, 0);
+            if (Krag.Wlaczony) zaprzegnieci(ctx, faza, tempo, teraz, lw, false);
+            else kon_(ctx, faza, tempo, teraz, lw, KON_BLISKI, dx => pod(kon + dx) - pod(kon), stoja, 0);
             ctx.restore();
             var przodSkrzyni = U.zWozu(ogon + 3.95, dno - 0.16);
             ctx.strokeStyle = "rgba(40,26,16,1)"; ctx.lineWidth = 0.05;

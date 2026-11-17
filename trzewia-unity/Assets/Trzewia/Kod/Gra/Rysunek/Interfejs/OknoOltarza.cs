@@ -46,14 +46,14 @@ namespace Trzewia.Rysunek
             var @out = new List<Wiersz>();
             var nikogo = SOltarz.pobozniPrzyOltarzu(sim).Count == 0 && SOltarz.rytualOltarza(sim) == null;
             if (nikogo && SLud.liczRole(sim).pobozny > 0)
-                @out.Add(new Wiersz { akcja = "przywolaj", tekst = "Przywołaj pobożnego", cena = "za darmo", daje = false, skutek = "Najbliższy pobożny przyjdzie do ołtarza i zostanie przy nim, modląc się.", powod = null });
+                @out.Add(new Wiersz { akcja = "przywolaj", tekst = Krag.T("Przywołaj pobożnego", "Przywołaj mnicha"), cena = "za darmo", daje = false, skutek = Krag.T("Najbliższy pobożny przyjdzie do ołtarza i zostanie przy nim, modląc się.", "Najbliższy mnich przyjdzie do ołtarza i zostanie przy nim, modląc się."), powod = null });
             var skutki = new Dictionary<string, string>
             {
-                ["modlitwa"] = $"Pobożny klęczy, od krzyża biją promienie. +{Js.Js.S(R.modlitwa.wiara)} wiary przez {R0(R.modlitwa.tikow / 120)} s.",
+                ["modlitwa"] = $"{Krag.T("Pobożny", "Mnich")} klęczy, od krzyża biją promienie. +{Js.Js.S(R.modlitwa.wiara)} wiary przez {R0(R.modlitwa.tikow / 120)} s.",
                 ["szal"] = $"Krew spływa do misy, płonie krąg znaków. Rycerz przez {R0(R.szal.trwa / 7200)} min bije {ReplaceFirst(Js.Js.S(R.szal.sila), ".", ",")} raza mocniej.",
                 ["wskrzeszenie"] = "Ciało wstaje przy ołtarzu i wraca do drużyny.",
-                ["ofiaraKrwi"] = $"Pobożny upuszcza krwi do misy (+{Js.Js.S(LUD.okaleczenieKrew)} krwi). Słabnie, póki nie wyśpi się w sypialni.",
-                ["ofiaraZycia"] = $"Pobożny oddaje życie na ołtarzu (+{Js.Js.S(LUD.ofiaraKrew)} krwi). Jego ciało można potem wskrzesić.",
+                ["ofiaraKrwi"] = $"{Krag.T("Pobożny", "Mnich")} upuszcza krwi do misy (+{Js.Js.S(LUD.okaleczenieKrew)} krwi). Słabnie, póki nie wyśpi się w sypialni.",
+                ["ofiaraZycia"] = $"{Krag.T("Pobożny", "Mnich")} oddaje życie na ołtarzu (+{Js.Js.S(LUD.ofiaraKrew)} krwi). Jego ciało można potem wskrzesić.",
             };
             foreach (var rodzaj in RYTUALY)
             {
@@ -78,10 +78,10 @@ namespace Trzewia.Rysunek
         static string stanOltarza(Sim sim)
         {
             var r = SOltarz.rytualOltarza(sim);
-            if (r != null) return $"Trwa rytuał: {NAZWA_RYTUALU[r.rodzaj].ToLowerInvariant()} — {R0(Math.Min(1, (sim.tick - r.od) / Math.Max(1, r.@do - r.od)) * 100)}%. Pobożny klęczy przy ołtarzu.";
+            if (r != null) return $"Trwa rytuał: {NAZWA_RYTUALU[r.rodzaj].ToLowerInvariant()} — {R0(Math.Min(1, (sim.tick - r.od) / Math.Max(1, r.@do - r.od)) * 100)}%. {Krag.T("Pobożny", "Mnich")} klęczy przy ołtarzu.";
             var n = SOltarz.pobozniPrzyOltarzu(sim).Count;
-            if (n > 0) return $"Przy ołtarzu stoi {(n > 1 ? $"{n} pobożnych" : "pobożny")}. Wybierz rytuał — zapłacisz krwią (masz {Js.Js.S(Math.Floor(sim.krew))}).";
-            return "Przy ołtarzu nie stoi żaden pobożny. Przywołaj go albo zaznacz pobożnego i dotknij ołtarza.";
+            if (n > 0) return $"Przy ołtarzu stoi {(n > 1 ? $"{n} pobożnych" : Krag.T("pobożny", "mnich"))}. Wybierz rytuał — zapłacisz krwią (masz {Js.Js.S(Math.Floor(sim.krew))}).";
+            return Krag.T("Przy ołtarzu nie stoi żaden pobożny. Przywołaj go albo zaznacz pobożnego i dotknij ołtarza.", "Przy ołtarzu nie stoi żaden mnich. Przywołaj go albo zaznacz mnicha i dotknij ołtarza.");
         }
 
         sealed class Przycisk { public int lEt, lSk; public double h; }

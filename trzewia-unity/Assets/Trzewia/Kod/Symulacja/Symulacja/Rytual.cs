@@ -91,7 +91,7 @@ namespace Trzewia.Symulacja
                 if (przed < R.kronikaStart && klan.rytual >= R.kronikaStart)
                 {
                     sim.gdzie(w.coreX, w.przedsionekY)
-                        .log(POMNIK.wlaczony ? $"{klan.name} zeszli do krypty nad Wielkim Pomnikiem i nie chcą odejść. Modlą się, a kamienny demon drży."
+                        .log(POMNIK.wlaczony ? $"{klan.name}{Krag.T(" zeszli do krypty nad Wielkim Pomnikiem i nie chcą odejść. Modlą się, a kamienny demon drży.", " zeszli do krypty nad pieczęcią zejścia i nie chcą odejść. Modlą się, a pieczęć zejścia drży.")}"
                             : $"{klan.name} zeszli pod twój rdzeń i nie chcą odejść. Modlą się do kamienia.", "wiara", $"rytual-start{JS.S(id)}");
                 }
                 else if (przed < R.kronikaPolowa && klan.rytual >= R.kronikaPolowa)

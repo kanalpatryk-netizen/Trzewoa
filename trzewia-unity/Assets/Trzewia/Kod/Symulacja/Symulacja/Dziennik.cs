@@ -65,7 +65,7 @@ namespace Trzewia.Symulacja
         /// <summary>„Ślepy Lud #12 (Grzmotowie)”.</summary>
         public static string kto(Sim sim, Creature c)
         {
-            string? rola = c.race == 0 ? (c.rola ?? "pobozny") switch { "pobozny" => "Pobożny", "robotnik" => "Robotnik", "rycerz" => "Rycerz", _ => null } : null;
+            string? rola = c.race == 0 ? (c.rola ?? "pobozny") switch { "pobozny" => Krag.T("Pobożny", "Mnich"), "robotnik" => Krag.T("Robotnik", "Grabarz"), "rycerz" => "Rycerz", _ => null } : null;
             var klan = c.clan >= 0 && c.clan < sim.clans.Count ? sim.clans[(int)c.clan].name : "?";
             return $"{rola ?? RACES[(int)c.race].name} #{JS.S(c.id)} ({klan})";
         }

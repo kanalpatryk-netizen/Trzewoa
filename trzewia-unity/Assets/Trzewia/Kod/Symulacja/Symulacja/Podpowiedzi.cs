@@ -115,7 +115,7 @@ namespace Trzewia.Symulacja
                 {
                     kandydaci.Add(new Podpowiedz
                     {
-                        tekst = $"Pod stalową bramą lochu czekają twoi. Zaznacz {JS.S(BRAMA.potrzeba)} pobożnych i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.",
+                        tekst = $"Pod stalową bramą lochu czekają twoi. Zaznacz {JS.S(BRAMA.potrzeba)}{Krag.T(" pobożnych i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.", " mnichów i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.")}",
                         cel = new CelPodpowiedzi { x = w.kociol.x + 0.5, y = w.kociol.y, r = 5, tekst = "kocioł" },
                         waga = 88,
                     });
@@ -128,7 +128,7 @@ namespace Trzewia.Symulacja
             {
                 kandydaci.Add(new Podpowiedz
                 {
-                    tekst = "Twoi wierni modlą się w krypcie i kruszą Wielki Pomnik. Nie przeszkadzaj im — i nie daj im umrzeć z głodu.",
+                    tekst = Krag.T("Twoi wierni modlą się w krypcie i kruszą Wielki Pomnik. Nie przeszkadzaj im — i nie daj im umrzeć z głodu.", "Twoi wierni modlą się w krypcie i kruszą pieczęć zejścia. Nie przeszkadzaj im — i nie daj im umrzeć z głodu."),
                     cel = new CelPodpowiedzi { x = sim.world.coreX, y = sim.world.przedsionekY, r = 7, tekst = "rytuał" },
                     waga = 85,
                 });
@@ -156,7 +156,7 @@ namespace Trzewia.Symulacja
                         var i = plan.kopac[plan.kopac.Count - 1];
                         kandydaci.Add(new Podpowiedz
                         {
-                            tekst = $"{sim.clans[plan.klan].name} schodzą do krypty. Jeśli chcesz, żeby wracali, zaznacz robotników i każ im kopać drogę wiernych — szyb ze schodami od wnęki przy sali.",
+                            tekst = $"{sim.clans[plan.klan].name}{Krag.T(" schodzą do krypty. Jeśli chcesz, żeby wracali, zaznacz robotników i każ im kopać drogę wiernych — szyb ze schodami od wnęki przy sali.", " schodzą do krypty. Jeśli chcesz, żeby wracali, zaznacz grabarzy i każ im kopać drogę wiernych — szyb ze schodami od wnęki przy sali.")}",
                             cel = new CelPodpowiedzi { x = (i % w.w) + 0.5, y = JS.ToInt32(i / w.w) + 0.5, r = 3, tekst = "drąż tutaj" },
                             waga = 35,
                         });
@@ -165,7 +165,7 @@ namespace Trzewia.Symulacja
                     {
                         kandydaci.Add(new Podpowiedz
                         {
-                            tekst = $"{najwierniejszy.name} schodzą do krypty pod Wielkim Pomnikiem. {(REMAKE ? "Pilnuj, żeby wiadra docierały do warty przy przedsionku." : "Pilnuj, żeby grzyb przy przedsionku nie zniknął.")}",
+                            tekst = $"{najwierniejszy.name}{Krag.T(" schodzą do krypty pod Wielkim Pomnikiem. ", " schodzą do krypty pod pieczęcią zejścia. ")}{(REMAKE ? "Pilnuj, żeby wiadra docierały do warty przy przedsionku." : "Pilnuj, żeby grzyb przy przedsionku nie zniknął.")}",
                             cel = new CelPodpowiedzi { x = w.coreX, y = w.przedsionekY, r = 7, tekst = "przedsionek" },
                             waga = 35,
                         });
@@ -182,8 +182,8 @@ namespace Trzewia.Symulacja
                 kandydaci.Add(new Podpowiedz
                 {
                     tekst = REMAKE
-                        ? "Żeby cię uwolnić, lud musi uwierzyć mocniej. Zrób Cud przy siedzibie albo szepnij pobożnym „módl się”."
-                        : $"Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. {duzeWierne.name} są najbliżej — postaw Znak przy ich gnieździe albo szepnij pobożnym „módl się”.",
+                        ? Krag.T("Żeby cię uwolnić, lud musi uwierzyć mocniej. Zrób Cud przy siedzibie albo szepnij pobożnym „módl się”.", "Żeby cię uwolnić, lud musi uwierzyć mocniej. Zrób Cud przy siedzibie albo szepnij mnichem „módl się”.")
+                        : $"Żeby cię uwolnić, jedna nacja musi uwierzyć mocniej. {duzeWierne.name}{Krag.T(" są najbliżej — postaw Znak przy ich gnieździe albo szepnij pobożnym „módl się”.", " są najbliżej — postaw Znak przy ich gnieździe albo szepnij mnichem „módl się”.")}",
                     cel = new CelPodpowiedzi { x = duzeWierne.hx, y = duzeWierne.hy, r = 5, tekst = REMAKE ? podpisSiedziby(sim, duzeWierne) : duzeWierne.name, klan = duzeWierne.id },
                     waga = 25,
                 });
@@ -211,7 +211,7 @@ namespace Trzewia.Symulacja
                 {
                     kandydaci.Add(new Podpowiedz
                     {
-                        tekst = "Pod salą leży rdzawa ruda. Zaznacz robotnika i wskaż ją — wykuje całą kępę, a żelazo samo spłynie do licznika.",
+                        tekst = Krag.T("Pod salą leży rdzawa ruda. Zaznacz robotnika i wskaż ją — wykuje całą kępę, a żelazo samo spłynie do licznika.", "Pod salą leży rdzawa ruda. Zaznacz grabarza i wskaż ją — wykuje całą kępę, a żelazo samo spłynie do licznika."),
                         cel = new CelPodpowiedzi { x = best.Value.x, y = best.Value.y, r = 3, tekst = "żelazo" },
                         waga = 40,
                     });

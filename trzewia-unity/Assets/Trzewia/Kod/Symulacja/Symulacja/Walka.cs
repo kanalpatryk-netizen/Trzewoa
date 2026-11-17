@@ -36,6 +36,14 @@ namespace Trzewia.Symulacja
     public static class Walka
     {
         static Typ_RUCHY_RYCERZA RR => RUCHY_RYCERZA;
+        static Typ_SCIECIE_GLOW SG => NastawyKrag.SCIECIE_GLOW;
+
+        /// <summary>Ruchy rycerza po kolei; w trybie kręgu na końcu „Ścięcie głowy” (krag-3-beta: RUCHY_RYCERZA.sciecieGlowy).</summary>
+        static readonly string[] KLUCZE_KREGU = Typ_RUCHY_RYCERZA.klucze.Concat(new[] { "sciecieGlowy" }).ToArray();
+        public static string[] kluczeRycerza => Krag.Wlaczony ? KLUCZE_KREGU : Typ_RUCHY_RYCERZA.klucze;
+
+        /// <summary>Opis ruchu rycerza po nazwie (RR[id]); „Ścięcie głowy” — z nastaw kręgu.</summary>
+        public static RuchRycerza Ruch(string id) => id == "sciecieGlowy" ? NastawyKrag.SCIECIE_GLOWY : RR[id];
         static Typ_OBRONA_RYCERZA OB => OBRONA_RYCERZA;
         static Typ_RUCHY_BOSSA RB => RUCHY_BOSSA;
         static Typ_WALKA_BOSSA WB => WALKA_BOSSA;
@@ -78,7 +86,7 @@ namespace Trzewia.Symulacja
 
         /// <summary>Ataki, które rycerz ma teraz w zanadrzu (karta postaci, atlas).</summary>
         public static List<string> atakiRycerza(Sim sim, Creature c) =>
-            Typ_RUCHY_RYCERZA.klucze.Where(id => RR[id].rodzaj == "atak" && (RR[id].waga ?? 0) > 0 && spelniaWymagania(sim, c, RR[id])).ToList();
+            kluczeRycerza.Where(id => Ruch(id).rodzaj == "atak" && (Ruch(id).waga ?? 0) > 0 && spelniaWymagania(sim, c, Ruch(id))).ToList();
 
         /// <summary>Zasięg zwykłego ciosu rycerza na tego wroga.</summary>
         static double zasiegRycerza(Creature s) => STRAZNICY.rycerzZasieg + (s.boss != null ? 0.8 : 0);
@@ -90,12 +98,15 @@ namespace Trzewia.Symulacja
             var lista = new List<(string, double)>();
             foreach (var id in atakiRycerza(sim, c))
             {
-                var def = RR[id];
+                var def = Ruch(id);
                 if (def.wrogPonizej != null && zycieWroga >= def.wrogPonizej) continue;
+                if (id == "sciecieGlowy" && !mozeSciac(s)) continue;
                 var blisko = d <= zasieg + (def.zasieg ?? 0);
                 var zDaleka = JS.Tak(def.zDaleka) && d <= zasieg + def.zDaleka!.Value && Math.Abs(s.y - c.y) < 1.2;
                 if (!blisko && !zDaleka) continue;
                 var waga = def.waga ?? 1;
+                // Krąg Trzeci: pusty pasek głowy — rycerz rzuca się, żeby ją ściąć
+                if (id == "sciecieGlowy" && glowaCzeka(s)) waga *= SG.wagaPustej;
                 if (c.kombo == id) waga *= OB.komboWaga;
                 if (!blisko && zDaleka) waga *= 3;
                 lista.Add((id, waga));
@@ -147,15 +158,15 @@ namespace Trzewia.Symulacja
             var zasieg = zasiegRycerza(s);
             var gotow = sim.tick - (c.ciosT ?? -1e9) >= OB.przerwa;
             double zDaleka = 0;
-            if (gotow && d > zasieg) foreach (var id0 in atakiRycerza(sim, c)) zDaleka = Math.Max(zDaleka, RR[id0].zDaleka ?? 0);
+            if (gotow && d > zasieg) foreach (var id0 in atakiRycerza(sim, c)) zDaleka = Math.Max(zDaleka, Ruch(id0).zDaleka ?? 0);
             if (d > zasieg && !(zDaleka > 0 && d <= zasieg + zDaleka && Math.Abs(s.y - c.y) < 1.2)) { podejdz(Math.Floor(s.x), Math.Floor(s.y)); return; }
             c.face = s.x > c.x ? 1 : -1;
             if (!gotow) return;
             var id = wybierzAtak(sim, c, s, d);
             if (id == null) { podejdz(Math.Floor(s.x), Math.Floor(s.y)); return; }
-            zacznijRuch(sim, c, id, RR[id].dl, s);
+            zacznijRuch(sim, c, id, Ruch(id).dl, s);
             c.kombo = OB.kombo[id];
-            if (s.boss != null) bossWidziZamach(sim, s, c, RR[id]);
+            if (s.boss != null) bossWidziZamach(sim, s, c, Ruch(id));
         }
 
         /// <summary>Krok rycerza w trakcie ruchu: doskok, trafienia o czasie. True, póki ruch trwa.</summary>
@@ -163,7 +174,7 @@ namespace Trzewia.Symulacja
         {
             var R = c.ruch;
             if (R == null) return false;
-            var def = RR[R.id];
+            var def = Ruch(R.id);
             var t = sim.tick - R.od;
             if (def == null || !czyRycerz(c) || c.wDloni == true || c.lot != null) { c.ruch = null; return false; }
             if (t >= R.dl)
@@ -190,8 +201,10 @@ namespace Trzewia.Symulacja
             {
                 var mn = def.traf[(int)R.traf][1];
                 R.traf++;
-                double zad = 0;
-                if (zyje && !s!.dead && JS.Hypot(s.x - c.x, s.y - c.y) <= zasiegRycerza(s) + (def.zasieg ?? 0) + 0.6) zad = zadajCios(sim, c, s, mn, def);
+                double zad = 0; var trafil = false;
+                if (zyje && !s!.dead && JS.Hypot(s.x - c.x, s.y - c.y) <= zasiegRycerza(s) + (def.zasieg ?? 0) + 0.6) { trafil = true; zad = zadajCios(sim, c, s, mn, def); }
+                // Krąg Trzeci: cięcie doszło, a pasek głowy jest (prawie) pusty — głowa spada (rana bywa zero: pasek już pusty)
+                if (R.id == "sciecieGlowy" && trafil && !s!.dead && mozeSciac(s)) { ucinaGlowe(sim, s, c); zad = Math.Max(zad, 1); }
                 R.zadane.Add(zad);
             }
             return true;
@@ -201,7 +214,7 @@ namespace Trzewia.Symulacja
         public static double przyjmijCios(Sim sim, Creature c, double rana, OpcjeCiosu o)
         {
             if (!czyRycerz(c) || rana <= 0) return rana;
-            var R = c.ruch; var def = R != null ? RR[R.id] : null;
+            var R = c.ruch; var def = R != null ? Ruch(R.id) : null;
             var wet = weteranAktywny(sim, c);
             var lezy = R?.id == "powalony" && sim.tick - R.od < R.dl;
             var ostatnieTraf = def?.traf != null && def.traf.Length > 0 ? def.traf[def.traf.Length - 1][0] : 0;
@@ -309,7 +322,10 @@ namespace Trzewia.Symulacja
             if (b.dead || b.boss != "demon") return;
             var max = Math.Max(1, b.hpMax ?? DEMON.hp);
             var R = b.ruch;
-            foreach (var prog in WB.kleka)
+            // Krąg Trzeci: pada na przednie łapy, gdy pasek bieżącej głowy się opróżni — głowa zwisa, czeka na miecz
+            var progi = WB.kleka;
+            if (Krag.Wlaczony) { var g = glowyCerbera(b); if (g.biezaca != null) progi = new[] { (g.dno + 1.5) / max }; }
+            foreach (var prog in progi)
             {
                 if (hp0 / max >= prog && b.hp / max < prog)
                 {
@@ -334,6 +350,8 @@ namespace Trzewia.Symulacja
             var sg = JS.Sign(cel.x - b.x);
             var kier = JS.Tak(sg) ? sg : b.face;
             var rana = DEMON.sila * mn * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel);
+            // Krąg Trzeci: każda ścięta głowa to mniej kłów
+            if (Krag.Wlaczony) rana *= 1 - SG.slabszeKly * (b.glowyOdciete?.Count ?? 0);
             var powala = sim.rng.chance(powalaO ?? def.powala ?? 0);
             rana = przyjmijCios(sim, cel, rana, new OpcjeCiosu { kier = -kier, powala = powala, odrzut = def.odrzut, przygniata = def.przygniata, ogien = ogien ? true : (bool?)null });
             if (!czyRycerz(cel) && JS.Tak(def.odrzut) && rana > 0) przesun(sim, cel, kier * def.odrzut!.Value * 0.6);
@@ -474,7 +492,9 @@ namespace Trzewia.Symulacja
         public static void tikDemona(Sim sim, Creature c, Action<Sim, Creature> zasyp)
         {
             var hpMax = c.hpMax ?? DEMON.hp;
-            if (sim.rytual.wierni < SNIACY_KAMIEN.modlitwaWiernych) c.hp = Math.Min(hpMax, c.hp + SNIACY_KAMIEN.zrastanie);
+            // (Krąg Trzeci: zrasta się tylko w pasku bieżącej głowy — ścięte nie odrastają)
+            if (sim.rytual.wierni < SNIACY_KAMIEN.modlitwaWiernych)
+                c.hp = Math.Min(Krag.Wlaczony ? Math.Min(hpMax, glowyCerbera(c).gora) : hpMax, c.hp + SNIACY_KAMIEN.zrastanie);
             var R = c.ruch;
             if (R != null)
             {
@@ -536,6 +556,107 @@ namespace Trzewia.Symulacja
         }
 
         /// <summary>Nazwa ruchu (dziennik, karta).</summary>
-        public static string nazwaRuchu(string id) => RR[id]?.nazwa ?? RB[id]?.nazwa ?? id;
+        // ======================================================================== Krąg Trzeci: ścięcie głowy Cerbera
+
+        /// <summary>Paski głów Cerbera: bieżąca głowa (null — wszystkie ścięte), granice jej paska w punktach życia, pasek 0…1.</summary>
+        public struct StanGlow { public double? biezaca; public double odcietych, dno, gora, pasek, max; }
+
+        /// <summary>
+        /// Paski głów Cerbera (krag-3-beta, prośba użytkownika 16.11: „trzy paski życia, każdy pasek to jedna głowa”): życie
+        /// dzieli się na trzy równe części; `biezaca` — numer głowy, którą teraz zbijają rany.
+        /// </summary>
+        public static StanGlow glowyCerbera(Creature b)
+        {
+            var max = Math.Max(1, b.hpMax ?? DEMON.hp);
+            double odcietych = b.glowyOdciete?.Count ?? 0;
+            double? biezaca = b.boss == "demon" && odcietych < SG.kolejnosc.Length ? SG.kolejnosc[(int)odcietych] : (double?)null;
+            var czesc = max / SG.najwiecej;
+            var dno = Math.Max(0, max - czesc * (odcietych + 1));
+            var gora = dno + czesc;
+            var pasek = biezaca == null ? 0 : Math.Max(0, Math.Min(1, (b.hp - dno) / czesc));
+            return new StanGlow { biezaca = biezaca, odcietych = odcietych, dno = dno, gora = gora, pasek = pasek, max = max };
+        }
+
+        /// <summary>Ile zostało z paska głowy `nr` (0…1): ścięta — 0, bieżąca — jej pasek, jeszcze nietknięta — 1.</summary>
+        public static double pasekGlowy(Creature b, double nr)
+        {
+            var g = glowyCerbera(b);
+            var k = Array.IndexOf(SG.kolejnosc, nr);
+            if (k < g.odcietych) return 0;
+            return k > g.odcietych ? 1 : g.pasek;
+        }
+
+        /// <summary>Pasek bieżącej głowy jest pusty — głowa zwisa i czeka, aż ktoś ją zetnie.</summary>
+        public static bool glowaCzeka(Creature b)
+        {
+            var g = glowyCerbera(b);
+            return !b.dead && g.biezaca != null && b.hp <= g.dno + 1.5;
+        }
+
+        /// <summary>Czy rycerz może teraz ściąć Cerberowi bieżącą głowę (pasek głowy prawie pusty).</summary>
+        public static bool mozeSciac(Creature b)
+        {
+            if (!Krag.Wlaczony || b.boss != "demon" || b.dead) return false;
+            var g = glowyCerbera(b);
+            return g.biezaca != null && g.pasek <= SG.sciecieOd;
+        }
+
+        /// <summary>Czy wśród walczących jest żywy rycerz (zetnie pustą głowę mieczem) — inaczej odrąbie ją, kto trafi.</summary>
+        public static bool rycerzDoSciecia(Sim sim)
+        {
+            foreach (var c in sim.creatures) if (!c.dead && czyRycerz(c)) return true;
+            return false;
+        }
+
+        /// <summary>Wysokość szyi głowy nad stopami Cerbera (kafle) — skąd spada ścięta głowa.</summary>
+        static readonly double[] WYS_GLOWY = { 3.1, 2.6, 1.9 };
+        static readonly string[] IMIE_GLOWY = { "dobermana", "wilka", "pitbulla" };
+
+        /// <summary>
+        /// Ścięcie głowy (rycerz mieczem albo — gdy rycerza nie ma — ktokolwiek, kto trafi w pustą głowę): po kolei pitbull,
+        /// wilk, doberman. Głowa spada przed psa na posadzkę, pies chwieje się i pada na przednie łapy. Trzecia — Cerber pada.
+        /// </summary>
+        public static void ucinaGlowe(Sim sim, Creature b, Creature r)
+        {
+            var odc = b.glowyOdciete ??= new List<GlowaOdcieta>();
+            double? nr = null;
+            foreach (var i in SG.kolejnosc)
+            {
+                var jest = false;
+                foreach (var o in odc) if (o.nr == i) { jest = true; break; }
+                if (!jest) { nr = i; break; }
+            }
+            if (nr == null) return;
+            var zwrot = JS.Tak(b.face) ? b.face : (r.x > b.x ? 1 : -1);
+            var w = sim.world;
+            // stopy psa: pierwsza posadzka pod nim (demon bywa w powietrzu — pies nie)
+            var yp = Math.Floor(b.y);
+            while (yp < w.h - 2 && w.passable(Math.Floor(b.x), yp + 1)) yp++;
+            double x0 = b.x + zwrot * 1.0, y0 = yp + 1 - WYS_GLOWY[(int)nr.Value];
+            var x = b.x + zwrot * (1.5 + sim.rng.next() * 0.9);
+            x = Math.Max(1, Math.Min(w.w - 2, x));
+            var y = Math.Floor(y0);
+            while (y < w.h - 2 && w.passable(Math.Floor(x), y + 1)) y++;
+            var dnoPo = glowyCerbera(b).dno;
+            odc.Add(new GlowaOdcieta { nr = nr.Value, tick = sim.tick, x0 = x0, y0 = y0, x = x, y = y, zwrot = zwrot });
+            for (var k = 0; k < 14; k++) sim.spark(x0 + sim.rng.range(-0.6, 0.6), y0 + sim.rng.range(-0.6, 0.6), "hit");
+            var imie = IMIE_GLOWY[(int)nr.Value];
+            var ktoTnie = czyRycerz(r) ? "Rycerz ściął" : $"{(rolaPostaci(r) == "pobozny" ? "Mnich" : "Grabarz")} odrąbał";
+            var zostalo = SG.najwiecej - odc.Count;
+            if (zostalo <= 0)
+            {
+                // ostatnia głowa: Cerber pada (Pomnik — konanie i Uwolnienie)
+                b.hp = 0;
+                if (!Pomnik.ostatnieUderzenie(sim, b, r)) sim.kill(b, $"bez głów — {ktoTnie.ToLowerInvariant()} ostatnią", "walka");
+                return;
+            }
+            b.hp = Math.Min(b.hp, dnoPo);
+            sim.log($"{ktoTnie} Cerberowi głowę {imie}! {(zostalo == 1 ? "Zostało mu jedno gardło" : "Zostały mu dwa gardła")}.", "krew");
+            b.chwiejT = sim.tick;
+            b.rykPo = true;
+            zacznijRuchBossa(sim, b, "zachwianie", null, WB.dlKleku, rr => { rr.wariant = 2; });
+        }
+
+        public static string nazwaRuchu(string id) => Ruch(id)?.nazwa ?? RB[id]?.nazwa ?? id;
     }
 }

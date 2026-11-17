@@ -51,7 +51,7 @@ namespace Trzewia.Symulacja
             if (!wPrzedsionku && REMAKE && w.brama.x1 >= w.brama.x0 && !w.wLochu(c.x, c.y) && w.wPrzedprozu(Math.Floor(c.x), Math.Floor(c.y)) && !bramaOtwarta(sim))
             {
                 c.droga = null;
-                c.zamiar = "czeka pod stalową bramą lochu — podniosą ją pobożni zaklęciami przy kotle";
+                c.zamiar = Krag.T("czeka pod stalową bramą lochu — podniosą ją pobożni zaklęciami przy kotle", "czeka pod stalową bramą lochu — podniosą ją mnisi zaklęciami przy kotle");
                 c.zamiarDo = sim.tick + 120;
                 return;
             }

@@ -19,8 +19,11 @@ public enum Akcja
 
 public sealed class OpisAkcji
 {
-    public readonly Akcja akcja; public readonly string nazwa, opis;
-    public OpisAkcji(Akcja akcja, string nazwa, string opis) { this.akcja = akcja; this.nazwa = nazwa; this.opis = opis; }
+    public readonly Akcja akcja; public readonly string nazwa;
+    /// <summary>Opis w Alphie 1 i — gdy inny — w trybie Kręgu Trzeciego (grabarze, mnisi); `opis` — bieżącego trybu.</summary>
+    readonly string opisAlfa, opisKregu;
+    public string opis => Symulacja.Krag.Wlaczony ? opisKregu : opisAlfa;
+    public OpisAkcji(Akcja akcja, string nazwa, string opis, string? opisKregu = null) { this.akcja = akcja; this.nazwa = nazwa; opisAlfa = opis; this.opisKregu = opisKregu ?? opis; }
 }
 
 public static class Keybinds
@@ -34,10 +37,10 @@ public static class Keybinds
         new(Akcja.zasiej, "Nakarm", "wiadro z jedzeniem tam, gdzie wskażesz"),
         new(Akcja.szept, "Szepnij", "módl się albo prorokuj — jednej głowie"),
         new(Akcja.znak, "Cud", "objawienie — oddanie nacji rośnie"),
-        new(Akcja.robotnicy, "Robotnicy", "zaznacza robotników (drugi raz: kamera do nich); dotknięcie mapy — idź tam, w skałę — kop"),
-        new(Akcja.pobozni, "Pobożni", "zaznacza pobożnych (drugi raz: kamera do nich)"),
+        new(Akcja.robotnicy, "Robotnicy", "zaznacza robotników (drugi raz: kamera do nich); dotknięcie mapy — idź tam, w skałę — kop", "zaznacza grabarzy (drugi raz: kamera do nich); dotknięcie mapy — idź tam, w skałę — kop"),
+        new(Akcja.pobozni, "Pobożni", "zaznacza pobożnych (drugi raz: kamera do nich)", "zaznacza mnichów (drugi raz: kamera do nich)"),
         new(Akcja.rycerz, "Rycerz", "zaznacza rycerza (drugi raz: kamera do niego)"),
-        new(Akcja.kopDroge, "Kop drogę wiernych", "zaznaczeni robotnicy kopią szyb drogi wiernych do krypty"),
+        new(Akcja.kopDroge, "Kop drogę wiernych", "zaznaczeni robotnicy kopią szyb drogi wiernych do krypty", "zaznaczeni grabarze kopią szyb drogi wiernych do krypty"),
         new(Akcja.odwolaj, "Odwołaj rozkaz", "zaznaczeni wracają do swoich zajęć"),
         new(Akcja.planuj, "Wyznacz pomieszczenie", "plan pod kursorem: sypialnia, warsztat, kuźnia, korytarz, szyb (drugi raz — następny szablon)"),
         new(Akcja.narzedzie1, "Narzędzie I", "pierwsze narzędzie wybranego czasownika"),

@@ -136,7 +136,7 @@ namespace Trzewia.Aplikacja
             if (pauza) ui.say("Szept czeka — usłyszą go, gdy puścisz czas.", sim.tick);
             else
             {
-                sim.log(ile == 1 ? $"Szepnąłeś pobożnemu: „{t.label}\". Usłyszał." : $"Szepnąłeś {ile} pobożnym: „{t.label}\". Usłyszeli.", "wiara");
+                sim.log(ile == 1 ? $"Szepnąłeś {Krag.T("pobożnemu", "mnichowi")}: „{t.label}\". Usłyszał." : $"Szepnąłeś {ile} {Krag.T("pobożnym", "mnichom")}: „{t.label}\". Usłyszeli.", "wiara");
                 ui.say(narzedzie == "modl" ? (ile == 1 ? "Idzie modlić się pod pomnikiem." : $"Idą modlić się pod pomnikiem: {ile}.") : "Wraca do swoich.", sim.tick);
             }
             app.gesty.klik();
@@ -266,7 +266,7 @@ namespace Trzewia.Aplikacja
         void kopDroge()
         {
             var robotnicy = zaznaczeniZywi().Where(c => SLud.rolaPostaci(c) == "robotnik").ToList();
-            if (robotnicy.Count == 0) { ui.say("Kopią tylko robotnicy — zaznacz robotnika.", sim.tick); app.gesty.odmowa(); return; }
+            if (robotnicy.Count == 0) { ui.say(Krag.T("Kopią tylko robotnicy — zaznacz robotnika.", "Kopią tylko grabarze — zaznacz grabarza."), sim.tick); app.gesty.odmowa(); return; }
             var r = Polecenia.drogaGrupie(sim, robotnicy.Select(c => c.id).ToList());
             if (r.przyjeli > 0) { ui.say(r.przyjeli == 1 ? "Idzie kopać drogę wiernych." : $"Idą kopać drogę wiernych ({Js.Js.S(r.przyjeli)}).", sim.tick); app.gesty.klik(); }
             else { krzyzykPodKursorem(); app.gesty.odmowa(); }
@@ -360,7 +360,7 @@ namespace Trzewia.Aplikacja
             var pom = k != null ? Pomieszczenia.pomieszczenieW(sim, k.Value.x, k.Value.y) : null;
             if (pom == null) return null;
             var lud = zaznaczeniZywi();
-            if (lud.Count == 0) return new PodKursorem { pom = pom, akcja = pom.gotowe ? $"{NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż" : "plan — zaznacz robotników i wskaż go", ok = true };
+            if (lud.Count == 0) return new PodKursorem { pom = pom, akcja = pom.gotowe ? $"{NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż" : Krag.T("plan — zaznacz robotników i wskaż go", "plan — zaznacz grabarzy i wskaż go"), ok = true };
             var rob = lud.Count(c => SLud.rolaPostaci(c) == "robotnik");
             var ryc = lud.Count(c => SLud.rolaPostaci(c) == "rycerz");
             var (akcja, ok) = Pokoje.akcjaNaPomieszczeniu(pom, rob, lud.Count - rob, ryc, Zbroja.naWieszaku(sim).Count);
@@ -385,13 +385,13 @@ namespace Trzewia.Aplikacja
             {
                 var pw = Polecenia.przywolajDoOltarza(sim);
                 if (pw != null) { ui.say($"Nikt nie przyjdzie: {pw}.", sim.tick); app.gesty.odmowa(); }
-                else { ui.say("Pobożny idzie do ołtarza.", sim.tick); app.gesty.klik(); }
+                else { ui.say(Krag.T("Pobożny idzie do ołtarza.", "Mnich idzie do ołtarza."), sim.tick); app.gesty.klik(); }
                 return;
             }
             if (b.rodzaj == null) return;
             var powod = Oltarz.odprawRytual(sim, b.rodzaj, b.cel);
             if (powod != null) { ui.say($"{NAZWA_RYTUALU[b.rodzaj]} — teraz nie: {powod}.", sim.tick); app.gesty.odmowa(); return; }
-            ui.say($"{NAZWA_RYTUALU[b.rodzaj]} — pobożny klęka przy ołtarzu.", sim.tick);
+            ui.say(Krag.T($"{NAZWA_RYTUALU[b.rodzaj]} — pobożny klęka przy ołtarzu.", $"{NAZWA_RYTUALU[b.rodzaj]} — mnich klęka przy ołtarzu."), sim.tick);
             app.gesty.klik();
             oknoOltarza = false;
             nasluch?.Invoke(new ZdarzenieGry { typ = "oltarz", rodzaj = b.rodzaj });
@@ -426,7 +426,7 @@ namespace Trzewia.Aplikacja
             }
             Pomieszczenia.polozPlan(sim, p);
             falaRozkazu = new FalaRozkazu { x = p.x + p.w / 2, y = p.y + p.h, t = Wydajnosc.Teraz(), ok = true };
-            ui.say($"Wyznaczyłeś {BIERNIK_POMIESZCZENIA[p.rodzaj]}. Zaznacz robotników i dotknij planu — wykują go.", sim.tick);
+            ui.say(Krag.T($"Wyznaczyłeś {BIERNIK_POMIESZCZENIA[p.rodzaj]}. Zaznacz robotników i dotknij planu — wykują go.", $"Wyznaczyłeś {BIERNIK_POMIESZCZENIA[p.rodzaj]}. Zaznacz grabarzy i dotknij planu — wykują go."), sim.tick);
             app.gesty.klik();
             nasluch?.Invoke(new ZdarzenieGry { typ = "plan", rodzaj = p.rodzaj });
             dirty = true;
@@ -492,7 +492,7 @@ namespace Trzewia.Aplikacja
                 app.gesty.klik();
                 return;
             }
-            if (wr.rob.Count == 0) { ui.say("Zaznacz robotników — wtedy ramka oznaczy skałę do wykucia.", sim.tick); return; }
+            if (wr.rob.Count == 0) { ui.say(Krag.T("Zaznacz robotników — wtedy ramka oznaczy skałę do wykucia.", "Zaznacz grabarzy — wtedy ramka oznaczy skałę do wykucia."), sim.tick); return; }
             var o = Polecenia.wydajObszar(sim, wr.rob.Select(c => c.id).ToList(), wr.lite);
             falaRozkazu = new FalaRozkazu { x = (wr.k.x0 + wr.k.x1 + 1) / 2, y = (wr.k.y0 + wr.k.y1 + 1) / 2, t = Wydajnosc.Teraz(), ok = o.przyjeli > 0 };
             if (o.przyjeli == 0) { krzyzykPodKursorem(); app.gesty.odmowa(); }
@@ -549,7 +549,7 @@ namespace Trzewia.Aplikacja
             }
             // etap 3c: plan albo pomieszczenie pod palcem — robotnicy kują plan, pracują w warsztacie i kuźni, każdy śpi w sypialni
             var pom = Pomieszczenia.pomieszczenieW(sim, Math.Floor(fx), Math.Floor(fy));
-            if (pom != null && ids.Count == 0) { ui.say(pom.gotowe ? $"{NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż." : "Plan — zaznacz robotników i wskaż go, a wykują.", sim.tick); return; }
+            if (pom != null && ids.Count == 0) { ui.say(pom.gotowe ? $"{NAZWA_POMIESZCZENIA[pom.rodzaj]} — zaznacz kogoś i wskaż." : Krag.T("Plan — zaznacz robotników i wskaż go, a wykują.", "Plan — zaznacz grabarzy i wskaż go, a wykują."), sim.tick); return; }
             if (ids.Count == 0) return;
             var wr = pom != null ? Polecenia.wydajNaPomieszczenie(sim, ids, pom) : Polecenia.wydajGrupie(sim, ids, Math.Floor(fx), Math.Floor(fy));
             falaRozkazu = new FalaRozkazu { x = fx, y = fy, t = Wydajnosc.Teraz(), ok = wr.przyjeli > 0 };
@@ -638,6 +638,8 @@ namespace Trzewia.Aplikacja
 
         public override void dotyk(Wskaznik e, Faza faza)
         {
+            // Krąg Trzeci: w filmie i scenie wejścia gracz nie ma jeszcze władzy
+            if (wstep.trwa()) return;
             ui.pointer = (e.clientX, e.clientY);
             // okienko dewelopera (w C# rysowane na płótnie) bierze dotknięcia nad sobą
             if (panelDev != null && ustawienia.trybDeweloperski && nasluch == null && panelDev.dotyk(e, faza)) return;
@@ -956,6 +958,7 @@ namespace Trzewia.Aplikacja
 
         public override void kolko(Kolko e)
         {
+            if (wstep.trwa()) return;
             if (panelDev != null && ustawienia.trybDeweloperski && nasluch == null && panelDev.kolko(e)) return;
             if (atlas.otwarte) { atlas.kolko(e.deltaY > 0 ? 70 : -70); return; }
             if (zapiski)
@@ -978,6 +981,8 @@ namespace Trzewia.Aplikacja
 
         public override void klawisz(Akcja? akcja, Klawisz? e)
         {
+            // Krąg Trzeci: Esc pomija film; w scenie wejścia klawisze nic nie robią
+            if (wstep.trwa()) { if (akcja == Akcja.menu) wstep.pomin(); return; }
             if (e?.key == "Tab") { liczby = true; return; }
             if (atlas.otwarte && e != null) { atlas.klawisz(e.key); return; }
             // Enter przy karcie sytuacji: „planuj” — karta znika, czas dalej stoi
@@ -1032,7 +1037,7 @@ namespace Trzewia.Aplikacja
                     else if (akcja == Akcja.znak)
                     {
                         if (zaznaczeniZywi().Any(c => SLud.rolaPostaci(c) == "pobozny")) wykonajMozliwosc("cud");
-                        else { ui.say("Cud sprowadza pobożny — zaznacz pobożnego (S) i wybierz „Cud” w jego oknie.", sim.tick); app.gesty.odmowa(); }
+                        else { ui.say(Krag.T("Cud sprowadza pobożny — zaznacz pobożnego (S) i wybierz „Cud” w jego oknie.", "Cud sprowadza mnich — zaznacz mnicha (S) i wybierz „Cud” w jego oknie."), sim.tick); app.gesty.odmowa(); }
                     }
                     else wykonajMozliwosc("modl");
                     break;

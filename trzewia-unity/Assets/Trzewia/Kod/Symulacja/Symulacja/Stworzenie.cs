@@ -138,6 +138,14 @@ namespace Trzewia.Symulacja
         public double? zamarlyDo;
         public bool? straznik;
         public string? boss;
+        /// <summary>
+        /// Krąg Trzeci (krag-3-beta, 16.11): Cerber — głowy ścięte przez rycerza (0 doberman, 1 wilk, 2 pitbull): tik, skąd
+        /// spadła (x0, y0 — kafle, w chwili cięcia), gdzie leży (x, y — kafel nad posadzką) i w którą stronę patrzył pies.
+        /// </summary>
+        public List<GlowaOdcieta>? glowyOdciete;
+        /// <summary>Krąg Trzeci: obżarstwo (0…1+, przy 1 pada w błoto) i do kiedy leży w błocie (Symulacja/Krag.cs).</summary>
+        public double? obzarstwo;
+        public double? wBlocieDo;
         public double? ciosT;
         public double? ksiegaT;
         public double? hpMax;
@@ -184,6 +192,9 @@ namespace Trzewia.Symulacja
     /// <summary>Pole, które nie idzie do zapisu gry (ani do skrótu stanu).</summary>
     [AttributeUsage(AttributeTargets.Field)]
     public sealed class BezZapisuAttribute : Attribute { }
+
+    /// <summary>Krąg Trzeci: ścięta głowa Cerbera (Creature.glowyOdciete).</summary>
+    public sealed class GlowaOdcieta { public double nr, tick, x0, y0, x, y, zwrot; }
 
     public sealed class Clan
     {

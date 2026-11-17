@@ -214,7 +214,7 @@ namespace Trzewia.Rysunek
             ctx.textBaseline = "alphabetic";
             var rozmImienia = Math.Max(16, Math.Min(24, cw * 0.075));
             ctx.font = $"{Js.Js.S(rozmImienia)}px {Ink.SERIF}";
-            var imie = c.boss != null ? Boss.aktywnyBoss().nazwa : c.straznik == true ? "Strażnik Snu" : Overlay.creatureName(c);
+            var imie = c.boss != null ? Boss.aktywnyBoss().nazwa : c.straznik == true ? Krag.T("Strażnik Snu", "Cień Żarłoka") : Overlay.creatureName(c);
             if (ctx.measureText(imie).width > tw) { rozmImienia *= tw / ctx.measureText(imie).width; ctx.font = $"{Js.Js.S(rozmImienia)}px {Ink.SERIF}"; }
             ctx.fillStyle = "rgba(242,228,202,0.97)";
             ctx.fillText(imie, tx, ny + rozmImienia * 0.9);
@@ -391,7 +391,7 @@ namespace Trzewia.Rysunek
             if (c.job == Job.DIG || c.job == Job.DESCEND) return "Drąży. Nie wie, że drąży w kimś.";
             if (c.job == Job.PRAY) return "Modli się do ściany, która słucha.";
             if (c.job == Job.FIGHT) return "Właśnie próbuje kogoś zabić.";
-            if (c.job == Job.PIELGRZYM) return "Idzie do krypty pod Wielkim Pomnikiem. Sam nie wie po co.";
+            if (c.job == Job.PIELGRZYM) return Krag.T("Idzie do krypty pod Wielkim Pomnikiem. Sam nie wie po co.", "Idzie do krypty pod pieczęcią zejścia. Sam nie wie po co.");
             if (c.job == Job.EAT || c.hunger > 0.6) return "Głodny. To u nich stan domyślny.";
             if (c.carry > 0) return "Niesie rudę do gniazda.";
             return clan.devotion > 0.6 ? "Wierzy w ciebie bez powodu." : "Żyje, bo jeszcze nie umarł.";

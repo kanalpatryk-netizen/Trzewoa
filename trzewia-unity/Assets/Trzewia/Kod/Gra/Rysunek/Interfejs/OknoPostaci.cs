@@ -33,10 +33,16 @@ namespace Trzewia.Rysunek
     public static class OknoPostaci
     {
         /// <summary>Odmiana nazwy roli: 1 robotnik, 2 robotników… (jedna, dopełniacz, mnoga).</summary>
-        static readonly Dictionary<string, (string g, string B, string C)> ODMIANA_ROLI = new Dictionary<string, (string, string, string)>
+        static readonly Dictionary<string, (string g, string B, string C)> ODMIANA_ROLI_ALFA = new Dictionary<string, (string, string, string)>
         {
             ["robotnik"] = ("robotnik", "robotników", "robotnicy"), ["pobozny"] = ("pobożny", "pobożnych", "pobożni"), ["rycerz"] = ("rycerz", "rycerzy", "rycerze"),
         };
+        /// <summary>Krąg Trzeci: grabarze i mnisi zamiast robotników i pobożnych.</summary>
+        static readonly Dictionary<string, (string g, string B, string C)> ODMIANA_ROLI_KREGU = new Dictionary<string, (string, string, string)>
+        {
+            ["robotnik"] = ("grabarz", "grabarzy", "grabarze"), ["pobozny"] = ("mnich", "mnichów", "mnisi"), ["rycerz"] = ("rycerz", "rycerzy", "rycerze"),
+        };
+        static Dictionary<string, (string g, string B, string C)> ODMIANA_ROLI => Krag.Wlaczony ? ODMIANA_ROLI_KREGU : ODMIANA_ROLI_ALFA;
         static string liczebnik(double A, string M)
         {
             var (g, B, C) = ODMIANA_ROLI[M]; double o = A % 10, E = A % 100;
@@ -120,7 +126,7 @@ namespace Trzewia.Rysunek
             if (nieModla.Count > 0) @out.Add(new Mozliwosc
             {
                 akcja = "zaInnych", nazwa = "Módl się za innych",
-                opis = $"zostaje, gdzie stoi, i modli się za tych wokół ({Js.Js.S(BLOGOSLAWIENSTWO.promien)} kafli): rany się goją, rycerz bije mocniej i szybciej chodzi, robotnik szybciej kopie, pobożny mocniej się modli",
+                opis = $"zostaje, gdzie stoi, i modli się za tych wokół ({Js.Js.S(BLOGOSLAWIENSTWO.promien)} kafli): rany się goją, rycerz bije mocniej i szybciej chodzi, {Krag.T("robotnik szybciej kopie, pobożny mocniej się modli", "grabarz szybciej kopie, mnich mocniej się modli")}",
                 ids = nieModla.Select(c => c.id).ToList(), ok = true,
             });
             return @out;

@@ -124,7 +124,7 @@ namespace Trzewia.Symulacja
         {
             if (sim.ending != null) return "gra skończona";
             if (rytualOltarza(sim) != null) return "trwa już inny rytuał";
-            if (pobozniPrzyOltarzu(sim).Count == 0) return "przy ołtarzu nie stoi żaden pobożny";
+            if (pobozniPrzyOltarzu(sim).Count == 0) return Krag.T("przy ołtarzu nie stoi żaden pobożny", "przy ołtarzu nie stoi żaden mnich");
             var cena = cenaRytualu(rodzaj);
             if (sim.krew - sim.rezerwa.krew < cena) return $"za mało krwi (trzeba {JS.S(cena)})";
             switch (rodzaj)
@@ -134,8 +134,8 @@ namespace Trzewia.Symulacja
                     if (polegli(sim).Count == 0) return "nikt nie poległ — albo ciała już nie ma";
                     if (cel != null && !polegli(sim).Any(t => t.id == cel)) return "tego ciała już nie ma";
                     break;
-                case "ofiaraKrwi": if (odprawiajacy(sim, rodzaj) == null) return "pobożny przy ołtarzu jest już okaleczony"; break;
-                case "ofiaraZycia": if (liczRole(sim).pobozny <= 1) return "to ostatni pobożny — bez niego nikt nie odprawi rytuału"; break;
+                case "ofiaraKrwi": if (odprawiajacy(sim, rodzaj) == null) return Krag.T("pobożny przy ołtarzu jest już okaleczony", "mnich przy ołtarzu jest już okaleczony"); break;
+                case "ofiaraZycia": if (liczRole(sim).pobozny <= 1) return Krag.T("to ostatni pobożny — bez niego nikt nie odprawi rytuału", "to ostatni mnich — bez niego nikt nie odprawi rytuału"); break;
             }
             if ((rodzaj == "ofiaraKrwi" || rodzaj == "ofiaraZycia") && sim.krew >= GORA.krewMax) return "krwi masz pełno";
             return null;
@@ -223,7 +223,7 @@ namespace Trzewia.Symulacja
             switch (r.rodzaj)
             {
                 case "modlitwa":
-                    tu.log($"Pobożny odmówił modlitwę przy ołtarzu: +{JS.S(O.rytualy.modlitwa.wiara)} wiary.", "wiara");
+                    tu.log($"{Krag.T("Pobożny odmówił modlitwę przy ołtarzu: +", "Mnich odmówił modlitwę przy ołtarzu: +")}{JS.S(O.rytualy.modlitwa.wiara)} wiary.", "wiara");
                     break;
                 case "szal":
                 {
@@ -234,7 +234,7 @@ namespace Trzewia.Symulacja
                         cel.szalDo = sim.tick + O.rytualy.szal.trwa;
                         cx = cel.x; cy = cel.y;
                         r.cel = cel.id;
-                        tu.log($"Szał krwi: {(rolaPostaci(cel) == "rycerz" ? "rycerz" : "robotnik w hełmie")} przez minutę bije mocniej.", "krew");
+                        tu.log($"Szał krwi: {(rolaPostaci(cel) == "rycerz" ? "rycerz" : Krag.T("robotnik w hełmie", "grabarz w hełmie"))} przez minutę bije mocniej.", "krew");
                     }
                     else
                     {
@@ -255,12 +255,12 @@ namespace Trzewia.Symulacja
                     c.hp = Math.Min(c.hp, maxHp(sim, c));
                     sim.krew += LUD.okaleczenieKrew;
                     sim.efekt(c.x, c.y, "mysl", $"+{JS.S(LUD.okaleczenieKrew)} krwi");
-                    tu.log($"Pobożny upuścił krwi do misy: +{JS.S(LUD.okaleczenieKrew)} krwi. Słabnie, póki nie wyśpi się w sypialni.", "krew");
+                    tu.log($"{Krag.T("Pobożny upuścił krwi do misy: +", "Mnich upuścił krwi do misy: +")}{JS.S(LUD.okaleczenieKrew)} krwi. Słabnie, póki nie wyśpi się w sypialni.", "krew");
                     break;
                 case "ofiaraZycia":
                     sim.krew += LUD.ofiaraKrew;
                     sim.efekt(c.x, c.y, "mysl", $"+{JS.S(LUD.ofiaraKrew)} krwi");
-                    tu.log($"Pobożny oddał życie na ołtarzu: +{JS.S(LUD.ofiaraKrew)} krwi.", "krew");
+                    tu.log($"{Krag.T("Pobożny oddał życie na ołtarzu: +", "Mnich oddał życie na ołtarzu: +")}{JS.S(LUD.ofiaraKrew)} krwi.", "krew");
                     sim.kill(c, "w ofierze na ołtarzu", "ofiara");
                     break;
             }

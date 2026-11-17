@@ -69,7 +69,7 @@ namespace Trzewia.Symulacja
                 var wybory = new List<Wybor>
                 {
                     wybor("podeprzyj", "Podeprzyj strop", "Droga wiernych zostanie cała.", 0, K.zawalPodeprzyj),
-                    wybor("niech", "Niech się wali", $"Kawałek drogi ({JS.S(K.zawalKafli)} kafli) znów będzie skałą — robotnicy muszą go odkopać, pobożni poczekają."),
+                    wybor("niech", "Niech się wali", $"Kawałek drogi ({JS.S(K.zawalKafli)}{Krag.T(" kafli) znów będzie skałą — robotnicy muszą go odkopać, pobożni poczekają.", " kafli) znów będzie skałą — grabarze muszą go odkopać, mnisi poczekają.")}"),
                 };
                 return new Wydarzenie { rodzaj = "zawal", tytul = "Strop nad drogą wiernych pęka", tekst = "Skała nad wykopaną drogą do krypty trzeszczy i sypie się piaskiem.", wybory = wybory, domyslny = 1, rozsadny = stac(sim, wybory[0]) ? 0 : 1, cel = new CelKarty { x = x + 0.5, y = y + 0.5, tekst = "tu się sypie" }, od = sim.tick, x = i };
             } });

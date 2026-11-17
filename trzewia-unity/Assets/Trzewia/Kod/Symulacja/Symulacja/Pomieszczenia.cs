@@ -205,7 +205,7 @@ namespace Trzewia.Symulacja
             var pom = new Pomieszczenie { id = sim.nrPomieszczenia++, rodzaj = p.rodzaj, x = p.x, y = p.y, w = p.w, h = p.h, kafle = new List<double>(p.kafle), kier = p.kier, od = sim.tick, gotowe = false };
             pom.doKucia = zostaloKafli(sim, pom);
             sim.pomieszczenia.Add(pom);
-            if (JS.Tak(pom.doKucia)) sim.gdzie(p.x + p.w / 2, p.y + p.h / 2).log($"Wyznaczyłeś {BIERNIK_POMIESZCZENIA[p.rodzaj]} — zaznacz robotników i wskaż im plan.", "swiat");
+            if (JS.Tak(pom.doKucia)) sim.gdzie(p.x + p.w / 2, p.y + p.h / 2).log($"Wyznaczyłeś {BIERNIK_POMIESZCZENIA[p.rodzaj]}{Krag.T(" — zaznacz robotników i wskaż im plan.", " — zaznacz grabarzy i wskaż im plan.")}", "swiat");
             pom.postep = 0;
             return pom;
         }
@@ -311,7 +311,7 @@ namespace Trzewia.Symulacja
                         }
                     }
                     zdarzenie(sim, new ZdarzeniePom { rodzaj = "gotowe", pom = pom.id, tik = sim.tick });
-                    sim.gdzie(pom.x + pom.w / 2, pom.y + pom.h / 2).log(pom.doKucia == 0 ? $"Urządziłeś {BIERNIK_POMIESZCZENIA[pom.rodzaj]}." : $"Robotnicy wykuli {BIERNIK_POMIESZCZENIA[pom.rodzaj]}.", "swiat");
+                    sim.gdzie(pom.x + pom.w / 2, pom.y + pom.h / 2).log(pom.doKucia == 0 ? $"Urządziłeś {BIERNIK_POMIESZCZENIA[pom.rodzaj]}." : $"{Krag.T("Robotnicy wykuli ", "Grabarze wykuli ")}{BIERNIK_POMIESZCZENIA[pom.rodzaj]}.", "swiat");
                     foreach (var c in sim.creatures)
                     {
                         if (c.polecenie?.pom != pom.id || c.polecenie.typ != "kop") continue;

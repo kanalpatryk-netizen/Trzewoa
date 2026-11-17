@@ -42,6 +42,10 @@ namespace Trzewia.Aplikacja
         static readonly Random los = new Random();
 
         public Sim sim;
+        /// <summary>W jakim trybie powstała bieżąca partia (Krąg Trzeci czy Alpha 1) — menu nie wraca do partii drugiego trybu.</summary>
+        public bool partiaKregu;
+        /// <summary>Krąg Trzeci: film i scena wejścia na początku partii (Aplikacja/WstepKregu.cs).</summary>
+        public readonly WstepKregu wstep = new WstepKregu();
         public Camera cam = new Camera(1, 1);
         /// <summary>Świat na płycie: rycina (eng), tajemnica, pomieszczenia, ołtarz, ruiny, urobki — wspólne z ekranem próbnym.</summary>
         readonly PlytaSwiata plyta = new PlytaSwiata();
@@ -202,7 +206,7 @@ namespace Trzewia.Aplikacja
                 var s = Zapisy.loadFromStorage();
                 if (s != null)
                 {
-                    sim = s; doSerca(true);
+                    sim = s; partiaKregu = Krag.Wlaczony; wstep.przerwij(); doSerca(true);
                     // zapis skończonej gry nie może otwierać zamrożonej płyty bez wyjścia
                     if (s.ending != null) { app.idz("kronika", s); return; }
                 }
@@ -220,12 +224,24 @@ namespace Trzewia.Aplikacja
         /// <summary>Generuje górę teraz, żeby „Nowa gra” (albo samouczek) nie czekały.</summary>
         public void przygotuj(double? ziarno = null)
         {
+            zapasTrybu();
             var klucz = ziarno ?? -1;
             if (!zapas.ContainsKey(klucz)) zapas[klucz] = new Sim(ziarno ?? Math.Floor(los.NextDouble() * 1e9));
         }
 
-        public void nowaGra(double? ziarno = null)
+        /// <summary>Góry przygotowane w drugim trybie (inne nastawy) — do wyrzucenia.</summary>
+        bool zapasKregu;
+        void zapasTrybu()
         {
+            if (zapasKregu == Krag.Wlaczony) return;
+            zapas.Clear(); zapasKregu = Krag.Wlaczony;
+        }
+
+        /// <param name="zWstepem">Krąg Trzeci: film i scena wejścia (nie w samouczku i nie w grze obserwowanej).</param>
+        public void nowaGra(double? ziarno = null, bool zWstepem = true)
+        {
+            zapasTrybu();
+            partiaKregu = Krag.Wlaczony;
             var klucz = ziarno ?? -1;
             zapas.TryGetValue(klucz, out var gotowa);
             zapas.Remove(klucz);
@@ -243,6 +259,8 @@ namespace Trzewia.Aplikacja
             cam.zoom = KAMERA.start;
             doSerca(true);
             dirty = true;
+            wstep.przerwij();
+            if (Krag.Wlaczony && zWstepem && !BOT.wlaczony) wstep.zacznij();
         }
 
         // ------------------------------------------------------------------ kamera

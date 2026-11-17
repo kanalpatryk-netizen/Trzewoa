@@ -123,6 +123,21 @@ namespace Trzewia.Symulacja
         static readonly RaceDef[] SAVE_BASE = Array.ConvertAll(RACES, r => r.Kopia());
         public static void resetRaces() { for (int i = 0; i < RACES.Length; i++) RACES[i].PrzepiszZ(SAVE_BASE[i]); }
 
+        /// <summary>
+        /// Krąg Trzeci (krag-3-beta/src/sim/races.ts): lud to potępieni. Nazwy rasy według trybu (Krag.Ustaw) — w obu
+        /// kopiach, bo nowa góra przywraca rasy z SAVE_BASE.
+        /// </summary>
+        public static void nazwyKregu(bool krag)
+        {
+            foreach (var r in new[] { RACES[Race.GOBLIN], SAVE_BASE[Race.GOBLIN] })
+            {
+                r.name = krag ? "Potępieni" : "Pobożni";
+                r.nazwaDopelniacz = krag ? "Potępionych" : "Pobożnych";
+                r.@short = krag ? "potępieni" : Krag.T("pobożni", "mnisi");
+                r.dopelniacz = krag ? "potępionych" : "Pobożnych";
+            }
+        }
+
         /// <summary>Odmienia czasownik pod nazwe rasy.</summary>
         public static string odmien(double race, string pojedyncza, string mnoga) => RACES[(int)race].mnoga ? mnoga : pojedyncza;
     }

@@ -163,7 +163,7 @@ namespace Trzewia.Aplikacja
 
         // ------------------------------------------------------------- rozdziały
 
-        readonly List<Rozdzial> rozdzialy = Rozdzialy.ROZDZIALY;
+        List<Rozdzial> rozdzialy => Rozdzialy.ROZDZIALY;
 
         public EkranSamouczka(IKontekst app)
         {
@@ -178,7 +178,7 @@ namespace Trzewia.Aplikacja
 
         public override void wejdz(object? dane)
         {
-            gra.nowaGra(ZIARNO_SAMOUCZKA);
+            gra.nowaGra(ZIARNO_SAMOUCZKA, zWstepem: false);
             gra.sim.spokojnySwiat = true;      // stały świat: żadnych zaraz ani klęsk w trakcie nauki
             gra.sim.nakarmSwiat();             // i wiadro z jedzeniem od razu, żeby nauka nie była patrzeniem na głód
             gra.wejdz("samouczek");

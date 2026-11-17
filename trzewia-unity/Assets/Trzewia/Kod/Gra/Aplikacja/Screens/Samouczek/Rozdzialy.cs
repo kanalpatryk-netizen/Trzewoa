@@ -106,7 +106,11 @@ namespace Trzewia.Aplikacja
 
         static Wskazanie zaznaczPoboznych(EkranSamouczka s) => polePunkt(s.gra.miejscePolaDruzyny("rola", "pobozny"))!;
 
-        public static readonly List<Rozdzial> ROZDZIALY = new List<Rozdzial>
+        static List<Rozdzial>? rozdzialyAlfa, rozdzialyKregu;
+        /// <summary>Rozdziały bieżącego trybu — teksty Kręgu Trzeciego (mnisi, grabarze, Cienie Żarłoków) liczą się osobno.</summary>
+        public static List<Rozdzial> ROZDZIALY => Krag.Wlaczony ? rozdzialyKregu ??= zbuduj() : rozdzialyAlfa ??= zbuduj();
+
+        static List<Rozdzial> zbuduj() => new List<Rozdzial>
         {
             new Rozdzial
             {
@@ -133,7 +137,7 @@ namespace Trzewia.Aplikacja
                         gotowe = (_g, z, _s) => z?.typ == "kamera" && z.rodzaj == "powrot",
                     },
                 },
-                koniec = T("To Pobożni — pobożni, robotnicy i rycerze. Mieszkają przy siedzibie; jej znak stoi nad nimi."),
+                koniec = T(Krag.T("To Pobożni — pobożni, robotnicy i rycerze. Mieszkają przy siedzibie; jej znak stoi nad nimi.", "To Pobożni — mnisi, grabarze i rycerze. Mieszkają przy siedzibie; jej znak stoi nad nimi.")),
                 czasowniki = new string[0],
             },
             new Rozdzial
@@ -145,12 +149,12 @@ namespace Trzewia.Aplikacja
                 {
                     new EtapSamouczka
                     {
-                        tekst = T("Wiara rośnie, gdy pobożni się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrze, które zjeżdża z góry do sali. Wiarę i krew wydajesz na ryty i wybory na kartach."),
+                        tekst = T(Krag.T("Wiara rośnie, gdy pobożni się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrze, które zjeżdża z góry do sali. Wiarę i krew wydajesz na ryty i wybory na kartach.", "Wiara rośnie, gdy mnisi się modlą. Krew płynie z każdej śmierci i z ofiar — na Koszmarze jest jej mało. Jedzenie to porcje w wiadrze, które zjeżdża z góry do sali. Wiarę i krew wydajesz na ryty i wybory na kartach.")),
                         rozumiem = true, wskaz = s => Wskazanie.ObszarW(obszarZasobow(s.gra.plate, s.vh)),
                     },
                     new EtapSamouczka
                     {
-                        tekst = _ => $"Oddanie: jak mocno lud w ciebie wierzy. Złożone dłonie napełniają się złotem — od kreski ({PROG}) pobożni sami idą pod twój rdzeń.",
+                        tekst = _ => Krag.T($"Oddanie: jak mocno lud w ciebie wierzy. Złożone dłonie napełniają się złotem — od kreski ({PROG}) pobożni sami idą pod twój rdzeń.", $"Oddanie: jak mocno lud w ciebie wierzy. Złożone dłonie napełniają się złotem — od kreski ({PROG}) mnisi sami idą pod twój rdzeń."),
                         rozumiem = true, wskaz = s => Wskazanie.ObszarW(Plyta.obszarOddania(s.gra.plate, s.vh)),
                     },
                 },
@@ -160,13 +164,13 @@ namespace Trzewia.Aplikacja
             new Rozdzial
             {
                 tytul = "Lud i jego role",
-                wstep = $"Twój lud to stała drużyna: {S(LUD.start.robotnik)} robotników, {S(LUD.start.pobozny)} pobożnych i {S(LUD.start.rycerz)} rycerz. Nikt się nie rodzi i nikt nowy nie przyjdzie.",
+                wstep = Krag.T($"Twój lud to stała drużyna: {S(LUD.start.robotnik)} robotników, {S(LUD.start.pobozny)} pobożnych i {S(LUD.start.rycerz)} rycerz. Nikt się nie rodzi i nikt nowy nie przyjdzie.", $"Twoi potępieni to stała drużyna: {S(LUD.start.robotnik)} grabarzy, {S(LUD.start.pobozny)} mnichów i {S(LUD.start.rycerz)} rycerz. Nikt się nie rodzi i nikt nowy nie przyjdzie."),
                 czasowniki = new string[0],
                 etapy = new List<EtapSamouczka>
                 {
                     new EtapSamouczka
                     {
-                        tekst = T("Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę i donoszą jedzenie z wiadra. Rycerz broni i walczy ze Strażnikami Snu — a gdy zginie, robotnicy zakładają hełmy i walczą sami."),
+                        tekst = T(Krag.T("Pobożni modlą się i kruszą skorupę rdzenia. Robotnicy kopią drogę i donoszą jedzenie z wiadra. Rycerz broni i walczy ze Strażnikami Snu — a gdy zginie, robotnicy zakładają hełmy i walczą sami.", "Pobożni modlą się i kruszą skorupę rdzenia. Grabarze kopią drogę i donoszą jedzenie z wiadra. Rycerz broni i walczy ze Strażnikami Snu — a gdy zginie, grabarze zakładają hełmy i walczą sami.")),
                         rozumiem = true, wskaz = s => Wskazanie.ObszarW(Plyta.obszarSpisu(s.gra.plate, s.vh)),
                     },
                     new EtapSamouczka
@@ -180,7 +184,7 @@ namespace Trzewia.Aplikacja
             new Rozdzial
             {
                 tytul = "Pomieszczenia",
-                wstep = "W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb — kują je robotnicy, którym plan wskażesz. Linę wieszasz sam, od razu.",
+                wstep = Krag.T("W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb — kują je robotnicy, którym plan wskażesz. Linę wieszasz sam, od razu.", "W skale możesz wyznaczyć pomieszczenia: sypialnię, warsztat, kuźnię, korytarz i szyb — kują je grabarze, którym plan wskażesz. Linę wieszasz sam, od razu."),
                 czasowniki = new string[0],
                 etapy = new List<EtapSamouczka>
                 {
@@ -199,13 +203,13 @@ namespace Trzewia.Aplikacja
                     },
                     new EtapSamouczka
                     {
-                        tekst = T("Zaznacz robotników (ich miniatura w księdze albo A) i dotknij planu — wykują go."), klawisz = T("robotnicy"),
+                        tekst = T(Krag.T("Zaznacz robotników (ich miniatura w księdze albo A) i dotknij planu — wykują go.", "Zaznacz grabarzy (ich miniatura w księdze albo A) i dotknij planu — wykują go.")), klawisz = T("robotnicy"),
                         wejdz = (g, _s) => g.ustawSzablon(null),
                         gotowe = (_g, z, _s) => z?.typ == "polecenie" && z.rodzaj == "pomieszczenie" && z.przyjeli > 0,
                     },
                     new EtapSamouczka
                     {
-                        tekst = T($"Gotowy warsztat zamienia złoto w wiarę ({S(POMIESZCZENIA.warsztat.zlotoNaSztuke)} złota — {S(POMIESZCZENIA.warsztat.wiaraZaSztuke)} wiary), kuźnia — żelazo w zbroję rycerza (rycerz sam ją zakłada, gdy nie ma fali), a sen w sypialni zdejmuje osłabienia. Wolni robotnicy sami nic nie biorą: pracują ci, którym wskażesz."),
+                        tekst = T(Krag.T($"Gotowy warsztat zamienia złoto w wiarę ({S(POMIESZCZENIA.warsztat.zlotoNaSztuke)} złota — {S(POMIESZCZENIA.warsztat.wiaraZaSztuke)} wiary), kuźnia — żelazo w zbroję rycerza (rycerz sam ją zakłada, gdy nie ma fali), a sen w sypialni zdejmuje osłabienia. Wolni robotnicy sami nic nie biorą: pracują ci, którym wskażesz.", $"Gotowy warsztat zamienia złoto w wiarę ({S(POMIESZCZENIA.warsztat.zlotoNaSztuke)} złota — {S(POMIESZCZENIA.warsztat.wiaraZaSztuke)} wiary), kuźnia — żelazo w zbroję rycerza (rycerz sam ją zakłada, gdy nie ma fali), a sen w sypialni zdejmuje osłabienia. Wolni grabarze sami nic nie biorą: pracują ci, którym wskażesz.")),
                         rozumiem = true,
                     },
                 },
@@ -214,26 +218,26 @@ namespace Trzewia.Aplikacja
             new Rozdzial
             {
                 tytul = "Ołtarz",
-                wstep = "Na środku sali, w smudze światła z góry, stoi ołtarz. Przy nim pobożny odprawia rytuały — płacisz za nie krwią.",
+                wstep = Krag.T("Na środku sali, w smudze światła z góry, stoi ołtarz. Przy nim pobożny odprawia rytuały — płacisz za nie krwią.", "Na środku sali, w smudze światła z góry, stoi ołtarz. Przy nim mnich odprawia rytuały — płacisz za nie krwią."),
                 przygotuj = (g, _s) => { g.sim.krew = Math.Max(g.sim.krew, 60); },
                 czasowniki = new string[0],
                 etapy = new List<EtapSamouczka>
                 {
                     new EtapSamouczka
                     {
-                        tekst = T("Zaznacz pobożnych — ich miniatura w księdze pod płytą albo S."), klawisz = T("pobozni"),
+                        tekst = T(Krag.T("Zaznacz pobożnych — ich miniatura w księdze pod płytą albo S.", "Zaznacz mnichów — ich miniatura w księdze pod płytą albo S.")), klawisz = T("pobozni"),
                         wskaz = s => zaznaczPoboznych(s),
                         gotowe = (g, _z, _s) => g.zaznaczeniRoli("pobozny") > 0,
                     },
                     new EtapSamouczka
                     {
-                        tekst = T("Dotknij ołtarza — pobożny pójdzie do niego, a otworzy się okno rytuałów."),
+                        tekst = T(Krag.T("Dotknij ołtarza — pobożny pójdzie do niego, a otworzy się okno rytuałów.", "Dotknij ołtarza — mnich pójdzie do niego, a otworzy się okno rytuałów.")),
                         wskaz = s => { var o = s.gra.sim.world.oltarz; return Wskazanie.Swiat(new Cel { x = o.x + 0.5, y = o.y - 1.5, r = 3, tekst = "ołtarz" }); },
                         gotowe = (_g, z, _s) => z?.typ == "oltarz" && z.rodzaj == "okno",
                     },
                     new EtapSamouczka
                     {
-                        tekst = T($"Gdy pobożny stanie przy ołtarzu, wybierz „Modlitwa” ({S(OLTARZ.rytualy.modlitwa.krew)} krwi) — od krzyża biją promienie, a wiara rośnie."),
+                        tekst = T(Krag.T($"Gdy pobożny stanie przy ołtarzu, wybierz „Modlitwa” ({S(OLTARZ.rytualy.modlitwa.krew)} krwi) — od krzyża biją promienie, a wiara rośnie.", $"Gdy mnich stanie przy ołtarzu, wybierz „Modlitwa” ({S(OLTARZ.rytualy.modlitwa.krew)} krwi) — od krzyża biją promienie, a wiara rośnie.")),
                         wskaz = s => { var p = s.gra.poleOltarza("modlitwa"); return p != null ? Wskazanie.Punkt(p.x + p.w / 2, p.y + p.h / 2, Math.Min(p.w, p.h) / 2 + 4) : null; },
                         gotowe = (_g, z, _s) => z?.typ == "oltarz" && z.rodzaj == "modlitwa",
                     },
@@ -243,7 +247,7 @@ namespace Trzewia.Aplikacja
                         rozumiem = true,
                     },
                 },
-                koniec = T("Ołtarz i każdy rytuał mają swoją tablicę w atlasie. Rytuał przepada, gdy pobożny odejdzie od ołtarza — krew wtedy wraca."),
+                koniec = T(Krag.T("Ołtarz i każdy rytuał mają swoją tablicę w atlasie. Rytuał przepada, gdy pobożny odejdzie od ołtarza — krew wtedy wraca.", "Ołtarz i każdy rytuał mają swoją tablicę w atlasie. Rytuał przepada, gdy mnich odejdzie od ołtarza — krew wtedy wraca.")),
             },
             new Rozdzial
             {
@@ -255,7 +259,7 @@ namespace Trzewia.Aplikacja
                 {
                     new EtapSamouczka
                     {
-                        tekst = T($"Co {S(round(WIADRO.co / 120))} s z góry zjeżdża wiadro pełne jedzenia — węższym otworem do sali, na dno kolumny pod nim. Kto wykopie pod wiadrem dziurę, sprowadzi je niżej. Do tych w głębi samo nie zjedzie — zaniosą im robotnicy, a kto zszedł drogą wiernych, wróci nią po linach na zakrętach. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół."),
+                        tekst = T(Krag.T($"Co {S(round(WIADRO.co / 120))} s z góry zjeżdża wiadro pełne jedzenia — węższym otworem do sali, na dno kolumny pod nim. Kto wykopie pod wiadrem dziurę, sprowadzi je niżej. Do tych w głębi samo nie zjedzie — zaniosą im robotnicy, a kto zszedł drogą wiernych, wróci nią po linach na zakrętach. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.", $"Co {S(round(WIADRO.co / 120))} s z góry zjeżdża wiadro pełne jedzenia — węższym otworem do sali, na dno kolumny pod nim. Kto wykopie pod wiadrem dziurę, sprowadzi je niżej. Do tych w głębi samo nie zjedzie — zaniosą im grabarze, a kto zszedł drogą wiernych, wróci nią po linach na zakrętach. Kto umiera z głodu, a wiadro jeszcze jedzie, wspina się po linie i je w drodze w dół.")),
                         rozumiem = true,
                         wskaz = s => { var c = s.najblizszeWiadro(); return c != null ? Wskazanie.Swiat(c) : null; },
                     },
@@ -284,14 +288,14 @@ namespace Trzewia.Aplikacja
             new Rozdzial
             {
                 tytul = "Zrób cud",
-                wstep = "Cud sprowadza pobożny: światło spada z góry tuż przy nim. Widzą go wszyscy dookoła — i ich wiara w ciebie rośnie.",
+                wstep = Krag.T("Cud sprowadza pobożny: światło spada z góry tuż przy nim. Widzą go wszyscy dookoła — i ich wiara w ciebie rośnie.", "Cud sprowadza mnich: światło spada z góry tuż przy nim. Widzą go wszyscy dookoła — i ich wiara w ciebie rośnie."),
                 przygotuj = (g, _s) => { g.sim.wiara += 60; },
                 czasowniki = new[] { "znak" },
                 etapy = new List<EtapSamouczka>
                 {
                     new EtapSamouczka
                     {
-                        tekst = T("Zaznacz pobożnego — dotknij go albo jego miniatury w księdze."), klawisz = T("pobozni"), tylko = "komputer",
+                        tekst = T(Krag.T("Zaznacz pobożnego — dotknij go albo jego miniatury w księdze.", "Zaznacz mnicha — dotknij go albo jego miniatury w księdze.")), klawisz = T("pobozni"), tylko = "komputer",
                         wskaz = s => zaznaczPoboznych(s),
                         gotowe = (g, _z, _s) => g.zaznaczeniRoli("pobozny") > 0,
                     },
@@ -314,12 +318,12 @@ namespace Trzewia.Aplikacja
                         gotowe = (_g, z, _s) => z?.typ == "moc" && z.czasownik == "znak",
                     },
                 },
-                koniec = _ => $"Oddanie Pobożnych skoczyło w górę — zobacz złożone dłonie. Przy {PROG} sami pójdą pod twój rdzeń. Światło Cudu przegania też to, co patrzy z ciemności.",
+                koniec = _ => Krag.T($"Oddanie Pobożnych skoczyło w górę — zobacz złożone dłonie. Przy {PROG} sami pójdą pod twój rdzeń. Światło Cudu przegania też to, co patrzy z ciemności.", $"Oddanie Mnichów skoczyło w górę — zobacz złożone dłonie. Przy {PROG} sami pójdą pod twój rdzeń. Światło Cudu przegania też to, co patrzy z ciemności."),
             },
             new Rozdzial
             {
                 tytul = "Poślij wiernego",
-                wstep = "Szept dotyka jednej głowy. „Módl się” posyła pobożnego pod twój rdzeń — od razu.",
+                wstep = Krag.T("Szept dotyka jednej głowy. „Módl się” posyła pobożnego pod twój rdzeń — od razu.", "Szept dotyka jednej głowy. „Módl się” posyła mnicha pod twój rdzeń — od razu."),
                 przygotuj = (g, _s) => { g.sim.wiara += 40; },
                 czasowniki = new[] { "szept" },
                 stopCzasu = true,
@@ -327,7 +331,7 @@ namespace Trzewia.Aplikacja
                 {
                     new EtapSamouczka
                     {
-                        tekst = T("Zaznacz pobożnego — dotknij go albo jego miniatury w księdze."), klawisz = T("pobozni"), tylko = "komputer",
+                        tekst = T(Krag.T("Zaznacz pobożnego — dotknij go albo jego miniatury w księdze.", "Zaznacz mnicha — dotknij go albo jego miniatury w księdze.")), klawisz = T("pobozni"), tylko = "komputer",
                         wskaz = s => zaznaczPoboznych(s),
                         gotowe = (g, _z, _s) => g.zaznaczeniRoli("pobozny") > 0,
                     },
@@ -345,7 +349,7 @@ namespace Trzewia.Aplikacja
                     new EtapSamouczka
                     {
                         tylko = "telefon",
-                        tekst = T("Dotknij zaznaczonego pobożnego."), cofa = true,
+                        tekst = T(Krag.T("Dotknij zaznaczonego pobożnego.", "Dotknij zaznaczonego mnicha.")), cofa = true,
                         wskaz = s => { var c = s.wskazanyGoblin("dotknij go", "pobozny"); return c != null ? Wskazanie.Swiat(c) : null; },
                         gotowe = (g, _z, _s) => g.ui.verb == "szept" && g.ui.selected != null && !g.ui.selected.dead,
                     },
@@ -412,7 +416,7 @@ namespace Trzewia.Aplikacja
                     },
                     new EtapSamouczka
                     {
-                        tekst = T("Gdy zginie rycerz, robotnicy zakładają hełmy i walczą zamiast niego. A kto umrze, nie znika — jego ciało leży tam, gdzie padł."),
+                        tekst = T(Krag.T("Gdy zginie rycerz, robotnicy zakładają hełmy i walczą zamiast niego. A kto umrze, nie znika — jego ciało leży tam, gdzie padł.", "Gdy zginie rycerz, grabarze zakładają hełmy i walczą zamiast niego. A kto umrze, nie znika — jego ciało leży tam, gdzie padł.")),
                         rozumiem = true,
                     },
                 },
@@ -435,20 +439,20 @@ namespace Trzewia.Aplikacja
             },
             new Rozdzial
             {
-                tytul = "Strażnicy Snu",
+                tytul = Krag.T("Strażnicy Snu", "Cienie Żarłoków"),
                 wstep = $"Skorupa rdzenia ma strażników. Przy {string.Join(", ", STRAZNICY.fale.Where(f => !(f.boss == true)).Select(f => S(f.prog)))}% wychodzą fale, przy {S(STRAZNICY.fale.FirstOrDefault(f => f.boss == true)?.prog ?? 90)}% — Śniący Kamień.",
                 czasowniki = new string[0],
                 etapy = new List<EtapSamouczka>
                 {
                     new EtapSamouczka
                     {
-                        tekst = T("Dopóki fala trwa, skorupa nie pęka. Rycerz (albo robotnicy w hełmach) walczy sam; pobożni i reszta robotników odchodzą spod rdzenia."),
+                        tekst = T(Krag.T("Dopóki fala trwa, skorupa nie pęka. Rycerz (albo robotnicy w hełmach) walczy sam; pobożni i reszta robotników odchodzą spod rdzenia.", "Dopóki fala trwa, skorupa nie pęka. Rycerz (albo grabarze w hełmach) walczy sam; mnisi i reszta grabarzy odchodzą spod rdzenia.")),
                         rozumiem = true,
                         wejdz = (g, _s) => { var w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
                     },
                     new EtapSamouczka
                     {
-                        tekst = T("Śniącego Kamienia ranią tylko walczący — rycerz idzie na niego sam. Boss słabnie, gdy pod rdzeniem modlą się pobożni, a zasypaną przez niego drogę odkopują robotnicy. Gdy walczących brak, pobożni razią go księgami."),
+                        tekst = T(Krag.T("Śniącego Kamienia ranią tylko walczący — rycerz idzie na niego sam. Boss słabnie, gdy pod rdzeniem modlą się pobożni, a zasypaną przez niego drogę odkopują robotnicy. Gdy walczących brak, pobożni razią go księgami.", "Śniącego Kamienia ranią tylko walczący — rycerz idzie na niego sam. Boss słabnie, gdy pod rdzeniem modlą się mnisi, a zasypaną przez niego drogę odkopują grabarze. Gdy walczących brak, mnisi razią go księgami.")),
                         rozumiem = true,
                     },
                 },
@@ -457,26 +461,26 @@ namespace Trzewia.Aplikacja
             new Rozdzial
             {
                 tytul = "Droga do wolności",
-                wstep = "Tak wygrywasz: pobożni schodzą pod rdzeń i modlą się, aż kamień pęknie.",
+                wstep = Krag.T("Tak wygrywasz: pobożni schodzą pod rdzeń i modlą się, aż kamień pęknie.", "Tak wygrywasz: mnisi schodzą pod rdzeń i modlą się, aż kamień pęknie."),
                 czasowniki = new string[0],
                 przygotuj = (g, s) => { var d = s.gniazdoGoblinow(); if (d != null) g.pokazMiejsce(d.Value.x, d.Value.y, 12, true); },
                 etapy = new List<EtapSamouczka>
                 {
                     new EtapSamouczka
                     {
-                        tekst = T("Najpierw robotnicy kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu. Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę."),
+                        tekst = T(Krag.T("Najpierw robotnicy kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu. Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.", "Najpierw grabarze kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu. Wysłani mnisi czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.")),
                         rozumiem = true,
                     },
                     new EtapSamouczka
                     {
-                        tekst = T("Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch pobożnych przy kotle („Do kotła” w oknie pobożnego) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać."),
+                        tekst = T(Krag.T("Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch pobożnych przy kotle („Do kotła” w oknie pobożnego) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać.", "Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch mnichów przy kotle („Do kotła” w oknie mnicha) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać.")),
                         rozumiem = true,
                         wejdz = (g, _s) => { var w = g.sim.world; g.pokazMiejsce(w.kociol.x, w.kociol.y, 10, true); },
                         wskaz = s => { var w = s.gra.sim.world; return Wskazanie.Swiat(new Cel { x = w.kociol.x + 0.5, y = w.kociol.y, r = 5, tekst = "kocioł" }); },
                     },
                     new EtapSamouczka
                     {
-                        tekst = _ => $"Przy {PROG} oddania pobożni sami pójdą pod rdzeń. Karta „chcą zejść pod twój rdzeń” albo szept „módl się” zrobią to od razu.",
+                        tekst = _ => Krag.T($"Przy {PROG} oddania pobożni sami pójdą pod rdzeń. Karta „chcą zejść pod twój rdzeń” albo szept „módl się” zrobią to od razu.", $"Przy {PROG} oddania mnisi sami pójdą pod rdzeń. Karta „chcą zejść pod twój rdzeń” albo szept „módl się” zrobią to od razu."),
                         rozumiem = true, wskaz = s => Wskazanie.ObszarW(Plyta.obszarOddania(s.gra.plate, s.vh)),
                     },
                     new EtapSamouczka
@@ -498,11 +502,11 @@ namespace Trzewia.Aplikacja
                 {
                     new EtapSamouczka
                     {
-                        tekst = T("Gdy nie zostanie żaden pobożny — to koniec: nikt inny nie skruszy skorupy, a nowych nikt nie wyda. Najczęściej zabija głód: lud rozproszony daleko od wiadra."),
+                        tekst = T(Krag.T("Gdy nie zostanie żaden pobożny — to koniec: nikt inny nie skruszy skorupy, a nowych nikt nie wyda. Najczęściej zabija głód: lud rozproszony daleko od wiadra.", "Gdy nie zostanie żaden mnich — to koniec: nikt inny nie skruszy skorupy, a nowych nikt nie wyda. Najczęściej zabija głód: lud rozproszony daleko od wiadra.")),
                         rozumiem = true, wskaz = s => Wskazanie.ObszarW(Plyta.obszarSpisu(s.gra.plate, s.vh)),
                     },
                 },
-                koniec = T("Trzymaj lud razem, pilnuj, żeby robotnicy donosili jedzenie z wiadra, i nie wysyłaj pod rdzeń ostatniego pobożnego. Wszystko, co tu było, znajdziesz w atlasie."),
+                koniec = T(Krag.T("Trzymaj lud razem, pilnuj, żeby robotnicy donosili jedzenie z wiadra, i nie wysyłaj pod rdzeń ostatniego pobożnego. Wszystko, co tu było, znajdziesz w atlasie.", "Trzymaj lud razem, pilnuj, żeby grabarze donosili jedzenie z wiadra, i nie wysyłaj pod rdzeń ostatniego mnicha. Wszystko, co tu było, znajdziesz w atlasie.")),
             },
         };
     }

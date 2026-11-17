@@ -48,23 +48,23 @@ namespace Trzewia.Aplikacja
             var pek = sim.rytual.pekniecia;
 
             var etap = rodzaj == "uwolnienie" ? $"Droga przebyta w {Js.Js.S(minut)} min."
-                : sim.lud.pomnik != null && sim.lud.pomnik.faza != "stoi" ? "Najdalej: Wielki Pomnik legł w gruzach, a demon wstał — zabrakło tylko ostatniego uderzenia."
-                : pek > 0 ? $"Najdalej: Wielki Pomnik pękł do {Js.Js.S(Rytual.procentSkorupy(sim))}%. Brakowało niewiele."
+                : sim.lud.pomnik != null && sim.lud.pomnik.faza != "stoi" ? Krag.T("Najdalej: Wielki Pomnik legł w gruzach, a demon wstał — zabrakło tylko ostatniego uderzenia.", "Najdalej: Pieczęć zejścia legła w gruzach, a Cerber wstał — zabrakło tylko ostatniego uderzenia.")
+                : pek > 0 ? Krag.T($"Najdalej: Wielki Pomnik pękł do {Js.Js.S(Rytual.procentSkorupy(sim))}%. Brakowało niewiele.", $"Najdalej: Pieczęć zejścia pękła do {Js.Js.S(Rytual.procentSkorupy(sim))}%. Brakowało niewiele.")
                 : oddanie > 0.6 ? "Najdalej: ktoś uwierzył dość mocno, ale nie zszedł do krypty — zabrakło drogi."
                 : "Najdalej: nikt nie uwierzył w ciebie dość mocno, by zejść do krypty.";
 
             if (rodzaj == "uwolnienie")
                 return new WyrokPartii
                 {
-                    przyczyna = "Pobożni skruszyli modlitwą Wielki Pomnik, a rycerz pokonał demona, który w nim spał.",
+                    przyczyna = Krag.T("Pobożni skruszyli modlitwą Wielki Pomnik, a rycerz pokonał demona, który w nim spał.", "Pobożni skruszyli modlitwą pieczęć zejścia, a rycerz pokonał Cerbera, który w niej spał."),
                     rada = "Spróbuj szybciej — i tak, żeby jak najmniej ludu zostało na ziemi jako trupy. Osiągnięcia podpowiadają, co jeszcze da się zrobić.",
                     etap = etap, statystyki = statystyki(sim),
                 };
             if (rodzaj == "upadek")
                 return new WyrokPartii
                 {
-                    przyczyna = "Zabrakło pobożnych — nikt już nie skruszy Wielkiego Pomnika.",
-                    rada = "Drużyna jest stała: pilnuj obu pobożnych jak oka w głowie — karm ich, trzymaj z dala od ciemności i nie zostawiaj samych w krypcie w czasie fali.",
+                    przyczyna = Krag.T("Zabrakło pobożnych — nikt już nie skruszy Wielkiego Pomnika.", "Zabrakło mnichów — nikt już nie skruszy pieczęci zejścia."),
+                    rada = Krag.T("Drużyna jest stała: pilnuj obu pobożnych jak oka w głowie — karm ich, trzymaj z dala od ciemności i nie zostawiaj samych w krypcie w czasie fali.", "Drużyna jest stała: pilnuj obu mnichów jak oka w głowie — karm ich, trzymaj z dala od ciemności i nie zostawiaj samych w krypcie w czasie fali."),
                     etap = etap, statystyki = statystyki(sim),
                 };
             if (rodzaj == "smierc")
@@ -92,10 +92,13 @@ namespace Trzewia.Aplikacja
         }
     }
 
-    /// <summary>core/save.ts: zapis partii w plikach gracza (w przeglądarce był localStorage pod „trzewia-alpha-1:zapis”).</summary>
+    /// <summary>
+    /// core/save.ts: zapis partii w plikach gracza (w przeglądarce był localStorage pod „trzewia-alpha-1:zapis”).
+    /// Krąg Trzeci ma własny plik (w TS kręgu: „trzewia-krag-3-beta:zapis”) — tryby nie nadpisują sobie partii.
+    /// </summary>
     public static class Zapisy
     {
-        const string PLIK = "zapis.json";
+        static string PLIK => Krag.Wlaczony ? "zapis-krag.json" : "zapis.json";
 
         public static bool saveToStorage(Sim sim)
         {
@@ -121,8 +124,9 @@ namespace Trzewia.Aplikacja
     public sealed class Osiagniecie
     {
         public string id = "", nazwa = "";
-        /// <summary>Co trzeba zrobić — jedno zdanie.</summary>
-        public string opis = "";
+        /// <summary>Co trzeba zrobić — jedno zdanie (Alpha 1 i, gdy inne, Krąg Trzeci); `opis` — bieżącego trybu.</summary>
+        public string opisAlfa = "", opisKregu = "";
+        public string opis { get => Krag.Wlaczony && opisKregu != "" ? opisKregu : opisAlfa; set => opisAlfa = value; }
         /// <summary>Czy ta partia je zdobywa (wołane raz, na końcu).</summary>
         public Func<Sim, bool, bool> sprawdz = null!;
     }
@@ -136,7 +140,8 @@ namespace Trzewia.Aplikacja
     /// </summary>
     public static class Osiagniecia
     {
-        const string PLIK = "osiagniecia.json";
+        /// <summary>Krąg Trzeci zdobywa osiągnięcia osobno (w TS kręgu: „trzewia-krag-3-beta:osiagniecia”).</summary>
+        static string PLIK => Krag.Wlaczony ? "osiagniecia-krag.json" : "osiagniecia.json";
 
         public static readonly Osiagniecie[] OSIAGNIECIA =
         {
@@ -147,7 +152,7 @@ namespace Trzewia.Aplikacja
             new Osiagniecie { id = "skromny", nazwa = "Bez jałmużny", opis = "Wygraj, ani razu nie spuszczając wiadra rytem Nakarm.", sprawdz = (s, w) => w && s.stat.nakarm == 0 },
             new Osiagniecie { id = "wspinaczka", nazwa = "Ostatkiem sił", opis = "Niech umierający z głodu wespnie się po linie do zjeżdżającego wiadra.", sprawdz = (s, _w) => s.stat.wspinaczek > 0 },
             new Osiagniecie { id = "druzyna", nazwa = "Cała drużyna", opis = "Wygraj, nie tracąc nikogo z ludu.", sprawdz = (s, w) => w && s.stat.ludZgonow == 0 },
-            new Osiagniecie { id = "helmy", nazwa = "Kilofy zamiast mieczy", opis = "Wygraj partię, w której robotnicy musieli założyć hełmy.", sprawdz = (s, w) => w && s.stat.helmy > 0 },
+            new Osiagniecie { id = "helmy", nazwa = "Kilofy zamiast mieczy", opis = "Wygraj partię, w której robotnicy musieli założyć hełmy.", opisKregu = "Wygraj partię, w której grabarze musieli założyć hełmy.", sprawdz = (s, w) => w && s.stat.helmy > 0 },
             new Osiagniecie { id = "weterani", nazwa = "Stara gwardia", opis = $"Miej naraz {Js.Js.S(CELE.weteranow)} weteranów.", sprawdz = (s, _w) => s.stat.weteranowMax >= CELE.weteranow },
             new Osiagniecie { id = "ludna", nazwa = "Ludna góra", opis = $"Miej naraz {Js.Js.S(CELE.lud)} postaci ludu.", sprawdz = (s, _w) => s.stat.ludMax >= CELE.lud },
             new Osiagniecie { id = "dlon", nazwa = "Wyrwani z dłoni", opis = "Odepchnij Cudem dłoń z otchłani, zanim kogoś chwyci.", sprawdz = (s, _w) => s.stat.odepchnieta > 0 },

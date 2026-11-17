@@ -390,7 +390,7 @@ namespace Trzewia.Rysunek
             okladkaZCieniem(ctx, k, oprawa);
 
             // ---- lewa karta: Twój lud
-            naglowekKarty(ctx, "Twój lud", u.lewa.x + u.lewa.w / 2, u.lewa.y + u.naglowek * 0.95, u.naglowek, u.lewa.w);
+            naglowekKarty(ctx, Krag.T("Twój lud", "Twoi potępieni"), u.lewa.x + u.lewa.w / 2, u.lewa.y + u.naglowek * 0.95, u.naglowek, u.lewa.w);
             foreach (var m in u.medaliony)
             {
                 var rola = m.rola; var lud = Druzyna.ludRoli(sim, rola); var ile = lud.Count; var zazn = lud.Count(c => zaznaczeni.Contains(c.id));

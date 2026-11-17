@@ -10,6 +10,7 @@ using Trzewia.Plotna;
 using Trzewia.Rdzen;
 using Trzewia.Rysunek;
 using Trzewia.Nastawy;
+using Krag = Trzewia.Symulacja.Krag;
 using static Trzewia.Nastawy.NastawyWygladMenu;
 using static Trzewia.Rdzen.SettingsStore;
 using static Trzewia.Rysunek.Ozdobnik;
@@ -101,6 +102,7 @@ namespace Trzewia.Aplikacja
         {
             if (przyciski.TryGetValue(p.id, out var gotowy)) return gotowy;
             Przycisk? wynik = null;
+            if (p.plik == "") { przyciski[p.id] = null; return null; }   // pozycja bez rysunku — napis pismem
             var img = Plotno.Wczytaj($"grafika/menu/przyciski/{p.plik}.png");
             if (img.complete && img.width > 0)
                 wynik = new Przycisk { zwykly = zabarw(img, M.napis), wybrany = zabarw(img, M.napisWybrany), w = img.width, h = img.height };
@@ -140,6 +142,8 @@ namespace Trzewia.Aplikacja
                 new Pozycja { id = "bestiariusz", etykieta = M.pozycje.bestiariusz.etykieta, plik = "atlas" },
                 new Pozycja { id = "osiagniecia", etykieta = M.pozycje.osiagniecia.etykieta, plik = "osiagniecia" },
                 new Pozycja { id = "ustawienia", etykieta = M.pozycje.ustawienia.etykieta, plik = "ustawienia" },
+                // Krąg Trzeci (Cerber) obok Alphy 1 — osobny tryb: własne nastawy, zapis, atlas i osiągnięcia
+                new Pozycja { id = "tryb", etykieta = etykietaTrybu(), plik = "" },
             };
         }
 
@@ -157,7 +161,28 @@ namespace Trzewia.Aplikacja
         bool trwaGra()
         {
             var gra = app.ekran("gra") as EkranGry;
-            return gra?.sim != null && gra.sim.tick > 0 && gra.sim.ending == null;
+            // partia z drugiego trybu nie wraca — po zmianie trybu zostaje tylko w swoim zapisie
+            return gra?.sim != null && gra.sim.tick > 0 && gra.sim.ending == null && gra.partiaKregu == Krag.Wlaczony;
+        }
+
+        /// <summary>Napis pozycji trybu: dokąd przełącza.</summary>
+        static string etykietaTrybu() => Krag.Wlaczony ? "Alpha 1" : "Krąg Trzeci";
+
+        /// <summary>
+        /// Przełącza tryb gry: Alpha 1 ⇄ Krąg Trzeci. Nastawy, nazwy i teksty zmieniają się od razu (Krag.Ustaw),
+        /// wybór zostaje w ustawieniach na następne uruchomienie. Bieżąca partia drugiego trybu nie znika z jego zapisu.
+        /// </summary>
+        void przelaczTryb()
+        {
+            var gra = app.ekran("gra") as EkranGry;
+            // trwająca partia trafia do zapisu swojego trybu, zanim tryb się zmieni
+            if (gra?.sim != null && gra.sim.tick > 0 && gra.sim.ending == null && gra.partiaKregu == Krag.Wlaczony && ustawienia.autozapis)
+                Zapisy.saveToStorage(gra.sim);
+            Krag.Ustaw(!Krag.Wlaczony);
+            ustaw(ref ustawienia.krag, Krag.Wlaczony);
+            foreach (var p in pozycje) if (p.id == "tryb") p.etykieta = etykietaTrybu();
+            komunikat = Krag.Wlaczony ? "Krąg Trzeci — Cerber, żarłocy, wieczny deszcz." : "Alpha 1 — Wielki Pomnik i demon.";
+            komunikatOd = Wydajnosc.Teraz();
         }
 
         /// <summary>Dane wejścia: komunikat (np. po końcu gry) — w TS `{ komunikat }`.</summary>
@@ -369,6 +394,7 @@ namespace Trzewia.Aplikacja
             else if (p.id == "nowa") app.idz("gra", "nowa");
             else if (p.id == "osiagniecia") app.idz("osiagniecia");
             else if (p.id == "wczytaj") app.idz("gra", "wczytaj");
+            else if (p.id == "tryb") przelaczTryb();
             else if (p.id == "samouczek") app.idz("samouczek");
             else if (p.id == "bestiariusz") app.idz("bestiariusz");
             else if (p.id == "ustawienia") app.idz("ustawienia");

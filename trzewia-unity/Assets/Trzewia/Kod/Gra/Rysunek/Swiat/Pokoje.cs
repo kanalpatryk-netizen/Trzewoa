@@ -984,14 +984,14 @@ namespace Trzewia.Rysunek
         /// <summary>Co zrobią zaznaczeni po dotknięciu tego pomieszczenia (podpis nad nim).</summary>
         public static (string akcja, bool ok) akcjaNaPomieszczeniu(Pomieszczenie pom, double robotnikow, double innych, double rycerzy = 0, double naWieszaku = 0)
         {
-            if (!pom.gotowe) return robotnikow != 0 ? ("kujcie ten plan", true) : ("kują tylko robotnicy", false);
+            if (!pom.gotowe) return robotnikow != 0 ? ("kujcie ten plan", true) : (Krag.T("kują tylko robotnicy", "kują tylko grabarze"), false);
             var r = pom.rodzaj;
             if (r == "sypialnia") return ("idźcie spać — sen zdejmie osłabienia", true);
             // etap 3f: rycerz w kuźni zakłada części z wieszaka
             if (r == "kuznia" && rycerzy != 0 && robotnikow == 0)
                 return naWieszaku != 0 ? ($"załóż zbroję z wieszaka ({Js.Js.S(naWieszaku)} {(naWieszaku == 1 ? "część" : "części")})", true) : ("nie ma części na wieszaku", false);
             if (robotnikow != 0) return (r == "warsztat" ? "pracuj: krzyże ze złota" : rycerzy != 0 ? "pracuj: zbroja z żelaza (rycerz ją założy)" : "pracuj: zbroja z żelaza", true);
-            return (innych != 0 ? "wejdź do środka (pracują tu robotnicy)" : "", true);
+            return (innych != 0 ? Krag.T("wejdź do środka (pracują tu robotnicy)", "wejdź do środka (pracują tu grabarze)") : "", true);
         }
     }
 }

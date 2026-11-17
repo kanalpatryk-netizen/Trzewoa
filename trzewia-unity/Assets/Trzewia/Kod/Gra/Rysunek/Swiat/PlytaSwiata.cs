@@ -74,6 +74,16 @@ namespace Trzewia.Rysunek
             else eng.rysuj(ctx, cam, ustawienia.jasnosc);
             // fresk: faktura tynku przyklejona do świata — jedzie razem ze skałą, gdy przesuwasz kamerę
             if (eng.fresk) Fresk.tynkSwiata(ctx, cam);
+            var krag = Krag.Wlaczony;
+            if (krag)
+            {
+                // Krąg Trzeci: rycina przygaszona i podgrzana (zakrzepła krew, zgniła żółć); nad tarasem wnętrze leja piekła,
+                // na skraju przepaść do kręgu czwartego, a na tarasie cuchnące błoto z kośćmi i szczątkami
+                RysKrag.barwaKregu(ctx, 0, 0, cam.vw, cam.vh);
+                KragSwiat.rysujLej(ctx, sim, cam, teraz);
+                KragSwiat.rysujPrzepasc(ctx, sim, cam, teraz);
+                RysKrag.rysujGruntKregu(ctx, sim, cam, teraz);
+            }
             t = L.znacz(Czesc.rycina, t);
             eng.poswiata(ctx, cam, true);
             t = L.znacz(Czesc.poswiata, t);
@@ -90,12 +100,22 @@ namespace Trzewia.Rysunek
             // etap 3e: ruiny — mury, łuki, belki, zabytek na posadzce (światło zabytku — nad mrokiem)
             ruiny.rysuj(ctx, sim, cam);
             RysLoch.rysujLoch(ctx, sim, cam, teraz);
+            // Krąg Trzeci: krew na murach, wisielcy na łańcuchach, kopce czaszek
+            if (krag) PiekloLochu.rysujPiekloLochu(ctx, sim, cam, teraz);
             // droga wiernych: schody kręcone — tylko to, co już zbudowano (po lochu: dół schodów stoi w komnacie z kotłem)
             Schody.rysujSchodyDrogi(ctx, sim, cam, teraz);
             // 6.11: budowa schodów — drabina, rusztowanie, kołowrót z kubłem urobku albo opuszczanym stopniem, hałda
             RysBudowaSchodow.rysujBudoweSchodow(ctx, sim, cam, teraz);
             // katedra na powierzchni nad szybem ze światłem — kamień (szkło rozety i płomienie świec — nad mrokiem)
-            Katedra.rysujKatedre(ctx, sim, cam);
+            if (krag)
+            {
+                // Krąg Trzeci: zamiast katedry — żarłocy w błocie i w trzewiach, krople ze stropów, ciała w ścianach
+                // (brzeg kręgu — nad niebem, niżej)
+                Potepieni.rysujPotepionych(ctx, sim, cam, teraz);
+                RysKrag.rysujKrople(ctx, sim, cam, teraz);
+                KragSwiat.rysujCialaWScianach(ctx, sim, cam, teraz);
+            }
+            else Katedra.rysujKatedre(ctx, sim, cam);
             Shafts.smugiSwiatla(ctx, sim, cam, teraz);
             Overlay.drawParticles(ctx, sim, cam);
             RysTrupy.rysujTrupy(ctx, sim, cam, teraz);
@@ -109,9 +129,18 @@ namespace Trzewia.Rysunek
             if (Nastawy.NastawyMrok.MROK.wlaczony) eng.poswiata(ctx, cam, false);
             t = L.znacz(Czesc.poswiata, t);
             // katedra: witraże rozety i okien, płomienie świec — świecą przez mrok; z rozety pada promień na ołtarz
-            Katedra.rysujKatedreNad(ctx, sim, cam, teraz);
+            if (!krag) Katedra.rysujKatedreNad(ctx, sim, cam, teraz);
             Promien.rysujPromien(ctx, sim, cam, teraz);
             Konwoj.rysujKonwojNad(ctx, sim, cam, teraz, grunt);
+            if (krag)
+            {
+                // Krąg Trzeci: wieczny deszcz, w ulewie grad, brudny śnieg i błyskawice; zamiast katedry skalny brzeg kręgu
+                // ze szczeliną światła (po niebie, żeby chmury go nie zakryły); Cerber krąży po tarasie kręgu
+                RysKrag.rysujNieboKregu(ctx, sim, cam, teraz);
+                RysKrag.rysujBrzegKregu(ctx, sim, cam);
+                RysKrag.rysujBrzegKreguNad(ctx, sim, cam, teraz);
+                KragSwiat.rysujCerberaNaKregu(ctx, sim, cam, teraz);
+            }
             // etap 5: Wielki Pomnik demona — nad mrokiem (żarzy się sam i trzeba go widzieć z krypty)
             if (Nastawy.NastawyPomnik.POMNIK.wlaczony) RysPomnik.rysujPomnik(ctx, sim, cam, teraz);
             // etap 3b: rozbity kafel rudy błyska (złoto) albo sypie iskry (żelazo) — to światło, więc nad mrokiem
@@ -127,6 +156,7 @@ namespace Trzewia.Rysunek
             ruiny.rysujNad(ctx, sim, cam, teraz);
             // 6.11: wywar w kotle i zaklinanie, płomienie, runy bramy, krąg modlitwy za innych — nad mrokiem
             RysLoch.rysujLochNad(ctx, sim, cam, teraz);
+            if (krag) PiekloLochu.rysujPiekloLochuNad(ctx, sim, cam, teraz);
             // (4) podgląd planu pod kursorem: pokoje.podglad
             sterowanie?.podglad(ctx, cam, teraz);
             // droga pielgrzymów: którędy wierni zejdą pod rdzeń (25.10: droga wiernych jako szyb — plan widać zawsze)
@@ -139,6 +169,8 @@ namespace Trzewia.Rysunek
             // (4) rysujZaznaczenie
             sterowanie?.zaznaczenie(ctx, cam, teraz);
             Figury.rysujStworzenia(ctx, sim, cam, teraz, sterowanie?.wybrany);
+            // Krąg Trzeci: obżarci (smród nad głową), przejedzeni w błocie, okup lecący do paszczy Cerbera
+            if (krag) RysKrag.rysujZarlokow(ctx, sim, cam, teraz);
             // etap 3f: część zbroi w rękach rycerza i błysk, gdy ją założy — przed postaciami
             pokoje.rysujPrzod(ctx, sim, cam, teraz);
             RysWiadra.rysujPrzodWiader(ctx, sim, cam, teraz);

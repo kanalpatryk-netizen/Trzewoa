@@ -58,6 +58,8 @@ namespace Trzewia.Symulacja
         public StanAniola? aniol;
         public StanPomnika? pomnik;
         public StanDloniDemona? dlonDemona;
+        /// <summary>Krąg Trzeci: ulewa, okup dla Cerbera (Symulacja/Krag.cs).</summary>
+        public StanKregu? krag;
         public bool? helmy;
         public double? oltarzPo;
         public StanBramy? brama;
@@ -99,8 +101,13 @@ namespace Trzewia.Symulacja
     /// </summary>
     public static class Lud
     {
-        public static readonly Dictionary<string, string> NAZWA_ROLI = new Dictionary<string, string> { ["pobozny"] = "Pobożny", ["robotnik"] = "Robotnik", ["rycerz"] = "Rycerz" };
-        public static readonly Dictionary<string, string> NAZWA_ROLI_MNOGA = new Dictionary<string, string> { ["pobozny"] = "pobożni", ["robotnik"] = "robotnicy", ["rycerz"] = "rycerze" };
+        static readonly Dictionary<string, string> NAZWA_ROLI_ALFA = new Dictionary<string, string> { ["pobozny"] = "Pobożny", ["robotnik"] = "Robotnik", ["rycerz"] = "Rycerz" };
+        static readonly Dictionary<string, string> NAZWA_ROLI_KREGU = new Dictionary<string, string> { ["pobozny"] = "Mnich", ["robotnik"] = "Grabarz", ["rycerz"] = "Rycerz" };
+        /// <summary>Nazwa roli (Krąg Trzeci: mnich, grabarz, rycerz).</summary>
+        public static Dictionary<string, string> NAZWA_ROLI => Krag.Wlaczony ? NAZWA_ROLI_KREGU : NAZWA_ROLI_ALFA;
+        static readonly Dictionary<string, string> NAZWA_ROLI_MNOGA_ALFA = new Dictionary<string, string> { ["pobozny"] = "pobożni", ["robotnik"] = "robotnicy", ["rycerz"] = "rycerze" };
+        static readonly Dictionary<string, string> NAZWA_ROLI_MNOGA_KREGU = new Dictionary<string, string> { ["pobozny"] = "mnisi", ["robotnik"] = "grabarze", ["rycerz"] = "rycerz" };
+        public static Dictionary<string, string> NAZWA_ROLI_MNOGA => Krag.Wlaczony ? NAZWA_ROLI_MNOGA_KREGU : NAZWA_ROLI_MNOGA_ALFA;
 
         /// <summary>Remake v2: jedzenie leży już tylko w wiadrach (sim/wiadro.ts).</summary>
         public static List<MiejsceJedzenia> wszystkieSpizarnie(Sim sim) => zrodlaJedzenia(sim);
@@ -222,6 +229,8 @@ namespace Trzewia.Symulacja
                 var b = sim.world.brama; double tx = Math.Floor(c.x), ty = Math.Floor(c.y);
                 if (tx >= b.x0 && tx <= b.x1 && ty >= b.y0 && ty <= b.y1 && (sim.lud.brama?.otwarcie ?? 0) < BRAMA.idzieOd) v *= BRAMA.czolganie;
             }
+            // Krąg Trzeci: ulewa (zimno, błoto) i obżarstwo
+            if (Krag.Wlaczony) v *= Krag.mnoznikKregu(sim, c, co);
             return v;
         }
 
@@ -254,8 +263,8 @@ namespace Trzewia.Symulacja
             if (helmy != (sim.lud.helmy == true))
             {
                 sim.lud.helmy = helmy;
-                if (helmy && robotnikow > 0) sim.log("Nie został ani jeden rycerz. Robotnicy zakładają hełmy i biorą kilofy do walki.", "krew");
-                else if (!helmy && robotnikow > 0) sim.log("Rycerze znów są w ludzie — robotnicy zdejmują hełmy i wracają do kopania.", "swiat");
+                if (helmy && robotnikow > 0) sim.log(Krag.T("Nie został ani jeden rycerz. Robotnicy zakładają hełmy i biorą kilofy do walki.", "Nie został ani jeden rycerz. Grabarze zakładają hełmy i biorą kilofy do walki."), "krew");
+                else if (!helmy && robotnikow > 0) sim.log(Krag.T("Rycerze znów są w ludzie — robotnicy zdejmują hełmy i wracają do kopania.", "Rycerze znów są w ludzie — grabarze zdejmują hełmy i wracają do kopania."), "swiat");
             }
         }
 
@@ -482,7 +491,7 @@ namespace Trzewia.Symulacja
             if (sim.ending != null) return;
             if (liczRole(sim).pobozny > 0) return;
             sim.ending = "upadek";
-            sim.log("Nie został nikt, kto by się modlił. Wielki Pomnik już nie pęknie.", "koniec");
+            sim.log(Krag.T("Nie został nikt, kto by się modlił. Wielki Pomnik już nie pęknie.", "Nie został nikt, kto by się modlił. Pieczęć zejścia już nie pęknie."), "koniec");
         }
 
         /// <summary>Miejsce na obóz albo siedzibę: płaska, szeroka półka, sucha i z dala od magmy.</summary>

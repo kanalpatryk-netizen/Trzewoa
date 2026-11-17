@@ -142,7 +142,7 @@ namespace Trzewia.Symulacja
             if (c.dead || rola == null) return "To nie twój lud.";
             if (typ == "droga")
             {
-                if (rola != "robotnik") return odmow(sim, c, "kopią tylko robotnicy");
+                if (rola != "robotnik") return odmow(sim, c, Krag.T("kopią tylko robotnicy", "kopią tylko grabarze"));
                 var cz = czoloDrogi(sim);
                 if (cz < 0)
                 {
@@ -426,7 +426,7 @@ namespace Trzewia.Symulacja
             {
                 var rola = rolaPostaci(c);
                 string? powod;
-                if (!pom.gotowe) powod = rola == "robotnik" ? kujPlan(sim, c, pom) : odmow(sim, c, "kują tylko robotnicy");
+                if (!pom.gotowe) powod = rola == "robotnik" ? kujPlan(sim, c, pom) : odmow(sim, c, Krag.T("kują tylko robotnicy", "kują tylko grabarze"));
                 else if (pom.rodzaj == "sypialnia") powod = doPomieszczenia(sim, c, pom, "sen", zajete);
                 else if (rola == "robotnik") powod = doPomieszczenia(sim, c, pom, "praca", zajete);
                 else if (rola == "rycerz" && pom.rodzaj == "kuznia") powod = poZbroje(sim, c, pom);
@@ -564,7 +564,7 @@ namespace Trzewia.Symulacja
             var o = sim.world.oltarz;
             var pobozni = JS.Sort(sim.creatures.Where(c => !c.dead && rolaPostaci(c) == "pobozny").ToList(),
                 (a, b) => JS.Hypot(a.x - o.x, a.y - o.y) - JS.Hypot(b.x - o.x, b.y - o.y));
-            if (pobozni.Count == 0) return "nie żyje żaden pobożny";
+            if (pobozni.Count == 0) return Krag.T("nie żyje żaden pobożny", "nie żyje żaden mnich");
             string? powod = "nie dojdzie";
             foreach (var c in pobozni)
             {
