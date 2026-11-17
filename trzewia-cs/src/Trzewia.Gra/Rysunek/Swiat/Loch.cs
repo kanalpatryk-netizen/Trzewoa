@@ -45,7 +45,8 @@ namespace Trzewia.Rysunek
         {
             double sx = cam.toScreenX(x), sy = cam.toScreenY(y);
             var r = los(x * 7919 + y * 104729);
-            double v = Rnd((84 + r * 16) * jas), g = Rnd((74 + r * 14) * jas), b = Rnd((64 + r * 12) * jas);
+            // (Krąg Trzeci: mury podgrzane, w brunatnej czerwieni)
+            double v = Krag.Wlaczony ? Rnd((82 + r * 16) * jas) : Rnd((84 + r * 16) * jas), g = Krag.Wlaczony ? Rnd((62 + r * 12) * jas) : Rnd((74 + r * 14) * jas), b = Krag.Wlaczony ? Rnd((52 + r * 10) * jas) : Rnd((64 + r * 12) * jas);
             ctx.fillStyle = Barwa.Rgba(v, g, b);
             ctx.fillRect(sx, sy, z + 0.6, z + 0.6);
             if (z < 5) return;
@@ -68,7 +69,7 @@ namespace Trzewia.Rysunek
         {
             double sx = cam.toScreenX(x), sy = cam.toScreenY(y);
             var r = los(x * 15485863 + y * 32452843);
-            double v = Rnd((52 + r * 9) * jas), g = Rnd((45 + r * 8) * jas), b = Rnd((40 + r * 7) * jas);
+            double v = Krag.Wlaczony ? Rnd((50 + r * 9) * jas) : Rnd((52 + r * 9) * jas), g = Krag.Wlaczony ? Rnd((37 + r * 7) * jas) : Rnd((45 + r * 8) * jas), b = Krag.Wlaczony ? Rnd((32 + r * 6) * jas) : Rnd((40 + r * 7) * jas);
             ctx.fillStyle = Barwa.Rgba(v, g, b);
             ctx.fillRect(sx, sy, z + 0.6, z + 0.6);
             if (z < 6) return;
@@ -143,7 +144,7 @@ namespace Trzewia.Rysunek
         }
 
         /// <summary>Ciągła wysokość sklepienia lochu (kafle nad posadzką) — gładki łuk zamiast schodków z kafli.</summary>
-        static double lukLochu(Sim sim, double x)
+        internal static double lukLochu(Sim sim, double x)
         {
             var w = sim.world; var L = LOCH.loch;
             var f = ((((x - w.loch.x0) % L.przeslo) + L.przeslo) % L.przeslo) / L.przeslo;
@@ -468,12 +469,12 @@ namespace Trzewia.Rysunek
                 {
                     if (Math.Abs(x - w.coreX) < L.nawaSzer - 1 || !widziany(sim, Math.Min(l.x1, x), l.y1)) continue;
                     double px = cam.toScreenX(x), dol = cam.toScreenY(podloga), gora = cam.toScreenY(podloga - L.sklepienie);
-                    ctx.fillStyle = "rgb(92,82,72)"; ctx.fillRect(px - z * 0.45, gora, z * 0.9, dol - gora);
+                    ctx.fillStyle = Krag.Wlaczony ? "rgb(88,68,58)" : "rgb(92,82,72)"; ctx.fillRect(px - z * 0.45, gora, z * 0.9, dol - gora);
                     ctx.fillStyle = "rgba(220,200,170,0.12)"; ctx.fillRect(px - z * 0.45, gora, z * 0.16, dol - gora);
-                    ctx.fillStyle = "rgb(104,92,80)"; ctx.fillRect(px - z * 0.6, gora, z * 1.2, z * 0.35); ctx.fillRect(px - z * 0.6, dol - z * 0.35, z * 1.2, z * 0.35);
+                    ctx.fillStyle = Krag.Wlaczony ? "rgb(100,78,66)" : "rgb(104,92,80)"; ctx.fillRect(px - z * 0.6, gora, z * 1.2, z * 0.35); ctx.fillRect(px - z * 0.6, dol - z * 0.35, z * 1.2, z * 0.35);
                 }
                 // łuki sklepienia: pas klińców wzdłuż gładkiej linii
-                ctx.strokeStyle = "rgb(98,88,76)"; ctx.lineWidth = z * 0.55;
+                ctx.strokeStyle = Krag.Wlaczony ? "rgb(94,72,60)" : "rgb(98,88,76)"; ctx.lineWidth = z * 0.55;
                 ctx.beginPath();
                 var pierwszy = true;
                 for (var x = Math.Max(l.x0, vl.x0); x <= Math.Min(l.x1 + 1, vl.x1 + 1); x += 0.5)
