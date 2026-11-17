@@ -109,6 +109,8 @@ public static class Uruchomienie
     public static double OdS, NajdluzejS;
     /// <summary>Nowa oprawa walki (Visual/VisualConfig.cs) na starcie: true/false; null — domyślnie (włączona). W grze: F9.</summary>
     public static bool? Oprawa;
+    /// <summary>Tryb Kręgu Trzeciego (Cerber) zamiast Alphy 1 — na razie tylko dla zrzutów walki (--krag).</summary>
+    public static bool Krag;
 
     public const string Pomoc = """
         Trzewia.exe [przełączniki]
@@ -130,6 +132,7 @@ public static class Uruchomienie
                            bez okna: bot gra partię do walki z bossem i zapisuje klatki PNG i klatki.json (porównania
                            oprawy przed/po; rozmiar z --rozmiar, domyślnie 1920x1080); z nim:
           --ziarno N       ziarno partii (domyślnie 3)
+          --krag           tryb Kręgu Trzeciego (Cerber) zamiast Alphy 1
           --co-ile S       zwykłe zrzuty co S sekund gry (domyślnie 0.5); przy zdarzeniach — seria klatka po klatce
           --od S, --najdluzej S
                            zapisuj dopiero od S sekund zapisu / kończ po S sekundach (szybkie próby strojenia)
@@ -158,6 +161,7 @@ public static class Uruchomienie
                     i++; break;
                 case "--wypisz-nastawy": WypiszNastawy = true; break;
                 case "--zrzuty-walki": ZrzutyWalki = nast; i++; break;
+                case "--krag": Krag = true; break;
                 case "--ziarno": Ziarno = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
                 case "--co-ile": CoIleS = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
                 case "--od": OdS = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;

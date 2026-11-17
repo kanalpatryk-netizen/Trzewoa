@@ -1,5 +1,5 @@
 // Oprawa walki z bossem, etap 0 (docs/plan-oprawy-cerber.md): zrzuty walki z bossem bez okna, do porównań przed/po.
-// W C# bossem jest demon z Wielkiego Pomnika (Alpha 1) — Cerber jest tylko w krag-3-beta (TS). Fazy te same:
+// Bossem jest demon z Wielkiego Pomnika (Alpha 1), a z --krag — Cerber (tryb Kręgu Trzeciego). Fazy te same:
 // stoi → rozpada (pieczęć/pomnik pęka) → wychodzi → walka → kona → koniec.
 //
 //   Trzewia --zrzuty-walki KATALOG [--ziarno 3] [--rozmiar 1920x1080] [--oprawa wl|wyl] [--co-ile 0.5]
@@ -83,6 +83,8 @@ static class ZrzutyWalki
         int W = Uruchomienie.RozmiarW > 0 ? Uruchomienie.RozmiarW : 1920, H = Uruchomienie.RozmiarH > 0 ? Uruchomienie.RozmiarH : 1080;
         double ziarno = Uruchomienie.Ziarno ?? 3, coIle = Uruchomienie.CoIleS > 0 ? Uruchomienie.CoIleS : 0.5;
         if (Uruchomienie.Oprawa is bool op) VisualConfig.Wlaczone = op;
+        // Krąg Trzeci: boss to Cerber (nastawy, symulacja i rysunek trybu kręgu)
+        if (Uruchomienie.Krag) Symulacja.Krag.Ustaw(true);
         // okno zapisu (s od początku zapisu): --od, --najdluzej — do szybkich prób strojenia
         double odS = Math.Max(0, Uruchomienie.OdS), najdluzejS = Uruchomienie.NajdluzejS > 0 ? Uruchomienie.NajdluzejS : NAJDLUZEJ_S;
 
@@ -100,7 +102,7 @@ static class ZrzutyWalki
         Plotno.Fabryka = new FabrykaSkia();
         Fonts.zaladujKroje();
 
-        Console.WriteLine($"zrzuty walki: ziarno {ziarno.ToString(CultureInfo.InvariantCulture)}, {W}×{H}, oprawa {(VisualConfig.Wlaczone ? "włączona" : "wyłączona")}, katalog {katalog}");
+        Console.WriteLine($"zrzuty walki{(Uruchomienie.Krag ? " (Krąg Trzeci)" : "")}: ziarno {ziarno.ToString(CultureInfo.InvariantCulture)}, {W}×{H}, oprawa {(VisualConfig.Wlaczone ? "włączona" : "wyłączona")}, katalog {katalog}");
         var zegar = System.Diagnostics.Stopwatch.StartNew();
 
         // przejście 1: kiedy pomnik pęka (bez rysunku)
@@ -179,7 +181,7 @@ static class ZrzutyWalki
 
         var json = JsonSerializer.Serialize(new
         {
-            ziarno, szerokosc = W, wysokosc = H, oprawa = VisualConfig.Wlaczone, tikPekniecia,
+            ziarno, szerokosc = W, wysokosc = H, oprawa = VisualConfig.Wlaczone, krag = Uruchomienie.Krag, tikPekniecia,
             pas = new { opis = $"cała szerokość pola gry, od {PAS_GORA} kafli nad stopami bossa (albo pomnika) do {PAS_DOL} kafla pod nimi" },
             akcja = new { opis = $"ten sam pas, tylko {AKCJA_BOK} kafli w lewo i w prawo od bossa (albo pomnika)" },
             klatki,
