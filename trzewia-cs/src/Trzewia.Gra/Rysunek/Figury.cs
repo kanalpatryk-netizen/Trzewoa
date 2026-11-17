@@ -283,13 +283,21 @@ namespace Trzewia.Rysunek
                 var dx = n > 1 ? 0 : przesuniecieX(c);
                 var sx = (c.x + dx - left) * z;
                 // (6.11: na schodach kręconych dalsza strona spirali leży wyżej — render/schody.ts)
-                var sy = (c.y + 1 + (n > 1 ? 0 : przesuniecieY(c)) - top) * z;
+                // Krąg Trzeci: Cerber nie lewituje jak dawny demon — gdy nie skacze, stoi na posadzce pod swoim miejscem
+                var podloga = 0;
+                if (Krag.Wlaczony && c.boss == "demon" && Math.Abs(c.vy) < 0.3)
+                {
+                    var fx = Math.Floor(c.x);
+                    while (podloga < 8 && sim.world.passable(fx, Math.Floor(c.y) + 1 + podloga)) podloga++;
+                    if (podloga >= 8) podloga = 0;
+                }
+                var sy = (c.y + 1 + podloga + (n > 1 ? 0 : przesuniecieY(c)) - top) * z;
                 var zw = n > 1 ? 0 : zwrotNaRysunku(c);
                 var kier = zw != 0 ? zw : (c.face >= 0 ? 1 : -1);
                 var tlo = n > 1 ? 0 : wTle(c);
 
                 // cień kontaktowy — tylko na ziemi: miękka plama, najciemniejsza tuż pod stopami
-                var naZiemi = c.vy <= 0.3 && sim.world.solid(Math.Floor(c.x + dx), Math.Floor(c.y) + 1);
+                var naZiemi = (c.vy <= 0.3 && sim.world.solid(Math.Floor(c.x + dx), Math.Floor(c.y) + 1)) || podloga > 0;
                 if (naZiemi) cienKontaktowy(ctx, sx, sy, h);
                 // 6.11: na schodach kręconych — cień na stopnicy pod stopami (i słabiej na następnej niższej), przycięty do niej
                 var naSchodach = n == 1 && chodNaSchodach(c) != null;
@@ -320,6 +328,24 @@ namespace Trzewia.Rysunek
                     ctx.fillStyle = ga; ctx.fillRect(sx - R, sy - h * 0.5 - R, R * 2, R * 2);
                 }
 
+                // Krąg Trzeci: ścięte głowy Cerbera — spadają z karku po łuku, koziołkując, i leżą na posadzce we krwi
+                if (Krag.Wlaczony && c.boss == "demon" && c.glowyOdciete != null && c.glowyOdciete.Count > 0)
+                {
+                    var hRys = h * Boss.aktywnyBoss().rozmiar * 0.6;
+                    var tF = ZegarGry.tikZUlamkiem(sim, czas);
+                    foreach (var o in c.glowyOdciete)
+                    {
+                        var ms = Math.Max(0, (tF - o.tick) * (1000.0 / 120));
+                        var f = Math.Min(1, ms / 650);
+                        double wx = o.x0 + (o.x - o.x0) * f, wy = o.y0 + (o.y + 1 - o.y0) * f - Math.Sin(f * Math.PI) * 1.2;
+                        ctx.save();
+                        ctx.translate((wx - left) * z, (wy - top) * z);
+                        ctx.scale(o.zwrot, 1);
+                        if (f < 1) ctx.rotate(f * 5.5);
+                        RysCerber.rysujScietaGlowe(ctx, (int)o.nr, hRys, Math.Max(0, ms - 650));
+                        ctx.restore();
+                    }
+                }
                 string cz;
                 // cudze światło z otoczenia kładzie ciepłą krawędź po swojej stronie sylwetki (render/lud/oswietlenie.ts)
                 Lud.Oswietlenie.ustawSwiatlo(Symulacja.Lud.rolaPostaci(c) != null ? Lud.Oswietlenie.swiatloDla(sim, c, h / z) : null);

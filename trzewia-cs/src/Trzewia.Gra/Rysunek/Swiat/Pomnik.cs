@@ -13,7 +13,7 @@ using JsM = Trzewia.Js.JsMath;
 namespace Trzewia.Rysunek
 {
     /// <summary>Rysunek pomnika (RysPomnik — bo Pomnik to klasa symulacji).</summary>
-    public static class RysPomnik
+    public static partial class RysPomnik
     {
         static double gladko(double t) { var x = Math.Max(0, Math.Min(1, t)); return x * x * (3 - 2 * x); }
 
@@ -286,6 +286,9 @@ namespace Trzewia.Rysunek
                 var tp = sim.tick - (s?.stanT ?? -1e9);
                 rysujPosag(ctx, bx, by, H, z, stan, teraz, tp >= 0 && tp < 200 ? 1 - tp / 200 : 0, ruch);
             }
+            else if (faza == "rozpada" && Krag.Wlaczony)
+                // Krąg Trzeci: pieczęć zejścia pęka i otwiera studnię do kręgu czwartego (Rysunek/Krag/PomnikKregu.cs)
+                rozpadKregu(ctx, bx, by, H, z, Math.Min(1, (sim.tick - (s?.od ?? 0)) / POMNIK.rozpad), teraz, ruch);
             else if (faza == "rozpada")
             {
                 var k = Math.Min(1, (sim.tick - (s?.od ?? 0)) / POMNIK.rozpad);
@@ -310,6 +313,8 @@ namespace Trzewia.Rysunek
                     lancuch(ctx, (bx + H * 0.08, top - H * 0.3), (bx - H * 0.29, top + H * 0.02), z, gladko(kk * 2));
                 }
             }
+            else if (Krag.Wlaczony)
+                poRozpadzieKregu(ctx, sim, cam, bx, by, H, z, faza, teraz);
             else
             {
                 // gruz po pomniku zostaje do końca gry; z niego wstaje demon (dalej rysuje go mapa jako bossa)
@@ -327,6 +332,8 @@ namespace Trzewia.Rysunek
         /// </summary>
         public static void rysujPosag(IPlotno ctx, double bx, double by, double H, double z, double stan, double teraz, double swieze = 0, bool ruch = true)
         {
+            // Krąg Trzeci: na dnie trzewi — zapieczętowane zejście do kręgu czwartego; modlitwa kruszy pieczęć
+            if (Krag.Wlaczony) { rysujPosagKregu(ctx, bx, by, H, z, stan, teraz, swieze, ruch); return; }
             var drga = ruch && swieze > 0 ? JsM.Sin(teraz * 0.09) * H * 0.006 * swieze : 0;
             var top = cokol(ctx, bx, by, H, false, z);
             var pkt = posagZUbytkami(ctx, bx + drga, top, H, pozaPosagu(stan, teraz, swieze * 0.7));
@@ -415,6 +422,12 @@ namespace Trzewia.Rysunek
                     gg.addColorStop(0, Barwa.Rgba(150, 135, 118, 0.45 * (1 - kk))); gg.addColorStop(1, "rgba(150,135,118,0)");
                     ctx.fillStyle = gg; ctx.fillRect(bx - rr, by - H * 0.2 - rr, rr * 2, rr * 2);
                 }
+            }
+            else if (s.faza == "kona" && s.cios != null && Krag.Wlaczony)
+            {
+                // Krąg Trzeci: śmierć psa piekła — czerwona mgła krwi po ostatnim ciosie, żadnego świętego światła
+                ctx.globalCompositeOperation = "source-over";
+                nadKonaniemKregu(ctx, sim, cam, s);
             }
             else if (s.faza == "kona" && s.cios != null)
             {
