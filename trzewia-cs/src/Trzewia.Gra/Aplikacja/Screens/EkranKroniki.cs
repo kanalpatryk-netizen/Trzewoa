@@ -50,8 +50,13 @@ namespace Trzewia.Aplikacja
             var cz = e.Split(':');
             var rodzaj = cz[0]; var kto = cz.Length > 1 ? cz[1] : "undefined";
             if (rodzaj == "sen") return ("Zasnąłeś", "Nikt już o tobie nie myślał.");
-            if (rodzaj == "uwolnienie") return ("Uwolnili cię", $"{kto} skruszyli Wielki Pomnik, a demon, który w nim spał, padł.");
-            if (rodzaj == "upadek") return ("Upadek", "Nie został nikt, kto mógłby cię uwolnić.");
+            // Krąg Trzeci: zwycięstwo to zejście do kręgu czwartego, klęska — ostatni potępiony w błocie
+            if (rodzaj == "uwolnienie") return Krag.Wlaczony
+                ? ("Zejście do kręgu czwartego", $"{kto} zbudzili modlitwą pieczęć i powalili go. Droga w dół, jedyna droga z piekła, stoi otworem.")
+                : ("Uwolnili cię", $"{kto} skruszyli Wielki Pomnik, a demon, który w nim spał, padł.");
+            if (rodzaj == "upadek") return Krag.Wlaczony
+                ? ("Błoto", "Ostatni z potępionych legł w błocie trzeciego kręgu. Deszcz pada dalej.")
+                : ("Upadek", "Nie został nikt, kto mógłby cię uwolnić.");
             return ("Zabili cię", $"{kto} dokopali się do rdzenia. Nie modlili się.");
         }
 

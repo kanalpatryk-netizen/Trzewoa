@@ -167,7 +167,7 @@ namespace Trzewia.Aplikacja
             var linie = new[]
             {
                 $"{czas(s.tick)} · tik {JS.S(s.tick)} · {(DEV.pauza ? "pauza dewelopera" : t)} · {JS.S(tikowNaSek)} tik/s · {JS.S(fps)} kl/s · krok {JS.ToFixed(DEV.msKroku, 2)} ms",
-                $"lud {JS.S(r.pobozny + r.robotnik + r.rycerz)}: pobożni {JS.S(r.pobozny)} · robotnicy {JS.S(r.robotnik)} · rycerze {JS.S(r.rycerz)} · jedzenie {JS.S(Wiadro.porcjiWWiadrach(s))} porcji · wiadro za {JS.S(Math.Ceiling(Wiadro.doNastepnego(s) / 120))} s",
+                Krag.T($"lud {JS.S(r.pobozny + r.robotnik + r.rycerz)}: pobożni {JS.S(r.pobozny)} · robotnicy {JS.S(r.robotnik)} · rycerze {JS.S(r.rycerz)} · jedzenie {JS.S(Wiadro.porcjiWWiadrach(s))} porcji · wiadro za {JS.S(Math.Ceiling(Wiadro.doNastepnego(s) / 120))} s", $"lud {JS.S(r.pobozny + r.robotnik + r.rycerz)}: mnisi {JS.S(r.pobozny)} · grabarze {JS.S(r.robotnik)} · rycerze {JS.S(r.rycerz)} · jedzenie {JS.S(Wiadro.porcjiWWiadrach(s))} porcji · wiadro za {JS.S(Math.Ceiling(Wiadro.doNastepnego(s) / 120))} s"),
                 $"wiara {JS.S(Math.Floor(s.wiara))} · krew {JS.S(Math.Floor(s.krew))} · żelazo {JS.S(s.zelazo)} · złoto {JS.S(s.zloto)} · oddanie {JS.S(round((wierni?.devotion ?? 0) * 100))}% · sen {JS.S(round(s.sen * 100))}% · pęknięć {JS.S(s.rytual.pekniecia)}{(s.rytual.otwarta ? " · rdzeń otwarty" : "")}",
                 Dlon.opisDloni(s),
             };
@@ -185,7 +185,7 @@ namespace Trzewia.Aplikacja
                 else
                 {
                     string p(double v) => $"{JS.S(round(v * 100))}%";
-                    linie.Add($"{kto(s, c)}{(c.straznik == true ? " · Strażnik Snu" : "")}");
+                    linie.Add($"{kto(s, c)}{(c.straznik == true ? Krag.T(" · Strażnik Snu", " · Cień Żarłoka") : "")}");
                     linie.Add($"życie {JS.S(round(c.hp))} · głód {p(c.hunger)} · wiara {p(c.devotion)} · szał {p(c.mad)} · strach {p(c.fear)}");
                     if (!string.IsNullOrEmpty(c.zamiar)) linie.Add($"zamiar: {c.zamiar}{(c.zamiarDo != null && c.zamiarDo > s.tick ? $" (jeszcze {JS.S(Math.Ceiling((c.zamiarDo.Value - s.tick) / 120))} s)" : "")}");
                     var praca = c.job >= 0 && c.job < OPIS_PRACY.Length ? OPIS_PRACY[c.job] : "zajęcie " + JS.S(c.job);
@@ -812,7 +812,7 @@ namespace Trzewia.Aplikacja
                 przycisk(ctx, "+ wiadro", () => Wiadro.wiadroTeraz(sim()), "pełne wiadro zjeżdża od razu, przy najgłodniejszych"),
                 przycisk(ctx, "sen → 0", () => sim().sen = 0, "powieka podnosi się"),
                 przycisk(ctx, "pęknij pomnik", () => Rytual.wymusPekniecie(sim()), "etap 5: +20% — jedno pełne odmodlenie"),
-                przycisk(ctx, "rozbij pomnik", () => pokazWynik(Pomnik.devRozbijPomnik(sim())), "etap 5: pomnik w gruz, z gruzów wstaje demon"),
+                przycisk(ctx, "rozbij pomnik", () => pokazWynik(Pomnik.devRozbijPomnik(sim())), Krag.T("etap 5: pomnik w gruz, z gruzów wstaje demon", "etap 5: pomnik w gruz, z gruzów wstaje Cerber")),
             };
             y = sekcja(ctx, nar, xl, y, wew, szer, x0, rysuj);
 
@@ -830,10 +830,10 @@ namespace Trzewia.Aplikacja
             // etap 5b: dłoń pomaga demonowi (najpierw „rozbij pomnik” — dopiero w walce z demonem)
             y = wiersz(ctx, new List<Element>
             {
-                napis(ctx, "Dłoń przy demonie:", "#9a8f7a"),
+                napis(ctx, Krag.T("Dłoń przy demonie:", "Dłoń przy Cerberze:"), "#9a8f7a"),
                 przycisk(ctx, "rzut", () => pokazWynik(DlonDemona.devDlonDemona(sim(), "rzut")), "etap 5b: obejmuje rycerza i ciska nim w górę"),
-                przycisk(ctx, "tarcza", () => pokazWynik(DlonDemona.devDlonDemona(sim(), "tarcza")), "etap 5b: otwarta dłoń przed demonem — ciosy się odbijają"),
-                przycisk(ctx, "zawał", () => pokazWynik(DlonDemona.devDlonDemona(sim(), "zawal")), "etap 5b: szpony drą strop — ściana gruzu odcina demona"),
+                przycisk(ctx, "tarcza", () => pokazWynik(DlonDemona.devDlonDemona(sim(), "tarcza")), Krag.T("etap 5b: otwarta dłoń przed demonem — ciosy się odbijają", "etap 5b: otwarta dłoń przed Cerberem — ciosy się odbijają")),
+                przycisk(ctx, "zawał", () => pokazWynik(DlonDemona.devDlonDemona(sim(), "zawal")), Krag.T("etap 5b: szpony drą strop — ściana gruzu odcina demona", "etap 5b: szpony drą strop — ściana gruzu odcina Cerbera")),
             }, xl, y, wew, rysuj);
             y = wiersz(ctx, new List<Element>
             {

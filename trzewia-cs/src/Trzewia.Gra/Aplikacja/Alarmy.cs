@@ -136,11 +136,11 @@ namespace Trzewia.Aplikacja
                 return new Alarm
                 {
                     rodzaj = $"fala-{Js.Js.S(f)}", kryzys = true,
-                    tytul = boss ? $"Ostatnia fala — {Boss.aktywnyBoss().nazwa}" : $"Strażnicy Snu — fala {Js.Js.S(f)} z {STRAZNICY.fale.Length}",
-                    tekst = boss ? $"Z gruzów Wielkiego Pomnika wstał demon. {Boss.aktywnyBoss().opis}"
-                        : $"Ze skały wokół krypty wychodzą Strażnicy ({(def != null ? Js.Js.S(def.straznikow) : "?")}). Dopóki żyją, pomnik nie pęka. Pobożni i robotnicy odchodzą z krypty — walczy rycerz.",
-                    rada = boss ? "Rycerz na demona, obaj pobożni do modlitwy w krypcie — wtedy demon słabnie. Robotnicy muszą odkopywać zasypaną drogę."
-                        : "Rycerz walczy sam; gdy zginie, robotnicy założą hełmy. Pilnuj, żeby był najedzony.",
+                    tytul = boss ? $"Ostatnia fala — {Boss.aktywnyBoss().nazwa}" : Krag.T($"Strażnicy Snu — fala {Js.Js.S(f)} z {STRAZNICY.fale.Length}", $"Cienie Żarłoków — fala {Js.Js.S(f)} z {STRAZNICY.fale.Length}"),
+                    tekst = boss ? Krag.T($"Z gruzów Wielkiego Pomnika wstał demon. {Boss.aktywnyBoss().opis}", $"Z gruzów pieczęci zejścia wstał Cerber. {Boss.aktywnyBoss().opis}")
+                        : $"Ze skały wokół krypty wychodzą Strażnicy ({(def != null ? Js.Js.S(def.straznikow) : "?")}). Dopóki żyją, pomnik nie pęka. Pobożni i {Krag.T("robotnicy", "grabarze")} odchodzą z krypty — walczy rycerz.",
+                    rada = boss ? Krag.T("Rycerz na demona, obaj pobożni do modlitwy w krypcie — wtedy demon słabnie. Robotnicy muszą odkopywać zasypaną drogę.", "Rycerz na Cerbera, obaj mnisi do modlitwy w krypcie — wtedy Cerber słabnie. Grabarze muszą odkopywać zasypaną drogę.")
+                        : Krag.T("Rycerz walczy sam; gdy zginie, robotnicy założą hełmy. Pilnuj, żeby był najedzony.", "Rycerz walczy sam; gdy zginie, grabarze założą hełmy. Pilnuj, żeby był najedzony."),
                     cel = (w.coreX + 0.5, w.przedsionekY + 0.5, "przedsionek"),
                 };
             }
@@ -168,9 +168,9 @@ namespace Trzewia.Aplikacja
                 return new Alarm
                 {
                     rodzaj = "pekniecie-pierwsze", kryzys = true,
-                    tytul = $"Wielki Pomnik zaczął pękać — {Js.Js.S(Rytual.procentSkorupy(s))}%",
-                    tekst = $"Modlitwa pobożnych kruszy kamiennego demona, którego nie ruszy żaden kilof. Góra oddaje ci za to {Js.Js.S(RYTUAL.nagrodaWiary)} wiary. Gdy pomnik pęknie do końca, demon w nim się obudzi.",
-                    rada = "Pilnuj, żeby robotnicy donosili jedzenie warcie w krypcie, a rycerz był najedzony — przy każdym pęknięciu wychodzą Strażnicy.",
+                    tytul = Krag.T($"Wielki Pomnik zaczął pękać — {Js.Js.S(Rytual.procentSkorupy(s))}%", $"Pieczęć zejścia zaczęła pękać — {Js.Js.S(Rytual.procentSkorupy(s))}%"),
+                    tekst = Krag.T($"Modlitwa pobożnych kruszy kamiennego demona, którego nie ruszy żaden kilof. Góra oddaje ci za to {Js.Js.S(RYTUAL.nagrodaWiary)} wiary. Gdy pomnik pęknie do końca, demon w nim się obudzi.", $"Modlitwa mnichów kruszy pieczęć, której nie ruszy żaden kilof. Góra oddaje ci za to {Js.Js.S(RYTUAL.nagrodaWiary)} wiary. Gdy pieczęć pęknie do końca, Cerber pod nią się obudzi."),
+                    rada = Krag.T("Pilnuj, żeby robotnicy donosili jedzenie warcie w krypcie, a rycerz był najedzony — przy każdym pęknięciu wychodzą Strażnicy.", "Pilnuj, żeby grabarze donosili jedzenie warcie w krypcie, a rycerz był najedzony — przy każdym pęknięciu wychodzą Strażnicy."),
                     cel = (w.coreX + 0.5, w.przedsionekY + 0.5, "przedsionek"),
                 };
             }
