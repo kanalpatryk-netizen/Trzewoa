@@ -169,7 +169,10 @@ namespace Trzewia.Rysunek.Duszki
             g.fillRect(0, 0, pw, ph);
             g.globalCompositeOperation = "source-over";
             var alfa = ctx.globalAlpha;
-            ctx.globalAlpha = alfa * (0.22 + 0.4 * sw.sila);
+            // oprawa walki (etap 1): mocniejsza krawędź — postać wyraźnie stoi w świetle pochodni, pieca i aury
+            ctx.globalAlpha = Visual.VisualConfig.Aktywne(Visual.VisualConfig.Swiatlo)
+                ? alfa * Math.Min(1, Visual.VisualConfig.Swiatla.KrawedzAlfa0 + Visual.VisualConfig.Swiatla.KrawedzAlfa1 * sw.sila)
+                : alfa * (0.22 + 0.4 * sw.sila);
             ctx.drawImage(g, 0, 0, pw, ph, dx + lx - 1 / skala, dy + ly - 1 / skala, pw / skala, ph / skala);
             ctx.globalAlpha = alfa;
         }

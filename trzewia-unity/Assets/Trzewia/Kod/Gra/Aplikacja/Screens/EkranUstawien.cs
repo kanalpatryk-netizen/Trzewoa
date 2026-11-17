@@ -172,6 +172,8 @@ namespace Trzewia.Aplikacja
                         new Suwak { etykieta = "Wielkość obrazu", min = 0.8, max = 1.6, krok = 0.1, czytaj = () => ustawienia.wielkoscUI, zmien = v => ustaw(ref ustawienia.wielkoscUI, Math.Floor(v * 10 + 0.5) / 10) },
                         new Suwak { etykieta = "Jasność", min = 1, max = 1.8, krok = 0.05, czytaj = () => ustawienia.jasnosc, zmien = v => ustaw(ref ustawienia.jasnosc, v) },
                         new Przelacznik { etykieta = "Ogranicz ruch", czytaj = () => ustawienia.ograniczRuch, zmien = v => ustaw(ref ustawienia.ograniczRuch, v) },
+                        // oprawa walki z bossem (dostępność): błyski zdarzeń słabsze
+                        new Przelacznik { etykieta = "Mniej błysków", czytaj = () => ustawienia.mniejBlyskow, zmien = v => ustaw(ref ustawienia.mniejBlyskow, v) },
                     },
                 },
                 new Kategoria

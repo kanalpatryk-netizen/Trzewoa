@@ -41,6 +41,8 @@ namespace Trzewia.Rysunek
         public readonly RysOltarz oltarz = new RysOltarz();
         public readonly RysRuiny ruiny = new RysRuiny();
         public readonly Urobki urobki = new Urobki();
+        /// <summary>Oprawa walki, etap 1: warstwa światła (Visual/SwiatloOprawy.cs) — tylko z włączoną oprawą (F9).</summary>
+        readonly Visual.SwiatloOprawy swiatlo = new Visual.SwiatloOprawy();
         /// <summary>Czy znaki nieznanego były w tej klatce widoczne (game.ts: znakowWidac).</summary>
         public int znakowWidac;
 
@@ -53,10 +55,23 @@ namespace Trzewia.Rysunek
             var L = global::Trzewia.Rdzen.Wydajnosc.licznik;
             if (t < 0) t = global::Trzewia.Rdzen.Wydajnosc.Teraz();
             var eng = rycina;
+            // oprawa walki (etap 1): źródła światła tej klatki zbierane przed postaciami — ich krawędź łapie ogień i piec
+            var oprawa = Visual.VisualConfig.Aktywne(Visual.VisualConfig.Swiatlo);
+            if (oprawa) swiatlo.Zbierz(sim, cam, teraz); else Visual.SwiatloOprawy.Uniewaznij();
             ctx.save();
             // wygładzanie zawsze: płyta bywa większa od bufora (skala ekranu), a najbliższy sąsiad szarpał kreskę
             ctx.imageSmoothingEnabled = true;
-            eng.rysuj(ctx, cam, ustawienia.jasnosc);
+            if (oprawa)
+            {
+                // tło (skała, ściany, korytarze): ciemniej, mniej koloru — plan akcji rozjaśni potem mapa świateł
+                Visual.SwiatloOprawy.start();
+                ctx.save();
+                ctx.filter = Visual.VisualConfig.Swiatla.FiltrTla;
+                eng.rysuj(ctx, cam, ustawienia.jasnosc);
+                ctx.restore();
+                Visual.SwiatloOprawy.znacz(8);
+            }
+            else eng.rysuj(ctx, cam, ustawienia.jasnosc);
             // fresk: faktura tynku przyklejona do świata — jedzie razem ze skałą, gdy przesuwasz kamerę
             if (eng.fresk) Fresk.tynkSwiata(ctx, cam);
             t = L.znacz(Czesc.rycina, t);
@@ -138,6 +153,8 @@ namespace Trzewia.Rysunek
             RysDlon.rysujDlon(ctx, sim, cam, teraz);
             RysDlonDemona.rysujDlonDemona(ctx, sim, cam, teraz);
             RysAniol.rysujAniola(ctx, sim, cam, teraz);
+            // oprawa walki (etap 1): mapa świateł, poświata, błyski zdarzeń, przygaszenie przy konaniu bossa, winieta
+            if (oprawa) swiatlo.Naloz(ctx, sim, cam, teraz);
             if (pauza)
             {
                 // czas stoi: świat przygasa (4: a na nim plan rozkazów — rysujRozkazy)
