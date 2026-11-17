@@ -1,0 +1,43 @@
+{
+ "w": 1366,
+ "h": 820,
+ "lw": 1366,
+ "lh": 820,
+ "sceny": [
+  {
+   "nazwa": "menu",
+   "rodzaj": "menu",
+   "teraz": 100000
+  },
+  {
+   "nazwa": "taras",
+   "rodzaj": "gra",
+   "ziarno": 3,
+   "tik": 2400,
+   "x": 96,
+   "y": 26,
+   "zoom": 12,
+   "teraz": 100000
+  },
+  {
+   "nazwa": "walka",
+   "rodzaj": "gra",
+   "ziarno": 3,
+   "tik": 97408,
+   "x": null,
+   "y": null,
+   "zoom": 14,
+   "teraz": 100000
+  },
+  {
+   "nazwa": "kona",
+   "rodzaj": "gra",
+   "ziarno": 3,
+   "tik": 101600,
+   "x": null,
+   "y": null,
+   "zoom": 14,
+   "teraz": 100000
+  }
+ ]
+}

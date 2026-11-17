@@ -80,11 +80,11 @@ function rozwinGlob(od, wzorzec) {
   return fs.readdirSync(folder).filter((f) => re.test(f)).sort().map((f) => folderWz + f);
 }
 
-/** Kod strony: wszystko, co eksportuje `wejscie`, pod globalną nazwą PIEKARNIA. */
-export async function zbuduj(wejscie, podmiany = {}) {
+/** Kod strony: wszystko, co eksportuje `wejscie`, pod globalną nazwą PIEKARNIA (`alias` — np. „@krag” dla Kręgu Trzeciego). */
+export async function zbuduj(wejscie, podmiany = {}, alias = {}) {
   const w = await build({
     entryPoints: [path.resolve(wejscie)], bundle: true, write: false, format: 'iife', globalName: 'PIEKARNIA',
-    platform: 'browser', target: 'es2022', logLevel: 'error',
+    platform: 'browser', target: 'es2022', logLevel: 'error', alias,
     loader: { '.png': 'dataurl', '.webp': 'dataurl', '.jpg': 'dataurl', '.jpeg': 'dataurl', '.svg': 'dataurl', '.css': 'empty' },
     define: { 'import.meta.env.DEV': 'false' },
     plugins: [wtyczkaVite(podmiany)],
