@@ -5,8 +5,8 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 ## Stan
 
 - [x] Etap 0 — rozpoznanie i narzędzia
-- [x] Etap 1 — światło i kontrast (system ogólny, na walce z demonem) (czeka na „dalej”)
-- [ ] Etap P — przeniesienie kręgu trzeciego (Cerber) z `krag-3-beta/` do C# (nowy etap, patrz „Decyzje”)
+- [x] Etap 1 — światło i kontrast (system ogólny, na walce z demonem); błyski do dostrojenia później (decyzja 16.11)
+- [x] Etap P — przeniesienie kręgu trzeciego (Cerber) z `krag-3-beta/` do C# (czeka na „dalej”)
 - [ ] Etap 2 — czytelność
 - [ ] Etap 3 — „uderzenie”
 - [ ] Etap 4 — cutscenki
@@ -143,12 +143,31 @@ złota eksplozja konania z Alphy 1); z oprawą wyłączoną pole gry identyczne 
 Przeniesienie z `krag-3-beta/` (TS) do `trzewia-cs/` tak jak reszta portu: te same nazwy, ta sama logika i liczby,
 symulacja bit w bit (testy złote z TS), rysunek porównany z TS. To nie zmienia balansu — to ta sama gra, tylko w C#.
 - [x] Krąg trzeci stoi w C# **obok** Alphy 1, jako osobny tryb (decyzja użytkownika 16.11).
-- [ ] Symulacja kręgu (obżarstwo, ulewa, okup, Cerber podjada kosz, zabijanie żarłoków), Cerber jako boss: trzy paski
-      głów, ścinanie, dłoń przy Cerberze.
-- [ ] Rysunek: krąg (lej, deszcz, błoto, potępieni), loch z pieczęcią, Cerber składany z wypieczonych obrazków
-      (`obrazy/cerber/`, `cerber-rig.ts`), żarłok, rany.
-- [ ] Wstęp: film kręgu i scena wejścia.
-- [ ] Zrzuty bez okna (`--zrzuty-walki`) już na Cerberze.
+- [x] Symulacja kręgu (obżarstwo, ulewa, okup, Cerber podjada kosz, zabijanie żarłoków), Cerber jako boss: trzy paski
+      głów, ścinanie, dłoń przy Cerberze. `Symulacja/Krag.cs`, `Nastawy/Krag.cs`, `KragNadpisy.cs`; przełącznik
+      `Krag.Ustaw(bool)`. Bit w bit z TS: 20 partii bota do 60 000 tików, test pieczęci dla 12 ziaren, pełne partie
+      ziaren 3 i 5 (`KragTesty`).
+- [x] Rysunek: krąg (lej z tarasami wyższych kręgów, przepaść do Dis, deszcz z gradem i błyskawicami, błoto z kośćmi
+      i szczątkami, potępieni na tarasie i w trzewiach, krople, ciała w ścianach), loch kręgu (krew na murach,
+      wisielcy, kopce czaszek), pieczęć zejścia, Cerber składany z wypieczonych obrazków (`Rysunek/Krag/Cerber.cs`:
+      szkielet, części, poza z ruchów walki), pięć sposobów zabijania, żarłok z obrazków, trzy paski głów,
+      ścięte głowy na posadzce. Duszki: `straznik-krag` (Cienie Żarłoków) i `rycerz-6-zK-sciecie` (ruch „Ścięcie głowy”).
+- [x] Wstęp: film kręgu (75 s, 12 ujęć) i scena wejścia bez sterowania (`Aplikacja/FilmKregu.cs`, `WstepKregu.cs`).
+- [x] Menu: pozycja „Krąg Trzeci” / „Alpha 1” przełącza tryb (zapamiętany w ustawieniach); osobne pliki zapisu,
+      osiągnięć i atlasu; teksty interfejsu, samouczka, atlasu i kroniki kręgu.
+- [x] Zrzuty bez okna (`--zrzuty-walki … --krag`) już na Cerberze.
+- [x] Porównanie z TS (`narzedzia/ekrany/porownaj-krag.mjs`, test `PorownanieEkranowKregu`): ta sama partia bota,
+      ta sama kamera i zegar — średnia różnica 2,4–2,6/255 w scenach gry (0,4–0,9% pikseli różnych o > 24).
+- [x] Unity: kopia kodu i danych (`trzewia-unity/narzedzia/kopiuj_z_trzewia_cs.py`).
+
+Świadome różnice od TS (do decyzji, jeśli coś ma być inaczej):
+- Teksty kręgu w TS powstały automatyczną zamianą słów i miały błędy odmiany („pieczęć zejścia zaczął pękać”) —
+  w C# poprawione. Opisy tablic atlasu „Pieczęć zejścia”, „Cerber” i „Ostatnie uderzenie” napisane od nowa (w TS
+  zostały zdania o kamiennym demonie z aureolą); tablica „Walka Cerbera” odgrywa ruchy psem (w TS — dawnym demonem).
+- Film i scena wejścia nie ruszają w samouczku i w grze obserwowanej (w TS samouczek też dostawał film).
+- Ustawienia i klawisze są wspólne dla obu trybów (w TS — osobne, bo to była osobna gra).
+- Rysunek 2D Cerbera i żarłoka (zastępczy w TS, póki obrazki się wczytują) nie jest przeniesiony — w C# obrazki
+  są zawsze wczytane.
 
 ## Etap 2 — czytelność
 
