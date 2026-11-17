@@ -1,7 +1,8 @@
 // Uruchamia funkcję z pliku TS gry w Chromium (V8 jak w grze w Electronie — ważne dla Math.sin/cos/atan2)
 // i wypisuje jej wynik jako JSON.
 //   node narzedzia/wzorce/chromium.mjs <plik-wejścia.ts> <funkcja> '<argumenty JSON>' [plik-wyniku]
-// Plik wejścia importuje kod z alpha-1/src (esbuild pakuje wszystko w jeden skrypt).
+// Plik wejścia importuje kod z alpha-1/src (esbuild pakuje wszystko w jeden skrypt), a wzorce kręgu (krag/*.ts) —
+// z krag-3-beta/src przez „@krag/…”: KRAG=<folder krag-3-beta> node chromium.mjs krag/zlote.ts …
 // OSOBNO=1: pierwszy argument to lista, a funkcja idzie dla każdego jej elementu w ŚWIEŻEJ stronie (wynik — lista).
 // Po co: V8 po kilkunastu wywołaniach kompiluje funkcję TurboFanem, który ma własny, wbudowany sort krótkich tablic —
 // sortowanie z porównaniem losowym (sim/ruiny.ts) daje wtedy inny wynik niż „na zimno”. W grze świat buduje się raz,
@@ -17,9 +18,11 @@ const globalne = execSync('npm root -g').toString().trim();
 const { chromium } = require(path.join(globalne, 'playwright'));
 
 const [wejscie, funkcja, argJson = '[]', plikWyniku] = process.argv.slice(2);
+// Krąg Trzeci: wzorce trybu kręgu importują „@krag/…” — KRAG=<folder krag-3-beta> (gałąź claude/youthful-wozniak-dqa6s9)
+const alias = process.env.KRAG ? { '@krag': path.resolve(process.env.KRAG, 'src') } : {};
 const wynikBudowy = await build({
   entryPoints: [path.resolve(wejscie)], bundle: true, write: false, format: 'iife', globalName: 'WZORZEC',
-  platform: 'browser', target: 'es2022', logLevel: 'error',
+  platform: 'browser', target: 'es2022', logLevel: 'error', alias,
 });
 const kod = wynikBudowy.outputFiles[0].text;
 const przegladarka = await chromium.launch();
