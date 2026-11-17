@@ -27,6 +27,13 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 4. **Nagranie było z obserwatorium (gra bota).** To tłumaczy zamrożony obraz po końcu gry (rycerz „celuje w pustkę”):
    w obserwatorium świat stoi do restartu partii. Spadek wiary o 30 przy dłoni to Cud rzucony przez bota.
 
+## Decyzje użytkownika (17.11, po raporcie etapu P)
+
+1. Przełącznik trybu jako ostatnia pozycja menu — zostaje.
+2. Ustawienia i klawisze — wspólne dla Alphy 1 i Kręgu Trzeciego.
+3. **Zawsze pracujemy na najnowszej wersji gry.** Najnowsza to Krąg Trzeci (Cerber), więc etapy 2–5 robimy na nim
+   (w trybie kręgu); Alpha 1 zostaje, jaka jest.
+
 ## Ustalenia z etapu 0, które zmieniają plan
 
 - **Walki z Cerberem nie ma w `trzewia-cs/`.** Cerber jest tylko w `krag-3-beta/` (TypeScript, gałąź
