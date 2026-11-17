@@ -254,7 +254,7 @@ namespace Trzewia.Symulacja
             }
             else if (a == "tarcza")
             {
-                sim.gdzie(st.x, st.y).log("Przed demonem wyrasta z podłogi dłoń z otchłani — otwarta, wnętrzem do rycerza. Ciosy się od niej odbijają.", "otchlan", "dlon-tarcza");
+                sim.gdzie(st.x, st.y).log(Krag.T("Przed demonem wyrasta z podłogi dłoń z otchłani — otwarta, wnętrzem do rycerza. Ciosy się od niej odbijają.", "Przed Cerberem wyrasta z podłogi dłoń z otchłani — otwarta, wnętrzem do rycerza. Ciosy się od niej odbijają."), "otchlan", "dlon-tarcza");
             }
             else
             {
@@ -262,7 +262,7 @@ namespace Trzewia.Symulacja
                 r.zamiar = "staje — przed nim pęka strop, sypie się gruz"; r.zamiarDo = r.przystanDo;
                 sim.gdzie(st.x + 1, st.y).log("Ze stropu krypty wyłaniają się szpony dłoni z otchłani — drą skałę nad przejściem.", "otchlan", "dlon-zawal");
             }
-            zapisz(sim, "swiat", $"Dłoń z otchłani pomaga demonowi: {a} → {kogo}", Math.Floor(st.x), Math.Floor(st.y));
+            zapisz(sim, "swiat", $"{Krag.T("Dłoń z otchłani pomaga demonowi: ", "Dłoń z otchłani pomaga Cerberowi: ")}{a} → {kogo}", Math.Floor(st.x), Math.Floor(st.y));
         }
 
         /// <summary>Rycerz w dłoni: unoszony i kołysany razem z nią.</summary>
@@ -343,7 +343,7 @@ namespace Trzewia.Symulacja
             for (var k = 0; k < 12; k++) sim.spark(st.x + sim.rng.range(0, D.zawal.szer), st.strop.Value + 1 + sim.rng.range(0, st.dno.Value - st.strop.Value - 1), "dust");
             st.sciana = new ScianaGruzu { kafle = kafle, x = st.x, strop = st.strop.Value, dno = st.dno.Value, od = sim.tick, @do = sim.tick + D.zawal.trwa };
             sim.stat.zawalow = sim.stat.zawalow + 1;
-            sim.gdzie(st.x + 1, st.dno.Value - 1).log("Strop krypty zawalił się między rycerzem a demonem. Demon jest odcięty — i zrasta się szybciej. Robotnicy mogą rozkuć gruz.", "krew", "zawal");
+            sim.gdzie(st.x + 1, st.dno.Value - 1).log(Krag.T("Strop krypty zawalił się między rycerzem a demonem. Demon jest odcięty — i zrasta się szybciej. Robotnicy mogą rozkuć gruz.", "Strop krypty zawalił się między rycerzem a Cerberem. Cerber jest odcięty — i zrasta się szybciej. Grabarze mogą rozkuć gruz."), "krew", "zawal");
             zapisz(sim, "swiat", $"zawał: ściana gruzu {kafle.Count} kafli", st.x, st.dno.Value - 1);
         }
 
@@ -393,17 +393,17 @@ namespace Trzewia.Symulacja
         /// <summary>Narzędzie dewelopera: akcja dłoni od razu (w walce z demonem).</summary>
         public static string devDlonDemona(Sim sim, string a)
         {
-            if (sim.lud.pomnik?.faza != "walka") return "Dłoń pomaga tylko w walce z demonem (najpierw „rozbij pomnik”).";
+            if (sim.lud.pomnik?.faza != "walka") return Krag.T("Dłoń pomaga tylko w walce z demonem (najpierw „rozbij pomnik”).", "Dłoń pomaga tylko w walce z Cerberem (najpierw „rozbij pomnik”).");
             var st = stanDloniDemona(sim);
             if (!string.IsNullOrEmpty(st.akcja)) return "Dłoń już coś robi.";
             var dm = demon(sim);
             var r = dm != null ? rycerzPrzy(sim, dm) : null;
-            if (dm == null || r == null) return "Nie ma demona albo rycerza.";
+            if (dm == null || r == null) return Krag.T("Nie ma demona albo rycerza.", "Nie ma Cerbera albo rycerza.");
             var ok = a == "rzut" ? ustawRzut(sim, st, dm, r) : a == "tarcza" ? ustawTarcze(sim, st, dm, r) : ustawZawal(sim, st, dm, r);
-            if (!ok) return a == "zawal" ? "Rycerz za blisko albo za daleko od demona — nie ma gdzie zawalić stropu." : "Nie ma gdzie wyrosnąć dłoni.";
+            if (!ok) return a == "zawal" ? Krag.T("Rycerz za blisko albo za daleko od demona — nie ma gdzie zawalić stropu.", "Rycerz za blisko albo za daleko od Cerbera — nie ma gdzie zawalić stropu.") : "Nie ma gdzie wyrosnąć dłoni.";
             if (st.sciana != null && a == "zawal") return "Ściana gruzu już stoi.";
             zacznij(sim, st, a, r);
-            return $"Dłoń z otchłani: {(a == "rzut" ? "rzut rycerzem" : a == "tarcza" ? "tarcza przed demonem" : "zawał stropu")}.";
+            return $"Dłoń z otchłani: {(a == "rzut" ? "rzut rycerzem" : a == "tarcza" ? Krag.T("tarcza przed demonem", "tarcza przed Cerberem") : "zawał stropu")}.";
         }
     }
 }

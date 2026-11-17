@@ -39,8 +39,8 @@ namespace Trzewia.Symulacja
             u.Add(new Urobek { x = x, y = y, rodzaj = rodzaj, ile = ile, tik = sim.tick });
             // kronika sumuje urobek z krótkiego okna w jeden wpis
             var nazwa = rodzaj == "zelazo" ? "żelaza" : "złota";
-            sim.gdzie(x + 0.5, y + 0.5).log($"Robotnicy wykuli kruszec: +{JS.S(ile)} {nazwa}.", "swiat",
-                "urobek-" + rodzaj, n => $"Robotnicy wykuli kruszec: +{JS.S(n * ile)} {nazwa}.");
+            sim.gdzie(x + 0.5, y + 0.5).log($"{Krag.T("Robotnicy wykuli kruszec: +", "Grabarze wykuli kruszec: +")}{JS.S(ile)} {nazwa}.", "swiat",
+                "urobek-" + rodzaj, n => $"{Krag.T("Robotnicy wykuli kruszec: +", "Grabarze wykuli kruszec: +")}{JS.S(n * ile)} {nazwa}.");
         }
     }
 }

@@ -254,8 +254,8 @@ namespace Trzewia.Symulacja
                 {
                     b.od = sim.tick;
                     sim.gdzie(sp.c, sp.ye - 1).log(n == 0
-                        ? "Szyb do starej komnaty wykopany do dna. Robotnicy stawiają rusztowanie i od dołu osadzają kamienne stopnie."
-                        : "Szyb na przedproże lochu wykopany do dna. Robotnicy stawiają rusztowanie i od dołu osadzają kamienne stopnie.", "swiat", $"schody-start-{n}");
+                        ? Krag.T("Szyb do starej komnaty wykopany do dna. Robotnicy stawiają rusztowanie i od dołu osadzają kamienne stopnie.", "Szyb do starej komnaty wykopany do dna. Grabarze stawiają rusztowanie i od dołu osadzają kamienne stopnie.")
+                        : Krag.T("Szyb na przedproże lochu wykopany do dna. Robotnicy stawiają rusztowanie i od dołu osadzają kamienne stopnie.", "Szyb na przedproże lochu wykopany do dna. Grabarze stawiają rusztowanie i od dołu osadzają kamienne stopnie."), "swiat", $"schody-start-{n}");
                 }
                 if (murarzy == 0) continue;
                 b.postep += Math.Min(murarzy, BUDOWA_SCHODOW.murarzy) * (b.kreci == true ? 1 : BUDOWA_SCHODOW.bezKolowrotu) / BUDOWA_SCHODOW.tikowNaStopien;

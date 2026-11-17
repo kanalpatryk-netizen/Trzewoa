@@ -99,7 +99,7 @@ namespace Trzewia.Symulacja
                     if (stanPrzyObozie(sim, c, naDroge, droga))
                     {
                         c.modliPrzyObozie = true;
-                        zamiar("czeka przy obozie, aż robotnicy dokopią drogę do krypty", Job.STOI, Z);
+                        zamiar(Krag.T("czeka przy obozie, aż robotnicy dokopią drogę do krypty", "czeka przy obozie, aż grabarze dokopią drogę do krypty"), Job.STOI, Z);
                         return;
                     }
                 }
@@ -162,7 +162,7 @@ namespace Trzewia.Symulacja
                     {
                         c.jx = kx; c.jy = ky;
                         if (d != null) naDroge(d, c.jx, c.jy);
-                        zamiar($"niesie jedzenie: {(komu.rola == "rycerz" ? "rycerz" : "pobożny")} #{JS.S(komu.id)}", Job.DOSTAWA, d != null ? podroz(d) : Z);
+                        zamiar($"niesie jedzenie: {(komu.rola == "rycerz" ? "rycerz" : Krag.T("pobożny", "mnich"))} #{JS.S(komu.id)}", Job.DOSTAWA, d != null ? podroz(d) : Z);
                         return;
                     }
                     if (budzetDrog() <= 0) { zamiar("zastanawia się, którędy iść", Job.STOI, 30); return; }
@@ -199,7 +199,7 @@ namespace Trzewia.Symulacja
                     if (drogaNiegotowa(sim, c) && stanPrzyObozie(sim, c, naDroge, droga))
                     {
                         c.modliPrzyObozie = true;
-                        zamiar("czeka przy obozie, aż robotnicy dokopią drogę do krypty", Job.STOI, Z);
+                        zamiar(Krag.T("czeka przy obozie, aż robotnicy dokopią drogę do krypty", "czeka przy obozie, aż grabarze dokopią drogę do krypty"), Job.STOI, Z);
                         return;
                     }
                     c.jx = miejsceWSzeregu(sim, c); c.jy = w.przedsionekY; c.dig = 0;
@@ -348,7 +348,7 @@ namespace Trzewia.Symulacja
                     if (d != null)
                     {
                         naDroge(d, sp.x, sp.y); c.dostawaDla = komu.id; c.bezczynnyOd = null;
-                        zamiar($"bierze jedzenie z wiadra dla: {(komu.rola == "rycerz" ? "rycerz" : "pobożny")} #{JS.S(komu.id)}", Job.ZBIERA, podroz(d));
+                        zamiar($"bierze jedzenie z wiadra dla: {(komu.rola == "rycerz" ? "rycerz" : Krag.T("pobożny", "mnich"))} #{JS.S(komu.id)}", Job.ZBIERA, podroz(d));
                         return;
                     }
                 }

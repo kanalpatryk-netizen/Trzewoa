@@ -104,7 +104,7 @@ namespace Trzewia.Symulacja
             if (st.klan >= 0 && sim.klan(st.klan) != null) return (int)st.klan;
             var w = sim.world;
             var k = sim.newClan(Race.TROLL, w.coreX, w.przedsionekY);
-            k.name = "Strażnicy Snu";
+            k.name = Krag.T("Strażnicy Snu", "Cienie Żarłoków");
             k.cecha = null;
             k.devotion = 0;
             st.klan = k.id;
@@ -165,8 +165,8 @@ namespace Trzewia.Symulacja
                     foreach (var c in sim.creatures) if (!c.dead && walczacy(c)) c.hp = Math.Max(c.hp, maxHp(sim, c));
                     var w = sim.world;
                     sim.gdzie(w.coreX, w.przedsionekY).log(
-                        st.fala >= S.fale.Length ? "Ostatni Strażnik Snu rozsypał się w pył. Nikt już nie strzeże twojego snu."
-                            : $"Fala Strażników Snu pokonana. {(POMNIK.wlaczony ? "Pomnik" : "Skorupa")} znów pęka pod modlitwą (+{JS.S(S.nagrodaWiary)} wiary).", "wiara", $"fala-koniec-{JS.S(st.fala)}");
+                        st.fala >= S.fale.Length ? Krag.T("Ostatni Strażnik Snu rozsypał się w pył. Nikt już nie strzeże twojego snu.", "Ostatni Cień Żarłoka rozsypał się w pył. Nikt już nie strzeże twojego snu.")
+                            : $"{Krag.T("Fala Strażników Snu pokonana. ", "Fala Cieni Żarłoków pokonana. ")}{(POMNIK.wlaczony ? Krag.T("Pomnik", "Pieczęć") : "Skorupa")} znów pęka pod modlitwą (+{JS.S(S.nagrodaWiary)} wiary).", "wiara", $"fala-koniec-{JS.S(st.fala)}");
                     zapisz(sim, "rytual", $"fala {JS.S(st.fala)} pokonana", w.coreX, w.przedsionekY);
                 }
                 // zwykła fala bez walki zasypia — skorupa się zrasta
@@ -177,7 +177,7 @@ namespace Trzewia.Symulacja
                     st.fala++;
                     foreach (var k in sim.clans) if (!k.dead && k.rytual > 0) k.rytual = 0;
                     var w = sim.world;
-                    sim.gdzie(w.coreX, w.przedsionekY).log($"Strażnicy Snu nie mieli z kim walczyć i wrócili do skały. {(POMNIK.wlaczony ? "Pomnik zrósł się" : "Skorupa zrosła się")} tam, gdzie pękał{(POMNIK.wlaczony ? "" : "a")}.", "otchlan", $"fala-sen-{JS.S(st.fala)}");
+                    sim.gdzie(w.coreX, w.przedsionekY).log($"{Krag.T("Strażnicy Snu", "Cienie Żarłoków")} nie mieli z kim walczyć i wrócili do skały. {(POMNIK.wlaczony ? "Pomnik zrósł się" : "Skorupa zrosła się")} tam, gdzie pękał{(POMNIK.wlaczony ? "" : "a")}.", "otchlan", $"fala-sen-{JS.S(st.fala)}");
                 }
                 var def = fala(st.fala);
                 // (Alpha, etap 5: falę z demonem zaczyna pomnik)
@@ -252,9 +252,9 @@ namespace Trzewia.Symulacja
             sim.lud.straznicy!.od = sim.tick;
             var w = sim.world;
             sim.gdzie(w.coreX, w.przedsionekY).log(
-                def.boss == true && POMNIK.wlaczony ? $"Z gruzów Wielkiego Pomnika wstaje {aktywnyBoss().nazwa} — a z nim Strażnicy Snu ({JS.S(def.straznikow)}). Rani go tylko rycerz; gdy padnie, jesteś wolny."
+                def.boss == true && POMNIK.wlaczony ? $"{Krag.T("Z gruzów Wielkiego Pomnika wstaje ", "Z kręgu nad trzewiami zeskakuje do rozbitej pieczęci ")}{aktywnyBoss().nazwa}{Krag.T(" — a z nim Strażnicy Snu (", " — a z nim Cienie Żarłoków (")}{JS.S(def.straznikow)}{Krag.T("). Rani go tylko rycerz; gdy padnie, jesteś wolny.", "). Rani go tylko rycerz; gdy padnie, droga w dół stoi otworem.")}"
                     : def.boss == true ? $"Ostatnia fala: ze ściany przedsionka wynurza się {aktywnyBoss().nazwa}. Skorupa nie pęknie, dopóki stoi."
-                    : $"Strażnicy Snu wychodzą ze skały ({JS.S(def.straznikow)}). Dopóki żyją, {(POMNIK.wlaczony ? "pomnik" : "skorupa")} nie pęka.", "krew", $"fala-{JS.S(st.fala)}");
+                    : $"{Krag.T("Strażnicy Snu", "Cienie Żarłoków")} wychodzą ze skały ({JS.S(def.straznikow)}). Dopóki żyją, {(POMNIK.wlaczony ? Krag.T("pomnik", "pieczęć") : "skorupa")} nie pęka.", "krew", $"fala-{JS.S(st.fala)}");
             zapisz(sim, "rytual", $"fala {JS.S(st.fala + 1)}: {JS.S(def.straznikow)} Strażników{(def.boss == true ? " + boss" : "")}", w.coreX, w.przedsionekY);
         }
 
@@ -328,6 +328,30 @@ namespace Trzewia.Symulacja
             if (s.boss != null && tarczaChroni(sim)) { odbijOdTarczy(sim, od); return; }
             var d = s.boss != null ? aktywnyBoss().przyjmij(sim, s, od, dmg) : dmg;
             if (d <= 0) return;
+            // Krąg Trzeci: trzy paski — po jednym na głowę. Rana nie zbija paska bieżącej głowy poniżej zera: pustą głowę
+            // trzeba ściąć (rycerz — Walka). Gdy rycerza nie ma wśród żywych, głowę odrąbie ten, kto trafi w pusty pasek.
+            if (Krag.Wlaczony && s.boss == "demon")
+            {
+                var g = Walka.glowyCerbera(s);
+                if (g.biezaca != null)
+                {
+                    // (ostatni pasek: zostaje 1 punkt — pada dopiero od ścięcia trzeciej głowy)
+                    var dno = Math.Max(g.dno, 1);
+                    var zapas = Math.Max(0, s.hp - dno);
+                    if (d >= zapas)
+                    {
+                        d = zapas;
+                        if (!Walka.rycerzDoSciecia(sim))
+                        {
+                            s.hp = dno;
+                            sim.spark(s.x, s.y - 0.5, "hit");
+                            Walka.ucinaGlowe(sim, s, od);
+                            return;
+                        }
+                    }
+                }
+                if (d <= 0) { sim.spark(s.x, s.y - 0.5, "hit"); return; }
+            }
             var hp0 = s.hp;
             s.hp -= d;
             sim.spark(s.x, s.y - 0.5, "hit");
@@ -395,7 +419,7 @@ namespace Trzewia.Symulacja
             cel.hp -= rana;
             oznaczCios(sim, cel, c.boss != null);
             sim.spark(cel.x, cel.y - 0.5, "hit");
-            if (cel.hp <= 0) { sim.kill(cel, c.boss != null ? $"zmiażdżony przez: {aktywnyBoss().nazwa}" : "z ręki Strażnika Snu", "straznik"); return; }
+            if (cel.hp <= 0) { sim.kill(cel, c.boss != null ? $"zmiażdżony przez: {aktywnyBoss().nazwa}" : Krag.T("z ręki Strażnika Snu", "z ręki Cienia Żarłoka"), "straznik"); return; }
             if (!walczacy(cel)) ranStraznika(sim, c, cel, RACES[cel.race].strength * mnoznik(sim, cel, "sila") * S.oddajeCios);
         }
 

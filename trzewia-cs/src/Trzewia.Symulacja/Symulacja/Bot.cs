@@ -122,7 +122,7 @@ namespace Trzewia.Symulacja
                 case "relikwiarz":
                     return czoloDrogi(sim) < 0 ? (true, "droga gotowa — modlitwa ważniejsza niż kucie") : (false, "droga niegotowa — kucie ważniejsze");
                 case "miecz":
-                    return proc >= 70 ? (true, "blisko demona — mocniejszy rycerz się przyda") : (false, "za wcześnie — wolniejszy rycerz długo by się wlókł");
+                    return proc >= 70 ? (true, Krag.T("blisko demona — mocniejszy rycerz się przyda", "blisko Cerbera — mocniejszy rycerz się przyda")) : (false, "za wcześnie — wolniejszy rycerz długo by się wlókł");
                 case "kielich":
                 {
                     var glodni = zywi(sim).Any(c => c.hunger > 0.5);
@@ -376,7 +376,7 @@ namespace Trzewia.Symulacja
                     {
                         var k = kk.Value;
                         ok = wydajPolecenie(sim, c, "idz", k % w.w, JS.ToInt32(k / w.w)) == null;
-                        if (ok) mysl(sim, $"{imie(c)} rozkuwa gruz po zawale — demon jest odcięty");
+                        if (ok) mysl(sim, $"{imie(c)}{Krag.T(" rozkuwa gruz po zawale — demon jest odcięty", " rozkuwa gruz po zawale — Cerber jest odcięty")}");
                     }
                 }
                 else if (z == "plan")
@@ -430,7 +430,7 @@ namespace Trzewia.Symulacja
                         if (sim.wiara < 8 || !whisper(sim, "modl", c)) wydajPolecenie(sim, c, "idz", w.coreX + (JS.Tak(c.id % 2) ? -3 : 3), w.przedsionekY);
                     }
                     foreach (var c in zRola(sim, "rycerz")) if (!wLochu(c)) wPosterunku(c);
-                    mysl(sim, "brama lochu podniesiona — pobożni z kotła schodzą pod pomnik, rycerze wchodzą do lochu");
+                    mysl(sim, Krag.T("brama lochu podniesiona — pobożni z kotła schodzą pod pomnik, rycerze wchodzą do lochu", "brama lochu podniesiona — mnisi z kotła schodzą pod pomnik, rycerze wchodzą do lochu"));
                     return;
                 }
                 if (zaklinaja.Count < BRAMA.potrzeba)
@@ -438,7 +438,7 @@ namespace Trzewia.Symulacja
                     var k = w.kociol;
                     var wolni = JS.Sort(pobozni.Where(c => c.polecenie == null && !wLochu(c) && c.hunger < 0.6).ToList(),
                         (a, b) => JS.Hypot(a.x - k.x, a.y - k.y) - JS.Hypot(b.x - k.x, b.y - k.y)).Take((int)(BRAMA.potrzeba - zaklinaja.Count)).ToList();
-                    if (wolni.Count > 0 && JS.Tak(wydajDoKotla(sim, wolni.Select(c => c.id).ToList()).przyjeli)) mysl(sim, "przy kotle zaklina za mało pobożnych — dosyłam drugiego");
+                    if (wolni.Count > 0 && JS.Tak(wydajDoKotla(sim, wolni.Select(c => c.id).ToList()).przyjeli)) mysl(sim, Krag.T("przy kotle zaklina za mało pobożnych — dosyłam drugiego", "przy kotle zaklina za mało mnichów — dosyłam drugiego"));
                 }
                 return;
             }
@@ -459,7 +459,7 @@ namespace Trzewia.Symulacja
             p.bramaOd = sim.tick;
             var pp = w.przedproze;
             foreach (var c in zRola(sim, "rycerz")) if (!wLochu(c)) wydajPolecenie(sim, c, "idz", pp.x1 - 1 - (c.id % 3), pp.y1);
-            mysl(sim, "brama lochu zamknięta — dwóch pobożnych do kotła, rycerze pod bramę");
+            mysl(sim, Krag.T("brama lochu zamknięta — dwóch pobożnych do kotła, rycerze pod bramę", "brama lochu zamknięta — dwóch mnichów do kotła, rycerze pod bramę"));
         }
 
         static void rycerzNaFale(Sim sim)
@@ -525,7 +525,7 @@ namespace Trzewia.Symulacja
                 if (wydajPolecenie(sim, c, "idz", salaX + (JS.Tak(c.id % 2) ? -8 : 8), salaY) == null)
                 {
                     p.odeslani.add(c.id);
-                    mysl(sim, $"{imie(c)} odchodzi od demona — nie ma czym walczyć");
+                    mysl(sim, $"{imie(c)}{Krag.T(" odchodzi od demona — nie ma czym walczyć", " odchodzi od Cerbera — nie ma czym walczyć")}");
                     continue;
                 }
                 if (w.brama.x1 >= w.brama.x0 && w.wLochu(c.x, c.y))
@@ -535,7 +535,7 @@ namespace Trzewia.Symulacja
                     if (wydajPolecenie(sim, c, "idz", kx, L.y1) == null)
                     {
                         p.odeslani.add(c.id);
-                        mysl(sim, $"{imie(c)} odchodzi od demona na drugi koniec lochu — krata opadła");
+                        mysl(sim, $"{imie(c)}{Krag.T(" odchodzi od demona na drugi koniec lochu — krata opadła", " odchodzi od Cerbera na drugi koniec lochu — krata opadła")}");
                     }
                 }
             }
@@ -544,7 +544,7 @@ namespace Trzewia.Symulacja
                 if (c.polecenie?.typ == "idz" || c.polecenie?.typ == "zbroja")
                 {
                     odwolajPolecenie(sim, c);
-                    if (p.oslona == null) { p.oslona = new[] { JS.Round(dx), JS.Round(dy) }; mysl(sim, "rycerz rusza na demona — bezbronni odchodzą w górę drogi"); }
+                    if (p.oslona == null) { p.oslona = new[] { JS.Round(dx), JS.Round(dy) }; mysl(sim, Krag.T("rycerz rusza na demona — bezbronni odchodzą w górę drogi", "rycerz rusza na Cerbera — bezbronni odchodzą w górę drogi")); }
                 }
             }
         }
@@ -571,12 +571,12 @@ namespace Trzewia.Symulacja
             var faza = stanPomnika(sim).faza;
             var ryc = zRola(sim, "rycerz").FirstOrDefault();
             if (styl != "speedrun" && ryc != null && pamiec(sim).szalNaDemona != true && (faza == "rozpada" || faza == "wychodzi" || faza == "walka") && wolna >= 30)
-                return new Potrzeba { rodzaj = "szal", zDaleka = true, czemu = "szał krwi — rycerz uderzy mocniej w demona" };
+                return new Potrzeba { rodzaj = "szal", zDaleka = true, czemu = Krag.T("szał krwi — rycerz uderzy mocniej w demona", "szał krwi — rycerz uderzy mocniej w Cerbera") };
             var trup = polegli(sim).FirstOrDefault();
             if (trup != null && wolna >= 100 && !walkaZDemonem(sim)) return new Potrzeba { rodzaj = "wskrzeszenie", zDaleka = true, czemu = $"wskrzeszam poległego ({NAZWA_ROLI[trup.rola].ToLowerInvariant()} #{JS.S(trup.id)})" };
             var p = pamiec(sim);
             if (sim.krew < 10 && sim.tick - (p.krewNiskoOd ?? sim.tick) > M && sim.tick - (p.wydalKrewT ?? -1e9) > 2 * M && role(sim).pobozny >= 2 && proc < 60)
-                return new Potrzeba { rodzaj = "ofiaraZycia", zDaleka = false, czemu = "krwi prawie nie ma — pobożny oddaje życie na ołtarzu" };
+                return new Potrzeba { rodzaj = "ofiaraZycia", zDaleka = false, czemu = Krag.T("krwi prawie nie ma — pobożny oddaje życie na ołtarzu", "krwi prawie nie ma — mnich oddaje życie na ołtarzu") };
             if (sim.krew < 30 && gotowy(sim, "sypialnia") != null) return new Potrzeba { rodzaj = "ofiaraKrwi", zDaleka = false, czemu = "krwi mało — ofiara krwi, potem sen w sypialni" };
             if (sim.wiara < 40 && wolna >= 70 && styl != "speedrun" && drogaGotowa(sim)) return new Potrzeba { rodzaj = "modlitwa", zDaleka = false, czemu = "brakuje wiary — modlitwa przy ołtarzu" };
             return null;
@@ -637,7 +637,7 @@ namespace Trzewia.Symulacja
             if (wydajPolecenie(sim, kto, "idz", o.x + 2 * s, o.y) == null)
             {
                 p.wezwany = kto.id; p.wezwanyCo = rodzaj; p.wezwanyOd = sim.tick;
-                mysl(sim, rodzaj == "szal" && potrzeba == null ? $"{imie(kto)} idzie do ołtarza — czeka z szałem krwi na demona"
+                mysl(sim, rodzaj == "szal" && potrzeba == null ? $"{imie(kto)}{Krag.T(" idzie do ołtarza — czeka z szałem krwi na demona", " idzie do ołtarza — czeka z szałem krwi na Cerbera")}"
                     : $"{imie(kto)} idzie do ołtarza: {NAZWA_RYTUALU[rodzaj].ToLowerInvariant()}");
             }
         }
@@ -687,7 +687,7 @@ namespace Trzewia.Symulacja
                 if (c.polecenie != null || p.wezwany == c.id || p.odprawia?.kto == c.id || p.odeslani.has(c.id)) continue;
                 if (whisper(sim, "modl", c)) poslal++;
             }
-            if (poslal > 0) mysl(sim, $"pobożni schodzą pod pomnik i się modlą ({JS.S(procentSkorupy(sim))}%)");
+            if (poslal > 0) mysl(sim, $"{Krag.T("pobożni schodzą pod pomnik i się modlą (", "mnisi schodzą pod pomnik i się modlą (")}{JS.S(procentSkorupy(sim))}%)");
         }
 
         static void rozsadny(Sim sim, double k)
@@ -707,7 +707,7 @@ namespace Trzewia.Symulacja
             if (!JS.Tak(p.wymarsz))
             {
                 var gotow = jedzenie(sim) >= 12 && sim.krew >= 40 && czoloDrogi(sim) < 0;
-                if (gotow || sim.tick > 8 * M) { p.wymarsz = sim.tick; mysl(sim, "wymarsz — pobożni schodzą pod pomnik"); }
+                if (gotow || sim.tick > 8 * M) { p.wymarsz = sim.tick; mysl(sim, Krag.T("wymarsz — pobożni schodzą pod pomnik", "wymarsz — mnisi schodzą pod pomnik")); }
             }
             if (JS.Tak(p.wymarsz) && k % 10 == 0) dopomnika(sim, 0.5);
         }
@@ -768,13 +768,13 @@ namespace Trzewia.Symulacja
             var p = pamiec(sim);
             if (!string.IsNullOrEmpty(p.mysl) && sim.tick - p.myslOd < MYSL_TIKOW) return p.mysl;
             var faza = stanPomnika(sim).faza;
-            if (faza == "walka" || faza == "wychodzi" || faza == "rozpada") return "walka z demonem — rycerz na demona, reszta z dala";
-            if (falaTrwa(sim)) return "fala Strażników — rycerz broni pobożnych pod pomnikiem";
+            if (faza == "walka" || faza == "wychodzi" || faza == "rozpada") return Krag.T("walka z demonem — rycerz na demona, reszta z dala", "walka z Cerberem — rycerz na Cerbera, reszta z dala");
+            if (falaTrwa(sim)) return Krag.T("fala Strażników — rycerz broni pobożnych pod pomnikiem", "fala Strażników — rycerz broni mnichów pod pomnikiem");
             if (czoloDrogi(sim) >= 0) return $"kopiemy drogę wiernych — zostało {nieWykopane(sim).Count} kafli";
             if (styl == "budowniczy" && !JS.Tak(p.wymarsz)) return "przygotowania przed wymarszem pod pomnik";
             var kuz = pokoj(sim, "kuznia");
             var zbroja = $"zbroja {sim.zbroja.Count}/{POMIESZCZENIA.kuznia.czesci.Length}";
-            return $"pobożni kruszą pomnik — {JS.S(procentSkorupy(sim))}%{(kuz != null ? $" · {zbroja}" : "")}";
+            return $"{Krag.T("pobożni kruszą pomnik — ", "mnisi kruszą pomnik — ")}{JS.S(procentSkorupy(sim))}%{(kuz != null ? $" · {zbroja}" : "")}";
         }
     }
 }

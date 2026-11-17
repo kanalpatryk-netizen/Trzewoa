@@ -235,6 +235,7 @@ namespace Trzewia.Symulacja
                 return;
             }
             var sp = spizarniaW(sim, c.jx, c.jy);
+            var glodPrzedPosilkiem = c.hunger;
             // Alpha, etap 3: je do syta (porcja za porcją)
             for (var n = 0; sp != null && n < 4 && (n == 0 || c.hunger > WIADRO.najadaDo) && sp.wez(1) > 0; n++)
             {
@@ -242,6 +243,8 @@ namespace Trzewia.Symulacja
                 c.hunger = Math.Max(0, c.hunger - LUD.posilek);
                 c.hp = Math.Min(maxHp(sim, c), c.hp + K.kesLeczy * leczenieZabytkow(sim));
             }
+            // Krąg Trzeci: żarłok — gdy jedzenia w bród, sięga po więcej (obżarstwo)
+            if (Krag.Wlaczony && sp != null) Krag.zarloczy(sim, c, glodPrzedPosilkiem, sp.wez);
             c.jt = 0;
         }
 

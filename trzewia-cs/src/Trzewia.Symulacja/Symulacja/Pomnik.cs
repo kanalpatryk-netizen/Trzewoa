@@ -68,13 +68,22 @@ namespace Trzewia.Symulacja
             return n;
         }
 
-        static readonly string[] LOG_STANU =
+        static readonly string[] LOG_STANU_ALFA =
         {
             "",
             "Wielki Pomnik pęka pod modlitwą — po kamiennym demonie biegną pierwsze rysy.",
             "Z pomnika odpadają kawałki kamienia. Coś w środku się porusza.",
             "Przez szczeliny pomnika bije czerwone światło. Demon w środku się budzi.",
         };
+        /// <summary>Krąg Trzeci: pieczęć zejścia zamiast pomnika.</summary>
+        static readonly string[] LOG_STANU_KREGU =
+        {
+            "",
+            "Pieczęć zejścia pęka pod modlitwą — po kamieniu biegną pierwsze rysy, a spod nich bije czerwone światło.",
+            "Z pieczęci odpadają kawałki. Gdzieś nad kręgiem Cerber podnosi trzy łby i węszy.",
+            "Przez szczeliny pieczęci bije łuna kręgu czwartego. Cerber już wie — i idzie po nich.",
+        };
+        static string[] LOG_STANU => Krag.Wlaczony ? LOG_STANU_KREGU : LOG_STANU_ALFA;
 
         /// <summary>Co tik symulacji (z tikLudu).</summary>
         public static void tikPomnika(Sim sim)
@@ -90,13 +99,13 @@ namespace Trzewia.Symulacja
                     s.stan = nowy; s.stanT = sim.tick;
                     for (var k = 0; k < 8; k++) sim.spark(w.coreX + 0.5 + sim.rng.range(-3, 3), w.coreY + sim.rng.range(-4, 3), "dust");
                     sim.gdzie(w.coreX + 0.5, w.coreY).log(JS.At(LOG_STANU, nowy) ?? LOG_STANU[3], "otchlan", $"pomnik-{JS.S(nowy)}");
-                    zapisz(sim, "rytual", $"pomnik demona — stan pękania {JS.S(nowy)} z {POMNIK.stany.Length}", w.coreX, w.coreY);
+                    zapisz(sim, "rytual", $"{Krag.T("pomnik demona — stan pękania ", "pieczęć zejścia — stan pękania ")}{JS.S(nowy)} z {POMNIK.stany.Length}", w.coreX, w.coreY);
                 }
                 if (pomnikRozbity(sim))
                 {
                     s.faza = "rozpada"; s.od = sim.tick; s.stan = POMNIK.stany.Length; s.stanT = sim.tick;
-                    sim.gdzie(w.coreX + 0.5, w.coreY).log("Wielki Pomnik rozpada się w gruz. Spod kamienia coś wstaje.", "krew", "pomnik-rozpad");
-                    zapisz(sim, "rytual", "pomnik demona rozpada się", w.coreX, w.coreY);
+                    sim.gdzie(w.coreX + 0.5, w.coreY).log(Krag.T("Wielki Pomnik rozpada się w gruz. Spod kamienia coś wstaje.", "Pieczęć zejścia pęka na kawałki — otwiera się zejście do kręgu czwartego. Nad kręgiem rozlega się wycie na trzy gardła."), "krew", "pomnik-rozpad");
+                    zapisz(sim, "rytual", Krag.T("pomnik demona rozpada się", "pieczęć zejścia rozpada się"), w.coreX, w.coreY);
                 }
                 return;
             }
@@ -122,7 +131,16 @@ namespace Trzewia.Symulacja
             s.cios = new CiosDemona { kto = od.id, x = demon.x, y = demon.y };
             sim.target.delete(demon.id);
             for (var k = 0; k < 10; k++) sim.spark(demon.x + sim.rng.range(-0.8, 0.8), demon.y - sim.rng.range(0, 2.5), "hit");
-            sim.gdzie(demon.x, demon.y).log($"{kto(sim, od).Split(new[] { " (" }, StringSplitOptions.None)[0]} zadaje ostatnie uderzenie. Demon z pomnika pęka od środka.", "koniec", "demon-cios");
+            var ktoBije = kto(sim, od).Split(new[] { " (" }, StringSplitOptions.None)[0];
+            if (Krag.Wlaczony)
+            {
+                // Krąg Trzeci: ostatni cios to ścięcie trzeciej głowy (albo cios, gdy głów ścięto mniej)
+                var glow = demon.glowyOdciete?.Count ?? 0;
+                sim.gdzie(demon.x, demon.y).log(glow >= 3
+                    ? $"{ktoBije} ścina ostatnią głowę. Bezgłowe cielsko Cerbera wali się we własną krew."
+                    : $"{ktoBije} zadaje ostatnie uderzenie. Cerber wyje na trzy gardła i wali się we własną krew.", "koniec", "Cerber-cios");
+            }
+            else sim.gdzie(demon.x, demon.y).log($"{ktoBije} zadaje ostatnie uderzenie. Demon z pomnika pęka od środka.", "koniec", "demon-cios");
             zapisz(sim, "rytual", $"ostatnie uderzenie: {kto(sim, od)}", Math.Floor(demon.x), Math.Floor(demon.y));
             return true;
         }
@@ -130,11 +148,11 @@ namespace Trzewia.Symulacja
         /// <summary>Demon rozsypał się: znikają Strażnicy, a lud jest wolny — koniec gry.</summary>
         static void koniecDemona(Sim sim, StanPomnika s)
         {
-            foreach (var c in zywiStraznicy(sim)) sim.kill(c, c.boss != null ? "pokonany — ostatnie uderzenie" : "rozsypał się razem z demonem", "walka");
+            foreach (var c in zywiStraznicy(sim)) sim.kill(c, c.boss != null ? "pokonany — ostatnie uderzenie" : Krag.T("rozsypał się razem z demonem", "rozsypał się razem z Cerberem"), "walka");
             var klan = klanLudu(sim);
             sim.ending = $"uwolnienie:{klan?.name ?? "Lud"}";
             double x = s.cios?.x ?? sim.world.coreX, y = s.cios?.y ?? sim.world.przedsionekY;
-            sim.gdzie(x, y).log("Demon z pomnika rozsypał się w pył. Nikt już nie strzeże twojego więzienia — jesteś wolny.", "koniec");
+            sim.gdzie(x, y).log(Krag.T("Demon z pomnika rozsypał się w pył. Nikt już nie strzeże twojego więzienia — jesteś wolny.", "Cerber leży martwy w kałuży krwi. Nikt już nie strzeże zejścia — potępieni schodzą do kręgu czwartego."), "koniec");
         }
 
         /// <summary>Narzędzie dewelopera: pomnik od razu w gruz.</summary>
@@ -150,7 +168,7 @@ namespace Trzewia.Symulacja
             var st = sim.lud.straznicy;
             if (st != null) st.fala = Math.Max(st.fala, fala);
             else sim.lud.straznicy = new StanStraznikow { fala = fala, trwa = false, klan = -1, od = 0 };
-            return "Pomnik rozpada się — za chwilę wstanie demon.";
+            return Krag.T("Pomnik rozpada się — za chwilę wstanie demon.", "Pomnik rozpada się — za chwilę wstanie Cerber.");
         }
     }
 }

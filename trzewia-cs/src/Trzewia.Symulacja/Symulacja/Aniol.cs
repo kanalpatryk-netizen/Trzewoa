@@ -162,7 +162,7 @@ namespace Trzewia.Symulacja
         {
             sim.stat.darow = sim.stat.darow + 1;
             var txt = s.dar == "podkop" ? $"Dłoń anielska wykruszyła palcami {JS.S(s.wykute ?? 0)} kafli drogi wiernych."
-                : s.dar == "ludzie" ? "Dłoń anielska postawiła przy ołtarzu nowego robotnika."
+                : s.dar == "ludzie" ? Krag.T("Dłoń anielska postawiła przy ołtarzu nowego robotnika.", "Dłoń anielska postawiła przy ołtarzu nowego grabarza.")
                 : $"Z dłoni anielskiej spłynęło do relikwiarza {JS.S(s.krewDana ?? 0)} krwi.";
             sim.gdzie(s.x + 0.5, s.y).log(txt, "wiara", "aniol-dar");
         }
