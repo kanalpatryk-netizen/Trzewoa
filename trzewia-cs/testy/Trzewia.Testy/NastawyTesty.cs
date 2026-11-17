@@ -17,6 +17,8 @@ public class NastawyTesty
         int porownan = 0;
         foreach (var p in Rejestr.Pliki)
         {
+            // nastawy trybu Kręgu Trzeciego mają własny wzorzec z krag-3-beta (KragTesty.NastawyJakWKregu)
+            if (p.Key == "krag") continue;
             var cs = JsonDocument.Parse(NastawyJson.Wypisz(p.Value)).RootElement;
             Porownaj(wzorzec.GetProperty(p.Key), cs, p.Key, ref porownan);
         }
@@ -29,7 +31,7 @@ public class NastawyTesty
     /// </summary>
     static readonly HashSet<string> TylkoWCs = new() { "wyglad-menu.MENU.przyciskOzdobnik" };
 
-    static void Porownaj(JsonElement ts, JsonElement cs, string gdzie, ref int n)
+    internal static void Porownaj(JsonElement ts, JsonElement cs, string gdzie, ref int n)
     {
         switch (ts.ValueKind)
         {

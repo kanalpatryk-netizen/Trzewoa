@@ -21,6 +21,8 @@ namespace Trzewia.Nastawy
             new KeyValuePair<string, Type>("gora", typeof(NastawyGora)),
             new KeyValuePair<string, Type>("karty-ludu", typeof(NastawyKartyLudu)),
             new KeyValuePair<string, Type>("katedra", typeof(NastawyKatedra)),
+            // tryb Kręgu Trzeciego (krag-3-beta/src/nastawy/krag.ts) — dopisane ręcznie, generator czyta alpha-1
+            new KeyValuePair<string, Type>("krag", typeof(NastawyKrag)),
             new KeyValuePair<string, Type>("kruszce", typeof(NastawyKruszce)),
             new KeyValuePair<string, Type>("loch", typeof(NastawyLoch)),
             new KeyValuePair<string, Type>("lud", typeof(NastawyLud)),
