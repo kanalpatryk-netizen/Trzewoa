@@ -96,7 +96,7 @@ namespace Trzewia.Rysunek
             ctx.font = $"{Js.Js.S(Math.Max(12, o.w * 0.17))}px {Ink.SERIF}";
             ctx.fillStyle = Paleta.rgba(BARWA.atramentCichy, 0.6);
             ctx.textAlign = "center";
-            ctx.fillText("pomnik", o.x + o.w / 2, o.y + o.h - 4);
+            ctx.fillText(Krag.T("pomnik", "pieczęć"), o.x + o.w / 2, o.y + o.h - 4);
             ctx.restore();
         }
 
