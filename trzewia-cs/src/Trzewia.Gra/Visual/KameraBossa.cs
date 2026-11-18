@@ -78,6 +78,13 @@ namespace Trzewia.Visual
             Mnoznik = 1;
             if (stoj) { if (prowadzi) { ostZoom = cam.zoom; ostX = cam.x; ostY = cam.y; } return; }
             var w = sim.world;
+            // konanie bossa: kamera zostaje blisko (to chwila, której nie wolno przegapić) — wraca dopiero po nim
+            if (prowadzi && Czytelnosc.Aktywna && sim.lud.pomnik?.faza == "kona")
+            {
+                if (Math.Abs(cam.zoom - ostZoom) > 1e-6) { prowadzi = false; porzucone = true; }
+                else { ostX = cam.x; ostY = cam.y; }
+                return;
+            }
             if (!walka || boss == null)
             {
                 porzucone = false;
