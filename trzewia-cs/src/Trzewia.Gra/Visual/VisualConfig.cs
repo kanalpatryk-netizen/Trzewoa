@@ -100,6 +100,51 @@ namespace Trzewia.Visual
             public static double MniejBlyskow = 0.3;
         }
 
+        // ───────────── etap 2: czytelność (Visual/Czytelnosc.cs, Visual/PasekBossa.cs, Visual/KameraBossa.cs) ─────────────
+
+        /// <summary>
+        /// Liczby czytelności walki z bossem. Wymiary w pikselach ekranu przy 1080p — skalowane wysokością ekranu
+        /// (`Czytelnosc.SkalaUi` = wysokość / 1080). Barwy {r, g, b} 0–255. Czasy w ms czasu gry.
+        /// </summary>
+        public static class Czytelne
+        {
+            /// <summary>Pergamin (etykiety, sylwetki, znaki głów) i atrament (obrysy, cyfry).</summary>
+            public static double[] BarwaPergaminu = { 238, 226, 194 }, BarwaAtramentu = { 26, 16, 10 };
+
+            /// <summary>Postać za bossem, która na niego nachodzi: po bossie jeszcze raz jako sylwetka w pergaminie — krycie.</summary>
+            public static double SylwetkaAlfa = 0.35;
+            /// <summary>Postać przed bossem, która na niego nachodzi: jasny obrys — grubość (px) i krycie.</summary>
+            public static double ObrysPx = 1.6, ObrysAlfa = 0.85;
+
+            /// <summary>Znak głowy (I / II / III): promień względem wysokości Cerbera na ekranie, najmniej i najwięcej (px @1080p).</summary>
+            public static double ZnakGlowy = 0.05, ZnakMin = 11, ZnakMax = 17;
+            /// <summary>Rząd znaków tyle nad najwyższą głową (× wysokość Cerbera); odstęp między znakami (× ich średnica).</summary>
+            public static double ZnakNad = 0.1, ZnakOdstep = 1.15;
+            /// <summary>Puls głowy do ścięcia (Hz): zwykły i gdy pasek pusty, a głowa czeka na miecz.</summary>
+            public static double PulsHz = 1.1, PulsCzekaHz = 2.4;
+            /// <summary>Poświata wokół głowy do ścięcia: promień (× wysokość Cerbera), krycie zwykłe i gdy czeka na miecz.</summary>
+            public static double PoswiataGlowy = 0.13, PoswiataAlfa = 0.22, PoswiataCzekaAlfa = 0.5;
+
+            /// <summary>Pasek bossa: cel („zetnij trzy głowy”) widać tyle ms od początku walki, gaśnie przez ostatnie `CelGasnieMs`.</summary>
+            public static double CelMs = 5000, CelGasnieMs = 600;
+            /// <summary>Pasek ściętej głowy pęka i gaśnie przez tyle ms; zostaje z niego tyle krycia.</summary>
+            public static double PekniecieMs = 900, PoPeknieciuAlfa = 0.38;
+            /// <summary>Dymek z instrukcją przy pasku bossa: znika po tylu ms (albo po kliknięciu).</summary>
+            public static double DymekMs = 6000;
+
+            /// <summary>Etykiety nad postaciami: krój księgi, wielkość (px @1080p, nie mniej niż `EtykietaMin`), obrys (px).</summary>
+            public static double EtykietaPx = 18, EtykietaMin = 14, EtykietaObrys = 3;
+            /// <summary>Pojawianie i znikanie etykiety (ms); odstęp między etykietami przy rozsuwaniu (px).</summary>
+            public static double EtykietaMs = 150, EtykietaOdstep = 3;
+            /// <summary>Etykieta na ciele bossa: ciemna podkładka o tym kryciu.</summary>
+            public static double PodkladkaAlfa = 0.55;
+
+            /// <summary>Kamera w walce z bossem: tyle razy bliżej niż przed walką; czas dojścia (ms, stała wykładnicza).</summary>
+            public static double ZoomBossa = 1.25, ZoomMs = 420;
+            /// <summary>Postacie „najbliższe bossowi” (środek kadru między nimi a bossem): do tylu kafli od bossa, najwyżej tyle.</summary>
+            public static double BliskoBossa = 14; public static int IluNajblizszych = 3;
+        }
+
         // ───────────── klawisz debug ─────────────
 
         /// <summary>Kiedy ostatnio przełączono F9 (ms zegara gry) — krótki napis w rogu ekranu.</summary>

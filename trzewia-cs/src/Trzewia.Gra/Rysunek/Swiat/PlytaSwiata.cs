@@ -58,6 +58,9 @@ namespace Trzewia.Rysunek
             // oprawa walki (etap 1): źródła światła tej klatki zbierane przed postaciami — ich krawędź łapie ogień i piec
             var oprawa = Visual.VisualConfig.Aktywne(Visual.VisualConfig.Swiatlo);
             if (oprawa) swiatlo.Zbierz(sim, cam, teraz); else Visual.SwiatloOprawy.Uniewaznij();
+            // oprawa (etap 2): czytelność — początek klatki (układ płyty, boss z poprzedniej klatki, puste etykiety)
+            var czytelnosc = Visual.Czytelnosc.Aktywna;
+            if (czytelnosc) Visual.Czytelnosc.PoczatekKlatki(ctx);
             ctx.save();
             // wygładzanie zawsze: płyta bywa większa od bufora (skala ekranu), a najbliższy sąsiad szarpał kreskę
             ctx.imageSmoothingEnabled = true;
@@ -187,6 +190,8 @@ namespace Trzewia.Rysunek
             RysAniol.rysujAniola(ctx, sim, cam, teraz);
             // oprawa walki (etap 1): mapa świateł, poświata, błyski zdarzeń, przygaszenie przy konaniu bossa, winieta
             if (oprawa) swiatlo.Naloz(ctx, sim, cam, teraz);
+            // oprawa (etap 2): znaki głów bossa i etykiety nad postaciami — po świetle, żeby ich nie gasiło
+            if (czytelnosc) Visual.Czytelnosc.NadSwiatlem(ctx, sim, cam, teraz);
             if (pauza)
             {
                 // czas stoi: świat przygasa (4: a na nim plan rozkazów — rysujRozkazy)

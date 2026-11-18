@@ -274,6 +274,9 @@ namespace Trzewia.Rysunek
             // z tyłu schodów kręconych — przed wszystkimi (słup i stopnie, które je zasłaniają, nie mogą przykryć tych z przodu)
             double kolejnosc(Creature c) => c.y - wTle(c) * 0.3 - (zTyluSchodow(c) ? 1e4 : 0);
             JS.Sort(doRysowania, (a, b) => kolejnosc(a.c) - kolejnosc(b.c));
+            // oprawa (etap 2): postacie przy bossie — czy boss już stoi na płycie w tej kolejności
+            var czytelnosc = Visual.Czytelnosc.WKlatce;
+            var bossJuz = false;
 
             foreach (var wpis in doRysowania)
             {
@@ -347,6 +350,11 @@ namespace Trzewia.Rysunek
                     }
                 }
                 string cz;
+                // oprawa (etap 2): postać nachodzi na bossa — rysowana przed nim (stoi za nim): zapis, po bossie wróci jako
+                // sylwetka w pergaminie; rysowana po nim (stoi przed nim): jasny obrys (Visual.Czytelnosc)
+                if (czytelnosc && n == 1 && c.boss == null && Symulacja.Lud.rolaPostaci(c) != null
+                    && Visual.Czytelnosc.NaBossie(sx - h * 0.45, sy - h, sx + h * 0.45, sy))
+                    Visual.Czytelnosc.TrybDuszka = bossJuz ? 2 : 1;
                 // cudze światło z otoczenia kładzie ciepłą krawędź po swojej stronie sylwetki (render/lud/oswietlenie.ts)
                 Lud.Oswietlenie.ustawSwiatlo(Symulacja.Lud.rolaPostaci(c) != null ? Lud.Oswietlenie.swiatloDla(sim, c, h / z) : null);
                 if (tlo > 0.02 && c.lot == null) cz = postacWTle(ctx, sim, c, h, czas, kier, sx, sy, 0.42 * tlo, szerokoscNaRysunku(c));
@@ -363,6 +371,11 @@ namespace Trzewia.Rysunek
                     ctx.restore();
                 }
                 Lud.Oswietlenie.ustawSwiatlo(null);
+                if (czytelnosc)
+                {
+                    Visual.Czytelnosc.TrybDuszka = 0;
+                    if (c.boss != null) { bossJuz = true; Visual.Czytelnosc.SylwetkiPoBossie(ctx); }
+                }
                 // 6.11: na schodach kręconych to, co leży bliżej widza (słup, gdy jest za nim, stopnie po drugiej stronie),
                 // rysuje się na postaci — znika za słupem
                 if (naSchodach) Schody.zaslonNaSchodach(ctx, sim, cam, c, c.x + dx, c.y + 1 + przesuniecieY(c), h, czas);
