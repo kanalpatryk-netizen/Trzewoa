@@ -311,7 +311,8 @@ namespace Trzewia.Aplikacja
                         if (ustawienia.autoZoom)
                         {
                             var fit = Math.Min(cam.vw / (s.w + KAMERA.zapasX), cam.vh / (s.h + KAMERA.zapasY));
-                            cam.zoom += (Math.Max(cam.minZoom, Math.Min(KAMERA.autoMaxZoom, fit)) - cam.zoom) * kz;
+                            // (oprawa, etap 2: w walce z bossem cel × KameraBossa.Mnoznik — bez oprawy 1)
+                            cam.zoom += (Math.Max(cam.minZoom, Math.Min(KAMERA.autoMaxZoom, fit)) * Visual.KameraBossa.Mnoznik - cam.zoom) * kz;
                         }
                         cam.clamp(sim.world.w, sim.world.h);
                     }
@@ -331,6 +332,11 @@ namespace Trzewia.Aplikacja
                     if (nasluch == null && !BOT.wlaczony) app.idz("kronika", sim);
                 }
             }
+
+            // oprawa (etap 2): w walce z bossem kamera płynnie bliżej i wraca po walce (Visual/KameraBossa.cs) — także w pauzie
+            if (!wstep.trwa())
+                Visual.KameraBossa.Krok(sim, cam, dt, ustawienia.kameraZaZyciem && !recznaKamera && ustawienia.autoZoom,
+                    painting || ui.verb != null || pointers.Count > 0 || (dev && DEV.sledz && DEV.sledzony >= 0));
 
             var odkrycia = Odkrycia.odkrycia;
             // co pół sekundy zegara, nie co tyle tików — w pauzie tiki stoją, a pauzę też się odkrywa
