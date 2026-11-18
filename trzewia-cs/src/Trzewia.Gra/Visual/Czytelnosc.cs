@@ -50,7 +50,7 @@ namespace Trzewia.Visual
             bossTeraz = false;
             for (int i = 0; i < 3; i++) glJest[i] = false;
             for (int i = 0; i < ileZapisow; i++) zapisy[i].obraz = null;
-            ileZapisow = 0; ileEtykiet = 0; TrybDuszka = 0;
+            ileZapisow = 0; ileEtykiet = 0; ileZnakow = 0; TrybDuszka = 0;
         }
 
         // ───────────── boss: prostokąt ciała i punkty głów ─────────────
@@ -326,6 +326,13 @@ namespace Trzewia.Visual
                 ctx.fillStyle = Pergamin(0.95);
                 ctx.beginPath(); ctx.arc(kx, ky, Math.Max(1.6, r * 0.16), 0, Math.PI * 2); ctx.fill();
                 ZnakGlowy(ctx, znX[i], znY[i], r, numer, stan, puls);
+                if (ileZnakow < 3)
+                {
+                    var rr = r * 1.5;
+                    przeszkody[ileZnakow * 4] = znX[i] - rr; przeszkody[ileZnakow * 4 + 1] = znY[i] - rr;
+                    przeszkody[ileZnakow * 4 + 2] = rr * 2; przeszkody[ileZnakow * 4 + 3] = rr * 2;
+                    ileZnakow++;
+                }
             }
             ctx.restore();
         }
@@ -385,18 +392,16 @@ namespace Trzewia.Visual
                 var y0 = Math.Min(vh - 4 - e.h, e.y - e.h);
                 for (int it = 0; it < 24; it++)
                 {
-                    var j = konflikt(i, x0, y0, e.w, e.h, odstep);
-                    if (j < 0) break;
-                    y0 = etykiety[j].ly - odstep - e.h;
+                    if (!konflikt(i, x0, y0, e.w, e.h, odstep, out var gora, out _)) break;
+                    y0 = gora - odstep - e.h;
                 }
                 if (y0 < 4)
                 {
                     y0 = 4;
                     for (int it = 0; it < 24; it++)
                     {
-                        var j = konflikt(i, x0, y0, e.w, e.h, odstep);
-                        if (j < 0) break;
-                        y0 = etykiety[j].ly + etykiety[j].h + odstep;
+                        if (!konflikt(i, x0, y0, e.w, e.h, odstep, out _, out var dol)) break;
+                        y0 = dol + odstep;
                     }
                 }
                 e.lx = x0; e.ly = y0;
@@ -411,16 +416,27 @@ namespace Trzewia.Visual
             return a < b;
         }
 
-        /// <summary>Indeks pierwszej już ułożonej etykiety (spośród `ile` pierwszych w kolejności), na którą nachodzi prostokąt.</summary>
-        static int konflikt(int ile, double x, double y, double w, double h, double odstep)
+        /// <summary>
+        /// Czy prostokąt nachodzi na już ułożoną etykietę (spośród `ile` pierwszych w kolejności) albo na znak głowy bossa;
+        /// `gora`, `dol` — pionowe granice tego, na co nachodzi.
+        /// </summary>
+        static bool konflikt(int ile, double x, double y, double w, double h, double odstep, out double gora, out double dol)
         {
+            for (int i = 0; i < ileZnakow; i++)
+                if (Nachodza(x, y - odstep * 0.5, w, h + odstep, przeszkody[i * 4], przeszkody[i * 4 + 1], przeszkody[i * 4 + 2], przeszkody[i * 4 + 3]))
+                { gora = przeszkody[i * 4 + 1]; dol = gora + przeszkody[i * 4 + 3]; return true; }
             for (int i = 0; i < ile; i++)
             {
                 ref var e = ref etykiety[kolejnosc[i]];
-                if (Nachodza(x, y - odstep * 0.5, w, h + odstep, e.lx, e.ly, e.w, e.h)) return kolejnosc[i];
+                if (Nachodza(x, y - odstep * 0.5, w, h + odstep, e.lx, e.ly, e.w, e.h)) { gora = e.ly; dol = e.ly + e.h; return true; }
             }
-            return -1;
+            gora = dol = 0;
+            return false;
         }
+
+        /// <summary>Znaki głów tej klatki jako przeszkody dla etykiet: x, y, szer., wys. (po cztery liczby).</summary>
+        static readonly double[] przeszkody = new double[12];
+        static int ileZnakow;
 
         /// <summary>Test: ułożone etykiety tej klatki (lewy górny róg, szerokość, wysokość).</summary>
         public static IEnumerable<(double x, double y, double w, double h)> UlozoneEtykiety()
