@@ -214,6 +214,13 @@ w `VisualConfig.Czytelne`. Wszystko za flagą `VisualConfig.Czytelnosc` i F9 (ks
 Gotowe, gdy: żadne dwie etykiety nie nachodzą na siebie; postać przy bossie zawsze widać; na każdym zrzucie z walki widać,
 która głowa jest którą i którą teraz ścinamy; na ekranie nie ma emoji.
 
+Sprawdzenie (ziarno 3, `--zrzuty-walki … --krag`): z oprawą wyłączoną (F9) każda klatka identyczna z grą sprzed etapu 2
+poza dwoma miejscami, które już wcześniej pulsowały według zegara komputera (napis „zetnij!” na pasku i przycisk atlasu —
+różnią się też między dwoma uruchomieniami tej samej wersji). Jasność (720p, przed = etap P z oprawą, po = etap 2): pole
+gry średnio 23,9 → 24,9, akcja 42,1 → 41,5 — etap 2 nie zmienia światła, różnice to bliższa kamera. Koszt (rysunek
+procesorem 720p, ta sama walka, `--czytelnosc wl` / `wyl`): 482–505 ms / 469–479 ms na klatkę, ok. +3–5% (w tym kamera
+bliżej). Testy: `CzytelnoscTesty` (etykiety nie nachodzą na siebie ani na pasek bossa i dymek; glify tylko z oprawą).
+
 ## Etap 3 — „uderzenie”
 
 - [ ] Zatrzymanie trafień (symulacja stoi, rysunek działa): zwykłe ciosy 0; mocny cios 60 ms; ścięcie głowy 140 ms;
