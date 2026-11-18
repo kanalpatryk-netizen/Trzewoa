@@ -106,6 +106,10 @@ namespace Trzewia.Rysunek
             foreach (var c in zywi) if (c.boss == null) zwykli++;
             var roz = Math.Max(12, Math.Min(16, szer * 0.02));
             var POM = Nastawy.NastawyPomnik.POMNIK.wlaczony;
+            // oprawa (etap 2): Krąg Trzeci — pasek Cerbera: tytuł, trzy paski ze znakami I/II/III, cel przez 5 s, mały
+            // wskaźnik fali, pęknięcie paska ściętej głowy, dymek z instrukcją (Visual/PasekBossa.cs)
+            if (Visual.Czytelnosc.Aktywna && Krag.Wlaczony && POM && (boss?.boss == "demon" || kona)
+                && Visual.PasekBossa.Rysuj(ctx, sim, x, y, szer, st.fala + 1, Nastawy.NastawyStraznicy.STRAZNICY.fale.Length, zwykli, kona)) return;
             // (Alpha, etap 5: pomnik zamiast skorupy; przy demonie — co da wygraną)
             // Krąg Trzeci: fala Cieni Żarłoków, boss to Cerber — trzy paski życia, po jednym na głowę
             var tekst = Krag.Wlaczony

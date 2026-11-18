@@ -109,6 +109,8 @@ namespace Trzewia.Aplikacja
             ctx.rect(plate.x, plate.y, plate.w, plate.h);
             ctx.clip();
             ctx.translate(plate.x, plate.y);
+            // oprawa (etap 2): wielkości napisów i znaków w px @1080p — skala z wysokości ekranu
+            Visual.Czytelnosc.SkalaUi = h / 1080;
             t = plyta.Rysuj(ctx, sim, cam, teraz, pauza, oddech, pomieszczeniePodKursorem(), oltarzPodKursorem(), t, this);
             ctx.restore();
             // etap 3: fala Strażników Snu — pasek nad polem gry
