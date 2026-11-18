@@ -7,7 +7,7 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 0 — rozpoznanie i narzędzia
 - [x] Etap 1 — światło i kontrast (system ogólny, na walce z demonem); błyski do dostrojenia później (decyzja 16.11)
 - [x] Etap P — przeniesienie kręgu trzeciego (Cerber) z `krag-3-beta/` do C# (czeka na „dalej”)
-- [ ] Etap 2 — czytelność
+- [x] Etap 2 — czytelność (na Kręgu Trzecim; czeka na „dalej”)
 - [ ] Etap 3 — „uderzenie”
 - [ ] Etap 4 — cutscenki
 - [ ] Etap 5 — jeden styl („rycina”)
@@ -178,23 +178,38 @@ symulacja bit w bit (testy złote z TS), rysunek porównany z TS. To nie zmienia
 
 ## Etap 2 — czytelność
 
-- [ ] Postać za bossem, która na niego nachodzi: po bossie jeszcze raz jako jasna sylwetka w kolorze pergaminu, ok. 35%
-      krycia. Postać przed bossem, która na niego nachodzi: jaśniejszy obrys.
-- [ ] Głowy bossa: punkty głów w danych animacji (po 3 na klatkę; kluczowe klatki ręcznie, reszta interpolowana); nad
-      każdą głową znak I / II / III w stylu księgi i ten sam znak przy jej pasku; głowa do ścięcia pulsuje.
-- [ ] Pasek bossa: duży tytuł, pod nim trzy paski ze znakami I/II/III; cel („zetnij trzy głowy”) jedną linijką przez 5 s;
-      informacja o fali do małego wskaźnika fali; pasek ściętej głowy pęka i gaśnie.
-- [ ] Samouczek: bez czarnego pasa przez środek; zdanie fabularne do cutscenki (etap 4); instrukcja w małym dymku na
-      pergaminie przy pasku bossa (najwyżej 2 linijki, znika po 6 s albo po kliknięciu).
-- [ ] Bez systemowych emoji w napisach; jeśli coś znaczyły — narysowana ikona w stylu gry.
-- [ ] Etykiety nad postaciami: krój księgi, co najmniej 18 px przy 1080p (skalowane z UI), jasny pergamin z ciemnym
-      obrysem 3 px (najpierw obrys, potem wypełnienie), pojawianie i znikanie w 150 ms.
-- [ ] Układ etykiet bez nachodzenia: prostokąty co klatkę, sortowanie (ważność, wiek), wypychanie w górę przecinających
-      się, przycięcie do ekranu. Etykieta na ciele bossa — ciemna, półprzezroczysta podkładka.
-- [ ] W walce z bossem kamera płynnie do ok. 1,25× (środek między bossem a najbliższymi postaciami), po walce wraca.
-- [ ] Za flagą, domyślnie wyłączone: w walce księga zwija się do wąskiego paska z najważniejszymi zasobami (zrzuty obu
-      wersji do raportu).
-- [ ] Minimapa: większy kontrast i czytelniejsza etykieta.
+Zrobione na Kręgu Trzecim (Cerber), zgodnie z decyzją 17.11. Kod: `src/Trzewia.Gra/Visual/Czytelnosc.cs` (znaki głów,
+postacie przy bossie, etykiety), `Visual/PasekBossa.cs`, `Visual/KameraBossa.cs`, `Visual/Glify.cs`; liczby
+w `VisualConfig.Czytelne`. Wszystko za flagą `VisualConfig.Czytelnosc` i F9 (księga zwinięta — osobna flaga
+`ZwinietaKsiega`, domyślnie wyłączona).
+
+- [x] Postać za bossem, która na niego nachodzi: po bossie jeszcze raz jako sylwetka w pergaminie, 35% krycia. Postać
+      przed bossem, która na niego nachodzi: jasny obrys (pergamin, 1,6 px). Rozpoznanie: prostokąt postaci × obrys
+      ciała bossa z tej klatki (z poprzedniej, dopóki boss się nie narysuje); klatka duszka z `Duszek.Rysuj`.
+- [x] Głowy bossa: punkty głów nie są ręcznie wpisane w klatki — Cerber jest składany ze szkieletu (`RigCerbera`)
+      w każdej klatce, więc punkty (ślepia trzech głów) bierzemy prosto z niego, dokładnie tam, gdzie głowa jest
+      narysowana. Nad Cerberem rząd znaków I / II / III (krążek pergaminu, cyfra atramentem, krój tytułów) w kolejności
+      głów od lewej, każdy z kreską do swojej głowy; głowa do ścięcia pulsuje (złoty pierścień i poświata, a gdy jej
+      pasek jest pusty — czerwień, szybciej). Ten sam znak przy jej pasku.
+- [x] Pasek bossa: tytuł „C E R B E R”, mały wskaźnik fali („fala 4/4 · 2 cienie”), cel jedną linijką przez 5 s
+      (potem gaśnie i rząd się zwija), trzy paski ze znakami I/II/III; pasek ściętej głowy pęka (biały błysk, rysa
+      z góry na dół), połówki rozchodzą się wzdłuż rysy i gasną. Przy konaniu: „Cerber kona — droga w dół stoi otworem”.
+- [x] Samouczek: czarnego pasa z nagrania w kodzie nie ma (pochodził z późniejszej wersji TS); instrukcja walki w małym
+      dymku na pergaminie pod paskiem bossa (2 linijki, znika po 6 s albo po kliknięciu). Karta z pauzą przy wejściu
+      Cerbera (zwykła gra) została, jak była — to przebieg gry, nie wygląd. Zdanie fabularne — etap 4.
+- [x] Bez systemowych glifów: płótno (rysunek i pomiar tekstu) zamienia znaki spoza krojów gry na » « · – albo słowa
+      („w górę”, „w dół”). Emoji ⏩ z nagrania w C# nie ma.
+- [x] Etykiety nad postaciami: krój księgi (pismo), 18 px przy 1080p (najmniej 14), pergamin z ciemnym obrysem 3 px
+      (najpierw obrys), 150 ms pojawiania i znikania; rysowane po mapie świateł.
+- [x] Układ etykiet bez nachodzenia: sortowanie (szept gracza przed myślami postaci, starsze przed młodszymi),
+      młodsze wypychane w górę, przycięcie do kadru; na ciele bossa ciemna podkładka. Test: `CzytelnoscTesty`.
+- [x] Kamera w walce z bossem płynnie do 1,25× przybliżenia sprzed walki (wokół środka między bossem a 3 najbliższymi
+      postaciami), po walce wraca. Gdy gracz albo gra sami zmienią przybliżenie (kółko, przelot przy konaniu) —
+      kamera oddana bez powrotu.
+- [x] Za flagą, domyślnie wyłączone: księga zwinięta do paska (role i wiara, krew, jedzenie), płyta wyższa
+      (`--zwinieta-ksiega` w zrzutach).
+- [x] Minimapa: jaśniejszy zarys i pamiętane miejsca, ramka widoku z ciemnym brzegiem, podpis w pergaminie
+      z obrysem, czerwony punkt bossa w walce.
 
 Gotowe, gdy: żadne dwie etykiety nie nachodzą na siebie; postać przy bossie zawsze widać; na każdym zrzucie z walki widać,
 która głowa jest którą i którą teraz ścinamy; na ekranie nie ma emoji.
