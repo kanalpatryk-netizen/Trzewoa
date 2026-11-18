@@ -36,6 +36,8 @@ namespace Trzewia.Visual
         static bool dymekZamkniety;
         /// <summary>Gdzie ostatnio stał dymek (do kliknięcia) — szerokość 0, gdy go nie ma.</summary>
         public static double DymekX, DymekY, DymekW, DymekH;
+        /// <summary>Gdzie ostatnio stał panel paska (ekran) — szerokość 0, gdy go nie ma. Etykiety go omijają.</summary>
+        public static double PanelX, PanelY, PanelW, PanelH;
 
         static string tytul = "", tytulZ = "";
         static string fala = "";
@@ -54,7 +56,7 @@ namespace Trzewia.Visual
         {
             Creature? boss = null;
             foreach (var c in sim.creatures) if (c.boss == "demon" && (!c.dead || kona)) { boss = c; break; }
-            if (boss == null) { DymekW = 0; return false; }
+            if (boss == null) { DymekW = 0; PanelW = 0; return false; }
             // nowa walka (inny boss albo inna partia): cel i dymek od nowa
             if (boss.id != bossId || sim.seed != ziarno || sim.tick < tikStartu)
             {
@@ -82,6 +84,7 @@ namespace Trzewia.Visual
             double hTytul = roz * 2.2, hCel = roz * 1.5 * (kona ? 1 : Math.Min(1, celW * 1.6)), hPaski = roz * 2.7;
             var bh = pad * 0.5 + hTytul + hCel + hPaski + pad * 0.4;
 
+            PanelX = bx; PanelY = y; PanelW = bw; PanelH = bh;
             ctx.save();
             // panel: ciemna skóra okładki księgi, podwójna złota linia
             ctx.fillStyle = Barwa.Rgba(16, 11, 8, 0.9);

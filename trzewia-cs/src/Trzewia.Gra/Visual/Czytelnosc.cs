@@ -30,6 +30,8 @@ namespace Trzewia.Visual
 
         /// <summary>Wysokość ekranu / 1080 — ekran gry ustawia ją co klatkę (wielkości w px @1080p).</summary>
         public static double SkalaUi = 1;
+        /// <summary>Lewy górny róg płyty na ekranie (ekran gry) — panel paska bossa i dymek liczą się na ekranie, etykiety na płycie.</summary>
+        public static double PlytaX, PlytaY;
 
         /// <summary>Odwrotność przekształcenia płyty z początku klatki: punkty z układu rysunku → układ płyty.</summary>
         static DOMMatrix odwrotnoscPlyty = DOMMatrix.Jednostkowa;
@@ -425,6 +427,11 @@ namespace Trzewia.Visual
             for (int i = 0; i < ileZnakow; i++)
                 if (Nachodza(x, y - odstep * 0.5, w, h + odstep, przeszkody[i * 4], przeszkody[i * 4 + 1], przeszkody[i * 4 + 2], przeszkody[i * 4 + 3]))
                 { gora = przeszkody[i * 4 + 1]; dol = gora + przeszkody[i * 4 + 3]; return true; }
+            // pasek bossa i dymek pod nim (z poprzedniej klatki — rysują się po płycie) zakryłyby etykietę
+            if (PasekBossa.PanelW > 0 && Nachodza(x, y, w, h, PasekBossa.PanelX - PlytaX, PasekBossa.PanelY - PlytaY, PasekBossa.PanelW, PasekBossa.PanelH))
+            { gora = PasekBossa.PanelY - PlytaY; dol = gora + PasekBossa.PanelH; return true; }
+            if (PasekBossa.DymekW > 0 && Nachodza(x, y, w, h, PasekBossa.DymekX - PlytaX, PasekBossa.DymekY - PlytaY - 12, PasekBossa.DymekW, PasekBossa.DymekH + 12))
+            { gora = PasekBossa.DymekY - PlytaY - 12; dol = gora + PasekBossa.DymekH + 12; return true; }
             for (int i = 0; i < ile; i++)
             {
                 ref var e = ref etykiety[kolejnosc[i]];

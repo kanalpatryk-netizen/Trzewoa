@@ -95,6 +95,8 @@ namespace Trzewia.Rysunek
         public static void rysujPasekFali(IPlotno ctx, Sim sim, double x, double y, double szer)
         {
             var st = sim.lud.straznicy;
+            // (oprawa, etap 2: bez paska Cerbera etykiety nie mają czego omijać)
+            Visual.PasekBossa.PanelW = 0; Visual.PasekBossa.DymekW = 0;
             if (st == null || !st.trwa) return;
             var zywi = new System.Collections.Generic.List<Creature>();
             foreach (var c in sim.creatures) if (!c.dead && c.straznik == true) zywi.Add(c);

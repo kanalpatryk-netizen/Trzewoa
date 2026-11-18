@@ -73,6 +73,30 @@ public class CzytelnoscTesty
     }
 
     [Fact]
+    public void EtykietyOmijajaPasekBossa()
+    {
+        przygotuj();
+        const int W = 1280, H = 560;
+        using var p = new PlotnoSkia(W, H);
+        Czytelnosc.SkalaUi = 1; Czytelnosc.PlytaX = 20; Czytelnosc.PlytaY = 20;
+        // panel paska i dymek na ekranie (płyta od 20, 20) — tam, gdzie postacie mają swoje etykiety
+        PasekBossa.PanelX = 500; PasekBossa.PanelY = 30; PasekBossa.PanelW = 440; PasekBossa.PanelH = 90;
+        PasekBossa.DymekX = 600; PasekBossa.DymekY = 130; PasekBossa.DymekW = 340; PasekBossa.DymekH = 50;
+        try
+        {
+            Czytelnosc.PoczatekKlatki(p);
+            for (int i = 0; i < 6; i++) Czytelnosc.DodajEtykiete(TEKSTY[i], 640 + i * 30, 150 + i * 5, 1, i, 1);
+            Czytelnosc.RysujEtykiety(p, W, H);
+            foreach (var e in Czytelnosc.UlozoneEtykiety())
+            {
+                Assert.False(Czytelnosc.Nachodza(e.x, e.y, e.w, e.h, 480, 10, 440, 90), $"etykieta na pasku bossa: {e}");
+                Assert.False(Czytelnosc.Nachodza(e.x, e.y, e.w, e.h, 580, 110, 340, 50), $"etykieta pod dymkiem: {e}");
+            }
+        }
+        finally { PasekBossa.PanelW = 0; PasekBossa.DymekW = 0; Czytelnosc.PlytaX = Czytelnosc.PlytaY = 0; }
+    }
+
+    [Fact]
     public void GlifyTylkoZOprawa()
     {
         var bylo = (VisualConfig.Wlaczone, VisualConfig.Czytelnosc);
