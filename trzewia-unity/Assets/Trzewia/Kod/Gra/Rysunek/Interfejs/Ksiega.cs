@@ -382,9 +382,70 @@ namespace Trzewia.Rysunek
         /// <summary>Czyści pamięć księgi (testy obrazu: następna klatka liczy wszystko od nowa).</summary>
         public static void wyczyscPamiecKsiegi() { okladkaCien = null; }
 
+        static readonly string[] ROLE_PASKA = { "robotnik", "pobozny", "rycerz" };
+        static readonly string[] ZASOBY_PASKA = { "wiara", "krew", "jedzenie" };
+
+        /// <summary>
+        /// Oprawa (etap 2, za flagą VisualConfig.ZwinietaKsiega, domyślnie wyłączone): księga zwinięta do wąskiego paska
+        /// pergaminu — ilu jest z każdej roli (kliknięcie wybiera rolę, jak medalion) i trzy najważniejsze zasoby:
+        /// wiara, krew, jedzenie. Żelazo, złoto, oddanie i pieczęć „Nakarm” czekają na koniec walki.
+        /// </summary>
+        static List<PoleKsiegi> rysujZwinietaKsiege(IPlotno ctx, Sim sim, Plate p, double vh, IReadOnlyCollection<double> zaznaczeni, (double x, double y) kursor, double czas, Urobki urobki)
+        {
+            var ud = Przyciski.ukladDolu(p, vh); var k = ud.ksiega;
+            var pola = new List<PoleKsiegi>();
+            ctx.save();
+            // grzbiet zamkniętej księgi: skóra okładki, na niej pasek pergaminu
+            ctx.fillStyle = "rgba(58,22,14,1)";
+            zaokraglony(ctx, k.x - 6, k.y - 4, k.w + 12, k.h + 8, 6); ctx.fill();
+            ctx.strokeStyle = "rgba(204,160,92,0.55)"; ctx.lineWidth = 1;
+            zaokraglony(ctx, k.x - 3.5, k.y - 1.5, k.w + 7, k.h + 3, 5); ctx.stroke();
+            ctx.fillStyle = "#eadbb6";
+            zaokraglony(ctx, k.x, k.y + 2, k.w, k.h - 4, 4); ctx.fill();
+            var komorka = k.w / 6;
+            var pismoR = Math.Max(13, Math.Min(20, k.h * 0.36));
+            var yT = k.y + k.h / 2 + pismoR * 0.35;
+            for (int i = 0; i < ROLE_PASKA.Length; i++)
+            {
+                var rola = ROLE_PASKA[i];
+                var lud = Druzyna.ludRoli(sim, rola); var ile = lud.Count; var zazn = 0;
+                foreach (var c in lud) if (zaznaczeni.Contains(c.id)) zazn++;
+                var cx = k.x + komorka * (i + 0.5);
+                var w1 = pismo(ctx, ile.ToString(), cx - komorka * 0.42, yT, pismoR, ile > 0 ? CZERWIEN : (120, 100, 80));
+                pismo(ctx, SLud.NAZWA_ROLI_MNOGA[rola], cx - komorka * 0.42 + w1 + pismoR * 0.3, yT, pismoR * 0.72, zazn > 0 ? (120, 80, 10) : ATRAMENT,
+                    alfa: ile > 0 ? 1 : 0.5, maxW: komorka * 0.84 - w1 - pismoR * 0.3);
+                if (zazn > 0)
+                {
+                    ctx.strokeStyle = "rgba(184,134,46,0.9)"; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.moveTo(cx - komorka * 0.42, k.y + k.h - 7); ctx.lineTo(cx + komorka * 0.42, k.y + k.h - 7); ctx.stroke();
+                }
+                pola.Add(new PoleKsiegi { akcja = "rola", rola = rola, x = cx - komorka / 2, y = k.y, w = komorka, h = k.h });
+            }
+            // kreska między ludem a zasobami
+            ctx.strokeStyle = rgbA(ATRAMENT, 0.35); ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.moveTo(k.x + komorka * 3, k.y + 8); ctx.lineTo(k.x + komorka * 3, k.y + k.h - 8); ctx.stroke();
+            double krewMax = GORA.krewMax;
+            for (int i = 0; i < ZASOBY_PASKA.Length; i++)
+            {
+                var z = ZASOBY_PASKA[i];
+                var cx = k.x + komorka * (3 + i + 0.5);
+                var s = pismoR * 1.25;
+                var n = z == "wiara" ? Math.Max(0, Math.Floor(sim.wiara - urobki.wLocie("wiara")))
+                    : z == "krew" ? Math.Max(0, Math.Floor(sim.krew - urobki.wLocie("krew"))) : Wiadro.porcjiWWiadrach(sim);
+                ikonaZasobu(ctx, z, cx - komorka * 0.3, k.y + k.h / 2, s, czas, z == "krew"
+                    ? (Math.Min(1, Math.Max(0, sim.krew) / krewMax), false, sim.krew >= krewMax - 0.5) : null);
+                if (z == "wiara" || z == "krew") urobki.cele[z] = (cx, k.y + k.h / 2);
+                pismo(ctx, Js.Js.S(n), cx - komorka * 0.3 + s * 0.7, yT, pismoR, BARWA_ZASOBU[z]);
+            }
+            ctx.restore();
+            return pola;
+        }
+
         /// <summary>Rysuje księgę i zwraca pola do kliknięcia (medaliony ról, pieczęć Nakarm).</summary>
         public static List<PoleKsiegi> rysujKsiege(IPlotno ctx, Sim sim, Plate p, double vh, IReadOnlyCollection<double> zaznaczeni, (double x, double y) kursor, double czas, Urobki urobki)
         {
+            // oprawa (etap 2, flaga ZwinietaKsiega): w walce z bossem księga zwinięta do wąskiego paska
+            if (Przyciski.KsiegaZwinieta) return rysujZwinietaKsiege(ctx, sim, p, vh, zaznaczeni, kursor, czas, urobki);
             var ud = Przyciski.ukladDolu(p, vh); var k = ud.ksiega; var oprawa = ud.oprawa; var u = Przyciski.ukladKsiegi(ud);
             var pola = new List<PoleKsiegi>();
             okladkaZCieniem(ctx, k, oprawa);

@@ -25,6 +25,8 @@ namespace Trzewia.Rysunek
             var o = obszarMinimapy(p);
             var w = sim.world;
             double sx = o.w / w.w, sy = o.h / w.h;
+            // oprawa (etap 2): większy kontrast — jaśniejszy zarys i pamiętane miejsca, wyraźna ramka widoku i podpis
+            var kontrast = Visual.Czytelnosc.Aktywna;
 
             ctx.save();
             ctx.fillStyle = "rgba(10,7,6,0.88)";
@@ -40,13 +42,15 @@ namespace Trzewia.Rysunek
             ctx.lineTo(o.x + o.w, o.y + o.h);
             ctx.lineTo(o.x, o.y + o.h);
             ctx.closePath();
-            ctx.fillStyle = "rgba(38,28,24,0.85)";
+            ctx.fillStyle = kontrast ? "rgba(46,34,28,0.92)" : "rgba(38,28,24,0.85)";
             ctx.fill();
-            ctx.strokeStyle = Paleta.rgba(BARWA.atrament, 0.55);
+            ctx.strokeStyle = Paleta.rgba(BARWA.atrament, kontrast ? 0.85 : 0.55);
+            if (kontrast) ctx.lineWidth = 1.4;
             ctx.stroke();
+            ctx.lineWidth = 1;
 
             // to, co pamiętane — jaśniejsze plamy; próbkujemy rzadko, bo to tylko podgląd
-            ctx.fillStyle = Paleta.rgba(BARWA.atrament, 0.3);
+            ctx.fillStyle = Paleta.rgba(BARWA.atrament, kontrast ? 0.5 : 0.3);
             const int krok = 3;
             for (var y = 0; y < w.h; y += krok)
             {
@@ -89,14 +93,44 @@ namespace Trzewia.Rysunek
             // ramka aktualnego widoku
             double vx = (cam.x - cam.vw / 2 / cam.zoom) * sx, vy = (cam.y - cam.vh / 2 / cam.zoom) * sy;
             double vw = (cam.vw / cam.zoom) * sx, vh = (cam.vh / cam.zoom) * sy;
-            ctx.strokeStyle = Paleta.rgba(BARWA.atramentMocny, 0.9);
-            ctx.lineWidth = 1.2;
-            ctx.strokeRect(o.x + Math.Max(0, vx), o.y + Math.Max(0, vy), Math.Min(vw, o.w), Math.Min(vh, o.h));
+            if (kontrast)
+            {
+                // ramka widoku: ciemny brzeg pod jasną kreską — widać ją i na zarysie, i na pustym tle
+                ctx.strokeStyle = "rgba(8,5,4,0.9)"; ctx.lineWidth = 3;
+                ctx.strokeRect(o.x + Math.Max(0, vx), o.y + Math.Max(0, vy), Math.Min(vw, o.w), Math.Min(vh, o.h));
+                ctx.strokeStyle = "rgba(246,226,170,1)"; ctx.lineWidth = 1.5;
+                ctx.strokeRect(o.x + Math.Max(0, vx), o.y + Math.Max(0, vy), Math.Min(vw, o.w), Math.Min(vh, o.h));
+                // boss w walce: czerwony punkt — wiadomo, gdzie jest, nawet gdy kamera patrzy gdzie indziej
+                if (Visual.KameraBossa.WalkaZBossem(sim, out var boss) && boss != null)
+                {
+                    ctx.fillStyle = Barwa.Rgba(232, 52, 36, 0.75 + 0.25 * puls);
+                    ctx.beginPath(); ctx.arc(o.x + boss.x * sx, o.y + boss.y * sy, 3.2, 0, Math.PI * 2); ctx.fill();
+                    ctx.strokeStyle = "rgba(8,5,4,0.9)"; ctx.lineWidth = 1; ctx.stroke();
+                }
+            }
+            else
+            {
+                ctx.strokeStyle = Paleta.rgba(BARWA.atramentMocny, 0.9);
+                ctx.lineWidth = 1.2;
+                ctx.strokeRect(o.x + Math.Max(0, vx), o.y + Math.Max(0, vy), Math.Min(vw, o.w), Math.Min(vh, o.h));
+            }
 
-            ctx.font = $"{Js.Js.S(Math.Max(12, o.w * 0.17))}px {Ink.SERIF}";
-            ctx.fillStyle = Paleta.rgba(BARWA.atramentCichy, 0.6);
             ctx.textAlign = "center";
-            ctx.fillText(Krag.T("pomnik", "pieczęć"), o.x + o.w / 2, o.y + o.h - 4);
+            if (kontrast)
+            {
+                // podpis: pergamin z ciemnym obrysem (jak etykiety), większy
+                ctx.font = $"{Js.Js.S(Math.Max(13, o.w * 0.2))}px {Ink.SERIF}";
+                ctx.lineJoin = "round"; ctx.lineWidth = 3; ctx.strokeStyle = "rgba(8,5,4,0.92)";
+                ctx.strokeText(Krag.T("pomnik", "pieczęć"), o.x + o.w / 2, o.y + o.h - 5);
+                ctx.fillStyle = Visual.Czytelnosc.Pergamin(0.95);
+                ctx.fillText(Krag.T("pomnik", "pieczęć"), o.x + o.w / 2, o.y + o.h - 5);
+            }
+            else
+            {
+                ctx.font = $"{Js.Js.S(Math.Max(12, o.w * 0.17))}px {Ink.SERIF}";
+                ctx.fillStyle = Paleta.rgba(BARWA.atramentCichy, 0.6);
+                ctx.fillText(Krag.T("pomnik", "pieczęć"), o.x + o.w / 2, o.y + o.h - 4);
+            }
             ctx.restore();
         }
 

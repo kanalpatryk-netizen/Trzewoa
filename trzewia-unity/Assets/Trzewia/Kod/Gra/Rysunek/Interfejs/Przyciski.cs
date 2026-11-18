@@ -99,21 +99,43 @@ namespace Trzewia.Rysunek
         /// Pas pod płytą: rząd przycisków przy prawej krawędzi, przed nim „Budowa” i „odwołaj”, księga pośrodku
         /// (szeroka najwyżej na 680 px i nie wchodzi na sąsiadów), atlas z jej lewej strony.
         /// </summary>
+        /// <summary>
+        /// Oprawa (etap 2, flaga VisualConfig.ZwinietaKsiega, domyślnie wyłączona): w walce z bossem księga zwinięta do
+        /// wąskiego paska z najważniejszymi zasobami — pas pod płytą niski, płyta wyższa. Ustawia ekran gry (i woła rozmiar).
+        /// </summary>
+        public static bool KsiegaZwinieta;
+        /// <summary>Wysokość pasa pod płytą przy zwiniętej księdze (px).</summary>
+        public const double DOL_ZWINIETEJ = 104;
+
         public static UkladDolu ukladDolu(Plate p, double vh, int ilePrzyciskow = 3)
         {
+            var zw = KsiegaZwinieta;
             double prawa = p.x + p.w + p.right, dolPlyty = p.y + p.h, oprawa = 12;
-            double gora = dolPlyty + 14 + oprawa, wys = Math.Max(90, vh - 10 - oprawa - gora);
-            double r = Math.Max(19, Math.Min(25, wys * 0.13)), odstep = r * 2.35, margR = Math.Max(8, r * 0.4);
+            double gora = dolPlyty + 14 + oprawa, wys = Math.Max(zw ? 44 : 90, vh - 10 - oprawa - gora);
+            double r = zw ? Math.Max(16, Math.Min(21, wys * 0.36)) : Math.Max(19, Math.Min(25, wys * 0.13)), odstep = r * 2.35, margR = Math.Max(8, r * 0.4);
             double szerRzedu = (ilePrzyciskow - 1) * odstep + r * 2 + margR * 2, xRzedu = prawa - 14 - szerRzedu, srodek = gora + wys / 2;
             double rAtlasu = r * 1.2, zajmujeAtlas = rAtlasu * 2 + 18 + oprawa;
-            double szerBudowy = Math.Max(118, Math.Min(168, prawa * 0.12)), zajmujeBudowa = oprawa + 18 + szerBudowy;
+            // zwinięta: „Budowa” i „odwołaj” obok siebie (nie jedno pod drugim) — szersze miejsce na oba
+            double szerBudowy = Math.Max(118, Math.Min(168, prawa * 0.12)) * (zw ? 1.7 : 1), zajmujeBudowa = oprawa + 18 + szerBudowy;
             double lewo = 14, prawoKsiegi = xRzedu - 16;
-            var szer = Math.Min(Math.Min(wys * 3.2, prawa * 0.46), 680);
+            var szer = Math.Min(Math.Min(zw ? 620 : wys * 3.2, prawa * 0.46), 680);
             szer = Math.Max(200, Math.Min(szer, prawoKsiegi - lewo - zajmujeAtlas - zajmujeBudowa));
             var x = Math.Max(lewo + zajmujeAtlas, Math.Min(prawa / 2 - szer / 2, prawoKsiegi - zajmujeBudowa - szer));
             var xBudowy = x + szer + oprawa + 18;
             double hBudowy = Math.Min(wys * 0.56, 92), hOdwolaj = Math.Max(30, Math.Min(40, wys * 0.21)), przerwa = 10;
             var yBudowy = srodek - (hBudowy + przerwa + hOdwolaj) / 2;
+            if (zw)
+            {
+                var hz = Math.Min(wys - 4, 44);
+                return new UkladDolu
+                {
+                    ksiega = new Obszar(x, gora, szer, wys), oprawa = oprawa,
+                    atlas = (x - oprawa - 16 - rAtlasu, srodek, rAtlasu),
+                    buduj = new Obszar(xBudowy, srodek - hz / 2, szerBudowy * 0.55, hz),
+                    odwolaj = new Obszar(xBudowy + szerBudowy * 0.58, srodek - hz / 2, szerBudowy * 0.42, hz),
+                    przyciski = (xRzedu + margR + r, srodek, r, odstep),
+                };
+            }
             return new UkladDolu
             {
                 ksiega = new Obszar(x, gora, szer, wys), oprawa = oprawa,

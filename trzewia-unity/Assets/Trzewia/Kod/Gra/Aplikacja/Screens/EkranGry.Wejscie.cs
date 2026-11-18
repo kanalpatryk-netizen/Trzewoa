@@ -641,6 +641,14 @@ namespace Trzewia.Aplikacja
             // Krąg Trzeci: w filmie i scenie wejścia gracz nie ma jeszcze władzy
             if (wstep.trwa()) return;
             ui.pointer = (e.clientX, e.clientY);
+            // oprawa (etap 2): dymek z instrukcją przy pasku bossa znika po kliknięciu; kliknięcie w sam dymek nic więcej nie robi
+            if (faza == Faza.dol && Visual.PasekBossa.DymekW > 0)
+            {
+                var wDymku = e.clientX >= Visual.PasekBossa.DymekX && e.clientX <= Visual.PasekBossa.DymekX + Visual.PasekBossa.DymekW
+                    && e.clientY >= Visual.PasekBossa.DymekY && e.clientY <= Visual.PasekBossa.DymekY + Visual.PasekBossa.DymekH;
+                Visual.PasekBossa.ZamknijDymek();
+                if (wDymku) return;
+            }
             // okienko dewelopera (w C# rysowane na płótnie) bierze dotknięcia nad sobą
             if (panelDev != null && ustawienia.trybDeweloperski && nasluch == null && panelDev.dotyk(e, faza)) return;
             // tryb deweloperski: kafel pod kursorem, a Shift+klik wybiera postać do inspektora

@@ -103,7 +103,10 @@ namespace Trzewia.Rysunek
                                 if (a == 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
                             }
                             ctx.stroke();
-                            if (!string.IsNullOrEmpty(e.tekst))
+                            // oprawa (etap 2): etykieta w kroju księgi, układana po świetle bez nachodzenia (Visual.Czytelnosc)
+                            if (!string.IsNullOrEmpty(e.tekst) && Visual.Czytelnosc.WKlatce)
+                                Visual.Czytelnosc.DodajEtykiete(e.tekst!, sx, sy - z * 1.9, 1, e.t, Visual.Czytelnosc.AlfaEtykiety(e.t, e.max));
+                            else if (!string.IsNullOrEmpty(e.tekst))
                             {
                                 ctx.font = $"italic {Js.Js.S(Math.Max(14, z * 0.75))}px \"Trzewia Tekst\", Georgia, serif";
                                 ctx.textAlign = "center";
@@ -180,7 +183,10 @@ namespace Trzewia.Rysunek
                                 ctx.stroke(Tajemnica.glif(37, 2));
                             }
                             ctx.restore();
-                            if (!string.IsNullOrEmpty(e.tekst))
+                            // (szept gracza — ważniejszy od myśli postaci: zostaje na miejscu, myśli ustępują)
+                            if (!string.IsNullOrEmpty(e.tekst) && Visual.Czytelnosc.WKlatce)
+                                Visual.Czytelnosc.DodajEtykiete(e.tekst!, sx, glowa - z * 1.8, 2, e.t, Visual.Czytelnosc.AlfaEtykiety(e.t, e.max) * a);
+                            else if (!string.IsNullOrEmpty(e.tekst))
                             {
                                 ctx.font = $"italic {Js.Js.S(Math.Max(14, z * 0.75))}px \"Trzewia Tekst\", Georgia, serif";
                                 ctx.textAlign = "center";

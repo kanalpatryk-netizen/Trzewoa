@@ -133,6 +133,8 @@ namespace Trzewia.Rysunek.Duszki
                 // w odbiciu (t.a < 0) róg klatki jest po prawej — po zaokrągleniu rogu szerokość też jest całkowita
             }
             if (otoczenie != null && otoczenie.sila > 0.05) Krawedz(ctx, obraz, sx, sy, w, wys, dx, dy, f, h, t, skala, otoczenie);
+            // oprawa (etap 2): postać przy bossie — zapis klatki (sylwetka po bossie) albo jasny obrys pod nią
+            if (Visual.Czytelnosc.TrybDuszka != 0) Visual.Czytelnosc.Duszek(ctx, obraz, sx, sy, w, wys, dx, dy, w * f, wys * f);
             ctx.drawImage(obraz, sx, sy, w, wys, dx, dy, w * f, wys * f);
         }
 

@@ -514,8 +514,12 @@ namespace Trzewia.Skia
 
         static readonly char[] Biale = { '\n', '\r', '\t', '\f' };
 
-        static string BezBialych(string t) =>
-            t.IndexOfAny(Biale) < 0 ? t : t.Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').Replace('\f', ' ');
+        /// <summary>Białe znaki → spacja (jak przeglądarka); z oprawą (etap 2) także znaki spoza krojów gry → zamienniki (Visual.Glify).</summary>
+        static string BezBialych(string t)
+        {
+            t = Trzewia.Visual.Glify.Popraw(t);
+            return t.IndexOfAny(Biale) < 0 ? t : t.Replace('\n', ' ').Replace('\r', ' ').Replace('\t', ' ').Replace('\f', ' ');
+        }
 
         public TextMetrics measureText(string tekst) => new TextMetrics(Tekst.Uloz(s.kroj, BezBialych(tekst)).Szerokosc);
 

@@ -40,6 +40,8 @@ namespace Trzewia.Rysunek
             var right = Math.Max(58, Math.Min(104, vw * 0.075));
             var top = EKRAN.ramaPlyty;
             var bottom = Math.Max(EKRAN.dolMin, Math.Min(EKRAN.dolMax, vh * EKRAN.dolCzesc));
+            // oprawa (etap 2, za flagą): księga zwinięta w walce z bossem — niski pas, wyższa płyta
+            if (Przyciski.KsiegaZwinieta) bottom = Przyciski.DOL_ZWINIETEJ;
             return new Plate { x = left, y = top, w = Math.Max(80, vw - left - right), h = Math.Max(80, vh - top - bottom), left = left, right = right, top = top, bottom = bottom, waski = false, niski = false };
         }
 

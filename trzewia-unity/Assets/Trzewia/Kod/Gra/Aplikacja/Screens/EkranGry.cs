@@ -183,7 +183,12 @@ namespace Trzewia.Aplikacja
             nasluch?.Invoke(new ZdarzenieGry { typ = "tempo" });
         }
 
-        public override void wyjdz() { panelDev?.ustaw(false); }
+        public override void wyjdz()
+        {
+            panelDev?.ustaw(false);
+            // (oprawa, etap 2: zwinięta księga to stan tej walki — inne ekrany liczą płytę po staremu)
+            Przyciski.KsiegaZwinieta = false;
+        }
 
         // ------------------------------------------------------------------ życie ekranu
 
@@ -390,8 +395,12 @@ namespace Trzewia.Aplikacja
             cam.clamp(sim.world.w, sim.world.h);
         }
 
+        /// <summary>Ostatni rozmiar ekranu (oprawa, etap 2: zwinięcie księgi w walce przelicza płytę na nowo).</summary>
+        double szerEkranu, wysEkranu;
+
         public override void rozmiar(double w, double h)
         {
+            szerEkranu = w; wysEkranu = h;
             plate = Plyta.computePlate(w, h);
             cam.vw = plate.w; cam.vh = plate.h;
             cam.minZoom = Math.Max(KAMERA.minNaDuzymEkranie, plate.w / sim.world.w);

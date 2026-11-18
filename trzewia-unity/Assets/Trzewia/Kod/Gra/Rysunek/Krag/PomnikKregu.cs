@@ -271,8 +271,11 @@ namespace Trzewia.Rysunek
         public static void rysujCerberaBossa(IPlotno ctx, Sim sim, Creature c, double h, double czas)
         {
             var s = sim.lud.pomnik;
-            if (s != null && s.faza == "kona") { rysujKonajacegoCerbera(ctx, h, Math.Min(1, (sim.tick - s.od) / POMNIK.konanie), czas, c.glowyOdciete); return; }
-            RysCerber.rysujCerbera(ctx, h, RysCerber.pozaBossa(sim, c, czas));
+            // oprawa (etap 2): boss oddaje punkty głów i obrys ciała (Visual.Czytelnosc) — tylko ten Cerber, nie podglądy
+            Visual.Czytelnosc.ZbierajBossa = Visual.Czytelnosc.Aktywna;
+            if (s != null && s.faza == "kona") rysujKonajacegoCerbera(ctx, h, Math.Min(1, (sim.tick - s.od) / POMNIK.konanie), czas, c.glowyOdciete);
+            else RysCerber.rysujCerbera(ctx, h, RysCerber.pozaBossa(sim, c, czas));
+            Visual.Czytelnosc.ZbierajBossa = false;
         }
 
         /// <summary>

@@ -438,6 +438,25 @@ namespace Trzewia.Rysunek
         }
 
         static readonly RigCerbera rigBiezacy = new RigCerbera();
+        static readonly double[] czGx = new double[3], czGy = new double[3];
+        static readonly bool[] czJest = new bool[3];
+
+        /// <summary>Oprawa (etap 2): ślepia głów (indeks = numer głowy), czy głowa na karku, obrys ciała — do Visual.Czytelnosc.</summary>
+        static void zapiszDlaCzytelnosci(IPlotno ctx, double hRys, double h, RigCerbera rig, PozaCerbera p, bool kam)
+        {
+            double x0 = 0, x1 = 0, y0 = 0;
+            void dodaj((double x, double y) q) { x0 = Math.Min(x0, q.x); x1 = Math.Max(x1, q.x); y0 = Math.Min(y0, q.y); }
+            for (int i = 0; i < 3; i++)
+            {
+                // punkt głowy: ślepia (kotwica łba leży przy karku — znak wskazywałby szyję)
+                var q = rz(rig.oczy[i], h);
+                czGx[i] = q.x; czGy[i] = q.y; czJest[i] = kam || p.Odcieta(i) < 0;
+                dodaj(q); dodaj(rz(rig.kotwice[i], h));
+            }
+            dodaj(rz(rig.ogonBaza, h)); dodaj(rz(rig.obroza, h)); dodaj(rz(rig.brzuch, h));
+            var m = hRys * 0.1;
+            Visual.Czytelnosc.ZapiszCerbera(ctx, hRys, czGx, czGy, czJest, x0 - m, y0 - m, x1 + m, 0);
+        }
         static readonly (double x, double y, double kat, double ms)[] kikuty = new (double, double, double, double)[3];
         static readonly double[,] SMUGA = { { 0.07, 0.32 }, { 0.14, 0.16 }, { 0.21, 0.08 } };
 
@@ -452,6 +471,8 @@ namespace Trzewia.Rysunek
             var kam = p.kamien > 0.5;
             var cialo = klatkaCiala(p, out var pc);
             var rig = rigBiezacy.Licz(pc.lezy, pc.kleka, pc.skok, pc.lapa, pc.przysiad, pc.faza, pc.krok, pc.oddech, pc.odrzut, pc.deba, p.glowy);
+            // oprawa (etap 2): boss oddaje punkty głów i obrys ciała — znaki I/II/III i sylwetki postaci przy nim
+            if (Visual.Czytelnosc.ZbierajBossa) zapiszDlaCzytelnosci(ctx, hRys, h, rig, p, kam);
             var r0 = spoczynek();
             ctx.save();
             // poświata szału (za nim)
