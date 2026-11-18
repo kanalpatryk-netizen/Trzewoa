@@ -333,6 +333,9 @@ namespace Trzewia.Aplikacja
                 }
             }
 
+            // oprawa (etap 2, za flagą ZwinietaKsiega): w walce z bossem księga zwinięta do paska — płyta wyższa
+            var zwinieta = Visual.VisualConfig.Aktywne(Visual.VisualConfig.ZwinietaKsiega) && !wstep.trwa() && Visual.KameraBossa.WalkaZBossem(sim, out _);
+            if (zwinieta != Przyciski.KsiegaZwinieta && szerEkranu > 0) { Przyciski.KsiegaZwinieta = zwinieta; rozmiar(szerEkranu, wysEkranu); }
             // oprawa (etap 2): w walce z bossem kamera płynnie bliżej i wraca po walce (Visual/KameraBossa.cs) — także w pauzie
             if (!wstep.trwa())
                 Visual.KameraBossa.Krok(sim, cam, dt, ustawienia.kameraZaZyciem && !recznaKamera && ustawienia.autoZoom,

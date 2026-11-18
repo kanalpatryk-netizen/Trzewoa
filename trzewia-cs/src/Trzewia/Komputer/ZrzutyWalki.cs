@@ -83,6 +83,7 @@ static class ZrzutyWalki
         int W = Uruchomienie.RozmiarW > 0 ? Uruchomienie.RozmiarW : 1920, H = Uruchomienie.RozmiarH > 0 ? Uruchomienie.RozmiarH : 1080;
         double ziarno = Uruchomienie.Ziarno ?? 3, coIle = Uruchomienie.CoIleS > 0 ? Uruchomienie.CoIleS : 0.5;
         if (Uruchomienie.Oprawa is bool op) VisualConfig.Wlaczone = op;
+        if (Uruchomienie.ZwinietaKsiega) VisualConfig.ZwinietaKsiega = true;
         // Krąg Trzeci: boss to Cerber (nastawy, symulacja i rysunek trybu kręgu)
         if (Uruchomienie.Krag) Symulacja.Krag.Ustaw(true);
         // okno zapisu (s od początku zapisu): --od, --najdluzej — do szybkich prób strojenia

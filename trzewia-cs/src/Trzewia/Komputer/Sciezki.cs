@@ -109,6 +109,8 @@ public static class Uruchomienie
     public static double OdS, NajdluzejS;
     /// <summary>Nowa oprawa walki (Visual/VisualConfig.cs) na starcie: true/false; null — domyślnie (włączona). W grze: F9.</summary>
     public static bool? Oprawa;
+    /// <summary>Oprawa, etap 2: księga zwinięta w walce z bossem (VisualConfig.ZwinietaKsiega) — domyślnie wyłączona.</summary>
+    public static bool ZwinietaKsiega;
     /// <summary>Tryb Kręgu Trzeciego (Cerber) zamiast Alphy 1 — na razie tylko dla zrzutów walki (--krag).</summary>
     public static bool Krag;
 
@@ -128,6 +130,7 @@ public static class Uruchomienie
                            osiagniecia, bestiariusz (atlas), menu; „proba” — ekran próbny bez ładowania
           --wypisz-nastawy zapisz wszystkie liczby gry do dane/nastawy/*.json (punkt wyjścia do zmian) i zakończ
           --oprawa wl|wyl  nowa oprawa walki z bossem na starcie włączona albo wyłączona (w grze przełącza F9)
+          --zwinieta-ksiega  w walce z bossem księga zwinięta do paska (próba z planu oprawy, domyślnie wyłączona)
           --zrzuty-walki KATALOG
                            bez okna: bot gra partię do walki z bossem i zapisuje klatki PNG i klatki.json (porównania
                            oprawy przed/po; rozmiar z --rozmiar, domyślnie 1920x1080); z nim:
@@ -170,6 +173,7 @@ public static class Uruchomienie
                     Oprawa = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Oprawa == null) Console.Error.WriteLine($"--oprawa: nie rozumiem „{nast}” (wl albo wyl)");
                     i++; break;
+                case "--zwinieta-ksiega": ZwinietaKsiega = true; break;
                 case "--pomoc": case "-h": case "--help": Console.WriteLine(Pomoc); Environment.Exit(0); break;
             }
         }
