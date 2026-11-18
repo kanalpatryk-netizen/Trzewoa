@@ -428,7 +428,8 @@ namespace Trzewia.Visual
             for (int i = 0; i < ileEtykiet; i++) yield return (etykiety[i].lx, etykiety[i].ly, etykiety[i].w, etykiety[i].h);
         }
 
-        static void rysujEtykiety(IPlotno ctx, double vw, double vh)
+        /// <summary>Mierzy, układa i rysuje etykiety tej klatki (publiczne dla testu układu).</summary>
+        public static void RysujEtykiety(IPlotno ctx, double vw, double vh)
         {
             if (ileEtykiet == 0) return;
             var px = WielkoscEtykiet;
@@ -482,7 +483,7 @@ namespace Trzewia.Visual
         public static void NadSwiatlem(IPlotno ctx, Sim sim, Camera cam, double czas)
         {
             rysujZnakiGlow(ctx, sim, czas);
-            rysujEtykiety(ctx, cam.vw, cam.vh);
+            RysujEtykiety(ctx, cam.vw, cam.vh);
             WKlatce = false;
             TrybDuszka = 0;
         }
