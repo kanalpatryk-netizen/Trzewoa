@@ -194,6 +194,40 @@ namespace Trzewia.Visual
             public static double SpoczynekMs = 300;
         }
 
+        // ───────────── etap 4: przerywniki (Visual/Cutscena.cs) ─────────────
+
+        /// <summary>Liczby przerywników — wejście i śmierć bossa. Czasy rzeczywiste (ms zegara ekranu), nie tiki.</summary>
+        public static class Przerywnikowe
+        {
+            /// <summary>Pasy kinowe: wysokość (ułamek wysokości płyty), czas wjazdu i zjazdu (ms).</summary>
+            public static double PasWysokosc = 0.1, PasMs = 400;
+
+            // ── wejście bossa (pomnik: stoi → rozpada → wychodzi → walka) ──
+            /// <summary>Kamera: przybliżenie względem tego, co było przed wejściem, i czas dojazdu (ms).</summary>
+            public static double WejsciePrzyblizenie = 1.4, WejscieKameraMs = 800;
+            /// <summary>Scena wejścia: karta tytułu (imię bossa) pokazuje się na tyle ms przed końcem fazy „wychodzi”, trwa tyle ms.</summary>
+            public static double WejscieKartaPrzed = 1700, WejscieKartaMs = 1500;
+            /// <summary>Po „walka”: tyle ms jeszcze trzyma pasy, zanim zaczną się chować (żeby gracz zobaczył bossa w całości).</summary>
+            public static double WejsciePoWalceMs = 300;
+            /// <summary>
+            /// Wysokość skoku Cerbera przy wejściu (× jego wysokość) — zamiast spadania z nieoznaczonej wysokości nad
+            /// korytarzem (stary błąd: przebijał sufit i podłogę), skromny skok znad otworu zejścia, który już stoi otworem.
+            /// </summary>
+            public static double WejscieSkokWysokosc = 1.15;
+            /// <summary>Po pierwszym obejrzeniu w tej partii: karta tytułu i początkowa cisza krótsze (ułamek czasu).</summary>
+            public static double SkrocenieDrugiRaz = 0.5;
+
+            // ── śmierć bossa (pomnik: kona → koniec gry) ──
+            /// <summary>Trup nie znika od razu — rozsypuje się w popiół przez tyle ms (krycie 1 → 0).</summary>
+            public static double TrupRozsypMs = 1200;
+            /// <summary>Kamera po rozsypaniu trupa: dojazd do otworu zejścia, przybliżenie i czas (ms).</summary>
+            public static double SmierckKameraMs = 900, SmiercPrzyblizenie = 1.15;
+            /// <summary>Napis „Droga w dół stoi otworem.”: pokazuje się tyle ms po dojechaniu kamery, trwa tyle ms.</summary>
+            public static double SmiercNapisPo = 400, SmiercNapisMs = 2200;
+            /// <summary>Po napisie: tyle ms jeszcze, zanim pasy się schowają i przejście do kroniki ruszy dalej.</summary>
+            public static double SmiercKoniecMs = 500;
+        }
+
         // ───────────── klawisz debug ─────────────
 
         /// <summary>Kiedy ostatnio przełączono F9 (ms zegara gry) — krótki napis w rogu ekranu.</summary>
