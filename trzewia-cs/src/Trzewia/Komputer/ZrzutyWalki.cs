@@ -32,7 +32,8 @@ static class ZrzutyWalki
     /// <summary>Od ilu sekund przed pęknięciem pomnika zapisywać.</summary>
     const double PRZED_S = 3;
     /// <summary>Po końcu gry jeszcze tyle sekund (zamrożony obraz — tak jak w nagraniu z obserwatorium).</summary>
-    const double PO_KONCU_S = 3;
+    // (oprawa, etap 4: scena śmierci po „kona” trwa ok. 5,2 s — trzeba tyle jeszcze nagrywać po końcu gry, żeby ją złapać)
+    const double PO_KONCU_S = 7;
     /// <summary>Seria klatka po klatce po zmianie fazy i końcu gry (ms).</summary>
     const double SERIA_MS = 300;
     /// <summary>Trafienie bossa: klatki tyle klatek po nim (0–150 ms) i najmniejszy odstęp między takimi seriami (ms).</summary>
