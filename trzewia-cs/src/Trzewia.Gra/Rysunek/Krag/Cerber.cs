@@ -242,7 +242,34 @@ namespace Trzewia.Rysunek
         static void czesc(IPlotno ctx, Czesc? k, double h)
         {
             if (k == null) return;
-            ctx.drawImage(poziom(k, h / k.S), k.x0 * h, k.y0 * h, (k.w / k.S) * h, (k.h / k.S) * h);
+            var obraz = poziom(k, h / k.S);
+            ctx.drawImage(obraz, k.x0 * h, k.y0 * h, (k.w / k.S) * h, (k.h / k.S) * h);
+            // oprawa (etap 3): błysk trafienia — ta sama część jeszcze raz, biała, z kryciem błysku
+            if (BlyskBialy > 0.01 && (!(obraz is IObraz io) || io.complete))
+            {
+                var a = ctx.globalAlpha;
+                ctx.globalAlpha = a * BlyskBialy;
+                ctx.drawImage(biala(obraz), k.x0 * h, k.y0 * h, (k.w / k.S) * h, (k.h / k.S) * h);
+                ctx.globalAlpha = a;
+            }
+        }
+
+        /// <summary>Oprawa (etap 3): krycie białego błysku trafienia na czas rysunku bossa (0 — bez błysku).</summary>
+        public static double BlyskBialy;
+        static readonly Dictionary<IZrodloObrazu, IPlotno> biale = new Dictionary<IZrodloObrazu, IPlotno>();
+
+        /// <summary>Biała sylwetka obrazka części (liczona raz na obrazek i poziom).</summary>
+        static IZrodloObrazu biala(IZrodloObrazu obraz)
+        {
+            if (biale.TryGetValue(obraz, out var b)) return b;
+            b = Plotno.Nowe(Math.Max(1, obraz.width), Math.Max(1, obraz.height));
+            b.drawImage(obraz, 0, 0);
+            b.globalCompositeOperation = "source-in";
+            b.fillStyle = "rgb(255,250,242)";
+            b.fillRect(0, 0, b.width, b.height);
+            b.globalCompositeOperation = "source-over";
+            biale[obraz] = b;
+            return b;
         }
 
         // nazwy klatek — raz, żeby w klatce nie składać napisów
@@ -382,16 +409,20 @@ namespace Trzewia.Rysunek
         /// Ścięta głowa Cerbera leżąca na posadzce: `ctx` w punkcie na posadzce, zwrot już ustawiony, `hRys` — wysokość
         /// Cerbera jak w rysujCerbera, `ms` — od ścięcia (kałuża rośnie, krew sączy się z karku).
         /// </summary>
-        public static void rysujScietaGlowe(IPlotno ctx, int nr, double hRys, double ms)
+        public static void rysujScietaGlowe(IPlotno ctx, int nr, double hRys, double ms, bool kaluza = true)
         {
             if (!Gotowy() || nr < 0 || nr > 2) return;
             var h = hRys / WYS_MODELU;
             var k = Math.Min(1, ms / 3000);
             ctx.save();
-            ctx.fillStyle = "rgba(70,3,2,0.9)";
-            ctx.beginPath(); ctx.ellipse(-h * 0.08, 0, h * (0.06 + 0.2 * k), h * (0.012 + 0.025 * k), 0, 0, Math.PI * 2); ctx.fill();
-            ctx.fillStyle = "rgba(150,30,24,0.25)";
-            ctx.beginPath(); ctx.ellipse(-h * 0.12, -h * 0.004, h * 0.08 * k, h * 0.008 * k, 0, 0, Math.PI * 2); ctx.fill();
+            // (oprawa, etap 3: w locie bez kałuży — ta rośnie dopiero na posadzce)
+            if (kaluza)
+            {
+                ctx.fillStyle = "rgba(70,3,2,0.9)";
+                ctx.beginPath(); ctx.ellipse(-h * 0.08, 0, h * (0.06 + 0.2 * k), h * (0.012 + 0.025 * k), 0, 0, Math.PI * 2); ctx.fill();
+                ctx.fillStyle = "rgba(150,30,24,0.25)";
+                ctx.beginPath(); ctx.ellipse(-h * 0.12, -h * 0.004, h * 0.08 * k, h * 0.008 * k, 0, 0, Math.PI * 2); ctx.fill();
+            }
             ctx.translate(0, -h * 0.085);
             ctx.rotate(0.42);
             czesc(ctx, Daj(NAZWY_ODCIETYCH[nr]), h);

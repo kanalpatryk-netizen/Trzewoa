@@ -273,8 +273,20 @@ namespace Trzewia.Rysunek
             var s = sim.lud.pomnik;
             // oprawa (etap 2): boss oddaje punkty głów i obrys ciała (Visual.Czytelnosc) — tylko ten Cerber, nie podglądy
             Visual.Czytelnosc.ZbierajBossa = Visual.Czytelnosc.Aktywna;
+            // oprawa (etap 3): błysk trafienia (biały), zapowiedź ataku (odchylenie, wyrzut z rozciągnięciem), oddech w spoczynku
+            var uderzenie = Visual.Uderzenie.Aktywne;
+            RysCerber.BlyskBialy = uderzenie ? Visual.Uderzenie.BlyskBossa(czas) : 0;
             if (s != null && s.faza == "kona") rysujKonajacegoCerbera(ctx, h, Math.Min(1, (sim.tick - s.od) / POMNIK.konanie), czas, c.glowyOdciete);
-            else RysCerber.rysujCerbera(ctx, h, RysCerber.pozaBossa(sim, c, czas));
+            else
+            {
+                var p = RysCerber.pozaBossa(sim, c, czas);
+                double sx = 1, sy = 1;
+                if (uderzenie) Visual.Uderzenie.ZapowiedzIOddech(sim, c, czas, ref p.odrzut, out sx, out sy);
+                if (sx != 1 || sy != 1) { ctx.save(); ctx.scale(sx, sy); }
+                RysCerber.rysujCerbera(ctx, h, p);
+                if (sx != 1 || sy != 1) ctx.restore();
+            }
+            RysCerber.BlyskBialy = 0;
             Visual.Czytelnosc.ZbierajBossa = false;
         }
 

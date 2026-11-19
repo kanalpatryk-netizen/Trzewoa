@@ -247,6 +247,37 @@ namespace Trzewia.Rysunek
 
         sealed class DoRysowania { public Creature c = null!; public int n; }
 
+        /// <summary>Krąg Trzeci: ścięte głowy Cerbera — w locie i na posadzce (oprawa etapu 3: lot z fizyką).</summary>
+        static void scieteGlowy(IPlotno ctx, Sim sim, Creature c, double h, double czas, double left, double top, double z)
+        {
+            if (c.glowyOdciete == null || c.glowyOdciete.Count == 0) return;
+            var hRys = h * Boss.aktywnyBoss().rozmiar * 0.6;
+            var tF = ZegarGry.tikZUlamkiem(sim, czas);
+            foreach (var o in c.glowyOdciete)
+            {
+                // oprawa (etap 3): w górę, łuk, obrót, jedno odbicie; kałuża rośnie w 400 ms
+                if (Visual.Uderzenie.Aktywne && Visual.Uderzenie.LotGlowy(o, tF, out var lx, out var ly, out var lkat, out var poLad))
+                {
+                    ctx.save();
+                    ctx.translate((lx - left) * z, (ly - top) * z);
+                    ctx.scale(o.zwrot, 1);
+                    if (lkat != 0) ctx.rotate(lkat);
+                    RysCerber.rysujScietaGlowe(ctx, (int)o.nr, hRys, Math.Max(0, poLad) * (3000 / Visual.VisualConfig.Uderzenia.GlowaPlamaMs), poLad >= 0);
+                    ctx.restore();
+                    continue;
+                }
+                var ms = Math.Max(0, (tF - o.tick) * (1000.0 / 120));
+                var f = Math.Min(1, ms / 650);
+                double wx = o.x0 + (o.x - o.x0) * f, wy = o.y0 + (o.y + 1 - o.y0) * f - Math.Sin(f * Math.PI) * 1.2;
+                ctx.save();
+                ctx.translate((wx - left) * z, (wy - top) * z);
+                ctx.scale(o.zwrot, 1);
+                if (f < 1) ctx.rotate(f * 5.5);
+                RysCerber.rysujScietaGlowe(ctx, (int)o.nr, hRys, Math.Max(0, ms - 650));
+                ctx.restore();
+            }
+        }
+
         public static void rysujStworzenia(IPlotno ctx, Sim sim, Camera cam, double czas, double? wybrany = null)
         {
             var z = cam.zoom;
@@ -295,6 +326,8 @@ namespace Trzewia.Rysunek
                     if (podloga >= 8) podloga = 0;
                 }
                 var sy = (c.y + 1 + podloga + (n > 1 ? 0 : przesuniecieY(c)) - top) * z;
+                // oprawa (etap 3): przewrócony odbija się od posadzki tuż po upadku
+                if (n == 1) sy -= Visual.Uderzenie.OdbiciePrzewroconego(sim, c, czas);
                 var zw = n > 1 ? 0 : zwrotNaRysunku(c);
                 var kier = zw != 0 ? zw : (c.face >= 0 ? 1 : -1);
                 var tlo = n > 1 ? 0 : wTle(c);
@@ -332,23 +365,8 @@ namespace Trzewia.Rysunek
                 }
 
                 // Krąg Trzeci: ścięte głowy Cerbera — spadają z karku po łuku, koziołkując, i leżą na posadzce we krwi
-                if (Krag.Wlaczony && c.boss == "demon" && c.glowyOdciete != null && c.glowyOdciete.Count > 0)
-                {
-                    var hRys = h * Boss.aktywnyBoss().rozmiar * 0.6;
-                    var tF = ZegarGry.tikZUlamkiem(sim, czas);
-                    foreach (var o in c.glowyOdciete)
-                    {
-                        var ms = Math.Max(0, (tF - o.tick) * (1000.0 / 120));
-                        var f = Math.Min(1, ms / 650);
-                        double wx = o.x0 + (o.x - o.x0) * f, wy = o.y0 + (o.y + 1 - o.y0) * f - Math.Sin(f * Math.PI) * 1.2;
-                        ctx.save();
-                        ctx.translate((wx - left) * z, (wy - top) * z);
-                        ctx.scale(o.zwrot, 1);
-                        if (f < 1) ctx.rotate(f * 5.5);
-                        RysCerber.rysujScietaGlowe(ctx, (int)o.nr, hRys, Math.Max(0, ms - 650));
-                        ctx.restore();
-                    }
-                }
+                // (oprawa, etap 3: lot z fizyką rysuje się po Cerberze — w locie głowa jest przed nim, nie za nim)
+                if (Krag.Wlaczony && c.boss == "demon" && !Visual.Uderzenie.Aktywne) scieteGlowy(ctx, sim, c, h, czas, left, top, z);
                 string cz;
                 // oprawa (etap 2): postać nachodzi na bossa — rysowana przed nim (stoi za nim): zapis, po bossie wróci jako
                 // sylwetka w pergaminie; rysowana po nim (stoi przed nim): jasny obrys (Visual.Czytelnosc)
@@ -376,6 +394,7 @@ namespace Trzewia.Rysunek
                     Visual.Czytelnosc.TrybDuszka = 0;
                     if (c.boss != null) { bossJuz = true; Visual.Czytelnosc.SylwetkiPoBossie(ctx); }
                 }
+                if (Krag.Wlaczony && c.boss == "demon" && Visual.Uderzenie.Aktywne) scieteGlowy(ctx, sim, c, h, czas, left, top, z);
                 // 6.11: na schodach kręconych to, co leży bliżej widza (słup, gdy jest za nim, stopnie po drugiej stronie),
                 // rysuje się na postaci — znika za słupem
                 if (naSchodach) Schody.zaslonNaSchodach(ctx, sim, cam, c, c.x + dx, c.y + 1 + przesuniecieY(c), h, czas);
