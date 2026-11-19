@@ -9,7 +9,7 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap P — przeniesienie kręgu trzeciego (Cerber) z `krag-3-beta/` do C# (czeka na „dalej”)
 - [x] Etap 2 — czytelność (na Kręgu Trzecim; czeka na „dalej”)
 - [x] Etap 3 — „uderzenie” (na Kręgu Trzecim; czeka na „dalej”)
-- [ ] Etap 4 — cutscenki
+- [x] Etap 4 — cutscenki (na Kręgu Trzecim; czeka na „dalej”)
 - [ ] Etap 5 — jeden styl („rycina”)
 - [ ] Etap 6 — mechanika bossa (opcjonalnie, dopiero po „tak” użytkownika i po skończonym porcie)
 
@@ -270,31 +270,65 @@ zajęły razem ok. 1 s. Testy: `UderzenieTesty`.
 
 ## Etap 4 — cutscenki
 
-- [ ] `CutsceneDirector`: kolejka kroków z czasem i krzywą (`Wait`, `CameraTo`, `Letterbox`, `HideHud/ShowHud`,
-      `Shake`, `Flash`, `Light`, `PlayAnim`, `Caption`, `NameCard`, `TimeScale`); symulacja stoi, reżyser na czasie
-      rzeczywistym; pomijanie spacją / Esc / kliknięciem do stanu końcowego zgodnego z logiką; po pierwszym obejrzeniu
-      wersja skrócona.
-- [ ] Wejście bossa (ok. 5 s): pasy kinowe 10% (0,4 s), HUD chowa się, kamera na piec 1,4× (0,8 s); drżenie (trauma do
-      0,3), pieczęć pęka w 3 krokach po 0,3 s, iskry; błysk biały → czerwony (120 ms), trauma 0,8, gruz, 0,4 s ciszy;
-      wyjście z pieca (łapa, głowy, ryk, czerwona fala światła); karta z imieniem 1,5 s; powrót kamery, pasy znikają,
-      HUD wraca, walka i dymek samouczka.
-- [ ] „Pieczęć pęka.” jako podpis w dolnym pasie kinowym, nigdy na akcji.
-- [ ] Bez zmiany logiki wejścia: jeśli logika każe czekać w piecu — półmrok (dym, oczy); usunąć spadanie przez podłogę
-      (punkt pojawienia w piecu, jeśli to nie zmienia mechaniki, albo pozycja rysowania oddzielona od logicznej);
-      w razie wątpliwości pytać.
-- [ ] Teleport z pieca na łuk → skok: przysiad 150 ms (0,92 w pionie), lot po łuku 0,5–0,6 s, lądowanie ze
-      spłaszczeniem, pyłem i traumą 0,35.
-- [ ] Dłoń (cud za wiarę albo skrypt — patrz raport etapu 0): wyłania się ze światłem od dołu, spłaszcza się przy
-      kontakcie, pierścień i łańcuchy światła, boss szarpie się co 0,5–0,8 s, na koniec rozpada się w iskry; przy cudzie
-      także lecąca wiara i wskaźnik czasu.
-- [ ] Śmierć bossa: hit-stop 200 ms, potem 0,3× przez 0,8 s i powrót w 0,3 s; przechył 200 ms, lądowanie, trauma 0,9,
-      reszta przygasa do ok. 50%; trup nie znika od razu (obiekt tylko-wizualny rozsypuje się w popiół 1,2 s, krew leci
-      do księgi); kamera do pieca: zapada się gruz, otwiera się ciemne przejście z poświatą (proceduralnie, jeśli brak
-      grafiki — pozycja na liście „potrzebna grafika”); dopiero potem „Droga w dół stoi otworem.” w pasie kinowym,
-      powrót kamery, postacie w spoczynku.
+Zrobione na Kręgu Trzecim (Cerber). Kod: `src/Trzewia.Gra/Visual/Cutscena.cs` (CutsceneDirector, obie sceny, pasy,
+napisy, trup); liczby w `VisualConfig.Przerywnikowe`; wpięcie w `EkranGry.Krok.cs` / `EkranGry.Rysuj.cs` /
+`EkranGry.Wejscie.cs`. Wszystko za flagą `VisualConfig.Przerywniki` i F9.
+
+- [x] `CutsceneDirector` (uproszczony względem listy rodzajów kroków z planu — tyle, ile realnie potrzebują te dwie
+      sceny, reszta rodzajów jak `Shake`/`Flash` to gotowe, już istniejące systemy z etapów 1 i 3, nie nowy kod tutaj):
+      kamera jedzie do celu, pasy kinowe wjeżdżają/zjeżdżają, napisy i karta tytułu — wszystko z zegara ekranu
+      i bieżącej fazy pomnika (`sim.lud.pomnik`), nigdy z własnego czasu. **Symulacja się nie zatrzymuje** — pieczęć
+      pęka i Cerber wychodzi w tych samych tikach co zawsze; to czysto ekranowa nakładka (patrz niżej, „decyzja”).
+      Pomijanie: spacja / Esc / klik (`Wejscie.cs`) — chowa pasy, oddaje kamerę i HUD od razu; skoro gra nigdy nie
+      stała, stan po pominięciu jest identyczny z obejrzeniem do końca. Po pierwszym obejrzeniu w tej partii — krótszy
+      przebieg (karta tytułu i progi czasu × `SkrocenieDrugiRaz`).
+- [x] Wejście bossa: pasy kinowe (10% wysokości płyty, 0,4 s), HUD znika, kamera jedzie do pieca ×1,4 (0,8 s,
+      łagodnym dojazdem); pieczęć pęka i rysuje się jak dotąd (błyski, wstrząs i iskry z etapów 1 i 3 już tam są —
+      nic nowego nie trzeba było dla nich pisać, bo już reagują na `pomnik.faza/stan`); wyjście z pieca — też jak
+      dotąd (łapa unosząca się, głowy, ryk, czerwona fala), tylko teraz widziane bez przeszkadzającego HUD-u i z bliska;
+      karta z imieniem „CERBER” 1,5 s pod koniec wychodzenia; potem pasy znikają, HUD i kamera wracają, zaczyna się
+      walka z dymkiem samouczka (ten już istniał z etapu 2).
+- [x] „Pieczęć pęka.” (potem „Cerber wychodzi z pieca.”) w dolnym pasie kinowym — nigdy na akcji, bo akcja jest
+      w środku kadru, między pasami.
+- [x] **Poprawka logiki wejścia (bez zmiany logiki gry):** Cerber przy wyjściu z pieca spadał z ok. 5× własnej
+      wysokości nad korytarzem — w praktyce zza górnej krawędzi ekranu, przebijając sufit i podłogę, mimo że pieczęć
+      pęka tu, na miejscu. To tylko pozycja RYSOWANIA (ta sama liczba tików, ten sam `s.od`, ten sam punkt
+      końcowy) — zmniejszona do skromnego skoku znad już otwartego zejścia (`WejscieSkokWysokosc`, za flagą).
+- [ ] **Teleport z pieca na łuk → skok: nie dotyczy tego portu.** To był opis błyszczącego zastępczego renderu 3D
+      ze starego nagrania (zanim obrazki Cerbera się wczytały — patrz „Ustalenia z etapu 0”); w `trzewia-cs` Cerber
+      zawsze rysuje się z wypieczonych obrazków, bez takiego trybu zastępczego, więc nie ma czego naprawiać.
+- [~] **Dłoń: tylko wstrząs przy jej zdarzeniach, reszta już istniała.** Pierścień, łańcuchy światła, spłaszczenie przy
+      kontakcie, szarpanie się co 0,5–0,8 s i rozpad w iskry są już w pełni zrobione w `Rysunek/DlonDemona.cs`
+      (wierny port z TS, nie dotykany w tym etapie) — także w Kręgu Trzecim, bo to ten sam ruch bossa
+      (`rozkazRzut`/`rozkazTarcza`/`rozkazZawal`), tylko wywołany przez Cerbera zamiast dawnego demona. Lecąca wiara
+      przy Cudzie już leci (etap 3, `LotyZasobow`). Dodane tu: te same zdarzenia, którymi dłoń już mówi dźwiękiem
+      (wyrasta, rzuca, odbija się od tarczy, wali w strop, ląduje rzucony), teraz dokładają też wstrząs kamery.
+- [x] Śmierć bossa: hit-stop ostatniego ciosu (200 ms) i zwolnienie tempa po nim **już istniały w grze bazowej**
+      (`POMNIK.zwolnienie/zwolnienieTempo`, nie część oprawy) — etap 3 dołożył do tego wstrząs (trauma 0,9) i białe
+      błyski; etap 1 — przygaszenie reszty obrazu do ok. 50% w czasie konania. Tu nowe: **trup nie znika w jednej
+      klatce** — symulacja usuwa Cerbera (`sim.kill`) dopiero po konaniu, w tej samej klatce, w której gra się
+      kończy; łapiemy go wtedy (`RozpocznijSmierc`) i dorysowujemy jeszcze przez 1,2 s, gasnącego, z iskrami popiołu
+      (`Cutscena.RysujTrupa`, osobno od symulacji — martwego stworzenia ona już nie rysuje). Potem kamera (0,9 s)
+      jedzie do otworu zejścia (ten stoi otworem od pęknięcia pieczęci — w Kręgu Trzecim, inaczej niż przy Wielkim
+      Pomniku, nie trzeba niczego dodatkowo „otwierać” proceduralnie), napis „Droga w dół stoi otworem.” w pasie
+      kinowym (2,2 s), pasy znikają, HUD i kamera wracają. **Przejście do kroniki czeka**, aż ta scena się skończy
+      albo zostanie pominięta (`EkranGry.Krok.cs`) — jedyna zmiana w logice EKRANU (kiedy zmienić widok), nie w grze:
+      `sim.ending` ustawia się w tym samym tiku co zawsze.
+- [x] Krew bossa (ostatni cios) leci teraz do księgi z miejsca trupa, nie od ołtarza: `Sim.kill` zgłasza dla
+      Strażników i bossa efekt „zawal”, nie „smierc” — `LotyZasobow` szukał tylko tego drugiego (drobna poprawka
+      przy okazji, etap 3).
 
 Gotowe, gdy: od pęknięcia pieczęci do śmierci bossa nic nie teleportuje się ani nie znika w jednej klatce; obie sceny da
 się pominąć; stan gry po pominięciu jest taki sam jak po obejrzeniu.
+
+**Decyzja (bez pytania, uzasadniona regułą „etapy 0–5 nie zmieniają logiki/czasów”):** `CutsceneDirector` NIE
+zatrzymuje symulacji, wbrew pierwotnemu opisowi „symulacja stoi”. Oba przerywniki to czysto wizualna nakładka
+(kamera, pasy, HUD) nad grą, która tyka dokładnie tak jak bez oprawy — bo fazy pomnika (`rozpada`/`wychodzi`/`kona`)
+już są w grze bazowej zdarzeniami rozciągniętymi w czasie (odpowiednio 2,5 s / 3,5 s / 3,5 s przy 120 tik/s), a nie
+jednoklatkowymi przełącznikami. Zatrzymanie symulacji na te ~5 s wymagałoby albo zamrożenia całego świata (also
+walczących w tle, modlących się mnichów — realna, choć drobna, zmiana przebiegu gry), albo podrabiania fazy
+pomnika własnym zegarem reżysera (dwa źródła prawdy o tym samym stanie — ryzykowne). Pominięcie dzięki temu jest
+całkiem bezpieczne: nic w grze nie czekało na przerywnik, więc nie ma czego „domykać”.
 
 ## Etap 5 — jeden styl („rycina”)
 
