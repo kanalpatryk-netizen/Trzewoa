@@ -63,7 +63,11 @@ namespace Trzewia.Visual
             // nowa walka (inny boss albo inna partia): cel i dymek od nowa
             if (boss.id != bossId || sim.seed != ziarno || sim.tick < tikStartu)
             {
-                bossId = boss.id; ziarno = sim.seed; tikStartu = sim.tick; dymekZamkniety = false;
+                // początek walki z symulacji (faza „walka” pieczęci), nie z pierwszej narysowanej klatki — cel i dymek
+                // liczą się tak samo, czy ekran rysował od początku, czy dopiero teraz (wczytany zapis, film z kawałków)
+                var p = sim.lud.pomnik;
+                bossId = boss.id; ziarno = sim.seed; dymekZamkniety = false;
+                tikStartu = p != null && p.faza == "walka" && p.od <= sim.tick ? p.od : sim.tick;
             }
             var s = (sim.tick - tikStartu) / TIKI_NA_S * 1000;   // ms walki (czas gry)
             var teraz = Rdzen.Wydajnosc.Teraz();

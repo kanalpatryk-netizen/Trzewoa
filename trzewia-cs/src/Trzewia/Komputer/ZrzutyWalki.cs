@@ -127,7 +127,7 @@ static class ZrzutyWalki
         // przejście 2: do 3 s przed pęknięciem bez rysunku, potem zapis
         using var p = new PlotnoSkia(W, H);
         var (g, _) = NowaPartia(p, W, H);
-        var start = Math.Max(0, tikPekniecia - PRZED_S * 120);
+        var start = Math.Max(0, tikPekniecia - (Uruchomienie.PrzedS ?? PRZED_S) * 120);
         Przewin(g, t => t >= start, start + 1);
         var sim = g.sim;
 
@@ -162,7 +162,7 @@ static class ZrzutyWalki
             if (sim.ending != null && koniecOd < 0) { koniecOd = czas; zd = "koniec:" + sim.ending; }
             if (zd != null && zd != "trafienie") seriaDo = czas + SERIA_MS;
 
-            bool zapisz = (czas >= nastRegularna || czas <= seriaDo || zd != null || Array.IndexOf(PO_TRAFIENIU, f - trafienieF) >= 0)
+            bool zapisz = (czas >= nastRegularna || (!Uruchomienie.Film && (czas <= seriaDo || zd != null || Array.IndexOf(PO_TRAFIENIU, f - trafienieF) >= 0)))
                           && czas >= odS * 1000;
             if (czas >= nastRegularna) nastRegularna += coIle * 1000;
             if (zapisz)
@@ -172,8 +172,9 @@ static class ZrzutyWalki
                 g.rysuj(p, W, H, teraz);
                 msRysunku += sw.Elapsed.TotalMilliseconds;
                 sw.Restart();
-                var nazwa = $"klatka-{f:D5}.png";
-                if (!p.ZapiszPngSzybko(Path.Combine(katalog, nazwa))) { Console.Error.WriteLine($"nie zapisałem {nazwa}"); return 1; }
+                // (--film: JPEG — tysiące klatek do wideo; inaczej PNG do pomiarów co do piksela)
+                var nazwa = Uruchomienie.Film ? $"klatka-{f:D5}.jpg" : $"klatka-{f:D5}.png";
+                if (!(Uruchomienie.Film ? p.ZapiszJpg(Path.Combine(katalog, nazwa)) : p.ZapiszPngSzybko(Path.Combine(katalog, nazwa)))) { Console.Error.WriteLine($"nie zapisałem {nazwa}"); return 1; }
                 msZapisu += sw.Elapsed.TotalMilliseconds;
                 klatki.Add(Opis(g, nazwa, f, czas / 1000, zd, boss));
                 if (zd != null) Console.WriteLine($"  {czas / 1000,7:F2} s  tik {sim.tick,7}  {zd}");

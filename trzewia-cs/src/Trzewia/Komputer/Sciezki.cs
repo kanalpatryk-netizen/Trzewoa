@@ -115,6 +115,10 @@ public static class Uruchomienie
     public static bool? Czytelnosc;
     /// <summary>Oprawa, etap 3: samo „uderzenie” (VisualConfig.Uderzenie) włączone albo wyłączone — do pomiaru jego kosztu.</summary>
     public static bool? Uderzenie;
+    /// <summary>Zrzuty walki: ile sekund przed pęknięciem pieczęci zacząć (domyślnie 3).</summary>
+    public static double? PrzedS;
+    /// <summary>Zrzuty walki jako film: tylko klatki co --co-ile (bez serii przy zdarzeniach) — równy odstęp do wideo.</summary>
+    public static bool Film;
     /// <summary>Tryb Kręgu Trzeciego (Cerber) zamiast Alphy 1 — na razie tylko dla zrzutów walki (--krag).</summary>
     public static bool Krag;
 
@@ -137,6 +141,8 @@ public static class Uruchomienie
           --zwinieta-ksiega  w walce z bossem księga zwinięta do paska (próba z planu oprawy, domyślnie wyłączona)
           --czytelnosc wl|wyl  sama czytelność walki (etap 2 oprawy) włączona albo wyłączona
           --uderzenie wl|wyl   samo „uderzenie” (etap 3 oprawy: zatrzymanie trafień, wstrząs, cząsteczki) włączone albo wyłączone
+          --przed S          zrzuty walki: zacznij S sekund przed pęknięciem pieczęci (domyślnie 3)
+          --film             zrzuty walki: tylko klatki co --co-ile, bez serii przy zdarzeniach, JPEG (do złożenia filmu)
           --zrzuty-walki KATALOG
                            bez okna: bot gra partię do walki z bossem i zapisuje klatki PNG i klatki.json (porównania
                            oprawy przed/po; rozmiar z --rozmiar, domyślnie 1920x1080); z nim:
@@ -180,6 +186,8 @@ public static class Uruchomienie
                     if (Oprawa == null) Console.Error.WriteLine($"--oprawa: nie rozumiem „{nast}” (wl albo wyl)");
                     i++; break;
                 case "--zwinieta-ksiega": ZwinietaKsiega = true; break;
+                case "--przed": PrzedS = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
+                case "--film": Film = true; break;
                 case "--uderzenie":
                     Uderzenie = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Uderzenie == null) Console.Error.WriteLine($"--uderzenie: nie rozumiem „{nast}” (wl albo wyl)");
