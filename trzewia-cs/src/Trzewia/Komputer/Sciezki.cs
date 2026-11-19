@@ -123,6 +123,8 @@ public static class Uruchomienie
     public static bool Film;
     /// <summary>Tryb Kręgu Trzeciego (Cerber) zamiast Alphy 1 — na razie tylko dla zrzutów walki (--krag).</summary>
     public static bool Krag;
+    /// <summary>Film całej partii (menu, zmiana trybu, wstęp, budowa w przyspieszeniu, walka, kronika) — katalog na klatki.</summary>
+    public static string? FilmPelnejGry;
 
     public const string Pomoc = """
         Trzewia.exe [przełączniki]
@@ -154,6 +156,10 @@ public static class Uruchomienie
           --co-ile S       zwykłe zrzuty co S sekund gry (domyślnie 0.5); przy zdarzeniach — seria klatka po klatce
           --od S, --najdluzej S
                            zapisuj dopiero od S sekund zapisu / kończ po S sekundach (szybkie próby strojenia)
+          --film-pelny KATALOG
+                           bez okna: cała partia Kręgu Trzeciego od menu — zmiana trybu, „Nowa gra”, wstęp (film i
+                           scena wejścia), budowa w przyspieszeniu aż do pęknięcia pieczęci, walka z Cerberem w
+                           zwykłym tempie (obie cutscenki), kronika; klatki JPEG + klatki.json (--ziarno, --rozmiar)
         """;
 
     public static void Ustaw(string[] args)
@@ -195,6 +201,7 @@ public static class Uruchomienie
                     Uderzenie = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Uderzenie == null) Console.Error.WriteLine($"--uderzenie: nie rozumiem „{nast}” (wl albo wyl)");
                     i++; break;
+                case "--film-pelny": FilmPelnejGry = nast; i++; break;
                 case "--przerywniki":
                     Przerywniki = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Przerywniki == null) Console.Error.WriteLine($"--przerywniki: nie rozumiem „{nast}” (wl albo wyl)");

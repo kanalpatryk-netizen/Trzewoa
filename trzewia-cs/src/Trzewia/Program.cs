@@ -48,6 +48,11 @@ static class Program
             Rdzen.Gospodarz.Dane = sciezki;
             return ZrzutyWalki.Uruchom();
         }
+        if (Uruchomienie.FilmPelnejGry != null)
+        {
+            Rdzen.Gospodarz.Dane = sciezki;
+            return FilmPelnejGry.Uruchom();
+        }
         Rdzen.Gospodarz.Pliki = sciezki;
         Rdzen.Gospodarz.Dane = sciezki;
         Dziennik.Otworz(Sciezki.Gracz,
