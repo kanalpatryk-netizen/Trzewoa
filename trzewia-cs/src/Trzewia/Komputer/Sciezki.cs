@@ -113,6 +113,8 @@ public static class Uruchomienie
     public static bool ZwinietaKsiega;
     /// <summary>Oprawa, etap 2: sama czytelność (VisualConfig.Czytelnosc) włączona albo wyłączona — do pomiaru jej kosztu.</summary>
     public static bool? Czytelnosc;
+    /// <summary>Oprawa, etap 3: samo „uderzenie” (VisualConfig.Uderzenie) włączone albo wyłączone — do pomiaru jego kosztu.</summary>
+    public static bool? Uderzenie;
     /// <summary>Tryb Kręgu Trzeciego (Cerber) zamiast Alphy 1 — na razie tylko dla zrzutów walki (--krag).</summary>
     public static bool Krag;
 
@@ -134,6 +136,7 @@ public static class Uruchomienie
           --oprawa wl|wyl  nowa oprawa walki z bossem na starcie włączona albo wyłączona (w grze przełącza F9)
           --zwinieta-ksiega  w walce z bossem księga zwinięta do paska (próba z planu oprawy, domyślnie wyłączona)
           --czytelnosc wl|wyl  sama czytelność walki (etap 2 oprawy) włączona albo wyłączona
+          --uderzenie wl|wyl   samo „uderzenie” (etap 3 oprawy: zatrzymanie trafień, wstrząs, cząsteczki) włączone albo wyłączone
           --zrzuty-walki KATALOG
                            bez okna: bot gra partię do walki z bossem i zapisuje klatki PNG i klatki.json (porównania
                            oprawy przed/po; rozmiar z --rozmiar, domyślnie 1920x1080); z nim:
@@ -177,6 +180,10 @@ public static class Uruchomienie
                     if (Oprawa == null) Console.Error.WriteLine($"--oprawa: nie rozumiem „{nast}” (wl albo wyl)");
                     i++; break;
                 case "--zwinieta-ksiega": ZwinietaKsiega = true; break;
+                case "--uderzenie":
+                    Uderzenie = Trzewia.Visual.VisualConfig.Czytaj(nast);
+                    if (Uderzenie == null) Console.Error.WriteLine($"--uderzenie: nie rozumiem „{nast}” (wl albo wyl)");
+                    i++; break;
                 case "--czytelnosc":
                     Czytelnosc = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Czytelnosc == null) Console.Error.WriteLine($"--czytelnosc: nie rozumiem „{nast}” (wl albo wyl)");
