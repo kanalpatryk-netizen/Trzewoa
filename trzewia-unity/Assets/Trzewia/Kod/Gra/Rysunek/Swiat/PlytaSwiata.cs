@@ -180,6 +180,9 @@ namespace Trzewia.Rysunek
             // (4) rysujPoleceniaNaMapie, rysujRamke, rysujDev
             sterowanie?.polecenia(ctx, cam, teraz);
             Efekty.rysujEfekty(ctx, sim.efekty, cam, teraz, sim);
+            // oprawa (etap 3): plamy i krople krwi, pył, popiół — materia, pod mapą świateł
+            var uderzenie = Visual.Uderzenie.Aktywne;
+            if (uderzenie) Visual.Czasteczki.RysujPod(ctx, cam, teraz);
             // (4) rysujZnacznikiLudu
             sterowanie?.znacznikiLudu(ctx, cam, teraz);
             RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
@@ -190,6 +193,8 @@ namespace Trzewia.Rysunek
             RysAniol.rysujAniola(ctx, sim, cam, teraz);
             // oprawa walki (etap 1): mapa świateł, poświata, błyski zdarzeń, przygaszenie przy konaniu bossa, winieta
             if (oprawa) swiatlo.Naloz(ctx, sim, cam, teraz);
+            // oprawa (etap 3): iskry świecą same — po mapie świateł
+            if (uderzenie) Visual.Czasteczki.RysujNad(ctx, cam, teraz);
             // oprawa (etap 2): znaki głów bossa i etykiety nad postaciami — po świetle, żeby ich nie gasiło
             if (czytelnosc) Visual.Czytelnosc.NadSwiatlem(ctx, sim, cam, teraz);
             if (pauza)

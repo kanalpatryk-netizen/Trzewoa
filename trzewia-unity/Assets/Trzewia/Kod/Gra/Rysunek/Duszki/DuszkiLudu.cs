@@ -127,15 +127,20 @@ namespace Trzewia.Rysunek.Duszki
             if (rola == "rycerz")
             {
                 var st = stanWalki(sim, c, cz, czas);
+                // oprawa (etap 3): cel walki zniknął (boss kona, świat stanął) — po 0,3 s spoczynek zamiast gardy i zamachu
+                // (ruch w toku — np. ścięcie ostatniej głowy — dogrywa się do końca; przerywa go tylko świat, który stanął)
+                if (st != null && st.id != "powalony" && (st.id == "garda" || st.id == "podejscie" || sim.ending != null)
+                    && Visual.Uderzenie.DoSpoczynku(sim, czas)) return Spoczynek();
                 if (st != null)
                 {
                     if (st.id == "powalony")
                     {
-                        // upadek (22 tiki), leży (do końca ogłuszenia), wstaje (ostatnie 64 tiki)
-                        var lezyDo = st.dl - 64;
+                        // upadek (22 tiki), leży (do końca ogłuszenia), wstaje (ostatnie 64 tiki; z oprawą — ostatnie 220 ms)
+                        var wst = Visual.Uderzenie.TikiWstawania;
+                        var lezyDo = st.dl - wst;
                         if (st.t < 22 && d.Animacja("powalony-pada") is { } pada) return pada.Klatka(st.t / 22);
                         if (st.t < lezyDo && d.Animacja("powalony-lezy") is { } lezy) return lezy.KlatkaZegara(czas, id);
-                        if (d.Animacja("powalony-wstaje") is { } wstaje) return wstaje.Klatka((st.t - lezyDo) / 64);
+                        if (d.Animacja("powalony-wstaje") is { } wstaje) return wstaje.Klatka((st.t - lezyDo) / wst);
                     }
                     else if (st.id == "garda" || st.id == "podejscie")
                     {

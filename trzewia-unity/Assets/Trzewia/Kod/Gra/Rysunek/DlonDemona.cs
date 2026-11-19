@@ -569,6 +569,27 @@ namespace Trzewia.Rysunek
         static void gwiazdki(IPlotno ctx, double sx, double sy, double h, double kier, double teraz, bool ruch)
         {
             double hx = sx - kier * h * 1.1, hy = sy - h * 0.55;
+            // oprawa (etap 3): zamiast kreskówkowych gwiazdek trzy krótkie kreski rytownika krążą nad głową
+            if (Visual.Uderzenie.Aktywne)
+            {
+                ctx.save();
+                ctx.lineCap = "round";
+                for (int i = 0; i < 3; i++)
+                {
+                    var a = (ruch ? teraz * 0.005 : 0) + (i / 3.0) * Math.PI * 2;
+                    double x = hx + Math.Cos(a) * h * 0.32, y = hy + Math.Sin(a) * h * 0.09;
+                    var dl = Math.Max(3, h * 0.11);
+                    // kreska po stycznej do orbity: ciemny brzeg, jasny rdzeń (pergamin)
+                    double tx = -Math.Sin(a), ty = Math.Cos(a) * 0.28, n = Math.Sqrt(tx * tx + ty * ty);
+                    tx /= n; ty /= n;
+                    ctx.strokeStyle = "rgba(20,12,8,0.75)"; ctx.lineWidth = Math.Max(2.4, h * 0.05);
+                    ctx.beginPath(); ctx.moveTo(x - tx * dl / 2, y - ty * dl / 2); ctx.lineTo(x + tx * dl / 2, y + ty * dl / 2); ctx.stroke();
+                    ctx.strokeStyle = "rgba(240,226,190,0.95)"; ctx.lineWidth = Math.Max(1.2, h * 0.022);
+                    ctx.stroke();
+                }
+                ctx.restore();
+                return;
+            }
             ctx.save();
             ctx.fillStyle = "rgba(255,226,140,0.95)";
             ctx.shadowColor = "rgba(255,210,120,0.9)"; ctx.shadowBlur = 6;

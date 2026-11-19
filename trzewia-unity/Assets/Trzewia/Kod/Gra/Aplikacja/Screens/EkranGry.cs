@@ -245,6 +245,8 @@ namespace Trzewia.Aplikacja
         /// <param name="zWstepem">Krąg Trzeci: film i scena wejścia (nie w samouczku i nie w grze obserwowanej).</param>
         public void nowaGra(double? ziarno = null, bool zWstepem = true)
         {
+            // (oprawa, etap 3: bez zaległych zatrzymań, wstrząsu i cząsteczek z poprzedniej partii)
+            Visual.Uderzenie.Wyczysc();
             zapasTrybu();
             partiaKregu = Krag.Wlaczony;
             var klucz = ziarno ?? -1;

@@ -307,7 +307,14 @@ namespace Trzewia.Rysunek
             ["wiara"] = "wiara", ["krew"] = "krew", ["jedzenie"] = "jedzenie", ["zelazo"] = "żelazo", ["zloto"] = "złoto", ["oddanie"] = "oddanie",
         };
         /// <summary>Ostatnio pokazana liczba każdego zasobu — żeby przy zmianie liczba na chwilę rozjarzyła się (więcej złotem, mniej czerwienią).</summary>
-        sealed class Ostatnia { public double n, t; public bool wiecej; }
+        sealed class Ostatnia { public double n, t, roznica; public bool wiecej; }
+        /// <summary>Oprawa (etap 3): napisy „+N” / „–N” w pamięci (bez składania w każdej klatce).</summary>
+        static readonly Dictionary<double, string> NAPISY_ZMIAN = new Dictionary<double, string>();
+        static string napisZmiany(double d)
+        {
+            if (!NAPISY_ZMIAN.TryGetValue(d, out var t)) { t = (d > 0 ? "+" : "–") + Js.Js.S(Math.Abs(d)); if (NAPISY_ZMIAN.Count < 512) NAPISY_ZMIAN[d] = t; }
+            return t;
+        }
         static readonly Dictionary<string, Ostatnia> ostatnie = new Dictionary<string, Ostatnia>();
 
         // ------------------------------------------------------------------ pamięć podręczna (8.11: wydajność)
@@ -507,9 +514,10 @@ namespace Trzewia.Rysunek
             double krewMax = GORA.krewMax, naRytual = new[] { R.modlitwa.krew, R.szal.krew, R.wskrzeszenie.krew, R.ofiaraKrwi.krew, R.ofiaraZycia.krew }.Where(x => x > 0).Min();
             var liczby = new Dictionary<string, double>
             {
-                ["wiara"] = Math.Max(0, Math.Floor(sim.wiara - urobki.wLocie("wiara"))),
-                ["krew"] = Math.Max(0, Math.Floor(sim.krew - urobki.wLocie("krew"))),
-                ["jedzenie"] = Wiadro.porcjiWWiadrach(sim),
+                // (oprawa, etap 3: to, co leci do księgi — Visual.LotyZasobow — licznik doliczy, gdy doleci)
+                ["wiara"] = Math.Max(0, Math.Floor(sim.wiara - urobki.wLocie("wiara") - Visual.LotyZasobow.WLocie("wiara"))),
+                ["krew"] = Math.Max(0, Math.Floor(sim.krew - urobki.wLocie("krew") - Visual.LotyZasobow.WLocie("krew"))),
+                ["jedzenie"] = Math.Max(0, Wiadro.porcjiWWiadrach(sim) - Visual.LotyZasobow.WLocie("jedzenie")),
                 ["zelazo"] = Math.Max(0, sim.zelazo - urobki.wLocie("zelazo")),
                 ["zloto"] = Math.Max(0, sim.zloto - urobki.wLocie("zloto")),
             };
@@ -536,15 +544,26 @@ namespace Trzewia.Rysunek
                 if (wNazwy + m.pismo * 0.3 + ctx.measureText(Js.Js.S(n)).width <= m.szer + m.s * 0.7)
                     x += pismo(ctx, NAPIS_ZASOBU[z], x, m.y, m.pismo * 0.66, ATRAMENT, alfa: 0.85) + m.pismo * 0.3;
                 ostatnie.TryGetValue(z, out var byla);
-                if (byla == null || byla.n != n) ostatnie[z] = new Ostatnia { n = n, t = byla != null ? czas : -1e9, wiecej = byla == null || n > byla.n };
+                if (byla == null || byla.n != n) ostatnie[z] = new Ostatnia { n = n, t = byla != null ? czas : -1e9, wiecej = byla == null || n > byla.n, roznica = byla != null ? n - byla.n : 0 };
                 var st = ostatnie[z];
+                // oprawa (etap 3): licznik pulsuje przy zmianie (1,0 → 1,2 → 1,0 w 200 ms)
+                var uderzenie = Visual.Uderzenie.Aktywne;
+                var kPuls = uderzenie ? (czas - st.t) / Visual.VisualConfig.Uderzenia.PulsMs : 1;
                 var zar = Nastroj.wolnoRuszac() ? Math.Max(0, 1 - (czas - st.t) / NASTROJ.liczbaZar) : 0;
                 Styl? blaskLiczby = blysk > 0 ? (z == "krew" ? Barwa.Rgba(255, 70, 50, blysk) : Barwa.Rgba(255, 214, 110, blysk))
                     : zar > 0 ? (st.wiecej ? Barwa.Rgba(240, 190, 90, 0.9 * zar) : Barwa.Rgba(214, 50, 32, 0.9 * zar)) : null;
                 var podbicie = blysk > 0 ? 1 + (OKRUCH.podbicie - 1) * blysk * blysk : 1;
+                if (kPuls >= 0 && kPuls < 1) podbicie *= 1 + (Visual.VisualConfig.Uderzenia.PulsSkala - 1) * Math.Sin(kPuls * Math.PI);
                 // okruchy wiary i krwi lecą do liczby
                 if (lot == "wiara" || lot == "krew") urobki.cele[lot] = (x + m.pismo * 0.5, m.y - m.pismo * 0.35);
+                if (z == "jedzenie") urobki.cele[z] = (x + m.pismo * 0.5, m.y - m.pismo * 0.35);
                 var wLiczby = pismo(ctx, Js.Js.S(n), x, m.y, m.pismo * podbicie, BARWA_ZASOBU[z], blask: blaskLiczby, blaskR: 10);
+                // oprawa (etap 3): „+N” / „–N” przy liczbie — unosi się i gaśnie (drobne zmiany modlitwy bez napisu)
+                var progZ = z == "wiara" ? Visual.VisualConfig.Uderzenia.ProgWiary : z == "krew" ? Visual.VisualConfig.Uderzenia.ProgKrwi : Visual.VisualConfig.Uderzenia.ProgJedzenia;
+                var kZm = (czas - st.t) / Visual.VisualConfig.Uderzenia.ZmianaMs;
+                if (uderzenie && kZm >= 0 && kZm < 1 && Math.Abs(st.roznica) >= progZ)
+                    pismo(ctx, napisZmiany(st.roznica), x + wLiczby + m.pismo * 0.25, m.y - m.pismo * (0.15 + 0.5 * kZm), m.pismo * 0.72,
+                        st.roznica > 0 ? BARWA_ZASOBU[z] : CZERWIEN, alfa: Math.Min(1, kZm * 10) * (1 - kZm * kZm));
                 if (z == "krew") obszarKrwi = new Obszar(m.x - m.s / 2, m.y - m.pismo * 1.1, x + wLiczby - (m.x - m.s / 2), m.pismo * 1.5);
             }
             {

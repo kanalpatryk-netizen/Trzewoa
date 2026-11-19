@@ -129,6 +129,8 @@ namespace Trzewia.Visual
             public static double CelMs = 5000, CelGasnieMs = 600;
             /// <summary>Pasek ściętej głowy pęka i gaśnie przez tyle ms; zostaje z niego tyle krycia.</summary>
             public static double PekniecieMs = 900, PoPeknieciuAlfa = 0.38;
+            /// <summary>Pas paska bossa węższy niż tyle px (ok. 720p) — pasek ciaśniejszy (mniejszy tytuł i odstępy).</summary>
+            public static double PasekCiasnyPonizej = 700;
             /// <summary>Dymek z instrukcją przy pasku bossa: znika po tylu ms (albo po kliknięciu).</summary>
             public static double DymekMs = 6000;
 
@@ -143,6 +145,53 @@ namespace Trzewia.Visual
             public static double ZoomBossa = 1.25, ZoomMs = 420;
             /// <summary>Postacie „najbliższe bossowi” (środek kadru między nimi a bossem): do tylu kafli od bossa, najwyżej tyle.</summary>
             public static double BliskoBossa = 14; public static int IluNajblizszych = 3;
+        }
+
+        // ───────────── etap 3: „uderzenie” (Visual/Uderzenie.cs, Visual/Czasteczki.cs, Visual/LotyZasobow.cs) ─────────────
+
+        /// <summary>
+        /// Liczby „uderzenia”. Czasy w ms. Wielkości „px” — piksele ekranu przy 1080p (× wysokość ekranu / 1080);
+        /// w świecie 1 kafel = `PxNaKafel` px (przybliżenie kamery w walce przy 1080p).
+        /// </summary>
+        public static class Uderzenia
+        {
+            /// <summary>Zatrzymanie trafień (symulacja stoi, rysunek działa): mocny cios, ścięcie głowy, ostatni cios.</summary>
+            public static double StopMocny = 60, StopSciecie = 140, StopOstatni = 200;
+            /// <summary>Mocny cios: boss traci jednym trafieniem co najmniej tyle życia (ułamek) albo się chwieje.</summary>
+            public static double MocnyOd = 0.06;
+
+            /// <summary>Błysk trafienia: boss biały przez tyle ms (krycie od `BlyskAlfa` do zera).</summary>
+            public static double BlyskMs = 70, BlyskAlfa = 0.75;
+
+            /// <summary>Wstrząs („trauma” 0–1): przesunięcie najwyżej (px @1080p), obrót najwyżej (stopnie), zanik (na sekundę).</summary>
+            public static double WstrzasPx = 10, WstrzasStopnie = 1.5, WstrzasZanik = 1.5, WstrzasHz = 13;
+            /// <summary>Trauma zdarzeń: mocny cios, przewrócenie, lądowanie bossa, ścięcie głowy, pęknięcie pieczęci, śmierć bossa, rysa pieczęci.</summary>
+            public static double TraumaMocny = 0.2, TraumaPrzewrocenie = 0.25, TraumaLadowanie = 0.35, TraumaSciecie = 0.5,
+                TraumaPekniecie = 0.8, TraumaSmierc = 0.9, TraumaRysa = 0.2;
+
+            /// <summary>Cząsteczki: najwięcej naraz; plam krwi na posadzce i jak długo gasną (ms).</summary>
+            public static int Czasteczek = 500, Plam = 64;
+            public static double PlamaMs = 9000;
+            /// <summary>Grawitacja cząsteczek (kafle/s²) i ile kafli to 1 px @1080p (do prędkości z planu).</summary>
+            public static double Grawitacja = 38, PxNaKafel = 17.5;
+
+            /// <summary>Lot ściętej głowy: w górę (px/s), grawitacja (px/s²), obrót (rad/s), odbicie (ułamek prędkości), plama (ms).</summary>
+            public static double GlowaWGore = 350, GlowaGrawitacja = 900, GlowaObrotOd = 6, GlowaObrotDo = 10, GlowaOdbicie = 0.3, GlowaPlamaMs = 400;
+
+            /// <summary>Przewrócenie: odbicie po upadku (px @1080p), wstawanie (ms) — ostatnie tyle ms ogłuszenia.</summary>
+            public static double OdbiciePx = 4, WstawanieMs = 220;
+
+            /// <summary>Zapowiedź ataku bossa: odchylenie do tyłu przed trafieniem, wyrzut do przodu z rozciągnięciem w trafieniu.</summary>
+            public static double Odchylenie = 0.3, Rozciagniecie = 0.07;
+            /// <summary>Oddech bossa w spoczynku: skala w pionie ±, częstotliwość (Hz).</summary>
+            public static double Oddech = 0.015, OddechHz = 0.5;
+
+            /// <summary>Zasoby: lot ikonki (ms), puls licznika (ms, do skali), „+N”/„−N” (ms); progi zmiany (bez drobnicy).</summary>
+            public static double LotMs = 700, PulsMs = 200, PulsSkala = 1.2, ZmianaMs = 1300;
+            public static double ProgWiary = 3, ProgKrwi = 2, ProgJedzenia = 1;
+
+            /// <summary>Gdy cel walki znika (boss kona albo świat stanął), postać wraca do spoczynku po tylu ms.</summary>
+            public static double SpoczynekMs = 300;
         }
 
         // ───────────── klawisz debug ─────────────

@@ -111,8 +111,18 @@ namespace Trzewia.Aplikacja
             ctx.translate(plate.x, plate.y);
             // oprawa (etap 2): wielkości napisów i znaków w px @1080p — skala z wysokości ekranu
             Visual.Czytelnosc.SkalaUi = h / 1080; Visual.Czytelnosc.PlytaX = plate.x; Visual.Czytelnosc.PlytaY = plate.y;
+            // oprawa (etap 3): wstrząs kamery — świat na płycie drga i lekko się obraca wokół środka płyty, powiększony
+            // o tyle, by brzegi nie odsłaniały tła; interfejs stoi
+            if (Visual.Uderzenie.Wstrzas(teraz, out var wdx, out var wdy, out var wkat))
+            {
+                double scx = plate.w / 2, scy = plate.h / 2;
+                var pow = 1 + (2 * Math.Max(Math.Abs(wdx), Math.Abs(wdy)) + Math.Abs(Math.Sin(wkat)) * Math.Max(plate.w, plate.h)) / Math.Min(plate.w, plate.h);
+                ctx.translate(scx + wdx, scy + wdy); ctx.rotate(wkat); ctx.scale(pow, pow); ctx.translate(-scx, -scy);
+            }
             t = plyta.Rysuj(ctx, sim, cam, teraz, pauza, oddech, pomieszczeniePodKursorem(), oltarzPodKursorem(), t, this);
             ctx.restore();
+            // oprawa (etap 3): zmiany zasobów bez lotu z Urobków (jedzenie, wiara z modlitwy i za Cud, krew z zabijania) → loty
+            Visual.LotyZasobow.Krok(sim, urobki, teraz);
             // etap 3: fala Strażników Snu — pasek nad polem gry
             RysStraznicy.rysujPasekFali(ctx, sim, plate.x + plate.w * 0.42, plate.y + 10, plate.w * 0.46);
             if (pauza)
@@ -203,6 +213,7 @@ namespace Trzewia.Aplikacja
             }
             // okruchy rudy lecą nad wszystkim, aż do liczników
             urobki.rysujLoty(ctx, plate, cam, teraz);
+            Visual.LotyZasobow.Rysuj(ctx, plate, cam, urobki, teraz);
             if (legenda) Legenda.rysujLegende(ctx, plate, w);
             // Alpha 1 (komputer): nad płytą nic — zasoby są w księdze, podpowiedź nad płytą nie jest rysowana
             radaRect = null;

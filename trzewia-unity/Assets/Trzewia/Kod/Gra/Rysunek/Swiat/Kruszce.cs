@@ -74,6 +74,13 @@ namespace Trzewia.Rysunek
             if (Nastroj.wolnoRuszac()) loty.Add(new Lot { rodzaj = rodzaj, ile = ile, x = x, y = y, od = teraz, ziarno = Math.Floor(x * 7919 + y * 104729 + teraz + 0.5), wstecz = true });
         }
 
+        /// <summary>Oprawa (etap 3): czy tego rodzaju lot właśnie ruszył (w tej chwili zmiana zasobu ma już swój ślad).</summary>
+        public bool lotAktywny(string rodzaj, double teraz)
+        {
+            foreach (var l in loty) if (l.rodzaj == rodzaj && teraz - l.od < 150) return true;
+            return false;
+        }
+
         /// <summary>Ile kruszcu jest jeszcze w powietrzu — licznik pokazuje stan symulacji bez tego.</summary>
         public double wLocie(string rodzaj)
         {

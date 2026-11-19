@@ -24,11 +24,14 @@ namespace Trzewia.Visual
         static readonly string[] ZETNIJ = { "Doberman — zetnij!", "Wilk — zetnij!", "Pitbull — zetnij!" };
         const string CEL = "Zetnij Cerberowi trzy głowy — zejdziecie niżej";
         const string KONA = "Cerber kona — droga w dół stoi otworem";
-        static readonly string[] DYMEK =
+        /// <summary>Dymek: dwie linijki dla każdej głowy w kolejce (I, II, III) — bieżąca ma swój znak.</summary>
+        static readonly string[][] DYMKI =
         {
-            "Bijcie głowę ze znakiem I — gdy jej pasek opadnie, rycerz zetnie ją mieczem.",
-            "Potem II i III. Mnisi na modlitwie osłabiają Cerbera.",
+            new[] { "Bijcie głowę ze znakiem I — gdy jej pasek opadnie, rycerz zetnie ją mieczem.", "Potem II i III. Mnisi na modlitwie osłabiają Cerbera." },
+            new[] { "Bijcie głowę ze znakiem II — gdy jej pasek opadnie, rycerz zetnie ją mieczem.", "Potem III. Mnisi na modlitwie osłabiają Cerbera." },
+            new[] { "Bijcie głowę ze znakiem III — gdy jej pasek opadnie, rycerz zetnie ją mieczem.", "To ostatnia. Mnisi na modlitwie osłabiają Cerbera." },
         };
+        static string[] DYMEK = DYMKI[0];
         const double TIKI_NA_S = 120;
 
         // stan walki: od kiedy (tik) trwa — cel i dymek liczą czas od niego
@@ -66,6 +69,8 @@ namespace Trzewia.Visual
             var teraz = Rdzen.Wydajnosc.Teraz();
             var roz = Math.Max(13, Math.Min(18, szer * 0.021));
             var bw = Math.Min(szer, roz * 34);
+            // mały ekran (720p): ciaśniej — pasek nie może zjadać piątej części płyty (decyzja po raporcie etapu 2)
+            var ciasny = szer < C.PasekCiasnyPonizej;
             var bx = x + szer / 2 - bw / 2;
             var pad = roz * 0.9;
 
@@ -81,8 +86,8 @@ namespace Trzewia.Visual
             // cel: 5 s, gaśnie przez ostatnie 0,6 s, rząd się zwija; przy konaniu — na stałe zdanie o drodze w dół
             var celW = kona ? 1 : Math.Max(0, Math.Min(1, (C.CelMs - s) / C.CelGasnieMs));
             var celWidac = celW > 0.01;
-            double hTytul = roz * 2.2, hCel = roz * 1.5 * (kona ? 1 : Math.Min(1, celW * 1.6)), hPaski = roz * 2.7;
-            var bh = pad * 0.5 + hTytul + hCel + hPaski + pad * 0.4;
+            double hTytul = roz * (ciasny ? 1.7 : 2.2), hCel = roz * (ciasny ? 1.25 : 1.5) * (kona ? 1 : Math.Min(1, celW * 1.6)), hPaski = roz * (ciasny ? 2.45 : 2.7);
+            var bh = pad * (ciasny ? 0.3 : 0.5) + hTytul + hCel + hPaski + pad * (ciasny ? 0.2 : 0.4);
 
             PanelX = bx; PanelY = y; PanelW = bw; PanelH = bh;
             ctx.save();
@@ -95,17 +100,18 @@ namespace Trzewia.Visual
             ctx.strokeRect(bx + 3.5, y + 3.5, bw - 7, bh - 7);
 
             // tytuł
-            var yy = y + pad * 0.5 + hTytul * 0.55;
+            var padG = pad * (ciasny ? 0.3 : 0.5);
+            var yy = y + padG + hTytul * 0.55;
             ctx.textAlign = "center"; ctx.textBaseline = "middle";
-            ctx.font = Czytelnosc.Kroj(Ink.SERIF_TYTUL, roz * 1.75);
+            ctx.font = Czytelnosc.Kroj(Ink.SERIF_TYTUL, roz * (ciasny ? 1.4 : 1.75));
             ctx.fillStyle = Barwa.Rgba(242, 230, 200, 1);
             ctx.fillText(tytul, x + szer / 2, yy);
             // wskaźnik fali — mały, z prawej
             ctx.font = Czytelnosc.Kroj(Ink.SERIF, roz * 0.74, true);
             ctx.textAlign = "right";
             ctx.fillStyle = Barwa.Rgba(196, 178, 146, 0.85);
-            ctx.fillText(fala, bx + bw - pad * 0.7, y + pad * 0.5 + roz * 0.75);
-            yy = y + pad * 0.5 + hTytul;
+            ctx.fillText(fala, bx + bw - pad * 0.7, y + padG + roz * 0.75);
+            yy = y + padG + hTytul;
 
             // cel jedną linijką
             if (celWidac || kona)
@@ -141,6 +147,7 @@ namespace Trzewia.Visual
             ctx.restore();
 
             // dymek z instrukcją pod paskiem
+            DYMEK = DYMKI[(int)Math.Max(0, Math.Min(2, g.odcietych))];
             var dymekA = kona || dymekZamkniety ? 0 : Math.Max(0, Math.Min(1, Math.Min(s / 200, (C.DymekMs - s) / 400)));
             if (dymekA > 0.01) dymek(ctx, bx, y + bh + roz * 0.75, bw, roz, dymekA);
             else DymekW = 0;
