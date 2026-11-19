@@ -24,11 +24,14 @@ namespace Trzewia.Visual
         static readonly string[] ZETNIJ = { "Doberman — zetnij!", "Wilk — zetnij!", "Pitbull — zetnij!" };
         const string CEL = "Zetnij Cerberowi trzy głowy — zejdziecie niżej";
         const string KONA = "Cerber kona — droga w dół stoi otworem";
-        static readonly string[] DYMEK =
+        /// <summary>Dymek: dwie linijki dla każdej głowy w kolejce (I, II, III) — bieżąca ma swój znak.</summary>
+        static readonly string[][] DYMKI =
         {
-            "Bijcie głowę ze znakiem I — gdy jej pasek opadnie, rycerz zetnie ją mieczem.",
-            "Potem II i III. Mnisi na modlitwie osłabiają Cerbera.",
+            new[] { "Bijcie głowę ze znakiem I — gdy jej pasek opadnie, rycerz zetnie ją mieczem.", "Potem II i III. Mnisi na modlitwie osłabiają Cerbera." },
+            new[] { "Bijcie głowę ze znakiem II — gdy jej pasek opadnie, rycerz zetnie ją mieczem.", "Potem III. Mnisi na modlitwie osłabiają Cerbera." },
+            new[] { "Bijcie głowę ze znakiem III — gdy jej pasek opadnie, rycerz zetnie ją mieczem.", "To ostatnia. Mnisi na modlitwie osłabiają Cerbera." },
         };
+        static string[] DYMEK = DYMKI[0];
         const double TIKI_NA_S = 120;
 
         // stan walki: od kiedy (tik) trwa — cel i dymek liczą czas od niego
@@ -144,6 +147,7 @@ namespace Trzewia.Visual
             ctx.restore();
 
             // dymek z instrukcją pod paskiem
+            DYMEK = DYMKI[(int)Math.Max(0, Math.Min(2, g.odcietych))];
             var dymekA = kona || dymekZamkniety ? 0 : Math.Max(0, Math.Min(1, Math.Min(s / 200, (C.DymekMs - s) / 400)));
             if (dymekA > 0.01) dymek(ctx, bx, y + bh + roz * 0.75, bw, roz, dymekA);
             else DymekW = 0;
