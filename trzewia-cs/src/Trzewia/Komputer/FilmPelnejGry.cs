@@ -156,8 +156,14 @@ static class FilmPelnejGry
             double nastS = 0;
             bool wZwyklym = false, bylaWalka = false;
             double koniecOd = -1;
+            var puls = System.Diagnostics.Stopwatch.StartNew();
             while (true)
             {
+                if (Environment.GetEnvironmentVariable("DBG_PELNY") != null && puls.ElapsedMilliseconds > 2000)
+                {
+                    puls.Restart();
+                    Console.WriteLine($"    [puls] tik {gra.sim.tick} teraz {teraz:F0} faza {faza(gra.sim)} ending {gra.sim.ending} cutscena {Visual.Cutscena.Scena}/{Visual.Cutscena.Trwa} f {f}");
+                }
                 Krok(DT);
                 var sim = gra.sim;
                 bool wWalce = faza(sim) != "stoi";
