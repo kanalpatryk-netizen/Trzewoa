@@ -101,9 +101,10 @@ namespace Trzewia.Visual
             }
             if (r == 1 && przyrost)
             {
+                // zwykła śmierć — efekt „smierc”; Strażnik albo boss (Krąg: Cerber) — „zawal” (Sim.kill rozróżnia po c.straznik)
                 Efekt? naj = null;
                 foreach (var e in sim.efekty)
-                    if (e.rodzaj == "smierc" && (naj == null || e.t < naj.t)) naj = e;
+                    if ((e.rodzaj == "smierc" || e.rodzaj == "zawal") && (naj == null || e.t < naj.t)) naj = e;
                 if (naj != null && naj.t < 180) return (naj.x, naj.y - 0.5);
             }
             return (w.oltarz.x + 0.5, w.oltarz.y - 1);

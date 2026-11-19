@@ -186,6 +186,8 @@ namespace Trzewia.Rysunek
             // (4) rysujZnacznikiLudu
             sterowanie?.znacznikiLudu(ctx, cam, teraz);
             RysStraznicy.rysujStraznikowWSkale(ctx, sim, cam, teraz);
+            // oprawa (etap 4): trup bossa — symulacja go już nie rysuje (martwy), ale nie znika bez śladu, tylko się rozsypuje
+            if (Visual.VisualConfig.Aktywne(Visual.VisualConfig.Przerywniki)) Visual.Cutscena.RysujTrupa(ctx, sim, cam, teraz);
             // etap 5: błyski pomnika, rozpad i konanie demona (fala światła, popiół)
             RysPomnik.rysujNadPomnikiem(ctx, sim, cam, teraz);
             RysDlon.rysujDlon(ctx, sim, cam, teraz);

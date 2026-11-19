@@ -123,8 +123,11 @@ namespace Trzewia.Aplikacja
             ctx.restore();
             // oprawa (etap 3): zmiany zasobów bez lotu z Urobków (jedzenie, wiara z modlitwy i za Cud, krew z zabijania) → loty
             Visual.LotyZasobow.Krok(sim, urobki, teraz);
-            // etap 3: fala Strażników Snu — pasek nad polem gry
-            RysStraznicy.rysujPasekFali(ctx, sim, plate.x + plate.w * 0.42, plate.y + 10, plate.w * 0.46);
+            // oprawa (etap 4): w przerywniku (wejście/śmierć bossa) chowa się cały HUD — zamiast niego pasy kinowe
+            var ukryjHud = Visual.Cutscena.UkryjHud(teraz);
+            if (!ukryjHud)
+                // etap 3: fala Strażników Snu — pasek nad polem gry
+                RysStraznicy.rysujPasekFali(ctx, sim, plate.x + plate.w * 0.42, plate.y + 10, plate.w * 0.46);
             if (pauza)
             {
                 // wstrzymany oddech: złota, pulsująca rama wewnątrz płyty
@@ -144,55 +147,65 @@ namespace Trzewia.Aplikacja
             Plyta.drawSmoke(ctx, plate, sim, teraz);
             Plyta.drawEyelid(ctx, plate, sim, teraz);
             Plyta.drawFrame(ctx, plate, teraz, oddech, ui.pointer);
-            if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski) Minimapa.rysujMinimape(ctx, sim, cam, plate, teraz);
+            if (ustawienia.skalaGlebokosci && !plate.waski && !plate.niski && !ukryjHud) Minimapa.rysujMinimape(ctx, sim, cam, plate, teraz);
             // Alpha 1 (komputer): pod płytą księga (lud i zasoby), okno postaci w rogu płyty, „Budowa” obok księgi
             // (telefon: tła HUD, pasek drużyny, dłonie oddania — pominięte)
+            // oprawa (etap 4): w przerywniku cały HUD pod płytą (i przyciski, i karty) chowa się za pasami kinowymi —
+            // klikom i tak odcina drogę Cutscena.Trwa (EkranGry.Wejscie.cs), więc puste listy pól są tylko porządkiem
             polaDruzyny.Clear();
-            polaKsiegi = Ksiega.rysujKsiege(ctx, sim, plate, h, zaznaczeni, ui.pointer, teraz, urobki);
-            polaOkna = sim.ending == null && !zapiski && !atlas.otwarte
-                ? OknoPostaci.rysujOknoPostaci(ctx, sim, plate, zaznaczeniZywi(), ui.pointer, teraz) : new List<PoleOkna>();
-            if (sim.ending != null) menuBudowy = false;
-            ui.draw(ctx, sim, teraz);
-            var cena = Pomieszczenia.cenaLiny(sim);
-            polaBudowy = Budowa.rysujBudowe(ctx, plate, h, new StanBudowy
+            if (!ukryjHud)
             {
-                kursor = ui.pointer, czas = teraz, menu = menuBudowy, szablon = szablon,
-                maRozkaz = zaznaczeniZywi().Any(c => c.polecenie != null),
-                liny = (Pomieszczenia.darmoweLiny(sim), cena != 0 ? cena : POMIESZCZENIA.linaKrew),
-            });
-            // (Alpha 1: kroniki na dole już nie ma — wszystkie wpisy są w zapiskach)
-            przyciski = Przyciski.rozmiescPrzyciski(plate, h, pauza, zapiski, legenda, tempoTeraz(), ustawienia.trybDeweloperski, Odkrycia.odkrycia.niezobaczone);
-            // atlas stoi osobno, przy księdze — własna okrągła tablica
-            foreach (var b in przyciski.Where(q => q.osobno))
-            {
-                var pad = Math.Max(6, b.r * 0.3);
-                Panele.panelKamien(ctx, b.x - b.r - pad, b.y - b.r - pad, (b.r + pad) * 2, (b.r + pad) * 2, b.r + pad);
+                polaKsiegi = Ksiega.rysujKsiege(ctx, sim, plate, h, zaznaczeni, ui.pointer, teraz, urobki);
+                polaOkna = sim.ending == null && !zapiski && !atlas.otwarte
+                    ? OknoPostaci.rysujOknoPostaci(ctx, sim, plate, zaznaczeniZywi(), ui.pointer, teraz) : new List<PoleOkna>();
+                if (sim.ending != null) menuBudowy = false;
+                ui.draw(ctx, sim, teraz);
+                var cena = Pomieszczenia.cenaLiny(sim);
+                polaBudowy = Budowa.rysujBudowe(ctx, plate, h, new StanBudowy
+                {
+                    kursor = ui.pointer, czas = teraz, menu = menuBudowy, szablon = szablon,
+                    maRozkaz = zaznaczeniZywi().Any(c => c.polecenie != null),
+                    liny = (Pomieszczenia.darmoweLiny(sim), cena != 0 ? cena : POMIESZCZENIA.linaKrew),
+                });
+                // (Alpha 1: kroniki na dole już nie ma — wszystkie wpisy są w zapiskach)
+                przyciski = Przyciski.rozmiescPrzyciski(plate, h, pauza, zapiski, legenda, tempoTeraz(), ustawienia.trybDeweloperski, Odkrycia.odkrycia.niezobaczone);
+                // atlas stoi osobno, przy księdze — własna okrągła tablica
+                foreach (var b in przyciski.Where(q => q.osobno))
+                {
+                    var pad = Math.Max(6, b.r * 0.3);
+                    Panele.panelKamien(ctx, b.x - b.r - pad, b.y - b.r - pad, (b.r + pad) * 2, (b.r + pad) * 2, b.r + pad);
+                }
+                // panel przycisków z przegródkami (rysunek Pawła: prostokąt z przegródkami pod rzędem przycisków)
+                var prz = przyciski.Where(q => !q.osobno).ToList();
+                if (prz.Count > 0)
+                {
+                    double x0 = prz.Min(b => b.x - b.r), x1 = prz.Max(b => b.x + b.r);
+                    double y0 = prz.Min(b => b.y - b.r), y1 = prz.Max(b => b.y + b.r);
+                    var pad = Math.Max(6, prz[0].r * 0.35);
+                    Panele.panelKamien(ctx, x0 - pad, y0 - pad, x1 - x0 + pad * 2, y1 - y0 + pad * 2);
+                    Panele.przegrodki(ctx, prz.Select(b => (b.x, b.y, b.r)));
+                }
+                var podPrzyciskiem = Przyciski.przyciskPod(przyciski, ui.pointer.x, ui.pointer.y);
+                Przyciski.rysujPrzyciski(ctx, przyciski, podPrzyciskiem?.akcja, teraz);
             }
-            // panel przycisków z przegródkami (rysunek Pawła: prostokąt z przegródkami pod rzędem przycisków)
-            var prz = przyciski.Where(q => !q.osobno).ToList();
-            if (prz.Count > 0)
-            {
-                double x0 = prz.Min(b => b.x - b.r), x1 = prz.Max(b => b.x + b.r);
-                double y0 = prz.Min(b => b.y - b.r), y1 = prz.Max(b => b.y + b.r);
-                var pad = Math.Max(6, prz[0].r * 0.35);
-                Panele.panelKamien(ctx, x0 - pad, y0 - pad, x1 - x0 + pad * 2, y1 - y0 + pad * 2);
-                Panele.przegrodki(ctx, prz.Select(b => (b.x, b.y, b.r)));
-            }
-            var podPrzyciskiem = Przyciski.przyciskPod(przyciski, ui.pointer.x, ui.pointer.y);
-            Przyciski.rysujPrzyciski(ctx, przyciski, podPrzyciskiem?.akcja, teraz);
+            else { polaKsiegi = new List<PoleKsiegi>(); polaOkna = new List<PoleOkna>(); polaBudowy = new List<PoleBudowy>(); przyciski = new List<Przycisk>(); }
             ui.plan = pauza ? rozkazy : null;
             const double nadPrzyciskami = 0;
             var wyd = sim.wydarzenia.biezace;
-            polaBanera = pauza && !zapiski && sim.ending == null && wyd == null
-                ? RysRozkazy.rysujBanerPauzy(ctx, plate, sim, rozkazy.ile, teraz, nadPrzyciskami) : new List<PoleBanera>();
-            polaAlarmu = alarm != null && pauza && !zapiski && wyd == null ? RysRozkazy.rysujAlarm(ctx, plate, alarm, teraz) : new List<PoleAlarmu>();
-            polaWydarzenia = wyd != null && !zapiski && sim.ending == null ? RysWydarzenie.rysujWydarzenie(ctx, plate, sim, wyd, teraz) : new List<PoleWyboru>();
+            if (!ukryjHud)
+            {
+                polaBanera = pauza && !zapiski && sim.ending == null && wyd == null
+                    ? RysRozkazy.rysujBanerPauzy(ctx, plate, sim, rozkazy.ile, teraz, nadPrzyciskami) : new List<PoleBanera>();
+                polaAlarmu = alarm != null && pauza && !zapiski && wyd == null ? RysRozkazy.rysujAlarm(ctx, plate, alarm, teraz) : new List<PoleAlarmu>();
+                polaWydarzenia = wyd != null && !zapiski && sim.ending == null ? RysWydarzenie.rysujWydarzenie(ctx, plate, sim, wyd, teraz) : new List<PoleWyboru>();
+            }
+            else { polaBanera = new List<PoleBanera>(); polaAlarmu = new List<PoleAlarmu>(); polaWydarzenia = new List<PoleWyboru>(); }
             // etap 3d: okno ołtarza (karta wydarzenia ma pierwszeństwo — okno czeka pod nią)
             if (sim.ending != null) oknoOltarza = false;
-            polaOltarza = oknoOltarza && wyd == null && !zapiski
+            polaOltarza = oknoOltarza && wyd == null && !zapiski && !ukryjHud
                 ? OknoOltarza.rysujOknoOltarza(ctx, plate, sim, teraz, ui.pointer, (plate.x + cam.toScreenX(sim.world.oltarz.x + 0.5), cam.zoom * 2.6)) : new List<PoleOltarza>();
             // (na komputerze bez przycisku menu w rogu — Esc)
-            if (liczby || ustawienia.trybDeweloperski)
+            if ((liczby || ustawienia.trybDeweloperski) && !ukryjHud)
             {
                 ctx.save();
                 ctx.font = $"{Js.Js.S(Math.Max(14, w / 74))}px \"Trzewia Tekst\", Georgia, serif";
@@ -211,10 +224,13 @@ namespace Trzewia.Aplikacja
                 for (int i = 0; i < linie.Length; i++) ctx.fillText(linie[i], plate.x + plate.w - 12, plate.y + plate.h - 14 - (linie.Length - 1 - i) * 20);
                 ctx.restore();
             }
-            // okruchy rudy lecą nad wszystkim, aż do liczników
-            urobki.rysujLoty(ctx, plate, cam, teraz);
-            Visual.LotyZasobow.Rysuj(ctx, plate, cam, urobki, teraz);
-            if (legenda) Legenda.rysujLegende(ctx, plate, w);
+            if (!ukryjHud)
+            {
+                // okruchy rudy lecą nad wszystkim, aż do liczników
+                urobki.rysujLoty(ctx, plate, cam, teraz);
+                Visual.LotyZasobow.Rysuj(ctx, plate, cam, urobki, teraz);
+                if (legenda) Legenda.rysujLegende(ctx, plate, w);
+            }
             // Alpha 1 (komputer): nad płytą nic — zasoby są w księdze, podpowiedź nad płytą nie jest rysowana
             radaRect = null;
             if (painting) rysujKoszt(ctx, w);
@@ -229,6 +245,8 @@ namespace Trzewia.Aplikacja
             panelDev?.rysuj(ctx, w, h, teraz);
             // Krąg Trzeci: napisy sceny wejścia (bez sterowania)
             wstep.rysujNapisy(ctx, plate.x, plate.y, plate.w, plate.h, teraz);
+            // oprawa (etap 4): pasy kinowe, napisy i karta tytułu przerywnika — na samej górze, nad wszystkim
+            Visual.Cutscena.Rysuj(ctx, sim, plate, teraz);
             L.znacz(Czesc.interfejs, t);
         }
 

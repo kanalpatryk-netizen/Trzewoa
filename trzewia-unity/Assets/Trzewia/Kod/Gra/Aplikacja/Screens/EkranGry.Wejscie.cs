@@ -640,6 +640,8 @@ namespace Trzewia.Aplikacja
         {
             // Krąg Trzeci: w filmie i scenie wejścia gracz nie ma jeszcze władzy
             if (wstep.trwa()) return;
+            // oprawa (etap 4): klik pomija przerywnik (wejście/śmierć bossa) — gra pod spodem nie wie, że scena w ogóle była
+            if (Visual.Cutscena.Trwa) { if (faza == Faza.dol) Visual.Cutscena.Pomin(); return; }
             ui.pointer = (e.clientX, e.clientY);
             // oprawa (etap 2): dymek z instrukcją przy pasku bossa znika po kliknięciu; kliknięcie w sam dymek nic więcej nie robi
             if (faza == Faza.dol && Visual.PasekBossa.DymekW > 0)
@@ -991,6 +993,8 @@ namespace Trzewia.Aplikacja
         {
             // Krąg Trzeci: Esc pomija film; w scenie wejścia klawisze nic nie robią
             if (wstep.trwa()) { if (akcja == Akcja.menu) wstep.pomin(); return; }
+            // oprawa (etap 4): spacja / Esc pomija przerywnik (wejście/śmierć bossa)
+            if (Visual.Cutscena.Trwa) { if (akcja == Akcja.menu || akcja == Akcja.pauza) Visual.Cutscena.Pomin(); return; }
             if (e?.key == "Tab") { liczby = true; return; }
             if (atlas.otwarte && e != null) { atlas.klawisz(e.key); return; }
             // Enter przy karcie sytuacji: „planuj” — karta znika, czas dalej stoi

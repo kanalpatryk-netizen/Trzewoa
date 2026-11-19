@@ -640,6 +640,17 @@ namespace Trzewia.Skia
         /// PNG bez strat, ale z szybką kompresją (zlib 1) — te same piksele, kilka razy szybciej. Do serii zrzutów
         /// (Trzewia --zrzuty-walki), gdzie liczy się czas, a nie wielkość pliku.
         /// </summary>
+        /// <summary>Zapis klatki jako JPEG (jakość 0–100) — do filmów z wielu klatek (PNG zająłby gigabajty).</summary>
+        public bool ZapiszJpg(string plik, int jakosc = 92)
+        {
+            using var img = wlasna?.Snapshot();
+            if (img == null) return false;
+            using var d = img.Encode(SKEncodedImageFormat.Jpeg, jakosc);
+            if (d == null) return false;
+            File.WriteAllBytes(plik, d.ToArray());
+            return true;
+        }
+
         public bool ZapiszPngSzybko(string plik)
         {
             using var img = wlasna?.Snapshot();

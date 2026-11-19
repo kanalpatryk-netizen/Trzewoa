@@ -152,6 +152,8 @@ namespace Trzewia.Aplikacja
         Cel? celKarty;
         /// <summary>Gra obserwowana: kiedy partia się skończyła (czas ekranu) i kiedy ostatnio wysłano stan.</summary>
         double botKoniecOd, botStanOd;
+        /// <summary>Oprawa, etap 4: czy ta partia już raz weszła w `if (sim.ending != null)` — tam odpalamy scenę śmierci.</summary>
+        bool endingObsluzone;
 
         readonly IKontekst app;
 
@@ -247,6 +249,9 @@ namespace Trzewia.Aplikacja
         {
             // (oprawa, etap 3: bez zaległych zatrzymań, wstrząsu i cząsteczek z poprzedniej partii)
             Visual.Uderzenie.Wyczysc();
+            // (oprawa, etap 4: nowa partia — bez przerywnika z poprzedniej)
+            Visual.Cutscena.Nowa();
+            endingObsluzone = false;
             zapasTrybu();
             partiaKregu = Krag.Wlaczony;
             var klucz = ziarno ?? -1;

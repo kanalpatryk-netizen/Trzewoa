@@ -54,6 +54,14 @@ namespace Trzewia.Visual
         /// <summary>Dokłada wstrząsu (0–1).</summary>
         public static void Trauma(double t) { if (Aktywne) trauma = Math.Min(1, trauma + t); }
 
+        /// <summary>Zanik traumy (ok. 1,5/s) — co klatkę gry (Klatka) i przy odczycie, zegarem ekranu.</summary>
+        static void zanik(double teraz)
+        {
+            if (!double.IsNaN(traumaT) && teraz < traumaT) trauma = 0;
+            if (!double.IsNaN(traumaT) && teraz > traumaT) trauma = Math.Max(0, trauma - U.WstrzasZanik * Math.Min(0.25, (teraz - traumaT) / 1000));
+            traumaT = teraz;
+        }
+
         /// <summary>Bieżąca trauma (pomiar, test).</summary>
         public static double Traumy => trauma;
 
@@ -64,9 +72,7 @@ namespace Trzewia.Visual
         {
             dx = dy = kat = 0;
             if (!Aktywne) { trauma = 0; return false; }
-            if (!double.IsNaN(traumaT) && teraz < traumaT) trauma = 0;
-            if (!double.IsNaN(traumaT) && teraz > traumaT) trauma = Math.Max(0, trauma - U.WstrzasZanik * Math.Min(0.25, (teraz - traumaT) / 1000));
-            traumaT = teraz;
+            zanik(teraz);
             var u = Rdzen.SettingsStore.ustawienia;
             var s = trauma * trauma * Math.Max(0, Math.Min(1, u.silaWstrzasu)) * (u.ograniczRuch ? 0 : 1);
             if (s < 1e-4) return false;
@@ -280,6 +286,8 @@ namespace Trzewia.Visual
         public static void Klatka(Sim sim, double teraz)
         {
             if (!Aktywne) { Czasteczki.Wyczysc(); return; }
+            // wstrząs gaśnie z czasem gry na ekranie, także w klatkach, których nikt nie rysuje
+            zanik(teraz);
             Czasteczki.Krok(sim, teraz);
             if (!stany.TryGetValue(sim, out var st)) return;
             // przewrócony dopadł posadzki (koniec „pada”, 22 tiki): pył spod ciała
