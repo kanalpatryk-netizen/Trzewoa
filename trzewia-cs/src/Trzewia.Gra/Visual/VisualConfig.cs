@@ -129,6 +129,8 @@ namespace Trzewia.Visual
             public static double CelMs = 5000, CelGasnieMs = 600;
             /// <summary>Pasek ściętej głowy pęka i gaśnie przez tyle ms; zostaje z niego tyle krycia.</summary>
             public static double PekniecieMs = 900, PoPeknieciuAlfa = 0.38;
+            /// <summary>Pas paska bossa węższy niż tyle px (ok. 720p) — pasek ciaśniejszy (mniejszy tytuł i odstępy).</summary>
+            public static double PasekCiasnyPonizej = 700;
             /// <summary>Dymek z instrukcją przy pasku bossa: znika po tylu ms (albo po kliknięciu).</summary>
             public static double DymekMs = 6000;
 

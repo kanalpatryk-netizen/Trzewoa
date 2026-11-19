@@ -34,6 +34,13 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 3. **Zawsze pracujemy na najnowszej wersji gry.** Najnowsza to Krąg Trzeci (Cerber), więc etapy 2–5 robimy na nim
    (w trybie kręgu); Alpha 1 zostaje, jaka jest.
 
+## Decyzje po raporcie etapu 2 (19.11 — użytkownik: „na pytania odpowiedz sam według siebie”)
+
+1. Księga zwinięta w walce — zostaje wyłączona (flaga do próby): księga jest wzorem stylu i trzyma akcje (pieczęć
+   „Nakarm”, zasoby); 16% wyższa płyta tego nie równoważy.
+2. Dymek z instrukcją — treść zostaje.
+3. Pasek bossa przy 720p — ciaśniejszy (mniejszy tytuł i odstępy): zamiast ok. 19% wysokości płyty ok. 15%.
+
 ## Ustalenia z etapu 0, które zmieniają plan
 
 - **Walki z Cerberem nie ma w `trzewia-cs/`.** Cerber jest tylko w `krag-3-beta/` (TypeScript, gałąź
