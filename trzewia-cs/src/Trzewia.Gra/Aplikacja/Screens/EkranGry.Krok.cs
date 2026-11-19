@@ -142,7 +142,7 @@ namespace Trzewia.Aplikacja
         /// Etap 5: pomnik pęka, rozpada się, demon wstaje, demon kona — dźwięk przy każdej zmianie, a przy rozpadzie
         /// i ostatnim uderzeniu kamera jedzie tam sama (to są chwile, których nie wolno przegapić).
         /// </summary>
-        void patrzNaPomnik()
+        void patrzNaPomnik(double teraz)
         {
             var p = sim.lud.pomnik;
             if (p == null) return;
@@ -156,7 +156,9 @@ namespace Trzewia.Aplikacja
             if (p.faza == "rozpada")
             {
                 g.rozpadPomnika();
-                if (nasluch == null) pokazMiejsce(w.coreX + 0.5, w.coreY - 2, Math.Max(cam.zoom, 14));
+                // oprawa (etap 4): scena wejścia bossa trzyma kamerę sama — bez starego, natychmiastowego skoku
+                if (Visual.VisualConfig.Aktywne(Visual.VisualConfig.Przerywniki) && Krag.Wlaczony) Visual.Cutscena.RozpocznijWejscie(sim, cam, teraz);
+                else if (nasluch == null) pokazMiejsce(w.coreX + 0.5, w.coreY - 2, Math.Max(cam.zoom, 14));
             }
             else if (p.faza == "wychodzi") g.pekniecie();
             else if (p.faza == "kona")
@@ -176,11 +178,17 @@ namespace Trzewia.Aplikacja
             slyszanaDlonDemona = new SlyszanaDlonDemona { akcja = s.akcja, faza = s.faza, odbicie = s.odbicieT ?? -1, sciana = s.sciana?.od ?? -1, lecacy = lecacy };
             if (by == null) return;
             var g = app.gesty;
-            if (s.akcja != null && (s.akcja != by.akcja || (s.faza != by.faza && s.faza == "wstaje"))) g.dlonWyrasta(s.akcja == "zawal");
-            if (s.akcja == "rzut" && s.faza == "cofa" && by.faza == "rzuca") g.rzutDloni();
-            if ((s.odbicieT ?? -1) != by.odbicie && s.odbicieT != null) g.odbicieOdDloni();
-            if ((s.sciana?.od ?? -1) != by.sciana && s.sciana != null) g.zawalStropu();
-            foreach (var id in by.lecacy) if (!lecacy.Contains(id)) g.upadek();
+            // oprawa (etap 4): te same zdarzenia, którymi dłoń już mówi dźwiękiem — teraz jeszcze lekki wstrząs kamery
+            var u = Visual.Uderzenie.Aktywne;
+            if (s.akcja != null && (s.akcja != by.akcja || (s.faza != by.faza && s.faza == "wstaje")))
+            {
+                g.dlonWyrasta(s.akcja == "zawal");
+                if (u) Visual.Uderzenie.Trauma(s.akcja == "zawal" ? Visual.VisualConfig.Uderzenia.TraumaPekniecie * 0.5 : Visual.VisualConfig.Uderzenia.TraumaPrzewrocenie);
+            }
+            if (s.akcja == "rzut" && s.faza == "cofa" && by.faza == "rzuca") { g.rzutDloni(); if (u) Visual.Uderzenie.Trauma(Visual.VisualConfig.Uderzenia.TraumaMocny); }
+            if ((s.odbicieT ?? -1) != by.odbicie && s.odbicieT != null) { g.odbicieOdDloni(); if (u) Visual.Uderzenie.Trauma(Visual.VisualConfig.Uderzenia.TraumaPrzewrocenie); }
+            if ((s.sciana?.od ?? -1) != by.sciana && s.sciana != null) { g.zawalStropu(); if (u) Visual.Uderzenie.Trauma(Visual.VisualConfig.Uderzenia.TraumaPekniecie); }
+            foreach (var id in by.lecacy) if (!lecacy.Contains(id)) { g.upadek(); if (u) Visual.Uderzenie.Trauma(Visual.VisualConfig.Uderzenia.TraumaLadowanie); }
         }
 
         /// <summary>
@@ -250,7 +258,7 @@ namespace Trzewia.Aplikacja
             sluchaj();
             glosOdmowy();
             glosyLudu(teraz);
-            patrzNaPomnik();
+            patrzNaPomnik(teraz);
             sluchajDloniDemona();
             // (Krąg Trzeci: w filmie i scenie wejścia symulacja stoi)
             if (!zamrozone() && !wstep.trwa())
@@ -334,18 +342,38 @@ namespace Trzewia.Aplikacja
                 }
                 if (sim.ending != null)
                 {
+                    // oprawa (etap 4): w chwili, w której gra się kończy, trup bossa jeszcze stoi (symulacja go nie
+                    // usuwa od razu — sim.kill robi to dopiero po konaniu) — to jedyna klatka, w której go złapiemy,
+                    // żeby nie znikał bez śladu; scena potem na chwilę wstrzymuje przejście do kroniki (niżej)
+                    if (!endingObsluzone)
+                    {
+                        endingObsluzone = true;
+                        // (scena gra też w grze obserwowanej/bocie — tylko przejście do kroniki niżej czeka na nią,
+                        // a to i tak dotyczy wyłącznie żywego gracza: w BOT/nasluch ten ekran nie zmienia się samo)
+                        if (Visual.VisualConfig.Aktywne(Visual.VisualConfig.Przerywniki) && Krag.Wlaczony && nasluch == null)
+                        {
+                            var zmarly = sim.creatures.FirstOrDefault(c => c.boss != null);
+                            if (zmarly != null) Visual.Cutscena.RozpocznijSmierc(sim, cam, teraz, zmarly);
+                        }
+                    }
                     nasluch?.Invoke(new ZdarzenieGry { typ = "koniec", opis = sim.ending });
-                    if (nasluch == null && !BOT.wlaczony) app.idz("kronika", sim);
+                    if (nasluch == null && !BOT.wlaczony && !Visual.Cutscena.Trwa) app.idz("kronika", sim);
                 }
             }
 
             // oprawa (etap 3): cząsteczki w czasie ekranu, pył przewróconych, krew za lecącą głową, popiół konania
             if (!wstep.trwa()) Visual.Uderzenie.Klatka(sim, teraz);
+            // oprawa (etap 4): przerywnik (wejście/śmierć bossa) trzyma kamerę sam, zegarem ekranu — nawet w pauzie,
+            // bo to on ją trzyma (nic innego w tej chwili nie powinno jej ruszać)
+            var cutscenaByla = Visual.Cutscena.Trwa;
+            if (cutscenaByla) recznaKamera = true;
+            if (!wstep.trwa()) Visual.Cutscena.Krok(sim, cam, teraz);
+            if (cutscenaByla && !Visual.Cutscena.Trwa) { recznaKamera = false; camTarget.x = cam.x; camTarget.y = cam.y; }
             // oprawa (etap 2, za flagą ZwinietaKsiega): w walce z bossem księga zwinięta do paska — płyta wyższa
             var zwinieta = Visual.VisualConfig.Aktywne(Visual.VisualConfig.ZwinietaKsiega) && !wstep.trwa() && Visual.KameraBossa.WalkaZBossem(sim, out _);
             if (zwinieta != Przyciski.KsiegaZwinieta && szerEkranu > 0) { Przyciski.KsiegaZwinieta = zwinieta; rozmiar(szerEkranu, wysEkranu); }
             // oprawa (etap 2): w walce z bossem kamera płynnie bliżej i wraca po walce (Visual/KameraBossa.cs) — także w pauzie
-            if (!wstep.trwa())
+            if (!wstep.trwa() && !Visual.Cutscena.Trwa)
                 Visual.KameraBossa.Krok(sim, cam, dt, ustawienia.kameraZaZyciem && !recznaKamera && ustawienia.autoZoom,
                     painting || ui.verb != null || pointers.Count > 0 || (dev && DEV.sledz && DEV.sledzony >= 0));
 

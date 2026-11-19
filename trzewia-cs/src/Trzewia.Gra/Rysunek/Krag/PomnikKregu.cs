@@ -222,7 +222,10 @@ namespace Trzewia.Rysunek
             if (k < SKOK)
             {
                 var f = k / SKOK;
-                dy = -h * 5 * (1 - f * f);
+                // oprawa (etap 4): skromny skok znad już otwartego zejścia — nie spadanie z nieoznaczonej wysokości nad
+                // korytarzem (stary błąd: przebijał sufit i podłogę, choć pieczęć pęka tu, w piecu, nie gdzieś wyżej)
+                var skokWys = Visual.VisualConfig.Aktywne(Visual.VisualConfig.Przerywniki) ? Visual.VisualConfig.Przerywnikowe.WejscieSkokWysokosc : 5;
+                dy = -h * skokWys * (1 - f * f);
                 p.deba = 0.25; p.krok = 0;
                 foreach (var g in p.glowy) { g.pochyl = 0.4; g.paszcza = 0.6; }
             }
