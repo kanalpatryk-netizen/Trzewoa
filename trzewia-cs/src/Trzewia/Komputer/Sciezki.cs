@@ -115,6 +115,8 @@ public static class Uruchomienie
     public static bool? Czytelnosc;
     /// <summary>Oprawa, etap 3: samo „uderzenie” (VisualConfig.Uderzenie) włączone albo wyłączone — do pomiaru jego kosztu.</summary>
     public static bool? Uderzenie;
+    /// <summary>Oprawa, etap 4: same przerywniki (VisualConfig.Przerywniki) włączone albo wyłączone — do pomiaru kosztu.</summary>
+    public static bool? Przerywniki;
     /// <summary>Zrzuty walki: ile sekund przed pęknięciem pieczęci zacząć (domyślnie 3).</summary>
     public static double? PrzedS;
     /// <summary>Zrzuty walki jako film: tylko klatki co --co-ile (bez serii przy zdarzeniach) — równy odstęp do wideo.</summary>
@@ -141,6 +143,7 @@ public static class Uruchomienie
           --zwinieta-ksiega  w walce z bossem księga zwinięta do paska (próba z planu oprawy, domyślnie wyłączona)
           --czytelnosc wl|wyl  sama czytelność walki (etap 2 oprawy) włączona albo wyłączona
           --uderzenie wl|wyl   samo „uderzenie” (etap 3 oprawy: zatrzymanie trafień, wstrząs, cząsteczki) włączone albo wyłączone
+          --przerywniki wl|wyl same przerywniki (etap 4 oprawy: wejście/śmierć bossa) włączone albo wyłączone
           --przed S          zrzuty walki: zacznij S sekund przed pęknięciem pieczęci (domyślnie 3)
           --film             zrzuty walki: tylko klatki co --co-ile, bez serii przy zdarzeniach, JPEG (do złożenia filmu)
           --zrzuty-walki KATALOG
@@ -191,6 +194,10 @@ public static class Uruchomienie
                 case "--uderzenie":
                     Uderzenie = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Uderzenie == null) Console.Error.WriteLine($"--uderzenie: nie rozumiem „{nast}” (wl albo wyl)");
+                    i++; break;
+                case "--przerywniki":
+                    Przerywniki = Trzewia.Visual.VisualConfig.Czytaj(nast);
+                    if (Przerywniki == null) Console.Error.WriteLine($"--przerywniki: nie rozumiem „{nast}” (wl albo wyl)");
                     i++; break;
                 case "--czytelnosc":
                     Czytelnosc = Trzewia.Visual.VisualConfig.Czytaj(nast);
