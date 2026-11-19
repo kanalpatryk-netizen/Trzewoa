@@ -8,7 +8,7 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 1 — światło i kontrast (system ogólny, na walce z demonem); błyski do dostrojenia później (decyzja 16.11)
 - [x] Etap P — przeniesienie kręgu trzeciego (Cerber) z `krag-3-beta/` do C# (czeka na „dalej”)
 - [x] Etap 2 — czytelność (na Kręgu Trzecim; czeka na „dalej”)
-- [ ] Etap 3 — „uderzenie”
+- [x] Etap 3 — „uderzenie” (na Kręgu Trzecim; czeka na „dalej”)
 - [ ] Etap 4 — cutscenki
 - [ ] Etap 5 — jeden styl („rycina”)
 - [ ] Etap 6 — mechanika bossa (opcjonalnie, dopiero po „tak” użytkownika i po skończonym porcie)
@@ -230,26 +230,43 @@ bliżej). Testy: `CzytelnoscTesty` (etykiety nie nachodzą na siebie ani na pase
 
 ## Etap 3 — „uderzenie”
 
-- [ ] Zatrzymanie trafień (symulacja stoi, rysunek działa): zwykłe ciosy 0; mocny cios 60 ms; ścięcie głowy 140 ms;
-      ostatni cios 200 ms. Czas symulacji oddzielony od rzeczywistego (UI, kamera, cząsteczki na rzeczywistym).
-- [ ] Błysk trafienia: boss biały na 60–80 ms (`source-atop`, krycie do zera).
-- [ ] Wstrząs kamery „trauma”: 0–1, siła = trauma², przesunięcie najwyżej 10 px przy 1080p, obrót najwyżej 1,5°, gładki
-      szum, zanik ok. 1,5/s; trauma: mocny cios 0,2, przewrócenie 0,25, lądowanie bossa 0,35, ścięcie głowy 0,5,
-      pęknięcie pieczęci 0,8, śmierć bossa 0,9; całość × suwak z ustawień (0–100%).
-- [ ] Cząsteczki z puli (bez alokacji, najwyżej ok. 500): iskry (addytywnie), krople krwi (spadają, plamy), pył
-      (przewrócenie, lądowanie), popiół.
-- [ ] Ścięta głowa leci: w bok 120–220 px/s, w górę 350 px/s, grawitacja 900 px/s², obrót 6–10 rad/s; jedno odbicie
-      (0,3), potem leży; smuga krwi, plama rośnie 0 → pełna w 400 ms.
-- [ ] Przewracanie: obrót do 90° w 140 ms (ease-out), odbicie 4 px, pył; wstawanie 220 ms; zamiast gwiazdek 2–3 kreski
-      krążące nad głową.
-- [ ] Zapowiedź ataku (tylko wizualna): jeśli atak ma osobny start i trafienie — odchylenie do tyłu, w trafieniu wyrzut
-      do przodu z rozciągnięciem; jeśli nie — w raporcie, że zapowiedź wymaga zmiany logiki.
-- [ ] „Oddech” bossa w spoczynku: skala w pionie ±1,5%, ok. 0,5 Hz.
-- [ ] Zasoby: zmiana ze źródłem w świecie — ikonka po łuku (Bézier, 0,7 s) do licznika; licznik pulsuje
-      (1,0 → 1,2 → 1,0 w 200 ms) i pokazuje „+N” / „−N”; wydatki lecą z księgi do celu.
-- [ ] Gdy cel znika, postacie wracają do spoczynku w najwyżej 0,3 s (jeśli to błąd AI — naprawić jako błąd, opisać).
+Zrobione na Kręgu Trzecim (Cerber). Kod: `src/Trzewia.Gra/Visual/Uderzenie.cs` (zdarzenia, zatrzymanie, wstrząs, lot
+głowy, przewrócenie, zapowiedź i oddech, spoczynek), `Visual/Czasteczki.cs`, `Visual/LotyZasobow.cs`; liczby
+w `VisualConfig.Uderzenia`. Wszystko za flagą `VisualConfig.Uderzenie` i F9; suwak „Siła wstrząsu” w ustawieniach (Obraz).
+
+- [x] Zatrzymanie trafień: zwykłe ciosy 0; mocny cios (jednym trafieniem ≥ 6% życia albo boss się chwieje) 60 ms;
+      ścięcie głowy 140 ms; ostatni cios 200 ms. Ekran gry nie robi wtedy tików i nie nadrabia ich potem; rysunek,
+      kamera, interfejs i cząsteczki idą zegarem ekranu. Zdarzenia wykrywane po każdym tiku z różnicy stanu.
+- [x] Błysk trafienia: Cerber biały ok. 70 ms (krycie 0,75 → 0): każda część rysuje się drugi raz z białej sylwetki
+      (zamiast `source-atop`, które na wspólnym płótnie bieliłoby też tło) — sylwetki liczone raz na obrazek.
+- [x] Wstrząs „trauma”: siła = trauma², do 10 px przy 1080p i 1,5°, gładki szum, zanik 1,5/s; trauma: mocny cios 0,2,
+      przewrócenie 0,25, lądowanie bossa 0,35 (tupnięcie, cios z góry, szarża — w chwili trafienia), ścięcie 0,5,
+      pęknięcie pieczęci 0,8, śmierć bossa 0,9 (i rysa pieczęci 0,2); × suwak 0–100%, nic przy „Ogranicz ruch”.
+      Płyta lekko powiększona na czas wstrząsu, żeby brzegi nie odsłaniały tła.
+- [x] Cząsteczki z jednej puli (500): iskry (addytywnie, po świetle), krople krwi (spadają, na posadzce plamy gasnące
+      przez 9 s), pył (przewrócenie, lądowanie, pęknięcie), popiół (pęknięcie, Cienie, konanie).
+- [x] Ścięta głowa: w górę 350 px/s, grawitacja 900 px/s², obrót 6–10 rad/s (całe obroty — legnie w tej samej pozie),
+      jedno odbicie (0,3), kałuża 0 → pełna w 400 ms, smuga krwi w locie. Odstępstwo: prędkość w bok nie 120–220 px/s,
+      tylko taka, by głowa legła dokładnie tam, gdzie kładzie ją symulacja (półtora–dwa kafle od psa) — inaczej
+      obraz rozjechałby się z pozycją logiczną.
+- [x] Przewracanie: rycerz ma w C# własne klatki upadku, leżenia i wstawania (nie obrócony obrazek), więc zamiast
+      obrotu — odbicie 4 px tuż po upadku, pył spod ciała, wstawanie w ostatnich 220 ms ogłuszenia; nad ogłuszonym
+      (dłoń przy bossie) zamiast gwiazdek trzy krążące kreski rytownika.
+- [x] Zapowiedź ataku: każdy atak Cerbera ma w danych osobny początek i trafienie (`RuchBossa.traf`) — przed trafieniem
+      odchylenie do tyłu, w trafieniu wyrzut z rozciągnięciem 7%. Logiki nie trzeba było zmieniać.
+- [x] Oddech bossa w spoczynku: skala w pionie ±1,5%, 0,5 Hz.
+- [x] Zasoby: jedzenie, wiara z modlitwy i za Cud, krew z zabijania lecą łukiem (Bézier, 0,7 s) ze źródła do
+      licznika (licznik rośnie, gdy doleci) albo z licznika do celu; ruda, krzyż i krew z ołtarza latały już wcześniej.
+      Licznik pulsuje (1,0 → 1,2 → 1,0 w 200 ms) i pokazuje „+N” / „–N”.
+- [x] Spoczynek: konający Cerber dalej jest celem walki (to nie błąd AI), a po końcu gry świat stoi — garda wraca do
+      spoczynku po 0,3 s; ruch w toku (np. ścięcie ostatniej głowy) dogrywa się do końca.
 
 Gotowe, gdy: każde trafienie i ścięcie czuć bez dźwięku; F9 przełącza przed/po; przy maksimum cząsteczek 60 fps.
+
+Sprawdzenie (ziarno 3): z oprawą wyłączoną każda klatka identyczna z grą sprzed etapu 2 (poza dwoma miejscami pulsującymi
+zegarem komputera). Pełna pula (ok. 460 cząsteczek) rysuje się procesorem w 2,6 ms przy 1080p. Koszt etapu (rysunek
+procesorem 720p, `--uderzenie wl` / `wyl`): 351–360 / 336–346 ms na klatkę, ok. +4%. W 60 s walki zatrzymania trafień
+zajęły razem ok. 1 s. Testy: `UderzenieTesty`.
 
 ## Etap 4 — cutscenki
 
