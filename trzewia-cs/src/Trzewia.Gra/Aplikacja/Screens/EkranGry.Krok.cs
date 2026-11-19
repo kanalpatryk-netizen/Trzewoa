@@ -257,7 +257,11 @@ namespace Trzewia.Aplikacja
             {
                 // zwykły czas: tyle tików na sekundę, niezależnie od tego, ile klatek pokazuje ekran
                 double kroki;
+                // oprawa (etap 3): zatrzymanie trafienia — świat stoi kilkadziesiąt ms, rysunek, kamera i cząsteczki idą
+                // dalej; tego czasu gra potem nie nadrabia (jak krótka pauza)
+                var uderzenie = Visual.Uderzenie.Aktywne;
                 if (dev && DEV.pauza) { kroki = DEV.krokow; DEV.krokow = 0; }
+                else if (uderzenie && Visual.Uderzenie.Zatrzymane(teraz)) kroki = 0;
                 else
                 {
                     var naSekunde = TEMPO.tikowNaSekunde * tempoTeraz() * (spowolnione() ? 0.25 : 1) * zwolnienieKonania();
@@ -281,6 +285,8 @@ namespace Trzewia.Aplikacja
                         if (sim.wydarzenia.biezace != null) Bot.kartaBota(sim, BOT.styl);
                         if (sim.tick % Bot.BOT_CO == 0) Bot.ruchBota(sim, BOT.styl);
                     }
+                    // oprawa (etap 3): zdarzenia walki po każdym tiku; trafienie z zatrzymaniem — dalsze tiki tej klatki przepadają
+                    if (uderzenie && Visual.Uderzenie.PoKroku(sim, teraz) > 0) { reszta = 0; break; }
                     // budżet klatki: gdy świat nie nadąża, zwalnia, a obraz nie staje — reszta tików tej klatki przepada
                     if (Wydajnosc.Teraz() - t0 > budzet && !(dev && DEV.pauza)) break;
                 }
@@ -333,6 +339,8 @@ namespace Trzewia.Aplikacja
                 }
             }
 
+            // oprawa (etap 3): cząsteczki w czasie ekranu, pył przewróconych, krew za lecącą głową, popiół konania
+            if (!wstep.trwa()) Visual.Uderzenie.Klatka(sim, teraz);
             // oprawa (etap 2, za flagą ZwinietaKsiega): w walce z bossem księga zwinięta do paska — płyta wyższa
             var zwinieta = Visual.VisualConfig.Aktywne(Visual.VisualConfig.ZwinietaKsiega) && !wstep.trwa() && Visual.KameraBossa.WalkaZBossem(sim, out _);
             if (zwinieta != Przyciski.KsiegaZwinieta && szerEkranu > 0) { Przyciski.KsiegaZwinieta = zwinieta; rozmiar(szerEkranu, wysEkranu); }

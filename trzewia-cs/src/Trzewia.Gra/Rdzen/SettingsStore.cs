@@ -24,6 +24,7 @@ public sealed class Settings
     public bool oddech = true;             // powolne falowanie całego rysunku
     public bool ograniczRuch = false;      // mniej drgań: dla oczu, które tego nie znoszą
     public bool mniejBlyskow = false;      // oprawa walki: błyski zdarzeń słabsze (dostępność)
+    public double silaWstrzasu = 1;        // oprawa walki: siła wstrząsu kamery 0..1 (dostępność; 0 — bez wstrząsu)
     /// <summary>Tryb gry ostatnio wybrany w menu: Krąg Trzeci (Cerber) zamiast Alphy 1.</summary>
     public bool krag = false;
     public bool kronika = true;

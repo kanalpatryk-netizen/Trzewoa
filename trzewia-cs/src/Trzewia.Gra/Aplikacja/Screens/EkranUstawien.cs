@@ -174,6 +174,7 @@ namespace Trzewia.Aplikacja
                         new Przelacznik { etykieta = "Ogranicz ruch", czytaj = () => ustawienia.ograniczRuch, zmien = v => ustaw(ref ustawienia.ograniczRuch, v) },
                         // oprawa walki z bossem (dostępność): błyski zdarzeń słabsze
                         new Przelacznik { etykieta = "Mniej błysków", czytaj = () => ustawienia.mniejBlyskow, zmien = v => ustaw(ref ustawienia.mniejBlyskow, v) },
+                        new Suwak { etykieta = "Siła wstrząsu", min = 0, max = 1, krok = 0.1, czytaj = () => ustawienia.silaWstrzasu, zmien = v => ustaw(ref ustawienia.silaWstrzasu, v) },
                     },
                 },
                 new Kategoria
