@@ -153,9 +153,14 @@ static class FilmPelnejGry
         double tikDobiegu = Math.Max(0, tikPekniecia - DOBIEG_S * 120);
         Obserwowany.BOT.tempo = 14;
         {
-            double nastS = 0;
+            // budowa: tempo (bot) w przyspieszeniu, krok co S s GRY (sim.tick) — czas mierzy się na tiku, bo o to chodzi
+            // w przyspieszeniu. Po pęknięciu pieczęci (albo w dobiegu do niego) tempo=1 i krok co 1/30 s SCENY (teraz) —
+            // po końcu partii symulacja przestaje tykać (tik zamarły), więc dalej liczy się już tylko zegar sceny, tak
+            // jak w --zrzuty-walki (tam też `czas`, nie tik, mierzy okno po końcu).
+            double nastS = 0, nastTeraz = 0;
             bool wZwyklym = false, bylaWalka = false;
-            double koniecOd = -1;
+            double koniecOd = -1, endingOd = -1;
+            bool cutscenaWidziana = false;
             var puls = System.Diagnostics.Stopwatch.StartNew();
             while (true)
             {
@@ -169,14 +174,24 @@ static class FilmPelnejGry
                 bool wWalce = faza(sim) != "stoi";
                 if (wWalce && !bylaWalka) { bylaWalka = true; Console.WriteLine($"  pieczęć pęka (tik {sim.tick}): {f} klatek — {zegar.Elapsed.TotalSeconds:F1} s"); }
                 bool chceZwykle = wWalce || sim.tick >= tikDobiegu;
-                if (chceZwykle && !wZwyklym) { wZwyklym = true; Obserwowany.BOT.tempo = 1; nastS = sim.tick / 120.0; }
-                double gs = sim.tick / 120.0;
-                double gspf = wZwyklym ? 1.0 / 30 : gspfBudowy;
-                if (gs >= nastS) { Zapisz(wWalce ? "walka" : "budowa"); nastS += gspf; }
-                if (sim.ending != null && !Visual.Cutscena.Trwa)
+                if (chceZwykle && !wZwyklym) { wZwyklym = true; Obserwowany.BOT.tempo = 1; nastTeraz = teraz; }
+                if (!wZwyklym)
                 {
-                    if (koniecOd < 0) koniecOd = gs;
-                    else if (gs - koniecOd >= BUFOR_PO_KONCU_S) break;
+                    double gs = sim.tick / 120.0;
+                    if (gs >= nastS) { Zapisz("budowa"); nastS += gspfBudowy; }
+                }
+                else if (teraz >= nastTeraz) { Zapisz(wWalce ? "walka" : "budowa"); nastTeraz += 1000.0 / 30; }
+                if (sim.ending != null)
+                {
+                    if (endingOd < 0) endingOd = teraz;
+                    if (Visual.Cutscena.Trwa) cutscenaWidziana = true;
+                    // cutscenka śmierci się pokazała i skończyła — albo (bezpiecznik) nie pokazała się wcale po 8 s
+                    bool gotowe = (cutscenaWidziana && !Visual.Cutscena.Trwa) || teraz - endingOd > 8000;
+                    if (gotowe)
+                    {
+                        if (koniecOd < 0) koniecOd = teraz;
+                        else if (teraz - koniecOd >= BUFOR_PO_KONCU_S * 1000) break;
+                    }
                 }
                 if (sim.tick >= BEZPIECZNIK_TIKOW) { Console.Error.WriteLine("  bezpiecznik: partia trwa za długo, przerywam"); break; }
             }
