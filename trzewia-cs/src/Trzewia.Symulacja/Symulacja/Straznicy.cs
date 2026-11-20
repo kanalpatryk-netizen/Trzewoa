@@ -203,6 +203,13 @@ namespace Trzewia.Symulacja
             foreach (var c in sim.creatures)
             {
                 if (c.dead || rolaPostaci(c) != "pobozny") continue;
+                // (Krąg, ZmianyKregu — naprawa z 20.11: głodny mnich najpierw idzie jeść; dawniej co pół sekundy wracał do
+                // walki z księgą i umierał z głodu przy pełnych wiadrach)
+                if (ZmianyKregu.Aktywne && c.hunger > LUD.glodSam)
+                {
+                    if (c.job == Job.FIGHT && sim.creatureById(sim.target.getOr(c.id, -1))?.straznik == true) { sim.target.delete(c.id); c.jt = 0; c.zamiarDo = sim.tick; }
+                    continue;
+                }
                 Creature? best = null; var bd = aktywnyBoss().ksiega.widzi;
                 foreach (var s in wrogowie) { var d = JS.Hypot(s.x - c.x, s.y - c.y); if (d < bd) { bd = d; best = s; } }
                 if (best == null) continue;

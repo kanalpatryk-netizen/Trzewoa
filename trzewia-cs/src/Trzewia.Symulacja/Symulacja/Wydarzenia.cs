@@ -97,6 +97,14 @@ namespace Trzewia.Symulacja
     /// </summary>
     public static class Wydarzenia
     {
+        /// <summary>
+        /// (Krąg, ZmianyKregu — naprawa z 20.11) Zdarzenia, które „leczą do pełna”, ustawiały życie rasy: Cerberowi (troll
+        /// z klanu Strażników) zbijały je z 500 do 83 — potem zrastał się w kółko i partia stała bez końca — a rycerzowi
+        /// obcinały życie z roli do życia goblina. Teraz Strażników i bossa pomijają, a lud leczą do życia jego roli.
+        /// </summary>
+        static bool pomin(Creature c) => ZmianyKregu.Aktywne && c.straznik == true;
+        static double pelneHp(Sim sim, Creature c) => ZmianyKregu.Aktywne && Lud.rolaPostaci(c) != null ? Math.Max(c.hp, Lud.maxHp(sim, c)) : RACES[c.race].maxHp;
+
         static Typ_WYDARZENIA W => WYDARZENIA;
 
         public static StanWydarzen nowyStanWydarzen() => new StanWydarzen
@@ -680,8 +688,8 @@ namespace Trzewia.Symulacja
                     }
                     foreach (var c in sim.creatures)
                     {
-                        if (c.dead || c.race != e.rasa) continue;
-                        c.hunger = 0; c.hp = RACES[c.race].maxHp;
+                        if (c.dead || c.race != e.rasa || pomin(c)) continue;
+                        c.hunger = 0; c.hp = pelneHp(sim, c);
                     }
                     break;
                 case "plemie:karm": if (klan != null) sim.zapasy(klan, W.plemieJedzenia); break;
@@ -888,8 +896,8 @@ namespace Trzewia.Symulacja
                     foreach (var k in zywe(sim)) dodajOddanie(k, W.ozdrowiencyOddanie);
                     foreach (var c in sim.creatures)
                     {
-                        if (c.dead || c.race == Race.HUMAN) continue;
-                        c.hp = RACES[c.race].maxHp; c.hunger = Math.Max(0, c.hunger - W.ozdrowiencyUlga);
+                        if (c.dead || c.race == Race.HUMAN || pomin(c)) continue;
+                        c.hp = pelneHp(sim, c); c.hunger = Math.Max(0, c.hunger - W.ozdrowiencyUlga);
                     }
                     break;
                 case "ozdrowiency:milcz":
@@ -899,7 +907,7 @@ namespace Trzewia.Symulacja
                     if (klan != null)
                     {
                         sim.zapasy(klan, W.zemstaJedzenia);
-                        foreach (var c in sim.creatures) if (!c.dead && c.clan == klan.id) { c.hp = RACES[c.race].maxHp; c.hunger = 0; c.fear = 0; }
+                        foreach (var c in sim.creatures) if (!c.dead && c.clan == klan.id && !pomin(c)) { c.hp = pelneHp(sim, c); c.hunger = 0; c.fear = 0; }
                         sim.efekt(klan.hx + 0.5, klan.hy + 0.5, "cud");
                     }
                     break;

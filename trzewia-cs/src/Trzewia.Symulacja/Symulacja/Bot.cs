@@ -524,6 +524,8 @@ namespace Trzewia.Symulacja
                 foreach (var c in zRola(sim, "pobozny"))
                 {
                     if (c.wDloni == true || c.lot != null || p.wezwany == c.id || p.odprawia?.kto == c.id) continue;
+                    // głodny — niech najpierw zje (gra sama go nie wciągnie do walki)
+                    if (c.hunger > Trzewia.Nastawy.NastawyLud.LUD.glodSam) { if (c.polecenie?.typ == "idz") odwolajPolecenie(sim, c); continue; }
                     if (JS.Hypot(c.x - dx, c.y - dy) > widzi * 0.7)
                     {
                         if (c.polecenie?.typ != "idz" && wydajPolecenie(sim, c, "idz", w.coreX + (JS.Tak(c.id % 2) ? -8 : 8), w.przedsionekY) == null) poslal++;
