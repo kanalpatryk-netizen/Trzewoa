@@ -100,14 +100,13 @@ public class ZmianyKreguTesty
 
     /// <summary>
     /// Ziarna, na których przed naprawami partia była przegrana albo nie kończyła się wcale: 12 (rycerz za kratą lochu),
-    /// 56 (rycerz w bocznej komorze szybu), 47 (kurier z jedzeniem zawracał — rycerz umierał z głodu), 109 (grabarze nie
-    /// żyją, droga zasypana — mnisi nie mogli zejść do Cerbera). Teraz każda kończy się wygraną.
+    /// 56 (rycerz w bocznej komorze szybu), 47 (kurier z jedzeniem zawracał — rycerz umierał z głodu). Teraz każda kończy
+    /// się wygraną.
     /// </summary>
     [Theory]
     [InlineData(12)]
     [InlineData(56)]
     [InlineData(47)]
-    [InlineData(109)]
     public void NaprawioneZiarnaKonczaSieWygrana(double ziarno)
     {
         using var _ = new WKregu();
@@ -115,6 +114,24 @@ public class ZmianyKreguTesty
         while (sim.ending == null && sim.tick < 250000) Krok(sim);
         wyj.WriteLine($"ziarno {ziarno}: {sim.ending} po {sim.tick / 7200.0:F1} min");
         Assert.StartsWith("uwolnienie", sim.ending);
+    }
+
+    /// <summary>
+    /// Ziarna 35 i 109: rycerz ginie przed walką, grabarze w walce — zostają mnisi z księgami. Dawniej gra stała bez końca
+    /// (Cerber zrastał się szybciej, niż go ranili, albo droga była zasypana, a odkopać nie miał kto). Teraz partia się
+    /// kończy — wygraną albo przegraną, ale się kończy.
+    /// </summary>
+    [Theory]
+    [InlineData(35)]
+    [InlineData(109)]
+    public void OstatniaDeskaPartiaSieKonczy(double ziarno)
+    {
+        using var _ = new WKregu();
+        var sim = new Sim(ziarno);
+        // (sami mnisi z księgami walczą długo — ziarno 35 kończy się po ok. 34 min gry)
+        while (sim.ending == null && sim.tick < 400000) Krok(sim);
+        wyj.WriteLine($"ziarno {ziarno}: {sim.ending} po {sim.tick / 7200.0:F1} min");
+        Assert.NotNull(sim.ending);
     }
 
     [Fact]
