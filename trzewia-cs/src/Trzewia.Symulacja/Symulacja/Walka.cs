@@ -101,8 +101,6 @@ namespace Trzewia.Symulacja
                 var def = Ruch(id);
                 if (def.wrogPonizej != null && zycieWroga >= def.wrogPonizej) continue;
                 if (id == "sciecieGlowy" && !mozeSciac(s)) continue;
-                // walka według wzorów: jedno trafienie na ruch — ruchy z kilkoma cięciami (seria, młynek) odpadają
-                if (WalkaWzor.Aktywny && def.traf != null && def.traf.Length > 1) continue;
                 var blisko = d <= zasieg + (def.zasieg ?? 0);
                 var zDaleka = JS.Tak(def.zDaleka) && d <= zasieg + def.zDaleka!.Value && Math.Abs(s.y - c.y) < 1.2;
                 if (!blisko && !zDaleka) continue;
@@ -173,7 +171,8 @@ namespace Trzewia.Symulacja
             var id = wybierzAtak(sim, c, s, d);
             if (id == null) { podejdz(Math.Floor(s.x), Math.Floor(s.y)); return; }
             var nowy = zacznijRuch(sim, c, id, Ruch(id).dl, s);
-            if (WalkaWzor.Aktywny && Ruch(id).traf is { Length: > 0 } tr) WalkaWzor.UstawRytm(nowy, WalkaWzor.RYCERZ, Ruch(id).dl, tr[0][0]);
+            // (wzór: ruch wieloetapowy — seria, młynek — to jedno zwykłe obrażenie na ostatnim cięciu; decyzja użytkownika 20.11)
+            if (WalkaWzor.Aktywny && Ruch(id).traf is { Length: > 0 } tr) WalkaWzor.UstawRytm(nowy, WalkaWzor.RYCERZ, Ruch(id).dl, tr[tr.Length - 1][0]);
             c.kombo = OB.kombo[id];
             if (s.boss != null) bossWidziZamach(sim, s, c, Ruch(id));
         }
@@ -230,7 +229,10 @@ namespace Trzewia.Symulacja
             var zyje = s != null && !s.dead;
             if (t >= tt && R.traf == 0)
             {
-                R.traf = 1;
+                // ruch wieloetapowy: wcześniejsze cięcia bez rany (zera — rysunek wie, które cięcie zraniło), rana na ostatnim
+                var ile = Math.Max(1, def.traf?.Length ?? 1);
+                R.traf = ile;
+                for (var k = 1; k < ile; k++) R.zadane.Add(0);
                 c.ciosT = sim.tick;
                 double zad = 0; var trafil = false;
                 if (zyje && JS.Hypot(s!.x - c.x, s.y - c.y) <= zasiegRycerza(s) + (def.zasieg ?? 0) + 0.6) { trafil = true; zad = zadajCios(sim, c, s, 1, def); }
@@ -357,13 +359,14 @@ namespace Trzewia.Symulacja
         }
 
         /// <summary>
-        /// Tik w danych ruchu, w którym atak bossa uderza — do rytmu wzoru: pierwsze trafienie; szarża (trafia przy
+        /// Tik w danych ruchu, w którym atak bossa uderza — do rytmu wzoru: ostatnie trafienie (ruch wieloetapowy — dwie
+        /// paszcze, łapa na piersi — to jedno zwykłe obrażenie na końcu; decyzja użytkownika 20.11); szarża (trafia przy
         /// zetknięciu) — koniec rozbiegu; ogień — początek podmuchu. Null — to nie atak (ryk, blok, rozkaz, reakcja).
         /// </summary>
         public static double? tikTrafieniaBossa(RuchBossa def)
         {
             if (def.rodzaj != "atak" && def.rodzaj != "obszar" && def.rodzaj != "dystans") return null;
-            if (def.traf is { Length: > 0 } tr && tr[0][0] > 0) return tr[0][0];
+            if (def.traf is { Length: > 0 } tr && tr[tr.Length - 1][0] > 0) return tr[tr.Length - 1][0];
             if (def.przemieszcza is { Length: > 1 } pm) return pm[1];
             if (def.oddech is { Length: > 0 } od) return od[0];
             return null;
@@ -553,7 +556,10 @@ namespace Trzewia.Symulacja
                 }
             }
             if (t < tt || R.traf != 0) return;
-            R.traf = 1;
+            // ruch wieloetapowy: wcześniejsze ugryzienia bez rany (zera — rysunek wie, która paszcza zraniła), rana na ostatnim
+            var ile = Math.Max(1, def.traf?.Length ?? 1);
+            R.traf = ile;
+            for (var j = 1; j < ile; j++) R.zadane.Add(0);
             b.ciosT = sim.tick;
             if (def.oddech != null && (def.traf == null || def.traf.Length == 0))
             {
@@ -596,9 +602,6 @@ namespace Trzewia.Symulacja
                 var def = RB[id];
                 if (def.rodzaj != "atak" && def.rodzaj != "obszar" && def.rodzaj != "dystans") continue;
                 if (def.zycieDo != null && zycie >= def.zycieDo) continue;
-                // walka według wzorów: jedno trafienie na ruch — podwójny zamach odpada (przygniecenie zostaje: pierwszy
-                // cios przygniata, to on się liczy)
-                if (WalkaWzor.Aktywny && def.traf != null && def.traf.Length > 1 && def.przygniata == null) continue;
                 if (def.od != null && d < def.od) continue;
                 var zasieg = def.zasieg ?? def.promien ?? DEMON.zasieg;
                 if (d > zasieg) continue;
