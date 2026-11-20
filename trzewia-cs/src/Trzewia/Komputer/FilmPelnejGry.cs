@@ -109,7 +109,9 @@ static class FilmPelnejGry
         app.zarejestruj(new EkranKroniki(app));
 
         int f = 0;
-        double teraz = 1000;
+        // zegar sceny startuje od zegara komputera: menu liczy wejście od Wydajnosc.Teraz() (rozjaśnia się od niego) —
+        // przy zegarze od 1000 ms różnica wychodziła ujemna i menu zostawało czarne przez cały film
+        double teraz = Wydajnosc.Teraz();
         var klatki = new List<object>();
         // dźwięk: mikser gry bez urządzenia — budzi się jak w App.obudzDzwiek (gesty, rezonans świata, muzyka)
         using var wav = new ZapisWav(Path.Combine(katalog, "dzwiek.wav"));
@@ -137,10 +139,10 @@ static class FilmPelnejGry
 
         // ---- 1) menu: parę klatek, potem zmiana trybu na Krąg Trzeci, potem „Nowa gra”
         app.idz("menu");
-        for (int i = 0; i < 45; i++) { Krok(DT); if (i % 3 == 0) Zapisz("menu"); }
+        for (int i = 0; i < 150; i++) { Krok(DT); if (i % 2 == 0) Zapisz("menu"); }
         NawigujMenu("tryb", Klawisz, () => { Krok(DT); Zapisz("menu"); }, app);
         Klawisz("Enter"); Krok(DT); Zapisz("menu-tryb");
-        for (int i = 0; i < 70; i++) { Krok(DT); if (i % 2 == 0) Zapisz("menu-tryb"); }
+        for (int i = 0; i < 120; i++) { Krok(DT); if (i % 2 == 0) Zapisz("menu-tryb"); }
         NawigujMenu("nowa", Klawisz, () => { Krok(DT); Zapisz("menu"); }, app);
         Klawisz("Enter"); Krok(DT);
         // menu woła app.idz("gra","nowa") z losowym ziarnem — od razu zastępujemy tym samym ziarnem co pomiar
