@@ -12,7 +12,8 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 4 — cutscenki (na Kręgu Trzecim; czeka na „dalej”)
 - [x] Etap 5 — jeden styl („rycina”; czeka na „dalej”)
 - [x] Etap 6a — walka i obrażenia według wzorów użytkownika (20.11; w Kręgu, za flagą; czeka na „dalej”)
-- [ ] Etap 6 — mechanika bossa (opcjonalnie, dopiero po „tak” użytkownika i po skończonym porcie)
+- [x] Etap 6b — Krąg bez Cieni, ruchy wieloetapowe, naprawy błędów, przełączniki, zamach ludu (20.11; czeka na „dalej”)
+- [x] Etap 6 — mechanika bossa (20.11, „Kontynuuj ze wszystkim innym”; za flagą; liczby do akceptacji; czeka na „dalej”)
 
 ## Decyzje użytkownika (16.11, po raporcie etapu 0)
 
@@ -407,8 +408,7 @@ dostały „zamach”: cel w zasięgu i przerwa minęła → po „czasie” tra
 - [x] Rdzeń wzorów, rytm ruchów, wpięcie we wszystkie walki Kręgu.
 - [x] Rysunek: poza uderzenia rycerza i Cerbera w chwili trafienia (zrzuty: klatki 1335 i 1860 na ziarnie 3).
 - [x] Testy: `WalkaWzorTesty` (wzory z kartki, nr 3, blok, rytm, pełne partie, Alpha 1 bez zmian).
-- [ ] Animacja zamachu dla Cienia, grabarza i mnicha — obiecana w konsultacji, **nie zrobiona**: Cień ma dziś
-      jedną pętlę „bije” (6,3 s, niezwiązaną z ciosem), grabarz i mnich nie mają klatek ciosu wcale. Do decyzji.
+- [x] Animacja zamachu dla grabarza i mnicha — zrobiona w etapie 6b (Cieni już nie ma).
 
 Pomiar (20 ziaren, bot „rozsadny”, Krąg):
 
@@ -421,14 +421,46 @@ Utknięte partie (ziarna 37, 100, 114) są takie same przy starej walce: rycerz 
 odchodzi dalej niż 30 kratek od rdzenia — błąd mapy/ścieżek sprzed tego etapu, nie wzorów. Koszt symulacji
 (ziarna 3, 5, 13): 22–30 µs na tik przy obu wersjach — różnica w szumie pomiaru.
 
-## Etap 6 — mechanika bossa (opcjonalnie: dopiero po „tak” i po skończonym porcie)
+## Etap 6b — Krąg bez Cieni, ruchy wieloetapowe, naprawy (20.11)
 
-Wszystko za flagą, liczby balansu w konfiguracji do akceptacji.
-- [ ] Każda głowa ma swój atak z zapowiedzią: gryzienie (czerwony łuk 0,5 s wcześniej), plucie ogniem (linia 0,7 s),
-      wycie (pierścień 0,8 s, ogłusza). Ścięta głowa nie atakuje, pozostałe przyspieszają.
-- [ ] Karmienie jako decyzja gracza: „garść w paszczę” usypia jedną głowę na kilka sekund; koszt w jedzeniu widoczny.
-- [ ] Dłoń jako cud z księgi: widoczny koszt, trzyma bossa przez określony czas.
-- [ ] Gracz wskazuje, którą głowę atakować.
+Prośba użytkownika: „Usuń innych przeciwników oprócz bossa (tych kamiennych), przywróć różnorodne animacje. Jeśli są
+kilkuetapowe (np. podwójne machnięcie mieczem), to licz to jako jedno zwykłe obrażenie, napraw wszystkie błędy, w tym
+punkt 2. Kontynuuj ze wszystkim innym.” Kod: `Symulacja/ZmianyKregu.cs` (główny wyłącznik zmian Kręgu po porcie;
+wyłączony — Krąg liczy się bit w bit jak w TS, tak liczą testy zgodności).
+
+- [x] **Bez Cieni Żarłoków** (kamienni Strażnicy): fale bez bossa przepadają, z Cerberem nie wychodzi nikt; pieczęć
+      pęka bez przerw. Napisy (pasek, alarmy, atlas, samouczek) mówią tylko o Cerberze.
+- [x] **Ruchy wieloetapowe wracają** (seria trzech cięć, młynek, dwie paszcze, łapa na piersi): jedno zwykłe obrażenie
+      na ostatnim cięciu; rytm wzoru liczy się do niego.
+- [x] **Naprawy błędów** (każdy znaleziony na partiach bota, z ziarnem):
+  - krata lochu w walce z Cerberem wyrwana — rycerz nie zostaje za nią, mnisi w środku nie głodują (ziarno 12),
+  - rycerz poza kreską drogi szuka drogi do jej najbliższego kafla, nie prze w ścianę komory (ziarno 56),
+  - kurier z jedzeniem dla rycerza nie zawraca z krypty (ziarno 47),
+  - mnich z księgą wstrzymuje zrastanie Cerbera; bot posyła mnichów, gdy walczących brak; głodny mnich najpierw je
+    (ziarna 35, 109),
+  - bez grabarzy zasypana droga osypuje się sama, a Cerber jej dalej nie zasypuje (ziarno 109),
+  - zdarzenia „leczące do pełna” nie zbijają życia Cerberowi (500 → 83) ani rycerzowi (ziarno 35),
+  - **Cerber był niewidoczny przy włączonej rycinie** (błąd z etapu 5: loader szukał .png, a pliki są WebP).
+- [x] Przełączniki: `--walka stara|wzory`, `--krag-zmiany wl|wyl`.
+- [x] Zamach grabarza (kilof w górę przez „czas”, cios w klatce trafienia) i mnicha (blask księgi narasta).
+
+## Etap 6 — mechanika bossa (20.11)
+
+Kod: `Symulacja/GlowyCerbera.cs` (liczby — sekcja „liczby”, do akceptacji), rysunek `Visual/ZapowiedzGlow.cs`,
+`Visual/PasekBossa.cs` (wybór głowy, przyciski), `Rysunek/DlonDemona.cs` (dłoń trzyma), `Rysunek/Krag/Cerber.cs`.
+Za ZmianyKregu.
+
+- [x] Każda głowa ma swój atak z zapowiedzią: pitbull gryzie (czerwony łuk 0,5 s), wilk wyje (pierścień 0,8 s,
+      ogłusza na 1,5 s każdego w promieniu 4 kafli), doberman zieje ogniem (linia 0,7 s). „Czas” broni głowy = czas
+      zapowiedzi. Ścięta, śpiąca albo zwisająca głowa nie atakuje; pozostałe przyspieszają (przerwa −20% za każdą
+      ściętą). Ataki głów mają w losowaniu podwójną wagę.
+- [x] Karmienie jako decyzja gracza: przycisk „Nakarm głowę · 2 jedzenia” na pasku — najgroźniejsza głowa, która nie
+      śpi (wilk, potem doberman, potem pitbull), żre i śpi 6 s. Dawny okup co 5 s wyłączony.
+- [x] Dłoń jako cud: przycisk „Dłoń z otchłani · 40 wiary” — wyrasta pod Cerberem i trzyma go 5 s (nie chodzi, nie
+      gryzie, nie zrasta się). Dłoń sama już Cerberowi nie pomaga (rzut, tarcza, zawał wyłączone). (Plan mówił „z
+      księgi”; przycisk stoi przy pasku Cerbera, bo tam gracz patrzy w walce.)
+- [x] Gracz wskazuje głowę: klik w jej pasek. Każda głowa ma własne życie; rany idą w pasek wskazanej, ją rycerz
+      zetnie. Bez wskazania — kolejność jak dotąd (pitbull, wilk, doberman).
 
 ## Wzór raportu po każdym etapie
 
