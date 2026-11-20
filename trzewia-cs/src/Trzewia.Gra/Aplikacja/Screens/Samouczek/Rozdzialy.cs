@@ -106,9 +106,13 @@ namespace Trzewia.Aplikacja
 
         static Wskazanie zaznaczPoboznych(EkranSamouczka s) => polePunkt(s.gra.miejscePolaDruzyny("rola", "pobozny"))!;
 
-        static List<Rozdzial>? rozdzialyAlfa, rozdzialyKregu;
-        /// <summary>Rozdziały bieżącego trybu — teksty Kręgu Trzeciego (mnisi, grabarze, Cienie Żarłoków) liczą się osobno.</summary>
-        public static List<Rozdzial> ROZDZIALY => Krag.Wlaczony ? rozdzialyKregu ??= zbuduj() : rozdzialyAlfa ??= zbuduj();
+        static List<Rozdzial>? rozdzialyAlfa, rozdzialyKregu, rozdzialyKreguZmian;
+        /// <summary>
+        /// Rozdziały bieżącego trybu — teksty Kręgu Trzeciego (mnisi, grabarze, Cienie Żarłoków) liczą się osobno; Krąg ze
+        /// zmianami po porcie (ZmianyKregu: bez Cieni Żarłoków) — też osobno.
+        /// </summary>
+        public static List<Rozdzial> ROZDZIALY => !Krag.Wlaczony ? rozdzialyAlfa ??= zbuduj()
+            : ZmianyKregu.Aktywne ? rozdzialyKreguZmian ??= zbuduj() : rozdzialyKregu ??= zbuduj();
 
         static List<Rozdzial> zbuduj() => new List<Rozdzial>
         {
@@ -437,7 +441,28 @@ namespace Trzewia.Aplikacja
                 },
                 koniec = T("Nie puszczaj nikogo samego daleko od obozu, zwłaszcza nad nieznanym."),
             },
-            new Rozdzial
+            // Krąg bez Cieni Żarłoków (ZmianyKregu): jedynym wrogiem jest Cerber
+            ZmianyKregu.BezCieni ? new Rozdzial
+            {
+                tytul = "Cerber",
+                wstep = $"Pieczęć zejścia ma jednego strażnika. Gdy pęknie do końca ({S(STRAZNICY.fale.FirstOrDefault(f => f.boss == true)?.prog ?? 100)}%), zeskakuje do niej Cerber — innych wrogów w tym kręgu nie ma.",
+                czasowniki = new string[0],
+                etapy = new List<EtapSamouczka>
+                {
+                    new EtapSamouczka
+                    {
+                        tekst = T("Cerbera ranią tylko walczący — rycerz (albo grabarze w hełmach) idzie na niego sam. Każda głowa ma swój pasek; pustą trzeba ściąć."),
+                        rozumiem = true,
+                        wejdz = (g, _s) => { var w = g.sim.world; g.pokazMiejsce(w.coreX, w.przedsionekY, 10, true); },
+                    },
+                    new EtapSamouczka
+                    {
+                        tekst = T("Cerber słabnie, gdy pod rdzeniem modlą się mnisi, a zasypaną przez niego drogę odkopują grabarze. Gdy walczących brak, mnisi razią go księgami."),
+                        rozumiem = true,
+                    },
+                },
+                koniec = T("Pasek nad płytą pokaże, ile życia zostało każdej głowie."),
+            } : new Rozdzial
             {
                 tytul = Krag.T("Strażnicy Snu", "Cienie Żarłoków"),
                 wstep = $"Skorupa rdzenia ma strażników. Przy {string.Join(", ", STRAZNICY.fale.Where(f => !(f.boss == true)).Select(f => S(f.prog)))}% wychodzą fale, przy {S(STRAZNICY.fale.FirstOrDefault(f => f.boss == true)?.prog ?? 90)}% — Śniący Kamień.",

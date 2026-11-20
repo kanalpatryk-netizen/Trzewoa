@@ -26,6 +26,11 @@ namespace Trzewia.Symulacja
         public double upadkow, okupow;
         /// <summary>Ostatnie wiadro, przy którym sprawdzono Cerbera (żeby podjadał raz na dostawę), ile razy podjadł.</summary>
         public double? wiadroSpr, podjadl;
+        /// <summary>
+        /// (ZmianyKregu) Kafle drogi wiernych zasypane przez Cerbera — gdy nie ma już grabarzy, gruz osypuje się sam
+        /// (ZmianyKregu.tik).
+        /// </summary>
+        public List<double>? zasypane;
     }
 
     /// <summary>Cerber na powierzchni kręgu (CerberNaKregu w TS).</summary>
@@ -155,6 +160,7 @@ namespace Trzewia.Symulacja
         public static void tikKregu(Sim sim)
         {
             var k = stanKregu(sim);
+            ZmianyKregu.tik(sim, k);
             cerberPodjada(sim, k);
             // ulewa
             if (sim.tick >= k.nastepna)

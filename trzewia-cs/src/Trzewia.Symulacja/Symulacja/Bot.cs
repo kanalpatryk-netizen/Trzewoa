@@ -515,6 +515,24 @@ namespace Trzewia.Symulacja
             var d = demon(sim);
             double dx = d != null ? d.x : w.coreX + 0.5, dy = d != null ? d.y : w.coreY;
             double salaX = w.oltarz.x, salaY = w.oltarz.y;
+            // Krąg (ZmianyKregu, naprawa z 20.11): walczących brak — mnisi to ostatnia deska. Idą pod Cerbera z księgami,
+            // zamiast odchodzić w górę albo modlić się daleko (gra stała wtedy bez końca: Cerber się zrastał, nikt go nie bił).
+            if (ZmianyKregu.Aktywne && d != null && trybWiernych(sim))
+            {
+                var widzi = Boss.aktywnyBoss().ksiega.widzi;
+                var poslal = 0;
+                foreach (var c in zRola(sim, "pobozny"))
+                {
+                    if (c.wDloni == true || c.lot != null || p.wezwany == c.id || p.odprawia?.kto == c.id) continue;
+                    if (JS.Hypot(c.x - dx, c.y - dy) > widzi * 0.7)
+                    {
+                        if (c.polecenie?.typ != "idz" && wydajPolecenie(sim, c, "idz", w.coreX + (JS.Tak(c.id % 2) ? -8 : 8), w.przedsionekY) == null) poslal++;
+                    }
+                    else if (c.polecenie != null) odwolajPolecenie(sim, c);
+                }
+                if (poslal > 0) mysl(sim, "walczących brak — mnisi schodzą z księgami na Cerbera");
+                return;
+            }
             foreach (var c in zywi(sim))
             {
                 var r = c.rola ?? "pobozny";

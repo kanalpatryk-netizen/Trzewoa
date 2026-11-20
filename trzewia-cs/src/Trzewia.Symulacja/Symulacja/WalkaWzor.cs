@@ -19,7 +19,8 @@ namespace Trzewia.Symulacja
         /// <summary>Nowa walka włączona (w Kręgu Trzecim). Wyłączona — walka jak w TS.</summary>
         public static bool Wlaczony = true;
 
-        public static bool Aktywny => Wlaczony && Krag.Wlaczony;
+        /// <summary>(gaśnie też z głównym wyłącznikiem zmian kręgu — ZmianyKregu.Wlaczone)</summary>
+        public static bool Aktywny => Wlaczony && ZmianyKregu.Aktywne;
 
         /// <summary>Tików symulacji na sekundę.</summary>
         public const double TIK = 120;

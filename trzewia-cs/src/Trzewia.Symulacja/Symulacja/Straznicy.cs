@@ -165,7 +165,8 @@ namespace Trzewia.Symulacja
                     foreach (var c in sim.creatures) if (!c.dead && walczacy(c)) c.hp = Math.Max(c.hp, maxHp(sim, c));
                     var w = sim.world;
                     sim.gdzie(w.coreX, w.przedsionekY).log(
-                        st.fala >= S.fale.Length ? Krag.T("Ostatni Strażnik Snu rozsypał się w pył. Nikt już nie strzeże twojego snu.", "Ostatni Cień Żarłoka rozsypał się w pył. Nikt już nie strzeże twojego snu.")
+                        st.fala >= S.fale.Length && ZmianyKregu.BezCieni ? $"{aktywnyBoss().nazwa} nie żyje. Nikt już nie strzeże zejścia."
+                        : st.fala >= S.fale.Length ? Krag.T("Ostatni Strażnik Snu rozsypał się w pył. Nikt już nie strzeże twojego snu.", "Ostatni Cień Żarłoka rozsypał się w pył. Nikt już nie strzeże twojego snu.")
                             : $"{Krag.T("Fala Strażników Snu pokonana. ", "Fala Cieni Żarłoków pokonana. ")}{(POMNIK.wlaczony ? Krag.T("Pomnik", "Pieczęć") : "Skorupa")} znów pęka pod modlitwą (+{JS.S(S.nagrodaWiary)} wiary).", "wiara", $"fala-koniec-{JS.S(st.fala)}");
                     zapisz(sim, "rytual", $"fala {JS.S(st.fala)} pokonana", w.coreX, w.przedsionekY);
                 }
@@ -180,6 +181,12 @@ namespace Trzewia.Symulacja
                     sim.gdzie(w.coreX, w.przedsionekY).log($"{Krag.T("Strażnicy Snu", "Cienie Żarłoków")} nie mieli z kim walczyć i wrócili do skały. {(POMNIK.wlaczony ? "Pomnik zrósł się" : "Skorupa zrosła się")} tam, gdzie pękał{(POMNIK.wlaczony ? "" : "a")}.", "otchlan", $"fala-sen-{JS.S(st.fala)}");
                 }
                 var def = fala(st.fala);
+                // Krąg bez Cieni Żarłoków (ZmianyKregu): fale bez bossa przepadają — pieczęć pęka bez przerw aż do Cerbera
+                if (ZmianyKregu.BezCieni && !st.trwa && def != null && def.boss != true)
+                {
+                    st.fala = Math.Max(st.fala, Array.FindIndex(S.fale, f => f.boss == true));
+                    def = fala(st.fala);
+                }
                 // (Alpha, etap 5: falę z demonem zaczyna pomnik)
                 if (!st.trwa && def != null && !(def.boss == true && POMNIK.wlaczony) && !sim.rytual.otwarta && procentSkorupy(sim) >= def.prog) zacznijFale(sim, st);
             }
@@ -246,7 +253,9 @@ namespace Trzewia.Symulacja
         {
             var def = S.fale[(int)st.fala];
             var wzrost = 1 + S.wzrostNaFale * st.fala;
-            for (var i = 0; i < def.straznikow; i++)
+            // Krąg bez Cieni Żarłoków (ZmianyKregu): z Cerberem nie wychodzi nikt
+            var ile = ZmianyKregu.BezCieni ? 0 : def.straznikow;
+            for (var i = 0; i < ile; i++)
             {
                 var (x, y) = miejscePojawienia(sim);
                 var c = nowyStraznik(sim, x, y, S.hp * wzrost);
@@ -259,6 +268,14 @@ namespace Trzewia.Symulacja
             foreach (var c in sim.creatures) if (!c.dead && rolaPostaci(c) != null && wStrefieStraznikow(sim, c.x, c.y, S.ucieczkaZapas)) c.jt = 0;
             sim.lud.straznicy!.od = sim.tick;
             var w = sim.world;
+            if (ZmianyKregu.BezCieni)
+            {
+                sim.gdzie(w.coreX, w.przedsionekY).log(
+                    def.boss == true ? $"Z kręgu nad trzewiami zeskakuje do rozbitej pieczęci {aktywnyBoss().nazwa}. Rani go tylko rycerz; gdy padnie, droga w dół stoi otworem."
+                        : $"Pod pieczęcią coś się budzi. Dopóki trwa, pieczęć nie pęka.", "krew", $"fala-{JS.S(st.fala)}");
+                zapisz(sim, "rytual", $"fala {JS.S(st.fala + 1)}: {(def.boss == true ? "boss" : "bez przeciwników")}", w.coreX, w.przedsionekY);
+                return;
+            }
             sim.gdzie(w.coreX, w.przedsionekY).log(
                 def.boss == true && POMNIK.wlaczony ? $"{Krag.T("Z gruzów Wielkiego Pomnika wstaje ", "Z kręgu nad trzewiami zeskakuje do rozbitej pieczęci ")}{aktywnyBoss().nazwa}{Krag.T(" — a z nim Strażnicy Snu (", " — a z nim Cienie Żarłoków (")}{JS.S(def.straznikow)}{Krag.T("). Rani go tylko rycerz; gdy padnie, jesteś wolny.", "). Rani go tylko rycerz; gdy padnie, droga w dół stoi otworem.")}"
                     : def.boss == true ? $"Ostatnia fala: ze ściany przedsionka wynurza się {aktywnyBoss().nazwa}. Skorupa nie pęknie, dopóki stoi."

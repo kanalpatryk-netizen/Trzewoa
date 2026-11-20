@@ -235,7 +235,20 @@ namespace Trzewia.Symulacja
                     var wPrzedsionku = Math.Abs(c.x - w.coreX) < P.przedsionekX && Math.Abs(c.y - w.przedsionekY) < P.przedsionekY;
                     if (foe.boss != null && plan != null && plan.sciezka.Count > 0 && !wPrzedsionku)
                     {
-                        if (idzPlanem(sim, c, plan.sciezka)) return;
+                        if (idzPlanem(sim, c, plan.sciezka)) { if (ZmianyKregu.Aktywne) c.droga = null; return; }
+                        // Krąg (ZmianyKregu, błąd z 20.11): zszedł z kreski dalej niż o krok (np. do bocznej komory przy szybie,
+                        // w drodze do wiadra) — szuka drogi do najbliższego jej kafla. Dawniej szedł do końca kreski w sali
+                        // „na przełaj” i parł w ścianę komory do końca gry.
+                        if (ZmianyKregu.Aktywne)
+                        {
+                            if (c.droga == null && (sim.tick + c.id) % 30 == 0 && budzetDrog() > 0)
+                            {
+                                var naKresce = new HashSet<double>(plan.sciezka);
+                                var dk = szukajDrogi(sim, c, (i, _x, _y) => naKresce.Contains(i), 4000);
+                                if (dk != null && dk.Count > 0) { c.droga = dk; c.drogaI = 0; c.drogaKopie = false; }
+                            }
+                            if (c.droga != null) { var n = nastepnyKafel(sim, c); if (n >= 0) { krok(sim, c, n); return; } c.droga = null; }
+                        }
                         // daleko od ścieżki — najpierw do jej końca w sali (krótka droga), potem nią w dół
                         var kon = plan.sciezka[plan.sciezka.Count - 1];
                         idz(sim, c, kon % w.w, JS.ToInt32(kon / w.w), false);

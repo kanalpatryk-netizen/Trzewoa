@@ -20,13 +20,14 @@ public class KragTesty
 
     /// <summary>
     /// Tryb kręgu na czas testu (<c>using var _ = new WTrybieKregu();</c>). Porównanie z TS — bez nowej walki według
-    /// wzorów (Symulacja/WalkaWzor.cs): TS jej nie ma; z wyłączoną gra liczy walkę jak dotąd, bit w bit.
+    /// wzorów (Symulacja/WalkaWzor.cs) i bez zmian Kręgu po porcie (Symulacja/ZmianyKregu.cs: bez Cieni Żarłoków…): TS
+    /// ich nie ma; z wyłączonymi gra liczy Krąg jak dotąd, bit w bit.
     /// </summary>
     sealed class WTrybieKregu : IDisposable
     {
-        readonly bool wzor = WalkaWzor.Wlaczony;
-        public WTrybieKregu() { Krag.Ustaw(true); WalkaWzor.Wlaczony = false; }
-        public void Dispose() { Krag.Ustaw(false); WalkaWzor.Wlaczony = wzor; }
+        readonly bool wzor = WalkaWzor.Wlaczony, zmiany = ZmianyKregu.Wlaczone;
+        public WTrybieKregu() { Krag.Ustaw(true); WalkaWzor.Wlaczony = false; ZmianyKregu.Wlaczone = false; }
+        public void Dispose() { Krag.Ustaw(false); WalkaWzor.Wlaczony = wzor; ZmianyKregu.Wlaczone = zmiany; }
     }
 
     static string Wzorzec(string plik) => File.ReadAllText(Path.Combine(Sciezka.Testy, "zlote", "krag", plik));

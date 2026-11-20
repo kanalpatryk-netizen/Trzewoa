@@ -619,7 +619,8 @@ namespace Trzewia.Symulacja
         {
             var hpMax = c.hpMax ?? DEMON.hp;
             // (Krąg Trzeci: zrasta się tylko w pasku bieżącej głowy — ścięte nie odrastają)
-            if (sim.rytual.wierni < SNIACY_KAMIEN.modlitwaWiernych)
+            // (Krąg, ZmianyKregu — naprawa: póki mnisi razą go księgą, to też modlitwa — nie zrasta się)
+            if (sim.rytual.wierni < SNIACY_KAMIEN.modlitwaWiernych && !ZmianyKregu.KsiegaWstrzymujeZrastanie(sim))
                 c.hp = Math.Min(Krag.Wlaczony ? Math.Min(hpMax, glowyCerbera(c).gora) : hpMax, c.hp + SNIACY_KAMIEN.zrastanie);
             var R = c.ruch;
             if (R != null)

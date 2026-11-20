@@ -167,6 +167,8 @@ namespace Trzewia.Symulacja
             var plan = sim.planDrogi;
             var w = sim.world;
             if (plan == null || sim.rytual.otwarta) return;
+            // (Krąg, ZmianyKregu — naprawa z 20.11: gdy nie ma już grabarzy, nikt by drogi nie odkopał — gra stała bez końca)
+            if (ZmianyKregu.Aktywne && !sim.creatures.Any(o => !o.dead && rolaPostaci(o) == "robotnik")) return;
             var zajete = new HashSet<double>();
             foreach (var o in sim.creatures) if (!o.dead) zajete.Add(w.idx(Math.Floor(o.x), Math.Floor(o.y)));
             var kandydaci = plan.sciezka.Where(i =>
@@ -182,6 +184,7 @@ namespace Trzewia.Symulacja
             {
                 var i = kandydaci[start + k];
                 w.tile[i] = T.ROCK;
+                if (ZmianyKregu.Aktywne) (Krag.stanKregu(sim).zasypane ??= new List<double>()).Add(i);
                 ile++;
             }
             if (ile == 0) return;

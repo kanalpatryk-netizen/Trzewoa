@@ -84,7 +84,8 @@ namespace Trzewia.Visual
             if (nrFali != falaN || ileFal != falaZ || zwykli != falaC)
             {
                 falaN = nrFali; falaZ = ileFal; falaC = zwykli;
-                fala = $"fala {Js.Js.S(nrFali)}/{Js.Js.S(ileFal)}" + (zwykli > 0 ? " · " + cienie(zwykli) : "");
+                // Krąg bez Cieni Żarłoków (ZmianyKregu): fal już nie ma — wskaźnik znika
+                fala = ZmianyKregu.BezCieni ? "" : $"fala {Js.Js.S(nrFali)}/{Js.Js.S(ileFal)}" + (zwykli > 0 ? " · " + cienie(zwykli) : "");
             }
 
             // cel: 5 s, gaśnie przez ostatnie 0,6 s, rząd się zwija; przy konaniu — na stałe zdanie o drodze w dół

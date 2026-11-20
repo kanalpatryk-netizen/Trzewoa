@@ -75,7 +75,10 @@ namespace Trzewia.Symulacja
             // etap 3: zwykła fala Strażników — kto nie jest rycerzem, odchodzi spod rdzenia
             var glodnyBezpieczny = c.hunger > LUD.glodSam && !zywiStraznicy(sim).Any(s => JS.Hypot(s.x - c.x, s.y - c.y) < STRAZNICY.glodnyNieUciekaOd);
             var czeka = walczacy(c) && rycerzeCzekaja(sim);
-            if ((falaZwykla(sim) || czeka) && (!walczacy(c) || czeka) && !(rola == "pobozny" && trybWiernych(sim)) && !glodnyBezpieczny && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas))
+            // (Krąg, ZmianyKregu — naprawa z 20.11: kurier, który niesie jedzenie walczącemu z Cerberem, nie zawraca w pół
+            // drogi — dawniej rycerz umierał z głodu w walce, choć jedzenie było już w drodze do niego)
+            var kurierDoWalki = ZmianyKregu.Aktywne && c.carry > 0 && c.job == Job.DOSTAWA && c.zamiar?.StartsWith("niesie jedzenie: rycerz", StringComparison.Ordinal) == true;
+            if ((falaZwykla(sim) || czeka) && (!walczacy(c) || czeka) && !(rola == "pobozny" && trybWiernych(sim)) && !glodnyBezpieczny && !kurierDoWalki && wStrefieStraznikow(sim, c.x, c.y, STRAZNICY.ucieczkaZapas))
             {
                 var skraj = czeka ? droga((x, y) => !wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas) && wStrefieStraznikow(sim, x, y, STRAZNICY.ucieczkaZapas + 6) && stoi(sim, x, y) && !sim.przyMagmie(x, y, 3), LUD.dostawaLimit) : null;
                 if (skraj != null) { naDroge(skraj); zamiar($"czeka na skraju, aż zbierze się ich dość ({JS.S(iluRycerzy(sim))}/{JS.S(STRAZNICY.rycerzyNaBossa)})", Job.WANDER, podroz(skraj)); return; }

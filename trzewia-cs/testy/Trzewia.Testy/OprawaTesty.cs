@@ -137,8 +137,9 @@ public class OprawaTesty
 /// </summary>
 sealed class BezOprawy : IDisposable
 {
-    // (i bez nowej walki według wzorów — Symulacja/WalkaWzor.cs: TS jej nie ma, a porównania idą na tej samej partii)
-    readonly bool bylo = VisualConfig.Wlaczone, wzor = Trzewia.Symulacja.WalkaWzor.Wlaczony;
-    public BezOprawy() { VisualConfig.Wlaczone = false; Trzewia.Symulacja.WalkaWzor.Wlaczony = false; }
-    public void Dispose() { VisualConfig.Wlaczone = bylo; Trzewia.Symulacja.WalkaWzor.Wlaczony = wzor; }
+    // (i bez nowej walki według wzorów — Symulacja/WalkaWzor.cs — ani zmian Kręgu po porcie — Symulacja/ZmianyKregu.cs:
+    // TS ich nie ma, a porównania idą na tej samej partii)
+    readonly bool bylo = VisualConfig.Wlaczone, wzor = Trzewia.Symulacja.WalkaWzor.Wlaczony, zmiany = Trzewia.Symulacja.ZmianyKregu.Wlaczone;
+    public BezOprawy() { VisualConfig.Wlaczone = false; Trzewia.Symulacja.WalkaWzor.Wlaczony = false; Trzewia.Symulacja.ZmianyKregu.Wlaczone = false; }
+    public void Dispose() { VisualConfig.Wlaczone = bylo; Trzewia.Symulacja.WalkaWzor.Wlaczony = wzor; Trzewia.Symulacja.ZmianyKregu.Wlaczone = zmiany; }
 }

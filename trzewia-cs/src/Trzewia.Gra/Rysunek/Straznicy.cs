@@ -116,6 +116,8 @@ namespace Trzewia.Rysunek
             // Krąg Trzeci: fala Cieni Żarłoków, boss to Cerber — trzy paski życia, po jednym na głowę
             var tekst = Krag.Wlaczony
                 ? (kona ? "CERBER KONA — DROGA W DÓŁ STOI OTWOREM"
+                    // Krąg bez Cieni Żarłoków (ZmianyKregu): fal nie ma — sam Cerber
+                    : ZmianyKregu.BezCieni ? "CERBER" + (boss != null && POM ? " · zetnij mu trzy głowy — zejdziecie niżej" : "")
                     : $"FALA CIENI ŻARŁOKÓW {Js.Js.S(st.fala + 1)}/{Nastawy.NastawyStraznicy.STRAZNICY.fale.Length}" + (zwykli > 0 ? $" · zostało {zwykli}" : "")
                     + (boss != null && POM ? (boss.boss == "demon" ? " · zetnij Cerberowi trzy głowy — zejdziecie niżej" : " · pokonaj Cerbera — zejdziecie niżej") : POM ? " · pieczęć zejścia nie pęka" : " · skorupa nie pęka"))
                 : kona ? "DEMON Z POMNIKA KONA — JESTEŚ WOLNY"

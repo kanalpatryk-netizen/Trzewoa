@@ -126,6 +126,8 @@ namespace Trzewia.Aplikacja
             senProg = Math.Min(senProg, s.sen);
             // etap 3: fala Strażników Snu
             var f = falRozpoczetych(s);
+            // Krąg bez Cieni Żarłoków (ZmianyKregu): fale bez bossa przepadają po cichu — alarm tylko o Cerberze
+            if (f > fal && ZmianyKregu.BezCieni && !(f - 1 < STRAZNICY.fale.Length && STRAZNICY.fale[(int)f - 1].boss == true)) fal = f;
             if (f > fal)
             {
                 fal = f;

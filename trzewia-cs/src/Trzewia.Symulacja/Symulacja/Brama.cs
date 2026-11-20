@@ -99,9 +99,17 @@ namespace Trzewia.Symulacja
             var ilu = zaklinajacy(sim).Count;
             var przed = b.otwarcie;
             b.zaklina = ilu;
-            if (ilu >= BRAMA.potrzeba) b.otwarcie = Math.Min(1, b.otwarcie + 1 / BRAMA.otwieranie);
-            else b.otwarcie = Math.Max(0, b.otwarcie - 1 / BRAMA.opadanie);
             double x = w.brama.x0, y = w.brama.y1;
+            // Krąg (ZmianyKregu, błąd z 20.11): gdy pieczęć pęka i zeskakuje Cerber, wstrząs wyrywa kratę — do końca walki
+            // brama stoi otworem. Inaczej rycerz, który wyszedł z lochu (jeść), zostawał za kratą, a mnisi w środku nie
+            // mogli jej podnieść — kocioł jest na zewnątrz — i wszyscy umierali z głodu.
+            if (ZmianyKregu.KrataWyrwana(sim))
+            {
+                if (b.otwarcie < 1) sim.gdzie(x, y).log("Pieczęć pęka, Cerber zeskakuje w trzewia — wstrząs wyrywa kratę lochu z muru. Do końca walki brama stoi otworem.", "otchlan", "brama-wyrwana");
+                b.otwarcie = 1;
+            }
+            else if (ilu >= BRAMA.potrzeba) b.otwarcie = Math.Min(1, b.otwarcie + 1 / BRAMA.otwieranie);
+            else b.otwarcie = Math.Max(0, b.otwarcie - 1 / BRAMA.opadanie);
             if (b.otwarcie > przed)
             {
                 if (przed == 0) sim.gdzie(w.kociol.x, w.kociol.y).log(Krag.T("Nad kotłem w starej komnacie pobożni rzucają zaklęcia. W dole, w murze lochu, drgnęła stalowa brama.", "Nad kotłem w starej komnacie mnisi rzucają zaklęcia. W dole, w murze lochu, drgnęła stalowa brama."), "wiara", "brama-drgnela");
