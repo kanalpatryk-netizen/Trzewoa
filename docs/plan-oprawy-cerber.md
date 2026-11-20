@@ -10,7 +10,7 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 2 — czytelność (na Kręgu Trzecim; czeka na „dalej”)
 - [x] Etap 3 — „uderzenie” (na Kręgu Trzecim; czeka na „dalej”)
 - [x] Etap 4 — cutscenki (na Kręgu Trzecim; czeka na „dalej”)
-- [ ] Etap 5 — jeden styl („rycina”)
+- [x] Etap 5 — jeden styl („rycina”; czeka na „dalej”)
 - [ ] Etap 6 — mechanika bossa (opcjonalnie, dopiero po „tak” użytkownika i po skończonym porcie)
 
 ## Decyzje użytkownika (16.11, po raporcie etapu 0)
@@ -333,25 +333,50 @@ całkiem bezpieczne: nic w grze nie czekało na przerywnik, więc nie ma czego �
 ## Etap 5 — jeden styl („rycina”)
 
 Kierunek: ryciny Gustave'a Doré do „Piekła” (domena publiczna). Kolory: czerń, pergamin, czerwień krwi, ogień.
-Kreskowanie zamiast miękkich cieni. Wzorem jest księga.
+Kreskowanie zamiast miękkich cieni. Wzorem jest księga. Kod: `src/Trzewia.Gra/Visual/Palette.cs`,
+`tools/ink-pipeline/rycina.py`; wpięcie w `Rysunek/Krag/Cerber.cs` i `Rysunek/Duszki/Duszek.cs`. Za flagą
+`VisualConfig.Rycina` i F9.
 
-- [ ] `Palette.cs` z jedną paletą (start: tusz `#0F0B0A`, cień `#1E1613`, kamień `#3A2C26`, pergamin `#E9DDC2`, kość
-      `#CFC2A6`, krew `#8C1C13`, jasna krew `#B8321F`, ogień `#E07A2C`, żar `#F2B35A`, złoto `#C9A25B`).
-- [ ] Narzędzie offline `tools/ink-pipeline/` (Python + Pillow): wersje „rycina” do nowego folderu (oryginały nietknięte);
-      odbarwienie → 4–6 tonów z palety → kreskowanie w ciemnych tonach (ukośne, w najciemniejszych krzyżowe) → ciemny
-      kontur 2 px zamiast białej obwódki; arkusz przed/po dla każdego sprite'a; zestaw grafik przełączany flagą.
-- [ ] Ludzie: ciemny kontur i jasna krawędź od światła z etapu 1 zamiast białej obwódki.
-- [ ] Boss: jeśli jest źródło 3D — render płaski, bez połysku, przez narzędzie; jeśli nie — klatki animacji przez
-      narzędzie i ocena w raporcie.
-- [ ] Kikuty i rany: kolory z palety, rany jako kreskowane nacięcia.
-- [ ] `docs/art-brief-cerber.md`: zlecenie dla grafika (Cerber, dłoń w 3 klatkach, otwarte przejście w dół; styl,
-      rozmiary, klatki, kierunek światła).
-- [ ] Złoty trójkąt na korytarzu i dusze-manekiny: opisać, czym są w kodzie, zaproponować wersję w stylu świata — bez
-      zmian bez zgody.
-- [ ] Nazwy głów (Pitbull, Wilk, Doberman): zostają; pytanie w raporcie.
+- [x] **`Palette.cs` — inaczej niż w planie.** Zamiast nowych barw (tusz `#0F0B0A` itd.) — role z planu jako aliasy
+      do już istniejącej, jedynej palety gry (`NastawyBarwy.BARWA`/`.FRESK`, wygenerowane z TS, „barwy całej gry…
+      żeby nic nie świeciło kolorem, którego nie ma w świecie”). Druga paleta obok tamtej złamałaby właśnie tę
+      zasadę. Ta sama lista (co do hex) w `tools/ink-pipeline/paleta.json`, bo Python do C# nie sięga.
+- [x] Narzędzie offline `tools/ink-pipeline/rycina.py` (Python + Pillow + numpy): odbarwienie → tony z palety (osobna
+      rampa dla krwi i dla żaru/ognia — żeby nie zgasły do szarości, reszta prawie monochromatyczna) → kreskowanie
+      (ukośne, krzyżowe w najciemniejszych) jako AKCENT cienia nad tonem, nie jedyny jego nośnik — inaczej płasko
+      cieniowany sprite wychodzi jednym szumem → ciemny kontur 2 px z maski kształtu (nie z tego, co tam wcześniej
+      narysowano) zamiast jasnej/białej obwódki. Dwa tryby progów kreskowania: `--render` (mocniejsze — błyszczące
+      rendery 3D bez własnej kreski, np. Cerber) i domyślny (łagodniejsze — gotowe, płasko cieniowane sprite'y, np.
+      ludzie). Wyjście jako WebP bezstratny (jak oryginały Cerbera) — ten sam PNG spuchał na kresce 3–4×.
+- [x] Ludzie: dostają z narzędzia ciemny kontur zamiast białej/jasnej obwódki (była upieczona w sprite'ach —
+      `narzedzia/duszki`, TS nietknięty). Jasna krawędź od światła już istniała (etap 1, `Duszek.Krawedz`) i działa
+      bez zmian na nowych sprite'ach też — nowego kodu nie trzeba było pisać, tylko podmienić, co się wczytuje.
+- [x] **Boss: nie ma źródła 3D w tym porcie — klatki (wypieczone obrazki) przez narzędzie, tryb `--render`.**
+      Wszystkie 181 części (`dane/grafika/krag/cerber-rycina/`, w tym kikuty szyi i ścięte głowy — to też tylko
+      obrazki, osobnego kodu na „kikuty i rany” nie trzeba było pisać, patrz niżej). Ocena: dobre jako łatka na
+      starym materiale (patrz raport), nie zastępuje grafika od nowa — stąd `docs/art-brief-cerber.md`.
+- [x] **Kikuty i rany: nie ma osobnego kodu — to też obrazki Cerbera** (`glowa-N-odcieta`, `szyja-N-kikut`), przez
+      ten sam `--render`; cząsteczki krwi z kikuta (fontanna, etap 3) to osobny, już gotowy system cząsteczek, nie
+      ruszany tutaj.
+- [x] `docs/art-brief-cerber.md`: zlecenie dla grafika — Cerber od nowa (pipeline to łatka, nie cel), dłoń w 3
+      kluczowych klatkach (rzut/tarcza/zawał — materiał do oceny, czy wracać do klatek z obrazków zamiast modelu
+      3D), otwarte przejście w dół (dziś goła dziura w geometrii, bez własnej grafiki); styl, paleta, kierunek
+      światła, rozmiary.
+- [x] **Dłoń: poza zakresem tego narzędzia.** To model 3D rysowany na żywo (`Rysunek/Model3D/Dlon3D.cs`, świadoma
+      decyzja użytkownika 12.11, zmiana wobec TS) — nie gotowy obrazek, więc offline pipeline go nie dotyczy.
+      Materiał na decyzję (spłaszczyć render 3D czy wrócić do pieczonych klatek) — w art-briefie, nie tu.
+- [x] Złoty trójkąt i dusze-manekiny: opisane w raporcie etapu 5 (czym są w kodzie — `Znaczniki.podswietlCel`
+      strzałka celu i `Potepieni`/`Ludzik` tłum w tle) i zaproponowane — **nie wdrożone, czeka na zgodę.**
+- [x] Nazwy głów (Pitbull, Wilk, Doberman): zostają (pytanie w raporcie — odpowiedź: nie ruszać bez prośby).
 
 Gotowe, gdy: arkusze przed/po dla wszystkich sprite'ów z walki; w grze da się przełączać stary i nowy zestaw grafik; jest
 brief dla grafika.
+
+Sprawdzenie (ziarno 3, 720p): z `--oprawa wyl` każda klatka bit w bit identyczna z gałęzią sprzed etapu 5 (worktree
+z commita `4bf4793`) poza tymi samymi dwoma miejscami pulsującymi zegarem komputera, co w poprzednich etapach.
+Koszt (`--rycina wl` / `wyl`, ten sam fragment walki): 427 / 439 ms na klatkę — różnica w granicach szumu pomiaru
+(inny plik tekstury, te same polecenia rysunku). Testy: zestaw istniejący (181/181) bez zmian — etap 5 nie dodaje
+nowej logiki do testowania, tylko podmienia, co się wczytuje.
 
 ## Etap 6 — mechanika bossa (opcjonalnie: dopiero po „tak” i po skończonym porcie)
 
