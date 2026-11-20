@@ -18,11 +18,15 @@ public class KragTesty
     readonly ITestOutputHelper wyj;
     public KragTesty(ITestOutputHelper wyj) { this.wyj = wyj; }
 
-    /// <summary>Tryb kręgu na czas testu (<c>using var _ = new WTrybieKregu();</c>).</summary>
+    /// <summary>
+    /// Tryb kręgu na czas testu (<c>using var _ = new WTrybieKregu();</c>). Porównanie z TS — bez nowej walki według
+    /// wzorów (Symulacja/WalkaWzor.cs): TS jej nie ma; z wyłączoną gra liczy walkę jak dotąd, bit w bit.
+    /// </summary>
     sealed class WTrybieKregu : IDisposable
     {
-        public WTrybieKregu() { Krag.Ustaw(true); }
-        public void Dispose() => Krag.Ustaw(false);
+        readonly bool wzor = WalkaWzor.Wlaczony;
+        public WTrybieKregu() { Krag.Ustaw(true); WalkaWzor.Wlaczony = false; }
+        public void Dispose() { Krag.Ustaw(false); WalkaWzor.Wlaczony = wzor; }
     }
 
     static string Wzorzec(string plik) => File.ReadAllText(Path.Combine(Sciezka.Testy, "zlote", "krag", plik));

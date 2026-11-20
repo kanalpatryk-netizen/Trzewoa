@@ -137,7 +137,8 @@ public class OprawaTesty
 /// </summary>
 sealed class BezOprawy : IDisposable
 {
-    readonly bool bylo = VisualConfig.Wlaczone;
-    public BezOprawy() { VisualConfig.Wlaczone = false; }
-    public void Dispose() => VisualConfig.Wlaczone = bylo;
+    // (i bez nowej walki według wzorów — Symulacja/WalkaWzor.cs: TS jej nie ma, a porównania idą na tej samej partii)
+    readonly bool bylo = VisualConfig.Wlaczone, wzor = Trzewia.Symulacja.WalkaWzor.Wlaczony;
+    public BezOprawy() { VisualConfig.Wlaczone = false; Trzewia.Symulacja.WalkaWzor.Wlaczony = false; }
+    public void Dispose() { VisualConfig.Wlaczone = bylo; Trzewia.Symulacja.WalkaWzor.Wlaczony = wzor; }
 }
