@@ -119,6 +119,10 @@ public static class Uruchomienie
     public static bool? Przerywniki;
     /// <summary>Oprawa, etap 5: sam styl „rycina” (VisualConfig.Rycina) włączony albo wyłączony — do pomiaru kosztu.</summary>
     public static bool? Rycina;
+    /// <summary>Walka w Kręgu: true — według wzorów użytkownika (WalkaWzor), false — stara, jak w TS; null — domyślnie.</summary>
+    public static bool? WalkaWzory;
+    /// <summary>Zmiany Kręgu po porcie (ZmianyKregu: bez Cieni, naprawy, etap 6) włączone albo wyłączone (Krąg jak w TS).</summary>
+    public static bool? ZmianyKregu;
     /// <summary>Zrzuty walki: ile sekund przed pęknięciem pieczęci zacząć (domyślnie 3).</summary>
     public static double? PrzedS;
     /// <summary>Zrzuty walki jako film: tylko klatki co --co-ile (bez serii przy zdarzeniach) — równy odstęp do wideo.</summary>
@@ -149,6 +153,11 @@ public static class Uruchomienie
           --uderzenie wl|wyl   samo „uderzenie” (etap 3 oprawy: zatrzymanie trafień, wstrząs, cząsteczki) włączone albo wyłączone
           --przerywniki wl|wyl same przerywniki (etap 4 oprawy: wejście/śmierć bossa) włączone albo wyłączone
           --rycina wl|wyl    sam styl „rycina” (etap 5 oprawy: zestaw grafik z tools/ink-pipeline) włączony albo wyłączony
+          --walka stara|wzory
+                           walka w Kręgu: stara (jak w wersji TS) albo według wzorów (domyślnie: wzory)
+          --krag-zmiany wl|wyl
+                           zmiany Kręgu po porcie (bez Cieni Żarłoków, naprawy błędów, ataki głów, karmienie, dłoń,
+                           wybór głowy) włączone albo wyłączone — wyłączone: Krąg jak w wersji TS (domyślnie: wl)
           --przed S          zrzuty walki: zacznij S sekund przed pęknięciem pieczęci (domyślnie 3)
           --film             zrzuty walki: tylko klatki co --co-ile, bez serii przy zdarzeniach, JPEG (do złożenia filmu)
           --zrzuty-walki KATALOG
@@ -212,6 +221,14 @@ public static class Uruchomienie
                 case "--rycina":
                     Rycina = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Rycina == null) Console.Error.WriteLine($"--rycina: nie rozumiem „{nast}” (wl albo wyl)");
+                    i++; break;
+                case "--walka":
+                    WalkaWzory = nast switch { "stara" => false, "wzory" => true, "wzor" => true, _ => null };
+                    if (WalkaWzory == null) Console.Error.WriteLine($"--walka: nie rozumiem „{nast}” (stara albo wzory)");
+                    i++; break;
+                case "--krag-zmiany":
+                    ZmianyKregu = Trzewia.Visual.VisualConfig.Czytaj(nast);
+                    if (ZmianyKregu == null) Console.Error.WriteLine($"--krag-zmiany: nie rozumiem „{nast}” (wl albo wyl)");
                     i++; break;
                 case "--czytelnosc":
                     Czytelnosc = Trzewia.Visual.VisualConfig.Czytaj(nast);

@@ -161,6 +161,14 @@ namespace Trzewia.Rysunek
                 case Job.FIGHT:
                 case Job.SLAVE:
                     {
+                        // walka według wzorów (Krąg): zamach przez „czas” — grabarz bierze zamach kilofem, mnich unosi księgę;
+                        // po trafieniu, przez przerwę, grabarz kończy cios (DuszkiLudu: klatki zamachu w rytmie trafienia)
+                        if (WalkaWzor.Aktywny && c.rola != "rycerz")
+                        {
+                            var mnich = Trzewia.Symulacja.Lud.rolaPostaci(c) == "pobozny";
+                            if (c.atakOd != null) return mnich ? "czyta" : "walczy";
+                            if (!mnich && c.ciosT is double ct && sim.tick - ct < WalkaWzor.LUD.PrzerwaT + 12 && r.v < 0.6) return "walczy";
+                        }
                         // ostatnia deska: pobożny unosi księgę przeciw bossowi
                         if (c.ksiegaT != null && sim.tick - c.ksiegaT < 400 && r.v < 0.6) return "czyta";
                         var cel = sim.creatureById(sim.target.TryGet(c.id, out var idCelu) ? idCelu : -1);

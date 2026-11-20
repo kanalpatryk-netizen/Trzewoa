@@ -191,6 +191,16 @@ namespace Trzewia.Rysunek.Duszki
                             var a = d.Animacja(Math.Floor(z) % 2 == 0 ? "walczy-ciecie" : "walczy-pchniecie");
                             return a?.Klatka(z) ?? Spoczynek();
                         }
+                        // walka według wzorów (Krąg): zamach w rytmie trafienia — kilof w górę przez „czas”, w dół dokładnie
+                        // w chwili trafienia (klatka ZAMACH_TRAF arkusza „walczy”), przez przerwę — dokończenie ciosu
+                        if (WalkaWzor.Aktywny && A("walczy") is { } aw)
+                        {
+                            var b = WalkaWzor.LUD;
+                            if (c.atakOd is double od)
+                                return aw.Klatka(Math.Max(0, Math.Min(1, (sim.tick - od) / b.CzasT)) * ZAMACH_TRAF);
+                            if (c.ciosT is double ct && sim.tick - ct < b.PrzerwaT + 12)
+                                return aw.Klatka(ZAMACH_TRAF + Math.Max(0, Math.Min(0.999, (sim.tick - ct) / (b.PrzerwaT + 12))) * (1 - ZAMACH_TRAF));
+                        }
                         return A("walczy")?.KlatkaZegara(zegar, id) ?? Spoczynek();
                     }
                 case "modli":
@@ -205,6 +215,9 @@ namespace Trzewia.Rysunek.Duszki
                 case "spi": return A("spi")?.Klatka(0) ?? Spoczynek();
                 case "czyta":
                     {
+                        // walka według wzorów (Krąg): zamach księgą — blask narasta przez „czas” i rozbłyska w chwili trafienia
+                        if (WalkaWzor.Aktywny && c.atakOd is double odK && d.Animacja("czyta") is { } narasta)
+                            return narasta.Klatka(1 - Math.Max(0, Math.Min(0.999, (sim.tick - odK) / WalkaWzor.KSIEGA.CzasT)));
                         // błysk po uniesieniu księgi gaśnie przez 60 tików, potem czyta
                         var blysk = c.ksiegaT != null ? Math.Max(0, Math.Min(1, 1 - (sim.tick - c.ksiegaT.Value) / 60)) : 0;
                         if (blysk > 0 && d.Animacja("czyta") is { } unosi) return unosi.Klatka(1 - blysk);
@@ -219,6 +232,12 @@ namespace Trzewia.Rysunek.Duszki
         }
 
         static double frac(double x) => x - Math.Floor(x);
+
+        /// <summary>
+        /// Arkusz „walczy” grabarza (12 klatek): 0–1 kilof nisko, 2–6 w górę, 7 — cios w dół, 8–11 kilof wyciągnięty przed
+        /// siebie. Trafienie wypada na klatce 7 (7/12 ≈ 0,58 — środek klatki: 7,5/12).
+        /// </summary>
+        const double ZAMACH_TRAF = 7.5 / 12;
 
         /// <summary>
         /// Postać ludu stopami w (0, 0), twarzą w prawo; `h` — wysokość postaci w jednostkach rysunku (jak w rysujLud z TS).
