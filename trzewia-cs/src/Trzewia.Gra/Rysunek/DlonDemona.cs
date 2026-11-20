@@ -228,9 +228,10 @@ namespace Trzewia.Rysunek
             }
             if (s.akcja == null) return;
             var t = sim.tick - s.od;
-            var skala = z * KJ(s.akcja);
+            var skala = z * KJ(s.akcja == "trzyma" ? "tarcza" : s.akcja);
             if (s.akcja == "rzut") rysujRzut(ctx, sim, cam, s, t, skala, teraz, ruch);
             else if (s.akcja == "tarcza") rysujTarcze(ctx, sim, cam, s, t, skala, teraz, ruch);
+            else if (s.akcja == "trzyma") rysujTrzyma(ctx, sim, cam, s, t, skala, teraz, ruch);
             else rysujZawal(ctx, sim, cam, s, t, skala, teraz, ruch);
         }
 
@@ -319,6 +320,45 @@ namespace Trzewia.Rysunek
                 }
                 ctx.restore();
             }
+        }
+
+        /// <summary>
+        /// Etap 6 (GlowyCerbera.Dlon — cud gracza): dłoń wyrasta spod posadzki pod Cerberem, palce zamykają się na jego
+        /// łapach i trzymają (drżą z wysiłku, łuna otchłani pod spodem), potem puszcza i wraca w szczelinę.
+        /// </summary>
+        static void rysujTrzyma(IPlotno ctx, Sim sim, Camera cam, StanDloniDemona s, double t, double skala, double teraz, bool ruch)
+        {
+            var z = cam.zoom;
+            var T = D.tarcza;
+            double fx = cam.toScreenX(s.x), fy = cam.toScreenY(s.y);
+            double klatka, glebiej = 0, alfa = 1, luna = 1, rysaK = 1;
+            if (s.faza == "wstaje")
+            {
+                var k = t / T.wstaje;
+                glebiej = (1 - gladko(k / 0.8)) * z * 6.5;
+                klatka = gladko(k) * 5 / 9;
+                rysaK = gladko(k / 0.35);
+                luna = gladko(k / 0.3);
+            }
+            else if (s.faza == "trzyma")
+            {
+                // zaciśnięta — drży z wysiłku, bo pies się szarpie
+                klatka = 5.0 / 9 + (ruch ? 0.03 * Math.Sin(teraz * 0.03) : 0);
+            }
+            else
+            {
+                var k = t / T.cofa;
+                klatka = (5 + 4 * gladko(k / 0.5)) / 9;
+                glebiej = gladko(k) * z * 7;
+                alfa = 1 - gladko((k - 0.6) / 0.4);
+                luna = 1 - gladko(k);
+                rysaK = 1 - gladko((k - 0.4) / 0.6);
+            }
+            RysDlon.lunaOtchlani(ctx, fx, fy, z * 4.5, 0, luna, teraz, ruch);
+            rysa(ctx, fx, fy, z, rysaK, 131, true);
+            if (s.faza == "wstaje") odlamki(ctx, fx, fy, z, t / T.wstaje, 117, true, 12);
+            var drz = ruch && s.faza == "trzyma" ? Math.Sin(teraz * 0.05) * z * 0.05 : 0;
+            dlonZBrzegu(ctx, "rzut", fx + drz, fy + z * 0.3 + glebiej, -Math.PI / 2, skala, klatka, s.bok, alfa, fy, true, Math.Min(1, luna));
         }
 
         /// <summary>Tarcza: otwarta dłoń wyrasta z podłogi przed demonem, wnętrzem do widza, i drży — ciosy się od niej odbijają.</summary>

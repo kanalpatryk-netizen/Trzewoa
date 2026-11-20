@@ -197,6 +197,8 @@ namespace Trzewia.Rysunek
             if (oprawa) swiatlo.Naloz(ctx, sim, cam, teraz);
             // oprawa (etap 3): iskry świecą same — po mapie świateł
             if (uderzenie) Visual.Czasteczki.RysujNad(ctx, cam, teraz);
+            // etap 6 (GlowyCerbera): zapowiedź ataku głowy Cerbera — po świetle, żeby jej nie gasiło
+            Visual.ZapowiedzGlow.Rysuj(ctx, sim, cam, teraz);
             // oprawa (etap 2): znaki głów bossa i etykiety nad postaciami — po świetle, żeby ich nie gasiło
             if (czytelnosc) Visual.Czytelnosc.NadSwiatlem(ctx, sim, cam, teraz);
             if (pauza)

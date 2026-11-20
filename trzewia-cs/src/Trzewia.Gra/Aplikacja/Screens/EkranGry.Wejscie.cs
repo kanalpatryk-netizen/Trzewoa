@@ -143,6 +143,36 @@ namespace Trzewia.Aplikacja
             nasluch?.Invoke(new ZdarzenieGry { typ = "szept", narzedzie = narzedzie });
         }
 
+        /// <summary>Etap 6 (GlowyCerbera): kliknięcie w pasek Cerbera — „glowa:N”, „nakarm” albo „dlon”.</summary>
+        void klikPaskaCerbera(string co)
+        {
+            string? odmowa;
+            string ok;
+            if (co.StartsWith("glowa:", StringComparison.Ordinal))
+            {
+                var nr = int.Parse(co.Substring(6), System.Globalization.CultureInfo.InvariantCulture);
+                odmowa = GlowyCerbera.Wskaz(sim, nr);
+                ok = $"Rycerz bije teraz głowę {GlowyCerbera.DOPELNIACZ[nr]}.";
+            }
+            else if (co == "nakarm")
+            {
+                odmowa = GlowyCerbera.Nakarm(sim);
+                var g = sim.lud.krag?.okupGlowa is double og ? (int)og : 0;
+                ok = $"Garść jedzenia w paszczę {GlowyCerbera.DOPELNIACZ[g]} — głowa zaśnie na chwilę.";
+            }
+            else
+            {
+                odmowa = GlowyCerbera.Dlon(sim);
+                ok = "Dłoń z otchłani chwyta Cerbera za łapy.";
+                if (odmowa == null) app.dzwiek.toll();
+            }
+            if (odmowa != null) { ui.say($"Teraz nie: {odmowa}.", sim.tick); app.gesty.odmowa(); return; }
+            ui.say(ok, sim.tick);
+            app.gesty.klik();
+            nasluch?.Invoke(new ZdarzenieGry { typ = "moc", czasownik = "cerber", narzedzie = co });
+            dirty = true;
+        }
+
         /// <summary>Możliwość wybrana w oknie postaci.</summary>
         void wykonajMozliwosc(string akcja)
         {
@@ -651,6 +681,8 @@ namespace Trzewia.Aplikacja
                 Visual.PasekBossa.ZamknijDymek();
                 if (wDymku) return;
             }
+            // etap 6 (GlowyCerbera): pasek Cerbera — wskazanie głowy, „Nakarm”, „Dłoń”
+            if (faza == Faza.dol && Visual.PasekBossa.Klik(e.clientX, e.clientY) is string klik) { klikPaskaCerbera(klik); return; }
             // okienko dewelopera (w C# rysowane na płótnie) bierze dotknięcia nad sobą
             if (panelDev != null && ustawienia.trybDeweloperski && nasluch == null && panelDev.dotyk(e, faza)) return;
             // tryb deweloperski: kafel pod kursorem, a Shift+klik wybiera postać do inspektora

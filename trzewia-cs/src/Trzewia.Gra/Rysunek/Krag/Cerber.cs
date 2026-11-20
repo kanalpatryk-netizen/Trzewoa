@@ -733,10 +733,11 @@ namespace Trzewia.Rysunek
             var odc = c.glowyOdciete;
             if (odc != null) foreach (var o in odc) p.DodajOdcieta((int)o.nr, Math.Max(0, (sim.tick - o.tick) * (1000.0 / 120)));
             // pusty pasek bieżącej głowy: łeb zwisa bezwładnie, paszcza rozdziawiona, oczy gasną — nie gryzie, czeka na miecz
-            var SG = Nastawy.NastawyKrag.SCIECIE_GLOW;
-            var czeka = Walka.glowaCzeka(c) && p.ileOdcietych < SG.kolejnosc.Length ? (int)SG.kolejnosc[p.ileOdcietych] : -1;
+            // (etap 6: bieżąca głowa to ta wskazana przez gracza — nie musi być następna w kolejności)
+            var czeka = Walka.glowaCzeka(c) && Walka.glowyCerbera(c).biezaca is double bz ? (int)bz : -1;
+            // etap 6 (GlowyCerbera): nakarmiona głowa śpi — nie gryzie, nie bierze udziału w ruchach
             int nz = 0;
-            for (int i = 0; i < 3; i++) if (p.Odcieta(i) < 0 && i != czeka) zywe[nz++] = i;
+            for (int i = 0; i < 3; i++) if (p.Odcieta(i) < 0 && i != czeka && !GlowyCerbera.Spi(sim, c, i)) zywe[nz++] = i;
             if (nz == 0) for (int i = 0; i < 3; i++) if (p.Odcieta(i) < 0) zywe[nz++] = i;
 
             var R = c.ruch;
@@ -748,13 +749,17 @@ namespace Trzewia.Rysunek
                 // (walka według wzorów: ruch w swoim tempie — pozy liczone w czasie oryginału, więc trafienie, ogień
                 // i rozbieg szarży wypadają dokładnie tam, gdzie w symulacji)
                 if (R.tempo != null && R.dl0 is double dl0 && dl0 > 0) { u = WalkaWzor.PostepRuchu(R, sim.tick - R.od); dl = dl0; }
-                ruchNaPoze(p, R.id, u, def, dl, zywe[(JS.ToInt32(R.od) >> 3) % nz], nz, R.zadane, R.wariant);
+                // (etap 6: atak głowy gra ta głowa, której to atak — pitbull gryzie, wilk wyje, doberman zieje ogniem)
+                var glowaRuchu = R.glowa is double rg && p.Odcieta((int)rg) < 0 ? (int)rg : (int?)null;
+                ruchNaPoze(p, R.id, u, def, dl, glowaRuchu ?? zywe[(JS.ToInt32(R.od) >> 3) % nz], nz, R.zadane, R.wariant, glowaRuchu);
             }
-            // okup: trzy głowy żrą rzuconą garść jedzenia
+            // okup: trzy głowy żrą rzuconą garść jedzenia (etap 6: żre tylko nakarmiona głowa)
             if (Krag.cerberZre(sim, c) > 0)
             {
+                var tylko = GlowyCerbera.Aktywne && sim.lud.krag?.okupGlowa is double og ? (int)og : -1;
                 for (int i = 0; i < 3; i++)
                 {
+                    if (tylko >= 0 && i != tylko) continue;
                     var g = p.glowy[i];
                     g.pochyl = 0.55 + 0.08 * Math.Sin(czas * 0.01 + i);
                     g.paszcza = 0.15 + 0.35 * Math.Abs(Math.Sin(czas * 0.018 + i * 1.3));
@@ -762,6 +767,16 @@ namespace Trzewia.Rysunek
                 }
                 p.ogon = Math.Sin(czas * 0.012) * 0.9;
             }
+            // etap 6: śpiąca głowa (po karmieniu, gdy już zjadła) — łeb nisko, paszcza zamknięta, oczy prawie zgasłe
+            if (GlowyCerbera.Aktywne && Krag.cerberZre(sim, c) <= 0)
+                for (int i = 0; i < 3; i++)
+                {
+                    if (p.Odcieta(i) >= 0 || !GlowyCerbera.Spi(sim, c, i)) continue;
+                    var g = p.glowy[i];
+                    g.pochyl = 0.7 + 0.04 * Math.Sin(czas * 0.0025 + i);
+                    g.paszcza = 0.03; g.wysun = 0; g.smuga = 0; g.ugryz = 0;
+                    g.oczy = 0.08;
+                }
             if (czeka >= 0)
             {
                 var g = p.glowy[czeka];
@@ -794,7 +809,7 @@ namespace Trzewia.Rysunek
         }
 
         /// <summary>Poza z ruchu walki `id` w chwili `u` (0…1): kłapnięcia, łapa, dęba, skok, wycie, ogień, bicz, szarża.</summary>
-        static void ruchNaPoze(PozaCerbera p, string id, double u, Nastawy.RuchBossa? def, double dl, int glowaNr, int nz, System.Collections.Generic.List<double> zadane, double? wariant)
+        static void ruchNaPoze(PozaCerbera p, string id, double u, Nastawy.RuchBossa? def, double dl, int glowaNr, int nz, System.Collections.Generic.List<double> zadane, double? wariant, int? glowaRuchu = null)
         {
             {
                 double traf(int k) => def?.traf != null && k < def.traf.Length ? def.traf[k][0] / dl : double.NaN;
@@ -863,12 +878,18 @@ namespace Trzewia.Rysunek
                         p.deba = 0.3 * dzwon(u, hit - 0.05, 0.98);
                         p.fala = u > hit ? obetnij((u - hit) / 0.35, 0, 1) : 0;
                         p.szal = Math.Max(p.szal, dzwon(u, hit - 0.1, hit + 0.3));
-                        foreach (var g in p.glowy) { g.paszcza = Math.Max(g.paszcza, dzwon(u, hit - 0.1, 0.98)); g.pochyl -= 0.8 * dzwon(u, hit - 0.1, 0.98) - 0.4 * dzwon(u, 0, hit - 0.1); }
+                        // (etap 6: wyje wilk — pozostałe łby tylko warczą)
+                        for (int k = 0; k < 3; k++)
+                        {
+                            var g = p.glowy[k];
+                            var f = glowaRuchu == null || glowaRuchu == k ? 1 : 0.3;
+                            g.paszcza = Math.Max(g.paszcza, f * dzwon(u, hit - 0.1, 0.98)); g.pochyl -= f * (0.8 * dzwon(u, hit - 0.1, 0.98) - 0.4 * dzwon(u, 0, hit - 0.1));
+                        }
                         break;
                     case "tchnienie":
                         {
                             double od = def?.oddech != null && def.oddech.Length > 1 ? def.oddech[0] : 84, doT = def?.oddech != null && def.oddech.Length > 1 ? def.oddech[1] : 174;
-                            p.ogienGlowa = zawiera(zywe, nz, 1) ? 1 : zywe[0];
+                            p.ogienGlowa = glowaRuchu ?? (zawiera(zywe, nz, 1) ? 1 : zywe[0]);
                             var g = p.glowy[p.ogienGlowa];
                             g.paszcza = Math.Max(g.paszcza, gladko((u - od / dl + 0.15) / 0.15));
                             g.pochyl += 0.15 - 0.35 * dzwon(u, od / dl - 0.2, od / dl);

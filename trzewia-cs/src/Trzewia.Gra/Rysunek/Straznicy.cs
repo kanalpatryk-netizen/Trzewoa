@@ -96,7 +96,7 @@ namespace Trzewia.Rysunek
         {
             var st = sim.lud.straznicy;
             // (oprawa, etap 2: bez paska Cerbera etykiety nie mają czego omijać)
-            Visual.PasekBossa.PanelW = 0; Visual.PasekBossa.DymekW = 0;
+            Visual.PasekBossa.PanelW = 0; Visual.PasekBossa.DymekW = 0; Visual.PasekBossa.WyczyscPola();
             if (st == null || !st.trwa) return;
             var zywi = new System.Collections.Generic.List<Creature>();
             foreach (var c in sim.creatures) if (!c.dead && c.straznik == true) zywi.Add(c);
@@ -110,7 +110,8 @@ namespace Trzewia.Rysunek
             var POM = Nastawy.NastawyPomnik.POMNIK.wlaczony;
             // oprawa (etap 2): Krąg Trzeci — pasek Cerbera: tytuł, trzy paski ze znakami I/II/III, cel przez 5 s, mały
             // wskaźnik fali, pęknięcie paska ściętej głowy, dymek z instrukcją (Visual/PasekBossa.cs)
-            if (Visual.Czytelnosc.Aktywna && Krag.Wlaczony && POM && (boss?.boss == "demon" || kona)
+            // (etap 6, GlowyCerbera: pasek ma przyciski i wybór głowy — to sterowanie, więc stoi i bez oprawy, F9)
+            if ((Visual.Czytelnosc.Aktywna || GlowyCerbera.Aktywne) && Krag.Wlaczony && POM && (boss?.boss == "demon" || kona)
                 && Visual.PasekBossa.Rysuj(ctx, sim, x, y, szer, st.fala + 1, Nastawy.NastawyStraznicy.STRAZNICY.fale.Length, zwykli, kona)) return;
             // (Alpha, etap 5: pomnik zamiast skorupy; przy demonie — co da wygraną)
             // Krąg Trzeci: fala Cieni Żarłoków, boss to Cerber — trzy paski życia, po jednym na głowę

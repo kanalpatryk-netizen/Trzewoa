@@ -22,6 +22,7 @@ namespace Trzewia.Visual
     {
         static readonly string[] NAZWY_GLOW = { "Doberman", "Wilk", "Pitbull" };
         static readonly string[] ZETNIJ = { "Doberman — zetnij!", "Wilk — zetnij!", "Pitbull — zetnij!" };
+        static readonly string[] SPI = { "Doberman — śpi", "Wilk — śpi", "Pitbull — śpi" };
         const string CEL = "Zetnij Cerberowi trzy głowy — zejdziecie niżej";
         const string KONA = "Cerber kona — droga w dół stoi otworem";
         /// <summary>Dymek: dwie linijki dla każdej głowy w kolejce (I, II, III) — bieżąca ma swój znak.</summary>
@@ -32,6 +33,15 @@ namespace Trzewia.Visual
             new[] { "Bijcie głowę ze znakiem III — gdy jej pasek opadnie, rycerz zetnie ją mieczem.", "To ostatnia. Mnisi na modlitwie osłabiają Cerbera." },
         };
         static string[] DYMEK = DYMKI[0];
+        /// <summary>Etap 6 (GlowyCerbera): gracz sam wskazuje głowę — dymek mówi, jak.</summary>
+        static readonly string[] DYMEK_ETAP6 =
+        {
+            "Kliknij pasek głowy — tę rycerz bije i ją zetnie. Pitbull gryzie, wilk wyje (ogłusza), doberman zieje ogniem.",
+            "„Nakarm” usypia jedną głowę na chwilę, „Dłoń” trzyma Cerbera kilka sekund.",
+        };
+        /// <summary>Etap 6: pola do kliknięcia — paski głów (numer głowy) i przyciski (Nakarm, Dłoń). Szerokość 0 — brak.</summary>
+        public static readonly (double x, double y, double w, double h, int nr)[] PolaGlow = new (double, double, double, double, int)[3];
+        public static (double x, double y, double w, double h) PoleNakarm, PoleDlon;
         const double TIKI_NA_S = 120;
 
         // stan walki: od kiedy (tik) trwa — cel i dymek liczą czas od niego
@@ -45,6 +55,13 @@ namespace Trzewia.Visual
         static string tytul = "", tytulZ = "";
         static string fala = "";
         static double falaN = -1, falaZ = -1, falaC = -1;
+
+        /// <summary>Pasek nie stoi (koniec walki, inny tryb) — pola do kliknięcia znikają razem z nim.</summary>
+        public static void WyczyscPola()
+        {
+            for (int i = 0; i < 3; i++) PolaGlow[i] = default;
+            PoleNakarm = default; PoleDlon = default;
+        }
 
         /// <summary>Kliknięcie gdziekolwiek w grze zamyka dymek (ekran gry woła to przy każdym wciśnięciu).</summary>
         public static void ZamknijDymek() { if (DymekW > 0) dymekZamkniety = true; }
@@ -92,7 +109,12 @@ namespace Trzewia.Visual
             var celW = kona ? 1 : Math.Max(0, Math.Min(1, (C.CelMs - s) / C.CelGasnieMs));
             var celWidac = celW > 0.01;
             double hTytul = roz * (ciasny ? 1.7 : 2.2), hCel = roz * (ciasny ? 1.25 : 1.5) * (kona ? 1 : Math.Min(1, celW * 1.6)), hPaski = roz * (ciasny ? 2.45 : 2.7);
-            var bh = pad * (ciasny ? 0.3 : 0.5) + hTytul + hCel + hPaski + pad * (ciasny ? 0.2 : 0.4);
+            // etap 6 (GlowyCerbera): rząd przycisków pod paskami — Nakarm i Dłoń
+            var etap6 = GlowyCerbera.Aktywne && !kona;
+            var hPrzyciski = etap6 ? roz * (ciasny ? 1.6 : 1.9) : 0;
+            var bh = pad * (ciasny ? 0.3 : 0.5) + hTytul + hCel + hPaski + hPrzyciski + pad * (ciasny ? 0.2 : 0.4);
+            for (int i = 0; i < 3; i++) PolaGlow[i] = default;
+            PoleNakarm = default; PoleDlon = default;
 
             PanelX = bx; PanelY = y; PanelW = bw; PanelH = bh;
             ctx.save();
@@ -136,8 +158,10 @@ namespace Trzewia.Visual
             for (int k = 0; k < kol.Length && k < 3; k++)
             {
                 var nr = (int)kol[k];
-                var sciete = kona || k < g.odcietych;
-                var biezaca = !kona && k == g.odcietych;
+                // (etap 6: bieżąca — wskazana przez gracza, ścięte — dowolne, nie po kolei)
+                var sciete = kona || (GlowyCerbera.Aktywne ? GlowyCerbera.Scieta(boss, nr) : k < g.odcietych);
+                var biezaca = !kona && (GlowyCerbera.Aktywne ? g.biezaca == nr : k == g.odcietych);
+                if (etap6 && !sciete) PolaGlow[k] = (bx + pad + k * (kw + odstep), yy, kw, hPaski, nr);
                 var u = -1.0;
                 if (sciete)
                 {
@@ -147,23 +171,77 @@ namespace Trzewia.Visual
                             if ((int)o.nr == nr) { u = Math.Max(0, Math.Min(1, (sim.tick - o.tick) / TIKI_NA_S * 1000 / C.PekniecieMs)); break; }
                 }
                 var puls = biezaca ? Czytelnosc.Puls(teraz, czeka) : 0;
-                komorka(ctx, bx + pad + k * (kw + odstep), yy, kw, roz, k, nr, biezaca, biezaca && czeka, sciete, u, biezaca ? Walka.pasekGlowy(boss, nr) : sciete ? 0 : 1, puls);
+                var fPaska = biezaca ? Walka.pasekGlowy(boss, nr) : sciete ? 0 : GlowyCerbera.Aktywne ? Walka.pasekGlowy(boss, nr) : 1;
+                komorka(ctx, bx + pad + k * (kw + odstep), yy, kw, roz, k, nr, biezaca, biezaca && czeka, sciete, u, fPaska, puls,
+                    etap6 && GlowyCerbera.Spi(sim, boss, nr));
             }
+            yy += hPaski;
+            if (etap6) przyciski(ctx, sim, bx + pad, yy, bw - pad * 2, hPrzyciski, roz);
             ctx.restore();
 
             // dymek z instrukcją pod paskiem
-            DYMEK = DYMKI[(int)Math.Max(0, Math.Min(2, g.odcietych))];
+            DYMEK = etap6 ? DYMEK_ETAP6 : DYMKI[(int)Math.Max(0, Math.Min(2, g.odcietych))];
             var dymekA = kona || dymekZamkniety ? 0 : Math.Max(0, Math.Min(1, Math.Min(s / 200, (C.DymekMs - s) / 400)));
             if (dymekA > 0.01) dymek(ctx, bx, y + bh + roz * 0.75, bw, roz, dymekA);
             else DymekW = 0;
             return true;
         }
 
+        static readonly string NAKARM = $"Nakarm głowę · {Js.Js.S(GlowyCerbera.KARMIENIE_PORCJI)} jedzenia";
+        static readonly string DLON = $"Dłoń z otchłani · {Js.Js.S(GlowyCerbera.DLON_WIARY)} wiary";
+
+        /// <summary>
+        /// Etap 6: dwa przyciski pod paskami — „Nakarm” (garść w paszczę najgroźniejszej głowy, która nie śpi) i „Dłoń”
+        /// (trzyma Cerbera) — z kosztem; przygaszone, gdy teraz się nie da (powód — Czytelnosc nie mieści, więc tylko
+        /// przygaszenie; po kliknięciu gra powie, czemu nie).
+        /// </summary>
+        static void przyciski(IPlotno ctx, Sim sim, double x, double y, double w, double h, double roz)
+        {
+            var odstep = roz * 0.8;
+            var bw = (w - odstep) / 2;
+            var bh = h * 0.78;
+            var by = y + (h - bh) / 2;
+            przycisk(ctx, x, by, bw, bh, roz, NAKARM, GlowyCerbera.CzemuNieKarmic(sim) == null, false);
+            PoleNakarm = (x, by, bw, bh);
+            var trzyma = GlowyCerbera.Trzymany(sim);
+            przycisk(ctx, x + bw + odstep, by, bw, bh, roz, trzyma ? "Dłoń trzyma Cerbera" : DLON, GlowyCerbera.CzemuNieDlon(sim) == null, trzyma);
+            PoleDlon = (x + bw + odstep, by, bw, bh);
+        }
+
+        static void przycisk(IPlotno ctx, double x, double y, double w, double h, double roz, string napis, bool mozna, bool trwa)
+        {
+            ctx.fillStyle = trwa ? Barwa.Rgba(90, 30, 18, 0.95) : mozna ? Barwa.Rgba(58, 36, 22, 0.95) : Barwa.Rgba(30, 22, 18, 0.9);
+            ctx.fillRect(x, y, w, h);
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = trwa ? Barwa.Rgba(255, 120, 80, 0.9) : mozna ? Barwa.Rgba(232, 186, 110, 0.85) : Barwa.Rgba(120, 100, 80, 0.5);
+            ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.font = Czytelnosc.Kroj(Ink.SERIF, roz * 0.8, !mozna);
+            ctx.fillStyle = mozna || trwa ? Barwa.Rgba(246, 230, 196, 1) : Barwa.Rgba(160, 145, 120, 0.8);
+            ctx.fillText(napis, x + w / 2, y + h / 2 + 1);
+        }
+
+        /// <summary>
+        /// Etap 6: co gracz kliknął na pasku Cerbera — „glowa:N” (wskaż głowę N), „nakarm”, „dlon” — albo null (nic).
+        /// </summary>
+        public static string? Klik(double x, double y)
+        {
+            static bool w((double x, double y, double w, double h) p, double x, double y) => p.w > 0 && x >= p.x && x <= p.x + p.w && y >= p.y && y <= p.y + p.h;
+            for (int k = 0; k < 3; k++)
+            {
+                var p = PolaGlow[k];
+                if (w((p.x, p.y, p.w, p.h), x, y)) return $"glowa:{p.nr}";
+            }
+            if (w(PoleNakarm, x, y)) return "nakarm";
+            if (w(PoleDlon, x, y)) return "dlon";
+            return null;
+        }
+
         /// <summary>Rysa przez pasek (ułamki szerokości i wysokości), z góry na dół.</summary>
         static readonly double[] RYSA_X = { 0.46, 0.52, 0.47, 0.55, 0.5, 0.57 }, RYSA_Y = { -0.1, 0.22, 0.42, 0.62, 0.82, 1.1 };
 
         /// <summary>Jeden pasek głowy: znak, imię nad paskiem, sam pasek (albo jego pęknięte połówki).</summary>
-        static void komorka(IPlotno ctx, double x, double y, double w, double roz, int k, int nr, bool biezaca, bool czeka, bool sciete, double u, double f, double puls)
+        static void komorka(IPlotno ctx, double x, double y, double w, double roz, int k, int nr, bool biezaca, bool czeka, bool sciete, double u, double f, double puls, bool spi = false)
         {
             var r = roz * 0.68;
             double zx = x + r, zy = y + roz * 1.45;
@@ -173,7 +251,7 @@ namespace Trzewia.Visual
             ctx.font = Czytelnosc.Kroj(Ink.SERIF, roz * 0.84, !biezaca);
             ctx.fillStyle = sciete ? Barwa.Rgba(150, 110, 96, 0.75) : czeka ? Barwa.Rgba(255, 120 + 90 * puls, 90 + 40 * puls, 1)
                 : biezaca ? Barwa.Rgba(246, 230, 196, 1) : Barwa.Rgba(200, 186, 158, 0.8);
-            var podpis = czeka ? ZETNIJ[nr] : NAZWY_GLOW[nr];
+            var podpis = czeka ? ZETNIJ[nr] : spi ? SPI[nr] : NAZWY_GLOW[nr];
             ctx.fillText(podpis, px, py - roz * 0.3);
             if (sciete)
             {
