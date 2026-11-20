@@ -60,6 +60,8 @@ namespace Trzewia.Symulacja
         {
             "rzut" => new[] { ("wstaje", D.rzut.wstaje), ("chwyta", D.rzut.chwyta), ("unosi", D.rzut.unosi), ("rzuca", D.rzut.rzuca), ("cofa", D.rzut.cofa) },
             "tarcza" => new[] { ("wstaje", D.tarcza.wstaje), ("stoi", D.tarcza.stoi), ("cofa", D.tarcza.cofa) },
+            // etap 6 (GlowyCerbera): dłoń jako cud gracza — wyrasta pod Cerberem i trzyma go
+            "trzyma" => new[] { ("wstaje", D.tarcza.wstaje), ("trzyma", GlowyCerbera.DLON_TRZYMA), ("cofa", D.tarcza.cofa) },
             _ => new[] { ("wstaje", D.zawal.wstaje), ("drze", D.zawal.drze), ("wali", D.zawal.wali), ("cofa", D.zawal.cofa) },
         };
 
@@ -155,6 +157,8 @@ namespace Trzewia.Symulacja
             if (!string.IsNullOrEmpty(st.akcja) && (p.faza == "kona" || dm == null) && st.faza != "cofa") { puscRycerza(sim, st, false); st.faza = "cofa"; st.od = sim.tick; }
             if (!string.IsNullOrEmpty(st.akcja)) { krokAkcji(sim, st, dm); return; }
             if (p.faza != "walka" || dm == null) return;
+            // etap 6 (GlowyCerbera): dłoń nie pomaga już Cerberowi sama — wyrasta tylko jako cud gracza (trzyma Cerbera)
+            if (GlowyCerbera.Aktywne) return;
             if (st.nastT == 0) st.nastT = sim.tick + D.pierwszaPo;
             if (sim.tick < st.nastT || (sim.lud.dlon != null && sim.lud.dlon.faza != "brak")) return;
             var r = rycerzPrzy(sim, dm);
@@ -309,6 +313,8 @@ namespace Trzewia.Symulacja
                 var r = sim.creatureById(st.cel ?? -1);
                 if (r != null && r.wDloni == true) { r.x = st.x; r.vy = 0; r.droga = null; }
             }
+            // (etap 6) trzyma: Cerber nie ucieka z dłoni — stoi tam, gdzie go chwyciła
+            if (st.akcja == "trzyma" && dm != null && st.faza != "cofa" && GlowyCerbera.Trzymany(sim)) { dm.x = st.x; dm.vy = 0; }
             // tarcza idzie za demonem (stoi zawsze przed nim, od strony rycerza)
             if (st.akcja == "tarcza" && dm != null && st.faza != "cofa") st.x += (dm.x + st.bok * D.tarcza.przedDemonem - st.x) * 0.05;
             if (i < 0 || t < fazy[i].dl) return;
@@ -345,6 +351,25 @@ namespace Trzewia.Symulacja
             sim.stat.zawalow = sim.stat.zawalow + 1;
             sim.gdzie(st.x + 1, st.dno.Value - 1).log(Krag.T("Strop krypty zawalił się między rycerzem a demonem. Demon jest odcięty — i zrasta się szybciej. Robotnicy mogą rozkuć gruz.", "Strop krypty zawalił się między rycerzem a Cerberem. Cerber jest odcięty — i zrasta się szybciej. Grabarze mogą rozkuć gruz."), "krew", "zawal");
             zapisz(sim, "swiat", $"zawał: ściana gruzu {kafle.Count} kafli", st.x, st.dno.Value - 1);
+        }
+
+        /// <summary>
+        /// Etap 6 (GlowyCerbera.Dlon): cud gracza — dłoń z otchłani wyrasta pod Cerberem i zaciska palce na jego łapach;
+        /// przez GlowyCerbera.DLON_TRZYMA tików nie chodzi, nie gryzie i nie zrasta się. Potem wraca w otchłań (przerwa jak
+        /// po każdej akcji dłoni).
+        /// </summary>
+        public static void trzymajCerbera(Sim sim, Creature dm)
+        {
+            var st = stanDloniDemona(sim);
+            st.akcja = "trzyma"; st.faza = "wstaje"; st.od = sim.tick;
+            st.cel = dm.id;
+            st.bok = JS.Tak(dm.face) ? dm.face : 1;
+            st.x = dm.x;
+            var k = kolumna(sim, Math.Floor(dm.x), dm.y - 1, 8);
+            st.y = k?.dno ?? Math.Floor(dm.y) + 1;
+            st.widziana = true;
+            sim.gdzie(st.x, st.y).log("Wzywasz dłoń z otchłani — wyrasta spod posadzki i zaciska palce na łapach Cerbera. Trzyma go.", "otchlan", "dlon-trzyma");
+            zapisz(sim, "swiat", "Dłoń z otchłani (cud gracza): trzyma Cerbera", Math.Floor(st.x), Math.Floor(st.y));
         }
 
         /// <summary>Ruch rycerza ciśniętego przez dłoń: leci łukiem, odbija się od stropu i ścian, spada ranny i ogłuszony.</summary>

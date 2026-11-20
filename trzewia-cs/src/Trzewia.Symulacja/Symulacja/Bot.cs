@@ -73,6 +73,8 @@ namespace Trzewia.Symulacja
             public double? krewNiskoOd; public double? wydalKrewT;
             /// <summary>6.11: od kiedy bot podnosi bramę lochu</summary>
             public double? bramaOd;
+            /// <summary>Etap 6 (GlowyCerbera): kiedy bot ostatnio nakarmił głowę Cerbera.</summary>
+            public double? karmT;
         }
 
         static readonly ConditionalWeakTable<Sim, Pamiec> pamieci = new ConditionalWeakTable<Sim, Pamiec>();
@@ -534,6 +536,21 @@ namespace Trzewia.Symulacja
                 }
                 if (poslal > 0) mysl(sim, "walczących brak — mnisi schodzą z księgami na Cerbera");
                 return;
+            }
+            // etap 6 (GlowyCerbera): gdy rycerz stoi przy Cerberze — garść w paszczę najgroźniejszej głowy (co 15 s, gdy
+            // jedzenia w bród) i dłoń z otchłani, gdy jest wiara z zapasem
+            if (GlowyCerbera.Walka(sim) && d != null)
+            {
+                var ryc = zRola(sim, "rycerz").FirstOrDefault();
+                if (ryc != null && JS.Hypot(ryc.x - d.x, ryc.y - d.y) < 6)
+                {
+                    if (sim.tick - (p.karmT ?? -1e9) > 15 * 120 && porcjiWWiadrach(sim) >= 6 && GlowyCerbera.Nakarm(sim) == null)
+                    {
+                        p.karmT = sim.tick;
+                        mysl(sim, "garść w paszczę — najgroźniejsza głowa Cerbera zaśnie na chwilę");
+                    }
+                    if (sim.wiara >= GlowyCerbera.DLON_WIARY + 15 && GlowyCerbera.Dlon(sim) == null) mysl(sim, "dłoń z otchłani trzyma Cerbera — rycerz tnie");
+                }
             }
             foreach (var c in zywi(sim))
             {

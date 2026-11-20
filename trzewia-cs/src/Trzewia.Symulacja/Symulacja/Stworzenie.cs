@@ -71,6 +71,8 @@ namespace Trzewia.Symulacja
         /// i tik jedynego trafienia (= „czas” broni). Null — ruch jak dotąd.
         /// </summary>
         public double? tempo, dl0, trafT;
+        /// <summary>Etap 6 (GlowyCerbera): która głowa Cerbera atakuje (0 doberman, 1 wilk, 2 pitbull). Null — ciało.</summary>
+        public double? glowa;
     }
 
     /// <summary>
@@ -155,6 +157,12 @@ namespace Trzewia.Symulacja
         public double? ksiegaT;
         /// <summary>Walka według wzorów (WalkaWzor): od którego tiku trwa zamach (Cień, lud, księga). Null — bez zamachu.</summary>
         public double? atakOd;
+        /// <summary>
+        /// Etap 6 (GlowyCerbera): życie każdej głowy Cerbera (wskazana głowa — z całego życia minus pozostałe), wskazana głowa
+        /// (tę bije rycerz), do kiedy śpi każda głowa po karmieniu, do kiedy trzyma go dłoń.
+        /// </summary>
+        public double[]? glowyHp, glowySpiaDo;
+        public double? glowaCel;
         public double? hpMax;
         public double? zasypT;
         public XY? posterunek;
