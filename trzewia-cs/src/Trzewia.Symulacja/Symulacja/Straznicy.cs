@@ -218,6 +218,14 @@ namespace Trzewia.Symulacja
             foreach (var o in zywiStraznicy(sim)) { var od = JS.Hypot(o.x - c.x, o.y - c.y); if (od < zd) { zd = od; zagr = o; } }
             if (zagr != null) { var r = c.x - zagr.x; idzDo(Math.Floor(c.x + JS.Sign(JS.Tak(r) ? r : 1) * 5), Math.Floor(c.y)); return; }
             if (d > K.zasieg) { idzDo(Math.Floor(s.x), Math.Floor(s.y)); return; }
+            if (WalkaWzor.Aktywny)
+            {
+                // walka według wzorów: zamach księgą przez „czas”, promień w chwili trafienia, potem przerwa
+                if (!WalkaWzor.Zamach(sim, c, WalkaWzor.KSIEGA, true, ref c.ksiegaT)) return;
+                for (var k = 1; k <= 5; k++) sim.spark(c.x + (s.x - c.x) * k / 6, c.y - 0.6 + (s.y - c.y) * k / 6, "pray");
+                ranStraznika(sim, s, c, WalkaWzor.O(WalkaWzor.Atak(sim, WalkaWzor.KSIEGA, mnoznik(sim, c, "modlitwa")), WalkaWzor.Pancerz(s)));
+                return;
+            }
             if (sim.tick - (c.ksiegaT ?? -1e9) < K.co) return;
             c.ksiegaT = sim.tick;
             // promień z księgi do bossa
@@ -371,6 +379,13 @@ namespace Trzewia.Symulacja
             var zasieg = S.rycerzZasieg + (s.boss != null ? 0.8 : 0);
             if (JS.Hypot(s.x - c.x, s.y - c.y) > zasieg) { podejdz(Math.Floor(s.x), Math.Floor(s.y)); return; }
             c.face = s.x > c.x ? 1 : -1;
+            if (WalkaWzor.Aktywny)
+            {
+                // walka według wzorów: zamach przez „czas”, trafienie, przerwa (broń ludu × siła względem grabarza)
+                if (WalkaWzor.Zamach(sim, c, WalkaWzor.LUD, true, ref c.ciosT))
+                    ranStraznika(sim, s, c, WalkaWzor.O(WalkaWzor.Atak(sim, WalkaWzor.LUD, mnoznik(sim, c, "sila") / WalkaWzor.SILA_LUDU), WalkaWzor.Pancerz(s)));
+                return;
+            }
             if (sim.tick - (c.ciosT ?? -1e9) < S.rycerzCiosCo) return;
             c.ciosT = sim.tick;
             var dmg = RACES[c.race].strength * mnoznik(sim, c, "sila") * (0.8 + sim.rng.next() * 0.4);
@@ -414,13 +429,20 @@ namespace Trzewia.Symulacja
         {
             if (sim.lud.straznicy != null) sim.lud.straznicy.cios = sim.tick;
             var kier = JS.Sign(c.x - cel.x);
-            var rana = przyjmijCios(sim, cel, sila * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel), new OpcjeCiosu { kier = JS.Tak(kier) ? kier : 1 });
+            var wzor = WalkaWzor.Aktywny;
+            // walka według wzorów: L z broni Cienia (× wzrost fali względem średniego), O po pancerzu celu (tarcza p 25)
+            var o0 = wzor
+                ? (c.boss != null
+                    ? WalkaWzor.O(WalkaWzor.Atak(sim, WalkaWzor.CERBER, 1), WalkaWzor.Pancerz(cel))
+                    : WalkaWzor.O(WalkaWzor.Atak(sim, WalkaWzor.CIEN, sila / (S.sila * WalkaWzor.WZROST_CIENIA)), WalkaWzor.Pancerz(cel)))
+                : sila * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel);
+            var rana = przyjmijCios(sim, cel, o0, new OpcjeCiosu { kier = JS.Tak(kier) ? kier : 1 });
             if (rana <= 0) return;
             cel.hp -= rana;
             oznaczCios(sim, cel, c.boss != null);
             sim.spark(cel.x, cel.y - 0.5, "hit");
             if (cel.hp <= 0) { sim.kill(cel, c.boss != null ? $"zmiażdżony przez: {aktywnyBoss().nazwa}" : Krag.T("z ręki Strażnika Snu", "z ręki Cienia Żarłoka"), "straznik"); return; }
-            if (!walczacy(cel)) ranStraznika(sim, c, cel, RACES[cel.race].strength * mnoznik(sim, cel, "sila") * S.oddajeCios);
+            if (!walczacy(cel)) ranStraznika(sim, c, cel, wzor ? oddanyCiosWzor(sim, cel, c) : RACES[cel.race].strength * mnoznik(sim, cel, "sila") * S.oddajeCios);
         }
 
         /// <summary>Krok Strażnika (zamiast zwykłego życia stworzenia).</summary>
@@ -438,7 +460,17 @@ namespace Trzewia.Symulacja
                 cel = celStraznika(sim, c, S.limitOdRdzenia);
                 if (cel != null) sim.target.set(c.id, cel.id); else sim.target.delete(c.id);
             }
-            if (cel == null) { ruchStraznika(sim, c, w.coreX + 0.5 + JS.Sin(sim.tick * 0.01 + c.id) * 6, w.przedsionekY - 3, S.szybkosc * 0.5, S.limitOdRdzenia); return; }
+            if (cel == null) { c.atakOd = null; ruchStraznika(sim, c, w.coreX + 0.5 + JS.Sin(sim.tick * 0.01 + c.id) * 6, w.przedsionekY - 3, S.szybkosc * 0.5, S.limitOdRdzenia); return; }
+            if (WalkaWzor.Aktywny)
+            {
+                // walka według wzorów: zamach przez „czas” (w miejscu), trafienie, przerwa; ogłuszony — zamach przepada
+                var wZasiegu = JS.Hypot(cel.x - c.x, cel.y - c.y) <= S.zasieg + (c.atakOd != null ? 0.6 : 0);
+                if (c.atakOd == null && !wZasiegu) { ruchStraznika(sim, c, cel.x, cel.y - 0.3, S.szybkosc, S.limitOdRdzenia); return; }
+                c.face = cel.x > c.x ? 1 : -1;
+                if ((c.ogluszonyAtakDo ?? -1) > sim.tick) { c.atakOd = null; return; }
+                if (WalkaWzor.Zamach(sim, c, WalkaWzor.CIEN, wZasiegu, ref c.ciosT)) ciosStraznika(sim, c, cel, S.sila * wzrost);
+                return;
+            }
             if (JS.Hypot(cel.x - c.x, cel.y - c.y) > S.zasieg) { ruchStraznika(sim, c, cel.x, cel.y - 0.3, S.szybkosc, S.limitOdRdzenia); return; }
             c.face = cel.x > c.x ? 1 : -1;
             if (sim.tick - (c.ciosT ?? -1e9) < S.ciosCo || (c.ogluszonyAtakDo ?? -1) > sim.tick) return;

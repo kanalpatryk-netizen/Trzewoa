@@ -101,6 +101,8 @@ namespace Trzewia.Symulacja
                 var def = Ruch(id);
                 if (def.wrogPonizej != null && zycieWroga >= def.wrogPonizej) continue;
                 if (id == "sciecieGlowy" && !mozeSciac(s)) continue;
+                // walka według wzorów: jedno trafienie na ruch — ruchy z kilkoma cięciami (seria, młynek) odpadają
+                if (WalkaWzor.Aktywny && def.traf != null && def.traf.Length > 1) continue;
                 var blisko = d <= zasieg + (def.zasieg ?? 0);
                 var zDaleka = JS.Tak(def.zDaleka) && d <= zasieg + def.zDaleka!.Value && Math.Abs(s.y - c.y) < 1.2;
                 if (!blisko && !zDaleka) continue;
@@ -128,11 +130,16 @@ namespace Trzewia.Symulacja
         /// <summary>Cios rycerza w Strażnika (albo demona). Zwraca zadaną ranę (ujemną — zablokował ją demon).</summary>
         static double zadajCios(Sim sim, Creature c, Creature s, double mn, RuchRycerza def)
         {
-            var rana = silaRycerza(sim, c) * mn;
+            var wzor = WalkaWzor.Aktywny;
+            // walka według wzorów: L z broni rycerza (× jego siła względem świeżego rycerza), O po pancerzu celu
+            var rana = wzor
+                ? WalkaWzor.O(WalkaWzor.Atak(sim, WalkaWzor.RYCERZ, mnoznik(sim, c, "sila") / WalkaWzor.SILA_RYCERZA), WalkaWzor.Pancerz(s))
+                : silaRycerza(sim, c) * mn;
             var blok = s.boss != null && s.ruch?.id == "blok" && def.nieDoZablokowania != true;
             if (blok)
             {
-                rana *= WB.blok.rany;
+                // (wzór: blok = chwilowy pancerz na ten jeden cios)
+                rana = wzor ? WalkaWzor.ZBlokiem(rana, WalkaWzor.Pancerz(s), WB.blok.rany) : rana * WB.blok.rany;
                 for (var k = 0; k < 3; k++) sim.spark(s.x + sim.rng.range(-0.5, 0.5), s.y - 2.5 + sim.rng.range(-0.6, 0.6), "hit");
             }
             var hp0 = s.hp;
@@ -156,7 +163,8 @@ namespace Trzewia.Symulacja
         {
             var d = JS.Hypot(s.x - c.x, s.y - c.y);
             var zasieg = zasiegRycerza(s);
-            var gotow = sim.tick - (c.ciosT ?? -1e9) >= OB.przerwa;
+            // (wzór: przerwa liczona od trafienia — ciosT to tik trafienia, nie końca ruchu)
+            var gotow = sim.tick - (c.ciosT ?? -1e9) >= (WalkaWzor.Aktywny ? WalkaWzor.RYCERZ.PrzerwaT : OB.przerwa);
             double zDaleka = 0;
             if (gotow && d > zasieg) foreach (var id0 in atakiRycerza(sim, c)) zDaleka = Math.Max(zDaleka, Ruch(id0).zDaleka ?? 0);
             if (d > zasieg && !(zDaleka > 0 && d <= zasieg + zDaleka && Math.Abs(s.y - c.y) < 1.2)) { podejdz(Math.Floor(s.x), Math.Floor(s.y)); return; }
@@ -164,7 +172,8 @@ namespace Trzewia.Symulacja
             if (!gotow) return;
             var id = wybierzAtak(sim, c, s, d);
             if (id == null) { podejdz(Math.Floor(s.x), Math.Floor(s.y)); return; }
-            zacznijRuch(sim, c, id, Ruch(id).dl, s);
+            var nowy = zacznijRuch(sim, c, id, Ruch(id).dl, s);
+            if (WalkaWzor.Aktywny && Ruch(id).traf is { Length: > 0 } tr) WalkaWzor.UstawRytm(nowy, WalkaWzor.RYCERZ, Ruch(id).dl, tr[0][0]);
             c.kombo = OB.kombo[id];
             if (s.boss != null) bossWidziZamach(sim, s, c, Ruch(id));
         }
@@ -177,6 +186,7 @@ namespace Trzewia.Symulacja
             var def = Ruch(R.id);
             var t = sim.tick - R.od;
             if (def == null || !czyRycerz(c) || c.wDloni == true || c.lot != null) { c.ruch = null; return false; }
+            if (R.trafT is double tt) return krokRuchuRycerzaWzor(sim, c, R, def, t, tt);
             if (t >= R.dl)
             {
                 c.ruch = null;
@@ -210,6 +220,39 @@ namespace Trzewia.Symulacja
             return true;
         }
 
+        /// <summary>
+        /// Ruch rycerza w rytmie wzoru (WalkaWzor.UstawRytm): cała animacja w tempie R.tempo, jedno trafienie po „czasie”
+        /// broni (tik tt), od niego liczy się przerwa (ciosT). Doskok w tym samym tempie.
+        /// </summary>
+        static bool krokRuchuRycerzaWzor(Sim sim, Creature c, RuchTrwa R, RuchRycerza def, double t, double tt)
+        {
+            var s = sim.creatureById(R.cel);
+            var zyje = s != null && !s.dead;
+            if (t >= tt && R.traf == 0)
+            {
+                R.traf = 1;
+                c.ciosT = sim.tick;
+                double zad = 0; var trafil = false;
+                if (zyje && JS.Hypot(s!.x - c.x, s.y - c.y) <= zasiegRycerza(s) + (def.zasieg ?? 0) + 0.6) { trafil = true; zad = zadajCios(sim, c, s, 1, def); }
+                if (R.id == "sciecieGlowy" && trafil && !s!.dead && mozeSciac(s)) { ucinaGlowe(sim, s, c); zad = Math.Max(zad, 1); }
+                R.zadane.Add(zad);
+            }
+            if (t >= R.dl) { c.ruch = null; return false; }
+            c.vy = 0; c.droga = null;
+            if (def.doskok != null && zyje && R.traf == 0)
+            {
+                var k = R.tempo ?? 1;
+                double kafle = def.doskok[0], t0 = def.doskok[1] * k, t1 = def.doskok[2] * k;
+                if (t >= t0 && t < t1)
+                {
+                    var odl = Math.Abs(s!.x - c.x); var sg = JS.Sign(s.x - c.x); var kier = JS.Tak(sg) ? sg : c.face;
+                    var stop = s.boss != null ? zasiegRycerza(s) - 0.5 : 0.85;
+                    if (odl > stop) przesun(sim, c, kier * Math.Min(kafle / (t1 - t0), odl - stop));
+                }
+            }
+            return true;
+        }
+
         /// <summary>Rycerz przyjmuje cios: obrona albo reakcja. Zwraca ranę, która naprawdę zostaje.</summary>
         public static double przyjmijCios(Sim sim, Creature c, double rana, OpcjeCiosu o)
         {
@@ -217,8 +260,9 @@ namespace Trzewia.Symulacja
             var R = c.ruch; var def = R != null ? Ruch(R.id) : null;
             var wet = weteranAktywny(sim, c);
             var lezy = R?.id == "powalony" && sim.tick - R.od < R.dl;
-            var ostatnieTraf = def?.traf != null && def.traf.Length > 0 ? def.traf[def.traf.Length - 1][0] : 0;
+            var ostatnieTraf = R?.trafT ?? (def?.traf != null && def.traf.Length > 0 ? def.traf[def.traf.Length - 1][0] : 0);
             var wAtaku = def != null && def.rodzaj == "atak" && R != null && sim.tick - R.od < ostatnieTraf;
+            var wzor = WalkaWzor.Aktywny;
             var zajety = lezy || wAtaku || (R != null && R.id != "garda" && sim.tick - R.od < R.dl && def?.rodzaj != "atak");
             if (!zajety && !JS.Tak(o.przygniata) && o.ogien != true)
             {
@@ -226,12 +270,13 @@ namespace Trzewia.Symulacja
                 {
                     zacznijRuch(sim, c, "blokTarcza", RR.blokTarcza.dl, null, r => { r.kier = o.kier; r.sila = rana / maxHp(sim, c); });
                     for (var k = 0; k < 3; k++) sim.spark(c.x + o.kier * 0.3, c.y - 0.8 + sim.rng.range(-0.3, 0.3), "hit");
-                    return rana * OB.blok.rany;
+                    // (wzór: blok tarczą = chwilowy pancerz na ten jeden cios)
+                    return wzor ? WalkaWzor.ZBlokiem(rana, WalkaWzor.Pancerz(c), OB.blok.rany) : rana * OB.blok.rany;
                 }
                 if (wet && sim.rng.chance(OB.parowanie.szansa))
                 {
                     zacznijRuch(sim, c, "parowanie", RR.parowanie.dl, null, r => { r.kier = o.kier; });
-                    c.ciosT = sim.tick + RR.parowanie.dl - OB.przerwa;   // kontra zaraz po parowaniu
+                    c.ciosT = sim.tick + RR.parowanie.dl - (wzor ? WalkaWzor.RYCERZ.PrzerwaT : OB.przerwa);   // kontra zaraz po parowaniu
                     c.kombo = OB.kombo.parowanie;
                     for (var k = 0; k < 4; k++) sim.spark(c.x + o.kier * 0.45, c.y - 1.0 + sim.rng.range(-0.3, 0.3), "glint");
                     return 0;
@@ -248,10 +293,11 @@ namespace Trzewia.Symulacja
             var frac = rr / maxHp(sim, c);
             if (!lezy && !JS.Tak(o.przygniata) && o.powala != true && nosi(c, "napiersnik") && (!wAtaku || frac >= OB.mocneOd) && sim.rng.chance(OB.kontra.szansa))
             {
-                rr *= OB.kontra.rany;
+                rr = wzor ? WalkaWzor.ZBlokiem(rr, WalkaWzor.Pancerz(c), OB.kontra.rany) : rr * OB.kontra.rany;
                 var bijacy = najblizszyWrog(sim, c);
                 var silaK = rr / maxHp(sim, c);
-                zacznijRuch(sim, c, "kontraNapiersnika", RR.kontraNapiersnika.dl, bijacy, r => { r.kier = o.kier; r.sila = silaK; });
+                var kontra = zacznijRuch(sim, c, "kontraNapiersnika", RR.kontraNapiersnika.dl, bijacy, r => { r.kier = o.kier; r.sila = silaK; });
+                if (wzor && RR.kontraNapiersnika.traf is { Length: > 0 } tk) WalkaWzor.UstawRytm(kontra, WalkaWzor.RYCERZ, RR.kontraNapiersnika.dl, tk[0][0]);
                 if (bijacy?.boss != null) bossWidziZamach(sim, bijacy, c, RR.kontraNapiersnika);
                 return rr;
             }
@@ -304,7 +350,23 @@ namespace Trzewia.Symulacja
         static RuchTrwa zacznijRuchBossa(Sim sim, Creature c, string id, Creature? cel, double? dl = null, Action<RuchTrwa>? extra = null)
         {
             if (cel != null) c.face = cel.x > c.x ? 1 : -1;
-            return zacznijRuch(sim, c, id, dl ?? RB[id].dl, cel, extra);
+            var r = zacznijRuch(sim, c, id, dl ?? RB[id].dl, cel, extra);
+            // walka według wzorów: atak gra się w rytmie broni Cerbera — jedno trafienie po „czasie”
+            if (WalkaWzor.Aktywny && dl == null && tikTrafieniaBossa(RB[id]) is double h) WalkaWzor.UstawRytm(r, WalkaWzor.CERBER, RB[id].dl, h);
+            return r;
+        }
+
+        /// <summary>
+        /// Tik w danych ruchu, w którym atak bossa uderza — do rytmu wzoru: pierwsze trafienie; szarża (trafia przy
+        /// zetknięciu) — koniec rozbiegu; ogień — początek podmuchu. Null — to nie atak (ryk, blok, rozkaz, reakcja).
+        /// </summary>
+        public static double? tikTrafieniaBossa(RuchBossa def)
+        {
+            if (def.rodzaj != "atak" && def.rodzaj != "obszar" && def.rodzaj != "dystans") return null;
+            if (def.traf is { Length: > 0 } tr && tr[0][0] > 0) return tr[0][0];
+            if (def.przemieszcza is { Length: > 1 } pm) return pm[1];
+            if (def.oddech is { Length: > 0 } od) return od[0];
+            return null;
         }
 
         /// <summary>Rycerz bierze zamach — demon (wolny) czasem zasłania się przedramieniem aż do trafienia.</summary>
@@ -313,7 +375,8 @@ namespace Trzewia.Symulacja
             if (b.dead || def.nieDoZablokowania == true || def.traf == null || def.traf.Length == 0) return;
             if (b.ruch != null && sim.tick - b.ruch.od < b.ruch.dl) return;
             if (!sim.rng.chance(zycieBossa(b) < 0.3 ? WB.blok.ranny : WB.blok.szansa)) return;
-            zacznijRuchBossa(sim, b, "blok", r, def.traf[0][0] + 24);
+            // (wzór: zasłona do trafienia rycerza — jego trafienie wypada po „czasie” broni, R.trafT)
+            zacznijRuchBossa(sim, b, "blok", r, (r.ruch?.trafT ?? def.traf[0][0]) + 24);
         }
 
         /// <summary>Demon przyjął ranę: przy połowie i ćwierci życia pada na kolano, po ciężkim ciosie się chwieje.</summary>
@@ -349,9 +412,21 @@ namespace Trzewia.Symulacja
             if (sim.lud.straznicy != null) sim.lud.straznicy.cios = sim.tick;
             var sg = JS.Sign(cel.x - b.x);
             var kier = JS.Tak(sg) ? sg : b.face;
-            var rana = DEMON.sila * mn * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel);
-            // Krąg Trzeci: każda ścięta głowa to mniej kłów
-            if (Krag.Wlaczony) rana *= 1 - SG.slabszeKly * (b.glowyOdciete?.Count ?? 0);
+            var wzor = WalkaWzor.Aktywny;
+            double rana;
+            if (wzor)
+            {
+                // walka według wzorów: L z broni Cerbera (każda ścięta głowa to mniej kłów — mniejsze min i max), O po
+                // pancerzu celu (tarcza p 25); mnożniki ruchów i spadek z odległością odpadają — jeden cios, jeden wzór
+                var kly = 1 - SG.slabszeKly * (b.glowyOdciete?.Count ?? 0);
+                rana = WalkaWzor.O(WalkaWzor.Atak(sim, WalkaWzor.CERBER, kly), WalkaWzor.Pancerz(cel));
+            }
+            else
+            {
+                rana = DEMON.sila * mn * (0.85 + sim.rng.next() * 0.3) * ranyZbroi(cel);
+                // Krąg Trzeci: każda ścięta głowa to mniej kłów
+                if (Krag.Wlaczony) rana *= 1 - SG.slabszeKly * (b.glowyOdciete?.Count ?? 0);
+            }
             var powala = sim.rng.chance(powalaO ?? def.powala ?? 0);
             rana = przyjmijCios(sim, cel, rana, new OpcjeCiosu { kier = -kier, powala = powala, odrzut = def.odrzut, przygniata = def.przygniata, ogien = ogien ? true : (bool?)null });
             if (!czyRycerz(cel) && JS.Tak(def.odrzut) && rana > 0) przesun(sim, cel, kier * def.odrzut!.Value * 0.6);
@@ -367,8 +442,12 @@ namespace Trzewia.Symulacja
                 b.rykPo = true;
                 return;
             }
-            if (!walczacy(cel)) ranStraznika(sim, b, cel, RACES[cel.race].strength * mnoznik(sim, cel, "sila") * STRAZNICY.oddajeCios);
+            if (!walczacy(cel)) ranStraznika(sim, b, cel, wzor ? oddanyCiosWzor(sim, cel, b) : RACES[cel.race].strength * mnoznik(sim, cel, "sila") * STRAZNICY.oddajeCios);
         }
+
+        /// <summary>Wzór: kto nie walczy, oddaje słabszy cios (broń ludu × oddajeCios), po pancerzu bijącego.</summary>
+        public static double oddanyCiosWzor(Sim sim, Creature od, Creature cel) =>
+            WalkaWzor.O(WalkaWzor.Atak(sim, WalkaWzor.LUD, mnoznik(sim, od, "sila") / WalkaWzor.SILA_LUDU) * STRAZNICY.oddajeCios, WalkaWzor.Pancerz(cel));
 
         /// <summary>Lud w promieniu wokół demona.</summary>
         static List<Creature> wokol(Sim sim, Creature b, double r, double dy = 3) =>
@@ -415,6 +494,7 @@ namespace Trzewia.Symulacja
         {
             var def = RB[R.id];
             if (def == null) { b.ruch = null; return; }
+            if (R.trafT is double tt) { krokRuchuBossaWzor(sim, b, R, def, t, tt, zasyp); return; }
             var cel = sim.creatureById(R.cel);
             if (def.przemieszcza != null)
             {
@@ -452,6 +532,49 @@ namespace Trzewia.Symulacja
             }
         }
 
+        /// <summary>
+        /// Atak bossa w rytmie wzoru (WalkaWzor.UstawRytm): całe ruchy w tempie R.tempo, jedno trafienie po „czasie”
+        /// broni (tik tt), od niego liczy się przerwa. Szarża biegnie w tym samym tempie (staje w zasięgu, nie trafia
+        /// przy zetknięciu), ogień to jeden podmuch w stożku zamiast serii.
+        /// </summary>
+        static void krokRuchuBossaWzor(Sim sim, Creature b, RuchTrwa R, RuchBossa def, double t, double tt, Action<Sim, Creature> zasyp)
+        {
+            var cel = sim.creatureById(R.cel);
+            var k = R.tempo ?? 1;
+            if (def.przemieszcza != null && R.id == "szarza" && R.traf == 0 && cel != null && !cel.dead)
+            {
+                double t0 = def.przemieszcza[0] * k, t1 = def.przemieszcza[1] * k, maks = def.przemieszcza[2];
+                if (t >= t0 && t < t1 && JS.Hypot(cel.x - b.x, cel.y - b.y) > 1.6)
+                {
+                    var sg = JS.Sign(cel.x - b.x);
+                    var kier = JS.Tak(sg) ? sg : b.face;
+                    b.x = Math.Max(1, Math.Min(sim.world.w - 2, b.x + kier * (maks / (t1 - t0))));
+                    b.y += Math.Max(-0.05, Math.Min(0.05, cel.y - b.y));
+                }
+            }
+            if (t < tt || R.traf != 0) return;
+            R.traf = 1;
+            b.ciosT = sim.tick;
+            if (def.oddech != null && (def.traf == null || def.traf.Length == 0))
+            {
+                // stożek ognia przed sobą: tym szerszy, im dalej — jeden podmuch
+                foreach (var o in wokol(sim, b, def.zasieg ?? 5, 3))
+                {
+                    double dx = (o.x - b.x) * b.face, dy = Math.Abs(o.y - (b.y - 0.3));
+                    if (dx > 0.2 && dx <= (def.zasieg ?? 5) && dy <= 1.2 + dx * 0.3) ciosBossa(sim, b, o, 1, def, null, true);
+                }
+                R.zadane.Add(1);
+                return;
+            }
+            if (R.id == "szarza")
+            {
+                if (cel != null && !cel.dead && JS.Hypot(cel.x - b.x, cel.y - b.y) <= 1.9) { ciosBossa(sim, b, cel, 1, def); R.zadane.Add(1); }
+                else R.zadane.Add(0);
+                return;
+            }
+            trafienieBossa(sim, b, R, def, 1, zasyp);
+        }
+
         /// <summary>Rozkaz dla dłoni z otchłani — który ruch demona do której akcji.</summary>
         static string? ROZKAZ(string? akcja) => akcja switch { "rzut" => "rozkazRzut", "tarcza" => "rozkazTarcza", "zawal" => "rozkazZawal", _ => null };
 
@@ -473,6 +596,9 @@ namespace Trzewia.Symulacja
                 var def = RB[id];
                 if (def.rodzaj != "atak" && def.rodzaj != "obszar" && def.rodzaj != "dystans") continue;
                 if (def.zycieDo != null && zycie >= def.zycieDo) continue;
+                // walka według wzorów: jedno trafienie na ruch — podwójny zamach odpada (przygniecenie zostaje: pierwszy
+                // cios przygniata, to on się liczy)
+                if (WalkaWzor.Aktywny && def.traf != null && def.traf.Length > 1 && def.przygniata == null) continue;
                 if (def.od != null && d < def.od) continue;
                 var zasieg = def.zasieg ?? def.promien ?? DEMON.zasieg;
                 if (d > zasieg) continue;
@@ -502,7 +628,8 @@ namespace Trzewia.Symulacja
                 if (t < R.dl) { krokRuchuBossa(sim, c, R, t, zasyp); return; }
                 c.ruch = null;
                 c.ruchPoprz = R.id;
-                if (R.id != "blok") c.ciosT = sim.tick;
+                // (wzór: po ataku przerwa liczy się od trafienia — ciosT już ustawiony w chwili trafienia)
+                if (R.id != "blok" && R.trafT == null) c.ciosT = sim.tick;
                 // po klęknięciu i po zabiciu kogoś — ryk
                 if ((R.id == "zachwianie" && R.wariant == 2) || c.rykPo == true)
                 {
@@ -541,7 +668,7 @@ namespace Trzewia.Symulacja
             }
             if (cel.wDloni == true || cel.lot != null) { c.face = cel.x > c.x ? 1 : -1; return; }
             var d = JS.Hypot(cel.x - c.x, cel.y - c.y);
-            var gotow = sim.tick - (c.ciosT ?? -1e9) >= WB.przerwa && (c.ogluszonyAtakDo ?? -1) <= sim.tick;
+            var gotow = sim.tick - (c.ciosT ?? -1e9) >= (WalkaWzor.Aktywny ? WalkaWzor.CERBER.PrzerwaT : WB.przerwa) && (c.ogluszonyAtakDo ?? -1) <= sim.tick;
             if (gotow)
             {
                 var id = wybierzAtakBossa(sim, c, cel, d);

@@ -254,6 +254,22 @@ namespace Trzewia.Symulacja
                 return;
             }
             var dist = JS.Hypot(foe.x - c.x, foe.y - c.y);
+            if (WalkaWzor.Aktywny)
+            {
+                // walka według wzorów (Krąg): zamiast ran co tik — zamach przez „czas”, jedno trafienie, przerwa
+                var wZasiegu = dist < K.walkaZasieg + (c.atakOd != null ? 0.3 : 0);
+                if (c.atakOd == null && !wZasiegu) { if (dist > K.walkaGubi) { sim.target.delete(c.id); c.jt = 0; } else walkTo(sim, c, foe.x, foe.y); return; }
+                var rycerz = rolaPostaci(c) == "rycerz";
+                var bron = rycerz ? WalkaWzor.RYCERZ : WalkaWzor.LUD;
+                if (!WalkaWzor.Zamach(sim, c, bron, wZasiegu, ref c.ciosT)) return;
+                var skala = RACES[c.race].strength / RACES[Race.GOBLIN].strength * mnoznik(sim, c, "sila") / (rycerz ? WalkaWzor.SILA_RYCERZA : WalkaWzor.SILA_LUDU)
+                            * cechaNacji(sim.clans[c.clan]).sila * (1 + c.mad);
+                foe.hp -= WalkaWzor.O(WalkaWzor.Atak(sim, bron, skala), WalkaWzor.Pancerz(foe));
+                foe.fear = Math.Min(1, foe.fear + K.walkaStrach);
+                sim.spark(foe.x, foe.y, "hit");
+                if (foe.hp <= 0) zabitWBojce(sim, c, foe);
+                return;
+            }
             if (dist < K.walkaZasieg)
             {
                 var dmg = RACES[c.race].strength * mnoznik(sim, c, "sila") * cechaNacji(sim.clans[c.clan]).sila * (K.walkaMin + sim.rng.next() * K.walkaRozrzut) * (1 + c.mad);
@@ -273,6 +289,17 @@ namespace Trzewia.Symulacja
             }
             else if (dist > K.walkaGubi) { sim.target.delete(c.id); c.jt = 0; }
             else walkTo(sim, c, foe.x, foe.y);
+        }
+
+        /// <summary>Śmierć w bójce (walka według wzorów) — to samo, co w zwykłej bójce wyżej.</summary>
+        static void zabitWBojce(Sim sim, Creature c, Creature foe)
+        {
+            var pierwsza = c.clan != foe.clan && !JS.Tak(sim.clans[c.clan].grudge.getOr(foe.clan, 0)) && !JS.Tak(sim.klan(foe.clan)?.grudge.getOr(c.clan, 0) ?? 0);
+            sim.kill(foe, $"z ręki {sim.clans[c.clan].name}", "walka");
+            if (RACES[c.race].eatsMeat) c.hunger = Math.Max(0, c.hunger - K.zjadaOfiare);
+            sim.feud(c.clan, foe.clan);
+            if (pierwsza) zglosWojne(sim, c.clan, foe.clan, foe.x, foe.y);
+            sim.wojnaBudzi(c.clan, foe.clan);
         }
 
         static void doFlee(Sim sim, Creature c)

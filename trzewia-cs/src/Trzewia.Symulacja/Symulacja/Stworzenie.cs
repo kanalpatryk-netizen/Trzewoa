@@ -66,6 +66,11 @@ namespace Trzewia.Symulacja
         public double? kier, sila, wariant;
         /// <summary>przemieszczenie: skąd (szarża) i dokąd</summary>
         public double? x0, y0, cx, cy;
+        /// <summary>
+        /// Walka według wzorów (WalkaWzor): tempo ruchu (k — cała animacja k razy dłuższa), długość ruchu w danych
+        /// i tik jedynego trafienia (= „czas” broni). Null — ruch jak dotąd.
+        /// </summary>
+        public double? tempo, dl0, trafT;
     }
 
     /// <summary>
@@ -148,6 +153,8 @@ namespace Trzewia.Symulacja
         public double? wBlocieDo;
         public double? ciosT;
         public double? ksiegaT;
+        /// <summary>Walka według wzorów (WalkaWzor): od którego tiku trwa zamach (Cień, lud, księga). Null — bez zamachu.</summary>
+        public double? atakOd;
         public double? hpMax;
         public double? zasypT;
         public XY? posterunek;
