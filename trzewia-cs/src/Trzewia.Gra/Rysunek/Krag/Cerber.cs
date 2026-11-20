@@ -210,7 +210,8 @@ namespace Trzewia.Rysunek
             if (bajty != null && Json.Czytaj(Encoding.UTF8.GetString(bajty)) is Dictionary<string, object?> o)
             {
                 var folder = rycina ? "grafika/krag/cerber-rycina/" : "grafika/krag/cerber/";
-                var rozszerzenie = rycina ? ".png" : ".webp";
+                // (oba zestawy to WebP bezstratny — etap 5; dawniej tu stało „.png” dla ryciny i Cerber znikał przy F9 włączonym)
+                const string rozszerzenie = ".webp";
                 foreach (var kv in o)
                 {
                     if (!(kv.Value is Dictionary<string, object?> d)) continue;
