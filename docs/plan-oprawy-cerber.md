@@ -11,6 +11,7 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 3 — „uderzenie” (na Kręgu Trzecim; czeka na „dalej”)
 - [x] Etap 4 — cutscenki (na Kręgu Trzecim; czeka na „dalej”)
 - [x] Etap 5 — jeden styl („rycina”; czeka na „dalej”)
+- [x] Etap 6a — walka i obrażenia według wzorów użytkownika (20.11; w Kręgu, za flagą; czeka na „dalej”)
 - [ ] Etap 6 — mechanika bossa (opcjonalnie, dopiero po „tak” użytkownika i po skończonym porcie)
 
 ## Decyzje użytkownika (16.11, po raporcie etapu 0)
@@ -377,6 +378,48 @@ z commita `4bf4793`) poza tymi samymi dwoma miejscami pulsującymi zegarem kompu
 Koszt (`--rycina wl` / `wyl`, ten sam fragment walki): 427 / 439 ms na klatkę — różnica w granicach szumu pomiaru
 (inny plik tekstury, te same polecenia rysunku). Testy: zestaw istniejący (181/181) bez zmian — etap 5 nie dodaje
 nowej logiki do testowania, tylko podmienia, co się wczytuje.
+
+## Etap 6a — walka i obrażenia według wzorów użytkownika (20.11)
+
+Wzory od użytkownika (opis: `trzewia-cs/docs/walka/wzory.md`): **L = min + (max − min)·(a − 1)**, a losowe z 1–2;
+**O = L·100/(100 + p)**, odjęte od hp na końcu „czasu” ataku; do balansu d, f, S, SC. Kod:
+`src/Trzewia.Symulacja/Symulacja/WalkaWzor.cs`, wpięcie w `Walka.cs`, `Straznicy.cs`, `Stworzenia7.cs` (bójka
+ogólna); rysunek: `Rysunek/Duszki/DuszkiLudu.cs`, `Rysunek/Krag/Cerber.cs`, `Visual/Uderzenie.cs`.
+
+Decyzje użytkownika:
+1. **Zakres:** każda walka w Kręgu Trzecim (rycerz, Cerber, Cienie, grabarze, mnisi z księgą, bójka ogólna).
+   Alpha 1 bez zmian (test `Alpha1BezZmian`).
+2. **Liczby:** 100 wariantów z `tools/walka/balans.py` → `docs/walka/konsultacja.md` i `warianty.csv`;
+   zatwierdzony **nr 3** („pancerne Cienie”, p 20): rycerz 45–67, 0,5 + 0,6 s; Cerber 9,5–14, 0,7 + 1 s;
+   Cień 2–3,5, 0,3 + 0,7 s; grabarz 2,5–3,5, 0,25 + 0,25 s; mnich (księga) 2–3, 0,5 + 0,75 s. Pancerz: Cień 20,
+   tarcza rycerza 25 (dzisiejsze rany × 0,8 to dokładnie p = 25), reszta 0. Życie (hp) bez zmian.
+3. **Ruchy:** jedno trafienie na końcu „czasu”; kombinacje (ruchy z kilkoma trafieniami) wypadają z losowania.
+   Każdy ruch rycerza i Cerbera jest równo przyspieszony/zwolniony tak, żeby trafienie z animacji wypadło dokładnie
+   po „czasie”; długość ruchu najwyżej czas + przerwa; przerwa liczona od trafienia.
+4. **Flaga:** `WalkaWzor.Wlaczony`, domyślnie włączona; testy zgodności z TS liczą starą walkę.
+5. **Obrona:** blok = chwilowy pancerz na ten jeden cios (p' = (100 + p)/rany − 100 — ten sam ułamek rany co
+   dotąd); parowanie i unik — pudło.
+
+Modyfikatory, które już były (siła roli i zbroi, wzrost Cieni co falę, słabsze kły Cerbera po ściętej głowie,
+modlitwa), skalują min i max względem siły, przy której liczby były liczone. Cień, grabarz, mnich i bójka ogólna
+dostały „zamach”: cel w zasięgu i przerwa minęła → po „czasie” trafienie (zamach przerwany, gdy cel ucieknie).
+
+- [x] Rdzeń wzorów, rytm ruchów, wpięcie we wszystkie walki Kręgu.
+- [x] Rysunek: poza uderzenia rycerza i Cerbera w chwili trafienia (zrzuty: klatki 1335 i 1860 na ziarnie 3).
+- [x] Testy: `WalkaWzorTesty` (wzory z kartki, nr 3, blok, rytm, pełne partie, Alpha 1 bez zmian).
+- [ ] Animacja zamachu dla Cienia, grabarza i mnicha — obiecana w konsultacji, **nie zrobiona**: Cień ma dziś
+      jedną pętlę „bije” (6,3 s, niezwiązaną z ciosem), grabarz i mnich nie mają klatek ciosu wcale. Do decyzji.
+
+Pomiar (20 ziaren, bot „rozsadny”, Krąg):
+
+| | wygrane | przegrane | utknięte | walka z Cerberem: mediana (zakres) |
+|---|---|---|---|---|
+| stara walka | 12 | 5 | 3 | 53 s (39–72) |
+| nowa walka | 12 | 5 | 3 | 54 s (50–73) |
+
+Utknięte partie (ziarna 37, 100, 114) są takie same przy starej walce: rycerz nie ma drogi do Cerbera, a Cerber nie
+odchodzi dalej niż 30 kratek od rdzenia — błąd mapy/ścieżek sprzed tego etapu, nie wzorów. Koszt symulacji
+(ziarna 3, 5, 13): 22–30 µs na tik przy obu wersjach — różnica w szumie pomiaru.
 
 ## Etap 6 — mechanika bossa (opcjonalnie: dopiero po „tak” i po skończonym porcie)
 

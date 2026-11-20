@@ -46,6 +46,8 @@ Nazwane warianty dla porównania (gdzie wypadły w rankingu):
 
 ## Propozycja: wariant nr 3 (miejsce 1)
 
+**Zatwierdzony przez użytkownika 20.11** — w grze: `src/Trzewia.Symulacja/Symulacja/WalkaWzor.cs`.
+
 | atakujący | min | max | czas | przerwa |
 |---|---|---|---|---|
 | rycerz | 45 | 67 | 0,5 s | 0,6 s |
