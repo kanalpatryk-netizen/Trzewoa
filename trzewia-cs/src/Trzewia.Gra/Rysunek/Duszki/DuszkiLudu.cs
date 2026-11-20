@@ -63,7 +63,8 @@ namespace Trzewia.Rysunek.Duszki
             if (R != null && (Typ_RUCHY_RYCERZA.klucze.Contains(R.id) || (Krag.Wlaczony && R.id == "sciecieGlowy")) && tF - R.od < R.dl + 0.5 && tF >= R.od)
             {
                 var t = Math.Max(0, tF - R.od);
-                return new StanWalki { id = R.id, u = Math.Max(0, Math.Min(1, t / R.dl)), t = t, dl = R.dl };
+                // (walka według wzorów: ruch w swoim tempie — poza uderzenia dokładnie w chwili trafienia)
+                return new StanWalki { id = R.id, u = WalkaWzor.PostepRuchu(R, t), t = t, dl = R.dl };
             }
             // lekkie trafienie
             var d = c.drgniecie;

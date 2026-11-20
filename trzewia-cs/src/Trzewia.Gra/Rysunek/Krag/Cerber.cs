@@ -744,6 +744,9 @@ namespace Trzewia.Rysunek
                 var def = RUCHY_BOSSA[R.id];
                 var dl = Math.Max(1, R.dl != 0 ? R.dl : def?.dl is double d0 && d0 != 0 ? d0 : 100);
                 var u = obetnij((sim.tick - R.od) / dl, 0, 1);
+                // (walka według wzorów: ruch w swoim tempie — pozy liczone w czasie oryginału, więc trafienie, ogień
+                // i rozbieg szarży wypadają dokładnie tam, gdzie w symulacji)
+                if (R.tempo != null && R.dl0 is double dl0 && dl0 > 0) { u = WalkaWzor.PostepRuchu(R, sim.tick - R.od); dl = dl0; }
                 ruchNaPoze(p, R.id, u, def, dl, zywe[(JS.ToInt32(R.od) >> 3) % nz], nz, R.zadane, R.wariant);
             }
             // okup: trzy głowy żrą rzuconą garść jedzenia

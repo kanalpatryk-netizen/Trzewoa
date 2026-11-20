@@ -172,7 +172,7 @@ namespace Trzewia.Visual
                     if (R != null && ladowanie(R.id))
                     {
                         var def = RUCHY_BOSSA[R.id];
-                        var tt = def?.traf != null && def.traf.Length > 0 ? R.od + def.traf[0][0] : double.NaN;
+                        var tt = R.trafT is double wt ? R.od + wt : def?.traf != null && def.traf.Length > 0 ? R.od + def.traf[0][0] : double.NaN;
                         if (!double.IsNaN(tt) && st.tik < tt && sim.tick >= tt)
                         {
                             Trauma(U.TraumaLadowanie);
@@ -385,6 +385,12 @@ namespace Trzewia.Visual
             var dl = Math.Max(1, R.dl != 0 ? R.dl : def.dl != 0 ? def.dl : 100);
             var u = (ZegarGry.tikZUlamkiem(sim, czas) - R.od) / dl;
             var hit = def.traf[0][0] / dl;
+            // (walka według wzorów: ruch w swoim tempie — postęp i trafienie liczone w czasie oryginału)
+            if (R.tempo != null && R.dl0 is double dl0 && dl0 > 0)
+            {
+                u = WalkaWzor.PostepRuchu(R, ZegarGry.tikZUlamkiem(sim, czas) - R.od);
+                hit = def.traf[0][0] / dl0;
+            }
             if (hit <= 0.08) return;
             odrzut += U.Odchylenie * dzwon(u, 0.02, hit - 0.01);
             sx = 1 + U.Rozciagniecie * dzwon(u, hit - 0.04, hit + 0.08);
