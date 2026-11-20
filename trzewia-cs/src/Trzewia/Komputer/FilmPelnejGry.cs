@@ -4,9 +4,13 @@
 // (obie cutscenki etapu 4: wejście i śmierć bossa), kronika skończonej partii. Bot „rozsadny” gra sam; menu
 // prowadzą prawdziwe klawisze (strzałki, Enter), jak w grze. Klatki JPEG + klatki.json (czas, etykieta fazy) —
 // do złożenia filmu (ffmpeg), jak --zrzuty-walki --film.
+// Dźwięk (20.11, prośba użytkownika: „gameplay z dźwiękiem”): ten sam mikser co w grze (Dzwieki.Silnik, muzyka, rezonans
+// świata, gesty), ale bez urządzenia — na każdą zapisaną klatkę filmu dokładnie 1/30 s dźwięku do dzwiek.wav (48 kHz,
+// stereo), więc obraz i dźwięk zgadzają się co do klatki także w przyspieszonej budowie (tam muzyka gra w swoim tempie).
 using System.Reflection;
 using System.Text.Json;
 using Trzewia.Aplikacja;
+using Trzewia.Dzwieki;
 using Trzewia.Nastawy;
 using Trzewia.Plotna;
 using Trzewia.Rdzen;
@@ -107,7 +111,17 @@ static class FilmPelnejGry
         int f = 0;
         double teraz = 1000;
         var klatki = new List<object>();
-        void Krok(double dt) { teraz += dt; app.aktywny!.krok(dt, teraz); }
+        // dźwięk: mikser gry bez urządzenia — budzi się jak w App.obudzDzwiek (gesty, rezonans świata, muzyka)
+        using var wav = new ZapisWav(Path.Combine(katalog, "dzwiek.wav"));
+        const int RAMEK_NA_KLATKE = Mp3.SR / 30;
+        var buforDzwieku = new float[RAMEK_NA_KLATKE * 2];
+        Silnik.Ten.wlaczony = true;
+        app.gesty.start();
+        if (u.rezonans) app.dzwiek.start();
+        if (u.muzyka) app.muzyka.start();
+        Mikser.wznow();
+        // muzyka planuje akordy i dzwony co klatkę ekranu (App.Klatka)
+        void Krok(double dt) { teraz += dt; app.muzyka.krok(); app.aktywny!.krok(dt, teraz); }
         void Zapisz(string etykieta)
         {
             p.setTransform(1, 0, 0, 1, 0, 0);
@@ -116,6 +130,8 @@ static class FilmPelnejGry
             if (!p.ZapiszJpg(Path.Combine(katalog, nazwa))) { Console.Error.WriteLine($"nie zapisałem {nazwa}"); return; }
             klatki.Add(new { plik = nazwa, klatka = f, czasS = Math.Round(teraz / 1000.0, 3), etykieta });
             f++;
+            Silnik.Ten.Mieszaj(buforDzwieku, RAMEK_NA_KLATKE);
+            wav.Dopisz(buforDzwieku);
         }
         void Klawisz(string k) => app.aktywny!.klawisz(Rdzen.Keybinds.akcjaDlaKlawisza(k), new Klawisz { key = k });
 
@@ -208,10 +224,36 @@ static class FilmPelnejGry
         }
         Console.WriteLine($"  kronika: {f} klatek — {zegar.Elapsed.TotalSeconds:F1} s");
 
+        Silnik.Ten.wlaczony = false;
         File.WriteAllText(Path.Combine(katalog, "klatki.json"),
             JsonSerializer.Serialize(new { ziarno, szerokosc = W, wysokosc = H, tikPekniecia, klatki }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine($"zapisano {f} klatek w {zegar.Elapsed.TotalSeconds:F1} s → {Path.Combine(katalog, "klatki.json")}");
         return 0;
+    }
+
+    /// <summary>Dźwięk filmu: WAV 16 bit, stereo, Mp3.SR — pisany po kawałku, nagłówek domykany przy zamknięciu.</summary>
+    sealed class ZapisWav : IDisposable
+    {
+        readonly BinaryWriter f;
+        long ramek;
+        public ZapisWav(string plik)
+        {
+            f = new BinaryWriter(File.Create(plik));
+            f.Write("RIFF"u8); f.Write(0); f.Write("WAVE"u8); f.Write("fmt "u8); f.Write(16); f.Write((short)1); f.Write((short)2);
+            f.Write(Mp3.SR); f.Write(Mp3.SR * 4); f.Write((short)4); f.Write((short)16); f.Write("data"u8); f.Write(0);
+        }
+        public void Dopisz(float[] probki)
+        {
+            foreach (var x in probki) f.Write((short)Math.Clamp(Math.Round(x * 32767), -32768, 32767));
+            ramek += probki.Length / 2;
+        }
+        public void Dispose()
+        {
+            var dane = ramek * 4;
+            f.Seek(4, SeekOrigin.Begin); f.Write((int)(36 + dane));
+            f.Seek(40, SeekOrigin.Begin); f.Write((int)dane);
+            f.Dispose();
+        }
     }
 
     /// <summary>Strzałka w dół, aż wybrana pozycja menu ma `id == docelowy` (pomija nieaktywne — jak w grze), Enter nie wciska.</summary>
