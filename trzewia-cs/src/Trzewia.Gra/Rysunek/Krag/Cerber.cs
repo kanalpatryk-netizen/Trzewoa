@@ -193,27 +193,38 @@ namespace Trzewia.Rysunek
             public readonly List<(int w, int h)> wym = new List<(int, int)>();
         }
 
-        static Dictionary<string, Czesc>? czesci;
+        static Dictionary<string, Czesc>? czesciOryginal, czesciRycina;
 
-        /// <summary>Wczytuje dane.json i obrazki części (raz). Pusty słownik, gdy plików nie ma.</summary>
+        /// <summary>
+        /// Wczytuje dane.json i obrazki części (raz na zestaw). Oba zestawy (oryginał i etap 5 „rycina”) trzymane
+        /// osobno — F9/VisualConfig.Rycina przełącza między nimi bez przeładowania: dane.json (wymiary, punkty
+        /// zaczepienia) są wspólne, zmienia się tylko folder i rozszerzenie obrazków.
+        /// </summary>
         static Dictionary<string, Czesc> Czesci()
         {
-            if (czesci != null) return czesci;
-            czesci = new Dictionary<string, Czesc>();
+            var rycina = Visual.VisualConfig.Aktywne(Visual.VisualConfig.Rycina);
+            ref var cache = ref (rycina ? ref czesciRycina : ref czesciOryginal);
+            if (cache != null) return cache;
+            var wynik = new Dictionary<string, Czesc>();
             var bajty = Rdzen.Zasoby.Czytaj("grafika/krag/cerber/dane.json");
-            if (bajty == null || !(Json.Czytaj(Encoding.UTF8.GetString(bajty)) is Dictionary<string, object?> o)) return czesci;
-            foreach (var kv in o)
+            if (bajty != null && Json.Czytaj(Encoding.UTF8.GetString(bajty)) is Dictionary<string, object?> o)
             {
-                if (!(kv.Value is Dictionary<string, object?> d)) continue;
-                double L(string k) => d.TryGetValue(k, out var v) && v is double x ? x : 0;
-                var c = new Czesc { x0 = L("x0"), y0 = L("y0"), S = L("S"), w = L("w"), h = L("h") };
-                if (c.S <= 0) continue;
-                c.img = Plotno.Wczytaj("grafika/krag/cerber/" + kv.Key + ".webp");
-                if (!c.img.complete) continue;
-                c.mip.Add(c.img); c.wym.Add((c.img.width, c.img.height));
-                czesci[kv.Key] = c;
+                var folder = rycina ? "grafika/krag/cerber-rycina/" : "grafika/krag/cerber/";
+                var rozszerzenie = rycina ? ".png" : ".webp";
+                foreach (var kv in o)
+                {
+                    if (!(kv.Value is Dictionary<string, object?> d)) continue;
+                    double L(string k) => d.TryGetValue(k, out var v) && v is double x ? x : 0;
+                    var c = new Czesc { x0 = L("x0"), y0 = L("y0"), S = L("S"), w = L("w"), h = L("h") };
+                    if (c.S <= 0) continue;
+                    c.img = Plotno.Wczytaj(folder + kv.Key + rozszerzenie);
+                    if (!c.img.complete) continue;
+                    c.mip.Add(c.img); c.wym.Add((c.img.width, c.img.height));
+                    wynik[kv.Key] = c;
+                }
             }
-            return czesci;
+            cache = wynik;
+            return wynik;
         }
 
         /// <summary>Czy obrazki Cerbera są w danych gry.</summary>

@@ -3,6 +3,7 @@
 // narzedzia/duszki z rysunku gry TS; leżą w dane/grafika/duszki: <nazwa>.json + strony PNG na każdy poziom wielkości.
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Trzewia.Plotna;
 using Trzewia.Rdzen;
@@ -52,15 +53,29 @@ namespace Trzewia.Rysunek.Duszki
         public double h;
         public string[] strony = Array.Empty<string>();
         IObraz?[] obrazy = Array.Empty<IObraz?>();
+        /// <summary>Etap 5 „rycina”: osobny bufor, żeby F9/VisualConfig.Rycina przełączał bez przeładowania oryginału.</summary>
+        IObraz?[] obrazyRycina = Array.Empty<IObraz?>();
         /// <summary>Po 7 liczb na klatkę: strona, x, y, szerokość, wysokość, ox, oy (przesunięcie od punktu zaczepienia — środka stóp).</summary>
         public float[] klatki = Array.Empty<float>();
         /// <summary>Światła klatki (poświata lampki, świecy, księgi): po 7 liczb — x, y, promień w ułamkach h; barwa R, G, B; siła.</summary>
         public float[]?[] swiatla = Array.Empty<float[]?>();
 
-        internal void Przygotuj() { obrazy = new IObraz?[strony.Length]; }
+        internal void Przygotuj() { obrazy = new IObraz?[strony.Length]; obrazyRycina = new IObraz?[strony.Length]; }
 
-        /// <summary>Strona arkusza — wczytywana przy pierwszym użyciu (większość poziomów i wariantów nigdy nie trafia na ekran).</summary>
-        public IObraz Strona(int nr) => obrazy[nr] ??= Plotno.Wczytaj("grafika/duszki/" + strony[nr]);
+        /// <summary>
+        /// Strona arkusza — wczytywana przy pierwszym użyciu (większość poziomów i wariantów nigdy nie trafia na
+        /// ekran). Etap 5: z VisualConfig.Rycina — strona z dane/grafika/duszki-rycina/ (tylko obsada walki ma tam
+        /// odpowiednik — narzedzia/duszki-rycina/); inne wracają do oryginału (plik niedostępny → `complete=false`).
+        /// </summary>
+        public IObraz Strona(int nr)
+        {
+            if (Visual.VisualConfig.Aktywne(Visual.VisualConfig.Rycina))
+            {
+                var r = obrazyRycina[nr] ??= Plotno.Wczytaj("grafika/duszki-rycina/" + Path.ChangeExtension(strony[nr], ".webp"));
+                if (r.complete) return r;
+            }
+            return obrazy[nr] ??= Plotno.Wczytaj("grafika/duszki/" + strony[nr]);
+        }
     }
 
     public sealed class Duszek
