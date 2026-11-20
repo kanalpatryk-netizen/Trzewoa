@@ -51,6 +51,9 @@ public class DuszkiTesty
     public void ScenaJakWTs(int nr)
     {
         Gospodarz();
+        // porównanie z TS: bez nowej oprawy walki (Visual/VisualConfig.cs) — TS jej nie ma (etap 5: inaczej
+        // sprite'y wczytane tu rysunek-rycina, zamiast tych, na których TS-owe złote obrazy są wzorowane)
+        using var bezOprawy = new BezOprawy();
         var sc = Sceny.Value[nr];
         var sim = new Sim(sc.ziarno);
         void Krok() { sim.step(); if (sim.tick % Bot.BOT_CO == 0) Bot.ruchBota(sim, "rozsadny"); }
