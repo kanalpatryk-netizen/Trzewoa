@@ -462,6 +462,18 @@ Za ZmianyKregu.
 - [x] Gracz wskazuje głowę: klik w jej pasek. Każda głowa ma własne życie; rany idą w pasek wskazanej, ją rycerz
       zetnie. Bez wskazania — kolejność jak dotąd (pitbull, wilk, doberman).
 
+Pomiar (bot „rozsadny”, Krąg, ziarna 1–120; „przed” — Krąg jak w TS, `--krag-zmiany wyl`, ziarna 1–20):
+
+| | wygrane | przegrane | bez końca | walka z Cerberem: mediana (90% krótszych niż) |
+|---|---|---|---|---|
+| przed (ziarna 1–20) | 16 | 3 | 1 | 53 s |
+| po etapach 6b i 6 (ziarna 1–120) | 118 | 2 | 0 | 55 s (89 s) |
+
+Przegrane po zmianach (ziarna 35 i 109): rycerz ginie przed walką, grabarze w walce, zostają sami mnisi z księgami —
+uczciwa przegrana, partia się kończy. Na partię bot karmi średnio 2,7 razy i wzywa dłoń 1,1 razy; ataki głów są
+rzadkie (gryzienie 0,5, ogień 0,55, wycie 0,3 na walkę), bo Cerber większość walki chwieje się pod ciosami rycerza
+(dawny próg zachwiania z TS). Testy: 204/204.
+
 ## Wzór raportu po każdym etapie
 
 - Co zrobione (krótko, w punktach).
