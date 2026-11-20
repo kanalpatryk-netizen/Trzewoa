@@ -41,6 +41,7 @@ static class Program
         if (Uruchomienie.Czytelnosc is bool czyt) Trzewia.Visual.VisualConfig.Czytelnosc = czyt;
         if (Uruchomienie.Uderzenie is bool ud) Trzewia.Visual.VisualConfig.Uderzenie = ud;
         if (Uruchomienie.Przerywniki is bool prz) Trzewia.Visual.VisualConfig.Przerywniki = prz;
+        if (Uruchomienie.Rycina is bool ryc) Trzewia.Visual.VisualConfig.Rycina = ryc;
         var sciezki = new Sciezki();
         // zrzuty walki bez okna: dane gry z folderu, ale ustawienia domyślne i nic w plikach gracza (Gospodarz.Pliki w pamięci)
         if (Uruchomienie.ZrzutyWalki != null)

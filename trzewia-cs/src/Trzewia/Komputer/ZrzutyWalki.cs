@@ -88,6 +88,7 @@ static class ZrzutyWalki
         if (Uruchomienie.Czytelnosc is bool czyt) Trzewia.Visual.VisualConfig.Czytelnosc = czyt;
         if (Uruchomienie.Uderzenie is bool ud) Trzewia.Visual.VisualConfig.Uderzenie = ud;
         if (Uruchomienie.Przerywniki is bool prz) Trzewia.Visual.VisualConfig.Przerywniki = prz;
+        if (Uruchomienie.Rycina is bool ryc) Trzewia.Visual.VisualConfig.Rycina = ryc;
         // Krąg Trzeci: boss to Cerber (nastawy, symulacja i rysunek trybu kręgu)
         if (Uruchomienie.Krag) Symulacja.Krag.Ustaw(true);
         // okno zapisu (s od początku zapisu): --od, --najdluzej — do szybkich prób strojenia
