@@ -102,7 +102,7 @@ namespace Trzewia.Symulacja
                 if (def.wrogPonizej != null && zycieWroga >= def.wrogPonizej) continue;
                 if (id == "sciecieGlowy" && !mozeSciac(s)) continue;
                 var blisko = d <= zasieg + (def.zasieg ?? 0);
-                var zDaleka = JS.Tak(def.zDaleka) && d <= zasieg + def.zDaleka!.Value && Math.Abs(s.y - c.y) < 1.2;
+                var zDaleka = JS.Tak(def.zDaleka) && d <= zasieg + def.zDaleka!.Value && ZmianyKregu.RoznicaWysokosci(sim, s, c) < 1.2;
                 if (!blisko && !zDaleka) continue;
                 var waga = def.waga ?? 1;
                 // Krąg Trzeci: pusty pasek głowy — rycerz rzuca się, żeby ją ściąć
@@ -159,17 +159,25 @@ namespace Trzewia.Symulacja
         /// <summary>Rycerz walczy ze Strażnikiem albo demonem: podchodzi, a w zasięgu — zaczyna ruch.</summary>
         public static void walkaRycerza(Sim sim, Creature c, Creature s, Action<double, double> podejdz)
         {
-            var d = JS.Hypot(s.x - c.x, s.y - c.y);
+            var d = ZmianyKregu.Odleglosc(sim, s, c);
             var zasieg = zasiegRycerza(s);
+            // (etap 7b, ZmianyKregu) przy Cerberze najpierw staje naprzeciw jego łbów — nie pod nim, bez kręcenia się
+            if (ZmianyKregu.UstawDoWalki(sim, c, s, podejdz)) return;
+            // dokąd podchodzi: przy Cerberze — na swoje miejsce do walki, poza tym — do kafla przeciwnika
+            void podejdzDo()
+            {
+                if (ZmianyKregu.ParaZCerberem(c, s)) { var (mx, my) = ZmianyKregu.MiejsceDoWalki(sim, c, s); podejdz(mx, my); }
+                else podejdz(Math.Floor(s.x), Math.Floor(s.y));
+            }
             // (wzór: przerwa liczona od trafienia — ciosT to tik trafienia, nie końca ruchu)
             var gotow = sim.tick - (c.ciosT ?? -1e9) >= (WalkaWzor.Aktywny ? WalkaWzor.RYCERZ.PrzerwaT : OB.przerwa);
             double zDaleka = 0;
             if (gotow && d > zasieg) foreach (var id0 in atakiRycerza(sim, c)) zDaleka = Math.Max(zDaleka, Ruch(id0).zDaleka ?? 0);
-            if (d > zasieg && !(zDaleka > 0 && d <= zasieg + zDaleka && Math.Abs(s.y - c.y) < 1.2)) { podejdz(Math.Floor(s.x), Math.Floor(s.y)); return; }
+            if (d > zasieg && !(zDaleka > 0 && d <= zasieg + zDaleka && ZmianyKregu.RoznicaWysokosci(sim, s, c) < 1.2)) { podejdzDo(); return; }
             c.face = s.x > c.x ? 1 : -1;
             if (!gotow) return;
             var id = wybierzAtak(sim, c, s, d);
-            if (id == null) { podejdz(Math.Floor(s.x), Math.Floor(s.y)); return; }
+            if (id == null) { podejdzDo(); return; }
             var nowy = zacznijRuch(sim, c, id, Ruch(id).dl, s);
             // (wzór: ruch wieloetapowy — seria, młynek — to jedno zwykłe obrażenie na ostatnim cięciu; decyzja użytkownika 20.11)
             if (WalkaWzor.Aktywny && Ruch(id).traf is { Length: > 0 } tr) WalkaWzor.UstawRytm(nowy, WalkaWzor.RYCERZ, Ruch(id).dl, tr[tr.Length - 1][0]);
@@ -202,7 +210,7 @@ namespace Trzewia.Symulacja
                 if (t >= t0 && t < t1)
                 {
                     var odl = Math.Abs(s!.x - c.x); var sg = JS.Sign(s.x - c.x); var kier = JS.Tak(sg) ? sg : c.face;
-                    var stop = s.boss != null ? zasiegRycerza(s) - 0.5 : 0.85;
+                    var stop = s.boss != null ? zasiegRycerza(s) - 0.5 + (ZmianyKregu.ParaZCerberem(c, s) ? ZmianyKregu.CIALO_CERBERA : 0) : 0.85;
                     if (odl > stop) przesun(sim, c, kier * Math.Min(kafle / (t1 - t0), odl - stop));
                 }
             }
@@ -211,7 +219,7 @@ namespace Trzewia.Symulacja
                 var mn = def.traf[(int)R.traf][1];
                 R.traf++;
                 double zad = 0; var trafil = false;
-                if (zyje && !s!.dead && JS.Hypot(s.x - c.x, s.y - c.y) <= zasiegRycerza(s) + (def.zasieg ?? 0) + 0.6) { trafil = true; zad = zadajCios(sim, c, s, mn, def); }
+                if (zyje && !s!.dead && ZmianyKregu.Odleglosc(sim, s, c) <= zasiegRycerza(s) + (def.zasieg ?? 0) + 0.6) { trafil = true; zad = zadajCios(sim, c, s, mn, def); }
                 // Krąg Trzeci: cięcie doszło, a pasek głowy jest (prawie) pusty — głowa spada (rana bywa zero: pasek już pusty)
                 if (R.id == "sciecieGlowy" && trafil && !s!.dead && mozeSciac(s)) { ucinaGlowe(sim, s, c); zad = Math.Max(zad, 1); }
                 R.zadane.Add(zad);
@@ -235,7 +243,7 @@ namespace Trzewia.Symulacja
                 for (var k = 1; k < ile; k++) R.zadane.Add(0);
                 c.ciosT = sim.tick;
                 double zad = 0; var trafil = false;
-                if (zyje && JS.Hypot(s!.x - c.x, s.y - c.y) <= zasiegRycerza(s) + (def.zasieg ?? 0) + 0.6) { trafil = true; zad = zadajCios(sim, c, s, 1, def); }
+                if (zyje && ZmianyKregu.Odleglosc(sim, s!, c) <= zasiegRycerza(s) + (def.zasieg ?? 0) + 0.6) { trafil = true; zad = zadajCios(sim, c, s, 1, def); }
                 if (R.id == "sciecieGlowy" && trafil && !s!.dead && mozeSciac(s)) { ucinaGlowe(sim, s, c); zad = Math.Max(zad, 1); }
                 R.zadane.Add(zad);
             }
@@ -248,7 +256,7 @@ namespace Trzewia.Symulacja
                 if (t >= t0 && t < t1)
                 {
                     var odl = Math.Abs(s!.x - c.x); var sg = JS.Sign(s.x - c.x); var kier = JS.Tak(sg) ? sg : c.face;
-                    var stop = s.boss != null ? zasiegRycerza(s) - 0.5 : 0.85;
+                    var stop = s.boss != null ? zasiegRycerza(s) - 0.5 + (ZmianyKregu.ParaZCerberem(c, s) ? ZmianyKregu.CIALO_CERBERA : 0) : 0.85;
                     if (odl > stop) przesun(sim, c, kier * Math.Min(kafle / (t1 - t0), odl - stop));
                 }
             }
@@ -351,7 +359,8 @@ namespace Trzewia.Symulacja
 
         static RuchTrwa zacznijRuchBossa(Sim sim, Creature c, string id, Creature? cel, double? dl = null, Action<RuchTrwa>? extra = null)
         {
-            if (cel != null) c.face = cel.x > c.x ? 1 : -1;
+            // (etap 7b, ZmianyKregu) Cerber obraca się do celu dopiero od OBROT_OD — bez kręcenia się nad kimś pod nim
+            if (cel != null) { if (ZmianyKregu.ParaZCerberem(c, cel)) ZmianyKregu.ObrocCerbera(c, cel, c.face); else c.face = cel.x > c.x ? 1 : -1; }
             var r = zacznijRuch(sim, c, id, dl ?? RB[id].dl, cel, extra);
             // etap 6 (GlowyCerbera): ruch głowy — która głowa atakuje (rysunek, zapowiedź, karmienie)
             if (GlowyCerbera.GlowaRuchu(id) is int gl) r.glowa = gl;
@@ -455,8 +464,19 @@ namespace Trzewia.Symulacja
             WalkaWzor.O(WalkaWzor.Atak(sim, WalkaWzor.LUD, mnoznik(sim, od, "sila") / WalkaWzor.SILA_LUDU) * STRAZNICY.oddajeCios, WalkaWzor.Pancerz(cel));
 
         /// <summary>Lud w promieniu wokół demona.</summary>
-        static List<Creature> wokol(Sim sim, Creature b, double r, double dy = 3) =>
-            sim.creatures.Where(o => !o.dead && rolaPostaci(o) != null && Math.Abs(o.x - b.x) <= r && Math.Abs(o.y - b.y) <= dy && JS.Hypot(o.x - b.x, (o.y - b.y) * 0.8) <= r).ToList();
+        static List<Creature> wokol(Sim sim, Creature b, double r, double dy = 3)
+        {
+            // (etap 7b, ZmianyKregu) wokół Cerbera: w poziomie od jego łbów, w pionie — różnica posadzek
+            if (ZmianyKregu.Aktywne && b.boss == "demon")
+                return sim.creatures.Where(o =>
+                {
+                    if (o.dead || rolaPostaci(o) == null) return false;
+                    var dx = Math.Max(0, Math.Abs(o.x - b.x) - ZmianyKregu.CIALO_CERBERA);
+                    var poz = ZmianyKregu.RoznicaPoziomow(sim, o, b);
+                    return dx <= r && poz <= dy && JS.Hypot(dx, poz * 0.8) <= r;
+                }).ToList();
+            return sim.creatures.Where(o => !o.dead && rolaPostaci(o) != null && Math.Abs(o.x - b.x) <= r && Math.Abs(o.y - b.y) <= dy && JS.Hypot(o.x - b.x, (o.y - b.y) * 0.8) <= r).ToList();
+        }
 
         static void trafienieBossa(Sim sim, Creature b, RuchTrwa R, RuchBossa def, double mn, Action<Sim, Creature> zasyp)
         {
@@ -471,7 +491,7 @@ namespace Trzewia.Symulacja
             {
                 foreach (var o in wokol(sim, b, def.promien!.Value))
                 {
-                    var d = JS.Hypot(o.x - b.x, o.y - b.y);
+                    var d = ZmianyKregu.Odleglosc(sim, o, b);
                     ciosBossa(sim, b, o, mn * (1 - 0.45 * Math.Min(1, d / def.promien.Value)), def, JS.Tak(def.powalaDo) && d <= def.powalaDo!.Value ? 0.7 : 0);
                 }
                 // etap 6 (GlowyCerbera): wycie wilka ogłusza każdego w pierścieniu zapowiedzi
@@ -489,7 +509,7 @@ namespace Trzewia.Symulacja
                 R.zadane.Add(1);
                 return;
             }
-            if (cel != null && !cel.dead && JS.Hypot(cel.x - b.x, cel.y - b.y) <= (def.zasieg ?? DEMON.zasieg) + 0.6)
+            if (cel != null && !cel.dead && ZmianyKregu.Odleglosc(sim, cel, b) <= (def.zasieg ?? DEMON.zasieg) + 0.6)
             {
                 ciosBossa(sim, b, cel, mn, def);
                 R.zadane.Add(1);
@@ -514,7 +534,7 @@ namespace Trzewia.Symulacja
                         var kier = JS.Tak(sg) ? sg : b.face;
                         b.x = Math.Max(1, Math.Min(sim.world.w - 2, b.x + kier * (maks / (t1 - t0))));
                         b.y += Math.Max(-0.05, Math.Min(0.05, cel.y - b.y));
-                        if (JS.Hypot(cel.x - b.x, cel.y - b.y) <= 1.9) { R.traf = 1; ciosBossa(sim, b, cel, def.traf![0][1], def); R.zadane.Add(1); }
+                        if (ZmianyKregu.Odleglosc(sim, cel, b) <= 1.9) { R.traf = 1; ciosBossa(sim, b, cel, def.traf![0][1], def); R.zadane.Add(1); }
                     }
                 }
             }
@@ -532,7 +552,7 @@ namespace Trzewia.Symulacja
                     // stożek ognia przed sobą: tym szerszy, im dalej
                     foreach (var o in wokol(sim, b, def.zasieg ?? 5, 3))
                     {
-                        double dx = (o.x - b.x) * b.face, dy = Math.Abs(o.y - (b.y - 0.3));
+                        double dx = (o.x - b.x) * b.face, dy = ZmianyKregu.Aktywne ? ZmianyKregu.RoznicaPoziomow(sim, o, b) : Math.Abs(o.y - (b.y - 0.3));
                         if (dx > 0.2 && dx <= (def.zasieg ?? 5) && dy <= 1.2 + dx * 0.3) ciosBossa(sim, b, o, def.podmuch ?? 0.1, def, null, true);
                     }
                 }
@@ -551,7 +571,7 @@ namespace Trzewia.Symulacja
             if (def.przemieszcza != null && R.id == "szarza" && R.traf == 0 && cel != null && !cel.dead)
             {
                 double t0 = def.przemieszcza[0] * k, t1 = def.przemieszcza[1] * k, maks = def.przemieszcza[2];
-                if (t >= t0 && t < t1 && JS.Hypot(cel.x - b.x, cel.y - b.y) > 1.6)
+                if (t >= t0 && t < t1 && ZmianyKregu.Odleglosc(sim, cel, b) > 1.6)
                 {
                     var sg = JS.Sign(cel.x - b.x);
                     var kier = JS.Tak(sg) ? sg : b.face;
@@ -570,7 +590,7 @@ namespace Trzewia.Symulacja
                 // stożek ognia przed sobą: tym szerszy, im dalej — jeden podmuch
                 foreach (var o in wokol(sim, b, def.zasieg ?? 5, 3))
                 {
-                    double dx = (o.x - b.x) * b.face, dy = Math.Abs(o.y - (b.y - 0.3));
+                    double dx = (o.x - b.x) * b.face, dy = ZmianyKregu.Aktywne ? ZmianyKregu.RoznicaPoziomow(sim, o, b) : Math.Abs(o.y - (b.y - 0.3));
                     if (dx > 0.2 && dx <= (def.zasieg ?? 5) && dy <= 1.2 + dx * 0.3) ciosBossa(sim, b, o, 1, def, null, true);
                 }
                 R.zadane.Add(1);
@@ -578,7 +598,7 @@ namespace Trzewia.Symulacja
             }
             if (R.id == "szarza")
             {
-                if (cel != null && !cel.dead && JS.Hypot(cel.x - b.x, cel.y - b.y) <= 1.9) { ciosBossa(sim, b, cel, 1, def); R.zadane.Add(1); }
+                if (cel != null && !cel.dead && ZmianyKregu.Odleglosc(sim, cel, b) <= 1.9) { ciosBossa(sim, b, cel, 1, def); R.zadane.Add(1); }
                 else R.zadane.Add(0);
                 return;
             }
@@ -614,7 +634,7 @@ namespace Trzewia.Symulacja
                 if (def.od != null && d < def.od) continue;
                 var zasieg = def.zasieg ?? def.promien ?? DEMON.zasieg;
                 if (d > zasieg) continue;
-                if (Math.Abs(cel.y - b.y) > 2.5 && id != "biczLancucha") continue;
+                if (ZmianyKregu.ParaZCerberem(b, cel) ? ZmianyKregu.RoznicaPoziomow(sim, cel, b) > 1.5 : Math.Abs(cel.y - b.y) > 2.5 && id != "biczLancucha") continue;
                 var w = def.waga ?? 1;
                 if (glowa != null) w *= GlowyCerbera.WAGA_ATAKU_GLOWY;
                 if (id == "odepchniecie" && d > 1.4) continue;
@@ -682,7 +702,7 @@ namespace Trzewia.Symulacja
                 return;
             }
             if (cel.wDloni == true || cel.lot != null) { c.face = cel.x > c.x ? 1 : -1; return; }
-            var d = JS.Hypot(cel.x - c.x, cel.y - c.y);
+            var d = ZmianyKregu.Odleglosc(sim, cel, c);
             // (etap 6: przerwa broni ostatniego ruchu — głowy albo ciała — krótsza z każdą ściętą głową)
             var przerwa = WalkaWzor.Aktywny ? GlowyCerbera.BronRuchu(c.ruchPoprz).PrzerwaT : WB.przerwa;
             if (GlowyCerbera.Aktywne) przerwa = GlowyCerbera.PrzerwaBossaT(c, przerwa);
@@ -697,6 +717,15 @@ namespace Trzewia.Symulacja
                     zacznijRuchBossa(sim, c, id, cel);
                     return;
                 }
+            }
+            // (etap 7b, ZmianyKregu) Cerber podchodzi na STAN_WALKI przed cel i obraca się dopiero od OBROT_OD
+            if (ZmianyKregu.ParaZCerberem(c, cel))
+            {
+                var face0 = c.face;
+                // (podchodzi też, póki jest w skale — wychodzi z komory pieczęci na posadzkę sali)
+                if (d > DEMON.zasieg || ZmianyKregu.WSkale(sim, c)) { var (tx, ty) = ZmianyKregu.CelPodejsciaCerbera(c, cel); ruchStraznika(sim, c, tx, ty, DEMON.szybkosc, STRAZNICY.limitOdRdzenia); }
+                ZmianyKregu.ObrocCerbera(c, cel, face0);
+                return;
             }
             if (d > DEMON.zasieg) ruchStraznika(sim, c, cel.x, cel.y - 0.5, DEMON.szybkosc, STRAZNICY.limitOdRdzenia);
             else c.face = cel.x > c.x ? 1 : -1;

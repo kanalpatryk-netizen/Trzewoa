@@ -226,10 +226,10 @@ namespace Trzewia.Symulacja
         public static void walczKsiega(Sim sim, Creature c, Creature s, Action<double, double> idzDo)
         {
             var K = aktywnyBoss().ksiega;
-            var d = JS.Hypot(s.x - c.x, s.y - c.y);
+            var d = ZmianyKregu.Odleglosc(sim, s, c);
             c.face = s.x > c.x ? 1 : -1;
             Creature? zagr = null; var zd = K.cofa;
-            foreach (var o in zywiStraznicy(sim)) { var od = JS.Hypot(o.x - c.x, o.y - c.y); if (od < zd) { zd = od; zagr = o; } }
+            foreach (var o in zywiStraznicy(sim)) { var od = ZmianyKregu.Odleglosc(sim, o, c); if (od < zd) { zd = od; zagr = o; } }
             if (zagr != null) { var r = c.x - zagr.x; idzDo(Math.Floor(c.x + JS.Sign(JS.Tak(r) ? r : 1) * 5), Math.Floor(c.y)); return; }
             if (d > K.zasieg) { idzDo(Math.Floor(s.x), Math.Floor(s.y)); return; }
             if (WalkaWzor.Aktywny)
@@ -327,14 +327,14 @@ namespace Trzewia.Symulacja
                 if (c.dead || !walczacy(c)) continue;
                 var obecny = sim.creatureById(sim.target.getOr(c.id, -1));
                 var glodny = c.hunger > LUD.glodSam;
-                var dObecny = obecny != null ? JS.Hypot(obecny.x - c.x, obecny.y - c.y) : double.PositiveInfinity;
+                var dObecny = obecny != null ? ZmianyKregu.Odleglosc(sim, obecny, c) : double.PositiveInfinity;
                 var dalekiStraznik = jestBoss && !glodny && obecny != null && obecny.boss == null && dObecny > S.rycerzBroniSieOd;
                 if (c.job == Job.FIGHT && obecny != null && !obecny.dead && obecny.straznik == true && !dalekiStraznik && !(glodny && dObecny > S.rycerzGlodnyWalczyOd)) continue;
                 var widzi = glodny ? S.rycerzGlodnyWalczyOd : S.rycerzWidzi;
                 Creature? best = null; var bd = double.PositiveInfinity;
                 foreach (var s in wrogowie)
                 {
-                    var d = JS.Hypot(s.x - c.x, s.y - c.y);
+                    var d = ZmianyKregu.Odleglosc(sim, s, c);
                     if (d >= (s.boss != null && !glodny ? double.PositiveInfinity : widzi)) continue;
                     var kara = jestBoss && !glodny && s.boss == null && d > S.rycerzBroniSieOd ? 1e6 : 0;
                     if (d + kara < bd) { bd = d + kara; best = s; }
@@ -401,7 +401,14 @@ namespace Trzewia.Symulacja
         {
             if (rolaPostaci(c) == "rycerz") { walkaRycerza(sim, c, s, podejdz); return; }
             var zasieg = S.rycerzZasieg + (s.boss != null ? 0.8 : 0);
-            if (JS.Hypot(s.x - c.x, s.y - c.y) > zasieg) { podejdz(Math.Floor(s.x), Math.Floor(s.y)); return; }
+            // (etap 7b, ZmianyKregu) przy Cerberze — jak rycerz: naprzeciw jego łbów, nie pod nim
+            if (ZmianyKregu.UstawDoWalki(sim, c, s, podejdz)) return;
+            if (ZmianyKregu.Odleglosc(sim, s, c) > zasieg)
+            {
+                if (ZmianyKregu.ParaZCerberem(c, s)) { var (mx, my) = ZmianyKregu.MiejsceDoWalki(sim, c, s); podejdz(mx, my); }
+                else podejdz(Math.Floor(s.x), Math.Floor(s.y));
+                return;
+            }
             c.face = s.x > c.x ? 1 : -1;
             if (WalkaWzor.Aktywny)
             {

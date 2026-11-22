@@ -219,7 +219,9 @@ namespace Trzewia.Symulacja
             var modliSiePodRdzeniem = c.job == Job.PIELGRZYM
                 && Math.Abs(c.x - w.coreX) < P.przedsionekX && Math.Abs(c.y - w.przedsionekY) < P.przedsionekY;
             var naPosterunku = ((c.job == Job.STOI || c.job == Job.WARTA) && Math.Abs(c.jx - Math.Floor(c.x)) <= 1 && Math.Abs(c.jy - Math.Floor(c.y)) <= 4)
-                || (c.job == Job.SCHODY && naPosterunkuBudowy(sim, c));
+                || (c.job == Job.SCHODY && naPosterunkuBudowy(sim, c))
+                // (etap 7b, ZmianyKregu) stoi przy Cerberze: czeka na niego albo bije z miejsca — to nie zakleszczenie
+                || ZmianyKregu.StoiPrzyCerberze(sim, c);
             if (!modliSiePodRdzeniem && !naPosterunku && (c.id + sim.tick) % K.zakleszczenieCo == 0)
             {
                 if (Math.Abs(c.x - c.lx) < K.zakleszczenieRuch && Math.Abs(c.y - c.ly) < K.zakleszczenieRuch) c.stall++;
