@@ -139,6 +139,43 @@ public class ZmianyKreguTesty
         Assert.NotNull(sim.ending);
     }
 
+    /// <summary>
+    /// Etap 7b (film 3:04–3:27): rycerz i Cerber nie kręcą się w miejscu i rycerz nie stoi w środku psa. Przed 7b:
+    /// rycerz 136 obrotów na minutę walki (mediana ziaren 1–12), Cerber 99, rycerz w obrysie psa przez 44% walki;
+    /// po 7b na ziarnach 1–40: najwyżej 7,0 i 3,7 obrotu na minutę, w obrysie najwyżej 0,3% walki.
+    /// </summary>
+    [Theory]
+    [InlineData(3)]
+    [InlineData(7)]
+    [InlineData(11)]
+    public void WalkaNaprzeciwBezKreceniaSie(double ziarno)
+    {
+        using var _ = new WKregu();
+        var sim = new Sim(ziarno);
+        double tikWalki = 0, obrR = 0, obrB = 0, wSrodku = 0;
+        double? fR = null, fB = null;
+        while (sim.ending == null && sim.tick < 250000)
+        {
+            Krok(sim);
+            if (sim.lud.pomnik?.faza != "walka") continue;
+            var b = sim.creatures.FirstOrDefault(c => !c.dead && c.boss != null);
+            var r = sim.creatures.FirstOrDefault(c => !c.dead && Lud.rolaPostaci(c) == "rycerz" && c.job == Job.FIGHT);
+            if (b == null || r == null) { fR = null; fB = null; continue; }
+            tikWalki++;
+            if (fR != null && r.face != fR) obrR++;
+            if (fB != null && b.face != fB) obrB++;
+            fR = r.face; fB = b.face;
+            if (Math.Abs(r.x - b.x) < 1.5) wSrodku++;
+        }
+        var min = Math.Max(1e-9, tikWalki / 7200.0);
+        wyj.WriteLine($"ziarno {ziarno}: {sim.ending}; walka rycerza {tikWalki / 120:F0} s, obroty/min rycerz {obrR / min:F1}, Cerber {obrB / min:F1}, w Cerberze {100 * wSrodku / Math.Max(1, tikWalki):F1}%");
+        Assert.StartsWith("uwolnienie", sim.ending);
+        Assert.True(tikWalki > 120 * 10, "rycerz prawie nie walczył");
+        Assert.True(obrR / min < 15, $"rycerz kręci się: {obrR / min:F1} obrotów na minutę");
+        Assert.True(obrB / min < 10, $"Cerber kręci się: {obrB / min:F1} obrotów na minutę");
+        Assert.True(wSrodku / tikWalki < 0.05, $"rycerz stoi w Cerberze przez {100 * wSrodku / tikWalki:F1}% walki");
+    }
+
     [Fact]
     public void BezZmianKragJakWTS()
     {

@@ -15,7 +15,7 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 6b — Krąg bez Cieni, ruchy wieloetapowe, naprawy błędów, przełączniki, zamach ludu (20.11; czeka na „dalej”)
 - [x] Etap 6 — mechanika bossa (20.11, „Kontynuuj ze wszystkim innym”; za flagą; liczby do akceptacji; czeka na „dalej”)
 - [x] Etap 7a — usunięcia po obejrzeniu filmu (22.11; czeka na „dalej”)
-- [ ] Etap 7b — walka: bez kręcenia się, rycerz za Cerberem, przerywniki ścięć, napisy końcowe
+- [x] Etap 7b — walka: bez kręcenia się, rycerz za Cerberem, przerywniki ścięć, napisy końcowe (22.11; czeka na „dalej”)
 - [ ] Etap 7c — wstęp: film i scena wejścia
 - [ ] Etap 7d — ludzie od nowa w kodzie i ich animacje
 
@@ -527,13 +527,37 @@ i dłoni). Rysunek klatki walki (procesorem, zrzuty ziarna 3): 497 ms przed, 499
 (F3 / `--pomiar`) nie mierzony — tu nie ma okna ani karty.
 
 ### 7b — walka
-- [ ] 3:04–3:27 — rycerz kręci się wokół własnej osi w pozycji do walki (Cerber na początku też); atak dopiero, gdy
+- [x] 3:04–3:27 — rycerz kręci się wokół własnej osi w pozycji do walki (Cerber na początku też); atak dopiero, gdy
       Cerber wyjdzie naprzeciw rycerzowi.
-- [ ] 3:33 — rycerza za Cerberem nie widać: części ciała i miecz zakryte przez Cerbera — matowe szare, krycie 0,5,
+- [x] 3:33 — rycerza za Cerberem nie widać: części ciała i miecz zakryte przez Cerbera — matowe szare, krycie 0,5,
       przenikające przez Cerbera; głowa normalnie.
-- [ ] 3:42 — przerywnik przy każdym ścięciu głowy, inny dla każdej głowy i zależnie od tego, która to już głowa;
+- [x] 3:42 — przerywnik przy każdym ścięciu głowy, inny dla każdej głowy i zależnie od tego, która to już głowa;
       wchodzi w chwili skoku rycerza (tuż przed ścięciem), po nim animacja dokańcza się od miejsca, w którym stanęła.
-- [ ] 4:02 — miejsce na napisy końcowe.
+- [x] 4:02 — miejsce na napisy końcowe.
+
+**Wynik 7b (22.11).**
+1. *Kręcenie się.* Symulacja liczyła odległość do środka Cerbera, a pies jest szeroki i wisi nad posadzką — rycerz
+   „dochodził” do środka psa, stał w nim i co chwilę zawracał. Teraz (`ZmianyKregu`, sekcja 7b) odległość liczy się
+   od boku Cerbera i na tej samej posadzce; rycerz staje 2,6 kafla od środka psa, twarzą do niego, a pierwszy cios
+   zadaje dopiero, gdy stoją naprzeciw siebie; Cerber podchodzi na taką odległość i obraca się tylko w stronę
+   rycerza. Pomiar
+   (obroty na minutę walki; „w Cerberze” — część walki, w której rycerz stoi w obrysie psa):
+
+   | | rycerz | Cerber | w Cerberze | wygrane | walka: mediana (90% krótszych niż; najdłuższa) |
+   |---|---|---|---|---|---|
+   | przed 7b (ziarna 1–12; wygrane i czas: 1–40) | 136 (najwięcej 164) | 99 (128) | 44% (100%) | 39 z 40 | 49 s (65 s; 137 s) |
+   | po 7b (ziarna 1–40) | 4,7 (najwięcej 7,0) | 0 (3,7) | 0% (0,3%) | 39 z 40 | 49 s (60 s; 119 s) |
+
+   Przegrywa tylko ziarno 35 (bez rycerza, jak wcześniej; sami mnisi z księgami walczą z Cerberem ok. 30 min).
+2. *Rycerz za Cerberem* — postać zasłonięta przez psa przenika przez niego: matowa szara (128, 126, 122), krycie 0,5,
+   głowa zwykła (`Visual/Czytelnosc.cs`: warstwa bossa i maska postaci; jasny obrys przy bossie z etapu 2 wyłączony).
+3. *Przerywniki ścięć* (`Visual/PrzerywnikGlowy.cs`, `Aplikacja/FilmGlowy.cs`): gdy rycerz wybija się do ścięcia
+   głowy, gra staje i leci film (3,4 / 3,7 / 4,3 s): pitbull kłapie w próżnię, wilk wyje, doberman zieje ogniem, a
+   rycerz skacze przez płomień; film kończy się na mieczu w górze, potem gra rusza od tego samego tiku — cięcie i
+   spadająca głowa są już w grze (z uderzeniem w dźwięku; ostatnią głowę gra konanie). Wynik partii ten sam co bez
+   filmów (test na ziarnach 3 i 7). Podgląd bez grania: `--zrzuty-walki KATALOG --krag --podglad-przerywnikow`.
+4. *Napisy końcowe* (`Aplikacja/Screens/EkranNapisow.cs`, treść w `Aplikacja/NapisyKoncowe.cs`): po wygranej w Kręgu
+   między śmiercią Cerbera a kroniką; na razie działy z „[do uzupełnienia]”; ok. 25 s, Esc / spacja / klik pomija.
 
 ### 7c — wstęp (film i scena wejścia)
 - [ ] 0:08 — lewitujące postacie i kamienie.
