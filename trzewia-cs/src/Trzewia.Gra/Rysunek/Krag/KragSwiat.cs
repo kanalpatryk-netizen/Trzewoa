@@ -527,6 +527,8 @@ namespace Trzewia.Rysunek
                 {
                     var i = (int)w.idx(x, y);
                     if (w.ever[i] == 0 || !w.passable(x, y)) continue;
+                    // (Krąg, ZmianyKregu — użytkownik 22.11: „zostają tylko czaszki w lochu”): w lochu bez ciał w ścianach
+                    if (ZmianyKregu.Aktywne && w.wLochu(x, y, 1)) continue;
                     var r = los(x * 7349 + y * 211);
                     if (r > 0.07) continue;
                     bool lewa = w.solid(x - 1, y), prawa = w.solid(x + 1, y), dol = w.solid(x, y + 1);

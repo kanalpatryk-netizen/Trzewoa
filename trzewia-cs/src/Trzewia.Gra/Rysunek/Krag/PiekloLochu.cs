@@ -125,9 +125,12 @@ namespace Trzewia.Rysunek
                 ctx.fillStyle = g; ctx.fillRect(sx - R, sy - R * 1.5, R * 2, R * 2);
             }
             var h = Math.Max(16, z * 1.9 * ustawienia.wielkoscSylwetek);
+            // (Krąg, ZmianyKregu — użytkownik 22.11: „zostają tylko czaszki w lochu”): bez wisielców (z łańcuchami, kałużami
+            // i kapiącą krwią), bez kości na posadzce i bez smug po wleczonych ciałach; kopce czaszek zostają
+            var tylkoCzaszki = ZmianyKregu.Aktywne;
             // wisielcy w przęsłach bez łańcuchów (nieparzystych) — po dwóch, z dala od nawy
             int kk = 0;
-            for (var x = l.x0 + L.przeslo / 2; x < l.x1; x += L.przeslo, kk++)
+            for (var x = l.x0 + L.przeslo / 2; x < l.x1 && !tylkoCzaszki; x += L.przeslo, kk++)
             {
                 if (Math.Abs(x - w.coreX) < L.nawaSzer || kk % 2 == 0) continue;
                 foreach (var dx in WISIELCY_DX)
@@ -175,10 +178,10 @@ namespace Trzewia.Rysunek
                 if (Math.Abs(x - w.coreX) < L.nawaSzer - 1 || x < xa - 3 || x > xb + 3 || !RysLoch.widziany(sim, Math.Min(l.x1, x), l.y1)) continue;
                 var s = Math.Max(1.5, z * 0.17);
                 kopiecCzaszek(ctx, cam.toScreenX(x + 1.4), yP, s, 6 + Math.Floor(los(x) * 5), x * 31);
-                kosciNaPosadzce(ctx, cam.toScreenX(x - 3), yP, s * 0.8, x * 17);
+                if (!tylkoCzaszki) kosciNaPosadzce(ctx, cam.toScreenX(x - 3), yP, s * 0.8, x * 17);
             }
             // krwawe smugi na posadzce — tu wleczono ciała
-            for (var x = xa; x <= xb; x += 3)
+            for (var x = xa; x <= xb && !tylkoCzaszki; x += 3)
             {
                 if (los(x * 977) > 0.45 || !RysLoch.widziany(sim, x, l.y1)) continue;
                 double sx = cam.toScreenX(x), dl = z * (1.5 + los(x * 7) * 3.5);
