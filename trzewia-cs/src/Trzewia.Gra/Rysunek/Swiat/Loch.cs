@@ -648,7 +648,8 @@ namespace Trzewia.Rysunek
             var B = BLOGOSLAWIENSTWO;
             foreach (var s in sim.creatures)
             {
-                if (!Blogoslawienstwo.modliSieZaInnych(sim, s)) continue;
+                // (Krąg, ZmianyKregu — użytkownik 22.11: krąg leczenia usunąć; błogosławieństwo działa dalej, niewidocznie)
+                if (ZmianyKregu.Aktywne || !Blogoslawienstwo.modliSieZaInnych(sim, s)) continue;
                 double sx = cam.toScreenX(s.x + 0.5), sy = cam.toScreenY(s.y + 1);
                 var R = B.promien * z;
                 if (sx + R < 0 || sx - R > cam.vw || sy + R < 0 || sy - R > cam.vh) continue;
