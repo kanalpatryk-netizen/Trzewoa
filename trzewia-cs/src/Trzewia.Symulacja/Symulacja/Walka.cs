@@ -633,7 +633,8 @@ namespace Trzewia.Symulacja
             var hpMax = c.hpMax ?? DEMON.hp;
             // (Krąg Trzeci: zrasta się tylko w pasku bieżącej głowy — ścięte nie odrastają)
             // (Krąg, ZmianyKregu — naprawa: póki mnisi razą go księgą, to też modlitwa — nie zrasta się)
-            if (sim.rytual.wierni < SNIACY_KAMIEN.modlitwaWiernych && !ZmianyKregu.KsiegaWstrzymujeZrastanie(sim))
+            // (Krąg, ZmianyKregu — naprawa z 22.11: pusta głowa czeka na miecz — wtedy też się nie zrasta)
+            if (sim.rytual.wierni < SNIACY_KAMIEN.modlitwaWiernych && !ZmianyKregu.KsiegaWstrzymujeZrastanie(sim) && !ZmianyKregu.GlowaCzekaNaMiecz(c))
                 c.hp = Math.Min(Krag.Wlaczony ? Math.Min(hpMax, glowyCerbera(c).gora) : hpMax, c.hp + SNIACY_KAMIEN.zrastanie);
             var R = c.ruch;
             if (R != null)
@@ -686,6 +687,8 @@ namespace Trzewia.Symulacja
             var przerwa = WalkaWzor.Aktywny ? GlowyCerbera.BronRuchu(c.ruchPoprz).PrzerwaT : WB.przerwa;
             if (GlowyCerbera.Aktywne) przerwa = GlowyCerbera.PrzerwaBossaT(c, przerwa);
             var gotow = sim.tick - (c.ciosT ?? -1e9) >= przerwa && (c.ogluszonyAtakDo ?? -1) <= sim.tick;
+            // (Krąg, ZmianyKregu — naprawa z 22.11: po ataku z dystansu najpierw podchodzi, nie smaga z góry raz za razem)
+            if (gotow && ZmianyKregu.NajpierwPodejdz(sim, c, cel, d)) gotow = false;
             if (gotow)
             {
                 var id = wybierzAtakBossa(sim, c, cel, d);

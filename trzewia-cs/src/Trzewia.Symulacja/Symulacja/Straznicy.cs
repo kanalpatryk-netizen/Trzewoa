@@ -432,6 +432,20 @@ namespace Trzewia.Symulacja
             c.vy = 0;
         }
 
+        /// <summary>Czy krok `ruchStraznika` ku (tx, ty) przybliżyłby go do celu (granice jak w nim; nic nie przesuwa).</summary>
+        public static bool zblizySie(Sim sim, Creature c, double tx, double ty, double v, double limit)
+        {
+            var w = sim.world;
+            double dx = tx - c.x, dy = ty - c.y, d = JS.Hypot(dx, dy);
+            if (!JS.Tak(d)) return false;
+            double nx = c.x + (dx / d) * Math.Min(v, d), ny = c.y + (dy / d) * Math.Min(v, d);
+            var od = JS.Hypot(nx - (w.coreX + 0.5), ny - w.przedsionekY);
+            if (od > limit) { var k = limit / od; nx = w.coreX + 0.5 + (nx - w.coreX - 0.5) * k; ny = w.przedsionekY + (ny - w.przedsionekY) * k; }
+            nx = Math.Max(1, Math.Min(w.w - 2, nx));
+            ny = Math.Max(1, Math.Min(c.boss != null ? miejscePomnika(sim).y : w.coreY - 1, ny));
+            return JS.Hypot(tx - nx, ty - ny) < d - 1e-4;
+        }
+
         /// <summary>Najbliższy z ludu w zasięgu rdzenia (cel Strażnika).</summary>
         public static Creature? celStraznika(Sim sim, Creature c, double limit)
         {

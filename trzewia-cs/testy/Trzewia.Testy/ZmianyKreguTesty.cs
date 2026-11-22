@@ -58,24 +58,29 @@ public class ZmianyKreguTesty
         Assert.Equal(150, Walka.tikTrafieniaBossa(NastawyWalka.RUCHY_BOSSA["przygniecenie"]));
         Assert.Equal(70, Walka.tikTrafieniaBossa(NastawyWalka.RUCHY_BOSSA["zGory"]));
         // rycerz: seria trzech cięć i młynek wracają do walki — w partii rycerz używa ruchów wieloetapowych, a każdy taki ruch
-        // zostawia jedną ranę (na ostatnim cięciu) i zera przed nią
-        var sim = new Sim(5);
+        // zostawia jedną ranę (na ostatnim cięciu) i zera przed nią. (Walka trwa około minuty — w jednej partii takiego ruchu
+        // może nie być wcale, więc partie po kolei, aż się trafi.)
         var wielo = 0;
-        RuchTrwa? poprz = null;
-        while (sim.ending == null && sim.tick < 200000)
+        foreach (var ziarno in new double[] { 5, 3, 13, 12, 1 })
         {
-            Krok(sim);
-            var r = sim.creatures.FirstOrDefault(c => !c.dead && Lud.rolaPostaci(c) == "rycerz");
-            var R = r?.ruch;
-            if (poprz != null && R != poprz && Walka.Ruch(poprz.id)?.traf is { Length: > 1 } tr && poprz.traf > 0)
+            var sim = new Sim(ziarno);
+            RuchTrwa? poprz = null;
+            while (sim.ending == null && sim.tick < 200000)
             {
-                wielo++;
-                Assert.Equal(tr.Length, poprz.zadane.Count);
-                for (var k = 0; k < tr.Length - 1; k++) Assert.Equal(0, poprz.zadane[k]);
+                Krok(sim);
+                var r = sim.creatures.FirstOrDefault(c => !c.dead && Lud.rolaPostaci(c) == "rycerz");
+                var R = r?.ruch;
+                if (poprz != null && R != poprz && Walka.Ruch(poprz.id)?.traf is { Length: > 1 } tr && poprz.traf > 0)
+                {
+                    wielo++;
+                    Assert.Equal(tr.Length, poprz.zadane.Count);
+                    for (var k = 0; k < tr.Length - 1; k++) Assert.Equal(0, poprz.zadane[k]);
+                }
+                poprz = R;
             }
-            poprz = R;
+            wyj.WriteLine($"ziarno {ziarno}: ruchów wieloetapowych rycerza razem {wielo}");
+            if (wielo > 0) break;
         }
-        wyj.WriteLine($"ruchów wieloetapowych rycerza: {wielo}");
         Assert.True(wielo > 0);
     }
 
