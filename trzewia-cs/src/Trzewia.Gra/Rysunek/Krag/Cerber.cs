@@ -735,9 +735,8 @@ namespace Trzewia.Rysunek
             // pusty pasek bieżącej głowy: łeb zwisa bezwładnie, paszcza rozdziawiona, oczy gasną — nie gryzie, czeka na miecz
             // (etap 6: bieżąca głowa to ta wskazana przez gracza — nie musi być następna w kolejności)
             var czeka = Walka.glowaCzeka(c) && Walka.glowyCerbera(c).biezaca is double bz ? (int)bz : -1;
-            // etap 6 (GlowyCerbera): nakarmiona głowa śpi — nie gryzie, nie bierze udziału w ruchach
             int nz = 0;
-            for (int i = 0; i < 3; i++) if (p.Odcieta(i) < 0 && i != czeka && !GlowyCerbera.Spi(sim, c, i)) zywe[nz++] = i;
+            for (int i = 0; i < 3; i++) if (p.Odcieta(i) < 0 && i != czeka) zywe[nz++] = i;
             if (nz == 0) for (int i = 0; i < 3; i++) if (p.Odcieta(i) < 0) zywe[nz++] = i;
 
             var R = c.ruch;
@@ -753,13 +752,11 @@ namespace Trzewia.Rysunek
                 var glowaRuchu = R.glowa is double rg && p.Odcieta((int)rg) < 0 ? (int)rg : (int?)null;
                 ruchNaPoze(p, R.id, u, def, dl, glowaRuchu ?? zywe[(JS.ToInt32(R.od) >> 3) % nz], nz, R.zadane, R.wariant, glowaRuchu);
             }
-            // okup: trzy głowy żrą rzuconą garść jedzenia (etap 6: żre tylko nakarmiona głowa)
+            // okup: trzy głowy żrą rzuconą garść jedzenia
             if (Krag.cerberZre(sim, c) > 0)
             {
-                var tylko = GlowyCerbera.Aktywne && sim.lud.krag?.okupGlowa is double og ? (int)og : -1;
                 for (int i = 0; i < 3; i++)
                 {
-                    if (tylko >= 0 && i != tylko) continue;
                     var g = p.glowy[i];
                     g.pochyl = 0.55 + 0.08 * Math.Sin(czas * 0.01 + i);
                     g.paszcza = 0.15 + 0.35 * Math.Abs(Math.Sin(czas * 0.018 + i * 1.3));
@@ -767,16 +764,6 @@ namespace Trzewia.Rysunek
                 }
                 p.ogon = Math.Sin(czas * 0.012) * 0.9;
             }
-            // etap 6: śpiąca głowa (po karmieniu, gdy już zjadła) — łeb nisko, paszcza zamknięta, oczy prawie zgasłe
-            if (GlowyCerbera.Aktywne && Krag.cerberZre(sim, c) <= 0)
-                for (int i = 0; i < 3; i++)
-                {
-                    if (p.Odcieta(i) >= 0 || !GlowyCerbera.Spi(sim, c, i)) continue;
-                    var g = p.glowy[i];
-                    g.pochyl = 0.7 + 0.04 * Math.Sin(czas * 0.0025 + i);
-                    g.paszcza = 0.03; g.wysun = 0; g.smuga = 0; g.ugryz = 0;
-                    g.oczy = 0.08;
-                }
             if (czeka >= 0)
             {
                 var g = p.glowy[czeka];

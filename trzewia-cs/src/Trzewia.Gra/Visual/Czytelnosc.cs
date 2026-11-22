@@ -94,16 +94,6 @@ namespace Trzewia.Visual
             bossTeraz = true; BossWidac = true;
         }
 
-        /// <summary>
-        /// Etap 6 (ZapowiedzGlow): kotwica głowy `nr` z ostatniego rysunku Cerbera (układ płyty) i środek jego ciała — żeby
-        /// zapowiedź ataku wyszła z paszczy, a nie z miejsca zgadniętego z kafli. Fałsz — głowy nie ma albo boss niewidoczny.
-        /// </summary>
-        public static bool PunktGlowy(int nr, out double x, out double y, out double srodekX)
-        {
-            x = glX[nr]; y = glY[nr]; srodekX = (BossX0 + BossX1) / 2;
-            return BossWidac && glJest[nr];
-        }
-
         /// <summary>Czy prostokąt (układ płyty) nachodzi na ciało bossa.</summary>
         public static bool NaBossie(double x0, double y0, double x1, double y1) =>
             BossWidac && x1 > BossX0 && x0 < BossX1 && y1 > BossY0 && y0 < BossY1;
@@ -515,7 +505,8 @@ namespace Trzewia.Visual
         /// <summary>PlytaSwiata, po warstwie światła: znaki głów, potem etykiety (napisy na wierzchu świata).</summary>
         public static void NadSwiatlem(IPlotno ctx, Sim sim, Camera cam, double czas)
         {
-            rysujZnakiGlow(ctx, sim, czas);
+            // (Krąg, ZmianyKregu — decyzja użytkownika 22.11: znaczników głów nad Cerberem nie ma)
+            if (!ZmianyKregu.Aktywne) rysujZnakiGlow(ctx, sim, czas);
             RysujEtykiety(ctx, cam.vw, cam.vh);
             WKlatce = false;
             TrybDuszka = 0;
