@@ -393,7 +393,10 @@ namespace Trzewia.Rysunek
                     // (niski korytarz: lud kuca — osobne klatki duszka)
                     // (6.11: na schodach kręconych obraca się z nimi — przy ścianach szybu idzie w głąb, sylwetka się zwęża)
                     ctx.scale(zwrotKucia(sim, c, kier) * szerokoscNaRysunku(c), 1);
-                    cz = rysujPostac(ctx, sim, c, h, czas);
+                    // (etap 7b) boss, za którym ktoś stoi, rysuje się na osobnej warstwie — po nim tamci przenikają na szaro
+                    var plotno = czytelnosc && c.boss != null ? Visual.Czytelnosc.PlotnoBossa(ctx) : ctx;
+                    cz = rysujPostac(plotno, sim, c, h, czas);
+                    Visual.Czytelnosc.PolozBossa(ctx, plotno);
                     ctx.restore();
                 }
                 Lud.Oswietlenie.ustawSwiatlo(null);

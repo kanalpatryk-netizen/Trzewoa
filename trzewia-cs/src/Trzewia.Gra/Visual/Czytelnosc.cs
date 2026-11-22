@@ -122,6 +122,8 @@ namespace Trzewia.Visual
                 return;
             }
             if (TrybDuszka != 2) return;
+            // (etap 7b, przy zmianach kręgu: postacie bez obramowań — przed Cerberem i tak widać je całe)
+            if (Przenikanie) return;
             var t = ctx.getTransform();
             var g = sylwetka(obraz, sx, sy, w, h, dw, dh, t, out var pw, out var ph, out var kx, out var ky);
             var o = C.ObrysPx * Math.Max(0.75, SkalaUi);
@@ -132,10 +134,20 @@ namespace Trzewia.Visual
             ctx.globalAlpha = a;
         }
 
-        /// <summary>Po narysowaniu bossa: zapamiętane postacie za nim jeszcze raz — jako sylwetki w pergaminie.</summary>
+        /// <summary>
+        /// Po narysowaniu bossa: zapamiętane postacie za nim jeszcze raz — jako sylwetki w pergaminie, a przy zmianach kręgu
+        /// (etap 7b) ich zasłonięte części matowo szare (Przenikanie).
+        /// </summary>
         public static void SylwetkiPoBossie(IPlotno ctx)
         {
             if (ileZapisow == 0) return;
+            if (Przenikanie)
+            {
+                if (warstwaGotowa && warstwaBossa != null) przenikanie(ctx, warstwaBossa);
+                for (int i = 0; i < ileZapisow; i++) zapisy[i].obraz = null;
+                ileZapisow = 0; warstwaGotowa = false;
+                return;
+            }
             ctx.save();
             for (int i = 0; i < ileZapisow; i++)
             {
@@ -149,6 +161,76 @@ namespace Trzewia.Visual
             }
             ctx.restore();
             ileZapisow = 0;
+        }
+
+        // ───────────── etap 7b: postać za Cerberem przenika przez niego na szaro ─────────────
+        // Użytkownik 22.11 (film 3:33): „nie widać rycerza za Cerberem… każda część ciała i miecz — matowy szary, który
+        // przenika przez Cerbera (przezroczystość 0,5), a głowa normalnie”. Przy zmianach kręgu: gdy ktoś stoi za Cerberem
+        // i na niego nachodzi, Cerber rysuje się na osobnej warstwie (PlotnoBossa); po nim tamte postacie wracają matowo
+        // szare z kryciem 0,5 — tylko tam, gdzie zakrywa je Cerber. Co wystaje zza niego (zwykle głowa), zostaje normalne.
+
+        /// <summary>Przenikanie postaci za Cerberem (zamiast pergaminowej sylwetki) — przy zmianach kręgu.</summary>
+        public static bool Przenikanie => ZmianyKregu.Aktywne;
+        static IPlotno? warstwaBossa, plotnoPrzenikania;
+        static bool warstwaGotowa;
+
+        /// <summary>Gdzie rysować bossa: na osobnej warstwie, gdy ktoś stoi za nim (Przenikanie), inaczej wprost na płycie.</summary>
+        public static IPlotno PlotnoBossa(IPlotno ctx)
+        {
+            warstwaGotowa = false;
+            if (!Przenikanie || ileZapisow == 0) return ctx;
+            var g = warstwaBossa = czystePlotno(warstwaBossa, ctx.width, ctx.height);
+            g.setTransform(ctx.getTransform());
+            warstwaGotowa = true;
+            return g;
+        }
+
+        /// <summary>Boss narysowany na osobnej warstwie — kładzie ją na płytę.</summary>
+        public static void PolozBossa(IPlotno ctx, IPlotno warstwa)
+        {
+            if (warstwa == ctx) return;
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.drawImage(warstwa, 0, 0);
+            ctx.restore();
+        }
+
+        /// <summary>Postacie za Cerberem (zapisy) — matowo szare, tylko na jego pikselach, z kryciem PrzenikanieAlfa.</summary>
+        static void przenikanie(IPlotno ctx, IPlotno boss)
+        {
+            var g = plotnoPrzenikania = czystePlotno(plotnoPrzenikania, ctx.width, ctx.height);
+            for (int i = 0; i < ileZapisow; i++)
+            {
+                ref var z = ref zapisy[i];
+                if (z.obraz == null) continue;
+                g.setTransform(z.t);
+                g.drawImage(z.obraz, z.sx, z.sy, z.w, z.h, z.dx, z.dy, z.dw, z.dh);
+            }
+            g.setTransform(1, 0, 0, 1, 0, 0);
+            g.globalCompositeOperation = "source-in";
+            g.fillStyle = Barwa.Rgba(C.BarwaPrzenikania[0], C.BarwaPrzenikania[1], C.BarwaPrzenikania[2], 1);
+            g.fillRect(0, 0, g.width, g.height);
+            g.globalCompositeOperation = "destination-in";
+            g.drawImage(boss, 0, 0);
+            g.globalCompositeOperation = "source-over";
+            ctx.save();
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.globalAlpha = C.PrzenikanieAlfa;
+            ctx.drawImage(g, 0, 0);
+            ctx.restore();
+        }
+
+        /// <summary>Płótno pomocnicze dokładnie w wymiarach płyty, wyczyszczone, bez przekształceń.</summary>
+        static IPlotno czystePlotno(IPlotno? p, int w, int h)
+        {
+            w = Math.Max(1, w); h = Math.Max(1, h);
+            if (p == null) p = Plotno.Nowe(w, h);
+            else if (p.width != w || p.height != h) { p.width = w; p.height = h; }
+            p.setTransform(1, 0, 0, 1, 0, 0);
+            p.globalCompositeOperation = "source-over";
+            p.globalAlpha = 1;
+            p.clearRect(0, 0, w, h);
+            return p;
         }
 
         /// <summary>Klatka duszka zalana pergaminem na płótnie pomocniczym w pikselach ekranu (z marginesem 1 px).</summary>

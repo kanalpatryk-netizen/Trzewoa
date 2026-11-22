@@ -115,6 +115,12 @@ namespace Trzewia.Visual
             public static double SylwetkaAlfa = 0.35;
             /// <summary>Postać przed bossem, która na niego nachodzi: jasny obrys — grubość (px) i krycie.</summary>
             public static double ObrysPx = 1.6, ObrysAlfa = 0.85;
+            /// <summary>
+            /// Etap 7b (przy zmianach kręgu): postać za Cerberem — zasłonięte przez niego części ciała i miecz przenikają przez
+            /// niego matowo szare, z tym kryciem (użytkownik 22.11: „matowy szary… przezroczystość 0,5”); barwa szarości.
+            /// </summary>
+            public static double PrzenikanieAlfa = 0.5;
+            public static double[] BarwaPrzenikania = { 128, 126, 122 };
 
             /// <summary>Znak głowy (I / II / III): promień względem wysokości Cerbera na ekranie, najmniej i najwięcej (px @1080p).</summary>
             public static double ZnakGlowy = 0.05, ZnakMin = 11, ZnakMax = 17;
