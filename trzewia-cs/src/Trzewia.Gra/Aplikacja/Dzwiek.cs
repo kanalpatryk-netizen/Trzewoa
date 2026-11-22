@@ -662,6 +662,8 @@ namespace Trzewia.Aplikacja
         public void pekniecie() { if (gotowe) zagraj("zdarzenia/pekniecie-pomnika"); }
         public void rozpadPomnika() { if (!gotowe) return; Mikser.przycisz(3, 0.5); zagraj("zdarzenia/rozpad-pomnika"); }
         public void ostatnieUderzenie() { if (!gotowe) return; Mikser.przycisz(5, 0.3); zagraj("zdarzenia/ostatnie-uderzenie"); }
+        /// <summary>Oprawa (etap 7b): rycerz ściął Cerberowi głowę (nie ostatnią — tę gra konanie) — to samo uderzenie, krócej przycisza resztę.</summary>
+        public void sciecieGlowy() { if (!gotowe) return; Mikser.przycisz(1.6, 0.45); zagraj("zdarzenia/ostatnie-uderzenie"); }
         public void dlonWyrasta(bool zawal) { if (gotowe) zagraj(zawal ? "zdarzenia/dlon-wyrasta-ze-stropu" : "zdarzenia/dlon-wyrasta-z-podlogi"); }
         public void rzutDloni() { if (gotowe) zagraj("zdarzenia/rzut-dloni"); }
         public void upadek() { if (gotowe && wolno("upadek", 300)) zagraj("zdarzenia/upadek"); }

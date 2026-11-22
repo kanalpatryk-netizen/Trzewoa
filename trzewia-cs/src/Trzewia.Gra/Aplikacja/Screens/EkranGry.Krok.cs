@@ -260,8 +260,16 @@ namespace Trzewia.Aplikacja
             glosyLudu(teraz);
             patrzNaPomnik(teraz);
             sluchajDloniDemona();
-            // (Krąg Trzeci: w filmie i scenie wejścia symulacja stoi)
-            if (!zamrozone() && !wstep.trwa())
+            // oprawa (etap 7b): przerywnik ścięcia głowy — koniec filmu (gra rusza od skoku rycerza, tam, gdzie stanęła —
+            // Visual/PrzerywnikGlowy.cs), okrzyk rycerza w filmie i uderzenie, gdy głowa naprawdę spadnie już w grze
+            Visual.PrzerywnikGlowy.Krok(teraz);
+            switch (Visual.PrzerywnikGlowy.Dzwiek(sim, teraz))
+            {
+                case "okrzyk": app.gesty.glosLudu("rycerz", "atak", 0, true); break;
+                case "ciecie": app.gesty.sciecieGlowy(); break;
+            }
+            // (Krąg Trzeci: w filmie i scenie wejścia symulacja stoi; w przerywniku ścięcia głowy też)
+            if (!zamrozone() && !wstep.trwa() && !Visual.PrzerywnikGlowy.Trwa)
             {
                 // zwykły czas: tyle tików na sekundę, niezależnie od tego, ile klatek pokazuje ekran
                 double kroki;
@@ -295,6 +303,8 @@ namespace Trzewia.Aplikacja
                     }
                     // oprawa (etap 3): zdarzenia walki po każdym tiku; trafienie z zatrzymaniem — dalsze tiki tej klatki przepadają
                     if (uderzenie && Visual.Uderzenie.PoKroku(sim, teraz) > 0) { reszta = 0; break; }
+                    // oprawa (etap 7b): rycerz wybił się do ścięcia głowy — przerywnik; gra staje na tym tiku
+                    if (Visual.PrzerywnikGlowy.PoKroku(sim, teraz)) { reszta = 0; break; }
                     // budżet klatki: gdy świat nie nadąża, zwalnia, a obraz nie staje — reszta tików tej klatki przepada
                     if (Wydajnosc.Teraz() - t0 > budzet && !(dev && DEV.pauza)) break;
                 }

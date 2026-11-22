@@ -20,7 +20,7 @@ using Trzewia.Symulacja;
 
 namespace Trzewia.Aplikacja
 {
-    public static class FilmKregu
+    public static partial class FilmKregu
     {
         public const double DLUGOSC_FILMU = 75;
         const string KROJ = "\"Trzewia Tekst\", Georgia, serif";

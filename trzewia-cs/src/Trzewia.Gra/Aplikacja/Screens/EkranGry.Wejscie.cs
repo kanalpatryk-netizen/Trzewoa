@@ -642,6 +642,8 @@ namespace Trzewia.Aplikacja
             if (wstep.trwa()) return;
             // oprawa (etap 4): klik pomija przerywnik (wejście/śmierć bossa) — gra pod spodem nie wie, że scena w ogóle była
             if (Visual.Cutscena.Trwa) { if (faza == Faza.dol) Visual.Cutscena.Pomin(); return; }
+            // oprawa (etap 7b): klik pomija przerywnik ścięcia głowy — gra rusza od skoku rycerza, cięcie już w grze
+            if (Visual.PrzerywnikGlowy.Trwa) { if (faza == Faza.dol) Visual.PrzerywnikGlowy.Pomin(); return; }
             ui.pointer = (e.clientX, e.clientY);
             // oprawa (etap 2): dymek z instrukcją przy pasku bossa znika po kliknięciu; kliknięcie w sam dymek nic więcej nie robi
             if (faza == Faza.dol && Visual.PasekBossa.DymekW > 0)
@@ -995,6 +997,8 @@ namespace Trzewia.Aplikacja
             if (wstep.trwa()) { if (akcja == Akcja.menu) wstep.pomin(); return; }
             // oprawa (etap 4): spacja / Esc pomija przerywnik (wejście/śmierć bossa)
             if (Visual.Cutscena.Trwa) { if (akcja == Akcja.menu || akcja == Akcja.pauza) Visual.Cutscena.Pomin(); return; }
+            // oprawa (etap 7b): spacja / Esc pomija przerywnik ścięcia głowy
+            if (Visual.PrzerywnikGlowy.Trwa) { if (akcja == Akcja.menu || akcja == Akcja.pauza) Visual.PrzerywnikGlowy.Pomin(); return; }
             if (e?.key == "Tab") { liczby = true; return; }
             if (atlas.otwarte && e != null) { atlas.klawisz(e.key); return; }
             // Enter przy karcie sytuacji: „planuj” — karta znika, czas dalej stoi

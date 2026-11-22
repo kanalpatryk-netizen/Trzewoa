@@ -129,6 +129,8 @@ public static class Uruchomienie
     public static bool Film;
     /// <summary>Tryb Kręgu Trzeciego (Cerber) zamiast Alphy 1 — na razie tylko dla zrzutów walki (--krag).</summary>
     public static bool Krag;
+    /// <summary>Oprawa, etap 7b: zamiast walki same trzy przerywniki ścięcia głów, klatka co --co-ile (domyślnie 0,1 s).</summary>
+    public static bool PodgladPrzerywnikow;
     /// <summary>Film całej partii (menu, zmiana trybu, wstęp, budowa w przyspieszeniu, walka, kronika) — katalog na klatki.</summary>
     public static string? FilmPelnejGry;
 
@@ -168,6 +170,9 @@ public static class Uruchomienie
           --co-ile S       zwykłe zrzuty co S sekund gry (domyślnie 0.5); przy zdarzeniach — seria klatka po klatce
           --od S, --najdluzej S
                            zapisuj dopiero od S sekund zapisu / kończ po S sekundach (szybkie próby strojenia)
+          --podglad-przerywnikow
+                           zamiast walki same trzy przerywniki ścięcia głów Cerbera (pitbull, wilk, doberman), klatka
+                           co --co-ile s filmu (domyślnie 0.1), JPEG — do szybkiego obejrzenia bez rozgrywania partii
           --film-pelny KATALOG
                            bez okna: cała partia Kręgu Trzeciego od menu — zmiana trybu, „Nowa gra”, wstęp (film i
                            scena wejścia), budowa w przyspieszeniu aż do pęknięcia pieczęci, walka z Cerberem w
@@ -209,6 +214,7 @@ public static class Uruchomienie
                 case "--zwinieta-ksiega": ZwinietaKsiega = true; break;
                 case "--przed": PrzedS = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
                 case "--film": Film = true; break;
+                case "--podglad-przerywnikow": PodgladPrzerywnikow = true; break;
                 case "--uderzenie":
                     Uderzenie = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Uderzenie == null) Console.Error.WriteLine($"--uderzenie: nie rozumiem „{nast}” (wl albo wyl)");

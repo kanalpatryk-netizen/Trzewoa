@@ -251,6 +251,8 @@ namespace Trzewia.Aplikacja
             Visual.Uderzenie.Wyczysc();
             // (oprawa, etap 4: nowa partia — bez przerywnika z poprzedniej)
             Visual.Cutscena.Nowa();
+            // (oprawa, etap 7b: bez przerywnika ścięcia głowy z poprzedniej)
+            Visual.PrzerywnikGlowy.Nowa();
             endingObsluzone = false;
             zapasTrybu();
             partiaKregu = Krag.Wlaczony;

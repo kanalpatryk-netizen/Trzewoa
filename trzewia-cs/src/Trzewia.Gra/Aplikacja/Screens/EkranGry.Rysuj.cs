@@ -63,6 +63,8 @@ namespace Trzewia.Aplikacja
         {
             // Krąg Trzeci: film zamiast gry; potem scena wejścia (kamera i szóstka w rękach sceny)
             if (wstep.plansze()) { wstep.rysujPlansze(ctx, sim, w, h, teraz); return; }
+            // oprawa (etap 7b): przerywnik ścięcia głowy — film na całym ekranie, gra stoi
+            if (Visual.PrzerywnikGlowy.Trwa) { FilmKregu.rysujPrzerywnikGlowy(ctx, w, h, teraz); return; }
             if (wstep.trwa())
             {
                 recznaKamera = true;

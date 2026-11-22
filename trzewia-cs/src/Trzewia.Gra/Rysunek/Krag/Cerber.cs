@@ -97,7 +97,10 @@ namespace Trzewia.Rysunek
     public struct PunktyCerbera
     {
         public (double x, double y) obroza, paszcza0, paszcza1, paszcza2, brzuch;
+        /// <summary>Oprawa (etap 7b): kark każdej głowy — miejsce cięcia (tam, gdzie po ścięciu zostaje kikut szyi).</summary>
+        public (double x, double y) kark0, kark1, kark2;
         public (double x, double y) Paszcza(int i) => i == 0 ? paszcza0 : i == 1 ? paszcza1 : paszcza2;
+        public (double x, double y) Kark(int i) => i == 0 ? kark0 : i == 1 ? kark1 : kark2;
     }
 
     /// <summary>
@@ -307,6 +310,13 @@ namespace Trzewia.Rysunek
         // ------------------------------------------------------------- pomocnicze
 
         static (double x, double y) rz(RigCerbera.V3 p, double h) => ((p.x * Math.Cos(YAW) + p.z * Math.Sin(YAW)) * h, p.y * h);
+
+        /// <summary>Kark głowy `i`: w połowie odcinka nasada → koniec szyi (tam zostaje kikut ściętej głowy).</summary>
+        static (double x, double y) kark(RigCerbera rig, int i, double h)
+        {
+            var (ax, ay) = rz(rig.nasady[i], h); var (bx, by) = rz(rig.konce[i], h);
+            return ((ax + bx) * 0.5, (ay + by) * 0.5);
+        }
 
         static int najblizszy(double[] lista, double v)
         {
@@ -629,7 +639,8 @@ namespace Trzewia.Rysunek
             }
             // krew z kikutów: fontanna w rytm serca (słabnie), potem cieknie
             for (int i = 0; i < ileKikutow; i++) tryska(ctx, kikuty[i].x, kikuty[i].y, kikuty[i].kat, h, kikuty[i].ms);
-            var pk = new PunktyCerbera { obroza = rz(rig.obroza, h), paszcza0 = rz(rig.paszcze[0], h), paszcza1 = rz(rig.paszcze[1], h), paszcza2 = rz(rig.paszcze[2], h), brzuch = rz(rig.brzuch, h) };
+            var pk = new PunktyCerbera { obroza = rz(rig.obroza, h), paszcza0 = rz(rig.paszcze[0], h), paszcza1 = rz(rig.paszcze[1], h), paszcza2 = rz(rig.paszcze[2], h), brzuch = rz(rig.brzuch, h),
+                                         kark0 = kark(rig, 0, h), kark1 = kark(rig, 1, h), kark2 = kark(rig, 2, h) };
             // kły trafiły: krew bryzga z paszczy
             for (int i = 0; i < 3; i++)
             {

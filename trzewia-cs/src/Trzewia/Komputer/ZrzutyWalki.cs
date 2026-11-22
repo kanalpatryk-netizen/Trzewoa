@@ -108,6 +108,7 @@ static class ZrzutyWalki
         Plotno.Fabryka = new FabrykaSkia();
         Fonts.zaladujKroje();
 
+        if (Uruchomienie.PodgladPrzerywnikow) return PodgladPrzerywnikow(katalog, W, H, Uruchomienie.CoIleS > 0 ? Uruchomienie.CoIleS : 0.1);
         Console.WriteLine($"zrzuty walki{(Uruchomienie.Krag ? " (Krąg Trzeci)" : "")}: ziarno {ziarno.ToString(CultureInfo.InvariantCulture)}, {W}×{H}, oprawa {(VisualConfig.Wlaczone ? "włączona" : "wyłączona")}, katalog {katalog}");
         var zegar = System.Diagnostics.Stopwatch.StartNew();
 
@@ -204,6 +205,37 @@ static class ZrzutyWalki
             for (int i = 0; i < SwiatloOprawy.CZESCI.Length; i++)
                 Console.WriteLine($"    {SwiatloOprawy.CZESCI[i],-13} {SwiatloOprawy.CzasyMs[i] / SwiatloOprawy.KlatekPomiaru,7:F1} ms");
         }
+        return 0;
+    }
+
+    /// <summary>
+    /// Oprawa, etap 7b: same trzy przerywniki ścięcia głów (w kolejności ścinania: pitbull, wilk, doberman), klatka co
+    /// `coIle` s filmu — przerywnik-1-0000.jpg … Bez gry: film rysuje się z tego, co zapamiętał przy starcie.
+    /// </summary>
+    static int PodgladPrzerywnikow(string katalog, int W, int H, double coIle)
+    {
+        using var p = new PlotnoSkia(W, H);
+        NowaPartia(p, W, H);
+        var kolejnosc = NastawyKrag.SCIECIE_GLOW.kolejnosc;
+        int zapisane = 0;
+        for (int k = 0; k < kolejnosc.Length; k++)
+        {
+            var odciete = new int[k];
+            for (int i = 0; i < k; i++) odciete[i] = (int)kolejnosc[i];
+            double teraz = 1000;
+            PrzerywnikGlowy.Pokaz((int)kolejnosc[k], k, "rycerz-6-z0", odciete, teraz);
+            var dlMs = PrzerywnikGlowy.DlugoscMs(k);
+            for (double t = 0; t <= dlMs + 1e-6; t += coIle * 1000)
+            {
+                p.setTransform(1, 0, 0, 1, 0, 0);
+                FilmKregu.rysujPrzerywnikGlowy(p, W, H, teraz + t);
+                var nazwa = $"przerywnik-{k + 1}-{(int)Math.Round(t):D4}.jpg";
+                if (!p.ZapiszJpg(Path.Combine(katalog, nazwa))) { Console.Error.WriteLine($"nie zapisałem {nazwa}"); return 1; }
+                zapisane++;
+            }
+        }
+        PrzerywnikGlowy.Nowa();
+        Console.WriteLine($"podgląd przerywników: {zapisane} klatek w {katalog}");
         return 0;
     }
 
