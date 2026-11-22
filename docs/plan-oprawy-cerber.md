@@ -495,10 +495,16 @@ Uwagi użytkownika do filmu `trzewia-gameplay-z-dzwiekiem.mp4` (czasy z filmu) i
 - [x] 1:11 i księga — czarne obramowania wokół postaci — usunąć.
 - [x] do 1:03 — duży kamień nad szybem (paskudny, zasłania dostawę jedzenia) — usunąć.
 
-Do decyzji użytkownika po 7a (nie ruszane): stały cienki okrąg z dwiema ukośnymi kreskami nad środkiem krypty (był
-i przed 7a, widać go też bez oprawy — to nie leczenie); wisielcy, czaszki i ciała w lochu (wystrój „piekła lochu”);
-jasne krawędzie postaci od światła (etap 1) i jasny obrys postaci przy bossie (etap 2 — ten i tak zmienia się w 7b);
-przycisk „+” przy jedzeniu w księdze (to ryt Nakarm dla ludzi, nie karmienie Cerbera); długość walki (mediana 32 s).
+Decyzje użytkownika po raporcie 7a (22.11):
+1. walkę **przedłużyć** — Cerber ma 2,9 × tyle życia (`ZmianyKregu.ZYCIE_CERBERA`, 1450 zamiast 500): 40 ziaren —
+   wygrane 39, mediana walki 49 s (90% krótszych niż 76 s, najdłuższa 137 s); przy 1,8 × mediana była 40 s;
+2. cienki okrąg z nacięciami nad środkiem krypty — **usunąć** (to podświetlenie celu „patrz tutaj”,
+   `Minimapa.podswietlCel`; strzałka przy krawędzi, gdy cel poza kadrem, zostaje);
+3. w lochu **zostają tylko czaszki** (bez wisielców, kości, smug po ciałach i ciał w ścianach; krew na murach zostaje);
+4. nowego filmu teraz nie — od razu 7b.
+
+Nieruszane: jasne krawędzie postaci od światła (etap 1), jasny obrys postaci przy bossie (etap 2 — zmienia się w 7b),
+przycisk „+” przy jedzeniu w księdze (ryt Nakarm dla ludzi, nie karmienie Cerbera).
 
 **Wynik 7a (22.11).** Bez karmienia i dłoni wyszły dwa stare błędy walki (ziarno 13 kończyło się przegraną: Cerber
 przy 3 punktach, rycerz umiera z głodu): (1) pasek głowy zbity do dna odrastał w pół sekundy z 1 do 5 punktów, więc

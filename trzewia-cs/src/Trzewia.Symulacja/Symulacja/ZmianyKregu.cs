@@ -30,6 +30,15 @@ namespace Trzewia.Symulacja
         public static bool KrataWyrwana(Sim sim) => Aktywne && WalkaZCerberem(sim);
 
         /// <summary>
+        /// Życie Cerbera × tyle. Decyzja użytkownika 22.11: „przedłuż” — po naprawach etapu 7a walka trwała 32 s (mediana
+        /// 40 ziaren) zamiast 51 s, bo rycerz wreszcie sięgał Cerbera i od razu ścinał pustą głowę.
+        /// </summary>
+        public const double ZYCIE_CERBERA = 2.9;
+
+        /// <summary>Życie, z którym Cerber wstaje (przy zmianach kręgu — większe, patrz ZYCIE_CERBERA).</summary>
+        public static double ZycieCerbera(double hp) => Aktywne ? hp * ZYCIE_CERBERA : hp;
+
+        /// <summary>
         /// Naprawa błędu „rycerz nie ścina pustej głowy” (22.11): pasek głowy zbity do dna — głowa zwisa i czeka na miecz,
         /// a Cerber się nie zrasta. Dawniej w pół sekundy odrastał z 1 do 5 punktów, rycerz przestawał celować w ścięcie
         /// (Walka.glowaCzeka) i bił zwykłymi ciosami, aż głodny odchodził jeść, a Cerber zrastał się do pełnego paska.

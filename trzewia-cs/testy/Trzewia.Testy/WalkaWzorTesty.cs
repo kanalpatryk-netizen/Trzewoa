@@ -110,8 +110,9 @@ public class WalkaWzorTesty
                 // (bez Cieni, ruchy wieloetapowe, naprawy) — 60 ziaren: mediana 56 s, 90% krótszych niż 82 s, najdłuższa
                 // 180 s. Po naprawach z 22.11 (pusta głowa nie odrasta, Cerber po ataku z dystansu podchodzi, zamiast wisieć
                 // nad rycerzem) — 40 ziaren: mediana 32 s (z tego 6 s to pękanie pieczęci i wyjście Cerbera), 90% krótszych
-                // niż 51 s, najdłuższa 78 s. Tu: wygrana, i to bez przeciągania.
-                Assert.InRange(walka, 20, 240);
+                // niż 51 s, najdłuższa 78 s. Użytkownik: „przedłuż” — Cerber ma 2,9 × tyle życia (ZmianyKregu.ZYCIE_CERBERA):
+                // 40 ziaren — mediana 49 s, 90% krótszych niż 76 s, najdłuższa 137 s. Tu: wygrana, i to bez przeciągania.
+                Assert.InRange(walka, 30, 240);
             }
         }
         finally { WalkaWzor.Wlaczony = bylo; Krag.Ustaw(false); }

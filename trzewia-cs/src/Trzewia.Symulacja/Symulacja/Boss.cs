@@ -106,7 +106,7 @@ namespace Trzewia.Symulacja
                 b.pojaw = sim =>
                 {
                     var m = miejscePomnika(sim);
-                    var c = nowyStraznik(sim, Math.Floor(m.x), m.y, DEMON.hp);
+                    var c = nowyStraznik(sim, Math.Floor(m.x), m.y, ZmianyKregu.ZycieCerbera(DEMON.hp));
                     if (c == null) return null;
                     c.x = m.x;
                     c.boss = "demon";
