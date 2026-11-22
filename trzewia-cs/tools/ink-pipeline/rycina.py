@@ -9,10 +9,14 @@
 # który poza tym jest prawie monochromatyczny (zasada BARWA: "nic nie świeci kolorem, którego nie ma w świecie").
 #
 # Użycie:
-#   python3 rycina.py WEJŚCIE.webp WYJŚCIE.png [--sheet ARKUSZ.png] [--no-hatch] [--render]
-#   python3 rycina.py --batch LISTA.txt KATALOG_WE KATALOG_WY [--render]
+#   python3 rycina.py WEJŚCIE.webp WYJŚCIE.png [--sheet ARKUSZ.png] [--no-hatch] [--render] [--bez-konturu]
+#   python3 rycina.py --batch LISTA.txt KATALOG_WE KATALOG_WY [--render] [--bez-konturu]
 # --render: dla błyszczących renderów 3D bez własnej kreski (Cerber) — mocniejsze progi kreskowania niż domyślne
 #           (dla już-gotowych, płasko cieniowanych sprite'ów, np. ludzi).
+# --bez-konturu (22.11, ludzie): bez żadnego obramowania — ani ciemnego konturu, ani jasnej obwódki z oryginału.
+#           Tak powstały dane/grafika/duszki-rycina/*.webp ludzi (z katalogu trzewia-cs):
+#           python3 tools/ink-pipeline/rycina.py --batch tools/ink-pipeline/ludzie.txt dane/grafika/duszki \
+#               dane/grafika/duszki-rycina --bez-konturu
 import json
 import sys
 from pathlib import Path
@@ -124,6 +128,29 @@ def kreskuj(im: Image.Image, v, alfa_maska, odstep: float, tusz, progi=(0.60, 0.
     return Image.fromarray(out, "RGBA")
 
 
+def zdejmij_obwodke(im: Image.Image, grubosc: int, prog=0.58) -> Image.Image:
+    """
+    Krok 0 (22.11, --bez-konturu): zdejmuje jasną obwódkę wypieczoną w sprite'ach ludzi (pergaminowa otoczka wokół
+    sylwetki) — piksele w pasie `grubosc` px od brzegu kształtu, jaśniejsze niż `prog`, robią się przezroczyste.
+    Ciemna kreska samej postaci (jej własny obrys) zostaje.
+    """
+    rgba = np.asarray(im.convert("RGBA"), dtype=np.float64)
+    alfa = rgba[..., 3]
+    maska = Image.fromarray(((alfa > 8) * 255).astype(np.uint8), "L")
+    wnetrze = maska
+    for _ in range(grubosc):
+        wnetrze = wnetrze.filter(ImageFilter.MinFilter(3))
+    pas = (np.asarray(maska) > 0) & (np.asarray(wnetrze) == 0)
+    jas = (0.2126 * rgba[..., 0] + 0.7152 * rgba[..., 1] + 0.0722 * rgba[..., 2]) / 255
+    nasyc = (rgba[..., :3].max(axis=2) - rgba[..., :3].min(axis=2)) / 255
+    zdjac = pas & (jas > prog) & (nasyc < 0.35)
+    # półprzezroczysty brzeg obwódki (wygładzenie) — też jasny, też precz
+    zdjac |= pas & (alfa < 200) & (jas > prog * 0.8)
+    out = rgba.copy()
+    out[..., 3] = np.where(zdjac, 0, alfa)
+    return Image.fromarray(out.astype(np.uint8), "RGBA")
+
+
 def kontur(im: Image.Image, tusz, grubosc=2) -> Image.Image:
     """Krok 4: ciemny kontur z maski alfa (nie z tego, co tam wcześniej narysowano) — zamiast jasnej/białej obwódki."""
     a = im.split()[3]
@@ -137,17 +164,23 @@ def kontur(im: Image.Image, tusz, grubosc=2) -> Image.Image:
 # kreskę tylko jako akcent w naprawdę ciemnych miejscach; błyszczące renderы 3D (np. Cerber, bez żadnej własnej
 # kreski) potrzebują jej dużo mocniej, bo to ONA niesie tam cień zamiast gładkiego gradientu i połysku.
 PROGI_PLASKI = (0.60, 0.76, 0.90)
+# Grubość jasnej obwódki w sprite'ach ludzi (px, stała na wszystkich poziomach wielkości — rysowana tą samą kreską).
+OBWODKA_PX = 3
 PROGI_RENDER = (0.42, 0.62, 0.85)
 
 
-def rycina(sciezka_we: Path, hatch=True, tryb="plaski") -> Image.Image:
+def rycina(sciezka_we: Path, hatch=True, tryb="plaski", z_konturem=True) -> Image.Image:
     im0 = Image.open(sciezka_we).convert("RGBA")
+    if not z_konturem:
+        # bez żadnego obramowania: ani ciemnego konturu, ani jasnej obwódki z oryginału
+        im0 = zdejmij_obwodke(im0, grubosc=OBWODKA_PX)
     baza, v, alfa_maska = odbarw(im0)
     if hatch:
         odstep = max(2.0, min(im0.size) / 55)
         progi = PROGI_RENDER if tryb == "render" else PROGI_PLASKI
         baza = kreskuj(baza, v, alfa_maska, odstep, P["tusz"], progi)
-    return kontur(baza, P["tusz"])
+    # --bez-konturu (22.11, użytkownik: „czarne obramowania wokół postaci” — usunąć): bez ciemnego obrysu
+    return kontur(baza, P["tusz"]) if z_konturem else baza
 
 
 def arkusz_przed_po(sciezka_we: Path, po: Image.Image) -> Image.Image:
@@ -164,6 +197,7 @@ def main():
         print(__doc__)
         return 1
     tryb = "render" if "--render" in args else "plaski"
+    z_konturem = "--bez-konturu" not in args
     if args[0] == "--batch":
         lista, we, wy = Path(args[1]), Path(args[2]), Path(args[3])
         wy.mkdir(parents=True, exist_ok=True)
@@ -172,7 +206,7 @@ def main():
             src = we / nazwa
             dst = wy / (Path(nazwa).stem + ".webp")
             try:
-                im = rycina(src, tryb=tryb)
+                im = rycina(src, tryb=tryb, z_konturem=z_konturem)
                 # bezstratny webp: kreska to drobny, kontrastowy wzór — PNG (DEFLATE) na nim pęcznieje parokrotnie;
                 # ten sam format, co oryginały Cerbera, więc silnik już go wczytuje
                 im.save(dst, lossless=True, quality=100, method=6)
@@ -185,7 +219,7 @@ def main():
         return 0
     we = Path(args[0])
     wy = Path(args[1])
-    im = rycina(we, hatch="--no-hatch" not in args, tryb=tryb)
+    im = rycina(we, hatch="--no-hatch" not in args, tryb=tryb, z_konturem=z_konturem)
     wy.parent.mkdir(parents=True, exist_ok=True)
     im.save(wy)
     if "--sheet" in args:
