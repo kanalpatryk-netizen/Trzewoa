@@ -76,6 +76,11 @@ namespace Trzewia.Rysunek
             // trzewia: dno pustek, które były od początku
             var sala = w.salaOltarza;
             double n = 0;
+            // (Krąg, ZmianyKregu — użytkownik 22.11: „ludzie obok pomnika Cerbera oraz w jego krypcie — do usunięcia
+            // natychmiast”): nikogo w lochu z kryptą, na przedprożu ani w komorze pomnika
+            var pom = Pomnik.miejscePomnika(sim);
+            bool przyPomniku(double x, double y) => ZmianyKregu.Aktywne
+                && (w.wLochu(x, y, 2) || w.wPrzedprozu(x, y) || (Math.Abs(x - pom.x) < 16 && y > pom.y - 16 && y < pom.y + 4));
             for (var y = SURFACE_Y + 3; y < w.h - 3; y++)
             {
                 double ostatni = -9;
@@ -83,6 +88,7 @@ namespace Trzewia.Rysunek
                 {
                     if (!w.passable(x, y) || w.passable(x, y + 1) || !w.passable(x, y - 1)) continue;
                     if (x - ostatni < 3) continue;
+                    if (przyPomniku(x, y)) continue;
                     var r = los(x * 7919 + y * 104729);
                     // w sali mniej (tam mieszka szóstka) — i nie przy ołtarzu ani pod szybami
                     var wSali = sala.x1 >= 0 && x >= sala.x0 && x <= sala.x1 && y >= sala.y0 - 2 && y <= sala.y1 + 2;
