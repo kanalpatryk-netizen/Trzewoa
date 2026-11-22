@@ -49,6 +49,8 @@ namespace Trzewia.Rysunek
         /// <summary>Skały brzegu kręgu nad szybem ze światłem — przed mrokiem.</summary>
         public static void rysujBrzegKregu(IPlotno ctx, Sim sim, Camera cam)
         {
+            // (Krąg, ZmianyKregu — użytkownik 22.11: duży kamień nad szybem — paskudny i zasłania dostawę jedzenia — usunąć)
+            if (ZmianyKregu.Aktywne) return;
             var k = Katedra.ukladKatedry(sim.world);
             if (k == null) return;
             var z = cam.zoom;
@@ -137,6 +139,8 @@ namespace Trzewia.Rysunek
         /// <summary>Szczelina w chmurach w łuku brzegu — świeci przez mrok (zamiast rozety).</summary>
         public static void rysujBrzegKreguNad(IPlotno ctx, Sim sim, Camera cam, double teraz)
         {
+            // (bez skał i łuku — 22.11 — nie ma też jasnej szczeliny w łuku; promień na ołtarz zostaje)
+            if (ZmianyKregu.Aktywne) return;
             var k = Katedra.ukladKatedry(sim.world);
             if (k == null) return;
             var z = cam.zoom; var r = k.rozeta;
