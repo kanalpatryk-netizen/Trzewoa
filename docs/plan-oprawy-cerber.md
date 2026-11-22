@@ -14,6 +14,10 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 6a — walka i obrażenia według wzorów użytkownika (20.11; w Kręgu, za flagą; czeka na „dalej”)
 - [x] Etap 6b — Krąg bez Cieni, ruchy wieloetapowe, naprawy błędów, przełączniki, zamach ludu (20.11; czeka na „dalej”)
 - [x] Etap 6 — mechanika bossa (20.11, „Kontynuuj ze wszystkim innym”; za flagą; liczby do akceptacji; czeka na „dalej”)
+- [x] Etap 7a — usunięcia po obejrzeniu filmu (22.11; czeka na „dalej”)
+- [ ] Etap 7b — walka: bez kręcenia się, rycerz za Cerberem, przerywniki ścięć, napisy końcowe
+- [ ] Etap 7c — wstęp: film i scena wejścia
+- [ ] Etap 7d — ludzie od nowa w kodzie i ich animacje
 
 ## Decyzje użytkownika (16.11, po raporcie etapu 0)
 
@@ -473,6 +477,72 @@ Przegrane po zmianach (ziarna 35 i 109): rycerz ginie przed walką, grabarze w w
 uczciwa przegrana, partia się kończy. Na partię bot karmi średnio 2,7 razy i wzywa dłoń 1,1 razy; ataki głów są
 rzadkie (gryzienie 0,5, ogień 0,55, wycie 0,3 na walkę), bo Cerber większość walki chwieje się pod ciosami rycerza
 (dawny próg zachwiania z TS). Testy: 204/204.
+
+## Etap 7 — poprawki po obejrzeniu filmu z dźwiękiem (22.11)
+
+Uwagi użytkownika do filmu `trzewia-gameplay-z-dzwiekiem.mp4` (czasy z filmu) i decyzje (22.11):
+- karmienie i dłoń: **usunąć obie z walki** (bez przycisków i bez dawnego automatu),
+- ataki głów zostają, **zapowiedzi (łuk, linia, pierścień) usunąć**,
+- krąg leczenia: **usunąć tylko okrąg** (leczenie działa dalej, niewidocznie),
+- ludzie („wyglądają jak kurczaki”): **narysować od nowa w kodzie** — osobny etap.
+
+### 7a — usunięcia
+- [x] 2:30 — ludzie (potępieni) obok pomnika Cerbera i w jego krypcie — usunąć natychmiast.
+- [x] 3:01 — „za dużo”: z paska Cerbera usunąć wszystko oprócz pasków życia; usunąć znaczniki głów nad Cerberem,
+      możliwość bicia konkretnej głowy i przyciski „Nakarm” i „Dłoń”.
+- [x] Zapowiedzi ataków głów — usunąć (decyzja 22.11).
+- [x] Krąg leczenia — usunąć okrąg.
+- [x] 1:11 i księga — czarne obramowania wokół postaci — usunąć.
+- [x] do 1:03 — duży kamień nad szybem (paskudny, zasłania dostawę jedzenia) — usunąć.
+
+Do decyzji użytkownika po 7a (nie ruszane): stały cienki okrąg z dwiema ukośnymi kreskami nad środkiem krypty (był
+i przed 7a, widać go też bez oprawy — to nie leczenie); wisielcy, czaszki i ciała w lochu (wystrój „piekła lochu”);
+jasne krawędzie postaci od światła (etap 1) i jasny obrys postaci przy bossie (etap 2 — ten i tak zmienia się w 7b);
+przycisk „+” przy jedzeniu w księdze (to ryt Nakarm dla ludzi, nie karmienie Cerbera); długość walki (mediana 32 s).
+
+**Wynik 7a (22.11).** Bez karmienia i dłoni wyszły dwa stare błędy walki (ziarno 13 kończyło się przegraną: Cerber
+przy 3 punktach, rycerz umiera z głodu): (1) pasek głowy zbity do dna odrastał w pół sekundy z 1 do 5 punktów, więc
+rycerz przestawał celować w ścięcie; teraz pusta głowa czeka na miecz i Cerber się nie zrasta; (2) Cerber wisiał
+w symulacji 3 kafle nad rycerzem (na rysunku stoi tuż przy nim) i bez końca smagał go łańcuchem z dystansu, a rycerz
+nie sięgał go mieczem — to jest „kręcenie się w miejscu” z 3:04; teraz po ataku z dystansu Cerber najpierw podchodzi.
+Obie naprawy tylko przy `ZmianyKregu` (Krąg jak w TS bez zmian). Pomiar ziaren 1–40:
+
+| | wygrane | przegrane | walka: mediana (90% krótszych niż; najdłuższa) |
+|---|---|---|---|
+| etap 6 (przed 7a) | 39 | 1 | 51 s (83 s; 164 s) |
+| 7a, same usunięcia | 37 | 3 | 51 s (74 s; 132 s) |
+| 7a z naprawami | 39 | 1 | 32 s (51 s; 78 s) |
+
+Czas walki liczony od pęknięcia pieczęci (w tym 6 s rozpadu i wyjścia Cerbera). Przegrywa tylko ziarno 35 (bez
+żadnego rycerza, jak wcześniej). Ludzie w stylu „rycina” bez obwódki: `rycina.py --bez-konturu` zdejmuje pergaminową
+obwódkę zalewem od zewnątrz do ciemnego obrysu postaci (jasnych pikseli na brzegu: mediana 5,7%, 90% obrazków poniżej
+10% — w pierwszej próbie z pasem 3 px było 52–58%). Testy: 201/201 (mniej o 3 — odpadły testy wyboru głowy, karmienia
+i dłoni). Rysunek klatki walki (procesorem, zrzuty ziarna 3): 497 ms przed, 499 ms po — bez różnicy; fps w grze
+(F3 / `--pomiar`) nie mierzony — tu nie ma okna ani karty.
+
+### 7b — walka
+- [ ] 3:04–3:27 — rycerz kręci się wokół własnej osi w pozycji do walki (Cerber na początku też); atak dopiero, gdy
+      Cerber wyjdzie naprzeciw rycerzowi.
+- [ ] 3:33 — rycerza za Cerberem nie widać: części ciała i miecz zakryte przez Cerbera — matowe szare, krycie 0,5,
+      przenikające przez Cerbera; głowa normalnie.
+- [ ] 3:42 — przerywnik przy każdym ścięciu głowy, inny dla każdej głowy i zależnie od tego, która to już głowa;
+      wchodzi w chwili skoku rycerza (tuż przed ścięciem), po nim animacja dokańcza się od miejsca, w którym stanęła.
+- [ ] 4:02 — miejsce na napisy końcowe.
+
+### 7c — wstęp (film i scena wejścia)
+- [ ] 0:08 — lewitujące postacie i kamienie.
+- [ ] 0:10 — kłótnia o jedzenie: „dwa kurczaki stoją, a przed nimi lewituje kawałek mięsa” — obrzydliwa animacja.
+- [ ] 0:14 — Cerber wchodzi pod planszę przerywnika.
+- [ ] 0:19 — rozszarpywanie: ofiara przeskakuje z jednego pyska na pozostałe dwa, nienaturalne trzęsienie głową.
+- [ ] 0:25 — Wergiliusz i Dante nie pasują do klimatu gry (wygląd).
+- [ ] 0:29 — rzucanej ziemi nie widać, Cerber nie ma wtedy żadnej animacji — nie wiadomo, co się stało.
+- [ ] 0:37–0:43 — wstawanie za szybkie i bez sensu (w linii prostej) — pełna animacja wstawania.
+- [ ] 0:59–1:03 — postacie chodzą po dziurze, przez którą wpada światło do jaskini (lewitują).
+
+### 7d — ludzie i animacje
+- [ ] Ludzie od nowa: wyglądają jak kurczaki, nie przypominają człowieka (plansza, księga, wstęp; potępieni, Dante,
+      Wergiliusz).
+- [ ] Animacje ludzi i Cerbera (część ohydna) — razem z nowymi ludźmi.
 
 ## Wzór raportu po każdym etapie
 
