@@ -183,6 +183,9 @@ namespace Trzewia.Rysunek
             var r = Math.Min(Math.Max(18, cel.r * z), Math.Min(cam.vw, cam.vh) * 0.11);
 
             var wKadrze = sx > 0 && sy > 0 && sx < cam.vw && sy < cam.vh;
+            // (Krąg, ZmianyKregu — użytkownik 22.11: cienki okrąg z nacięciami nad środkiem krypty — „usuń”): w kadrze nic;
+            // strzałka przy krawędzi, gdy cel jest poza kadrem, zostaje
+            if (wKadrze && ZmianyKregu.Aktywne) return;
             ctx.save();
             if (wKadrze)
             {
