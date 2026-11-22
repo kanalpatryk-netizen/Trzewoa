@@ -64,6 +64,7 @@ namespace Trzewia.Aplikacja
                         bestiariusz = new EkranBestiariusza(app); app.zarejestruj(bestiariusz);
                         ustawieniaEkran = new EkranUstawien(app); app.zarejestruj(ustawieniaEkran);
                         app.zarejestruj(new EkranKroniki(app));
+                        app.zarejestruj(new EkranNapisow(app));
                         app.zarejestruj(new EkranOsiagniec(app));
                     },
                 },

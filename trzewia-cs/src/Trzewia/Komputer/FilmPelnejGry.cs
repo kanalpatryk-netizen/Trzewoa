@@ -1,8 +1,8 @@
 // Film całej partii Kręgu Trzeciego (--film-pelny KATALOG), do pokazania oprawy w jednym nagraniu: menu i zmiana
 // trybu na Krąg Trzeci, „Nowa gra”, wstęp (film + scena wejścia — WstepKregu/FilmKregu), budowa aż do pęknięcia
 // pieczęci (w dużym przyspieszeniu — to najdłuższa, najmniej ciekawa część), walka z Cerberem w zwykłym tempie
-// (obie cutscenki etapu 4: wejście i śmierć bossa), kronika skończonej partii. Bot „rozsadny” gra sam; menu
-// prowadzą prawdziwe klawisze (strzałki, Enter), jak w grze. Klatki JPEG + klatki.json (czas, etykieta fazy) —
+// (obie cutscenki etapu 4: wejście i śmierć bossa), po wygranej napisy końcowe (etap 7b), kronika skończonej partii.
+// Bot „rozsadny” gra sam; menu prowadzą prawdziwe klawisze (strzałki, Enter), jak w grze. Klatki JPEG + klatki.json (czas, etykieta fazy) —
 // do złożenia filmu (ffmpeg), jak --zrzuty-walki --film.
 // Dźwięk (20.11, prośba użytkownika: „gameplay z dźwiękiem”): ten sam mikser co w grze (Dzwieki.Silnik, muzyka, rezonans
 // świata, gesty), ale bez urządzenia — na każdą zapisaną klatkę filmu dokładnie 1/30 s dźwięku do dzwiek.wav (48 kHz,
@@ -31,6 +31,8 @@ static class FilmPelnejGry
     const double BUFOR_PO_KONCU_S = 1.5;
     /// <summary>Ile sekund (wyjściowych) pokazać ekran kroniki.</summary>
     const double KRONIKA_S = 7;
+    /// <summary>Napisy końcowe (po wygranej): najdłużej tyle sekund — bezpiecznik, zwykle kończą się same.</summary>
+    const double NAPISY_NAJDLUZEJ_S = 90;
     /// <summary>Bezpiecznik: najdłużej tyle tików (budowa + walka), żeby zła partia nie liczyła się w nieskończoność.</summary>
     const double BEZPIECZNIK_TIKOW = 120 * 60 * 60; // godzina gry
 
@@ -107,6 +109,7 @@ static class FilmPelnejGry
         app.zarejestruj(gra);
         app.zarejestruj(new EkranMenu(app));
         app.zarejestruj(new EkranKroniki(app));
+        app.zarejestruj(new EkranNapisow(app));
 
         int f = 0;
         // zegar sceny startuje od zegara komputera: menu liczy wejście od Wydajnosc.Teraz() (rozjaśnia się od niego) —
@@ -216,10 +219,24 @@ static class FilmPelnejGry
         }
         Console.WriteLine($"  koniec partii: {f} klatek — {zegar.Elapsed.TotalSeconds:F1} s");
 
-        // ---- 4) kronika skończonej partii
+        // ---- 4) po wygranej napisy końcowe (oprawa, etap 7b) — same przechodzą do kroniki, gdy się skończą
+        if (EkranNapisow.PoPartii(gra.sim))
+        {
+            app.idz("napisy", gra.sim);
+            double nastTeraz = teraz;
+            double bezpiecznik = teraz + NAPISY_NAJDLUZEJ_S * 1000;
+            while (app.aktywny?.nazwa == "napisy" && teraz < bezpiecznik)
+            {
+                Krok(DT);
+                if (teraz >= nastTeraz && app.aktywny?.nazwa == "napisy") { Zapisz("napisy"); nastTeraz = teraz + 1000.0 / 30; }
+            }
+            Console.WriteLine($"  napisy końcowe: {f} klatek — {zegar.Elapsed.TotalSeconds:F1} s");
+        }
+
+        // ---- 5) kronika skończonej partii
         {
             var sim = gra.sim;
-            app.idz("kronika", sim);
+            if (app.aktywny?.nazwa != "kronika") app.idz("kronika", sim);
             double nastTeraz = teraz;
             double doS = teraz + KRONIKA_S * 1000;
             while (teraz < doS) { Krok(DT); if (teraz >= nastTeraz) { Zapisz("kronika"); nastTeraz = teraz + 1000.0 / 30; } }

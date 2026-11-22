@@ -367,7 +367,8 @@ namespace Trzewia.Aplikacja
                         }
                     }
                     nasluch?.Invoke(new ZdarzenieGry { typ = "koniec", opis = sim.ending });
-                    if (nasluch == null && !BOT.wlaczony && !Visual.Cutscena.Trwa) app.idz("kronika", sim);
+                    // (oprawa, etap 7b: po wygranej w Kręgu najpierw napisy końcowe — one same przechodzą do kroniki)
+                    if (nasluch == null && !BOT.wlaczony && !Visual.Cutscena.Trwa) app.idz(EkranNapisow.PoPartii(sim) ? "napisy" : "kronika", sim);
                 }
             }
 
