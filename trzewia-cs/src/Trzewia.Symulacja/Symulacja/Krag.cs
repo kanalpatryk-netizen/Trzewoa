@@ -31,8 +31,6 @@ namespace Trzewia.Symulacja
         /// (ZmianyKregu.tik).
         /// </summary>
         public List<double>? zasypane;
-        /// <summary>Etap 6 (GlowyCerbera): którą głowę nakarmiono ostatnio (rysunek: żre tylko ona).</summary>
-        public double? okupGlowa;
     }
 
     /// <summary>Cerber na powierzchni kręgu (CerberNaKregu w TS).</summary>
@@ -198,7 +196,7 @@ namespace Trzewia.Symulacja
             Creature? boss = null;
             if (sim.lud.pomnik?.faza == "walka")
                 foreach (var c in sim.creatures) if (!c.dead && c.boss != null) { boss = c; break; }
-            // (etap 6, GlowyCerbera: karmienie to decyzja gracza — samo z siebie już się nie dzieje)
+            // (Krąg, ZmianyKregu — decyzja użytkownika 22.11: karmienia Cerbera w walce nie ma wcale)
             if (boss != null && !GlowyCerbera.Aktywne && sim.tick - k.okupT >= KRAG.okup.co)
             {
                 // rzuca ten, kto niesie jedzenie (kurierzy noszą je do krypty), a gdy nikt nie niesie — porcje z wiadra

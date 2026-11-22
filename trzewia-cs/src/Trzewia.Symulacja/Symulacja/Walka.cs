@@ -605,11 +605,11 @@ namespace Trzewia.Symulacja
             {
                 var def = RB[id];
                 if (def.rodzaj != "atak" && def.rodzaj != "obszar" && def.rodzaj != "dystans") continue;
-                // etap 6 (GlowyCerbera): atak głowy — tylko gdy ta głowa żyje, nie śpi i nie zwisa (za to od początku walki,
-                // nie dopiero przy słabnięciu); ruchy kilku paszcz — gdy gryźć mogą co najmniej dwie
+                // etap 6 (GlowyCerbera): atak głowy — tylko gdy ta głowa żyje i nie zwisa (za to od początku walki, nie
+                // dopiero przy słabnięciu); ruchy kilku paszcz — gdy gryźć mogą co najmniej dwie
                 var glowa = GlowyCerbera.GlowaRuchu(id);
-                if (glowa is int gn && !GlowyCerbera.MozeAtakowac(sim, b, gn)) continue;
-                if (GlowyCerbera.Aktywne && (id == "podwojnyZamach" || id == "zgniecenie") && GlowyCerbera.IleGotowych(sim, b) < 2) continue;
+                if (glowa is int gn && !GlowyCerbera.MozeAtakowac(b, gn)) continue;
+                if (GlowyCerbera.Aktywne && (id == "podwojnyZamach" || id == "zgniecenie") && GlowyCerbera.IleGotowych(b) < 2) continue;
                 if (def.zycieDo != null && zycie >= def.zycieDo && glowa == null) continue;
                 if (def.od != null && d < def.od) continue;
                 var zasieg = def.zasieg ?? def.promien ?? DEMON.zasieg;
@@ -631,13 +631,6 @@ namespace Trzewia.Symulacja
         public static void tikDemona(Sim sim, Creature c, Action<Sim, Creature> zasyp)
         {
             var hpMax = c.hpMax ?? DEMON.hp;
-            // etap 6 (GlowyCerbera): dłoń z otchłani trzyma Cerbera — nie chodzi, nie gryzie, nie zrasta się; ruch w toku przepada
-            if (GlowyCerbera.Trzymany(sim))
-            {
-                if (c.ruch != null) { c.ruchPoprz = c.ruch.id; c.ruch = null; }
-                c.atakOd = null;
-                return;
-            }
             // (Krąg Trzeci: zrasta się tylko w pasku bieżącej głowy — ścięte nie odrastają)
             // (Krąg, ZmianyKregu — naprawa: póki mnisi razą go księgą, to też modlitwa — nie zrasta się)
             if (sim.rytual.wierni < SNIACY_KAMIEN.modlitwaWiernych && !ZmianyKregu.KsiegaWstrzymujeZrastanie(sim))
@@ -718,8 +711,6 @@ namespace Trzewia.Symulacja
         /// </summary>
         public static StanGlow glowyCerbera(Creature b)
         {
-            // etap 6 (GlowyCerbera): każda głowa ma własne życie, bieżąca — wskazana przez gracza
-            if (GlowyCerbera.Aktywne && b.boss == "demon") return GlowyCerbera.Paski(b);
             var max = Math.Max(1, b.hpMax ?? DEMON.hp);
             double odcietych = b.glowyOdciete?.Count ?? 0;
             double? biezaca = b.boss == "demon" && odcietych < SG.kolejnosc.Length ? SG.kolejnosc[(int)odcietych] : (double?)null;
@@ -733,7 +724,6 @@ namespace Trzewia.Symulacja
         /// <summary>Ile zostało z paska głowy `nr` (0…1): ścięta — 0, bieżąca — jej pasek, jeszcze nietknięta — 1.</summary>
         public static double pasekGlowy(Creature b, double nr)
         {
-            if (GlowyCerbera.Aktywne && b.boss == "demon") return GlowyCerbera.Pasek(b, (int)nr);
             var g = glowyCerbera(b);
             var k = Array.IndexOf(SG.kolejnosc, nr);
             if (k < g.odcietych) return 0;
@@ -780,8 +770,6 @@ namespace Trzewia.Symulacja
                 foreach (var o in odc) if (o.nr == i) { jest = true; break; }
                 if (!jest) { nr = i; break; }
             }
-            // etap 6 (GlowyCerbera): ścina się wskazaną głowę
-            if (GlowyCerbera.Aktywne) nr = GlowyCerbera.Biezaca(b);
             if (nr == null) return;
             var zwrot = JS.Tak(b.face) ? b.face : (r.x > b.x ? 1 : -1);
             var w = sim.world;
@@ -795,7 +783,6 @@ namespace Trzewia.Symulacja
             while (y < w.h - 2 && w.passable(Math.Floor(x), y + 1)) y++;
             var dnoPo = glowyCerbera(b).dno;
             odc.Add(new GlowaOdcieta { nr = nr.Value, tick = sim.tick, x0 = x0, y0 = y0, x = x, y = y, zwrot = zwrot });
-            if (GlowyCerbera.Aktywne) GlowyCerbera.PoScieciu(b, (int)nr.Value);
             for (var k = 0; k < 14; k++) sim.spark(x0 + sim.rng.range(-0.6, 0.6), y0 + sim.rng.range(-0.6, 0.6), "hit");
             var imie = IMIE_GLOWY[(int)nr.Value];
             var ktoTnie = czyRycerz(r) ? "Rycerz ściął" : $"{(rolaPostaci(r) == "pobozny" ? "Mnich" : "Grabarz")} odrąbał";
