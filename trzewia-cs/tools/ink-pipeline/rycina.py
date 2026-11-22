@@ -18,6 +18,7 @@
 #           python3 tools/ink-pipeline/rycina.py --batch tools/ink-pipeline/ludzie.txt dane/grafika/duszki \
 #               dane/grafika/duszki-rycina --bez-konturu
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -128,27 +129,41 @@ def kreskuj(im: Image.Image, v, alfa_maska, odstep: float, tusz, progi=(0.60, 0.
     return Image.fromarray(out, "RGBA")
 
 
-def zdejmij_obwodke(im: Image.Image, grubosc: int, prog=0.58) -> Image.Image:
+def zdejmij_obwodke(im: Image.Image, glebokosc: int) -> Image.Image:
     """
-    Krok 0 (22.11, --bez-konturu): zdejmuje jasną obwódkę wypieczoną w sprite'ach ludzi (pergaminowa otoczka wokół
-    sylwetki) — piksele w pasie `grubosc` px od brzegu kształtu, jaśniejsze niż `prog`, robią się przezroczyste.
-    Ciemna kreska samej postaci (jej własny obrys) zostaje.
+    Krok 0 (22.11, --bez-konturu): zdejmuje jasną obwódkę wypieczoną w sprite'ach ludzi — pergaminową otoczkę wokół
+    sylwetki (2–3 px i miękka poświata na zewnątrz). Barwa obwódki H to mediana pikseli brzegu kształtu. Zalew od
+    zewnątrz, najwyżej `glebokosc` px, przez piksele „jak obwódka”: barwa H albo jej mieszanka z ciemną kreską (ta sama
+    barwa, tylko ciemniej) albo półprzezroczysta, nieciemna poświata. Ciemny obrys samej postaci zatrzymuje zalew, więc
+    jej wnętrze zostaje. (Pierwsza wersja zdejmowała tylko jasne piksele w pasie 3 px — w małych arkuszach h21–h28
+    zostawały z obwódki jasne kropki na brzegu: 52–58% pikseli brzegu; teraz 5–8%.)
     """
-    rgba = np.asarray(im.convert("RGBA"), dtype=np.float64)
-    alfa = rgba[..., 3]
-    maska = Image.fromarray(((alfa > 8) * 255).astype(np.uint8), "L")
-    wnetrze = maska
-    for _ in range(grubosc):
-        wnetrze = wnetrze.filter(ImageFilter.MinFilter(3))
-    pas = (np.asarray(maska) > 0) & (np.asarray(wnetrze) == 0)
-    jas = (0.2126 * rgba[..., 0] + 0.7152 * rgba[..., 1] + 0.0722 * rgba[..., 2]) / 255
-    nasyc = (rgba[..., :3].max(axis=2) - rgba[..., :3].min(axis=2)) / 255
-    zdjac = pas & (jas > prog) & (nasyc < 0.35)
-    # półprzezroczysty brzeg obwódki (wygładzenie) — też jasny, też precz
-    zdjac |= pas & (alfa < 200) & (jas > prog * 0.8)
-    out = rgba.copy()
-    out[..., 3] = np.where(zdjac, 0, alfa)
+    A = np.asarray(im.convert("RGBA"), dtype=np.float64)
+    a = A[..., 3]
+    rgb = A[..., :3]
+    zewn = a <= 8
+    p = np.pad(~zewn, 1)
+    brzeg = ~zewn & ~(p[:-2, 1:-1] & p[2:, 1:-1] & p[1:-1, :-2] & p[1:-1, 2:])
+    H = np.median(rgb[brzeg], axis=0)
+    hh = float((H * H).sum())
+    # rzut na barwę obwódki: k — jasność względem H, reszta — jak daleko barwa od H (0 — ta sama barwa)
+    k = (rgb * H).sum(-1) / hh
+    reszta = np.sqrt(((rgb - k[..., None] * H) ** 2).sum(-1)) / np.sqrt(hh)
+    jak_obwodka = ((k > 0.38) & (reszta < 0.10)) | ((a < 250) & (k > 0.30))
+    zalew = zewn.copy()
+    for _ in range(glebokosc):
+        p = np.pad(zalew, 1)
+        zalew = zalew | ((p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]) & jak_obwodka)
+    out = A.copy()
+    out[..., 3] = np.where(zalew & ~zewn, 0, a)
     return Image.fromarray(out.astype(np.uint8), "RGBA")
+
+
+def glebokosc_obwodki(nazwa: str) -> int:
+    """Jak głęboko zalewać obwódkę (px): 2–3 px obwódki i piksel jej mieszanki z kreską; w dużych arkuszach o piksel więcej."""
+    m = re.search(r"-h(\d+)-", nazwa)
+    h = int(m.group(1)) if m else 80
+    return 3 if h <= 28 else 4 if h <= 56 else 5
 
 
 def kontur(im: Image.Image, tusz, grubosc=2) -> Image.Image:
@@ -164,8 +179,6 @@ def kontur(im: Image.Image, tusz, grubosc=2) -> Image.Image:
 # kreskę tylko jako akcent w naprawdę ciemnych miejscach; błyszczące renderы 3D (np. Cerber, bez żadnej własnej
 # kreski) potrzebują jej dużo mocniej, bo to ONA niesie tam cień zamiast gładkiego gradientu i połysku.
 PROGI_PLASKI = (0.60, 0.76, 0.90)
-# Grubość jasnej obwódki w sprite'ach ludzi (px, stała na wszystkich poziomach wielkości — rysowana tą samą kreską).
-OBWODKA_PX = 3
 PROGI_RENDER = (0.42, 0.62, 0.85)
 
 
@@ -173,7 +186,7 @@ def rycina(sciezka_we: Path, hatch=True, tryb="plaski", z_konturem=True) -> Imag
     im0 = Image.open(sciezka_we).convert("RGBA")
     if not z_konturem:
         # bez żadnego obramowania: ani ciemnego konturu, ani jasnej obwódki z oryginału
-        im0 = zdejmij_obwodke(im0, grubosc=OBWODKA_PX)
+        im0 = zdejmij_obwodke(im0, glebokosc_obwodki(Path(sciezka_we).name))
     baza, v, alfa_maska = odbarw(im0)
     if hatch:
         odstep = max(2.0, min(im0.size) / 55)
