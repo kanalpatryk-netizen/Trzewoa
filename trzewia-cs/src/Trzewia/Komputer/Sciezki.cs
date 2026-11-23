@@ -135,6 +135,8 @@ public static class Uruchomienie
     public static bool PodgladWstepu;
     /// <summary>Film całej partii (menu, zmiana trybu, wstęp, budowa w przyspieszeniu, walka, kronika) — katalog na klatki.</summary>
     public static string? FilmPelnejGry;
+    /// <summary>Oprawa, etap 7d: katalog na tablice podglądu nowych ludzi (Komputer/PodgladLudzi.cs); null — zwykła gra.</summary>
+    public static string? PodgladLudzi;
 
     public const string Pomoc = """
         Trzewia.exe [przełączniki]
@@ -177,6 +179,9 @@ public static class Uruchomienie
                            co --co-ile s filmu (domyślnie 0.1), JPEG — do szybkiego obejrzenia bez rozgrywania partii
           --podglad-wstepu zamiast walki wstęp Kręgu: film (od --od s, najwyżej --najdluzej s) i scena wejścia
                            (szóstka idzie do szybu), klatka co --co-ile s (domyślnie 0.5), JPEG
+          --podglad-ludzi KATALOG
+                           bez okna: tablice PNG nowych ludzi (etap 7d) — stroje w kilku wielkościach obok starych
+                           arkuszy, pozy i animacje
           --film-pelny KATALOG
                            bez okna: cała partia Kręgu Trzeciego od menu — zmiana trybu, „Nowa gra”, wstęp (film i
                            scena wejścia), budowa w przyspieszeniu aż do pęknięcia pieczęci, walka z Cerberem w
@@ -225,6 +230,7 @@ public static class Uruchomienie
                     if (Uderzenie == null) Console.Error.WriteLine($"--uderzenie: nie rozumiem „{nast}” (wl albo wyl)");
                     i++; break;
                 case "--film-pelny": FilmPelnejGry = nast; i++; break;
+                case "--podglad-ludzi": PodgladLudzi = nast; i++; break;
                 case "--przerywniki":
                     Przerywniki = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Przerywniki == null) Console.Error.WriteLine($"--przerywniki: nie rozumiem „{nast}” (wl albo wyl)");

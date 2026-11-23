@@ -51,6 +51,11 @@ static class Program
             Rdzen.Gospodarz.Dane = sciezki;
             return ZrzutyWalki.Uruchom();
         }
+        if (Uruchomienie.PodgladLudzi != null)
+        {
+            Rdzen.Gospodarz.Dane = sciezki;
+            return PodgladLudzi.Uruchom(Uruchomienie.PodgladLudzi);
+        }
         if (Uruchomienie.FilmPelnejGry != null)
         {
             Rdzen.Gospodarz.Dane = sciezki;
