@@ -159,7 +159,8 @@ namespace Trzewia.Rysunek
                 var poza = pozaTlumu(p.typ, tt, p.id);
                 var lezy = Math.Abs(poza.tulow) > 1.1;
                 ctx.save();
-                ctx.translate(sx, sy - h * (lezy ? 0.08 : poza.udoL > 1 ? 0.25 : 0.5));
+                // (oprawa, etap 7c: biodro tak wysoko, by stopy i kolana stały na ziemi — nie wisiały nad nią)
+                ctx.translate(sx, sy - h * (lezy ? 0.08 : Ludzik.punkty(1, poza).Dno));
                 ctx.scale(p.face, 1);
                 Ludzik.rysujLudzika(ctx, h, poza);
                 ctx.restore();

@@ -34,7 +34,14 @@ namespace Trzewia.Rysunek
     }
 
     /// <summary>Punkty ciała żarłoka (do przyczepiania: paszcza trzyma za tułów, łapa przygniata).</summary>
-    public struct PunktyLudzika { public (double x, double y) glowa, kark, dlonL, dlonP, stopaL, stopaP, pas; }
+    public struct PunktyLudzika
+    {
+        public (double x, double y) glowa, kark, dlonL, dlonP, stopaL, stopaP, pas;
+        /// <summary>Oprawa (etap 7c): kolana — najniższy punkt klęczącego.</summary>
+        public (double x, double y) kolL, kolP;
+        /// <summary>Jak nisko pod biodrem sięga najniższa stopa albo kolano (piksele, w dół dodatnie) — tyle biodro nad ziemią.</summary>
+        public double Dno => Math.Max(Math.Max(stopaL.y, stopaP.y), Math.Max(kolL.y, kolP.y));
+    }
 
     public static class Ludzik
     {
@@ -114,6 +121,25 @@ namespace Trzewia.Rysunek
         static readonly string[,] UDO = { { "zarlok-udo", "zarlok-udo-k" }, { "zarlok-udo-d", "zarlok-udo-d-k" } };
         static readonly string[,] GLOWA = { { "zarlok-glowa-u0", "zarlok-glowa-u0-k" }, { "zarlok-glowa-u1", "zarlok-glowa-u1-k" }, { "zarlok-glowa-u2", "zarlok-glowa-u2-k" } };
 
+        /// <summary>
+        /// Oprawa (etap 7c): punkty ciała w pozie bez rysowania (biodro w (0, 0), wzrost `h`) — gdzie dłonie (ochłap
+        /// trzymany w rękach), stopy i kolana (postać stoi na ziemi, nie wisi nad nią). Te same stawy co rysujLudzika.
+        /// </summary>
+        public static PunktyLudzika punkty(double h, PozaLudzika p)
+        {
+            (double x, double y) biodro = (0, 0);
+            var tulKat = Math.PI - p.tulow;
+            var kark = od(biodro, tulKat, h * 0.34);
+            (double x, double y) barkL = (kark.x - Math.Cos(p.tulow) * h * 0.03, kark.y + h * 0.02);
+            (double x, double y) barkP = (kark.x + Math.Cos(p.tulow) * h * 0.03, kark.y + h * 0.02);
+            var lokL = od(barkL, p.ramieL, h * 0.17); var dlonL = od(lokL, p.ramieL + p.lokiecL, h * 0.16);
+            var lokP = od(barkP, p.ramieP, h * 0.17); var dlonP = od(lokP, p.ramieP + p.lokiecP, h * 0.16);
+            var kolL = od(biodro, p.udoL, h * 0.25); var stopaL = od(kolL, p.udoL - p.kolanoL, h * 0.25);
+            var kolP = od(biodro, p.udoP, h * 0.25); var stopaP = od(kolP, p.udoP - p.kolanoP, h * 0.25);
+            var glowaS = od(kark, tulKat - p.glowa, h * 0.1);
+            return new PunktyLudzika { glowa = glowaS, kark = kark, dlonL = dlonL, dlonP = dlonP, stopaL = stopaL, stopaP = stopaP, kolL = kolL, kolP = kolP, pas = ((biodro.x + kark.x) / 2, (biodro.y + kark.y) / 2) };
+        }
+
         /// <summary>Rysuje żarłoka z obrazków (biodro w (0, 0), wzrost `h`); zwraca punkty ciała.</summary>
         public static PunktyLudzika rysujLudzika(IPlotno ctx, double h, PozaLudzika p)
         {
@@ -155,7 +181,7 @@ namespace Trzewia.Rysunek
             else if (gora) czesc(ctx, "zarlok-kikut-nogi", h, kark, p.tulow + Math.PI);
             // bliższa ręka
             if (gora) reka(barkP, lokP, p.ramieP, p.lokiecP, 0, p.bezRekiP);
-            return new PunktyLudzika { glowa = glowaS, kark = kark, dlonL = dlonL, dlonP = dlonP, stopaL = stopaL, stopaP = stopaP, pas = ((biodro.x + kark.x) / 2, (biodro.y + kark.y) / 2) };
+            return new PunktyLudzika { glowa = glowaS, kark = kark, dlonL = dlonL, dlonP = dlonP, stopaL = stopaL, stopaP = stopaP, kolL = kolL, kolP = kolP, pas = ((biodro.x + kark.x) / 2, (biodro.y + kark.y) / 2) };
         }
 
         /// <summary>Oderwana głowa (szczątki): kikut szyi w (0, 0), `kat` — obrót.</summary>
@@ -197,21 +223,24 @@ namespace Trzewia.Rysunek
             return p;
         }
         /// <summary>Klęczy i wyje w deszcz.</summary>
+        // (oprawa, etap 7c: klęczy naprawdę — podudzia leżą w błocie za kolanami; dawniej uda szły poziomo przed siebie,
+        // a podudzia pionowo w dół, jak u kogoś, kto siedzi na niewidzialnym krześle)
         public static PozaLudzika pozaWyje(double t, double z = 0)
         {
             var k = Math.Sin(t * 0.9 + z) * 0.1;
             var p = pozaStoi();
             p.tulow = -0.2 + k; p.glowa = -0.6; p.ramieL = -0.4; p.lokiecL = 0.2; p.ramieP = 0.5 + k; p.lokiecP = 0.6;
-            p.udoL = 1.4; p.kolanoL = 1.5; p.udoP = 1.3; p.kolanoP = 1.5; p.usta = 0.8 + 0.2 * Math.Sin(t * 3 + z); p.bloto = 1;
+            p.udoL = 0.9; p.kolanoL = 2.4; p.udoP = 0.75; p.kolanoP = 2.3; p.usta = 0.8 + 0.2 * Math.Sin(t * 3 + z); p.bloto = 1;
             return p;
         }
-        /// <summary>Siedzi i żre (ręka do ust).</summary>
+        /// <summary>Siedzi w błocie i żre (ręka do ust).</summary>
+        // (oprawa, etap 7c: siedzi na ziemi z kolanami w górze — dawniej na niewidzialnym krześle)
         public static PozaLudzika pozaZre(double t, double z = 0)
         {
             var r = (Math.Sin(t * 2.5 + z) + 1) / 2;
             var p = pozaStoi();
             p.tulow = 0.35; p.glowa = 0.3; p.ramieP = 1.6 - r * 0.6; p.lokiecP = 1.6 + r * 0.8; p.ramieL = 0.9; p.lokiecL = 0.7;
-            p.udoL = 1.5; p.kolanoL = 1.4; p.udoP = 1.6; p.kolanoP = 1.3; p.usta = r; p.bloto = 1;
+            p.udoL = 1.9; p.kolanoL = 2.6; p.udoP = 1.7; p.kolanoP = 2.3; p.usta = r; p.bloto = 1;
             return p;
         }
         /// <summary>Bije się / sięga po ochłap (zamach ręką).</summary>
