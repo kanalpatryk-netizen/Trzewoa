@@ -16,6 +16,7 @@ using System;
 using System.Collections.Generic;
 using Trzewia.Plotna;
 using Trzewia.Rysunek;
+using Trzewia.Rysunek.Duszki;
 using Trzewia.Symulacja;
 
 namespace Trzewia.Aplikacja
@@ -64,6 +65,11 @@ namespace Trzewia.Aplikacja
             double dy() => wstrzas != 0 ? Math.Cos(czas * 0.11) * wstrzas * k.s * 0.05 : 0;
         }
 
+        /// <summary>Oprawa (etap 7c): grunt sięga tyle nad linię stóp najbliższych (jednostki świata) — tu horyzont.</summary>
+        const double HORYZONT = 0.62;
+        /// <summary>O ile wyżej w kadrze stoi każdy dalszy rząd tłumu (jednostki świata) — zawsze na gruncie, poniżej horyzontu.</summary>
+        const double RZAD_TLUMU = 0.26;
+
         static readonly (double wy, (double r, double g, double b) kg, (double r, double g, double b) kd)[] RZEDY_TLA =
         {
             (-7.5, (20, 18, 22), (80, 28, 19)), (-5, (25, 21, 25), (104, 36, 21)), (-2.6, (30, 26, 28), (134, 46, 25)),
@@ -77,11 +83,14 @@ namespace Trzewia.Aplikacja
         {
             var R = v.R;
             var yG = v.Y(0);
+            // (oprawa, etap 7c: grunt sięga do horyzontu — dalsze rzędy tłumu stoją na nim; dawniej ziemia kończyła się na
+            // linii stóp najbliższych, a dalsze rzędy, wyżej w kadrze, wisiały w powietrzu nad nią)
+            var yH = v.Y(-HORYZONT);
             var L = Pieklo.luna(v.czas);
             var t = v.czas / 1000;
             // samoistne błyski burzy (co kilka sekund) i błysk zadany przez scenę
             var b = Math.Max(blyskSceny != 0 ? blyskSceny * 1.6 : 0, Pieklo.blyskawica(v.czas, 0.5).a);
-            var g = ctx.createLinearGradient(0, v.Y(-16), 0, yG);
+            var g = ctx.createLinearGradient(0, v.Y(-16), 0, yH);
             g.addColorStop(0, "rgb(3,2,4)"); g.addColorStop(0.5, "rgb(12,7,9)");
             g.addColorStop(0.82, Barwa.Rgba(ji(46 * L), ji(16 * L), ji(12 * L))); g.addColorStop(1, Barwa.Rgba(ji(118 * L), ji(36 * L), ji(16 * L)));
             ctx.fillStyle = g; ctx.fillRect(R.x, R.y, R.w, R.h);
@@ -97,9 +106,9 @@ namespace Trzewia.Aplikacja
                 }
                 ctx.beginPath();
                 for (int i = 0; i <= 60; i++) { var sx = R.x + (R.w * i) / 60; var y = krawedz(sx); if (i == 0) ctx.moveTo(sx, y); else ctx.lineTo(sx, y); }
-                ctx.lineTo(R.x + R.w, yG); ctx.lineTo(R.x, yG); ctx.closePath();
+                ctx.lineTo(R.x + R.w, yH); ctx.lineTo(R.x, yH); ctx.closePath();
                 var yS = v.Y(wy);
-                var sg = ctx.createLinearGradient(0, yS, 0, yG);
+                var sg = ctx.createLinearGradient(0, yS, 0, yH);
                 sg.addColorStop(0, Barwa.Rgba(kg.r, kg.g, kg.b)); sg.addColorStop(0.55, Barwa.Rgba(ji(kg.r * 1.15), kg.g, kg.b));
                 sg.addColorStop(1, Barwa.Rgba(ji(kd.r * L), ji(kd.g * L), ji(kd.b * L)));
                 ctx.fillStyle = sg; ctx.fill();
@@ -142,10 +151,10 @@ namespace Trzewia.Aplikacja
             var lg = ctx.createRadialGradient(R.x + R.w / 2, yG + v.k.s, 0, R.x + R.w / 2, yG + v.k.s, RR);
             lg.addColorStop(0, Barwa.Rgba(ji(150 * L), ji(44 * L), 14, 0.3)); lg.addColorStop(1, "rgba(60,14,6,0)");
             ctx.fillStyle = lg; ctx.fillRect(R.x, yG - RR, R.w, RR + v.k.s);
-            if (b > 0.01) { ctx.fillStyle = Barwa.Rgba(80, 90, 120, 0.45 * b); ctx.fillRect(R.x, R.y, R.w, yG - R.y); }
+            if (b > 0.01) { ctx.fillStyle = Barwa.Rgba(80, 90, 120, 0.45 * b); ctx.fillRect(R.x, R.y, R.w, yH - R.y); }
             ctx.restore();
             // burzowy strop: kłęby z krwawym spodem, płyną
-            var Hs = Math.Max(40, yG - R.y);
+            var Hs = Math.Max(40, yH - R.y);
             Pieklo.pasChmur(ctx, R.x + R.w, R.y - Hs * 0.22, R.y + Hs * 0.42, t * 9 + v.k.x * v.k.s * 0.3, 1.2, 1);
             Pieklo.pasChmur(ctx, R.x + R.w, R.y + Hs * 0.12, R.y + Hs * 0.55, t * 17 + v.k.x * v.k.s * 0.5 + 300, 0.8, 0.45);
             if (b > 0.01)
@@ -155,11 +164,22 @@ namespace Trzewia.Aplikacja
                 ctx.restore();
                 if (b > 0.35) Pieklo.piorun(ctx, R.x + R.w * (0.25 + 0.5 * los(Math.Floor(t * 2))), R.y + Hs * 0.3, v.Y(-2.6), Math.Min(1, b), Math.Floor(t * 2), Math.Max(1.5, v.k.s * 0.03));
             }
-            Pieklo.iskry(ctx, R.x, R.x + R.w, yG - v.k.s * 4, yG, (int)Math.Floor(R.w / 40 + 0.5), t, 5);
-            // grunt — cuchnące błoto, w kałużach łuna
-            var gg = ctx.createLinearGradient(0, yG, 0, R.y + R.h);
-            gg.addColorStop(0, "rgb(46,34,26)"); gg.addColorStop(1, "rgb(24,18,14)");
-            ctx.fillStyle = gg; ctx.fillRect(R.x, yG, R.w, R.y + R.h - yG);
+            Pieklo.iskry(ctx, R.x, R.x + R.w, yH - v.k.s * 4, yH, (int)Math.Floor(R.w / 40 + 0.5), t, 5);
+            // grunt — cuchnące błoto od horyzontu (dalej: zamglone, w łunie) po przód kadru, w kałużach łuna
+            var dol = R.y + R.h;
+            var gg = ctx.createLinearGradient(0, yH, 0, dol);
+            var naStopach = Math.Max(0.01, Math.Min(0.99, (yG - yH) / Math.Max(1, dol - yH)));
+            gg.addColorStop(0, Barwa.Rgba(ji(70 * L), ji(38 * L), ji(26 * L))); gg.addColorStop(naStopach, "rgb(46,34,26)"); gg.addColorStop(1, "rgb(24,18,14)");
+            ctx.fillStyle = gg; ctx.fillRect(R.x, yH, R.w, dol - yH);
+            ctx.strokeStyle = Barwa.Rgba(ji(170 * L), ji(70 * L), 40, 0.22); ctx.lineWidth = Math.Max(1, v.k.s * 0.012);
+            ctx.beginPath(); ctx.moveTo(R.x, yH); ctx.lineTo(R.x + R.w, yH); ctx.stroke();
+            // dalsze kałuże — cieńsze, bliżej horyzontu
+            for (int i = 0; i < 14; i++)
+            {
+                double x = v.X(-40 + los(i * 11 + 2) * 80), y = v.Y(-HORYZONT * (0.15 + 0.8 * los(i * 5 + 1)));
+                ctx.fillStyle = Barwa.Rgba(ji(130 * L + 120 * b), ji(44 * L + 120 * b), ji(26 + 140 * b), 0.35);
+                ctx.beginPath(); ctx.ellipse(x, y, v.k.s * (0.3 + los(i + 4) * 0.8), v.k.s * 0.025, 0, 0, Math.PI * 2); ctx.fill();
+            }
             for (int i = 0; i < 26; i++)
             {
                 double x = v.X(-40 + los(i * 7) * 80), y = v.Y(0.15 + los(i * 3) * 2.5);
@@ -201,11 +221,13 @@ namespace Trzewia.Aplikacja
             ctx.restore();
         }
 
-        /// <summary>Żarłok w świecie filmu: biodro na wysokości zależnej od pozy, `zwrot`.</summary>
-        static void zarlok(IPlotno ctx, Widok v, double wx, PozaLudzika p, double zwrot = 1, double skala = 1, double? wyBiodra = null)
+        /// <summary>Żarłok w świecie filmu: biodro na wysokości zależnej od pozy, `zwrot`. Zwraca punkty ciała w pikselach ekranu.</summary>
+        static PunktyLudzika zarlok(IPlotno ctx, Widok v, double wx, PozaLudzika p, double zwrot = 1, double skala = 1, double? wyBiodra = null)
         {
             var lezy = Math.Abs(p.tulow) > 1.1;
-            var hb = wyBiodra ?? (lezy ? 0.08 : p.udoL > 1 ? 0.25 : 0.5);
+            // (oprawa, etap 7c: stoi, klęczy, siedzi — biodro tak wysoko, by najniższa stopa albo kolano dotykały ziemi;
+            // dawniej wysokość „na oko” i część postaci wisiała nad błotem)
+            var hb = wyBiodra ?? (lezy ? 0.08 : Ludzik.punkty(1, p).Dno);
             // cień i muł pod ciałem — ciało leży w błocie, nie wisi nad nim
             if (hb < 0.35)
             {
@@ -217,30 +239,41 @@ namespace Trzewia.Aplikacja
                 ctx.fillStyle = gc; ctx.beginPath(); ctx.arc(sx, sy, rc, 0, Math.PI * 2); ctx.fill();
                 ctx.restore();
             }
+            double ox = v.X(wx), oy = v.Y(-hb * skala);
             ctx.save();
-            ctx.translate(v.X(wx), v.Y(-hb * skala));
+            ctx.translate(ox, oy);
             ctx.scale(zwrot, 1);
-            Ludzik.rysujLudzika(ctx, v.k.s * skala, p);
+            var pk = Ludzik.rysujLudzika(ctx, v.k.s * skala, p);
             ctx.restore();
             // leżący tkwi w błocie: grzbiet mułu przed ciałem zakrywa dół (brzuch, uda, łydki)
             if (lezy || hb < 0.3) blotoPrzed(ctx, v, wx - zwrot * 0.6 * skala, wx + zwrot * 0.62 * skala, skala, wx * 7.3);
+            (double x, double y) E((double x, double y) q) => (ox + zwrot * q.x, oy + q.y);
+            return new PunktyLudzika
+            {
+                glowa = E(pk.glowa), kark = E(pk.kark), dlonL = E(pk.dlonL), dlonP = E(pk.dlonP),
+                stopaL = E(pk.stopaL), stopaP = E(pk.stopaP), kolL = E(pk.kolL), kolP = E(pk.kolP), pas = E(pk.pas),
+            };
         }
 
-        /// <summary>Grzbiet mułu od x0 do x1 (jednostki świata) tuż przy gruncie: nierówny brzeg, mokre odblaski.</summary>
+        /// <summary>
+        /// Grzbiet mułu od x0 do x1 (jednostki świata) tuż przy gruncie: garb w barwie błota, który z boków schodzi do ziemi
+        /// i ku dołowi wtapia się w grunt; mokre odblaski. (Oprawa, etap 7c: dawniej prostokąt w innej barwie niż grunt — na
+        /// dalszych rzędach tłumu wyglądał jak kamienna płyta pod ciałem.)
+        /// </summary>
         static void blotoPrzed(IPlotno ctx, Widok v, double x0, double x1, double skala, double ziarno)
         {
             double a = Math.Min(x0, x1) - 0.1 * skala, b = Math.Max(x0, x1) + 0.1 * skala;
-            double yT = v.Y(-0.015 * skala), yD = v.Y(0.3 * skala);
+            double yT = v.Y(-0.07 * skala), yD = v.Y(0.24 * skala);
             ctx.save();
             var g = ctx.createLinearGradient(0, yT, 0, yD);
-            g.addColorStop(0, "rgb(50,46,34)"); g.addColorStop(1, "rgb(38,35,26)");
+            g.addColorStop(0, "rgba(60,45,33,1)"); g.addColorStop(0.3, "rgba(46,34,26,1)"); g.addColorStop(1, "rgba(46,34,26,0)");
             ctx.fillStyle = g;
             ctx.beginPath(); ctx.moveTo(v.X(a), yD);
             const int n = 18;
             for (int i = 0; i <= n; i++)
             {
                 double u = (double)i / n, x = v.X(a + (b - a) * u);
-                var brzeg = Math.Sin(u * Math.PI) * 0.035 * skala + (los(ziarno * 13 + i) - 0.5) * 0.03 * skala;
+                var brzeg = Math.Pow(Math.Sin(u * Math.PI), 0.6) * (0.05 + 0.025 * los(ziarno * 13 + i)) * skala;
                 ctx.lineTo(x, v.Y(-brzeg));
             }
             ctx.lineTo(v.X(b), yD); ctx.closePath(); ctx.fill();
@@ -286,7 +319,7 @@ namespace Trzewia.Aplikacja
         static void zarlokNaWarstwie(IPlotno ctx, Widok v, double x, PozaLudzika p, double zwrot, double sk, int warstwa)
         {
             ctx.save();
-            ctx.translate(0, -warstwa * v.k.s * 0.35);
+            ctx.translate(0, -warstwa * v.k.s * RZAD_TLUMU);
             zarlok(ctx, v, x, p, zwrot, sk);
             ctx.restore();
         }
@@ -323,6 +356,33 @@ namespace Trzewia.Aplikacja
             {
                 var f = ((czas / 700) + i * 0.27) % 1;
                 ctx.beginPath(); ctx.ellipse(m.x + (i - 1.5) * s * 0.05, m.y + f * s * 1.2, s * 0.018, s * 0.035, 0, 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        /// <summary>Oprawa (etap 7c): bryzg błota z paszczy, która kłapnęła na grudzie (`k` 0…1 od chwili kłapnięcia).</summary>
+        static void bryzgBlota(IPlotno ctx, double x, double y, double s, double k, int ziarno)
+        {
+            ctx.save();
+            for (int i = 0; i < 16; i++)
+            {
+                var a = -Math.PI * (0.1 + 0.8 * los(ziarno * 41 + i)) + (los(ziarno * 7 + i * 3) - 0.5) * 0.6;
+                var v0 = s * (0.6 + 1.2 * los(ziarno * 13 + i));
+                double px = x + Math.Cos(a) * v0 * k, py = y + Math.Sin(a) * v0 * k + k * k * s * 1.4;
+                ctx.fillStyle = Barwa.Rgba(58 + 20 * los(i), 44, 30, 0.9 * (1 - k));
+                ctx.beginPath(); ctx.arc(px, py, Math.Max(1, s * (0.02 + 0.025 * los(i * 5 + ziarno)) * (1 - 0.5 * k)), 0, Math.PI * 2); ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        /// <summary>Oprawa (etap 7c): błoto cieknie z paszczy, która żre.</summary>
+        static void kapieBloto(IPlotno ctx, (double x, double y) m, double s, double czas, int ziarno)
+        {
+            ctx.save(); ctx.fillStyle = "rgb(56,42,28)";
+            for (int i = 0; i < 3; i++)
+            {
+                var f = ((czas / 650) + i * 0.33 + ziarno * 0.17) % 1;
+                ctx.beginPath(); ctx.ellipse(m.x + (i - 1) * s * 0.05, m.y + f * s * 1.0, s * 0.02, s * 0.04, 0, 0, Math.PI * 2); ctx.fill();
             }
             ctx.restore();
         }
@@ -504,12 +564,75 @@ namespace Trzewia.Aplikacja
 
         static readonly Dictionary<string, Creature> atrapy = new Dictionary<string, Creature>();
 
-        static void postacGry(IPlotno ctx, Sim sim, string rola, string klucz, double x, double y, double h, double czas, string cz, double zwrot = 1, double wstaje = 1)
+        static Creature atrapa(string rola, string klucz)
         {
             if (!atrapy.TryGetValue(klucz, out var c))
             {
                 c = Stworzenia.makeCreature(Race.GOBLIN, -1, 0, 0, 300000 + atrapy.Count); c.rola = rola; atrapy[klucz] = c;
             }
+            return c;
+        }
+
+        /// <summary>
+        /// Oprawa (etap 7c): postać gry wstaje z błota klatkami swojego arkusza — dawniej obracała się z leżenia do pionu
+        /// jak deska, w linii prostej. Rycerz: leży, podnosi się, siada, klęka i wstaje z mieczem w górze (ruch
+        /// „powalony-wstaje” z gry); grabarz: leży, podnosi się na czworaki, kuca, staje; mnich: leży, podnosi się na
+        /// czworaki i klęka do modlitwy. Stopy w (x, y), wzrost `h`, `lt` — sekundy ujęcia. Między fazami krótkie przenikanie.
+        /// </summary>
+        static void postacWstaje(IPlotno ctx, string rola, string klucz, double x, double y, double h, double lt, double czas)
+        {
+            var c = atrapa(rola, klucz);
+            var d = Duszek.Daj(DuszkiLudu.nazwaDuszka(c, rola));
+            if (d == null) return;
+            (string a, double u0, double u1, double t0, double t1)[] fazy = rola switch
+            {
+                "rycerz" => new[] { ("powalony-lezy", 0.0, 0.0, 0.0, 0.9), ("powalony-wstaje", 0.0, 1.0, 0.9, 2.7), ("powalony-wstaje", 1.0, 1.0, 2.7, 99.0) },
+                "robotnik" => new[] { ("spi", 0.0, 0.0, 0.0, 0.8), ("czolga", 0.0, 0.35, 0.8, 1.6), ("kuca-stoi", 0.0, 0.0, 1.6, 2.2), ("stoi", 0.0, 0.0, 2.2, 99.0) },
+                _ => new[] { ("spi", 0.0, 0.0, 0.0, 0.8), ("czolga", 0.0, 0.35, 0.8, 1.5), ("modli", 0.0, 0.0, 1.5, 99.0) },
+            };
+            int klatka((string a, double u0, double u1, double t0, double t1) f, double t)
+            {
+                var an = d.Animacja(f.a) ?? d.Animacja("stoi");
+                if (an == null) return 0;
+                if (f.u0 == f.u1 && f.a != "powalony-wstaje") return an.KlatkaZegara(czas, c.id);
+                return an.Klatka(mix(f.u0, f.u1, Math.Max(0, Math.Min(1, (t - f.t0) / Math.Max(0.01, f.t1 - f.t0)))));
+            }
+            var hh = h * (rola == "rycerz" ? 1.15 : 1);
+            int nr = 0;
+            while (nr + 1 < fazy.Length && lt >= fazy[nr + 1].t0) nr++;
+            const double PRZEJSCIE = 0.12;
+            var w = nr > 0 ? Math.Min(1, (lt - fazy[nr].t0) / PRZEJSCIE) : 1;
+            // klatka „spi” leży w arkuszu na lewo od stóp — przesunięta tak, by ciało leżało tam, gdzie zaraz się podniesie
+            double przes(string a) => a == "spi" ? hh * 0.45 : 0;
+            void rysuj((string a, double u0, double u1, double t0, double t1) f, double t)
+            {
+                ctx.save(); ctx.translate(przes(f.a), 0); d.Rysuj(ctx, klatka(f, t), hh, true, null); ctx.restore();
+            }
+            ctx.save();
+            ctx.translate(x, y);
+            if (w < 1)
+            {
+                ctx.globalAlpha = 1 - w; rysuj(fazy[nr - 1], fazy[nr - 1].t1);
+                ctx.globalAlpha = w;
+            }
+            rysuj(fazy[nr], lt);
+            ctx.restore();
+            // błoto spływa z ciała, gdy się podnosi
+            if (lt > 0.7 && lt < 2.8)
+            {
+                ctx.save(); ctx.fillStyle = "rgba(52,40,28,0.85)";
+                for (int i = 0; i < 5; i++)
+                {
+                    var f = ((lt - 0.7) * 1.6 + i * 0.21) % 1;
+                    ctx.beginPath(); ctx.ellipse(x + (los(i * 7 + 3) - 0.5) * h * 0.5, y - h * (0.45 - 0.45 * f) - h * 0.05, h * 0.012, h * 0.026, 0, 0, Math.PI * 2); ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        static void postacGry(IPlotno ctx, Sim sim, string rola, string klucz, double x, double y, double h, double czas, string cz, double zwrot = 1, double wstaje = 1)
+        {
+            var c = atrapa(rola, klucz);
             ctx.save();
             ctx.translate(x, y);
             ctx.scale(zwrot, 1);
@@ -562,44 +685,11 @@ namespace Trzewia.Aplikacja
                 napis(ctx, R, "Piekło. Krąg trzeci — krąg żarłoków.", t - 1.2, true, r);
                 napis(ctx, R, "Pada tu wieczny deszcz, zimny i ciężki. Nie ustaje nigdy.", t - 3.8, false, r);
             } },
-            // 2. Bójka o ochłap
-            new Pozycja { od = 7, @do = 13, rysuj = (ctx, R, t, czas, _, r) =>
-            {
-                var k = kamera(t, new[] { new[] { 0, -6, -0.7, R.h / 3.2 }, new[] { 6, -6.3, -0.6, R.h / 2.7 } });
-                var v = new Widok(R, k, 0, czas);
-                tlo(ctx, v); tlum(ctx, v, t + 7, -9, -3);
-                // ochłap (kość z mięsem) — szarpany między dwoma
-                var ciag = Math.Sin(t * 5) * 0.12;
-                double bx = v.X(-6.1 + ciag), by = v.Y(-0.42);
-                zarlok(ctx, v, -6.75, Ludzik.pozaSzarpie(t, 0), 1, 1, 0.3);
-                zarlok(ctx, v, -5.45, z(Ludzik.pozaSzarpie(t + 0.5, 2), krew: t > 3 ? 0.4 : 0), -1, 1, 0.3);
-                ctx.save(); ctx.translate(bx, by); ctx.rotate(0.3 + ciag);
-                ctx.strokeStyle = "rgb(222,212,186)"; ctx.lineWidth = v.k.s * 0.05; ctx.lineCap = "round";
-                ctx.beginPath(); ctx.moveTo(-v.k.s * 0.18, 0); ctx.lineTo(v.k.s * 0.18, 0); ctx.stroke();
-                ctx.fillStyle = "rgb(130,40,34)"; ctx.beginPath(); ctx.ellipse(0, 0, v.k.s * 0.1, v.k.s * 0.06, 0, 0, Math.PI * 2); ctx.fill();
-                ctx.restore();
-                if (t > 3) Ludzik.bryzgKrwi(ctx, v.X(-5.4), v.Y(-0.75), v.k.s, (t - 3) / 0.8, -0.5, 0.5, 3);
-                deszcz(ctx, R, czas, 1);
-                napis(ctx, R, "Leżą tu ci, którzy za życia służyli brzuchowi. Nawet tutaj biją się o ochłap.", t - 0.6, true, r);
-            } },
-            // 3. Ziemia drży; za wzgórzem trzy łby
-            new Pozycja { od = 13, @do = 17, rysuj = (ctx, R, t, czas, _, r) =>
-            {
-                var k = kamera(t, new[] { new[] { 0, 6, -1.6, R.h / 9 }, new[] { 4, 7, -1.8, R.h / 8 } });
-                var v = new Widok(R, k, t > 0.5 ? 1.2 : 0, czas);
-                tlo(ctx, v);
-                // trzy łby nad wzgórzem
-                var wy = mix(1.2, -0.6, zakres(t, 0.6, 2.6));
-                var p = pc.Zeruj(); p.czas = czas;
-                foreach (var g in p.glowy) { g.pochyl = -0.2; g.paszcza = 0.3 + 0.6 * dzwon(t, 2.2, 3.9); }
-                cerber(ctx, v, 13, p, -1, wy + 2.4);
-                // wzgórze przed nim
-                ctx.fillStyle = "rgb(46,44,34)";
-                ctx.beginPath(); ctx.moveTo(v.X(5), v.Y(0)); ctx.quadraticCurveTo(v.X(12), v.Y(-1.6), v.X(20), v.Y(0)); ctx.closePath(); ctx.fill();
-                // żarłocy unoszą głowy
-                tlum(ctx, v, t + 13);
-                deszcz(ctx, R, czas, 1.2);
-            } },
+            // 2. Bójka o ochłap (oprawa, etap 7c: trzymają go w rękach — dawniej kość wisiała w powietrzu przed nimi)
+            new Pozycja { od = 7, @do = 13, rysuj = ujecieBojki },
+            // 3. Ziemia drży; za wzgórzem trzy łby (oprawa, etap 7c: wzgórze zasłania psa — dawniej jego tułów wychodził
+            // pod linię gruntu, na przód kadru, jakby szedł pod planszą filmu)
+            new Pozycja { od = 13, @do = 17, rysuj = ujecieWzgorza },
             // 4. Cerber wpada w tłum: patroszy, rozrywa na pół, miażdży i połyka, odrywa rękę
             new Pozycja { od = 17, @do = 27, rysuj = ujecieRzezi },
             // 5. Dwóch wędrowców; Cerber ryczy na nich
@@ -655,21 +745,61 @@ namespace Trzewia.Aplikacja
                 }
                 else
                 {
-                    // rzut w trzy rozwarte gardła — od dołu, pies nad kamerą
-                    var v = new Widok(R, new Kam(1.4, -1.9, R.h / 4.0), dzwon(lt, 0.6, 1.6) * 0.7, czas);
+                    // rzut w trzy rozwarte gardła — od dołu, pies nad kamerą. (Oprawa, etap 7c: trzy duże grudy błota lecą
+                    // łukiem, każdy łeb łapie swoją w locie, kłapie, przełyka i opuszcza łeb, żeby żreć — dawniej kilka
+                    // drobnych kropek, których nie było widać, a pies stał z otwartymi paszczami bez ruchu.)
+                    double[] trafia = { 0.95, 1.08, 1.2 };
+                    var wstrzas = 0.0;
+                    foreach (var tt in trafia) wstrzas = Math.Max(wstrzas, dzwon(lt, tt - 0.02, tt + 0.3) * 0.9);
+                    var v = new Widok(R, new Kam(1.4, -1.9, R.h / 4.0), wstrzas, czas);
                     tlo(ctx, v);
                     var p = pc.Zeruj(); p.czas = czas; p.krew = 1;
-                    for (int i = 0; i < 3; i++) { var g2 = p.glowy[i]; g2.pochyl = -0.25 + 0.08 * i; g2.paszcza = 1; g2.wysun = 0.3; }
-                    var m = cerber(ctx, v, 2.6, p, -1);
-                    foreach (var q in m) kapie(ctx, q, v.k.s, czas, 1.5);
-                    var f = zakres(lt, 0.3, 1.3);
-                    for (int i = 0; i < 16; i++)
+                    for (int i = 0; i < 3; i++)
                     {
-                        var ff = Math.Max(0, Math.Min(1, f * 1.3 - (i % 4) * 0.08));
-                        if (ff <= 0 || ff >= 1) continue;
-                        var cel = m[i % 3];
-                        double x = mix(R.x - R.w * 0.05, cel.x, ff), y = mix(R.y + R.h * 0.95, cel.y, ff) - Math.Sin(ff * Math.PI) * R.h * 0.2;
-                        ctx.fillStyle = "rgb(48,38,26)"; ctx.beginPath(); ctx.arc(x + (los(i) - 0.5) * 24, y, R.h * (0.012 + 0.01 * los(i * 3)), 0, Math.PI * 2); ctx.fill();
+                        var g2 = p.glowy[i]; var tt = trafia[i];
+                        var lap = dzwon(lt, tt - 0.28, tt + 0.12);
+                        var zamyka = zakres(lt, tt - 0.04, tt + 0.04);
+                        var zre = zakres(lt, tt + 0.45, tt + 0.95);
+                        g2.pochyl = (-0.25 + 0.08 * i) * (1 - zre) + (0.45 + 0.1 * i) * zre - 0.35 * dzwon(lt, tt + 0.05, tt + 0.45);
+                        g2.paszcza = mix(1, 0.08, zamyka) + zre * 0.3 * Math.Abs(Math.Sin(czas / 130 + i * 1.7));
+                        g2.wysun = 0.3 + 0.55 * lap;
+                        g2.smuga = 0.7 * dzwon(lt, tt - 0.12, tt + 0.03);
+                    }
+                    var m = cerber(ctx, v, 2.6, p, -1);
+                    var s = v.k.s;
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var d = lt - trafia[i];
+                        if (d > 0 && d < 0.7) bryzgBlota(ctx, m[i].x, m[i].y, s, d / 0.7, i);
+                        if (d > 0.25) kapieBloto(ctx, m[i], s, czas, i);
+                    }
+                    // grudy: z dołu po lewej (stamtąd rzuca przewodnik), łukiem, każda w swoją paszczę
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var tt = trafia[i]; const double LOT = 0.75;
+                        var f = (lt - (tt - LOT)) / LOT;
+                        if (f <= 0 || f >= 1) continue;
+                        double x0 = R.x - R.w * 0.04, y0 = R.y + R.h * (0.86 + 0.04 * i);
+                        (double x, double y) pkt(double ff) => (mix(x0, m[i].x, ff), mix(y0, m[i].y, ff) - Math.Sin(ff * Math.PI) * R.h * (0.2 + 0.04 * i));
+                        // ślad: okruchy i krople za grudą
+                        for (int kk = 1; kk <= 7; kk++)
+                        {
+                            var ff = f - kk * 0.03; if (ff <= 0) break;
+                            var q = pkt(ff);
+                            ctx.fillStyle = Barwa.Rgba(58, 44, 30, 0.7 * (1 - kk / 8.0));
+                            ctx.beginPath(); ctx.arc(q.x + (los(i * 31 + kk) - 0.5) * s * 0.1, q.y + (los(i * 17 + kk) - 0.5) * s * 0.1, s * (0.035 - kk * 0.003), 0, Math.PI * 2); ctx.fill();
+                        }
+                        var gq = pkt(f);
+                        var rr = R.h * 0.042;
+                        ctx.save(); ctx.translate(gq.x, gq.y); ctx.rotate(lt * 7 + i);
+                        ctx.fillStyle = "rgb(50,38,26)";
+                        ctx.beginPath(); ctx.ellipse(0, 0, rr * 1.15, rr * 0.85, 0, 0, Math.PI * 2); ctx.fill();
+                        ctx.fillStyle = "rgb(40,30,20)";
+                        ctx.beginPath(); ctx.ellipse(rr * 0.4, rr * 0.2, rr * 0.5, rr * 0.4, 0.4, 0, Math.PI * 2); ctx.fill();
+                        ctx.restore();
+                        // światło łuny na wierzchu grudy — widać ją na tle nieba
+                        ctx.strokeStyle = "rgba(200,96,54,0.6)"; ctx.lineWidth = Math.Max(1.5, rr * 0.25);
+                        ctx.beginPath(); ctx.arc(gq.x, gq.y, rr * 0.95, Math.PI * 1.1, Math.PI * 1.85); ctx.stroke();
                     }
                     deszcz(ctx, R, czas, 0.9);
                 }
@@ -735,19 +865,10 @@ namespace Trzewia.Aplikacja
                 var v = new Widok(R, new Kam(0.1 + lt * 0.05, -0.85, (R.h / 2.7) * (1 + lt * 0.025)), 0, czas);
                 tlo(ctx, v);
                 for (int j = 0; j < 4; j++) zarlok(ctx, v, -2.4 + j * 1.6 + (j > 1 ? 0.9 : 0), Ludzik.pozaLezy(t + j, j + i), j % 2 != 0 ? 1 : -1, 0.85);
-                var wst = zakres(lt, 0.5, 2.0);
-                if (i == 0)
-                {
-                    // łopata tkwi w błocie; grabarz chwyta ją i wyciąga
-                    var wyc = zakres(lt, 1.6, 2.6);
-                    lopata(ctx, v.X(0.45), v.Y(-0.3 - wyc * 0.4), v.k.s, 0.25 - wyc * 0.2);
-                }
-                if (i == 2)
-                {
-                    var wyc = zakres(lt, 1.8, 2.8);
-                    miecz(ctx, v.X(0.5), v.Y(0.15 - wyc * 0.9), v.k.s, 0.15 - wyc * 0.3);
-                }
-                postacGry(ctx, sim, role[i], "film" + i, v.X(-0.1), v.Y(0), v.k.s * 1.0, czas + i * 300, i == 1 && lt > 2.2 ? "modli" : "stoi", 1, wst);
+                // (oprawa, etap 7c: łopata tkwi w błocie obok grabarza — dawniej sama unosiła się w powietrze; osobny miecz
+                // wyjeżdżający z błota zniknął — rycerz wstaje z własnym mieczem w ręku)
+                if (i == 0) lopata(ctx, v.X(0.55), v.Y(-0.3), v.k.s, 0.25);
+                postacWstaje(ctx, role[i], "film" + i, v.X(-0.1), v.Y(0), v.k.s * 1.0, lt, czas + i * 300);
                 deszcz(ctx, R, czas, 0.8);
                 if (i == 1) kwestia(ctx, R, "Pater noster, qui es in caelis…", (lt - 2.2) * 2, r, 3.3 - lt);
                 napis(ctx, R, opisy[i], (lt - 0.7) * 2, true, r, 3.3 - lt);
@@ -815,9 +936,210 @@ namespace Trzewia.Aplikacja
             } },
         };
 
-        static readonly double[] UDERZENIA = { 0.9, 1.6, 4.6, 6.9, 7.6 };
+        // ---------------------------------------------------------------- oprawa, etap 7c: bójka o ochłap, wzgórze
 
-        /// <summary>Ujęcie 4: Cerber wpada w tłum — patroszy, rozrywa na pół, miażdży i połyka, odrywa rękę.</summary>
+        /// <summary>Poza pośrodku między a i b (kąty liniowo; części ciała, krew i błoto — z bliższej).</summary>
+        static PozaLudzika mieszaj(PozaLudzika a, PozaLudzika b, double k)
+        {
+            double m(double x, double y) => x + (y - x) * k;
+            var p = k < 0.5 ? a : b;
+            p.tulow = m(a.tulow, b.tulow); p.glowa = m(a.glowa, b.glowa);
+            p.ramieL = m(a.ramieL, b.ramieL); p.lokiecL = m(a.lokiecL, b.lokiecL); p.ramieP = m(a.ramieP, b.ramieP); p.lokiecP = m(a.lokiecP, b.lokiecP);
+            p.udoL = m(a.udoL, b.udoL); p.kolanoL = m(a.kolanoL, b.kolanoL); p.udoP = m(a.udoP, b.udoP); p.kolanoP = m(a.kolanoP, b.kolanoP);
+            p.usta = m(a.usta, b.usta); p.brzuch = m(a.brzuch, b.brzuch); p.bloto = m(a.bloto, b.bloto); p.krew = m(a.krew, b.krew);
+            return p;
+        }
+
+        /// <summary>
+        /// Szarpie się o ochłap: trzyma go oburącz przed sobą na wysokości piersi, bliższą nogą zaparty z przodu;
+        /// `ciagnie` 1 — ciągnie, odchylony w tył; −1 — ciągnięty, pochylony naprzód.
+        /// </summary>
+        static PozaLudzika pozaPrzeciaga(double ciagnie, double usta)
+        {
+            var p = Ludzik.pozaStoi();
+            p.tulow = -0.12 - 0.3 * ciagnie; p.glowa = 0.15 + 0.15 * ciagnie;
+            p.ramieL = 1.4 + 0.12 * ciagnie; p.lokiecL = 0.2; p.ramieP = 1.5 + 0.12 * ciagnie; p.lokiecP = 0.12;
+            p.udoP = 0.5 + 0.15 * ciagnie; p.kolanoP = 0.45;
+            p.udoL = -0.35 - 0.1 * ciagnie; p.kolanoL = 0.2;
+            p.usta = usta; p.bloto = 1; p.brzuch = 0.8;
+            return p;
+        }
+
+        /// <summary>Siedzi w błocie, przyciska pogryzioną rękę do piersi i wrzeszczy; drugą ręką podpiera się z tyłu.</summary>
+        static PozaLudzika pozaSiedziTrzymaReke(double t)
+        {
+            var p = Ludzik.pozaStoi();
+            p.tulow = -0.45 + 0.05 * Math.Sin(t * 7); p.glowa = -0.35;
+            p.ramieP = 0.6; p.lokiecP = 2.1; p.ramieL = -0.7; p.lokiecL = 0.15;
+            p.udoL = 1.75; p.kolanoL = 0.6; p.udoP = 1.6; p.kolanoP = 0.4;
+            p.usta = 0.9; p.bloto = 1; p.krew = 0.6;
+            return p;
+        }
+
+        /// <summary>Kość z mięsem między punktami a i b (piksele) — trzymana w dłoniach.</summary>
+        static void ochlap(IPlotno ctx, (double x, double y) a, (double x, double y) b, double s)
+        {
+            double dx = b.x - a.x, dy = b.y - a.y, L = Math.Sqrt(dx * dx + dy * dy);
+            ctx.save();
+            ctx.translate((a.x + b.x) / 2, (a.y + b.y) / 2); ctx.rotate(Math.Atan2(dy, dx));
+            var pol = L / 2 + s * 0.05;
+            ctx.strokeStyle = "rgb(214,204,178)"; ctx.lineWidth = s * 0.045; ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(-pol, 0); ctx.lineTo(pol, 0); ctx.stroke();
+            ctx.fillStyle = "rgb(222,212,188)";
+            foreach (var kx in new[] { -pol, pol })
+            {
+                ctx.beginPath(); ctx.arc(kx, -s * 0.022, s * 0.028, 0, Math.PI * 2); ctx.fill();
+                ctx.beginPath(); ctx.arc(kx, s * 0.022, s * 0.028, 0, Math.PI * 2); ctx.fill();
+            }
+            // mięso: postrzępiona bryła na środku kości, ciemniejszy spód, żyłki tłuszczu
+            ctx.fillStyle = "rgb(120,30,24)";
+            ctx.beginPath(); ctx.ellipse(0, s * 0.01, s * 0.12, s * 0.068, 0, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = "rgb(150,48,38)";
+            ctx.beginPath(); ctx.ellipse(-s * 0.02, -s * 0.012, s * 0.08, s * 0.04, -0.2, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "rgba(230,200,170,0.55)"; ctx.lineWidth = Math.Max(1, s * 0.008);
+            ctx.beginPath(); ctx.moveTo(-s * 0.07, s * 0.02); ctx.quadraticCurveTo(0, -s * 0.02, s * 0.08, s * 0.025); ctx.stroke();
+            ctx.restore();
+        }
+
+        /// <summary>
+        /// Ujęcie 2: dwóch żarłoków szarpie się o ochłap — oburącz, zaparci w błocie, raz jeden ciągnie, raz drugi. Prawy
+        /// rzuca się i gryzie lewego w ręce; lewy wrzeszczy, puszcza i pada na tyłek, przyciskając rękę; prawy odskakuje,
+        /// siada w błocie i żre.
+        /// </summary>
+        static void ujecieBojki(IPlotno ctx, Prost R, double t, double czas, Sim _, double r)
+        {
+            var k = kamera(t, new[] { new[] { 0, -6, -0.7, R.h / 3.2 }, new[] { 6, -6.3, -0.6, R.h / 2.7 } });
+            var v = new Widok(R, k, dzwon(t, 3.15, 3.7) * 0.6, czas);
+            tlo(ctx, v); tlum(ctx, v, t + 7, -9.2, -3);
+            const double DL = 0.42;
+            // kto ciągnie: + prawy, − lewy (nierówno, szarpnięciami)
+            var n = 0.65 * Math.Sin(t * 2.3) + 0.35 * Math.Sin(t * 5.9 + 1);
+            var gryz = zakres(t, 3.05, 3.35);
+            var puszcza = zakres(t, 3.5, 4.1);
+            var siada = zakres(t, 3.8, 4.6);
+            var pL = pozaPrzeciaga(-n * (1 - gryz) + 0.9 * gryz, 0.5 + 0.3 * Math.Abs(n));
+            var pR = pozaPrzeciaga(n * (1 - gryz) - gryz, 0.5 + 0.3 * Math.Abs(n));
+            var rzut = dzwon(t, 3.0, 3.6);
+            pR.glowa += 0.55 * rzut; pR.tulow += 0.35 * rzut;
+            if (t > 3.0) pR.usta = t < 3.25 ? 1 : 0.15;
+            if (t > 3.3) pL.usta = 1;
+            // gdzie stoją: dłonie na końcach kości (z póz szarpaniny — po puszczeniu już się nie przesuwają za kością)
+            var tz = Math.Min(t, 3.5);
+            var nz = 0.65 * Math.Sin(tz * 2.3) + 0.35 * Math.Sin(tz * 5.9 + 1);
+            var gz = zakres(tz, 3.05, 3.35);
+            var srodek = -6.1 + nz * 0.1 * (1 - gz);
+            var hL = Ludzik.punkty(1, t < 3.5 ? pL : pozaPrzeciaga(-nz * (1 - gz) + 0.9 * gz, 0.8));
+            var hR = Ludzik.punkty(1, t < 3.5 ? pR : pozaPrzeciaga(nz * (1 - gz) - gz, 0.8));
+            double xL = srodek - DL / 2 - (hL.dlonL.x + hL.dlonP.x) / 2, xR = srodek + DL / 2 + (hR.dlonL.x + hR.dlonP.x) / 2;
+            if (puszcza > 0)
+            {
+                pL = mieszaj(pL, pozaSiedziTrzymaReke(t), puszcza);
+                pR = mieszaj(pR, Ludzik.pozaZre(t), siada);
+                xL -= 0.35 * puszcza; xR += 0.55 * zakres(t, 3.5, 4.3);
+            }
+            var s = v.k.s;
+            var ptL = zarlok(ctx, v, xL, pL, 1, 1);
+            var ptR = zarlok(ctx, v, xR, pR, -1, 1);
+            if (puszcza < 0.5)
+            {
+                ochlap(ctx, ((ptL.dlonL.x + ptL.dlonP.x) / 2, (ptL.dlonL.y + ptL.dlonP.y) / 2),
+                            ((ptR.dlonL.x + ptR.dlonP.x) / 2, (ptR.dlonL.y + ptR.dlonP.y) / 2), s);
+            }
+            else
+            {
+                // w garści prawego, przy ustach
+                var d = ptR.dlonP;
+                ochlap(ctx, (d.x + s * 0.03, d.y + s * 0.16), (d.x - s * 0.02, d.y - s * 0.2), s);
+            }
+            // pogryziona ręka: bryzg, potem kapie
+            if (t > 3.25) Ludzik.bryzgKrwi(ctx, ptL.dlonP.x, ptL.dlonP.y, s * 0.8, (t - 3.25) / 0.7, -Math.PI * 0.75, 1.6, 5, v.Y(0));
+            if (t > 3.6) kapie(ctx, ptL.dlonP, s, czas, 0.8);
+            deszcz(ctx, R, czas, 1);
+            napis(ctx, R, "Leżą tu ci, którzy za życia służyli brzuchowi. Nawet tutaj biją się o ochłap.", t - 0.6, true, r);
+        }
+
+        /// <summary>Wysokość wzgórza w ujęciu 3 nad gruntem (jednostki świata) w miejscu x.</summary>
+        static double wzgorze(double x) => x <= 6 || x >= 20 ? 0 : 1.75 * Math.Pow(Math.Sin((x - 6) / 14 * Math.PI), 1.3) + (los(Math.Floor(x * 3)) - 0.5) * 0.05;
+
+        /// <summary>
+        /// Ujęcie 3: ziemia drży, za wzgórzem wyrastają trzy łby — pies wspina się po drugim stoku, widać tylko to, co
+        /// wystaje nad grzbiet; z grzbietu sypie się pył.
+        /// </summary>
+        static void ujecieWzgorza(IPlotno ctx, Prost R, double t, double czas, Sim _, double r)
+        {
+            var k = kamera(t, new[] { new[] { 0, 6, -1.6, R.h / 9 }, new[] { 4, 7, -1.8, R.h / 8 } });
+            var v = new Widok(R, k, t > 0.5 ? 1.2 : 0, czas);
+            tlo(ctx, v);
+            // Cerber za grzbietem: rysowany tylko nad linią wzgórza
+            var wy = mix(3.4, 0.2, zakres(t, 0.5, 3.2));
+            var p = pc.Zeruj(); p.czas = czas;
+            foreach (var g in p.glowy) { g.pochyl = -0.2; g.paszcza = 0.3 + 0.6 * dzwon(t, 2.2, 3.9); }
+            ctx.save();
+            ctx.beginPath(); ctx.moveTo(R.x, R.y); ctx.lineTo(R.x + R.w, R.y); ctx.lineTo(R.x + R.w, v.Y(0));
+            for (int i = 80; i >= 0; i--) { var x = 4 + 18 * i / 80.0; ctx.lineTo(v.X(x), v.Y(-wzgorze(x))); }
+            ctx.lineTo(R.x, v.Y(0)); ctx.closePath(); ctx.clip();
+            cerber(ctx, v, 13, p, -1, wy);
+            ctx.restore();
+            // wzgórze: garb błota od gruntu po grzbiet, od tyłu podświetlony łuną
+            var gw = ctx.createLinearGradient(0, v.Y(-1.8), 0, v.Y(0));
+            gw.addColorStop(0, "rgb(38,28,22)"); gw.addColorStop(1, "rgb(46,34,26)");
+            ctx.fillStyle = gw;
+            ctx.beginPath(); ctx.moveTo(v.X(5.5), v.Y(0.02));
+            for (int i = 0; i <= 80; i++) { var x = 5.5 + 15 * i / 80.0; ctx.lineTo(v.X(x), v.Y(-wzgorze(x))); }
+            ctx.lineTo(v.X(20.5), v.Y(0.02)); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = "rgba(170,70,40,0.35)"; ctx.lineWidth = Math.Max(1, v.k.s * 0.02);
+            ctx.beginPath();
+            for (int i = 0; i <= 80; i++) { var x = 6 + 14 * i / 80.0; var y = v.Y(-wzgorze(x)); if (i == 0) ctx.moveTo(v.X(x), y); else ctx.lineTo(v.X(x), y); }
+            ctx.stroke();
+            // pył i grudy osypują się z grzbietu, gdzie pies się wspina
+            if (t > 1.2)
+            {
+                ctx.fillStyle = "rgba(70,56,44,0.55)";
+                for (int i = 0; i < 14; i++)
+                {
+                    var f = ((t - 1.2) * 0.7 + los(i * 7)) % 1;
+                    var x = 12.2 + (los(i * 3) - 0.5) * 2.4 + f * (los(i * 5) - 0.5) * 1.2;
+                    var y = -wzgorze(x) + f * f * 1.4;
+                    ctx.beginPath(); ctx.arc(v.X(x), v.Y(y), v.k.s * (0.03 + 0.04 * los(i)), 0, Math.PI * 2); ctx.fill();
+                }
+            }
+            tlum(ctx, v, t + 13);
+            deszcz(ctx, R, czas, 1.2);
+        }
+
+        static readonly double[] UDERZENIA = { 1.35, 2.1, 4.6, 6.9, 7.6 };
+
+        /// <summary>Szarpnięcia łbem: `cykle` drgań z częstotliwością `hz` od chwili t0, gasnące od siły `amp` (rad) do zera.</summary>
+        static double szarp(double t, double t0, double cykle, double hz, double amp)
+        {
+            var d = t - t0; var T = cykle / hz;
+            if (d <= 0 || d >= T) return 0;
+            return amp * Math.Sin(2 * Math.PI * hz * d) * (1 - d / T);
+        }
+
+        /// <summary>
+        /// Ofiara między ziemią a paszczą: `f` 0 — biodro w punkcie `ziemia` (piksele), poza `a`, kąt `kat0`; `f` 1 — biodro
+        /// przy paszczy (jak trzymane w zębach), poza `b`, kąt `kat1`. W drodze ciało leci łukiem, poza i kąt płynnie.
+        /// (Oprawa, etap 7c: dawniej ofiara przeskakiwała z ziemi do paszczy i z paszczy do paszczy z klatki na klatkę.)
+        /// </summary>
+        static void podnoszona(IPlotno ctx, Widok v, (double x, double y) ziemia, (double x, double y) paszcza, PozaLudzika a, PozaLudzika b,
+                               double kat0, double kat1, double f, double zwrot = 1, double skala = 1)
+        {
+            var p = mieszaj(a, b, f);
+            double x = mix(ziemia.x, paszcza.x, f), y = mix(ziemia.y, paszcza.y, f) - Math.Sin(f * Math.PI) * v.k.s * 0.12;
+            ctx.save();
+            ctx.translate(x, y); ctx.rotate(mix(kat0, kat1, f));
+            ctx.translate(-v.k.s * 0.17 * skala * f, v.k.s * 0.02 * f);
+            ctx.scale(zwrot, 1);
+            Ludzik.rysujLudzika(ctx, v.k.s * skala, p);
+            ctx.restore();
+        }
+
+        /// <summary>
+        /// Ujęcie 4: Cerber wpada w tłum — patroszy, rozrywa na pół, miażdży i połyka, odrywa rękę. (Oprawa, etap 7c: każda
+        /// ofiara trafia do paszczy i z niej wypada ruchem — nie przeskokiem; łeb trzęsie ofiarą kilkoma gasnącymi
+        /// szarpnięciami, a nie drga bez przerwy.)
+        /// </summary>
         static void ujecieRzezi(IPlotno ctx, Prost R, double t, double czas, Sim _, double r)
         {
             // pozycja Cerbera: wbiega z prawej i staje nad ofiarami
@@ -839,107 +1161,158 @@ namespace Trzewia.Aplikacja
             var p = pc.Zeruj(); p.czas = czas; p.krew = t > 2 ? 1 : 0.6;
             p.krok = t < 1.5 ? 1 : 0; p.faza = czas / 90; p.szal = 0.6;
             for (int i = 0; i < 3; i++) { var g = p.glowy[i]; g.pochyl = 0.1 * Math.Sin(czas / 300 + i); g.paszcza = 0.5; }
-            // K1 (0.8–3.2): środkowa głowa chwyta, trzęsie — brzuch pęka, trzewia lecą — potem ciska trupem
-            var k1 = t > 0.8 && t < 3.2;
-            if (k1) { var g = p.glowy[1]; g.wysun = 0.4; g.pochyl = 0.5 + Math.Sin(czas / 40) * 0.35 * zakres(t, 1, 1.3); g.paszcza = 0.35; }
-            // K2 (3.6–6.0): lewa i prawa głowa rozrywają na pół (wolniej — kamera najeżdża)
-            var k2 = t > 3.6 && t < 6.0;
+            // K1 (1.0–3.45): gdy dobiega, środkowa głowa rzuca się na wyjącego i chwyta go, dwie serie szarpnięć — brzuch
+            // pęka — i ciska nim w lewo (łeb w górę i w bok)
+            var trz1 = szarp(t, 1.75, 3, 3.2, 0.32) + szarp(t, 2.6, 2, 3.6, 0.22);
+            var rzut1 = dzwon(t, 3.0, 3.45);
+            if (t > 1.0 && t < 3.45)
+            {
+                var g = p.glowy[1];
+                g.wysun = 0.45 * dzwon(t, 1.0, 1.7) + 0.25 * zakres(t, 1.45, 1.7) * (1 - rzut1);
+                g.pochyl = 0.65 * dzwon(t, 1.0, 1.8) + 0.25 * zakres(t, 1.4, 1.7) + trz1 - 0.9 * rzut1;
+                g.paszcza = t < 1.4 ? 0.9 : t < 3.15 ? 0.35 : 0.9;
+            }
+            // K2 (3.6–6.0): pitbull chwyta leżącego i podnosi, doberman chwyta za bark — rozrywają na pół, połówki spadają
+            var podnosi2 = zakres(t, 3.7, 4.05);
             var roz = zakres(t, 4.1, 5.0);
+            var k2 = t > 3.6 && t < 6.0;
             if (k2)
             {
-                p.glowy[0].pochyl = 0.3 - roz * 0.9; p.glowy[0].paszcza = 0.3; p.glowy[0].wysun = 0.2;
-                p.glowy[2].pochyl = 0.5 + roz * 0.5; p.glowy[2].paszcza = 0.3; p.glowy[2].wysun = 0.5;
-                p.deba = 0.15 * roz;
+                var opada = zakres(t, 5.6, 6.0);
+                p.glowy[0].pochyl = (0.3 + 0.35 * zakres(t, 3.9, 4.1) - roz * 1.1) * (1 - opada); p.glowy[0].paszcza = t < 4.05 ? 0.8 : 0.3; p.glowy[0].wysun = 0.2;
+                p.glowy[2].pochyl = (0.85 * dzwon(t, 3.55, 4.1) + 0.2 + roz * 0.6) * (1 - opada); p.glowy[2].paszcza = t < 3.75 ? 0.9 : 0.3; p.glowy[2].wysun = 0.5 * zakres(t, 3.6, 3.75);
+                p.deba = 0.15 * roz * (1 - opada);
+                p.kleka = 0.5 * dzwon(t, 3.5, 4.2);
             }
             // K3 (6.2–9.5): łapa miażdży pełzającego (głowa odpada), środkowa głowa podnosi resztę i połyka
             if (t > 6.2)
             {
                 p.deba = dzwon(t, 6.2, 7.0) * 0.6;
+                p.kleka = 0.5 * dzwon(t, 7.1, 7.8);
                 var g = p.glowy[1];
                 g.pochyl = t < 7.4 ? 0.7 : mix(0.7, -0.7, zakres(t, 7.4, 8.2));
                 g.paszcza = t < 7.4 ? 0.8 : t < 8.4 ? 0.35 : 0.2 + 0.6 * dzwon(t, 8.4, 9.2);
                 g.wysun = t < 7.4 ? 0.5 : 0.2;
             }
-            // K4 (7.0–9.8): bliższa głowa (pitbull) odrywa rękę klęczącemu
+            // K4 (7.0–9.8): bliższa głowa (pitbull) odrywa rękę klęczącemu i trzepie nią
             if (t > 7.0)
             {
                 var g = p.glowy[2];
                 g.wysun = t < 7.6 ? zakres(t, 7.0, 7.5) * 0.7 : mix(0.7, 0.3, zakres(t, 7.6, 8.4));
-                g.pochyl = t < 7.6 ? 0.9 : 0.9 - zakres(t, 7.6, 8.4) * 0.8 + Math.Sin(czas / 45) * 0.25 * zakres(t, 8.4, 8.7);
+                g.pochyl = t < 7.6 ? 0.9 : 0.9 - zakres(t, 7.6, 8.4) * 0.8 + szarp(t, 8.35, 2, 3.4, 0.25);
                 g.paszcza = t < 7.55 ? 1 : 0.3;
             }
             var m = cerber(ctx, v, cx, p, -1);
-            // ofiara 1
-            if (t < 0.8) zarlok(ctx, v, 1.0, Ludzik.pozaWyje(t, 1), 1, 1);
-            else if (k1)
+            var s = v.k.s;
+            // ofiara 1: klęczy i wyje, łeb chwyta ją i unosi, trzęsie, ciska
+            var wyje1 = Ludzik.pozaWyje(t, 1);
+            (double x, double y) klecz1 = (v.X(1.0), v.Y(-Ludzik.punkty(1, wyje1).Dno));
+            if (t < 1.2) zarlok(ctx, v, 1.0, wyje1, 1, 1);
+            else if (t < 3.2)
             {
-                var pek = t > 1.7;
-                wPaszczy(ctx, v, m[1], z(Ludzik.pozaWPaszczy(t, t < 2.5 ? 1 : 0.4), krew: pek ? 1 : 0.6, trzewia: pek), Math.PI / 2 + Math.Sin(czas / 40) * 0.4);
-                Ludzik.bryzgKrwi(ctx, m[1].x, m[1].y, v.k.s * 0.9, ((t - 1.0) % 0.6) / 0.6, -1.2 + Math.Sin(t * 9), 1.4, Math.Floor(t / 0.6));
-                if (pek) Ludzik.bryzgKrwi(ctx, m[1].x, m[1].y + v.k.s * 0.2, v.k.s * 1.0, (t - 1.7) / 0.9, Math.PI * 0.6, 2.0, 31);
-                if (t > 1.2) kapie(ctx, m[1], v.k.s, czas, 2);
+                var pek = t > 2.1;
+                var kolys = (szarp(t - 0.07, 1.75, 3, 3.2, 0.32) + szarp(t - 0.07, 2.6, 2, 3.6, 0.22)) * 1.4;
+                podnoszona(ctx, v, klecz1, m[1], wyje1, z(Ludzik.pozaWPaszczy(t, t < 2.9 ? 0.7 : 0.3), krew: pek ? 1 : 0.6, trzewia: pek),
+                           0, Math.PI / 2 + kolys, zakres(t, 1.2, 1.45));
+                if (t > 1.45) Ludzik.bryzgKrwi(ctx, m[1].x, m[1].y, s * 0.9, ((t - 1.45) % 0.6) / 0.6, -1.2 + Math.Sin(t * 9), 1.4, Math.Floor(t / 0.6));
+                if (pek) Ludzik.bryzgKrwi(ctx, m[1].x, m[1].y + s * 0.2, s * 1.0, (t - 2.1) / 0.9, Math.PI * 0.6, 2.0, 31);
+                if (t > 1.6) kapie(ctx, m[1], s, czas, 2);
             }
             else
             {
-                // ciśnięty — leci w lewo, pada wypatroszony, trzewia wloką się za nim
-                var f = zakres(t, 3.2, 3.9);
-                double x = mix(cx - 2.6, -2.4, f), y = -2.2 * dzwon(f, 0, 1) - 0.08;
-                if (f >= 1) { ctx.save(); ctx.translate(v.X(-1.75), v.Y(0)); Ludzik.rysujTrzewia(ctx, v.k.s * 1.1, 0.1); ctx.restore(); }
-                ctx.save(); ctx.translate(v.X(x), v.Y(y)); ctx.rotate(f * 4);
-                Ludzik.rysujLudzika(ctx, v.k.s, z(Ludzik.pozaTrup(1), trzewia: true)); ctx.restore();
-            }
-            // ofiara 2 — rozrywana na pół
-            (double x, double y) sr = ((m[0].x + m[2].x) / 2, (m[0].y + m[2].y) / 2);
-            if (t < 3.6) zarlok(ctx, v, 1.6, Ludzik.pozaLezy(t, 2), -1, 1);
-            else if (k2)
-            {
-                if (roz < 0.5) wPaszczy(ctx, v, sr, z(Ludzik.pozaWPaszczy(t, 1), krew: 0.4 + roz), Math.PI / 2);
+                // ciśnięty z paszczy: leci łukiem w lewo, obraca się raz i pada wypatroszony — dalej leży tam, gdzie spadł
+                var f = Math.Min(1, (t - 3.2) / 0.7);
+                if (f < 1)
+                {
+                    double x = mix(m[1].x, v.X(-2.4), f), y = mix(m[1].y, v.Y(-0.08), f) - Math.Sin(f * Math.PI) * s * 0.8;
+                    ctx.save(); ctx.translate(x, y); ctx.rotate(mix(Math.PI / 2, Math.PI * 2, f));
+                    ctx.translate(-s * 0.17 * (1 - f), s * 0.02 * (1 - f));
+                    Ludzik.rysujLudzika(ctx, s, mieszaj(z(Ludzik.pozaWPaszczy(t, 0.3), krew: 1, trzewia: true), z(Ludzik.pozaTrup(1), trzewia: true), f));
+                    ctx.restore();
+                }
                 else
                 {
-                    wPaszczy(ctx, v, m[0], z(Ludzik.pozaWPaszczy(t, 0.6), polowa: "gora"), Math.PI / 2 + 0.6);
-                    wPaszczy(ctx, v, m[2], z(Ludzik.pozaWPaszczy(t, 0.6), polowa: "dol"), Math.PI / 2 - 0.4);
-                    kapie(ctx, m[0], v.k.s, czas, 3); kapie(ctx, m[2], v.k.s, czas, 3);
+                    ctx.save(); ctx.translate(v.X(-1.75), v.Y(0)); Ludzik.rysujTrzewia(ctx, s * 1.1, 0.1); ctx.restore();
+                    zarlok(ctx, v, -2.4, z(Ludzik.pozaTrup(1), trzewia: true), 1, 1, 0.08);
+                }
+            }
+            // ofiara 2: leży; pitbull chwyta i podnosi do dobermana; rozpięta między paszczami pęka na pół; połówki spadają
+            (double x, double y) lez2 = (v.X(1.6), v.Y(-0.08));
+            if (t < 3.7) zarlok(ctx, v, 1.6, Ludzik.pozaLezy(t, 2), -1, 1);
+            else if (k2)
+            {
+                // kąt ciała: od paszczy pitbulla (biodra) ku paszczy dobermana (bark)
+                var th = Math.Atan2(m[0].x - m[2].x, -(m[0].y - m[2].y));
+                if (t < 4.05)
+                {
+                    podnoszona(ctx, v, lez2, m[2], Ludzik.pozaLezy(t, 2), Ludzik.pozaWPaszczy(t, 1), 0, mix(Math.PI / 2, th, zakres(t, 3.85, 4.05)), podnosi2, -1);
+                }
+                else if (roz < 0.5)
+                {
+                    ctx.save(); ctx.translate(m[2].x, m[2].y); ctx.rotate(th); ctx.scale(-1, 1);
+                    Ludzik.rysujLudzika(ctx, s, z(Ludzik.pozaWPaszczy(t, 1 - roz * 1.5), krew: 0.4 + roz));
+                    ctx.restore();
+                }
+                else
+                {
+                    // połówki: dolna zostaje w zębach pitbulla, górna — w zębach dobermana; od 5,6 s spadają w błoto
+                    var opada = zakres(t, 5.6, 6.0);
+                    (double x, double y) ziemiaG = (v.X(0.4), v.Y(-0.08)), ziemiaD = (v.X(1.6), v.Y(-0.1));
+                    void polowka((double x, double y) paszcza, (double x, double y) ziemia, PozaLudzika pz, double kat)
+                    {
+                        double x = mix(paszcza.x, ziemia.x, opada), y = mix(paszcza.y, ziemia.y, opada) - Math.Sin(opada * Math.PI) * s * 0.3;
+                        ctx.save(); ctx.translate(x, y); ctx.rotate(mix(kat, 0, opada)); ctx.scale(-1, 1);
+                        Ludzik.rysujLudzika(ctx, s, pz);
+                        ctx.restore();
+                    }
+                    polowka(m[0], ziemiaG, mieszaj(z(Ludzik.pozaWPaszczy(t, 0.6), polowa: "gora"), z(Ludzik.pozaTrup(2), polowa: "gora"), opada), th);
+                    polowka(m[2], ziemiaD, mieszaj(z(Ludzik.pozaWPaszczy(t, 0.6), polowa: "dol"), z(Ludzik.pozaTrup(3), polowa: "dol"), opada), th);
+                    if (opada < 1) { kapie(ctx, m[0], s, czas, 3); kapie(ctx, m[2], s, czas, 3); }
                     // trzewia wypadają z rozdartego tułowia i spadają w błoto
+                    (double x, double y) sr = ((m[0].x + m[2].x) / 2, (m[0].y + m[2].y) / 2);
                     var sp = zakres(t, 4.6, 5.3);
-                    ctx.save(); ctx.translate(sr.x, mix(sr.y + v.k.s * 0.2, v.Y(0), sp)); Ludzik.rysujTrzewia(ctx, v.k.s * 1.2, sp * 1.5 - 0.6); ctx.restore();
+                    ctx.save(); ctx.translate(sr.x, mix(sr.y + s * 0.2, v.Y(0), sp)); Ludzik.rysujTrzewia(ctx, s * 1.2, sp * 1.5 - 0.6); ctx.restore();
                 }
                 // fontanna krwi i czerwona mgła w chwili rozdarcia
-                Ludzik.bryzgKrwi(ctx, sr.x, sr.y, v.k.s * 1.2, (t - 4.55) / 1.1, -Math.PI / 2, 2.4, 7);
-                Ludzik.bryzgKrwi(ctx, sr.x, sr.y, v.k.s * 1.0, (t - 4.6) / 1.0, Math.PI * 0.85, 1.8, 19);
-                Ludzik.bryzgKrwi(ctx, sr.x, sr.y, v.k.s * 1.0, (t - 4.62) / 1.0, Math.PI * 0.15, 1.8, 23);
+                (double x, double y) srd = ((m[0].x + m[2].x) / 2, (m[0].y + m[2].y) / 2);
+                Ludzik.bryzgKrwi(ctx, srd.x, srd.y, s * 1.2, (t - 4.55) / 1.1, -Math.PI / 2, 2.4, 7);
+                Ludzik.bryzgKrwi(ctx, srd.x, srd.y, s * 1.0, (t - 4.6) / 1.0, Math.PI * 0.85, 1.8, 19);
+                Ludzik.bryzgKrwi(ctx, srd.x, srd.y, s * 1.0, (t - 4.62) / 1.0, Math.PI * 0.15, 1.8, 23);
                 var mg = dzwon(t, 4.5, 5.8);
                 if (mg > 0)
                 {
-                    var gm = ctx.createRadialGradient(sr.x, sr.y, 0, sr.x, sr.y, v.k.s * 1.6);
+                    var gm = ctx.createRadialGradient(srd.x, srd.y, 0, srd.x, srd.y, s * 1.6);
                     gm.addColorStop(0, Barwa.Rgba(120, 6, 4, 0.5 * mg)); gm.addColorStop(1, "rgba(90,0,0,0)");
-                    ctx.fillStyle = gm; ctx.fillRect(sr.x - v.k.s * 1.6, sr.y - v.k.s * 1.6, v.k.s * 3.2, v.k.s * 3.2);
+                    ctx.fillStyle = gm; ctx.fillRect(srd.x - s * 1.6, srd.y - s * 1.6, s * 3.2, s * 3.2);
                 }
             }
             else
             {
-                zarlok(ctx, v, 0.4, z(Ludzik.pozaTrup(2), polowa: "gora"), 1, 1, 0.08);
+                zarlok(ctx, v, 0.4, z(Ludzik.pozaTrup(2), polowa: "gora"), -1, 1, 0.08);
                 zarlok(ctx, v, 1.6, z(Ludzik.pozaTrup(3), polowa: "dol"), -1, 1, 0.1);
-                ctx.save(); ctx.translate(v.X(1.0), v.Y(0)); Ludzik.rysujTrzewia(ctx, v.k.s * 1.2, 0.3); ctx.restore();
+                ctx.save(); ctx.translate(v.X(1.0), v.Y(0)); Ludzik.rysujTrzewia(ctx, s * 1.2, 0.3); ctx.restore();
             }
-            // ofiara 3 — pełznie, zmiażdżona łapą (głowa odskakuje), podniesiona i połknięta
+            // ofiara 3 — pełznie, zmiażdżona łapą (głowa odskakuje), podniesiona przez środkową głowę i połknięta
+            var trup3 = z(Ludzik.pozaTrup(0), krew: 1, bezGlowy: true, trzewia: true);
             if (t < 6.9) zarlok(ctx, v, mix(-0.4, 0.4, zakres(t, 4, 6.9)), Ludzik.pozaCzolga(t, 1.6, 4), 1, 1);
             else if (t < 7.4)
             {
-                zarlok(ctx, v, 0.5, z(Ludzik.pozaTrup(0), krew: 1, bezGlowy: true, trzewia: true), 1, 1, 0.06);
-                Ludzik.bryzgKrwi(ctx, v.X(0.5), v.Y(-0.1), v.k.s * 1.0, (t - 6.9) / 0.6, -Math.PI / 2, 2.2, 9);
+                zarlok(ctx, v, 0.5, trup3, 1, 1, 0.06);
+                Ludzik.bryzgKrwi(ctx, v.X(0.5), v.Y(-0.1), s * 1.0, (t - 6.9) / 0.6, -Math.PI / 2, 2.2, 9);
             }
             else if (t < 8.6)
             {
                 var lyk = zakres(t, 8.0, 8.6);
-                wPaszczy(ctx, v, m[1], z(Ludzik.pozaWPaszczy(t, 0.3), krew: 1, bezGlowy: true, trzewia: true), Math.PI / 2 - 0.9, 1 - lyk * 0.7);
+                podnoszona(ctx, v, (v.X(0.5), v.Y(-0.06)), m[1], trup3, z(Ludzik.pozaWPaszczy(t, 0.3), krew: 1, bezGlowy: true, trzewia: true),
+                           0, Math.PI / 2 - 0.9, zakres(t, 7.4, 7.65), 1, 1 - lyk * 0.7);
             }
             if (t > 6.9)
             {
                 var f = zakres(t, 6.9, 7.6);
-                ctx.save(); ctx.translate(v.X(mix(0.9, 2.6, f)), v.Y(-0.06 - Math.Sin(f * Math.PI) * 1.4)); Ludzik.rysujOderwanaGlowe(ctx, v.k.s, f * 8 + 1.5); ctx.restore();
+                ctx.save(); ctx.translate(v.X(mix(0.9, 2.6, f)), v.Y(-0.06 - Math.Sin(f * Math.PI) * 1.4)); Ludzik.rysujOderwanaGlowe(ctx, s, f * 8 + 1.5); ctx.restore();
             }
-            if (t > 7.4) kapie(ctx, m[1], v.k.s, czas, 2);
-            // ofiara 4 — klęczy przed nim i wyje; pitbull odrywa mu rękę
+            if (t > 7.4) kapie(ctx, m[1], s, czas, 2);
+            // ofiara 4 — klęczy przed nim i wyje; pitbull odrywa mu rękę (ręka przechodzi z barku do paszczy) i trzepie nią
             var x4 = cx - 2.15;
             if (t > 4.5)
             {
@@ -947,10 +1320,12 @@ namespace Trzewia.Aplikacja
                 else
                 {
                     var pad = zakres(t, 7.8, 8.6);
-                    zarlok(ctx, v, x4 - pad * 0.3, z(pad < 0.5 ? Ludzik.pozaWyje(t, 6) : Ludzik.pozaTrup(4), krew: 1, bezRekiP: true), -1, 1, pad < 0.5 ? (double?)null : 0.08);
-                    ctx.save(); ctx.translate(m[2].x, m[2].y); ctx.rotate(-0.4 + Math.Sin(czas / 45) * 0.3 * zakres(t, 8.4, 8.7)); Ludzik.rysujOderwanaReke(ctx, v.k.s, 1.2, 0.6); ctx.restore();
-                    Ludzik.bryzgKrwi(ctx, v.X(x4 - 0.05), v.Y(-0.62), v.k.s * 0.9, (t - 7.6) / 0.9, -Math.PI * 0.8, 1.8, 41);
-                    kapie(ctx, m[2], v.k.s, czas, 2);
+                    var pt4 = zarlok(ctx, v, x4 - pad * 0.3, z(pad < 0.5 ? Ludzik.pozaWyje(t, 6) : Ludzik.pozaTrup(4), krew: 1, bezRekiP: true), -1, 1, pad < 0.5 ? (double?)null : 0.08);
+                    var wlot = zakres(t, 7.6, 7.75);
+                    (double x, double y) bark = pt4.kark;
+                    ctx.save(); ctx.translate(mix(bark.x, m[2].x, wlot), mix(bark.y, m[2].y, wlot)); ctx.rotate(-0.4 + szarp(t, 8.35, 2, 3.4, 0.3)); Ludzik.rysujOderwanaReke(ctx, s, 1.2, 0.6); ctx.restore();
+                    Ludzik.bryzgKrwi(ctx, bark.x, bark.y, s * 0.9, (t - 7.6) / 0.9, -Math.PI * 0.8, 1.8, 41);
+                    kapie(ctx, m[2], s, czas, 2);
                 }
             }
             deszcz(ctx, R, czas, 1);
