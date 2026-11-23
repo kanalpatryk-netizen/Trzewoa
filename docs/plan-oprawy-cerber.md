@@ -16,7 +16,7 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 6 — mechanika bossa (20.11, „Kontynuuj ze wszystkim innym”; za flagą; liczby do akceptacji; czeka na „dalej”)
 - [x] Etap 7a — usunięcia po obejrzeniu filmu (22.11; czeka na „dalej”)
 - [x] Etap 7b — walka: bez kręcenia się, rycerz za Cerberem, przerywniki ścięć, napisy końcowe (22.11; czeka na „dalej”)
-- [ ] Etap 7c — wstęp: film i scena wejścia
+- [x] Etap 7c — wstęp: film i scena wejścia (23.11; czeka na „dalej”; Dante i Wergiliusz — w 7d)
 - [ ] Etap 7d — ludzie od nowa w kodzie i ich animacje
 
 ## Decyzje użytkownika (16.11, po raporcie etapu 0)
@@ -560,18 +560,44 @@ i dłoni). Rysunek klatki walki (procesorem, zrzuty ziarna 3): 497 ms przed, 499
    między śmiercią Cerbera a kroniką; na razie działy z „[do uzupełnienia]”; ok. 25 s, Esc / spacja / klik pomija.
 
 ### 7c — wstęp (film i scena wejścia)
-- [ ] 0:08 — lewitujące postacie i kamienie.
-- [ ] 0:10 — kłótnia o jedzenie: „dwa kurczaki stoją, a przed nimi lewituje kawałek mięsa” — obrzydliwa animacja.
-- [ ] 0:14 — Cerber wchodzi pod planszę przerywnika.
-- [ ] 0:19 — rozszarpywanie: ofiara przeskakuje z jednego pyska na pozostałe dwa, nienaturalne trzęsienie głową.
-- [ ] 0:25 — Wergiliusz i Dante nie pasują do klimatu gry (wygląd).
-- [ ] 0:29 — rzucanej ziemi nie widać, Cerber nie ma wtedy żadnej animacji — nie wiadomo, co się stało.
-- [ ] 0:37–0:43 — wstawanie za szybkie i bez sensu (w linii prostej) — pełna animacja wstawania.
-- [ ] 0:59–1:03 — postacie chodzą po dziurze, przez którą wpada światło do jaskini (lewitują).
+- [x] 0:08 — lewitujące postacie i kamienie.
+- [x] 0:10 — kłótnia o jedzenie: „dwa kurczaki stoją, a przed nimi lewituje kawałek mięsa” — obrzydliwa animacja.
+- [x] 0:14 — Cerber wchodzi pod planszę przerywnika.
+- [x] 0:19 — rozszarpywanie: ofiara przeskakuje z jednego pyska na pozostałe dwa, nienaturalne trzęsienie głową.
+- [ ] 0:25 — Wergiliusz i Dante nie pasują do klimatu gry (wygląd) — **przeniesione do 7d** (ludzie od nowa w kodzie,
+      razem z resztą ludzi, żeby nie rysować ich dwa razy).
+- [x] 0:29 — rzucanej ziemi nie widać, Cerber nie ma wtedy żadnej animacji — nie wiadomo, co się stało.
+- [x] 0:37–0:43 — wstawanie za szybkie i bez sensu (w linii prostej) — pełna animacja wstawania.
+- [x] 0:59–1:03 — postacie chodzą po dziurze, przez którą wpada światło do jaskini (lewitują).
+
+**Wynik 7c (23.11).**
+0. *Nagranie.* Film z 22.11 miał wstęp i scenę wejścia 1,5 × za szybkie: `--film-pelny` zapisywał tam klatki co 50 ms
+   zamiast co 33 ms (błąd narzędzia, nie gry — w grze film trwa 75 s, w nagraniu trwał 50 s). Naprawione; nowa flaga
+   `--podglad-wstepu` (z `--zrzuty-walki` i `--krag`) zapisuje klatki samego filmu i sceny wejścia bez rozgrywania partii.
+1. *0:08 tłum.* Grunt sięga teraz do horyzontu (`HORYZONT` w `FilmKregu`), więc dalsze rzędy żarłoków stoją na ziemi,
+   a nie wiszą nad jej krawędzią. „Kamienie” to były grzbiety błota przed leżącymi — prostokąty w innej barwie niż grunt;
+   teraz to garby w barwie błota, wtopione w grunt. Klęczący i siedzący mieli uda poziomo, a podudzia pionowo w dół —
+   siedzieli na niewidzialnym krześle; teraz klęczą i siedzą w błocie, a wysokość bioder liczy się z nóg
+   (`Ludzik.punkty`, `PunktyLudzika.Dno`). To samo w tłumie potępionych w grze (`Potepieni`).
+2. *0:10 bójka.* Trzymają kość z mięsem oburącz (końce kości w dłoniach, liczone z ich pozy), zaparci w błocie, szarpią
+   się na zmianę; prawy gryzie lewego w ręce, lewy wrzeszczy, puszcza i siada w błocie, przyciskając rękę, prawy siada
+   z ochłapem i żre. Wygląd samych żarłoków („kurczaki”) — 7d.
+3. *0:14 wzgórze.* Pies wspina się po drugim stoku i widać tylko to, co wystaje nad grzbiet (przycięcie do linii
+   wzgórza); z grzbietu osypuje się pył. Dawniej jego tułów wychodził pod linię gruntu, na przód kadru.
+4. *0:19 rzeź.* Każda ofiara przechodzi z ziemi do paszczy ruchem (łeb się pochyla, pies przypada na łapy, ciało unosi
+   się łukiem), a z paszczy — lotem albo upadkiem; rozrywaną ofiarę najpierw podnosi pitbull, potem chwyta doberman,
+   połówki spadają w błoto. Trzęsienie łbem: dwie krótkie serie gasnących szarpnięć zamiast drgania bez przerwy.
+5. *0:29 rzut.* Trzy duże grudy błota lecą łukiem (podświetlone łuną, z okruchami za sobą), każdy łeb łapie swoją
+   w locie, kłapie, przełyka i opuszcza łeb, żeby żreć; błoto bryzga i cieknie z paszcz.
+6. *0:37–0:43 wstawanie.* Klatkami arkuszy gry: rycerz — gotowy ruch „powalony-wstaje” (leży, siada, klęka, wstaje
+   z mieczem w górze); grabarz — leży, czworaki, przysiad, stoi; mnich — leży, czworaki, klęka do modlitwy. Łopata tkwi
+   w błocie (nie lewituje), osobny miecz wyjeżdżający z błota zniknął.
+7. *0:59–1:03 wejście.* Szóstka wstaje i staje w kolejce po tej stronie liny, po której nie ma szybu ze światłem
+   (`WstepKregu`) — nie przechodzi już nad jego otworem.
 
 ### 7d — ludzie i animacje
 - [ ] Ludzie od nowa: wyglądają jak kurczaki, nie przypominają człowieka (plansza, księga, wstęp; potępieni, Dante,
-      Wergiliusz).
+      Wergiliusz). Z 7c: 0:25 — Dante i Wergiliusz nie pasują do klimatu gry (wygląd).
 - [ ] Animacje ludzi i Cerbera (część ohydna) — razem z nowymi ludźmi.
 
 ## Wzór raportu po każdym etapie
