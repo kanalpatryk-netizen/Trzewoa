@@ -109,6 +109,8 @@ static class ZrzutyWalki
         Fonts.zaladujKroje();
 
         if (Uruchomienie.PodgladPrzerywnikow) return PodgladPrzerywnikow(katalog, W, H, Uruchomienie.CoIleS > 0 ? Uruchomienie.CoIleS : 0.1);
+        if (Uruchomienie.PodgladWstepu) return PodgladWstepu(katalog, W, H, ziarno, Uruchomienie.CoIleS > 0 ? Uruchomienie.CoIleS : 0.5,
+                                                            odS, Uruchomienie.NajdluzejS > 0 ? Uruchomienie.NajdluzejS : FilmKregu.DLUGOSC_FILMU);
         Console.WriteLine($"zrzuty walki{(Uruchomienie.Krag ? " (Krąg Trzeci)" : "")}: ziarno {ziarno.ToString(CultureInfo.InvariantCulture)}, {W}×{H}, oprawa {(VisualConfig.Wlaczone ? "włączona" : "wyłączona")}, katalog {katalog}");
         var zegar = System.Diagnostics.Stopwatch.StartNew();
 
@@ -236,6 +238,55 @@ static class ZrzutyWalki
         }
         PrzerywnikGlowy.Nowa();
         Console.WriteLine($"podgląd przerywników: {zapisane} klatek w {katalog}");
+        return 0;
+    }
+
+    /// <summary>
+    /// Oprawa, etap 7c: wstęp Kręgu bez rozgrywania partii — klatki filmu (wstep-film-CZAS.jpg, czas filmu w ms, od `odS`
+    /// najwyżej `ileS` s) i sceny wejścia w silniku gry (wstep-wejscie-CZAS.jpg, czas sceny w ms), co `coIle` s.
+    /// </summary>
+    static int PodgladWstepu(string katalog, int W, int H, double ziarno, double coIle, double odS, double ileS)
+    {
+        if (!Symulacja.Krag.Wlaczony) { Console.Error.WriteLine("--podglad-wstepu: tylko z --krag"); return 2; }
+        using var p = new PlotnoSkia(W, H);
+        int zapisane = 0;
+        bool zapisz(string nazwa)
+        {
+            if (!p.ZapiszJpg(Path.Combine(katalog, nazwa))) { Console.Error.WriteLine($"nie zapisałem {nazwa}"); return false; }
+            zapisane++; return true;
+        }
+        // film: sam rysunek, czas podany wprost
+        var simFilmu = new Sim(ziarno);
+        var doS = Math.Min(FilmKregu.DLUGOSC_FILMU, odS + ileS);
+        for (double t = odS; t < doS + 1e-9; t += coIle)
+        {
+            p.setTransform(1, 0, 0, 1, 0, 0);
+            FilmKregu.rysujFilm(p, simFilmu, W, H, t, 1000 + t * 1000);
+            if (!zapisz($"wstep-film-{(int)Math.Round(t * 1000):D5}.jpg")) return 1;
+        }
+        // scena wejścia: zwykła nowa gra (bez bota), film pominięty jak klawiszem Esc
+        Obserwowany.BOT.wlaczony = false;
+        Races.resetRaces();
+        var app = new Kontekst { ctx = p, w = W, h = H };
+        var gra = new EkranGry(app);
+        app.zarejestruj(gra);
+        gra.nowaGra(ziarno);
+        gra.rozmiar(W, H);
+        gra.wstep.pomin();
+        double teraz = 1000, od = -1, nast = 0;
+        for (int f = 0; f < 60 * 120 && gra.wstep.trwa(); f++)
+        {
+            teraz += DT;
+            gra.krok(DT, teraz);
+            if (od < 0) od = teraz;
+            var czas = teraz - od;
+            if (czas < nast - 1e-6) continue;
+            nast += coIle * 1000;
+            p.setTransform(1, 0, 0, 1, 0, 0);
+            gra.rysuj(p, W, H, teraz);
+            if (!zapisz($"wstep-wejscie-{(int)Math.Round(czas):D5}.jpg")) return 1;
+        }
+        Console.WriteLine($"podgląd wstępu: {zapisane} klatek w {katalog}");
         return 0;
     }
 

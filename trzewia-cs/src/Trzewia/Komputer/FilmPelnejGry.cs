@@ -153,12 +153,14 @@ static class FilmPelnejGry
         Console.WriteLine($"  menu: {f} klatek — {zegar.Elapsed.TotalSeconds:F1} s");
 
         // ---- 2) wstęp: film (FilmKregu, ~75 s) i scena wejścia (WstepKregu) — zwykłe tempo, bez przyspieszenia
+        // (klatka co 1/30 s SCENY, odliczana od stałego początku: dawniej `nastTeraz = teraz + 1/30 s` przy kroku 1/60 s
+        // przez błędy zaokrągleń zapisywało co trzeci krok, czyli co 50 ms — wstęp w filmie szedł 1,5 × za szybko)
         {
-            double nastTeraz = 0;
+            double nastTeraz = teraz;
             while (gra.wstep.trwa())
             {
                 Krok(DT);
-                if (teraz >= nastTeraz) { Zapisz(gra.wstep.plansze() ? "wstep-film" : "wstep-wejscie"); nastTeraz = teraz + 1000.0 / 30; }
+                if (teraz >= nastTeraz - 1e-6) { Zapisz(gra.wstep.plansze() ? "wstep-film" : "wstep-wejscie"); nastTeraz += 1000.0 / 30; }
             }
         }
         Console.WriteLine($"  wstęp skończony: {f} klatek — {zegar.Elapsed.TotalSeconds:F1} s");
@@ -201,7 +203,7 @@ static class FilmPelnejGry
                     double gs = sim.tick / 120.0;
                     if (gs >= nastS) { Zapisz("budowa"); nastS += gspfBudowy; }
                 }
-                else if (teraz >= nastTeraz) { Zapisz(wWalce ? "walka" : "budowa"); nastTeraz += 1000.0 / 30; }
+                else if (teraz >= nastTeraz - 1e-6) { Zapisz(wWalce ? "walka" : "budowa"); nastTeraz += 1000.0 / 30; }
                 if (sim.ending != null)
                 {
                     if (endingOd < 0) endingOd = teraz;
@@ -228,7 +230,7 @@ static class FilmPelnejGry
             while (app.aktywny?.nazwa == "napisy" && teraz < bezpiecznik)
             {
                 Krok(DT);
-                if (teraz >= nastTeraz && app.aktywny?.nazwa == "napisy") { Zapisz("napisy"); nastTeraz = teraz + 1000.0 / 30; }
+                if (teraz >= nastTeraz - 1e-6 && app.aktywny?.nazwa == "napisy") { Zapisz("napisy"); nastTeraz += 1000.0 / 30; }
             }
             Console.WriteLine($"  napisy końcowe: {f} klatek — {zegar.Elapsed.TotalSeconds:F1} s");
         }
@@ -239,7 +241,7 @@ static class FilmPelnejGry
             if (app.aktywny?.nazwa != "kronika") app.idz("kronika", sim);
             double nastTeraz = teraz;
             double doS = teraz + KRONIKA_S * 1000;
-            while (teraz < doS) { Krok(DT); if (teraz >= nastTeraz) { Zapisz("kronika"); nastTeraz = teraz + 1000.0 / 30; } }
+            while (teraz < doS) { Krok(DT); if (teraz >= nastTeraz - 1e-6) { Zapisz("kronika"); nastTeraz += 1000.0 / 30; } }
         }
         Console.WriteLine($"  kronika: {f} klatek — {zegar.Elapsed.TotalSeconds:F1} s");
 

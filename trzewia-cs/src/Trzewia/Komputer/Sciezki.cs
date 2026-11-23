@@ -131,6 +131,8 @@ public static class Uruchomienie
     public static bool Krag;
     /// <summary>Oprawa, etap 7b: zamiast walki same trzy przerywniki ścięcia głów, klatka co --co-ile (domyślnie 0,1 s).</summary>
     public static bool PodgladPrzerywnikow;
+    /// <summary>Oprawa, etap 7c: zamiast walki wstęp Kręgu — film (okno --od/--najdluzej) i scena wejścia, klatka co --co-ile.</summary>
+    public static bool PodgladWstepu;
     /// <summary>Film całej partii (menu, zmiana trybu, wstęp, budowa w przyspieszeniu, walka, kronika) — katalog na klatki.</summary>
     public static string? FilmPelnejGry;
 
@@ -173,6 +175,8 @@ public static class Uruchomienie
           --podglad-przerywnikow
                            zamiast walki same trzy przerywniki ścięcia głów Cerbera (pitbull, wilk, doberman), klatka
                            co --co-ile s filmu (domyślnie 0.1), JPEG — do szybkiego obejrzenia bez rozgrywania partii
+          --podglad-wstepu zamiast walki wstęp Kręgu: film (od --od s, najwyżej --najdluzej s) i scena wejścia
+                           (szóstka idzie do szybu), klatka co --co-ile s (domyślnie 0.5), JPEG
           --film-pelny KATALOG
                            bez okna: cała partia Kręgu Trzeciego od menu — zmiana trybu, „Nowa gra”, wstęp (film i
                            scena wejścia), budowa w przyspieszeniu aż do pęknięcia pieczęci, walka z Cerberem w
@@ -215,6 +219,7 @@ public static class Uruchomienie
                 case "--przed": PrzedS = double.Parse(nast, System.Globalization.CultureInfo.InvariantCulture); i++; break;
                 case "--film": Film = true; break;
                 case "--podglad-przerywnikow": PodgladPrzerywnikow = true; break;
+                case "--podglad-wstepu": PodgladWstepu = true; break;
                 case "--uderzenie":
                     Uderzenie = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Uderzenie == null) Console.Error.WriteLine($"--uderzenie: nie rozumiem „{nast}” (wl albo wyl)");
