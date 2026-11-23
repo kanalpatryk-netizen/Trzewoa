@@ -23,6 +23,8 @@ namespace Trzewia.Aplikacja
         {
             public Creature c = null!;
             public double x0, y0, f0, start, kolejka, wstaje, doLiny, zejscie, naDole, koniec;
+            /// <summary>Z której strony liny idą: 1 — z prawej (w lewo), −1 — z lewej (w prawo).</summary>
+            public double strona = 1;
         }
 
         const double V_IDZIE = 2.2, V_LINA = 4.2, V_SALA = 2.4;
@@ -86,12 +88,15 @@ namespace Trzewia.Aplikacja
                 }
                 else if (t < a.doLiny)
                 {
-                    var x = Math.Min(a.kolejka, a.start + (t - a.wstaje - 0.5 > 0 ? (t - a.wstaje - 0.5) * V_IDZIE : 0));
-                    c.x = x; c.y = KragSwiat.gruntKregu(sim, x) - 1; c.face = 1;
+                    // (oprawa, etap 7c: idą ku linie od tej strony, po której nie ma szybu ze światłem — nad jego otworem
+                    // dawniej przechodzili jak po ziemi)
+                    var droga = t - a.wstaje - 0.5 > 0 ? (t - a.wstaje - 0.5) * V_IDZIE : 0;
+                    var x = a.strona > 0 ? Math.Max(a.kolejka, a.start - droga) : Math.Min(a.kolejka, a.start + droga);
+                    c.x = x; c.y = KragSwiat.gruntKregu(sim, x) - 1; c.face = -a.strona;
                 }
                 else if (t < a.zejscie)
                 {
-                    c.x = a.kolejka; c.y = KragSwiat.gruntKregu(sim, a.kolejka) - 1; c.face = 1;
+                    c.x = a.kolejka; c.y = KragSwiat.gruntKregu(sim, a.kolejka) - 1; c.face = -a.strona;
                 }
                 else if (t < a.naDole)
                 {
@@ -141,18 +146,21 @@ namespace Trzewia.Aplikacja
             double waga(Creature c) => c.rola == "robotnik" ? 0 : c.rola == "pobozny" ? 1 : 2;
             var lud = sim.creatures.Where(c => !c.dead && c.race == Race.GOBLIN).OrderBy(waga).ThenBy(c => c.id).ToList();
             double zejscieOst = 0;
+            // (oprawa, etap 7c: wstają i stają w kolejce po tej stronie liny, po której NIE ma szybu ze światłem do sali —
+            // w ziemi nad nim jest dziura; dawniej szli zawsze od lewej i przechodzili nad nią, jakby lewitowali)
+            var strona = w.szybX + 0.5 < linaX ? 1.0 : -1.0;
             aktorzy = lud.Select((c, i) =>
             {
-                var start = Math.Max(6, linaX - 20 - i * 1.4);
-                var kolejka = linaX - 1.4 - i * 0.9;
+                var start = Math.Max(6, Math.Min(w.w - 6, linaX + strona * (20 + i * 1.4)));
+                var kolejka = linaX + strona * (1.4 + i * 0.9);
                 var wstaje = 1.2 + i * 0.45;
-                var doLiny = wstaje + 0.5 + (kolejka - start) / V_IDZIE;
+                var doLiny = wstaje + 0.5 + Math.Abs(start - kolejka) / V_IDZIE;
                 var zejscie = Math.Max(doLiny + 0.3, zejscieOst + 1.5);
                 zejscieOst = zejscie;
                 var glebokosc = c.y - (KragSwiat.gruntKregu(sim, linaX) - 1);
                 var naDole = zejscie + Math.Max(0.5, glebokosc / V_LINA);
                 var koniec = naDole + Math.Abs(c.x - linaX) / V_SALA + 0.1;
-                return new Aktor { c = c, x0 = c.x, y0 = c.y, f0 = c.face, start = start, kolejka = kolejka, wstaje = wstaje, doLiny = doLiny, zejscie = zejscie, naDole = naDole, koniec = koniec };
+                return new Aktor { c = c, x0 = c.x, y0 = c.y, f0 = c.face, start = start, kolejka = kolejka, wstaje = wstaje, doLiny = doLiny, zejscie = zejscie, naDole = naDole, koniec = koniec, strona = strona };
             }).ToList();
         }
 
