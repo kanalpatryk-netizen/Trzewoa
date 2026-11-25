@@ -441,7 +441,9 @@ namespace Trzewia.Rysunek.Ludzie
             p.tulow = 0.1 + 0.03 * Math.Sin(2 * q); p.glowa = -0.42;
             var r = default(Rekwizyty);
             // grabarz: latarnia u pasa — świeci, ale dłonie wolne (rycerz: miecz w pochwie)
-            if (s.rola == "rycerz") r.pochwa = true;
+            if (s.rola == "robotnik") r.lampa = 3;
+            // rycerz: miecz w pochwie, tarcza na plecach (nie nad głową)
+            if (s.rola == "rycerz") { r.pochwa = true; r.tarcza = false; }
             return new KlatkaPostaci(p, r);
         }
 
@@ -458,7 +460,8 @@ namespace Trzewia.Rysunek.Ludzie
             p.tulow = -0.15; p.glowa = -0.35; p.usta = 0.9;
             p.plaszcz = -0.8;
             var r = default(Rekwizyty);
-            if (s.rola == "rycerz") r.pochwa = true;
+            if (s.rola == "robotnik") r.lampa = 3;
+            if (s.rola == "rycerz") { r.pochwa = true; r.tarcza = false; }
             return new KlatkaPostaci(p, r);
         }
 
@@ -628,6 +631,9 @@ namespace Trzewia.Rysunek.Ludzie
         {
             var p = Poza.Stoi();
             p.obrot = -Math.PI / 2;
+            // ciało w lewo od środka klatki jak w starym arkuszu: głowa ok. 1,35 wzrostu w lewo (trupy przesuwają leżącego
+            // o 0,95 wzrostu, aureola liczy od głowy)
+            p.biodroX = -0.95;
             p.tulow = 0.02; p.glowa = -0.1;
             p.udoL = 0.25; p.kolanoL = 0.5; p.udoP = 0.1; p.kolanoP = 0.4;
             p.ramieP = 0.12; p.lokiecP = 0.3; p.ramieL = 0.05; p.lokiecL = 0.25;
@@ -678,7 +684,8 @@ namespace Trzewia.Rysunek.Ludzie
             p.tulow = 0.06 + 0.02 * Math.Sin(q); p.glowa = -0.32 + szarp * 0.1;
             p.usta = 0.3 * szarp;
             var r = default(Rekwizyty);
-            if (s.rola == "rycerz") r.pochwa = true;
+            if (s.rola == "robotnik") r.lampa = 3;
+            if (s.rola == "rycerz") { r.pochwa = true; r.tarcza = false; }
             return new KlatkaPostaci(p, r);
         }
 

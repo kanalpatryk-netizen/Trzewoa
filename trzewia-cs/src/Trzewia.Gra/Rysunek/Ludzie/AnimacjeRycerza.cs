@@ -217,8 +217,9 @@ namespace Trzewia.Rysunek.Ludzie
                         K(0, "", 0.15, 0.1, 2.2),
                         K(30, PRZYSIAD, 0.12, 0.27, 0.5),
                         K(44, PRZYSIAD + " tulow=.46", 0.1, 0.28, 0.3),
-                        K(54, "udoL=.3 kolanoL=.1 stopaL=.2 udoP=-.3 kolanoP=.05 stopaP=.45 tulow=-.06 glowa=-.18", 0.24, -0.12, 2.6, 1),
-                        K(62, "udoL=.28 kolanoL=.1 stopaL=.2 udoP=-.28 kolanoP=.05 stopaP=.4 tulow=-.08 glowa=-.2", 0.16, -0.2, 3.0),
+                        // trafienie w pół łuku: ostrze przecina cel przed nim, na wysokości barku
+                        K(54, "udoL=.32 kolanoL=.14 stopaL=.15 udoP=-.3 kolanoP=.06 stopaP=.4 tulow=.02 glowa=-.14", 0.27, -0.02, 2.15, 1),
+                        K(62, "udoL=.28 kolanoL=.1 stopaL=.2 udoP=-.28 kolanoP=.05 stopaP=.45 tulow=-.08 glowa=-.2", 0.16, -0.2, 3.0),
                         K(78, "tulow=.06", 0.15, 0.04, 2.5),
                         K(96, "", 0.15, 0.1, 2.2));
                 case "piruet":

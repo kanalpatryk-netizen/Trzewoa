@@ -323,9 +323,7 @@ namespace Trzewia.Rysunek.Ludzie
         /// </summary>
         public static PunktyPostaci Rysuj(IPlotno ctx, double h, in Poza p, in Rekwizyty r, Stroj s, in Rany rany = default)
         {
-            Kafle(ctx);
-            var P = new Pedzel { ctx = ctx, h = h, lw = Math.Max(0.5, h * 0.0105), detal = h >= 46 ? 2 : h >= 28 ? 1 : 0 };
-            if (P.detal >= 2) { P.kreski = wzorKresek; if (s.rola == "rycerz") P.kolka = wzorKolek; }
+            var P = NowyPedzel(ctx, h, s);
             var q = Punkty(p, h);
             var b = BarwyStroju(s);
             ctx.save();
@@ -351,8 +349,9 @@ namespace Trzewia.Rysunek.Ludzie
             if (rany.polowa == "gora") Rozdarcie(P, q, b, false);
             if (gora && !rany.bezGlowy) Glowa(P, q, p, s, b);
             else if (gora) Kikut(P, q.kark, q.glowa, 0.055, b, 1);
-            // latarnia w dalszej dłoni: wisi pod dłonią, przed postacią
+            // latarnia w dalszej dłoni: wisi pod dłonią, przed postacią; albo u pasa (wspina się, wisi, spada)
             if (gora && r.lampa == 1 && !rany.bezRekiL) q.lampa = Latarnia(P, q.dlonL, false);
+            if (gora && r.lampa == 3) q.lampa = Latarnia(P, WTulowiu(q, h, 0.1, 0.075), false);
             if (gora && !rany.bezRekiP)
             {
                 var katP = KatPrzedramienia(p, true) + p.dlonP + r.katP;
@@ -476,6 +475,23 @@ namespace Trzewia.Rysunek.Ludzie
                     var w = (0.03 - i * 0.004) * h;
                     Kreska(P, (a.x + dy / L * w, a.y - dx / L * w - 0.008 * h), (a.x - dy / L * w, a.y + dx / L * w + 0.008 * h), Barwa.Rgba(34, 24, 18, 0.5), P.lw * 0.9);
                 }
+            }
+            if (s.rola == "zarlok" && P.detal >= 1)
+            {
+                // błoto do pół łydki (żarłocy leżą i brodzą w błocie)
+                var ctx = P.ctx;
+                double dx = kos.x - kol.x, dy = kos.y - kol.y, L = Math.Sqrt(dx * dx + dy * dy) + 1e-6;
+                var w = 0.04 * h;
+                var a0 = Ku(kol, kos, 0.35);
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(a0.x + dy / L * w, a0.y - dx / L * w); ctx.lineTo(kos.x + dy / L * w, kos.y - dx / L * w);
+                ctx.lineTo(pal.x + 0.01 * h, pal.y + 0.004 * h); ctx.lineTo(pie.x - 0.01 * h, pie.y + 0.004 * h);
+                ctx.lineTo(kos.x - dy / L * w, kos.y + dx / L * w); ctx.lineTo(a0.x - dy / L * w, a0.y + dx / L * w); ctx.closePath();
+                var g = ctx.createLinearGradient(a0.x, a0.y, kos.x, kos.y);
+                g.addColorStop(0, Barwa.Rgba(70, 54, 38, 0)); g.addColorStop(0.5, Barwa.Rgba(70, 54, 38, 0.5 * c + 0.3 * p.bloto)); g.addColorStop(1, Barwa.Rgba(58, 44, 30, 0.85));
+                ctx.fillStyle = g; ctx.fill();
+                ctx.restore();
             }
             if (s.rola == "wergiliusz" && P.detal >= 1)
             {
@@ -1171,6 +1187,55 @@ namespace Trzewia.Rysunek.Ludzie
             Jeden(P, Wielokat(pkt, new K(146, 124, 88)));
             Kreska(P, WTulowiu(q, h, 0.96, 0.05), WTulowiu(q, h, 0.4, -0.1), TUSZ, 0.012 * h + P.lw * 2);
             Kreska(P, WTulowiu(q, h, 0.96, 0.05), WTulowiu(q, h, 0.4, -0.1), Barwa.Rgba(74, 52, 32, 1), 0.012 * h);
+        }
+
+        static Pedzel NowyPedzel(IPlotno ctx, double h, Stroj s)
+        {
+            Kafle(ctx);
+            // kreska rośnie z postacią, ale w zbliżeniach filmu nie grubieje jak w komiksie
+            var P = new Pedzel { ctx = ctx, h = h, lw = Math.Max(0.5, Math.Min(h * 0.0105, 1.2 + h * 0.0025)), detal = h >= 46 ? 2 : h >= 28 ? 1 : 0 };
+            if (P.detal >= 2) { P.kreski = wzorKresek; if (s.rola == "rycerz") P.kolka = wzorKolek; }
+            return P;
+        }
+
+        /// <summary>Oderwana głowa (szczątki żarłoka): kikut szyi w (0, 0), głowa nad nim, całość obrócona o `kat` (płótno).</summary>
+        public static void OderwanaGlowa(IPlotno ctx, double h, double kat, Stroj s, double usta = 0.6)
+        {
+            var P = NowyPedzel(ctx, h, s);
+            var b = BarwyStroju(s);
+            ctx.save();
+            ctx.rotate(kat);
+            ctx.lineJoin = "round"; ctx.lineCap = "round";
+            var q = new PunktyPostaci { kark = (0, 0), glowa = (0, -(SZYJA + R_GLOWY * 0.95) * h), rGlowy = R_GLOWY * h };
+            Jeden(P, Konczyna(P, (0, 0), Ku(q.kark, q.glowa, 0.62), P_SZYJA, 1.3, b.skora));
+            Glowa(P, q, new Poza { usta = usta }, s, b);
+            // poszarpany kikut szyi
+            ctx.beginPath(); ctx.ellipse(0, 0, 0.034 * h, 0.014 * h, 0, 0, Math.PI * 2);
+            ctx.fillStyle = Barwa.Rgba(126, 16, 12, 1); ctx.fill();
+            ctx.fillStyle = Barwa.Rgba(214, 196, 176, 0.9); ctx.beginPath(); ctx.arc(0.004 * h, 0, 0.007 * h, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
+        }
+
+        /// <summary>Oderwana ręka (szczątki żarłoka): poszarpany bark w (0, 0), ramię pod kątem `kat` (kość: 0 — w dół), zgięcie łokcia.</summary>
+        public static void OderwanaReka(IPlotno ctx, double h, double kat, double zgiecie, Stroj s)
+        {
+            var P = NowyPedzel(ctx, h, s);
+            var b = BarwyStroju(s);
+            ctx.save();
+            ctx.lineJoin = "round"; ctx.lineCap = "round";
+            (double x, double y) bark = (0, 0);
+            var lok = od(bark, kat, RAMIE * h); var dl = od(lok, kat + zgiecie, PRZEDRAMIE * h);
+            var gr = s.rola == "zarlok" ? 1.25 : 1.0;
+            Grupa(P, new List<Ks>
+            {
+                Dlon(P, dl, kat + zgiecie, b.skora, false),
+                Konczyna(P, lok, dl, P_PRZEDRAMIE, gr, b.skora),
+                Konczyna(P, bark, lok, P_RAMIE, gr, b.skora),
+            });
+            ctx.beginPath(); ctx.ellipse(0, 0, 0.034 * h, 0.022 * h, kat, 0, Math.PI * 2);
+            ctx.fillStyle = Barwa.Rgba(126, 16, 12, 1); ctx.fill();
+            ctx.fillStyle = Barwa.Rgba(214, 196, 176, 0.9); ctx.beginPath(); ctx.arc(0, 0, 0.008 * h, 0, Math.PI * 2); ctx.fill();
+            ctx.restore();
         }
 
         /// <summary>Kupa trzewi (żarłok, Ludzik.rysujTrzewia): środek w (x, y), `kat` — obrót.</summary>
