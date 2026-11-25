@@ -17,7 +17,7 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 7a — usunięcia po obejrzeniu filmu (22.11; czeka na „dalej”)
 - [x] Etap 7b — walka: bez kręcenia się, rycerz za Cerberem, przerywniki ścięć, napisy końcowe (22.11; czeka na „dalej”)
 - [x] Etap 7c — wstęp: film i scena wejścia (23.11; czeka na „dalej”; Dante i Wergiliusz — w 7d)
-- [ ] Etap 7d — ludzie od nowa w kodzie i ich animacje
+- [x] Etap 7d — ludzie od nowa w kodzie i ich animacje (25.11; czeka na „dalej”; animacje Cerbera — pytanie, które)
 
 ## Decyzje użytkownika (16.11, po raporcie etapu 0)
 
@@ -596,9 +596,38 @@ i dłoni). Rysunek klatki walki (procesorem, zrzuty ziarna 3): 497 ms przed, 499
    (`WstepKregu`) — nie przechodzi już nad jego otworem.
 
 ### 7d — ludzie i animacje
-- [ ] Ludzie od nowa: wyglądają jak kurczaki, nie przypominają człowieka (plansza, księga, wstęp; potępieni, Dante,
+- [x] Ludzie od nowa: wyglądają jak kurczaki, nie przypominają człowieka (plansza, księga, wstęp; potępieni, Dante,
       Wergiliusz). Z 7c: 0:25 — Dante i Wergiliusz nie pasują do klimatu gry (wygląd).
-- [ ] Animacje ludzi i Cerbera (część ohydna) — razem z nowymi ludźmi.
+- [x] Animacje ludzi — wszystkie od nowa, razem z nowymi ludźmi.
+- [ ] Animacje Cerbera (część ohydna) — nie ruszone: nie wiadomo, które (pytanie w raporcie; „nie zgaduj”).
+
+Zrobione (25.11, decyzja „narysuję od nowa w kodzie”):
+1. *Postać* (`Rysunek/Ludzie/Postac.cs`, `PostacRysunek.cs`): ludzkie proporcje (głowa ~1/8 wzrostu, szyja, barki,
+   łokcie, dłonie z kciukiem, kolana, stopy z piętą), mięśnie kończyn (udo, łydka, biceps), światło z góry z przodu,
+   kreskowanie w cieniu od 46 px wzrostu, kółka kolczugi, cienki kontur sepią — jedna kreska na całą kończynę, bez
+   czarnej obwódki sylwetki (7a). Stroje: grabarz (5 wzorów barw, kaptur z ogonem albo żelazny kapelusz, broda, owijacze,
+   sakiewka), mnich (2: biały habit ze stułą i ciemny z brodą; tonsura, sznur z węzłami), rycerz z0–z5 (czepiec kolczy,
+   hełm garnczkowy z krzyżem, naramienniki, napierśnik i karwasze, nakolanniki, tarcza; wapenrok z krzyżem, płaszcz),
+   żarłok (nagi, obrzmiały brzuch, błoto do pół łydki, krew), Dante (czerwona szata i kaptur, wieniec laurowy),
+   Wergiliusz (toga z fałdem, siwe kędziory i broda, sandały, wieniec). Rekwizyty: kilof, młot, miecz, kostur z krzyżem,
+   księga z blaskiem, latarnia, świeca, grzyb, worek, pochwa.
+2. *Animacje* (`Animacje.cs`, `AnimacjeRycerza.cs`): każda animacja starych arkuszy pod tą samą nazwą, liczbą klatek
+   i sterownikiem — gra wybiera klatki bez zmian. Chód i bieg z kinematyki nogi: stopa stoi na ziemi i jedzie w tył
+   równo z ziemią (test), pięta–cała stopa–palce; ręce sięgają do celu (kilof i miecz oburącz). Grabarz w drodze niesie
+   kilof na ramieniu i latarnię przed sobą (jak w TS), mnich kostur. Rycerz: 17 ruchów walki według opisów z nastaw,
+   uderzenie dokładnie w tiku trafienia (test: ostrze przed nim w tiku trafienia każdego ciosu), piruet w lustrze,
+   powalenie na plecy i wstawanie przez siad i klęk wsparty na mieczu, ścięcie głowy (wyskok oburącz, cięcie w locie).
+3. *Arkusze* (`Komputer/PiekarniaLudzi.cs`, `--wypiecz-ludzi`): 24 arkusze w `dane/grafika/duszki-ludzie` (WebP 90,
+   35 MB; stare zostają). Światła klatek (latarnia, świeca, aureola, księga, krzyż kostura) przeniesione w miejsca
+   nowych rekwizytów; głowa każdej klatki z nowej postaci. `Duszek.Daj` bierze nowe arkusze przy `VisualConfig.Ludzie`
+   (`--ludzie wl|wyl`, F9 — cała oprawa), strony nowych nie przechodzą przez rycinę z etapu 5.
+4. *Na żywo*: żarłoki (`Ludzik` — tłum, bójka, rzeź, szczątki: głowa, ręka, trzewia; to samo API i pozy), Dante
+   i Wergiliusz we wstępie (`FilmKregu.wedrowiecNowy`: chód, wskazuje drogę, schyla się po ziemię; strój widać przez
+   deszcz). Filmy ścięć i wstawanie szóstki biorą nowe arkusze same.
+5. *Sprawdzenie*: `--podglad-ludzi KATALOG` (tablica strojów nowa obok starej, paski wszystkich animacji),
+   testy `LudzieTesty` (pozy, stopa w chodzie, ciosy) i `DuszkiTesty.NowiLudzieMajaTeSameAnimacjeCoStarzy`.
+   Koszt: film wstępu na procesorze 378 ms/klatkę wobec 364 ms ze starymi (+4%); żarłok na żywo 0,6 ms (40 px),
+   1,7 ms (80 px).
 
 ## Wzór raportu po każdym etapie
 
