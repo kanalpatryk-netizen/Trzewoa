@@ -42,6 +42,7 @@ static class Program
         if (Uruchomienie.Uderzenie is bool ud) Trzewia.Visual.VisualConfig.Uderzenie = ud;
         if (Uruchomienie.Przerywniki is bool prz) Trzewia.Visual.VisualConfig.Przerywniki = prz;
         if (Uruchomienie.Rycina is bool ryc) Trzewia.Visual.VisualConfig.Rycina = ryc;
+        if (Uruchomienie.Ludzie is bool lu) Trzewia.Visual.VisualConfig.Ludzie = lu;
         if (Uruchomienie.WalkaWzory is bool wz) Trzewia.Symulacja.WalkaWzor.Wlaczony = wz;
         if (Uruchomienie.ZmianyKregu is bool zk) Trzewia.Symulacja.ZmianyKregu.Wlaczone = zk;
         var sciezki = new Sciezki();
@@ -50,6 +51,11 @@ static class Program
         {
             Rdzen.Gospodarz.Dane = sciezki;
             return ZrzutyWalki.Uruchom();
+        }
+        if (Uruchomienie.WypieczLudzi != null)
+        {
+            Rdzen.Gospodarz.Dane = sciezki;
+            return PiekarniaLudzi.Uruchom(Uruchomienie.WypieczLudzi, Uruchomienie.TylkoArkusz);
         }
         if (Uruchomienie.PodgladLudzi != null)
         {

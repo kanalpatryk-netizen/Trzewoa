@@ -55,6 +55,10 @@ namespace Trzewia.Rysunek.Duszki
         IObraz?[] obrazy = Array.Empty<IObraz?>();
         /// <summary>Etap 5 „rycina”: osobny bufor, żeby F9/VisualConfig.Rycina przełączał bez przeładowania oryginału.</summary>
         IObraz?[] obrazyRycina = Array.Empty<IObraz?>();
+        /// <summary>Katalog stron w dane/ (stare arkusze: grafika/duszki/; nowi ludzie, etap 7d: grafika/duszki-ludzie/).</summary>
+        public string katalog = "grafika/duszki/";
+        /// <summary>Etap 7d: arkusz nowych ludzi — już w stylu ryciny, bez zamiany stron na duszki-rycina.</summary>
+        public bool nowi;
         /// <summary>Po 7 liczb na klatkę: strona, x, y, szerokość, wysokość, ox, oy (przesunięcie od punktu zaczepienia — środka stóp).</summary>
         public float[] klatki = Array.Empty<float>();
         /// <summary>Światła klatki (poświata lampki, świecy, księgi): po 7 liczb — x, y, promień w ułamkach h; barwa R, G, B; siła.</summary>
@@ -69,12 +73,12 @@ namespace Trzewia.Rysunek.Duszki
         /// </summary>
         public IObraz Strona(int nr)
         {
-            if (Visual.VisualConfig.Aktywne(Visual.VisualConfig.Rycina))
+            if (!nowi && Visual.VisualConfig.Aktywne(Visual.VisualConfig.Rycina))
             {
                 var r = obrazyRycina[nr] ??= Plotno.Wczytaj("grafika/duszki-rycina/" + Path.ChangeExtension(strony[nr], ".webp"));
                 if (r.complete) return r;
             }
-            return obrazy[nr] ??= Plotno.Wczytaj("grafika/duszki/" + strony[nr]);
+            return obrazy[nr] ??= Plotno.Wczytaj(katalog + strony[nr]);
         }
     }
 
@@ -197,19 +201,28 @@ namespace Trzewia.Rysunek.Duszki
         // ── wczytywanie ────────────────────────────────────────────────────────────────────────────────────────
 
         static readonly Dictionary<string, Duszek?> pamiec = new Dictionary<string, Duszek?>();
+        static readonly Dictionary<string, Duszek?> pamiecNowych = new Dictionary<string, Duszek?>();
 
-        /// <summary>Duszek o nazwie pliku (np. „robotnik-3”, „rycerz-6-z2”); null, gdy go nie ma w dane/grafika/duszki.</summary>
+        /// <summary>
+        /// Duszek o nazwie pliku (np. „robotnik-3”, „rycerz-6-z2”); null, gdy go nie ma w dane/grafika/duszki. Etap 7d: przy
+        /// włączonych nowych ludziach (VisualConfig.Ludzie, F9) — arkusz z dane/grafika/duszki-ludzie, gdy taki jest.
+        /// </summary>
         public static Duszek? Daj(string nazwa)
         {
+            if (Visual.VisualConfig.Aktywne(Visual.VisualConfig.Ludzie))
+            {
+                if (!pamiecNowych.TryGetValue(nazwa, out var n)) { n = Wczytaj(nazwa, "grafika/duszki-ludzie/"); pamiecNowych[nazwa] = n; }
+                if (n != null) return n;
+            }
             if (pamiec.TryGetValue(nazwa, out var d)) return d;
-            d = Wczytaj(nazwa);
+            d = Wczytaj(nazwa, "grafika/duszki/");
             pamiec[nazwa] = d;
             return d;
         }
 
-        static Duszek? Wczytaj(string nazwa)
+        static Duszek? Wczytaj(string nazwa, string katalog)
         {
-            var bajty = Zasoby.Czytaj("grafika/duszki/" + nazwa + ".json");
+            var bajty = Zasoby.Czytaj(katalog + nazwa + ".json");
             if (bajty == null) return null;
             if (!(Json.Czytaj(Encoding.UTF8.GetString(bajty)) is Dictionary<string, object?> o)) return null;
             var d = new Duszek
@@ -245,7 +258,7 @@ namespace Trzewia.Rysunek.Duszki
                 d.poziomy = new PoziomDuszka[poziomy.Count];
                 for (int i = 0; i < poziomy.Count; i++)
                 {
-                    var p = new PoziomDuszka();
+                    var p = new PoziomDuszka { katalog = katalog, nowi = katalog != "grafika/duszki/" };
                     d.poziomy[i] = p;
                     if (!(poziomy[i] is Dictionary<string, object?> q)) continue;
                     p.h = q.TryGetValue("h", out var hh) && hh is double hd ? hd : 1;

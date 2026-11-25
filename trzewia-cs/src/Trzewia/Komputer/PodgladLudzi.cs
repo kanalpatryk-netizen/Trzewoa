@@ -57,6 +57,23 @@ static class PodgladLudzi
         // nowe animacje: te same nazwy i liczby klatek co w starych arkuszach
         foreach (var (arkusz, stroj) in new[] { ("robotnik-3", STROJE[0].stroj), ("pobozny-1", STROJE[6].stroj), ("rycerz-6-z5", STROJE[13].stroj), ("rycerz-6-z0-sciecie", STROJE[8].stroj) })
             Animacje(Path.Combine(katalog, "nowe-" + arkusz + ".png"), Duszek.Daj(arkusz), stroj, 80);
+        // koszt rysunku na żywo (żarłoki w filmie i zabijaniu, Dante, Wergiliusz): średni czas jednej postaci
+        {
+            using var p = new PlotnoSkia(400, 300);
+            var zarlok = new Stroj { rola = "zarlok" };
+            foreach (var h in new[] { 40.0, 80.0, 160.0 })
+            {
+                var z = System.Diagnostics.Stopwatch.StartNew();
+                const int N = 300;
+                for (int i = 0; i < N; i++)
+                {
+                    var k = Trzewia.Rysunek.Ludzie.Animacje.Klatka(zarlok, "idzie", i / (double)N);
+                    p.setTransform(1, 0, 0, 1, 200, 250);
+                    Postac.Rysuj(p, h, k.p, k.r, zarlok);
+                }
+                Console.WriteLine($"żarłok na żywo, wzrost {h} px: {z.Elapsed.TotalMilliseconds / N:F3} ms na postać");
+            }
+        }
         Console.WriteLine($"podgląd ludzi: {katalog}");
         return 0;
     }

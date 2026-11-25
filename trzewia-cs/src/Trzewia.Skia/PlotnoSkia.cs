@@ -656,15 +656,18 @@ namespace Trzewia.Skia
             return x1 < 0 ? null : (x0, y0, x1 + 1, y1 + 1);
         }
 
-        /// <summary>Oprawa 7d: zapis bezstratny WebP (strony arkuszy ludzi — kreskowanie i kontur bez strat, mniej niż PNG).</summary>
-        public bool ZapiszWebp(string plik)
+        /// <summary>
+        /// Oprawa 7d: zapis WebP (strony arkuszy ludzi): `jakosc` 0–100 stratnie (alfa bez strat), null — bezstratnie.
+        /// Przy 90 kontur i kreskowanie wyglądają jak bez strat, a plik jest o połowę mniejszy.
+        /// </summary>
+        public bool ZapiszWebp(string plik, int? jakosc = null)
         {
             using var img = wlasna?.Snapshot();
             if (img == null) return false;
             using var raster = img.ToRasterImage(true);
             using var pix = raster.PeekPixels();
             if (pix == null) return false;
-            using var d = pix.Encode(new SKWebpEncoderOptions(SKWebpEncoderCompression.Lossless, 100));
+            using var d = pix.Encode(jakosc is int q ? new SKWebpEncoderOptions(SKWebpEncoderCompression.Lossy, q) : new SKWebpEncoderOptions(SKWebpEncoderCompression.Lossless, 100));
             if (d == null) return false;
             File.WriteAllBytes(plik, d.ToArray());
             return true;

@@ -31,6 +31,12 @@ namespace Trzewia.Visual
         public static bool Przerywniki = true;
         /// <summary>Etap 5: jeden styl („rycina”) — zestaw grafik po narzędziu tools/ink-pipeline.</summary>
         public static bool Rycina = true;
+        /// <summary>
+        /// Etap 7d: nowi ludzie — arkusze z dane/grafika/duszki-ludzie (postać rysowana kodem, Rysunek/Ludzie, upieczona
+        /// przez Komputer/PiekarniaLudzi.cs) zamiast starych; żarłoki, Dante i Wergiliusz na żywo tą samą postacią.
+        /// Wyłączone (albo F9) — starzy ludzie, do porównania.
+        /// </summary>
+        public static bool Ludzie = true;
 
         // ───────────── etap 1: światło i kontrast (Visual/SwiatloOprawy.cs, Visual/LightEvents.cs) ─────────────
 

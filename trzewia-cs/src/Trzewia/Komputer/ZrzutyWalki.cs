@@ -258,12 +258,18 @@ static class ZrzutyWalki
         // film: sam rysunek, czas podany wprost
         var simFilmu = new Sim(ziarno);
         var doS = Math.Min(FilmKregu.DLUGOSC_FILMU, odS + ileS);
+        // czas rysunku klatki filmu (bez zapisu): średni i najgorszy — koszt ludzi rysowanych na żywo (etap 7d)
+        double suma = 0, najgorszy = 0, najgorszyT = 0; int ile = 0;
         for (double t = odS; t < doS + 1e-9; t += coIle)
         {
             p.setTransform(1, 0, 0, 1, 0, 0);
+            var z = System.Diagnostics.Stopwatch.StartNew();
             FilmKregu.rysujFilm(p, simFilmu, W, H, t, 1000 + t * 1000);
+            var ms = z.Elapsed.TotalMilliseconds;
+            if (t > odS) { suma += ms; ile++; if (ms > najgorszy) { najgorszy = ms; najgorszyT = t; } }
             if (!zapisz($"wstep-film-{(int)Math.Round(t * 1000):D5}.jpg")) return 1;
         }
+        if (ile > 0) Console.WriteLine($"film: rysunek klatki średnio {suma / ile:F1} ms, najdłużej {najgorszy:F1} ms (t = {najgorszyT:F1} s)");
         // scena wejścia: zwykła nowa gra (bez bota), film pominięty jak klawiszem Esc
         Obserwowany.BOT.wlaczony = false;
         Races.resetRaces();

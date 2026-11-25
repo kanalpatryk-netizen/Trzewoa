@@ -119,6 +119,8 @@ public static class Uruchomienie
     public static bool? Przerywniki;
     /// <summary>Oprawa, etap 5: sam styl „rycina” (VisualConfig.Rycina) włączony albo wyłączony — do pomiaru kosztu.</summary>
     public static bool? Rycina;
+    /// <summary>Oprawa, etap 7d: nowi ludzie (VisualConfig.Ludzie) włączeni albo wyłączeni — do porównania ze starymi.</summary>
+    public static bool? Ludzie;
     /// <summary>Walka w Kręgu: true — według wzorów użytkownika (WalkaWzor), false — stara, jak w TS; null — domyślnie.</summary>
     public static bool? WalkaWzory;
     /// <summary>Zmiany Kręgu po porcie (ZmianyKregu: bez Cieni, naprawy, etap 6) włączone albo wyłączone (Krąg jak w TS).</summary>
@@ -137,6 +139,10 @@ public static class Uruchomienie
     public static string? FilmPelnejGry;
     /// <summary>Oprawa, etap 7d: katalog na tablice podglądu nowych ludzi (Komputer/PodgladLudzi.cs); null — zwykła gra.</summary>
     public static string? PodgladLudzi;
+    /// <summary>Oprawa, etap 7d: katalog na upieczone arkusze nowych ludzi (Komputer/PiekarniaLudzi.cs); null — zwykła gra.</summary>
+    public static string? WypieczLudzi;
+    /// <summary>Piekarnia ludzi: tylko ten arkusz (np. „rycerz-6-z5”).</summary>
+    public static string? TylkoArkusz;
 
     public const string Pomoc = """
         Trzewia.exe [przełączniki]
@@ -159,6 +165,8 @@ public static class Uruchomienie
           --uderzenie wl|wyl   samo „uderzenie” (etap 3 oprawy: zatrzymanie trafień, wstrząs, cząsteczki) włączone albo wyłączone
           --przerywniki wl|wyl same przerywniki (etap 4 oprawy: wejście/śmierć bossa) włączone albo wyłączone
           --rycina wl|wyl    sam styl „rycina” (etap 5 oprawy: zestaw grafik z tools/ink-pipeline) włączony albo wyłączony
+          --ludzie wl|wyl    nowi ludzie (etap 7d: postać rysowana kodem, arkusze z dane/grafika/duszki-ludzie)
+                             włączeni albo wyłączeni — wyłączeni: starzy ludzie, do porównania (domyślnie: wl)
           --walka stara|wzory
                            walka w Kręgu: stara (jak w wersji TS) albo według wzorów (domyślnie: wzory)
           --krag-zmiany wl|wyl
@@ -182,6 +190,10 @@ public static class Uruchomienie
           --podglad-ludzi KATALOG
                            bez okna: tablice PNG nowych ludzi (etap 7d) — stroje w kilku wielkościach obok starych
                            arkuszy, pozy i animacje
+          --wypiecz-ludzi KATALOG
+                           bez okna: piecze arkusze nowych ludzi (etap 7d) do KATALOGU (w repozytorium:
+                           dane/grafika/duszki-ludzie) — te same animacje i poziomy co stare arkusze; --tylko NAZWA
+                           piecze jeden arkusz (np. rycerz-6-z5)
           --film-pelny KATALOG
                            bez okna: cała partia Kręgu Trzeciego od menu — zmiana trybu, „Nowa gra”, wstęp (film i
                            scena wejścia), budowa w przyspieszeniu aż do pęknięcia pieczęci, walka z Cerberem w
@@ -231,9 +243,15 @@ public static class Uruchomienie
                     i++; break;
                 case "--film-pelny": FilmPelnejGry = nast; i++; break;
                 case "--podglad-ludzi": PodgladLudzi = nast; i++; break;
+                case "--wypiecz-ludzi": WypieczLudzi = nast; i++; break;
+                case "--tylko": TylkoArkusz = nast; i++; break;
                 case "--przerywniki":
                     Przerywniki = Trzewia.Visual.VisualConfig.Czytaj(nast);
                     if (Przerywniki == null) Console.Error.WriteLine($"--przerywniki: nie rozumiem „{nast}” (wl albo wyl)");
+                    i++; break;
+                case "--ludzie":
+                    Ludzie = Trzewia.Visual.VisualConfig.Czytaj(nast);
+                    if (Ludzie == null) Console.Error.WriteLine($"--ludzie: nie rozumiem „{nast}” (wl albo wyl)");
                     i++; break;
                 case "--rycina":
                     Rycina = Trzewia.Visual.VisualConfig.Czytaj(nast);
