@@ -17,6 +17,7 @@ using System.Collections.Generic;
 using Trzewia.Plotna;
 using Trzewia.Rysunek;
 using Trzewia.Rysunek.Duszki;
+using Trzewia.Rysunek.Ludzie;
 using Trzewia.Symulacja;
 
 namespace Trzewia.Aplikacja
@@ -423,12 +424,59 @@ namespace Trzewia.Aplikacja
             ctx.drawImage(B, 0, 0, W, Hh, ox - o, oy - o, W, Hh);
             // sylwetka: ciemna, z odrobiną barwy szaty
             B.clearRect(0, 0, W, Hh); B.drawImage(A, 0, 0, W, Hh, 0, 0, W, Hh);
-            B.globalCompositeOperation = "source-atop"; B.fillStyle = zywy ? "rgba(30,7,6,0.86)" : "rgba(15,16,16,0.86)"; B.fillRect(0, 0, W, Hh); B.globalCompositeOperation = "source-over";
+            // (etap 7d: nowa postać — strój widać przez deszcz, tylko przygaszony; dawna sylwetka prawie czarna)
+            var nowi = Visual.VisualConfig.Aktywne(Visual.VisualConfig.Ludzie);
+            B.globalCompositeOperation = "source-atop";
+            B.fillStyle = nowi ? (zywy ? "rgba(26,10,8,0.34)" : "rgba(14,16,18,0.36)") : zywy ? "rgba(30,7,6,0.86)" : "rgba(15,16,16,0.86)";
+            B.fillRect(0, 0, W, Hh); B.globalCompositeOperation = "source-over";
             ctx.drawImage(B, 0, 0, W, Hh, ox, oy, W, Hh);
+        }
+
+        static readonly Stroj DANTE = new Stroj { rola = "dante" }, WERGILIUSZ = new Stroj { rola = "wergiliusz" };
+
+        /// <summary>
+        /// Oprawa, etap 7d: Dante (żywy — czerwona szata i kaptur, wieniec) i Wergiliusz (toga, siwa broda, wieniec) jako nowa
+        /// postać: chód z kinematyki (`krok` — faza kroku w radianach, 0 — stoi), `reka` 0…1 — Wergiliusz wskazuje drogę,
+        /// `schyla` 0…1 — schyla się po garść ziemi. Dante idzie zgarbiony, z dłońmi przy piersi; Wergiliusz prosto.
+        /// </summary>
+        static void wedrowiecNowy(IPlotno ctx, double h, bool zywy, double krok, double reka, double schyla)
+        {
+            var s = zywy ? DANTE : WERGILIUSZ;
+            var baza = Animacje.Baza(s);
+            baza.tulow += zywy ? 0.07 : 0.01; baza.glowa += zywy ? 0.08 : -0.02;
+            Poza p;
+            if (krok != 0)
+            {
+                var c = Animacje.CHOD.Kopia(); c.wymach = zywy ? 0.12 : 0.22; c.pochyl = zywy ? 0.06 : 0.03;
+                p = Animacje.Chod(krok / (Math.PI * 2) - Math.Floor(krok / (Math.PI * 2)), c, baza);
+            }
+            else
+            {
+                p = baza;
+                p.udoL = 0.07; p.kolanoL = 0.06; p.udoP = -0.05; p.kolanoP = 0.04;
+            }
+            // Dante: dłonie złożone przy piersi (lęk); Wergiliusz: ręce wzdłuż ciała, bliższa wskazuje drogę
+            if (zywy) { Animacje.Siegnij(ref p, true, 0.1, 0.12); Animacje.Siegnij(ref p, false, 0.11, 0.13); }
+            if (reka > 0)
+            {
+                var w = p; Animacje.Siegnij(ref w, true, 0.27, -0.14); w.dlonP = 1.4; w.glowa -= 0.08;
+                p = Poza.Miesz(p, w, Math.Min(1, reka));
+            }
+            if (schyla > 0)
+            {
+                var sch = p;
+                sch.tulow += 1.05; sch.glowa -= 0.4;
+                sch.udoL += 0.5; sch.kolanoL += 0.7; sch.udoP += 0.25; sch.kolanoP += 0.5;
+                sch.biodroY = null;
+                Animacje.Siegnij(ref sch, true, 0.08, 0.3);
+                p = Poza.Miesz(p, sch, Math.Min(1, schyla));
+            }
+            Postac.Rysuj(ctx, h, p, default, s);
         }
 
         static void wedrowiecRys(IPlotno ctx, double h, bool zywy, double krok, double reka, double schyla)
         {
+            if (Visual.VisualConfig.Aktywne(Visual.VisualConfig.Ludzie)) { wedrowiecNowy(ctx, h, zywy, krok, reka, schyla); return; }
             ctx.save();
             ctx.lineJoin = "round"; ctx.lineCap = "round";
             ctx.strokeStyle = "rgba(6,4,4,0.4)"; ctx.lineWidth = Math.Max(0.6, h * 0.008);

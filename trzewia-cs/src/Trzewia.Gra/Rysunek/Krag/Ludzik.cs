@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Text;
 using Trzewia.Plotna;
 using Trzewia.Rdzen;
+using Trzewia.Rysunek.Ludzie;
 
 namespace Trzewia.Rysunek
 {
@@ -83,7 +84,31 @@ namespace Trzewia.Rysunek
         }
 
         /// <summary>Czy obrazki żarłoka są w danych gry.</summary>
-        public static bool Gotowy() => Czesci().Count > 0;
+        public static bool Gotowy() => Nowy || Czesci().Count > 0;
+
+        /// <summary>Oprawa, etap 7d: żarłok rysowany nową postacią (Rysunek/Ludzie) zamiast składania z obrazków.</summary>
+        static bool Nowy => Visual.VisualConfig.Aktywne(Visual.VisualConfig.Ludzie);
+
+        static readonly Stroj ZARLOK = new Stroj { rola = "zarlok" };
+
+        /// <summary>Poza żarłoka jako poza nowej postaci: te same kąty (te same zasady), biodro w (0, 0).</summary>
+        static Poza NaPoze(in PozaLudzika l) => new Poza
+        {
+            tulow = l.tulow, glowa = l.glowa,
+            ramieL = l.ramieL, lokiecL = l.lokiecL, ramieP = l.ramieP, lokiecP = l.lokiecP,
+            udoL = l.udoL, kolanoL = l.kolanoL, udoP = l.udoP, kolanoP = l.kolanoP,
+            usta = l.usta, brzuch = l.brzuch, bloto = l.bloto, krew = l.krew,
+            biodroX = 0, biodroY = 0,
+        };
+
+        static PunktyLudzika ZPostaci(in PunktyPostaci q, double h) => new PunktyLudzika
+        {
+            glowa = q.glowa, kark = q.kark, dlonL = q.dlonL, dlonP = q.dlonP,
+            // stopa: podeszwa (najniższy z pięty i palców); kolano: z grubością rzepki — klęczący opiera się o ziemię
+            stopaL = (q.kostkaL.x, Math.Max(q.pietaL.y, q.palceL.y)), stopaP = (q.kostkaP.x, Math.Max(q.pietaP.y, q.palceP.y)),
+            kolL = (q.kolanoL.x, q.kolanoL.y + 0.03 * h), kolP = (q.kolanoP.x, q.kolanoP.y + 0.03 * h),
+            pas = ((q.biodro.x + q.kark.x) / 2, (q.biodro.y + q.kark.y) / 2),
+        };
 
         static IZrodloObrazu poziom(Czesc o, double f)
         {
@@ -127,6 +152,7 @@ namespace Trzewia.Rysunek
         /// </summary>
         public static PunktyLudzika punkty(double h, PozaLudzika p)
         {
+            if (Nowy) return ZPostaci(Postac.Punkty(NaPoze(p), h), h);
             (double x, double y) biodro = (0, 0);
             var tulKat = Math.PI - p.tulow;
             var kark = od(biodro, tulKat, h * 0.34);
@@ -143,6 +169,11 @@ namespace Trzewia.Rysunek
         /// <summary>Rysuje żarłoka z obrazków (biodro w (0, 0), wzrost `h`); zwraca punkty ciała.</summary>
         public static PunktyLudzika rysujLudzika(IPlotno ctx, double h, PozaLudzika p)
         {
+            if (Nowy)
+            {
+                var rany = new Rany { bezRekiL = p.bezRekiL, bezRekiP = p.bezRekiP, bezNogiL = p.bezNogiL, bezNogiP = p.bezNogiP, bezGlowy = p.bezGlowy, trzewia = p.trzewia, polowa = p.polowa };
+                return ZPostaci(Postac.Rysuj(ctx, h, NaPoze(p), default, ZARLOK, rany), h);
+            }
             bool gora = p.polowa != "dol", dol = p.polowa != "gora";
             var k = p.krew > 0.4 ? 1 : 0;
             (double x, double y) biodro = (0, 0);
@@ -185,14 +216,24 @@ namespace Trzewia.Rysunek
         }
 
         /// <summary>Oderwana głowa (szczątki): kikut szyi w (0, 0), `kat` — obrót.</summary>
-        public static void rysujOderwanaGlowe(IPlotno ctx, double h, double kat) => czesc(ctx, "zarlok-glowa-oderwana", h, (0, 0), kat);
+        public static void rysujOderwanaGlowe(IPlotno ctx, double h, double kat)
+        {
+            if (Nowy) { Postac.OderwanaGlowa(ctx, h, kat, ZARLOK); return; }
+            czesc(ctx, "zarlok-glowa-oderwana", h, (0, 0), kat);
+        }
 
         /// <summary>Kupa trzewi na ziemi (szczątki), środek w (0, 0).</summary>
-        public static void rysujTrzewia(IPlotno ctx, double h, double kat = 0) => czesc(ctx, "zarlok-trzewia", h, (0, 0), kat);
+        public static void rysujTrzewia(IPlotno ctx, double h, double kat = 0)
+        {
+            if (Nowy) { Postac.Trzewia(ctx, 0, 0, h, kat); return; }
+            czesc(ctx, "zarlok-trzewia", h, (0, 0), kat);
+        }
 
         /// <summary>Oderwana ręka (szczątki): poszarpany bark w (0, 0), ręka w kierunku `kat` (0 — w dół), zgięta w łokciu.</summary>
         public static void rysujOderwanaReke(IPlotno ctx, double h, double kat, double zgiecie = 0.5)
         {
+            // (obrót płótna `kat` to kość pod kątem −kat w układzie postaci)
+            if (Nowy) { Postac.OderwanaReka(ctx, h, -kat, -zgiecie, ZARLOK); return; }
             (double x, double y) lok = (-Math.Sin(kat) * h * 0.17, Math.Cos(kat) * h * 0.17);
             czesc(ctx, "zarlok-ramie-k", h, (0, 0), kat);
             czesc(ctx, "zarlok-przedramie-k", h, lok, kat + zgiecie);
