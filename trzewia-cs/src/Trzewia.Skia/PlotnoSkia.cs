@@ -626,6 +626,50 @@ namespace Trzewia.Skia
         public CanvasPattern? createPattern(IZrodloObrazu obraz, string powtorzenie) =>
             FabrykaSkia.Obraz(obraz) == null ? null : new CanvasPattern(obraz, powtorzenie);
 
+        /// <summary>
+        /// Oprawa 7d (piekarnia ludzi): prostokąt niepustych pikseli (alfa ponad `prog`) — x0, y0 włącznie, x1, y1 wyłącznie;
+        /// null — płótno puste.
+        /// </summary>
+        public (int x0, int y0, int x1, int y1)? Zawartosc(int prog = 3)
+        {
+            using var img = wlasna?.Snapshot();
+            if (img == null) return null;
+            using var raster = img.ToRasterImage(true);
+            using var pix = raster.PeekPixels();
+            if (pix == null) return null;
+            int w = pix.Width, h = pix.Height;
+            if (pix.BytesPerPixel != 4) return null;
+            // RGBA albo BGRA — alfa zawsze czwarta
+            var bajty = pix.GetPixelSpan();
+            var rb = pix.RowBytes;
+            int x0 = w, y0 = h, x1 = -1, y1 = -1;
+            for (int y = 0; y < h; y++)
+            {
+                int wiersz = y * rb;
+                for (int x = 0; x < w; x++)
+                {
+                    if (bajty[wiersz + x * 4 + 3] <= prog) continue;
+                    if (x < x0) x0 = x; if (x > x1) x1 = x;
+                    if (y < y0) y0 = y; if (y > y1) y1 = y;
+                }
+            }
+            return x1 < 0 ? null : (x0, y0, x1 + 1, y1 + 1);
+        }
+
+        /// <summary>Oprawa 7d: zapis bezstratny WebP (strony arkuszy ludzi — kreskowanie i kontur bez strat, mniej niż PNG).</summary>
+        public bool ZapiszWebp(string plik)
+        {
+            using var img = wlasna?.Snapshot();
+            if (img == null) return false;
+            using var raster = img.ToRasterImage(true);
+            using var pix = raster.PeekPixels();
+            if (pix == null) return false;
+            using var d = pix.Encode(new SKWebpEncoderOptions(SKWebpEncoderCompression.Lossless, 100));
+            if (d == null) return false;
+            File.WriteAllBytes(plik, d.ToArray());
+            return true;
+        }
+
         public bool ZapiszPng(string plik)
         {
             using var img = wlasna?.Snapshot();

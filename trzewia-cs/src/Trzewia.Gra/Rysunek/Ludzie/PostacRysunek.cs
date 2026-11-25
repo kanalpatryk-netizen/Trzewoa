@@ -329,6 +329,9 @@ namespace Trzewia.Rysunek.Ludzie
             var q = Punkty(p, h);
             var b = BarwyStroju(s);
             ctx.save();
+            // piruet: w lustrze (twarzą w lewo) — punkty zwracane też odbite
+            var lustro = p.odwrot >= 0.5;
+            if (lustro) ctx.scale(-1, 1);
             ctx.lineJoin = "round"; ctx.lineCap = "round";
             bool gora = rany.polowa != "dol", dol = rany.polowa != "gora";
             var tarcza = r.tarcza ?? s.Tarcza;
@@ -363,6 +366,19 @@ namespace Trzewia.Rysunek.Ludzie
             else if (gora) Kikut(P, q.barkP, q.lokiecP, 0.06, b, 1);
             if (gora && !rany.bezRekiL && r.wL == Narzedzie.Ksiega) q.ksiega = Ksiega(P, q.dlonL, KatPrzedramienia(p, false) + p.dlonL + r.katL, r.otwarta, r.blask);
             ctx.restore();
+            if (lustro) q = Odbij(q);
+            return q;
+        }
+
+        /// <summary>Punkty postaci w lustrze (x → −x).</summary>
+        static PunktyPostaci Odbij(PunktyPostaci q)
+        {
+            static (double x, double y) o((double x, double y) a) => (-a.x, a.y);
+            q.biodro = o(q.biodro); q.kark = o(q.kark); q.glowa = o(q.glowa); q.barkL = o(q.barkL); q.barkP = o(q.barkP);
+            q.lokiecL = o(q.lokiecL); q.lokiecP = o(q.lokiecP); q.dlonL = o(q.dlonL); q.dlonP = o(q.dlonP);
+            q.kolanoL = o(q.kolanoL); q.kolanoP = o(q.kolanoP); q.kostkaL = o(q.kostkaL); q.kostkaP = o(q.kostkaP);
+            q.pietaL = o(q.pietaL); q.pietaP = o(q.pietaP); q.palceL = o(q.palceL); q.palceP = o(q.palceP);
+            q.czubek = o(q.czubek); q.lampa = o(q.lampa); q.swieca = o(q.swieca); q.ksiega = o(q.ksiega);
             return q;
         }
 
@@ -611,46 +627,68 @@ namespace Trzewia.Rysunek.Ludzie
             }
         }
 
-        /// <summary>Strój od pasa w dół: tunika do pół uda (grabarz), habit i toga do kostek, wapenrok do kolan (rycerz).</summary>
+        /// <summary>
+        /// Strój od pasa w dół: tunika do pół uda (grabarz), habit i toga do kostek, wapenrok do kolan (rycerz). Kształt to
+        /// obrys wypukły pasa i nóg do rąbka — materiał spada prosto z bioder i przez wysunięte kolano, nie wydyma się.
+        /// </summary>
         static void DolStroju(Pedzel P, in PunktyPostaci q, in Poza p, Stroj s, Barwy b)
         {
             var h = P.h;
-            double dlug = s.rola switch { "robotnik" => 0.42, "rycerz" => 0.9, "pobozny" => 1.72, "dante" => 1.75, "wergiliusz" => 1.6, _ => 0 };
+            double dlug = s.rola switch { "robotnik" => 0.62, "rycerz" => 0.92, "pobozny" => 1.8, "dante" => 1.82, "wergiliusz" => 1.7, _ => 0 };
             if (dlug <= 0) { if (s.rola == "zarlok") Przepaska(P, q); return; }
             double szata = s.rola == "pobozny" || s.rola == "wergiliusz" || s.rola == "dante" ? 1.08 : 1;
-            var pas0 = WTulowiu(q, h, 0.14, -0.064 * szata); var pas1 = WTulowiu(q, h, 0.14, 0.066 * szata);
+            var pas0 = WTulowiu(q, h, 0.16, -0.066 * szata); var pas1 = WTulowiu(q, h, 0.16, 0.068 * szata);
             var biodro = q.biodro;
-            (double x, double y) naNodze((double x, double y) kol, (double x, double y) kos, double t) => t <= 1 ? Ku(biodro, kol, t) : Ku(kol, kos, Math.Min(1.05, t - 1));
-            var nL = naNodze(q.kolanoL, q.kostkaL, dlug); var nP = naNodze(q.kolanoP, q.kostkaP, dlug);
-            // biodra pod spódnicą: przód i tył ud
-            var kL = Ku(biodro, q.kolanoL, Math.Min(1, dlug)); var kP = Ku(biodro, q.kolanoP, Math.Min(1, dlug));
-            var przod = nL.x > nP.x ? nL : nP; var tyl = nL.x > nP.x ? nP : nL;
-            var szer = (s.rola == "robotnik" ? 0.062 : s.rola == "rycerz" ? 0.06 : 0.072) * h;
-            var dno = Math.Max(przod.y, tyl.y);
-            // długa szata nie schodzi pod ziemię: rąbek najniżej tuż nad stopą
-            if (dlug > 1.2) dno = Math.Min(dno, -0.035 * h);
-            // poła z przodu wychodzi za kolano przedniej nogi, z tyłu za tylną — przy kroku szata się rozchyla
-            var pkt = new List<(double x, double y)>(8)
+            var szer = (s.rola == "robotnik" ? 0.05 : s.rola == "rycerz" ? 0.05 : 0.058) * h;
+            var pkt = new List<(double x, double y)>(16) { pas0, pas1, WTulowiu(q, h, -0.04, -0.07 * szata), WTulowiu(q, h, -0.02, 0.07 * szata) };
+            // długa szata: rąbek nad ziemią, nie niżej niż tuż nad stopą
+            var minY = dlug > 1.2 ? -0.03 * h : double.MaxValue;
+            void noga((double x, double y) kol, (double x, double y) kos)
             {
-                pas0, pas1,
-                (Math.Max(pas1.x, Math.Max(kL.x, kP.x)) + szer * 0.7, (pas1.y + Math.Min(dno, przod.y)) / 2),
-                (przod.x + szer, Math.Min(dno, przod.y + 0.015 * h)),
-                ((przod.x + tyl.x) / 2, dno + 0.012 * h),
-                (tyl.x - szer, Math.Min(dno, tyl.y + 0.015 * h)),
-                (Math.Min(pas0.x, Math.Min(kL.x, kP.x)) - szer * 0.75, (pas0.y + Math.Min(dno, tyl.y)) / 2),
-            };
-            Jeden(P, Wielokat(pkt, b.odziez));
-            if (P.detal >= 1)
+                (double x, double y) rabek;
+                if (dlug <= 1) rabek = Ku(biodro, kol, dlug);
+                else
+                {
+                    pkt.Add((kol.x + szer * 0.9, kol.y)); pkt.Add((kol.x - szer * 0.9, kol.y));
+                    rabek = Ku(kol, kos, Math.Min(1.05, dlug - 1));
+                }
+                var y = Math.Min(rabek.y, minY);
+                pkt.Add((rabek.x + szer, y)); pkt.Add((rabek.x - szer, y));
+            }
+            noga(q.kolanoL, q.kostkaL);
+            noga(q.kolanoP, q.kostkaP);
+            var obrys = Obrys(pkt);
+            Jeden(P, Wielokat(obrys, b.odziez));
+            if (P.detal >= 1 && obrys.Count >= 4)
             {
-                // fałdy od pasa do rąbka
+                // fałdy od pasa do rąbka (do najniższych punktów obrysu)
+                var dol = new List<(double x, double y)>(obrys);
+                dol.Sort((a, c) => c.y.CompareTo(a.y));
+                var r0 = dol[0]; var r1 = dol[1];
+                if (r0.x > r1.x) (r0, r1) = (r1, r0);
                 for (int i = 0; i < 3; i++)
                 {
                     var a = Ku(pas0, pas1, 0.25 + i * 0.25);
-                    var c = Ku(pkt[5], pkt[3], 0.2 + i * 0.3);
-                    Kreska(P, Ku(a, c, 0.3), Ku(a, c, 0.96), Barwa.Rgba(30, 20, 14, 0.3), P.lw * 0.9);
+                    var c = Ku(r0, r1, 0.2 + i * 0.3);
+                    Kreska(P, Ku(a, c, 0.3), Ku(a, c, 0.95), Barwa.Rgba(30, 20, 14, 0.3), P.lw * 0.9);
                 }
-                if (s.rola == "rycerz") Kreska(P, Ku(Ku(pas0, pas1, 0.55), pkt[4], 0.3), pkt[4], Barwa.Rgba(30, 20, 14, 0.5), P.lw);
+                if (s.rola == "rycerz") Kreska(P, Ku(Ku(pas0, pas1, 0.55), Ku(r0, r1, 0.5), 0.3), Ku(r0, r1, 0.5), Barwa.Rgba(30, 20, 14, 0.5), P.lw);
             }
+        }
+
+        /// <summary>Obrys wypukły punktów (łańcuch monotoniczny), w kolejności obiegu.</summary>
+        static List<(double x, double y)> Obrys(List<(double x, double y)> pkt)
+        {
+            var p = new List<(double x, double y)>(pkt);
+            p.Sort((a, b) => a.x != b.x ? a.x.CompareTo(b.x) : a.y.CompareTo(b.y));
+            if (p.Count < 3) return p;
+            static double krzyz((double x, double y) o, (double x, double y) a, (double x, double y) b) => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+            var w = new List<(double x, double y)>(p.Count * 2);
+            foreach (var q in p) { while (w.Count >= 2 && krzyz(w[w.Count - 2], w[w.Count - 1], q) <= 0) w.RemoveAt(w.Count - 1); w.Add(q); }
+            var dolna = w.Count + 1;
+            for (int i = p.Count - 2; i >= 0; i--) { var q = p[i]; while (w.Count >= dolna && krzyz(w[w.Count - 2], w[w.Count - 1], q) <= 0) w.RemoveAt(w.Count - 1); w.Add(q); }
+            w.RemoveAt(w.Count - 1);
+            return w;
         }
 
         static void Przepaska(Pedzel P, in PunktyPostaci q)
@@ -902,11 +940,13 @@ namespace Trzewia.Rysunek.Ludzie
                         var a = wzdluz(-0.1); var k = wzdluz(0.36);
                         var trzon = Konczyna(P, a, k, new[] { 0, 0.011, 0.011, 1, 0.012, 0.012 }, 1, b.drewno);
                         // głowica w poprzek trzonka: szpic naprzód, płaskie ostrze z tyłu, lekko wygięta
-                        var szpic = od(od(k, pr, 0.17 * h), kat, -0.03 * h); var tyl = od(od(k, pr, -0.12 * h), kat, -0.02 * h);
+                        // szpic po stronie zamachu: trzonek w górę — szpic naprzód, trzonek naprzód — szpic w dół
+                        var ps = kat - Math.PI / 2;
+                        var szpic = od(od(k, ps, 0.17 * h), kat, -0.03 * h); var tyl = od(od(k, ps, -0.12 * h), kat, -0.02 * h);
                         var glw = new Ks { kol = b.zelazo, gladko = false };
-                        glw.pkt.Add(tyl); glw.pkt.Add(od(od(k, pr, -0.06 * h), kat, 0.016 * h)); glw.pkt.Add(od(k, kat, 0.022 * h));
-                        glw.pkt.Add(od(od(k, pr, 0.08 * h), kat, 0.01 * h)); glw.pkt.Add(szpic); glw.pkt.Add(od(od(k, pr, 0.08 * h), kat, -0.016 * h));
-                        glw.pkt.Add(od(k, kat, -0.02 * h)); glw.pkt.Add(od(od(k, pr, -0.08 * h), kat, -0.026 * h)); glw.pkt.Add(od(tyl, kat, -0.02 * h));
+                        glw.pkt.Add(tyl); glw.pkt.Add(od(od(k, ps, -0.06 * h), kat, 0.016 * h)); glw.pkt.Add(od(k, kat, 0.022 * h));
+                        glw.pkt.Add(od(od(k, ps, 0.08 * h), kat, 0.01 * h)); glw.pkt.Add(szpic); glw.pkt.Add(od(od(k, ps, 0.08 * h), kat, -0.016 * h));
+                        glw.pkt.Add(od(k, kat, -0.02 * h)); glw.pkt.Add(od(od(k, ps, -0.08 * h), kat, -0.026 * h)); glw.pkt.Add(od(tyl, kat, -0.02 * h));
                         SwiatloPola(glw); glw.sila = 1.3; glw.kreski = false;
                         Grupa(P, new List<Ks> { trzon, glw });
                         return szpic;
@@ -1100,7 +1140,8 @@ namespace Trzewia.Rysunek.Ludzie
             var c = Ku(q.lokiecL, q.dlonL, 0.5);
             var kat = KatPrzedramienia(p, false);
             ctx.save();
-            ctx.translate(c.x + 0.035 * h, c.y); ctx.rotate(-(kat - 0.1) * 0.35);
+            // tarcza obraca się z całą postacią (leżący) i trochę z przedramieniem
+            ctx.translate(c.x + 0.035 * h * Math.Cos(p.obrot), c.y + 0.035 * h * Math.Sin(p.obrot)); ctx.rotate(p.obrot - (kat - 0.1) * 0.35);
             double w = 0.11 * h, hh = 0.3 * h;
             var t = new Ks { kol = b.odziez, gladko = false, sila = 1.1 };
             t.pkt.Add((-w, -hh * 0.42)); t.pkt.Add((w, -hh * 0.42));

@@ -54,8 +54,46 @@ static class PodgladLudzi
         foreach (var a in new[] { "robotnik-3", "pobozny-1", "rycerz-6-z5", "rycerz-6-z0-sciecie" })
             Arkusz(Path.Combine(katalog, "stare-" + a + ".png"), Duszek.Daj(a), 80);
         Trzewia.Visual.VisualConfig.Rycina = rycina;
+        // nowe animacje: te same nazwy i liczby klatek co w starych arkuszach
+        foreach (var (arkusz, stroj) in new[] { ("robotnik-3", STROJE[0].stroj), ("pobozny-1", STROJE[6].stroj), ("rycerz-6-z5", STROJE[13].stroj), ("rycerz-6-z0-sciecie", STROJE[8].stroj) })
+            Animacje(Path.Combine(katalog, "nowe-" + arkusz + ".png"), Duszek.Daj(arkusz), stroj, 80);
         Console.WriteLine($"podgląd ludzi: {katalog}");
         return 0;
+    }
+
+    /// <summary>Faza albo postęp, w którym gra pokazuje klatkę `i` animacji (pętle i przebiegi „w środkach” — środek przedziału).</summary>
+    internal static double UKlatki(AnimacjaDuszka a, int i) =>
+        a.petla || a.srodki ? (i + 0.5) / a.n : a.n <= 1 ? 0 : (double)i / (a.n - 1);
+
+    /// <summary>Nowe animacje (Rysunek/Ludzie/Animacje.cs) w układzie starego arkusza `wzor`: wiersz na animację.</summary>
+    static void Animacje(string plik, Duszek? wzor, Stroj s, double h)
+    {
+        if (wzor == null) return;
+        var anim = new List<AnimacjaDuszka>(wzor.animacje.Values);
+        anim.Sort((a, b) => a.od.CompareTo(b.od));
+        var hh = h * (s.rola == "rycerz" ? 1.3 : 1);
+        int maxN = 0; foreach (var a in anim) maxN = Math.Max(maxN, a.n);
+        double kol = hh * 0.95, wiersz = hh * 1.45;
+        int W = (int)(150 + maxN * kol), H = (int)(anim.Count * wiersz + 20);
+        using var p = new PlotnoSkia(W, H);
+        Tlo(p, W, H);
+        for (int i = 0; i < anim.Count; i++)
+        {
+            var a = anim[i];
+            double y = 10 + (i + 1) * wiersz - hh * 0.25;
+            p.font = $"12px {Fonts.KROJ}"; p.fillStyle = Barwa.Rgba(220, 200, 170, 0.9); p.textAlign = "left"; p.textBaseline = "alphabetic";
+            p.fillText($"{a.nazwa} ({a.n}, {a.ster})", 6, y - hh * 0.4);
+            for (int k = 0; k < a.n; k++)
+            {
+                var kl = Trzewia.Rysunek.Ludzie.Animacje.Klatka(s, a.nazwa, UKlatki(a, k));
+                p.save(); p.translate(Math.Round(150 + k * kol + kol / 2), Math.Round(y));
+                // ziemia
+                p.fillStyle = Barwa.Rgba(70, 56, 44); p.fillRect(-kol / 2 + 2, 0, kol - 4, 2);
+                Postac.Rysuj(p, hh, kl.p, kl.r, s);
+                p.restore();
+            }
+        }
+        p.ZapiszPng(plik);
     }
 
     /// <summary>Każda animacja arkusza w osobnym wierszu, klatka po klatce (wysokość postaci h, rycerz ×1,3).</summary>

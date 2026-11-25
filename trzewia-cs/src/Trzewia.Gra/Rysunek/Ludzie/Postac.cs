@@ -28,6 +28,8 @@ namespace Trzewia.Rysunek.Ludzie
         public double obrot;
         /// <summary>wzlot nad ziemię (skok; ułamki wzrostu) — gdy biodroY nie jest podane</summary>
         public double wzlot;
+        /// <summary>odwrócony (piruet): od 0,5 — postać rysowana w lustrze, twarzą w lewo</summary>
+        public double odwrot;
         /// <summary>usta 0…1 (krzyk), płaszcz: wychylenie (−1…1, + — rozwiany do tyłu), brzuch 0…1 (żarłok)</summary>
         public double usta, plaszcz, brzuch;
         /// <summary>błoto i krew 0…1</summary>
@@ -53,7 +55,7 @@ namespace Trzewia.Rysunek.Ludzie
                 udoP = m(a.udoP, b.udoP), kolanoP = m(a.kolanoP, b.kolanoP), stopaP = m(a.stopaP, b.stopaP),
                 biodroX = m(a.biodroX, b.biodroX),
                 biodroY = a.biodroY is double ya && b.biodroY is double yb ? m(ya, yb) : (k < 0.5 ? a.biodroY : b.biodroY),
-                obrot = m(a.obrot, b.obrot), wzlot = m(a.wzlot, b.wzlot), usta = m(a.usta, b.usta), plaszcz = m(a.plaszcz, b.plaszcz), brzuch = m(a.brzuch, b.brzuch),
+                obrot = m(a.obrot, b.obrot), wzlot = m(a.wzlot, b.wzlot), odwrot = m(a.odwrot, b.odwrot), usta = m(a.usta, b.usta), plaszcz = m(a.plaszcz, b.plaszcz), brzuch = m(a.brzuch, b.brzuch),
                 bloto = m(a.bloto, b.bloto), krew = m(a.krew, b.krew),
             };
         }
@@ -151,6 +153,8 @@ namespace Trzewia.Rysunek.Ludzie
             // leżący, klęczący na rękach: także dłonie, łokcie, głowa i bark (opiera się o ziemię)
             if (Math.Abs(obrot) > 0.6) m = Math.Max(m, Math.Max(Y(q.glowa) + R_GLOWY, Math.Max(Y(q.barkL), Y(q.barkP)) + 0.05));
             m = Math.Max(m, Math.Max(Y(q.dlonL), Y(q.dlonP)) + 0.02);
+            // pośladki i plecy przy biodrze (siedzi, leży) — ciało ma grubość wokół bioder
+            m = Math.Max(m, 0.065);
             return m;
         }
 
