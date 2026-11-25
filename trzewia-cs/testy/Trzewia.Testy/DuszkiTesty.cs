@@ -131,11 +131,61 @@ public class DuszkiTesty
             foreach (var p in d.poziomy)
             {
                 Assert.Equal(d.klatek * 7, p.klatki.Length);
-                foreach (var s in p.strony) Assert.True(File.Exists(Path.Combine(folder, s)), $"{nazwa}: brak strony {s}");
+                // (etap 7d: nowi ludzie mają strony w swoim katalogu — dane/grafika/duszki-ludzie)
+                foreach (var s in p.strony) Assert.True(File.Exists(Path.Combine(Sciezka.Testy, "..", "dane", p.katalog, s)), $"{nazwa}: brak strony {s}");
             }
             foreach (var a in d.animacje.Values) Assert.True(a.od >= 0 && a.n > 0 && a.od + a.n <= d.klatek, $"{nazwa}/{a.nazwa}");
             klatek += d.klatek;
         }
         wyj.WriteLine($"{pliki.Length} arkuszy, {klatek} klatek");
+    }
+
+    /// <summary>
+    /// Oprawa, etap 7d: każdy arkusz nowych ludzi (dane/grafika/duszki-ludzie) ma dokładnie te same animacje (nazwy, klatki,
+    /// sterowniki, czasy) i poziomy wielkości co stary arkusz o tej samej nazwie — gra wybiera klatki tymi samymi regułami.
+    /// Każdy stary arkusz ludu ma swój nowy odpowiednik, a każda klatka ma głowę i niepusty prostokąt.
+    /// </summary>
+    [Fact]
+    public void NowiLudzieMajaTeSameAnimacjeCoStarzy()
+    {
+        Gospodarz();
+        var nowy = Path.Combine(Sciezka.Testy, "..", "dane", "grafika", "duszki-ludzie");
+        var stary = Path.Combine(Sciezka.Testy, "..", "dane", "grafika", "duszki");
+        var lud = Directory.GetFiles(stary, "*.json").Select(Path.GetFileNameWithoutExtension)
+            .Where(n => n!.StartsWith("robotnik-") || n.StartsWith("pobozny-") || n.StartsWith("rycerz-")).ToList();
+        Assert.Equal(24, lud.Count);
+        var wl = Trzewia.Visual.VisualConfig.Wlaczone; var lu = Trzewia.Visual.VisualConfig.Ludzie;
+        try
+        {
+            Trzewia.Visual.VisualConfig.Wlaczone = true;
+            foreach (var nazwa in lud)
+            {
+                Assert.True(File.Exists(Path.Combine(nowy, nazwa + ".json")), $"brak nowego arkusza {nazwa}");
+                Trzewia.Visual.VisualConfig.Ludzie = false;
+                var s = Duszek.Daj(nazwa!)!;
+                Trzewia.Visual.VisualConfig.Ludzie = true;
+                var n = Duszek.Daj(nazwa!)!;
+                Assert.NotSame(s, n);
+                Assert.True(n.poziomy.All(p => p.nowi), nazwa);
+                Assert.Equal(s.klatek, n.klatek);
+                Assert.Equal(n.klatek, n.glowa.Length);
+                Assert.Equal(s.mnoznik, n.mnoznik);
+                Assert.Equal(s.poziomy.Select(p => p.h), n.poziomy.Select(p => p.h));
+                Assert.Equal(s.animacje.Keys.OrderBy(k => k), n.animacje.Keys.OrderBy(k => k));
+                foreach (var (k, a) in s.animacje)
+                {
+                    var b = n.animacje[k];
+                    Assert.True(a.od == b.od && a.n == b.n && a.ster == b.ster && a.mnoz == b.mnoz && a.przes == b.przes && a.ms == b.ms && a.petla == b.petla && a.srodki == b.srodki, $"{nazwa}/{k}");
+                }
+                foreach (var p in n.poziomy)
+                {
+                    Assert.Equal(n.klatek * 7, p.klatki.Length);
+                    for (int i = 0; i < n.klatek; i++) Assert.True(p.klatki[i * 7 + 3] > 0 && p.klatki[i * 7 + 4] > 0, $"{nazwa} h{p.h} klatka {i}: pusta");
+                    foreach (var st in p.strony) Assert.True(File.Exists(Path.Combine(nowy, st)), $"{nazwa}: brak strony {st}");
+                }
+                for (int i = 0; i < n.klatek; i++) Assert.True(n.glowa[i] is { Length: 3 } g && g[2] > 0, $"{nazwa}: głowa klatki {i}");
+            }
+        }
+        finally { Trzewia.Visual.VisualConfig.Wlaczone = wl; Trzewia.Visual.VisualConfig.Ludzie = lu; }
     }
 }
