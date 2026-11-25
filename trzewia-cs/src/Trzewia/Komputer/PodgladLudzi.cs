@@ -47,6 +47,9 @@ static class PodgladLudzi
         Directory.CreateDirectory(katalog);
         Plotno.Fabryka = new FabrykaSkia();
         Fonts.zaladujKroje();
+        // „stare” w podglądzie to stare arkusze: Duszek.Daj bez nowych ludzi (nowa postać rysuje się wprost)
+        var ludzie = Trzewia.Visual.VisualConfig.Ludzie;
+        Trzewia.Visual.VisualConfig.Ludzie = false;
         Stroje(Path.Combine(katalog, "ludzie-stroje.png"));
         // stare arkusze (rysunek TS bez ryciny) — wzór ruchu każdej animacji
         var rycina = Trzewia.Visual.VisualConfig.Rycina;
@@ -54,6 +57,7 @@ static class PodgladLudzi
         foreach (var a in new[] { "robotnik-3", "pobozny-1", "rycerz-6-z5", "rycerz-6-z0-sciecie" })
             Arkusz(Path.Combine(katalog, "stare-" + a + ".png"), Duszek.Daj(a), 80);
         Trzewia.Visual.VisualConfig.Rycina = rycina;
+        Trzewia.Visual.VisualConfig.Ludzie = ludzie;
         // nowe animacje: te same nazwy i liczby klatek co w starych arkuszach
         foreach (var (arkusz, stroj) in new[] { ("robotnik-3", STROJE[0].stroj), ("pobozny-1", STROJE[6].stroj), ("rycerz-6-z5", STROJE[13].stroj), ("rycerz-6-z0-sciecie", STROJE[8].stroj) })
             Animacje(Path.Combine(katalog, "nowe-" + arkusz + ".png"), Duszek.Daj(arkusz), stroj, 80);
