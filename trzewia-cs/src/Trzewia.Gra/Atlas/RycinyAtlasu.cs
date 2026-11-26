@@ -552,6 +552,21 @@ namespace Trzewia.Atlas
                     ctx.beginPath(); ctx.moveTo(hx, hy); ctx.quadraticCurveTo((hx + kx) / 2, hy - kr * 1.2 + JsM.Sin(t * 0.006 + s) * kr * 0.3, kx, y - kr * 1.1); ctx.stroke();
                 }
             }
+            krataRyciny(ctx, w, h, y, otw, zaklina, (150, 236, 214));
+            ctx.save();
+            ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 4;
+            ctx.fillStyle = "rgba(240,228,204,0.95)"; ctx.font = $"{Js.Js.S(Math.Floor(h * 0.055 + 0.5))}px Georgia, serif"; ctx.textAlign = "center";
+            ctx.fillText(zaklina ? "zaklinają — krata się unosi" : otw > 0 ? "cisza — krata powoli opada" : "brama zamknięta", w / 2, h * 0.1);
+            ctx.restore();
+        }
+
+        /// <summary>
+        /// Stalowa brama na rycinie (6.11; wydzielona w etapie 8 — tę samą rysuje rycina kotła i dźwigni): ościeże, nadproże
+        /// z pięcioma runami (zapalają się kolejno, ile otwarta; `zywa` — w barwie `barwa`), krata uniesiona o `otw` i progi
+        /// „przejdzie” / „przeczołga się”.
+        /// </summary>
+        static void krataRyciny(IPlotno ctx, double w, double h, double y, double otw, bool zywa, (int r, int g, int b) barwa)
+        {
             // brama: ościeże, nadproże z runami, krata uniesiona o otwarcie
             double bx = w * 0.72, bw = w * 0.13, bh = h * 0.42, by = y - bh;
             ctx.fillStyle = "rgb(84,74,64)"; ctx.fillRect(bx - bw * 0.35, by - h * 0.14, bw * 1.7, bh + h * 0.14);
@@ -564,7 +579,7 @@ namespace Trzewia.Atlas
             for (int n = 0; n < 5; n++)
             {
                 var a = Math.Max(0, Math.Min(1, otw * 5 - n));
-                ctx.fillStyle = a > 0 ? (zaklina ? Barwa.Rgba(150, 236, 214, 0.4 + 0.6 * a) : Barwa.Rgba(236, 210, 160, 0.3 + 0.5 * a)) : (Styl)"rgba(0,0,0,0.5)";
+                ctx.fillStyle = a > 0 ? (zywa ? Barwa.Rgba(barwa.r, barwa.g, barwa.b, 0.4 + 0.6 * a) : Barwa.Rgba(236, 210, 160, 0.3 + 0.5 * a)) : (Styl)"rgba(0,0,0,0.5)";
                 ctx.beginPath(); ctx.arc(bx + bw * ((n + 0.5) / 5), by - h * 0.07, 2.6, 0, PI * 2); ctx.fill();
             }
             // progi przejścia: wyprostowany i na czworakach
@@ -575,10 +590,57 @@ namespace Trzewia.Atlas
                 ctx.strokeStyle = "rgba(240,228,204,0.5)"; ctx.setLineDash(3, 3); ctx.beginPath(); ctx.moveTo(bx - bw * 0.35 - 4, yy); ctx.lineTo(bx - bw * 0.35 - 14, yy); ctx.stroke(); ctx.setLineDash();
                 ctx.fillStyle = otw >= prog ? "rgba(240,228,204,0.95)" : "rgba(240,228,204,0.4)"; ctx.fillText(napis, bx - bw * 0.35 - 17, yy + 4);
             }
+        }
+
+        /// <summary>
+        /// Etap 8 (Krąg ze zmianami) — Dźwignia i stalowa brama: dwóch ciągnie liny od szczytu dużej dźwigni (siła 2 + 2),
+        /// ramię idzie w dół, krata podnosi się; puszczona dźwignia wraca, krata powoli opada.
+        /// </summary>
+        public static void dzwigniaRycina(PlotnoRyciny P)
+        {
+            var ctx = P.ctx; double w = P.w, h = P.h, t = P.t;
+            sklepienie(ctx, w, h, 31);
+            const double okres = 4000 + 11000 + 2000;
+            var f = t % okres;
+            var otw = f < 4000 ? f / 4000 : f < 15000 ? Math.Max(0, 1 - (f - 4000) / 11000) : 0;
+            var ciagna = f < 4000;
+            // ramię: 0 — w górze (spoczywa), 1 — ściągnięte; w dół w 0,7 s, puszczone wraca w 0,5 s
+            var u = ciagna ? Math.Min(1, f / 700) : Math.Max(0, 1 - (f - 4000) / 500);
+            var y = h * 0.84;
+            // skrzynia z kamienia i żelaza, w niej oś dźwigni; łańcuch w posadzkę
+            double dx0 = w * 0.1, sw = w * 0.1, sh = h * 0.12;
+            ctx.fillStyle = "rgb(70,62,54)"; ctx.fillRect(dx0 - sw / 2, y - sh, sw, sh);
+            ctx.strokeStyle = "rgba(20,12,8,0.9)"; ctx.lineWidth = 1.4; ctx.strokeRect(dx0 - sw / 2, y - sh, sw, sh);
+            ctx.fillStyle = "rgb(96,104,112)"; ctx.fillRect(dx0 - sw / 2, y - sh * 0.62, sw, sh * 0.12);
+            double ox = dx0, oy = y - sh;
+            var kat = -0.3 + u * 0.95;                      // od pionu: w lewo spoczywa, w prawo — ściągnięta
+            double L = h * 0.5, tx = ox + Math.Sin(kat) * L, ty = oy - Math.Cos(kat) * L;
+            ctx.strokeStyle = "rgb(92,64,40)"; ctx.lineWidth = Math.Max(5, w * 0.022); ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(tx, ty); ctx.stroke();
+            ctx.strokeStyle = "rgb(110,118,128)"; ctx.lineWidth = 2;
+            foreach (var k in new[] { 0.3, 0.62 }) { double bx2 = ox + Math.Sin(kat) * L * k, by2 = oy - Math.Cos(kat) * L * k; ctx.beginPath(); ctx.moveTo(bx2 - Math.Cos(kat) * 5, by2 - Math.Sin(kat) * 5); ctx.lineTo(bx2 + Math.Cos(kat) * 5, by2 + Math.Sin(kat) * 5); ctx.stroke(); }
+            ctx.fillStyle = "rgb(60,64,70)"; ctx.beginPath(); ctx.arc(ox, oy, 4, 0, PI * 2); ctx.fill();
+            ctx.strokeStyle = "rgb(120,128,138)"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(tx, ty, 4, 0, PI * 2); ctx.stroke();
+            // dwóch ciągnących: odchyleni w tył, liny od szczytu ramienia do rąk
+            var szarp = ciagna ? 0.5 + 0.5 * JsM.Sin(t * 0.012) : 0;
+            foreach (var (px, sila) in new[] { (w * 0.23, 2.0), (w * 0.35, 2.0) })
+            {
+                double ph = h * 0.3, odch = ciagna ? 0.22 + 0.08 * szarp : 0.04;
+                double kx = px + Math.Sin(odch) * ph * 0.7, ky = y - Math.Cos(odch) * ph * 0.7;
+                ctx.fillStyle = "rgb(208,198,176)";
+                ctx.beginPath(); ctx.moveTo(px - ph * 0.15, y); ctx.lineTo(kx - ph * 0.1, ky); ctx.quadraticCurveTo(kx, ky - ph * 0.3, kx + ph * 0.1, ky); ctx.lineTo(px + ph * 0.15, y); ctx.closePath(); ctx.fill();
+                ctx.strokeStyle = "rgba(20,12,8,0.9)"; ctx.lineWidth = 1.4; ctx.stroke();
+                double hx = kx - ph * 0.22, hy = ky + ph * 0.12;
+                ctx.strokeStyle = "rgb(208,198,176)"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(kx - ph * 0.02, ky + ph * 0.08); ctx.lineTo(hx, hy); ctx.stroke();
+                ctx.strokeStyle = "rgba(150,120,80,0.95)"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(hx, hy); ctx.stroke();
+                ctx.fillStyle = "rgba(244,214,150,0.95)"; ctx.font = $"{Js.Js.S(Math.Floor(h * 0.045 + 0.5))}px Georgia, serif"; ctx.textAlign = "center";
+                ctx.fillText($"siła {Js.Js.S(sila)}", px, y + h * 0.07);
+            }
+            krataRyciny(ctx, w, h, y, otw, ciagna, (255, 196, 120));
             ctx.save();
             ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 4;
             ctx.fillStyle = "rgba(240,228,204,0.95)"; ctx.font = $"{Js.Js.S(Math.Floor(h * 0.055 + 0.5))}px Georgia, serif"; ctx.textAlign = "center";
-            ctx.fillText(zaklina ? "zaklinają — krata się unosi" : otw > 0 ? "cisza — krata powoli opada" : "brama zamknięta", w / 2, h * 0.1);
+            ctx.fillText(ciagna ? "ciągną (razem 4) — krata się unosi" : otw > 0 ? "puścili — krata powoli opada" : "brama zamknięta", w / 2, h * 0.1);
             ctx.restore();
         }
 

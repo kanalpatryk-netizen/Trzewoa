@@ -1,4 +1,5 @@
 // Port: alpha-1/src/render/loch.ts — LOCH, STARA KOMNATA Z KOTŁEM I STALOWA BRAMA (6.11): rysunek miejsc ze świata
+// (etap 8, Krąg ze zmianami: zamiast kotła — duża dźwignia z linami do ciągnących i latarnia obok; patrz `dzwignia`)
 // (ukladDrogi, wykujLoch, wykujDroge) i bramy (sim/brama.ts). Styl: skrajnie mroczny, ale przyjazny dla oka — głęboki
 // grafit z nutą brązu, mała różnica jasności w murze, światło tylko z kilku ciepłych źródeł (kocioł, pochodnie, kosze
 // ognia) o miękkich krawędziach, wolne i łagodne ruchy.
@@ -262,6 +263,145 @@ namespace Trzewia.Rysunek
             ctx.restore();
         }
 
+        // ── etap 8 (Krąg ze zmianami): duża dźwignia zamiast kotła ───────────────────────────────────────────────────
+        // Kamienna skrzynia okuta żelazem, w niej oś z zębatym kołem; z osi w górę grube ramię z belki, przy szczycie
+        // żelazny pierścień, a od niego liny do ciągnących (stoją po stronie Dzwignia.MIEJSCA, przodem do dźwigni).
+        // Spoczywa odchylona od nich; ściągnięta — pochyla się ku nim, koło obraca się z ramieniem, a łańcuch w szczelinie
+        // posadzki (do bramy, daleko w dole) jedzie w górę. Za słabi: ramię tylko drga. Obok latarnia na żelaznym słupku.
+
+        /// <summary>Wysokość osi nad posadzką i długość ramienia — w kaflach.</summary>
+        const double DZ_OS = 1.0, DZ_RAMIE = 3.9;
+
+        /// <summary>Kąt ramienia od pionu (+ — ku ciągnącym): spoczywa odchylone w drugą stronę, ściągnięte — ku nim; za słabi — drga.</summary>
+        public static double KatDzwigni(Sim sim, double czas)
+        {
+            var st = Brama.stanBramy(sim);
+            var u = st.dzwignia ?? 0;
+            var zaSlabi = (st.ciagnie ?? 0) > 0 && (st.silaDzwigni ?? 0) < Dzwignia.POTRZEBA;
+            var drga = zaSlabi && Nastroj.wolnoRuszac() ? 0.03 * JsM.Sin(czas * 0.011) + 0.015 * JsM.Sin(czas * 0.027) : 0;
+            return -0.3 + 0.9 * u + drga;
+        }
+
+        /// <summary>Oś dźwigni — w kaflach świata.</summary>
+        static (double x, double y) OsDzwigni(Sim sim) { var k = sim.world.kociol; return (k.x + 0.5, k.y + 1 - DZ_OS); }
+
+        /// <summary>Pierścień na szczycie ramienia (tu przywiązane liny) — w kaflach świata.</summary>
+        public static (double x, double y) SzczytDzwigni(Sim sim, double czas)
+        {
+            var (ox, oy) = OsDzwigni(sim);
+            var kat = KatDzwigni(sim, czas);
+            return (ox + JsM.Sin(kat) * DZ_RAMIE * 0.96, oy - JsM.Cos(kat) * DZ_RAMIE * 0.96);
+        }
+
+        /// <summary>Latarnia przy dźwigni (płomień, światło) — w kaflach świata: po drugiej stronie niż ciągnący.</summary>
+        public static (double x, double y) LatarniaDzwigni(Sim sim) { var k = sim.world.kociol; return (k.x - 1.4, k.y - 0.75); }
+
+        /// <summary>Dźwignia: skrzynia, koło zębate, ramię, łańcuch w posadzce i latarnia (bryła; płomień — w rysujLochNad).</summary>
+        static void dzwignia(IPlotno ctx, Sim sim, Camera cam, double czas)
+        {
+            var w = sim.world; var k = w.kociol; var z = cam.zoom;
+            if (!widziany(sim, k.x, k.y)) return;
+            double cx = cam.toScreenX(k.x + 0.5), dno = cam.toScreenY(k.y + 1);
+            var (oxw, oyw) = OsDzwigni(sim);
+            double ox = cam.toScreenX(oxw), oy = cam.toScreenY(oyw);
+            var kat = KatDzwigni(sim, czas);
+            var lw = Math.Max(1, z * 0.06);
+            ctx.save();
+            ctx.lineJoin = "round"; ctx.lineCap = "round";
+            // łańcuch ze skrzyni w szczelinę posadzki — jedzie w górę, gdy ramię idzie w dół
+            var u = Brama.stanBramy(sim).dzwignia ?? 0;
+            double lx = cx + z * 1.3, ly0 = dno - z * 0.6;
+            ctx.fillStyle = "rgb(14,11,10)"; ctx.fillRect(lx - z * 0.18, dno - z * 0.04, z * 0.36, z * 0.12);
+            ctx.strokeStyle = STAL; ctx.lineWidth = Math.Max(1, z * 0.07);
+            var przes = u * z * 0.9;
+            for (double yy = ly0; yy < dno; yy += z * 0.22)
+            {
+                var o = ((yy - ly0 + przes) / (z * 0.22)) % 2;
+                ctx.beginPath();
+                if (o < 1) ctx.ellipse(lx, yy + z * 0.1, z * 0.06, z * 0.11, 0, 0, Math.PI * 2); else { ctx.moveTo(lx, yy); ctx.lineTo(lx, yy + z * 0.2); }
+                ctx.stroke();
+            }
+            // skrzynia: kamień z żelaznymi okuciami
+            double sw = z * 2.2, sh = z * DZ_OS;
+            var gs = ctx.createLinearGradient(0, dno - sh, 0, dno);
+            gs.addColorStop(0, "rgb(96,86,74)"); gs.addColorStop(1, "rgb(62,54,46)");
+            ctx.fillStyle = gs; ctx.fillRect(cx - sw / 2, dno - sh, sw, sh);
+            ctx.fillStyle = "rgba(220,200,170,0.14)"; ctx.fillRect(cx - sw / 2, dno - sh, sw, Math.Max(1, z * 0.07));
+            ctx.fillStyle = STAL;
+            foreach (var fx in new[] { -0.42, 0.42 }) ctx.fillRect(cx + fx * sw - z * 0.08, dno - sh, z * 0.16, sh);
+            ctx.fillStyle = STAL_JASNA;
+            foreach (var fx in new[] { -0.42, 0.42 }) for (int n = 0; n < 2; n++) { ctx.beginPath(); ctx.arc(cx + fx * sw, dno - sh * (0.28 + n * 0.45), Math.Max(0.8, z * 0.045), 0, Math.PI * 2); ctx.fill(); }
+            ctx.strokeStyle = TUSZ; ctx.lineWidth = lw; ctx.strokeRect(cx - sw / 2, dno - sh, sw, sh);
+            // koło zębate na osi (obraca się z ramieniem)
+            var R = z * 0.78;
+            ctx.save(); ctx.translate(ox, oy); ctx.rotate(kat * 2.2);
+            ctx.fillStyle = "rgb(58,62,68)";
+            ctx.beginPath();
+            for (int n = 0; n < 24; n++)
+            {
+                var a = n * Math.PI / 12; var r = n % 2 == 0 ? R : R * 0.82;
+                if (n == 0) ctx.moveTo(JsM.Cos(a) * r, JsM.Sin(a) * r); else ctx.lineTo(JsM.Cos(a) * r, JsM.Sin(a) * r);
+            }
+            ctx.closePath(); ctx.fill(); ctx.strokeStyle = TUSZ; ctx.lineWidth = lw; ctx.stroke();
+            ctx.strokeStyle = "rgba(150,160,172,0.35)"; ctx.lineWidth = Math.Max(1, z * 0.05);
+            for (int n = 0; n < 3; n++) { var a = n * Math.PI * 2 / 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(JsM.Cos(a) * R * 0.7, JsM.Sin(a) * R * 0.7); ctx.stroke(); }
+            ctx.restore();
+            // ramię: gruba belka z żelaznymi obręczami, przy szczycie pierścień na liny
+            ctx.save(); ctx.translate(ox, oy); ctx.rotate(kat);
+            double L = DZ_RAMIE * z, bw = Math.Max(3, z * 0.42);
+            var gb = ctx.createLinearGradient(-bw / 2, 0, bw / 2, 0);
+            gb.addColorStop(0, "rgb(70,46,28)"); gb.addColorStop(0.45, "rgb(112,76,46)"); gb.addColorStop(1, "rgb(58,38,22)");
+            ctx.fillStyle = gb;
+            ctx.beginPath(); ctx.moveTo(-bw / 2, z * 0.15); ctx.lineTo(-bw * 0.4, -L); ctx.lineTo(bw * 0.4, -L); ctx.lineTo(bw / 2, z * 0.15); ctx.closePath(); ctx.fill();
+            ctx.strokeStyle = TUSZ; ctx.lineWidth = lw; ctx.stroke();
+            ctx.strokeStyle = "rgba(30,18,10,0.45)"; ctx.lineWidth = Math.Max(0.8, z * 0.035);
+            ctx.beginPath(); ctx.moveTo(-bw * 0.1, 0); ctx.lineTo(-bw * 0.08, -L * 0.95); ctx.moveTo(bw * 0.18, -L * 0.1); ctx.lineTo(bw * 0.16, -L * 0.8); ctx.stroke();
+            ctx.fillStyle = STAL;
+            foreach (var f in new[] { 0.22, 0.55, 0.86 }) { ctx.fillRect(-bw * 0.56, -L * f - z * 0.07, bw * 1.12, z * 0.14); }
+            ctx.fillStyle = STAL_JASNA;
+            foreach (var f in new[] { 0.22, 0.55, 0.86 }) ctx.fillRect(-bw * 0.56, -L * f - z * 0.07, bw * 1.12, Math.Max(1, z * 0.03));
+            ctx.strokeStyle = "rgb(84,90,98)"; ctx.lineWidth = Math.Max(1.2, z * 0.08);
+            ctx.beginPath(); ctx.arc(0, -L * 0.96, z * 0.2, 0, Math.PI * 2); ctx.stroke();
+            ctx.restore();
+            // oś: żelazna piasta z bolcem
+            ctx.fillStyle = "rgb(46,50,56)"; ctx.beginPath(); ctx.arc(ox, oy, z * 0.26, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = TUSZ; ctx.lineWidth = lw; ctx.stroke();
+            ctx.fillStyle = STAL_JASNA; ctx.beginPath(); ctx.arc(ox - z * 0.05, oy - z * 0.05, z * 0.06, 0, Math.PI * 2); ctx.fill();
+            // latarnia na żelaznym słupku (płomień i światło — nad mrokiem)
+            var (lxw, lyw) = LatarniaDzwigni(sim);
+            double tx = cam.toScreenX(lxw), ty = cam.toScreenY(lyw);
+            ctx.strokeStyle = "rgb(40,42,46)"; ctx.lineWidth = Math.Max(1.2, z * 0.08);
+            ctx.beginPath(); ctx.moveTo(tx, dno); ctx.lineTo(tx, ty - z * 0.45); ctx.lineTo(tx + z * 0.25, ty - z * 0.45); ctx.stroke();
+            ctx.fillStyle = "rgb(36,34,32)"; ctx.fillRect(tx - z * 0.16, ty - z * 0.3, z * 0.32, z * 0.06); ctx.fillRect(tx - z * 0.12, ty + z * 0.12, z * 0.24, z * 0.06);
+            ctx.fillStyle = "rgba(255,200,120,0.25)"; ctx.fillRect(tx - z * 0.11, ty - z * 0.24, z * 0.22, z * 0.36);
+            ctx.strokeStyle = "rgb(36,34,32)"; ctx.lineWidth = Math.Max(0.8, z * 0.04); ctx.strokeRect(tx - z * 0.12, ty - z * 0.25, z * 0.24, z * 0.38);
+            ctx.restore();
+        }
+
+        /// <summary>
+        /// Lina od pierścienia dźwigni do dłoni ciągnącego (Figury — po narysowaniu postaci): `sx`, `sy` — stopy na ekranie,
+        /// `kier` — zwrot rysunku, `h` — wysokość postaci (px), `u` — faza animacji „ciagnie” w tej klatce.
+        /// </summary>
+        public static void linaDzwigni(IPlotno ctx, Sim sim, Camera cam, Creature c, string rola, double sx, double sy, double kier, double h, double u, double czas)
+        {
+            var (twx, twy) = SzczytDzwigni(sim, czas);
+            double tx = cam.toScreenX(twx), ty = cam.toScreenY(twy);
+            var k = Ludzie.Animacje.Klatka(new Ludzie.Stroj { rola = rola, wzor = 3, zbroja = 0 }, "ciagnie", u);
+            var q = Ludzie.Postac.Punkty(k.p, h);
+            double hx = sx + kier * (q.dlonP.x + q.dlonL.x) / 2, hy = sy + (q.dlonP.y + q.dlonL.y) / 2;
+            var z = cam.zoom;
+            // napięta, gdy ciągną dość mocno; luźna (lekko zwisa), gdy za słabi
+            var st = Brama.stanBramy(sim);
+            var luz = (st.silaDzwigni ?? 0) >= Dzwignia.POTRZEBA ? 0.02 : 0.12;
+            double mx = (hx + tx) / 2, my = (hy + ty) / 2 + Math.Abs(tx - hx) * luz;
+            ctx.save();
+            ctx.lineCap = "round";
+            ctx.beginPath(); ctx.moveTo(tx, ty); ctx.quadraticCurveTo(mx, my, hx, hy);
+            ctx.strokeStyle = "rgba(20,12,6,0.85)"; ctx.lineWidth = Math.Max(1.6, z * 0.11); ctx.stroke();
+            ctx.strokeStyle = "rgb(168,132,84)"; ctx.lineWidth = Math.Max(0.9, z * 0.055); ctx.stroke();
+            ctx.restore();
+        }
+
         /// <summary>Krata bramy w przejściu — podniesiona o tyle, ile brama otwarta; nad nią nadproże z runami.</summary>
         static void brama(IPlotno ctx, Sim sim, Camera cam, double czas)
         {
@@ -432,7 +572,8 @@ namespace Trzewia.Rysunek
                     pajeczyna(ctx, cam.toScreenX(km.x0 + (km.x1 - km.x0 + 1) * 0.5) - z * 6, gy, z * 1.4, Math.PI * 0.15, Math.PI * 0.85, 3, czas);
                     lancuch(ctx, cam.toScreenX(km.x0 + (km.x1 - km.x0) * 0.12), gy, z * 2.2, z, czas, 1.3, true);
                     lancuch(ctx, cam.toScreenX(km.x0 + (km.x1 - km.x0) * 0.9), gy, z * 1.6, z, czas, 2.7, false);
-                    kociol(ctx, sim, cam);
+                    // etap 8 (Krąg ze zmianami): zamiast kotła — dźwignia
+                    if (Dzwignia.Aktywna) dzwignia(ctx, sim, cam, czas); else kociol(ctx, sim, cam);
                 }
             }
 
@@ -550,9 +691,14 @@ namespace Trzewia.Rysunek
             var st = Brama.stanBramy(sim);
             ctx.save();
             ctx.lineCap = "round"; ctx.lineJoin = "round";
-            // --- kocioł
+            // --- kocioł (etap 8, Krąg ze zmianami: zamiast niego dźwignia — tylko płomień latarni obok)
             var k = w.kociol;
-            if (widziany(sim, k.x, k.y) && wKadrze(cam, new Prost(k.x - 6, k.x + 6, k.y - 6, k.y + 1)) != null)
+            if (Dzwignia.Aktywna)
+            {
+                var (lxw, lyw) = LatarniaDzwigni(sim);
+                if (widziany(sim, k.x, k.y)) plomien(ctx, cam.toScreenX(lxw), cam.toScreenY(lyw) + z * 0.05, z * 0.2, czas, lxw * 5);
+            }
+            else if (widziany(sim, k.x, k.y) && wKadrze(cam, new Prost(k.x - 6, k.x + 6, k.y - 6, k.y + 1)) != null)
             {
                 double cx = cam.toScreenX(k.x + 0.5), dno = cam.toScreenY(k.y + 1);
                 double R = z * 1.25, H = z * 1.15, gy = dno - H * 1.15;
@@ -631,16 +777,18 @@ namespace Trzewia.Rysunek
             if (b.x1 >= b.x0 && (widziany(sim, b.x0 - 1, b.y1) || widziany(sim, b.x1 + 1, b.y1)) && st.otwarcie > 0.001)
             {
                 double x0 = cam.toScreenX(b.x0), W = cam.toScreenX(b.x1 + 1) - x0, ny = cam.toScreenY(b.y0 - 1);
-                var rosnie = st.zaklina >= BRAMA.potrzeba;
+                // (etap 8, Krąg ze zmianami: bramę podnosi dźwignia — runy, gdy krata rośnie, żarzą się ciepło, nie turkusem zaklęć)
+                var dzw = Dzwignia.Aktywna;
+                var rosnie = dzw ? (st.silaDzwigni ?? 0) >= Dzwignia.POTRZEBA : st.zaklina >= BRAMA.potrzeba;
                 for (int n = 0; n < 5; n++)
                 {
                     var a = Math.Max(0, Math.Min(1, st.otwarcie * 5 - n));
                     if (a <= 0) continue;
                     double rx = x0 + W * ((n + 0.5) / 5), ry = ny + z * 0.5;
                     var g = ctx.createRadialGradient(rx, ry, 0, rx, ry, z * 0.5);
-                    g.addColorStop(0, rosnie ? Barwa.Rgba(140, 236, 212, 0.45 * a) : Barwa.Rgba(220, 190, 140, 0.3 * a)); g.addColorStop(1, "rgba(0,0,0,0)");
+                    g.addColorStop(0, rosnie ? (dzw ? Barwa.Rgba(255, 190, 110, 0.45 * a) : Barwa.Rgba(140, 236, 212, 0.45 * a)) : Barwa.Rgba(220, 190, 140, 0.3 * a)); g.addColorStop(1, "rgba(0,0,0,0)");
                     ctx.fillStyle = g; ctx.fillRect(rx - z * 0.5, ry - z * 0.5, z, z);
-                    ctx.strokeStyle = rosnie ? Barwa.Rgba(170, 244, 224, 0.9 * a) : Barwa.Rgba(236, 210, 160, 0.65 * a); ctx.lineWidth = Math.Max(1, z * 0.06);
+                    ctx.strokeStyle = rosnie ? (dzw ? Barwa.Rgba(255, 214, 150, 0.9 * a) : Barwa.Rgba(170, 244, 224, 0.9 * a)) : Barwa.Rgba(236, 210, 160, 0.65 * a); ctx.lineWidth = Math.Max(1, z * 0.06);
                     runa(ctx, rx, ry, z * 0.22, n);
                 }
             }
@@ -705,7 +853,9 @@ namespace Trzewia.Rysunek
             double m(double f) => Nastroj.wolnoRuszac() ? 0.94 + 0.08 * Fresk.migotLampy(czas + f) : 1;
             var st = Brama.stanBramy(sim);
             var k = w.kociol;
-            if (widziany(sim, k.x, k.y)) swiec(k.x + 0.5, k.y - 0.6, (st.zaklina >= BRAMA.potrzeba ? 9.5 : 7) * m(11), 0.95);
+            // (etap 8, Krąg ze zmianami: zamiast żaru kotła — latarnia przy dźwigni, słabsza)
+            if (Dzwignia.Aktywna) { var (lx, ly) = LatarniaDzwigni(sim); if (widziany(sim, k.x, k.y)) swiec(lx, ly, 6.5 * m(11), 0.9); }
+            else if (widziany(sim, k.x, k.y)) swiec(k.x + 0.5, k.y - 0.6, (st.zaklina >= BRAMA.potrzeba ? 9.5 : 7) * m(11), 0.95);
             foreach (var (px, py) in swieceKomnaty(sim)) if (widziany(sim, Math.Floor(px), Math.Floor(py))) swiec(px, py, 4.2 * m(px * 7), 0.8);
             foreach (var (px, py) in pochodnie(sim)) if (widziany(sim, Math.Floor(px), Math.Floor(py))) swiec(px, py, 5.6 * m(px * 31), 0.92);
             foreach (var (px, py) in koszeOgnia(sim)) if (widziany(sim, px, py)) swiec(px + 0.5, py - 0.6, 8 * m(px * 17), 0.92);

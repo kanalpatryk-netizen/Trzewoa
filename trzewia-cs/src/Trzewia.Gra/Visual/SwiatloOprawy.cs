@@ -155,7 +155,9 @@ namespace Trzewia.Visual
             {
                 odswiezLoch(sim);
                 var k = w.kociol;
-                if (RysLoch.widziany(sim, k.x, k.y)) dodaj(k.x + 0.5, k.y - 0.6, 7 * C.PromienOgnia, 0.95 * migot(teraz, 1.1), RodzajSwiatla.Ogien);
+                // (etap 8, Krąg ze zmianami: zamiast kotła — latarnia przy dźwigni)
+                if (Dzwignia.Aktywna) { var (lx, ly) = RysLoch.LatarniaDzwigni(sim); if (RysLoch.widziany(sim, k.x, k.y)) dodaj(lx, ly, 6.5 * C.PromienOgnia, 0.9 * migot(teraz, 1.1), RodzajSwiatla.Ogien); }
+                else if (RysLoch.widziany(sim, k.x, k.y)) dodaj(k.x + 0.5, k.y - 0.6, 7 * C.PromienOgnia, 0.95 * migot(teraz, 1.1), RodzajSwiatla.Ogien);
                 foreach (var (px, py) in swiece) if (RysLoch.widziany(sim, Math.Floor(px), Math.Floor(py))) dodaj(px, py, 4.2 * C.PromienOgnia, 0.8 * migot(teraz, px * 0.7), RodzajSwiatla.Ogien);
                 foreach (var (px, py) in pochodnie) if (RysLoch.widziany(sim, Math.Floor(px), Math.Floor(py))) dodaj(px, py, 5.6 * C.PromienOgnia, 0.95 * migot(teraz, px * 3.1), RodzajSwiatla.Ogien);
                 foreach (var (px, py) in kosze) if (RysLoch.widziany(sim, px, py)) dodaj(px + 0.5, py - 0.6, 8 * C.PromienOgnia, 0.95 * migot(teraz, px * 1.7), RodzajSwiatla.Ogien);

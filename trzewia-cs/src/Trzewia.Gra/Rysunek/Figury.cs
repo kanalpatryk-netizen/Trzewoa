@@ -400,6 +400,14 @@ namespace Trzewia.Rysunek
                     ctx.restore();
                 }
                 Lud.Oswietlenie.ustawSwiatlo(null);
+                // etap 8 (Krąg ze zmianami): ciągnący dźwignię — lina od pierścienia na szczycie ramienia do jego dłoni
+                // (dłonie z pozy tej samej klatki „ciagnie”, którą pokazał arkusz)
+                if (cz == "ciagnie" && n == 1 && Dzwignia.Aktywna && Symulacja.Lud.rolaPostaci(c) is { } rolaLiny)
+                {
+                    var an = Duszek.Daj(DuszkiLudu.nazwaDuszka(c, rolaLiny))?.Animacja("ciagnie");
+                    var u = an != null && an.n > 0 ? (an.KlatkaZegara(czas, c.id) - an.od + 0.5) / an.n : 0.5;
+                    RysLoch.linaDzwigni(ctx, sim, cam, c, rolaLiny, sx, sy, zwrotKucia(sim, c, kier) * szerokoscNaRysunku(c), h, u, czas);
+                }
                 if (czytelnosc)
                 {
                     Visual.Czytelnosc.TrybDuszka = 0;
