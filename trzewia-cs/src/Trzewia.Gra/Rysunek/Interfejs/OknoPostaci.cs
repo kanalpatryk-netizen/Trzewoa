@@ -124,7 +124,7 @@ namespace Trzewia.Rysunek
             return new Mozliwosc
             {
                 akcja = "dzwignia", nazwa = "Do dźwigni — podnieś bramę",
-                opis = $"idą do dźwigni w starej komnacie i ją ciągną; mieści się przy niej dwóch, a ruszy, gdy mają razem siłę co najmniej {Js.Js.S(Dzwignia.POTRZEBA)} — brama podnosi się wtedy (40 s do pełna), a puszczona dźwignia wraca i krata powoli opada{(ile != 0 ? $" (teraz otwarta w {Js.Js.S(ile)}%)" : "")}",
+                opis = $"razem trzeba siły co najmniej {Js.Js.S(Dzwignia.POTRZEBA)} — ciągnie jeden albo dwaj; brama rośnie, póki ciągną (40 s do pełna), puszczona opada{(ile != 0 ? $" (teraz {Js.Js.S(ile)}%)" : "")}",
                 ids = (ida.Count > 0 ? ida : reszta.Take(1)).Select(c => c.id).ToList(), ok = dostepna && ida.Count > 0,
                 powod = !dostepna ? "droga wiernych nie sięga jeszcze komnaty z dźwignią" : "przy dźwigni już ciągnie dwóch",
                 koszt = ida.Count == 0 ? null : razem >= Dzwignia.POTRZEBA ? $"siła razem {Js.Js.S(razem)} z {Js.Js.S(Dzwignia.POTRZEBA)}" : $"za słabi: siła {Js.Js.S(razem)} z {Js.Js.S(Dzwignia.POTRZEBA)}",
