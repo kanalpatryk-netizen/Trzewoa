@@ -5,9 +5,9 @@ namespace Trzewia.Testy;
 
 /// <summary>
 /// Etap 8 (prośba użytkownika z 26.11): poziom siły ludu i dźwignia zamiast kotła w Kręgu Trzecim (ze zmianami po porcie).
-/// Siła na start według roli (rycerz 2, robotnik 1, pobożny 0), rośnie od chodzenia, kopania i walki; dźwignię ciągnie
-/// jeden albo dwóch dowolnej roli, a brama rusza, gdy mają razem siłę co najmniej 4. Bez zmian kręgu i w Alphie 1 — nic
-/// z tego nie działa (kocioł i zaklęcia, jak w TS).
+/// Siła na start według roli (rycerz 2, robotnik 1, pobożny 0), rośnie od chodzenia, kopania i walki i lekko przyspiesza
+/// kopanie i cios. Dźwignię ciągnie tylko ten, kto sam ma siłę co najmniej 4 (dowolnej roli, najwyżej dwaj): dwaj —
+/// pełnym tempem, jeden — wolniej. Bez zmian kręgu i w Alphie 1 — nic z tego nie działa (kocioł i zaklęcia, jak w TS).
 /// </summary>
 public class SilaIDzwigniaTesty
 {
@@ -77,6 +77,7 @@ public class SilaIDzwigniaTesty
         Sila.Kucie(sim, c);
         Assert.Null(c.poziomSily);
         Assert.Null(c.punktySily);
+        Assert.Equal(1, Sila.Mnoznik(c));
         using var _ = new WKregu(zmianyKregu: false);
         Assert.False(Dzwignia.Aktywna);
     }
@@ -90,41 +91,56 @@ public class SilaIDzwigniaTesty
     }
 
     [Fact]
-    public void DzwigniaPodnosiBrameGdyRazemCoNajmniej4()
+    public void SilaLekkoPrzyspieszaKopanieIWzmacniaCios()
+    {
+        using var _ = new WKregu();
+        var sim = new Sim(3);
+        var r = Pierwszy(sim, "robotnik");
+        // na start bez zmian (wyjściowy układ ról zostaje), potem +4% za każdy poziom ponad startowy
+        Assert.Equal(1, Sila.Mnoznik(r));
+        r.poziomSily = Sila.NaStart("robotnik") + 3;
+        Assert.Equal(1 + 3 * Sila.ZA_POZIOM, Sila.Mnoznik(r), 12);
+        Assert.True(Sila.ZA_POZIOM <= 0.05, "wpływ siły miał być lekki");
+    }
+
+    [Fact]
+    public void DzwignieCiagnieKazdyZSila4JedenWolniejNizDwaj()
     {
         using var _ = new WKregu();
         var sim = new Sim(3);
         var b = Brama.stanBramy(sim);
         var rycerz = Pierwszy(sim, "rycerz");
-        var robotnik = Pierwszy(sim, "robotnik");
-        // rycerz (2) + robotnik (1) = 3 — za mało: dźwignia ledwie drga, brama stoi
-        PrzyDzwigni(sim, rycerz, 2); PrzyDzwigni(sim, robotnik, 3);
-        for (int t = 0; t < 600; t++) { sim.tick++; Brama.tikBramy(sim); }
+        var roboty = sim.creatures.Where(c => !c.dead && Lud.rolaPostaci(c) == "robotnik").Take(2).ToList();
+        double podnies(int tikow) { var przed = b.otwarcie; for (int t = 0; t < tikow; t++) { sim.tick++; Brama.tikBramy(sim); } return b.otwarcie - przed; }
+        // rycerz (2) przy dźwigni się nie liczy — brama stoi
+        PrzyDzwigni(sim, rycerz, 2);
+        Assert.Equal(0, podnies(600));
+        Assert.Equal(0, b.ciagnie);
+        Assert.Equal(0, b.dzwignia);
+        rycerz.polecenie = null;
+        // jeden z siłą 4 — ciągnie sam, wolniej
+        roboty[0].poziomSily = 4;
+        PrzyDzwigni(sim, roboty[0], 2);
+        var sam = podnies(1200);
+        Assert.Equal(1, b.ciagnie);
+        Assert.True(sam > 0);
+        // drugi z siłą 4 — pełne tempo (sam: razy Dzwignia.SAM)
+        roboty[1].poziomSily = 5;
+        PrzyDzwigni(sim, roboty[1], 3);
+        var dwaj = podnies(1200);
         Assert.Equal(2, b.ciagnie);
-        Assert.Equal(3, b.silaDzwigni);
-        Assert.Equal(0, b.otwarcie);
-        Assert.True(b.dzwignia <= Dzwignia.ZA_SLABI + 1e-9);
-        // robotnik nabrał siły (2) — razem 4: dźwignia w dół, brama w górę
-        robotnik.poziomSily = 2;
-        for (int t = 0; t < 600; t++) { sim.tick++; Brama.tikBramy(sim); }
-        Assert.Equal(4, b.silaDzwigni);
         Assert.Equal(1, b.dzwignia);
-        Assert.True(b.otwarcie > 0.1, $"otwarcie {b.otwarcie}");
+        Assert.Equal(Dzwignia.SAM, sam / dwaj, 6);
+        Assert.Equal(1200 / NastawyDlaTestu.Otwieranie, dwaj, 9);
         // puścili — dźwignia wraca, krata opada
         var szczyt = b.otwarcie;
-        rycerz.polecenie = null; robotnik.polecenie = null;
-        for (int t = 0; t < 600; t++) { sim.tick++; Brama.tikBramy(sim); }
+        roboty[0].polecenie = null; roboty[1].polecenie = null;
+        podnies(600);
         Assert.Equal(0, b.dzwignia);
         Assert.True(b.otwarcie < szczyt);
-        // jeden sam, z siłą 4 — też podnosi
-        var sam = sim.creatures.Where(c => !c.dead && Lud.rolaPostaci(c) == "robotnik").Skip(1).First();
-        sam.poziomSily = 4;
-        PrzyDzwigni(sim, sam, 2);
-        var przed = b.otwarcie;
-        for (int t = 0; t < 600; t++) { sim.tick++; Brama.tikBramy(sim); }
-        Assert.Equal(1, b.ciagnie);
-        Assert.True(b.otwarcie > przed);
     }
+
+    static class NastawyDlaTestu { public static double Otwieranie => Trzewia.Nastawy.NastawyLoch.BRAMA.otwieranie; }
 
     /// <summary>Partia z botem do chwili, gdy droga wiernych jest wykopana (komnata z dźwignią osiągalna).</summary>
     static Sim DoWykopanejDrogi(double ziarno)
@@ -137,24 +153,31 @@ public class SilaIDzwigniaTesty
     }
 
     [Fact]
-    public void PrzyDzwigniMieszczaSieDwajDowolnejRoli()
+    public void PrzyDzwigniMieszczaSieDwajZSila4()
     {
         using var _ = new WKregu();
         var sim = DoWykopanejDrogi(3);
+        var slaby = sim.creatures.Last(c => !c.dead && Lud.rolaPostaci(c) == "pobozny");
+        Assert.True(Sila.Poziom(slaby) < Dzwignia.POTRZEBA);
+        // słabszy odmawia
+        var r0 = Polecenia.wydajDoDzwigni(sim, new List<double> { slaby.id });
+        Assert.Equal(0, r0.przyjeli);
+        Assert.Contains(r0.odmowy, o => o.Contains("za słaby"));
+        // trzech z siłą 4 (każda rola może): idą dwaj, trzeci odmawia — nie ma miejsca
         var kto = new[] { Pierwszy(sim, "pobozny"), Pierwszy(sim, "rycerz"), Pierwszy(sim, "robotnik") };
+        foreach (var c in kto) c.poziomSily = Math.Max(Dzwignia.POTRZEBA, Sila.Poziom(c));
         var r = Polecenia.wydajDoDzwigni(sim, kto.Select(c => c.id).ToList());
         wyj.WriteLine($"przyjęli {r.przyjeli}, odmowy: {string.Join("; ", r.odmowy)}");
         Assert.Equal(2, r.przyjeli);
         Assert.Contains(r.odmowy, o => o.Contains("nie ma już miejsca"));
         Assert.Equal(2, Dzwignia.doDzwigni(sim).Count);
-        // pobożny i rycerz idą (każda rola może) — trzeci odmówił
         Assert.True(kto[0].polecenie?.dzwignia == true && kto[1].polecenie?.dzwignia == true);
         Assert.NotEqual(true, kto[2].polecenie?.dzwignia);
     }
 
     /// <summary>
-    /// Partia z botem: brama lochu podnosi się dźwignią (bot posyła tego, kto ma dość siły — albo dwóch), a partia kończy się
-    /// wygraną. Siła rośnie w prawdziwej grze: grabarze kopią drogę wiernych i dochodzą do 4 mniej więcej wtedy, gdy brama
+    /// Partia z botem: brama lochu podnosi się dźwignią (bot posyła dwóch z siłą 4, a gdy jest jeden — jego samego), a partia
+    /// kończy się wygraną. Siła rośnie w prawdziwej grze: grabarze kopią drogę wiernych i dochodzą do 4 mniej więcej wtedy, gdy brama
     /// jest potrzebna (ok. 6. minuty).
     /// </summary>
     [Theory]
@@ -170,7 +193,7 @@ public class SilaIDzwigniaTesty
         while (sim.ending == null && sim.tick < 250000)
         {
             Krok(sim);
-            foreach (var c in Dzwignia.ciagnacy(sim)) ciagneli.Add(c.id);
+            foreach (var c in Dzwignia.ciagnacy(sim)) { ciagneli.Add(c.id); Assert.True(Dzwignia.dosycSilny(c)); }
             // (bot puszcza dźwignię przy 97% — jak dawniej zaklinających przy kotle)
             if (pelna == null && Brama.stanBramy(sim).otwarcie >= 0.95 && !ZmianyKregu.WalkaZCerberem(sim)) pelna = sim.tick;
             if (sim.tick == 6 * 7200) maksRobotnika = sim.creatures.Where(c => !c.dead && Lud.rolaPostaci(c) == "robotnik").Max(Sila.Poziom);
