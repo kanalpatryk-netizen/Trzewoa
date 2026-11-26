@@ -639,6 +639,43 @@ Zrobione (25.11, decyzja „narysuję od nowa w kodzie”):
    Koszt: film wstępu na procesorze 378 ms/klatkę wobec 364 ms ze starymi (+4%); żarłok na żywo 0,6 ms (40 px),
    1,7 ms (80 px).
 
+## Etap 8 — siła i dźwignia (26.11)
+
+Prośba użytkownika: „Dodaj poziom siły, domyślnie rycerz ma 2, pobożny 0 i robotnik jeden, poziom siły wzrasta przez
+chodzenie, kopanie i walkę; usuń kocioł, zamiast tego postaw tam dużą jedną dźwignię (może ją obsługiwać jedna lub 2
+dowolne jednostki), ale poziom siły musi wynosić co najmniej 4”.
+
+Działa w Kręgu Trzecim przy zmianach po porcie (`ZmianyKregu.Aktywne`, jak wszystko od etapu 6). Alpha 1 i Krąg bez
+zmian zostają jak w TS: kocioł, zaklęcia dwóch pobożnych, te same testy zgodności.
+
+- [x] *Siła* (`Symulacja/Sila.cs`): na start rycerz 2, robotnik (grabarz) 1, pobożny (mnich) 0. Punkty: kafel przebyty
+      na nogach (posadzka i schody, liczone co 30 tików z różnicy położeń) 0,5; wykuty kafel 2; cios zadany w walce 10.
+      Poziom kosztuje 150 · (poziom + 1) punktów — każdy następny więcej pracy, górnej granicy nie ma. Nowy poziom:
+      myśl nad głową („siła 3!”) i wpis w kronice. Pola `poziomSily`, `punktySily` w postaci (puste bez zmian kręgu —
+      zapis jak w TS). W partiach z botem grabarze dochodzą do 4 ok. 6. minuty (wtedy brama jest potrzebna), rycerz
+      do 3 dopiero po 10–14 minutach, mnisi zostają przy 0–1.
+- [x] *Dźwignia zamiast kotła* (`Symulacja/Dzwignia.cs`, `Brama.tikBramy`): stoi w starej komnacie na miejscu kotła.
+      Rozkaz „Do dźwigni — podnieś bramę” dla każdej roli; mieszczą się dwaj (trzeci słyszy „nie ma już miejsca”).
+      Brama rośnie, póki ciągnący mają razem siłę co najmniej 4 (tempo jak przy kotle: 40 s do pełna, puszczona
+      opada 110 s); za słabi szarpią liny, dźwignia drga, nad głowami „za ciężka… siła 3 z 4”. Teksty: zamiar postaci,
+      kronika, podpowiedź, samouczek, atlas (tablica „Dźwignia i stalowa brama” z ryciną, nowa tablica „Siła”).
+- [x] *Bot* (`Bot.bramaDzwignia`): posyła jednego, gdy sam ma 4, inaczej parę, która razem ma 4 — najbliższych, rycerza
+      tylko w ostateczności; za słabi przy dźwigni — dosyła albo odwołuje; brama w górze — puszczają. Inne zajęcia bota
+      nie zdejmują już ciągnących z dźwigni.
+- [x] *Okno postaci*: siła obok nazwy roli („siła 3 (40% do 4)”), dla grupy „siła razem”; przy „Do dźwigni” —
+      „siła razem 5 z 4” albo „za słabi: siła 3 z 4”.
+- [x] *Rysunek* (`RysLoch.dzwignia`, `linaDzwigni`): kamienna skrzynia okuta żelazem, koło zębate na osi, ramię z belki
+      (3,9 kafla) z pierścieniem, łańcuch w szczelinie posadzki, latarnia na słupku (światło zamiast żaru kotła). Ramię
+      pochyla się ku ciągnącym, gdy mają dość siły; liny od pierścienia do dłoni (z pozy tej samej klatki). Runy bramy
+      żarzą się ciepło.
+- [x] *Animacja „ciagnie”* (`Animacje.Ciagnie`): odchylony w tył, przednia noga zaparta, dłonie jedna za drugą na linie,
+      szarpnięcie co 1,1 s; rycerz z mieczem w pochwie i tarczą na plecach, grabarz z latarnią u pasa. Dopieczona do 18
+      arkuszy (`PiekarniaLudzi`: nowe animacje od nowej strony — stare strony bajt w bajt te same; 90 nowych stron,
+      ok. 660 KB).
+- [x] *Testy*: `SilaIDzwigniaTesty` (siła na start, wzrost od chodu, kopania i walki, bez zmian kręgu nic się nie
+      liczy, próg 4 dla jednego i dwóch, dwa miejsca, partie z botem: brama w górze, wygrana). Partie z botem na
+      ziarnach 3, 12, 35, 47, 56 kończą się wygraną po 13–16 min (z kotłem: 13,5–16,6 min; ziarno 35 dawniej 34 min).
+
 ## Wzór raportu po każdym etapie
 
 - Co zrobione (krótko, w punktach).
