@@ -302,6 +302,8 @@ namespace Trzewia.Symulacja
             if (t == T.CORE) { sim.reachCore(c); return; }
             w.set(x, y, T.AIR);
             sim.dug++;
+            // etap 8 (Krąg ze zmianami): wykuty kafel dokłada siły temu, kto go wykuł
+            Sila.Kucie(sim, c);
             // wykuty kafel szybu drogi wiernych od razu dostaje schody
             if (wSzybie) schodyDrogi(sim);
             // Alpha, etap 3b: ruda wykuta przez lud od razu podbija licznik żelaza albo złota

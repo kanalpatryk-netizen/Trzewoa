@@ -193,6 +193,12 @@ namespace Trzewia.Symulacja
         public double? linaDo;
         public double? naLinie;
         public bool? naWiadrze;
+        /// <summary>
+        /// Etap 8 (Krąg, ZmianyKregu — Symulacja/Sila.cs): poziom siły (null — jeszcze nie urósł: tyle, ile daje rola),
+        /// punkty zebrane ku następnemu poziomowi i gdzie postać stała tik temu (z tego liczy się chód).
+        /// </summary>
+        public double? poziomSily, punktySily;
+        public double? sladX, sladY;
 
         /// <summary>{ ...c } z JS — płytka kopia (np. pozorny wędrowiec z przedsionka w powrotSpodRdzenia).</summary>
         public Creature Kopia() => (Creature)MemberwiseClone();

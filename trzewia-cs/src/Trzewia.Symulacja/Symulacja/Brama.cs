@@ -22,6 +22,11 @@ namespace Trzewia.Symulacja
         public double? szczyt;
         /// <summary>Porcje w koszu przy kracie (od środka lochu).</summary>
         public double? kosz;
+        /// <summary>
+        /// Etap 8 (Krąg ze zmianami — Dzwignia.cs): ilu ciągnie dźwignię, ile mają razem siły i gdzie jest jej ramię
+        /// (0 — w górze, spoczywa; 1 — ściągnięte w dół). Bez zmian kręgu — puste.
+        /// </summary>
+        public double? ciagnie, silaDzwigni, dzwignia;
     }
 
     /// <summary>
@@ -96,7 +101,10 @@ namespace Trzewia.Symulacja
             var w = sim.world;
             if (w.brama.x1 < w.brama.x0) return;
             var b = stanBramy(sim);
-            var ilu = zaklinajacy(sim).Count;
+            // etap 8 (Krąg ze zmianami): zamiast kotła — dźwignia; bramę podnosi siła ciągnących (razem co najmniej 4)
+            var dzwignia = Dzwignia.Aktywna;
+            var ilu = dzwignia ? 0 : zaklinajacy(sim).Count;
+            var podnosza = dzwignia ? Dzwignia.tik(sim, b) : ilu >= BRAMA.potrzeba;
             var przed = b.otwarcie;
             b.zaklina = ilu;
             double x = w.brama.x0, y = w.brama.y1;
@@ -108,14 +116,18 @@ namespace Trzewia.Symulacja
                 if (b.otwarcie < 1) sim.gdzie(x, y).log("Pieczęć pęka, Cerber zeskakuje w trzewia — wstrząs wyrywa kratę lochu z muru. Do końca walki brama stoi otworem.", "otchlan", "brama-wyrwana");
                 b.otwarcie = 1;
             }
-            else if (ilu >= BRAMA.potrzeba) b.otwarcie = Math.Min(1, b.otwarcie + 1 / BRAMA.otwieranie);
+            else if (podnosza) b.otwarcie = Math.Min(1, b.otwarcie + 1 / BRAMA.otwieranie);
             else b.otwarcie = Math.Max(0, b.otwarcie - 1 / BRAMA.opadanie);
             if (b.otwarcie > przed)
             {
-                if (przed == 0) sim.gdzie(w.kociol.x, w.kociol.y).log(Krag.T("Nad kotłem w starej komnacie pobożni rzucają zaklęcia. W dole, w murze lochu, drgnęła stalowa brama.", "Nad kotłem w starej komnacie mnisi rzucają zaklęcia. W dole, w murze lochu, drgnęła stalowa brama."), "wiara", "brama-drgnela");
+                if (przed == 0)
+                    sim.gdzie(w.kociol.x, w.kociol.y).log(dzwignia ? "W starej komnacie dźwignia poszła w dół, łańcuch zgrzytnął w posadzce. W dole, w murze lochu, drgnęła stalowa brama."
+                        : Krag.T("Nad kotłem w starej komnacie pobożni rzucają zaklęcia. W dole, w murze lochu, drgnęła stalowa brama.", "Nad kotłem w starej komnacie mnisi rzucają zaklęcia. W dole, w murze lochu, drgnęła stalowa brama."), "wiara", "brama-drgnela");
                 b.szczyt = Math.Max(b.szczyt ?? 0, b.otwarcie);
                 if (przed < BRAMA.idzieOd && b.otwarcie >= BRAMA.idzieOd) sim.gdzie(x, y).log("Brama lochu podniesiona — można przejść wyprostowanym.", "wiara", "brama-idzie");
-                if (przed < 1 && b.otwarcie >= 1) sim.gdzie(x, y).log("Brama lochu podniesiona do końca. Gdy zaklęcia ucichną, zacznie powoli opadać.", "wiara", "brama-pelna");
+                if (przed < 1 && b.otwarcie >= 1)
+                    sim.gdzie(x, y).log(dzwignia ? "Brama lochu podniesiona do końca. Gdy puszczą dźwignię, zacznie powoli opadać."
+                        : "Brama lochu podniesiona do końca. Gdy zaklęcia ucichną, zacznie powoli opadać.", "wiara", "brama-pelna");
             }
             var wolne = b.otwarcie >= BRAMA.czolgaOd;
             if (wolne != b.wolne)

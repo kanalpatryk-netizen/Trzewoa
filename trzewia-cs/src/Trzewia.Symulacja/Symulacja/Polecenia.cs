@@ -42,6 +42,8 @@ namespace Trzewia.Symulacja
         public double? pomin;
         /// <summary>6.11: pobożny idzie do kotła i tam rzuca zaklęcia (sim/brama.ts).</summary>
         public bool? zaklinaj;
+        /// <summary>Etap 8 (Krąg ze zmianami): idzie do dźwigni w starej komnacie i ją ciągnie (Symulacja/Dzwignia.cs).</summary>
+        public bool? dzwignia;
         /// <summary>6.11: pobożny modli się za innych (sim/blogoslawienstwo.ts).</summary>
         public bool? zaInnych;
         /// <summary>6.11: „kop drogę wiernych” wydane po wykopie — robotnik buduje schody.</summary>
@@ -537,6 +539,40 @@ namespace Trzewia.Symulacja
                 if (powod != null || c.polecenie == null) { wynik.odmowy.Add(powod ?? "nie dojdę do kotła"); continue; }
                 c.polecenie.zaklinaj = true;
                 zapisz(sim, "praca", $"{kto(sim, c)}: rozkaz — do kotła, rzucać zaklęcia (brama lochu)", k.x, k.y);
+                wynik.przyjeli++;
+            }
+            return wynik;
+        }
+
+        /// <summary>
+        /// Etap 8 (Krąg ze zmianami): „Do dźwigni” — zaznaczeni (dowolnej roli) idą do dźwigni w starej komnacie i ją
+        /// ciągną; mieści się przy niej dwóch (Dzwignia.MIEJSCA). Brama ruszy, gdy ciągnący mają razem siły co najmniej
+        /// Dzwignia.POTRZEBA — rozkaz przyjmuje się i przy mniejszej sile (ktoś może dojść), dźwignia wtedy ani drgnie.
+        /// </summary>
+        public static WynikRozkazu wydajDoDzwigni(Sim sim, IReadOnlyList<double> ids)
+        {
+            var w = sim.world; var k = w.kociol;
+            var wynik = new WynikRozkazu();
+            if (w.komnata.x1 < w.komnata.x0) { wynik.odmowy.Add("w tej górze nie ma dźwigni"); return wynik; }
+            var lud = ids.Select(id => sim.creatureById(id)).Where(c => c != null && !c.dead && rolaPostaci(c) != null && c.polecenie?.dzwignia != true).Select(c => c!).ToList();
+            // miejsca zajęte przez tych, którzy już ciągną albo idą do dźwigni
+            var zajete = new HashSet<double>();
+            foreach (var c in Dzwignia.doDzwigni(sim))
+            {
+                var d = c.polecenie!.x - k.x;
+                if (Array.IndexOf(Dzwignia.MIEJSCA, d) < 0) foreach (var m in Dzwignia.MIEJSCA) if (!zajete.Contains(m)) { d = m; break; }
+                zajete.Add(d);
+            }
+            foreach (var c in lud)
+            {
+                double? dx = null;
+                foreach (var d in Dzwignia.MIEJSCA) if (!zajete.Contains(d)) { dx = d; break; }
+                if (dx == null) { wynik.odmowy.Add(odmow(sim, c, "przy dźwigni nie ma już miejsca — ciągnie dwóch")); continue; }
+                var powod = wydajPolecenie(sim, c, "idz", k.x + dx.Value, k.y);
+                if (powod != null || c.polecenie == null) { wynik.odmowy.Add(powod ?? "nie dojdę do dźwigni"); continue; }
+                zajete.Add(dx.Value);
+                c.polecenie.dzwignia = true;
+                zapisz(sim, "praca", $"{kto(sim, c)}: rozkaz — do dźwigni, ciągnąć (brama lochu)", k.x, k.y);
                 wynik.przyjeli++;
             }
             return wynik;

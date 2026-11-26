@@ -110,13 +110,18 @@ namespace Trzewia.Symulacja
             {
                 var w = sim.world;
                 var b = sim.lud.brama;
-                if (w.brama.x1 >= w.brama.x0 && !(b?.wolne == true) && !(b != null && b.zaklina >= BRAMA.potrzeba)
+                // etap 8 (Krąg ze zmianami): zamiast kotła — dźwignia; podnosi, gdy ciągnący mają razem dość siły
+                var dzw = Dzwignia.Aktywna;
+                var podnosza = dzw ? (b?.silaDzwigni ?? 0) >= Dzwignia.POTRZEBA : b != null && b.zaklina >= BRAMA.potrzeba;
+                if (w.brama.x1 >= w.brama.x0 && !(b?.wolne == true) && !podnosza
                     && sim.creatures.Exists(c => !c.dead && c.straznik != true && c.race == Race.GOBLIN && w.wPrzedprozu(c.x, c.y)))
                 {
                     kandydaci.Add(new Podpowiedz
                     {
-                        tekst = $"Pod stalową bramą lochu czekają twoi. Zaznacz {JS.S(BRAMA.potrzeba)}{Krag.T(" pobożnych i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.", " mnichów i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.")}",
-                        cel = new CelPodpowiedzi { x = w.kociol.x + 0.5, y = w.kociol.y, r = 5, tekst = "kocioł" },
+                        tekst = dzw
+                            ? $"Pod stalową bramą lochu czekają twoi. Wyślij „Do dźwigni” w starej komnacie jednego albo dwóch swoich — muszą mieć razem siłę co najmniej {JS.S(Dzwignia.POTRZEBA)} (siła rośnie od chodzenia, kopania i walki). Póki ciągną, brama się podnosi (40 s do pełna), a potem krata powoli opada."
+                            : $"Pod stalową bramą lochu czekają twoi. Zaznacz {JS.S(BRAMA.potrzeba)}{Krag.T(" pobożnych i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.", " mnichów i wyślij ich „Do kotła” w starej komnacie — ich zaklęcia podniosą bramę (40 s do pełna), a potem krata powoli opadnie.")}",
+                        cel = new CelPodpowiedzi { x = w.kociol.x + 0.5, y = w.kociol.y, r = 5, tekst = dzw ? "dźwignia" : "kocioł" },
                         waga = 88,
                     });
                 }

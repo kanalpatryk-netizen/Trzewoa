@@ -224,7 +224,10 @@ namespace Trzewia.Symulacja
         /// </summary>
         public static void tik(Sim sim, StanKregu k)
         {
-            if (!Aktywne || sim.tick % 60 != 0 || k.zasypane == null || k.zasypane.Count == 0) return;
+            if (!Aktywne) return;
+            // etap 8: siła rośnie od chodzenia (kopanie i walka dokładają się tam, gdzie się kuje i bije)
+            Sila.Chod(sim);
+            if (sim.tick % 60 != 0 || k.zasypane == null || k.zasypane.Count == 0) return;
             var w = sim.world;
             k.zasypane.RemoveAll(i => w.tile[i] != T.ROCK);
             if (k.zasypane.Count == 0) return;

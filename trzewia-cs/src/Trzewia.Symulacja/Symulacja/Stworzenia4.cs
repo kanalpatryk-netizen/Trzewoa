@@ -222,8 +222,20 @@ namespace Trzewia.Symulacja
                 p.prob = 0;
                 c.jx = naMiejscu ? cx : p.x; c.jy = naMiejscu ? cy : p.y; c.droga = null;
                 // 6.11: przy kotle rzuca zaklęcia (to nie modlitwa — nie błogosławi); „za innych” modli się zawsze
-                c.modliPrzyObozie = rola == "pobozny" && p.zaklinaj != true && (p.zaInnych == true || sim.tick >= (c.bezModlitwyDo ?? 0));
-                var opis = p.zaklinaj == true && rola == "pobozny" ? (przyKotle(sim, c) ? "rzuca zaklęcia nad kotłem — w dole podnosi się stalowa brama lochu" : "idzie do kotła w starej komnacie")
+                c.modliPrzyObozie = rola == "pobozny" && p.zaklinaj != true && p.dzwignia != true && (p.zaInnych == true || sim.tick >= (c.bezModlitwyDo ?? 0));
+                // etap 8 (Krąg ze zmianami): przy dźwigni ciągnie linę, przodem do dźwigni
+                if (p.dzwignia == true && Dzwignia.przyDzwigni(sim, c))
+                {
+                    var k = sim.world.kociol;
+                    c.czynnosc = "ciagnie";
+                    c.face = c.x < k.x + 0.5 ? 1 : -1;
+                    var b = stanBramy(sim);
+                    zamiar((b.silaDzwigni ?? 0) >= Dzwignia.POTRZEBA ? "ciągnie dźwignię — w dole podnosi się stalowa brama lochu"
+                        : $"szarpie dźwignię, ale ta ani drgnie — razem siła {JS.S(b.silaDzwigni ?? Sila.Poziom(c))}, trzeba {JS.S(Dzwignia.POTRZEBA)}", Job.STOI, Z);
+                    return true;
+                }
+                var opis = p.dzwignia == true ? "idzie do dźwigni w starej komnacie"
+                    : p.zaklinaj == true && rola == "pobozny" ? (przyKotle(sim, c) ? "rzuca zaklęcia nad kotłem — w dole podnosi się stalowa brama lochu" : "idzie do kotła w starej komnacie")
                     : p.zaInnych == true && rola == "pobozny" ? "modli się za tych, którzy stoją wokół — leczy ich i błogosławi"
                     : rola == "pobozny" ? "modli się tam, gdzie kazałeś" : rola == "rycerz" ? "pilnuje miejsca, które wskazałeś" : "czeka tam, gdzie kazałeś";
                 zamiar(opis, Job.STOI, Z);

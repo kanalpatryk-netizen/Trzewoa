@@ -51,7 +51,8 @@ namespace Trzewia.Symulacja
             if (!wPrzedsionku && REMAKE && w.brama.x1 >= w.brama.x0 && !w.wLochu(c.x, c.y) && w.wPrzedprozu(Math.Floor(c.x), Math.Floor(c.y)) && !bramaOtwarta(sim))
             {
                 c.droga = null;
-                c.zamiar = Krag.T("czeka pod stalową bramą lochu — podniosą ją pobożni zaklęciami przy kotle", "czeka pod stalową bramą lochu — podniosą ją mnisi zaklęciami przy kotle");
+                c.zamiar = Dzwignia.Aktywna ? $"czeka pod stalową bramą lochu — podniesie ją dźwignia w starej komnacie (razem siła co najmniej {JS.S(Dzwignia.POTRZEBA)})"
+                    : Krag.T("czeka pod stalową bramą lochu — podniosą ją pobożni zaklęciami przy kotle", "czeka pod stalową bramą lochu — podniosą ją mnisi zaklęciami przy kotle");
                 c.zamiarDo = sim.tick + 120;
                 return;
             }
@@ -278,6 +279,7 @@ namespace Trzewia.Symulacja
                 var skala = RACES[c.race].strength / RACES[Race.GOBLIN].strength * mnoznik(sim, c, "sila") / (rycerz ? WalkaWzor.SILA_RYCERZA : WalkaWzor.SILA_LUDU)
                             * cechaNacji(sim.clans[c.clan]).sila * (1 + c.mad);
                 foe.hp -= WalkaWzor.O(WalkaWzor.Atak(sim, bron, skala), WalkaWzor.Pancerz(foe));
+                Sila.Cios(sim, c);
                 foe.fear = Math.Min(1, foe.fear + K.walkaStrach);
                 sim.spark(foe.x, foe.y, "hit");
                 if (foe.hp <= 0) zabitWBojce(sim, c, foe);
@@ -287,6 +289,7 @@ namespace Trzewia.Symulacja
             {
                 var dmg = RACES[c.race].strength * mnoznik(sim, c, "sila") * cechaNacji(sim.clans[c.clan]).sila * (K.walkaMin + sim.rng.next() * K.walkaRozrzut) * (1 + c.mad);
                 foe.hp -= dmg * ranyZbroi(foe);
+                Sila.Cios(sim, c);
                 foe.fear = Math.Min(1, foe.fear + K.walkaStrach);
                 sim.spark(foe.x, foe.y, "hit");
                 if (foe.hp <= 0)

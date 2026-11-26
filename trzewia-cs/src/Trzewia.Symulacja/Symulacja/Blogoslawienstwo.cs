@@ -22,7 +22,7 @@ namespace Trzewia.Symulacja
         {
             if (c.dead || rolaPostaci(c) != "pobozny") return false;
             var p = c.polecenie;
-            if (p?.zaklinaj == true) return false;
+            if (p?.zaklinaj == true || p?.dzwignia == true) return false;
             if (p?.zaInnych == true) return p.na != null;
             var w = sim.world;
             if (c.job == Job.PIELGRZYM) return Math.Abs(c.x - w.coreX) < PIELGRZYMKA.przedsionekX && Math.Abs(c.y - w.przedsionekY) < PIELGRZYMKA.przedsionekY;
