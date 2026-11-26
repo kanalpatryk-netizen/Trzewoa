@@ -19,6 +19,16 @@ Plan od użytkownika (16.11), zapisany na gałęzi pracy i odhaczany etapami. Ra
 - [x] Etap 7c — wstęp: film i scena wejścia (23.11; czeka na „dalej”; Dante i Wergiliusz — w 7d)
 - [x] Etap 7d — ludzie od nowa w kodzie i ich animacje (25.11; czeka na „dalej”; animacje Cerbera — pytanie, które)
 
+## Decyzje użytkownika (26.11, po raporcie etapu 7d)
+
+- Napisy końcowe — „zrobimy dużo później” (tekst zostaje „[do uzupełnienia]”).
+- Przerywniki ścięcia głów: długość i granie za każdym razem — zostają. Ziarno 35 (bez rycerza przegrana po ~30 min) — zostaje.
+- Nowy pełny film z dźwiękiem — tak. Animacje Cerbera — na razie bez zmian; użytkownik wskaże je po obejrzeniu filmu.
+- Styl nowych ludzi — „jak uważasz” (zostaje: czysta kreska, kreskowanie w cieniu, barwy ziemi).
+- Stare arkusze ludzi (i ich ryciny) — zostają (porównanie: `--ludzie wyl`).
+- Rycerz z tarczą tnie jedną ręką w ciosach oburęcznych — tak. Żarłoki rysowane jak reszta ludzi — tak.
+  Barwy tunik grabarzy i habitów mnichów — zostają.
+
 ## Decyzje użytkownika (16.11, po raporcie etapu 0)
 
 1. **Gałąź:** nowa gałąź `oprawa/cerber`, założona od `claude/friendly-mayer-7sx7tn` (tam jest port C#).
