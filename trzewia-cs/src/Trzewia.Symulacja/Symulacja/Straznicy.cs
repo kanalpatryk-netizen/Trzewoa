@@ -356,8 +356,10 @@ namespace Trzewia.Symulacja
         public static void ranStraznika(Sim sim, Creature s, Creature od, double dmg, bool chwieje = false)
         {
             if (s.dead) return;
-            // etap 8 (Krąg ze zmianami): cios w walce dokłada siły temu, kto go zadał (odbity od tarczy też — wysiłek ten sam)
+            // etap 8 (Krąg ze zmianami): cios w walce dokłada siły temu, kto go zadał (odbity od tarczy też — wysiłek ten sam),
+            // a silniejszy bije lekko mocniej (Sila.Mnoznik; poza tym ×1)
             Sila.Cios(sim, od);
+            dmg *= Sila.Mnoznik(od);
             if (s.boss != null && demonKona(sim)) return;
             if (s.boss != null && tarczaChroni(sim)) { odbijOdTarczy(sim, od); return; }
             var d = s.boss != null ? aktywnyBoss().przyjmij(sim, s, od, dmg) : dmg;

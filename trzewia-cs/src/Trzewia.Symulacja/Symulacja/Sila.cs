@@ -1,8 +1,10 @@
 // Etap 8 (prośba użytkownika z 26.11): poziom siły ludu w Kręgu Trzecim — „domyślnie rycerz ma 2, pobożny 0 i robotnik
 // jeden, poziom siły wzrasta przez chodzenie, kopanie i walkę”. Siła rośnie w punktach: każdy kafel przebyty na nogach,
 // każdy wykuty kafel i każdy cios zadany w walce dokłada swoje. Każdy następny poziom kosztuje więcej pracy
-// (KosztPoziomu: z 0 na 1 — 150 punktów, z 1 na 2 — 300, z 2 na 3 — 450…); górnej granicy nie ma. Siła służy dźwigni
-// w starej komnacie (Symulacja/Dzwignia.cs): ta podnosi bramę lochu, gdy ciągnący mają razem co najmniej Dzwignia.POTRZEBA.
+// (KosztPoziomu: z 0 na 1 — 150 punktów, z 1 na 2 — 300, z 2 na 3 — 450…); górnej granicy nie ma. Siła otwiera dźwignię
+// w starej komnacie (Symulacja/Dzwignia.cs): ciągnie ją tylko ten, kto ma co najmniej Dzwignia.POTRZEBA. Do tego lekko
+// (decyzja użytkownika 26.11) przyspiesza kopanie i wzmacnia cios: Mnoznik — ZA_POZIOM za każdy poziom ponad startowy
+// (start roli nic nie zmienia, więc wyjściowy układ sił ról zostaje jak był).
 //
 // Działa tylko przy zmianach kręgu (ZmianyKregu.Aktywne). Bez nich — i w Alphie 1 — nic się nie liczy, a pola siły
 // zostają puste (null), więc zapis i skrót stanu są bit w bit jak w TS.
@@ -26,6 +28,9 @@ namespace Trzewia.Symulacja
         /// <summary>Przesunięcie dłuższe niż tyle kafli od ostatniego liczenia to nie chód (przeniesienie, wypchnięcie spod kraty).</summary>
         const double MAKS_PRZESUNIECIE = 3;
 
+        /// <summary>Lekki wpływ siły: tyle szybciej kopie i mocniej bije za każdy poziom ponad ten, z którym zaczynał (+4%).</summary>
+        public const double ZA_POZIOM = 0.04;
+
         /// <summary>Siła liczy się w tej partii (Krąg Trzeci ze zmianami).</summary>
         public static bool Aktywna => ZmianyKregu.Aktywne;
 
@@ -34,6 +39,17 @@ namespace Trzewia.Symulacja
 
         /// <summary>Poziom siły postaci ludu — dopóki nie urósł, tyle, ile daje rola.</summary>
         public static double Poziom(Creature c) => c.poziomSily ?? NaStart(Lud.rolaPostaci(c));
+
+        /// <summary>
+        /// Mnożnik szybkości kopania i mocy ciosu: 1 + ZA_POZIOM za każdy poziom ponad startowy roli. Poza ludem i bez zmian
+        /// kręgu — dokładnie 1 (mnożenie przez 1 nie zmienia ani bitu: zgodność z TS zostaje).
+        /// </summary>
+        public static double Mnoznik(Creature c)
+        {
+            if (!Aktywna) return 1;
+            var rola = Lud.rolaPostaci(c);
+            return rola == null ? 1 : 1 + ZA_POZIOM * Math.Max(0, Poziom(c) - NaStart(rola));
+        }
 
         /// <summary>Ile punktów trzeba, by z poziomu `poziom` wejść na następny.</summary>
         public static double KosztPoziomu(double poziom) => PUNKTY_POZIOMU * (Math.Max(0, poziom) + 1);

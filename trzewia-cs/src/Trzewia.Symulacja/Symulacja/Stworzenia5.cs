@@ -289,7 +289,8 @@ namespace Trzewia.Symulacja
             if (REMAKE && rolaPostaci(c) != null && w.idx(x, y) == blokWiadra(sim)) { c.dig = 0; c.jt = 0; c.droga = null; return; }
             // rysunek: kuje właśnie ten kafel
             c.kujeT = sim.tick; c.kujeX = x; c.kujeY = y;
-            var sila = RACES[c.race].digPower * mnoznik(sim, c, "kopanie") * cechaNacji(sim.clans[c.clan]).kopanie * (1 + c.mad * K.kopanieOdSzalenstwa);
+            // (etap 8, Krąg ze zmianami: silniejszy kuje lekko szybciej — Sila.Mnoznik; poza tym ×1)
+            var sila = RACES[c.race].digPower * mnoznik(sim, c, "kopanie") * cechaNacji(sim.clans[c.clan]).kopanie * (1 + c.mad * K.kopanieOdSzalenstwa) * Sila.Mnoznik(c);
             // Alpha, etap 3: postęp zostaje w kaflu (w.kucie), nie w kopaczu
             var wSzybie = w.wSzybie(x, y) && y > w.salaOltarza.y1;
             var tempo = SWIAT.warstwy.wlaczone && rolaPostaci(c) != null && t != T.CORE

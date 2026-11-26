@@ -278,7 +278,7 @@ namespace Trzewia.Symulacja
                 if (!WalkaWzor.Zamach(sim, c, bron, wZasiegu, ref c.ciosT)) return;
                 var skala = RACES[c.race].strength / RACES[Race.GOBLIN].strength * mnoznik(sim, c, "sila") / (rycerz ? WalkaWzor.SILA_RYCERZA : WalkaWzor.SILA_LUDU)
                             * cechaNacji(sim.clans[c.clan]).sila * (1 + c.mad);
-                foe.hp -= WalkaWzor.O(WalkaWzor.Atak(sim, bron, skala), WalkaWzor.Pancerz(foe));
+                foe.hp -= WalkaWzor.O(WalkaWzor.Atak(sim, bron, skala * Sila.Mnoznik(c)), WalkaWzor.Pancerz(foe));
                 Sila.Cios(sim, c);
                 foe.fear = Math.Min(1, foe.fear + K.walkaStrach);
                 sim.spark(foe.x, foe.y, "hit");
@@ -288,7 +288,7 @@ namespace Trzewia.Symulacja
             if (dist < K.walkaZasieg)
             {
                 var dmg = RACES[c.race].strength * mnoznik(sim, c, "sila") * cechaNacji(sim.clans[c.clan]).sila * (K.walkaMin + sim.rng.next() * K.walkaRozrzut) * (1 + c.mad);
-                foe.hp -= dmg * ranyZbroi(foe);
+                foe.hp -= dmg * ranyZbroi(foe) * Sila.Mnoznik(c);
                 Sila.Cios(sim, c);
                 foe.fear = Math.Min(1, foe.fear + K.walkaStrach);
                 sim.spark(foe.x, foe.y, "hit");
