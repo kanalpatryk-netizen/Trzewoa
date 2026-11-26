@@ -184,15 +184,14 @@ namespace Trzewia.Aplikacja
                 }
                 case "dzwignia":
                 {
-                    // etap 8 (Krąg ze zmianami): dźwignia zamiast kotła — ciągnie jeden albo dwóch, razem co najmniej 4 siły
+                    // etap 8 (Krąg ze zmianami): dźwignia zamiast kotła — ciągnie ten, kto ma siłę co najmniej 4; sam — wolniej
                     var r = Polecenia.wydajDoDzwigni(sim, m.ids); var k = sim.world.kociol;
                     falaRozkazu = new FalaRozkazu { x = k.x + 0.5, y = k.y + 0.5, t = Wydajnosc.Teraz(), ok = r.przyjeli > 0 };
-                    var razem = Dzwignia.silaRazem(Dzwignia.doDzwigni(sim));
+                    var ciagnacych = Dzwignia.doDzwigni(sim).Count(Dzwignia.dosycSilny);
                     if (r.przyjeli > 0)
                     {
                         ui.say((r.przyjeli == 1 ? "Idzie do dźwigni." : $"Idą do dźwigni: {Js.Js.S(r.przyjeli)}.")
-                            + (razem >= Dzwignia.POTRZEBA ? $" Siła razem {Js.Js.S(razem)} — brama ruszy, gdy chwycą."
-                                : $" Siła razem {Js.Js.S(razem)} z {Js.Js.S(Dzwignia.POTRZEBA)} — dźwignia nie drgnie, dopóki nie dojdzie ktoś silniejszy."), sim.tick);
+                            + (ciagnacych >= 2 ? " Dwaj pociągną ją pełnym tempem." : $" Sam pociągnie ją wolniej — drugi z siłą {Js.Js.S(Dzwignia.POTRZEBA)} przyspieszy."), sim.tick);
                         app.gesty.klik();
                     }
                     else { ui.say($"Nie pójdą: {(r.odmowy.Count > 0 ? r.odmowy[0] : "nie ma drogi")}.", sim.tick); app.gesty.odmowa(); }

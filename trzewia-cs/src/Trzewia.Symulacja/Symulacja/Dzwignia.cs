@@ -1,35 +1,38 @@
 // Etap 8 (prośba użytkownika z 26.11): „usuń kocioł, zamiast tego postaw tam dużą jedną dźwignię (może ją obsługiwać
-// jedna lub 2 dowolne jednostki), ale poziom siły musi wynosić co najmniej 4”. Dźwignia stoi w starej komnacie, na
-// miejscu dawnego kotła (world.kociol). Ciągnie ją jedna albo dwie postacie dowolnej roli (MIEJSCA — po jednej stronie,
-// jedna za drugą, na linach od szczytu ramienia). Brama lochu podnosi się, póki ciągnący mają razem co najmniej POTRZEBA
-// siły (Sila.Poziom) — w tym samym tempie co dawniej przy zaklęciach (BRAMA.otwieranie); puszczona dźwignia wraca,
-// a krata powoli opada (BRAMA.opadanie). Za słabi szarpią liny, dźwignia ani drgnie.
+// jedna lub 2 dowolne jednostki), ale poziom siły musi wynosić co najmniej 4”, a po raporcie: „każdy z nich osobno musi
+// mieć 4 — jeśli tylko jeden będzie miał, to jeden może używać dźwigni, ale będzie jej używał znacząco wolniej”.
+//
+// Dźwignia stoi w starej komnacie, na miejscu dawnego kotła (world.kociol). Ciągnie ją ten, kto sam ma siłę co najmniej
+// POTRZEBA (Sila.Poziom) — dowolnej roli; słabszego rozkaz nie wyśle (Polecenia.wydajDoDzwigni). Mieszczą się dwaj
+// (MIEJSCA — po jednej stronie, jeden za drugim, na linach od szczytu ramienia). Dwaj — brama rośnie w tempie jak dawniej
+// przy zaklęciach (BRAMA.otwieranie, 40 s do pełna); jeden sam — razy SAM (100 s do pełna). Puszczona dźwignia wraca,
+// a krata powoli opada (BRAMA.opadanie).
 //
 // Działa przy zmianach kręgu (ZmianyKregu.Aktywne). Bez nich — i w Alphie 1 — jest kocioł i zaklęcia dwóch pobożnych
 // (Brama.cs, jak w TS).
 using System;
 using System.Collections.Generic;
-using JS = Trzewia.Js.Js;
 
 namespace Trzewia.Symulacja
 {
     public static class Dzwignia
     {
-        /// <summary>Tyle siły muszą mieć razem ciągnący, żeby dźwignia poszła w dół.</summary>
+        /// <summary>Tyle siły musi mieć każdy, kto ciągnie dźwignię.</summary>
         public const double POTRZEBA = 4;
+        /// <summary>Jeden ciągnie sam: brama rośnie razy tyle (2,5 raza wolniej niż dwaj — 100 s do pełna zamiast 40).</summary>
+        public const double SAM = 0.4;
         /// <summary>Gdzie stają ciągnący — kafle w bok od dźwigni (pierwszy bliżej, drugi za nim); tyle też ich mieści się naraz.</summary>
         public static readonly double[] MIEJSCA = { 2, 3 };
         /// <summary>Przy dźwigni: tyle kafli od niej w bok (i rząd w górę albo w dół) — tam się ciągnie.</summary>
         public const double PRZY = 4.5;
-        /// <summary>Dźwignia w dół (pełny ruch) w tyle tików, puszczona wraca w tyle.</summary>
+        /// <summary>Dźwignia w dół (pełny ruch) w tyle tików, gdy ciągną dwaj (jeden — wolniej, razy SAM); puszczona wraca w tyle.</summary>
         public const double W_DOL_TIKOW = 90, W_GORE_TIKOW = 60;
-        /// <summary>Za słabi: dźwignia drga, ale nie schodzi niżej niż na tyle (0…1).</summary>
-        public const double ZA_SLABI = 0.12;
-        /// <summary>Za słabi: myśl nad głową co tyle tików.</summary>
-        const double MYSL_CO = 360;
 
         /// <summary>Dźwignia zamiast kotła (Krąg Trzeci ze zmianami).</summary>
         public static bool Aktywna => ZmianyKregu.Aktywne;
+
+        /// <summary>Czy postać ma dość siły, żeby ciągnąć dźwignię.</summary>
+        public static bool dosycSilny(Creature c) => Sila.Poziom(c) >= POTRZEBA;
 
         /// <summary>Czy postać stoi przy dźwigni (tam się ciągnie).</summary>
         public static bool przyDzwigni(Sim sim, Creature c)
@@ -46,52 +49,29 @@ namespace Trzewia.Symulacja
             return @out;
         }
 
-        /// <summary>Ci, którzy właśnie ciągną (doszli i stoją przy dźwigni).</summary>
+        /// <summary>Ci, którzy właśnie ciągną: doszli, stoją przy dźwigni i mają dość siły.</summary>
         public static List<Creature> ciagnacy(Sim sim)
         {
             var @out = new List<Creature>();
-            foreach (var c in doDzwigni(sim)) if (c.polecenie!.na == true && przyDzwigni(sim, c)) @out.Add(c);
+            foreach (var c in doDzwigni(sim)) if (c.polecenie!.na == true && przyDzwigni(sim, c) && dosycSilny(c)) @out.Add(c);
             return @out;
         }
 
-        /// <summary>Siła razem — tych, którzy ciągną.</summary>
-        public static double silaCiagnacych(Sim sim)
-        {
-            double s = 0;
-            foreach (var c in ciagnacy(sim)) s += Sila.Poziom(c);
-            return s;
-        }
-
-        /// <summary>Siła razem dla podanych postaci (podgląd rozkazu: „razem siła 3 z 4”).</summary>
-        public static double silaRazem(IEnumerable<Creature> kto)
-        {
-            double s = 0;
-            foreach (var c in kto) s += Sila.Poziom(c);
-            return s;
-        }
+        /// <summary>Tempo bramy (1 — jak dawniej przy zaklęciach) przy tylu ciągnących: dwaj — 1, jeden — SAM, nikt — 0.</summary>
+        public static double tempo(int ciagnacych) => ciagnacych >= 2 ? 1 : ciagnacych == 1 ? SAM : 0;
 
         /// <summary>
-        /// Tik dźwigni (z Brama.tikBramy): kto ciągnie, z jaką siłą i gdzie jest ramię. Zwraca true, gdy ciągną dość mocno —
-        /// wtedy brama się podnosi.
+        /// Tik dźwigni (z Brama.tikBramy): ilu ciągnie i gdzie jest ramię. Zwraca tempo, w jakim rośnie brama (0 — nikt
+        /// nie ciągnie: krata opada).
         /// </summary>
-        public static bool tik(Sim sim, StanBramy b)
+        public static double tik(Sim sim, StanBramy b)
         {
-            var kto = ciagnacy(sim);
-            double sila = 0;
-            foreach (var c in kto) sila += Sila.Poziom(c);
-            var dosc = kto.Count > 0 && sila >= POTRZEBA;
-            b.ciagnie = kto.Count;
-            b.silaDzwigni = sila;
-            var cel = dosc ? 1 : kto.Count > 0 ? ZA_SLABI : 0;
+            var ilu = ciagnacy(sim).Count;
+            var t = tempo(ilu);
+            b.ciagnie = ilu;
             var u = b.dzwignia ?? 0;
-            b.dzwignia = u < cel ? Math.Min(cel, u + 1 / W_DOL_TIKOW) : Math.Max(cel, u - 1 / W_GORE_TIKOW);
-            if (kto.Count > 0 && !dosc && (sim.tick % MYSL_CO) == 0)
-            {
-                var k = sim.world.kociol;
-                foreach (var c in kto) sim.efekt(c.x, c.y - 0.6, "mysl", $"za ciężka… siła {JS.S(sila)} z {JS.S(POTRZEBA)}");
-                sim.gdzie(k.x, k.y).log($"Dźwignia w starej komnacie ani drgnie — ciągnący mają razem siłę {JS.S(sila)}, a trzeba {JS.S(POTRZEBA)}.", "swiat", "dzwignia-za-slabi");
-            }
-            return dosc;
+            b.dzwignia = t > 0 ? Math.Min(1, u + t / W_DOL_TIKOW) : Math.Max(0, u - 1 / W_GORE_TIKOW);
+            return t;
         }
     }
 }

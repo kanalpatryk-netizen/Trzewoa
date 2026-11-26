@@ -593,7 +593,7 @@ namespace Trzewia.Atlas
         }
 
         /// <summary>
-        /// Etap 8 (Krąg ze zmianami) — Dźwignia i stalowa brama: dwóch ciągnie liny od szczytu dużej dźwigni (siła 2 + 2),
+        /// Etap 8 (Krąg ze zmianami) — Dźwignia i stalowa brama: dwóch z siłą 4 ciągnie liny od szczytu dużej dźwigni,
         /// ramię idzie w dół, krata podnosi się; puszczona dźwignia wraca, krata powoli opada.
         /// </summary>
         public static void dzwigniaRycina(PlotnoRyciny P)
@@ -623,7 +623,7 @@ namespace Trzewia.Atlas
             ctx.strokeStyle = "rgb(120,128,138)"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(tx, ty, 4, 0, PI * 2); ctx.stroke();
             // dwóch ciągnących: odchyleni w tył, liny od szczytu ramienia do rąk
             var szarp = ciagna ? 0.5 + 0.5 * JsM.Sin(t * 0.012) : 0;
-            foreach (var (px, sila) in new[] { (w * 0.23, 2.0), (w * 0.35, 2.0) })
+            foreach (var (px, sila) in new[] { (w * 0.23, 4.0), (w * 0.35, 4.0) })
             {
                 double ph = h * 0.3, odch = ciagna ? 0.22 + 0.08 * szarp : 0.04;
                 double kx = px + Math.Sin(odch) * ph * 0.7, ky = y - Math.Cos(odch) * ph * 0.7;
@@ -640,7 +640,7 @@ namespace Trzewia.Atlas
             ctx.save();
             ctx.shadowColor = "rgba(0,0,0,0.9)"; ctx.shadowBlur = 4;
             ctx.fillStyle = "rgba(240,228,204,0.95)"; ctx.font = $"{Js.Js.S(Math.Floor(h * 0.055 + 0.5))}px Georgia, serif"; ctx.textAlign = "center";
-            ctx.fillText(ciagna ? "ciągną (razem 4) — krata się unosi" : otw > 0 ? "puścili — krata powoli opada" : "brama zamknięta", w / 2, h * 0.1);
+            ctx.fillText(ciagna ? "ciągną dwaj z siłą 4 — krata się unosi" : otw > 0 ? "puścili — krata powoli opada" : "brama zamknięta", w / 2, h * 0.1);
             ctx.restore();
         }
 

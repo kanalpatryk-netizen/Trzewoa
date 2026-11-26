@@ -23,10 +23,10 @@ namespace Trzewia.Symulacja
         /// <summary>Porcje w koszu przy kracie (od środka lochu).</summary>
         public double? kosz;
         /// <summary>
-        /// Etap 8 (Krąg ze zmianami — Dzwignia.cs): ilu ciągnie dźwignię, ile mają razem siły i gdzie jest jej ramię
+        /// Etap 8 (Krąg ze zmianami — Dzwignia.cs): ilu ciągnie dźwignię (każdy z siłą co najmniej 4) i gdzie jest jej ramię
         /// (0 — w górze, spoczywa; 1 — ściągnięte w dół). Bez zmian kręgu — puste.
         /// </summary>
-        public double? ciagnie, silaDzwigni, dzwignia;
+        public double? ciagnie, dzwignia;
     }
 
     /// <summary>
@@ -101,10 +101,11 @@ namespace Trzewia.Symulacja
             var w = sim.world;
             if (w.brama.x1 < w.brama.x0) return;
             var b = stanBramy(sim);
-            // etap 8 (Krąg ze zmianami): zamiast kotła — dźwignia; bramę podnosi siła ciągnących (razem co najmniej 4)
+            // etap 8 (Krąg ze zmianami): zamiast kotła — dźwignia; ciągną ci z siłą co najmniej 4 — dwaj w pełnym tempie,
+            // jeden sam wolniej (Dzwignia.tempo)
             var dzwignia = Dzwignia.Aktywna;
             var ilu = dzwignia ? 0 : zaklinajacy(sim).Count;
-            var podnosza = dzwignia ? Dzwignia.tik(sim, b) : ilu >= BRAMA.potrzeba;
+            var tempo = dzwignia ? Dzwignia.tik(sim, b) : ilu >= BRAMA.potrzeba ? 1 : 0;
             var przed = b.otwarcie;
             b.zaklina = ilu;
             double x = w.brama.x0, y = w.brama.y1;
@@ -116,7 +117,7 @@ namespace Trzewia.Symulacja
                 if (b.otwarcie < 1) sim.gdzie(x, y).log("Pieczęć pęka, Cerber zeskakuje w trzewia — wstrząs wyrywa kratę lochu z muru. Do końca walki brama stoi otworem.", "otchlan", "brama-wyrwana");
                 b.otwarcie = 1;
             }
-            else if (podnosza) b.otwarcie = Math.Min(1, b.otwarcie + 1 / BRAMA.otwieranie);
+            else if (tempo > 0) b.otwarcie = Math.Min(1, b.otwarcie + tempo / BRAMA.otwieranie);
             else b.otwarcie = Math.Max(0, b.otwarcie - 1 / BRAMA.opadanie);
             if (b.otwarcie > przed)
             {

@@ -227,11 +227,11 @@ namespace Trzewia.Symulacja
                 if (p.dzwignia == true && Dzwignia.przyDzwigni(sim, c))
                 {
                     var k = sim.world.kociol;
-                    c.czynnosc = "ciagnie";
+                    var silny = Dzwignia.dosycSilny(c);
+                    c.czynnosc = silny ? "ciagnie" : null;
                     c.face = c.x < k.x + 0.5 ? 1 : -1;
-                    var b = stanBramy(sim);
-                    zamiar((b.silaDzwigni ?? 0) >= Dzwignia.POTRZEBA ? "ciągnie dźwignię — w dole podnosi się stalowa brama lochu"
-                        : $"szarpie dźwignię, ale ta ani drgnie — razem siła {JS.S(b.silaDzwigni ?? Sila.Poziom(c))}, trzeba {JS.S(Dzwignia.POTRZEBA)}", Job.STOI, Z);
+                    zamiar(silny ? "ciągnie dźwignię — w dole podnosi się stalowa brama lochu"
+                        : $"za słaby, żeby ruszyć dźwignię — siła {JS.S(Sila.Poziom(c))}, trzeba {JS.S(Dzwignia.POTRZEBA)}", Job.STOI, Z);
                     return true;
                 }
                 var opis = p.dzwignia == true ? "idzie do dźwigni w starej komnacie"

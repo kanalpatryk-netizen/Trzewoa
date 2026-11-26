@@ -266,21 +266,14 @@ namespace Trzewia.Rysunek
         // ── etap 8 (Krąg ze zmianami): duża dźwignia zamiast kotła ───────────────────────────────────────────────────
         // Kamienna skrzynia okuta żelazem, w niej oś z zębatym kołem; z osi w górę grube ramię z belki, przy szczycie
         // żelazny pierścień, a od niego liny do ciągnących (stoją po stronie Dzwignia.MIEJSCA, przodem do dźwigni).
-        // Spoczywa odchylona od nich; ściągnięta — pochyla się ku nim, koło obraca się z ramieniem, a łańcuch w szczelinie
-        // posadzki (do bramy, daleko w dole) jedzie w górę. Za słabi: ramię tylko drga. Obok latarnia na żelaznym słupku.
+        // Spoczywa odchylona od nich; ściągnięta — pochyla się ku nim (jeden ciągnie wolniej niż dwaj), koło obraca się
+        // z ramieniem, a łańcuch w szczelinie posadzki (do bramy, daleko w dole) jedzie w górę. Obok latarnia na słupku.
 
         /// <summary>Wysokość osi nad posadzką i długość ramienia — w kaflach.</summary>
         const double DZ_OS = 1.0, DZ_RAMIE = 3.9;
 
-        /// <summary>Kąt ramienia od pionu (+ — ku ciągnącym): spoczywa odchylone w drugą stronę, ściągnięte — ku nim; za słabi — drga.</summary>
-        public static double KatDzwigni(Sim sim, double czas)
-        {
-            var st = Brama.stanBramy(sim);
-            var u = st.dzwignia ?? 0;
-            var zaSlabi = (st.ciagnie ?? 0) > 0 && (st.silaDzwigni ?? 0) < Dzwignia.POTRZEBA;
-            var drga = zaSlabi && Nastroj.wolnoRuszac() ? 0.03 * JsM.Sin(czas * 0.011) + 0.015 * JsM.Sin(czas * 0.027) : 0;
-            return -0.3 + 0.9 * u + drga;
-        }
+        /// <summary>Kąt ramienia od pionu (+ — ku ciągnącym): spoczywa odchylone w drugą stronę, ściągnięte — ku nim.</summary>
+        public static double KatDzwigni(Sim sim, double czas) => -0.3 + 0.9 * (Brama.stanBramy(sim).dzwignia ?? 0);
 
         /// <summary>Oś dźwigni — w kaflach świata.</summary>
         static (double x, double y) OsDzwigni(Sim sim) { var k = sim.world.kociol; return (k.x + 0.5, k.y + 1 - DZ_OS); }
@@ -390,10 +383,8 @@ namespace Trzewia.Rysunek
             var q = Ludzie.Postac.Punkty(k.p, h);
             double hx = sx + kier * (q.dlonP.x + q.dlonL.x) / 2, hy = sy + (q.dlonP.y + q.dlonL.y) / 2;
             var z = cam.zoom;
-            // napięta, gdy ciągną dość mocno; luźna (lekko zwisa), gdy za słabi
-            var st = Brama.stanBramy(sim);
-            var luz = (st.silaDzwigni ?? 0) >= Dzwignia.POTRZEBA ? 0.02 : 0.12;
-            double mx = (hx + tx) / 2, my = (hy + ty) / 2 + Math.Abs(tx - hx) * luz;
+            // napięta — ledwie zwisa
+            double mx = (hx + tx) / 2, my = (hy + ty) / 2 + Math.Abs(tx - hx) * 0.02;
             ctx.save();
             ctx.lineCap = "round";
             ctx.beginPath(); ctx.moveTo(tx, ty); ctx.quadraticCurveTo(mx, my, hx, hy);
@@ -779,7 +770,7 @@ namespace Trzewia.Rysunek
                 double x0 = cam.toScreenX(b.x0), W = cam.toScreenX(b.x1 + 1) - x0, ny = cam.toScreenY(b.y0 - 1);
                 // (etap 8, Krąg ze zmianami: bramę podnosi dźwignia — runy, gdy krata rośnie, żarzą się ciepło, nie turkusem zaklęć)
                 var dzw = Dzwignia.Aktywna;
-                var rosnie = dzw ? (st.silaDzwigni ?? 0) >= Dzwignia.POTRZEBA : st.zaklina >= BRAMA.potrzeba;
+                var rosnie = dzw ? (st.ciagnie ?? 0) > 0 : st.zaklina >= BRAMA.potrzeba;
                 for (int n = 0; n < 5; n++)
                 {
                     var a = Math.Max(0, Math.Min(1, st.otwarcie * 5 - n));

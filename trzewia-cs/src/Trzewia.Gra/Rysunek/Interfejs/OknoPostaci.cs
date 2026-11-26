@@ -106,8 +106,9 @@ namespace Trzewia.Rysunek
         }
 
         /// <summary>
-        /// Etap 8 (Krąg ze zmianami): „Do dźwigni — podnieś bramę”. Idzie najsilniejszy z zaznaczonych (albo dwóch — tyle się
-        /// mieści przy dźwigni); brama ruszy, gdy ciągnący mają razem siłę co najmniej Dzwignia.POTRZEBA.
+        /// Etap 8 (Krąg ze zmianami): „Do dźwigni — podnieś bramę”. Idą najsilniejsi z zaznaczonych, którzy mają siłę co
+        /// najmniej Dzwignia.POTRZEBA (najwyżej dwaj — tyle się mieści); słabszych dźwignia nie przyjmie. Jeden ciągnie
+        /// wolniej, dwaj — pełnym tempem.
         /// </summary>
         static Mozliwosc? mozliwoscDzwigni(Sim sim, List<Creature> zaznaczeni)
         {
@@ -117,17 +118,19 @@ namespace Trzewia.Rysunek
             var reszta = zaznaczeni.Where(c => c.polecenie?.dzwignia != true && SLud.rolaPostaci(c) != null).ToList();
             if (reszta.Count == 0) return null;
             var wolne = Math.Max(0, Dzwignia.MIEJSCA.Length - juz.Count);
-            var ida = reszta.OrderByDescending(Sila.Poziom).ThenBy(c => c.id).Take(wolne).ToList();
-            var razem = Dzwignia.silaRazem(juz) + Dzwignia.silaRazem(ida);
+            var ida = reszta.Where(Dzwignia.dosycSilny).OrderByDescending(Sila.Poziom).ThenBy(c => c.id).Take(wolne).ToList();
+            var ciagnacych = juz.Count(Dzwignia.dosycSilny) + ida.Count;
             var ile = Math.Floor(Brama.stanBramy(sim).otwarcie * 100 + 0.5);
             var dostepna = komnataDostepna(sim);
+            var P = Js.Js.S(Dzwignia.POTRZEBA);
             return new Mozliwosc
             {
                 akcja = "dzwignia", nazwa = "Do dźwigni — podnieś bramę",
-                opis = $"razem trzeba siły co najmniej {Js.Js.S(Dzwignia.POTRZEBA)} — ciągnie jeden albo dwaj; brama rośnie, póki ciągną (40 s do pełna), puszczona opada{(ile != 0 ? $" (teraz {Js.Js.S(ile)}%)" : "")}",
+                opis = $"ciągnie tylko ten, kto ma siłę co najmniej {P}: dwaj — brama pełna po 40 s, jeden sam — po 100 s; puszczona opada{(ile != 0 ? $" (teraz {Js.Js.S(ile)}%)" : "")}",
                 ids = (ida.Count > 0 ? ida : reszta.Take(1)).Select(c => c.id).ToList(), ok = dostepna && ida.Count > 0,
-                powod = !dostepna ? "droga wiernych nie sięga jeszcze komnaty z dźwignią" : "przy dźwigni już ciągnie dwóch",
-                koszt = ida.Count == 0 ? null : razem >= Dzwignia.POTRZEBA ? $"siła razem {Js.Js.S(razem)} z {Js.Js.S(Dzwignia.POTRZEBA)}" : $"za słabi: siła {Js.Js.S(razem)} z {Js.Js.S(Dzwignia.POTRZEBA)}",
+                powod = !dostepna ? "droga wiernych nie sięga jeszcze komnaty z dźwignią" : wolne == 0 ? "przy dźwigni już ciągnie dwóch"
+                    : $"nikt z zaznaczonych nie ma siły {P} (najsilniejszy: {Js.Js.S(reszta.Max(Sila.Poziom))})",
+                koszt = ida.Count == 0 ? null : ciagnacych >= 2 ? "dwaj — pełne tempo" : "sam — wolniej",
             };
         }
 
@@ -295,7 +298,7 @@ namespace Trzewia.Rysunek
                     ctx.fillStyle = barwaRoli(d.r, 0.95); ctx.fillText(t, z, S + Y + i * 2.55); z += ctx.measureText(t).width;
                     if (di != N.Count - 1) { ctx.fillStyle = "rgba(204,160,92,0.7)"; ctx.fillText("  ·  ", z, S + Y + i * 2.55); z += ctx.measureText("  ·  ").width; }
                 }
-                if (Sila.Aktywna) napisSily(ctx, $"siła razem {Js.Js.S(Dzwignia.silaRazem(B))}", z, S + Y + i * 2.55);
+                if (Sila.Aktywna) napisSily(ctx, $"najsilniejszy: {Js.Js.S(B.Max(Sila.Poziom))}", z, S + Y + i * 2.55);
             }
             double q = K + I - Y - 12, F = S + Y + 4; var yy = Math.Sqrt(Math.Pow(kursor.x - q, 2) + Math.Pow(kursor.y - F, 2)) < 12;
             ctx.strokeStyle = yy ? "rgba(255,220,160,1)" : "rgba(204,170,120,0.7)"; ctx.lineWidth = 1.6; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(q - 5, F - 5); ctx.lineTo(q + 5, F + 5); ctx.moveTo(q + 5, F - 5); ctx.lineTo(q - 5, F + 5); ctx.stroke();

@@ -546,8 +546,8 @@ namespace Trzewia.Symulacja
 
         /// <summary>
         /// Etap 8 (Krąg ze zmianami): „Do dźwigni” — zaznaczeni (dowolnej roli) idą do dźwigni w starej komnacie i ją
-        /// ciągną; mieści się przy niej dwóch (Dzwignia.MIEJSCA). Brama ruszy, gdy ciągnący mają razem siły co najmniej
-        /// Dzwignia.POTRZEBA — rozkaz przyjmuje się i przy mniejszej sile (ktoś może dojść), dźwignia wtedy ani drgnie.
+        /// ciągną; mieści się przy niej dwóch (Dzwignia.MIEJSCA). Każdy musi mieć siłę co najmniej Dzwignia.POTRZEBA —
+        /// słabszy odmawia (decyzja użytkownika 26.11). Jeden ciągnie wolniej niż dwaj (Dzwignia.tempo).
         /// </summary>
         public static WynikRozkazu wydajDoDzwigni(Sim sim, IReadOnlyList<double> ids)
         {
@@ -567,6 +567,7 @@ namespace Trzewia.Symulacja
             {
                 double? dx = null;
                 foreach (var d in Dzwignia.MIEJSCA) if (!zajete.Contains(d)) { dx = d; break; }
+                if (!Dzwignia.dosycSilny(c)) { wynik.odmowy.Add(odmow(sim, c, $"za słaby na dźwignię — siła {JS.S(Sila.Poziom(c))}, trzeba {JS.S(Dzwignia.POTRZEBA)}")); continue; }
                 if (dx == null) { wynik.odmowy.Add(odmow(sim, c, "przy dźwigni nie ma już miejsca — ciągnie dwóch")); continue; }
                 var powod = wydajPolecenie(sim, c, "idz", k.x + dx.Value, k.y);
                 if (powod != null || c.polecenie == null) { wynik.odmowy.Add(powod ?? "nie dojdę do dźwigni"); continue; }

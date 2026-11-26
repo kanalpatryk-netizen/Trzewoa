@@ -500,7 +500,7 @@ namespace Trzewia.Aplikacja
                     new EtapSamouczka
                     {
                         tekst = _ => Dzwignia.Aktywna
-                            ? $"Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnosi ją dźwignia w starej komnacie („Do dźwigni” w oknie postaci): pociągnie ją jeden albo dwóch twoich, jeśli mają razem siłę co najmniej {Js.Js.S(Dzwignia.POTRZEBA)} — siła rośnie od chodzenia, kopania i walki. Brama podnosi się 40 s do pełna; puszczona dźwignia wraca, a krata powoli opada. Przy połowie da się już tylko przeczołgać."
+                            ? $"Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnosi ją dźwignia w starej komnacie („Do dźwigni” w oknie postaci). Ciągnie ją tylko ten, kto ma siłę co najmniej {Js.Js.S(Dzwignia.POTRZEBA)} — siła rośnie od chodzenia, kopania i walki. Dwaj tacy podniosą bramę w 40 s, jeden sam — w 100 s; puszczona dźwignia wraca, a krata powoli opada. Przy połowie da się już tylko przeczołgać."
                             : Krag.T("Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch pobożnych przy kotle („Do kotła” w oknie pobożnego) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać.", "Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch mnichów przy kotle („Do kotła” w oknie mnicha) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać."),
                         rozumiem = true,
                         wejdz = (g, _s) => { var w = g.sim.world; g.pokazMiejsce(w.kociol.x, w.kociol.y, 10, true); },
