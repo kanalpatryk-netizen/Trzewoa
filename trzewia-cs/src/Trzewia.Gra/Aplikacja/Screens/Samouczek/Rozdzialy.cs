@@ -493,15 +493,18 @@ namespace Trzewia.Aplikacja
                 {
                     new EtapSamouczka
                     {
-                        tekst = T(Krag.T("Najpierw robotnicy kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu. Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.", "Najpierw grabarze kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu. Wysłani mnisi czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.")),
+                        // (etap 8: przy zmianach kręgu w starej komnacie stoi dźwignia zamiast kotła)
+                        tekst = _ => Krag.T("Najpierw robotnicy kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu. Wysłani pobożni czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę.", $"Najpierw grabarze kopią drogę wiernych — szyb ze schodami od wnęki przy lewej ścianie sali w dół do starej komnaty z {(Dzwignia.Aktywna ? "dźwignią" : "kotłem")}, a z niej drugi szyb w dół, na przedproże lochu. Wysłani mnisi czekają przy obozie, aż będzie gotowa — wtedy schodzą, a rycerz idzie z nimi na wartę."),
                         rozumiem = true,
                     },
                     new EtapSamouczka
                     {
-                        tekst = T(Krag.T("Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch pobożnych przy kotle („Do kotła” w oknie pobożnego) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać.", "Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch mnichów przy kotle („Do kotła” w oknie mnicha) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać.")),
+                        tekst = _ => Dzwignia.Aktywna
+                            ? $"Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnosi ją dźwignia w starej komnacie („Do dźwigni” w oknie postaci): pociągnie ją jeden albo dwóch twoich, jeśli mają razem siłę co najmniej {Js.Js.S(Dzwignia.POTRZEBA)} — siła rośnie od chodzenia, kopania i walki. Brama podnosi się 40 s do pełna; puszczona dźwignia wraca, a krata powoli opada. Przy połowie da się już tylko przeczołgać."
+                            : Krag.T("Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch pobożnych przy kotle („Do kotła” w oknie pobożnego) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać.", "Do lochu z pomnikiem prowadzi tylko stalowa brama. Podnoszą ją zaklęcia dwóch mnichów przy kotle („Do kotła” w oknie mnicha) — 40 s do pełna; potem krata powoli opada. Przy połowie da się już tylko przeczołgać."),
                         rozumiem = true,
                         wejdz = (g, _s) => { var w = g.sim.world; g.pokazMiejsce(w.kociol.x, w.kociol.y, 10, true); },
-                        wskaz = s => { var w = s.gra.sim.world; return Wskazanie.Swiat(new Cel { x = w.kociol.x + 0.5, y = w.kociol.y, r = 5, tekst = "kocioł" }); },
+                        wskaz = s => { var w = s.gra.sim.world; return Wskazanie.Swiat(new Cel { x = w.kociol.x + 0.5, y = w.kociol.y, r = 5, tekst = Dzwignia.Aktywna ? "dźwignia" : "kocioł" }); },
                     },
                     new EtapSamouczka
                     {

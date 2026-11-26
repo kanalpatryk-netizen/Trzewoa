@@ -232,6 +232,20 @@ namespace Trzewia.Rysunek
                     ctx.restore();
                     break;
                 }
+                case "dzwignia":
+                {
+                    // etap 8: duża dźwignia na kamiennej skrzyni, lina od szczytu ramienia do ciągnącego (odchylony w tył)
+                    ctx.strokeRect(-C * 0.36, C * 0.2, C * 0.3, C * 0.18);
+                    var kat = Nastroj.wolnoRuszac() ? 0.25 + 0.1 * JsM.Sin(o * 3e-3) : 0.3;
+                    double px = -C * 0.21, py = C * 0.2, tx = px + JsM.Sin(kat) * C * 0.6, ty = py - JsM.Cos(kat) * C * 0.6;
+                    ctx.save(); ctx.lineWidth = Q * 2; ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(tx, ty); ctx.stroke(); ctx.restore();
+                    ctx.beginPath(); ctx.arc(tx, ty, C * 0.04, 0, PI * 2); ctx.stroke();
+                    ctx.save(); ctx.globalAlpha = 0.8; ctx.beginPath(); ctx.moveTo(tx, ty); ctx.lineTo(C * 0.2, -C * 0.02); ctx.stroke(); ctx.restore();
+                    // ciągnący: głowa, tułów odchylony w tył, ręce do liny, nogi w rozkroku
+                    ctx.beginPath(); ctx.arc(C * 0.34, -C * 0.12, C * 0.06, 0, PI * 2); ctx.moveTo(C * 0.32, -C * 0.06); ctx.lineTo(C * 0.26, C * 0.16);
+                    ctx.lineTo(C * 0.16, C * 0.38); ctx.moveTo(C * 0.26, C * 0.16); ctx.lineTo(C * 0.38, C * 0.38); ctx.moveTo(C * 0.3, 0); ctx.lineTo(C * 0.2, -C * 0.02); ctx.stroke();
+                    break;
+                }
                 case "zaInnych":
                 {
                     // 6.11: modlący się w środku, krąg światła wokół i dwie postaci, za które się modli

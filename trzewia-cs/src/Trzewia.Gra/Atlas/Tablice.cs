@@ -121,8 +121,24 @@ namespace Trzewia.Atlas
         /// zmianami po porcie (ZmianyKregu) — też osobno: bez tablicy Cieni Żarłoków, których już nie ma.
         /// </summary>
         public static Tablica[] TABLICE => !Krag.Wlaczony ? tabliceAlfa ??= zbuduj()
-            : ZmianyKregu.Aktywne ? tabliceKreguZmian ??= zbuduj().Where(t => !(ZmianyKregu.BezCieni && t.id == "straznicy")).ToArray()
+            : ZmianyKregu.Aktywne ? tabliceKreguZmian ??= zSila(zbuduj().Where(t => !(ZmianyKregu.BezCieni && t.id == "straznicy")))
             : tabliceKregu ??= zbuduj();
+
+        /// <summary>Etap 8 (Krąg ze zmianami): tablica „Siła” zaraz za „Dźwignią i stalową bramą”.</summary>
+        static Tablica[] zSila(IEnumerable<Tablica> tablice)
+        {
+            var lista = tablice.ToList();
+            if (!Sila.Aktywna) return lista.ToArray();
+            var i = lista.FindIndex(t => t.id == "brama");
+            lista.Insert(i < 0 ? lista.Count : i + 1, new Tablica
+            {
+                id = "sila", grupa = "prawa", nazwa = "Siła", lacina = "Vis corporis",
+                opis = $"Każdy z twoich ma poziom siły. Na start rycerz ma {S(Sila.NaStart("rycerz"))}, grabarz {S(Sila.NaStart("robotnik"))}, a mnich {S(Sila.NaStart("pobozny"))}. Siła rośnie od pracy: od chodzenia (po posadzce i po schodach), od kopania (każdy wykuty kafel) i od walki (każdy zadany cios). Każdy następny poziom wymaga więcej pracy niż poprzedni. Poziom i to, ile brakuje do następnego, widać w oknie postaci obok nazwy roli, a kto nabierze siły, woła o tym głośno. Siła jest potrzebna przy dźwigni w starej komnacie: ta podnosi bramę lochu, gdy ciągnący mają razem co najmniej {S(Dzwignia.POTRZEBA)}.",
+                kiedy = $"Grabarze kopią najwięcej, więc najszybciej nabierają siły — po kilku minutach kopania jeden pociągnie dźwignię sam. Rycerzowi z siłą {S(Sila.NaStart("rycerz"))} potrzeba do pary kogoś, kto ma co najmniej {S(Dzwignia.POTRZEBA - Sila.NaStart("rycerz"))}. Mnisi chodzą mało, więc zostają słabi.",
+                rycina = postac(Race.GOBLIN, "kopie", 1, "robotnik"),
+            });
+            return lista.ToArray();
+        }
 
         static Tablica[] zbuduj() => new Tablica[]
                 {
@@ -259,7 +275,7 @@ namespace Trzewia.Atlas
           {
             id = "warstwy", grupa = "prawa", nazwa = "Warstwy góry", lacina = "Strata montis",
             opis = Krag.T("Góra ma piętra. Z powierzchni prowadzą dwa otwory: szerszy szyb pod katedrą, którym z jej rozety pada światło na ołtarz, i węższy, nad którym stoi kozioł — tędy konwój spuszcza wiadro z jedzeniem — oba do sali z siedzibą. Nad salą leży czapa skały nie do ruszenia, a całą górę otacza gruba rama, której nikt nie przekuje. Niżej trzy warstwy: płytka — miękka skała i kępy rdzawego żelaza; środkowa — zwykła skała, małe jaskinie ze złotem pod dnem i ruiny; głęboka — twarda skała, kuje się najwolniej. Na samym dole szeroka, niska krypta z płaską podłogą, a pod jej środkiem, w komorze, Wielki Pomnik demona — zawsze w tym samym miejscu.", "Góra ma piętra. Z powierzchni prowadzą dwa otwory: szerszy szyb pod katedrą, którym z jej rozety pada światło na ołtarz, i węższy, nad którym stoi kozioł — tędy konwój spuszcza wiadro z jedzeniem — oba do sali z siedzibą. Nad salą leży czapa skały nie do ruszenia, a całą górę otacza gruba rama, której nikt nie przekuje. Niżej trzy warstwy: płytka — miękka skała i kępy rdzawego żelaza; środkowa — zwykła skała, małe jaskinie ze złotem pod dnem i ruiny; głęboka — twarda skała, kuje się najwolniej. Na samym dole szeroka, niska krypta z płaską podłogą, a pod jej środkiem, w komorze, pieczęć zejścia Cerbera — zawsze w tym samym miejscu."),
-            kiedy = "Każda warstwa w dół to dłuższa droga z powrotem do wiadra. Żelazo leży tuż pod salą, po złoto trzeba zejść do środkowej, a droga wiernych prowadzi przez wszystkie trzy — z zakrętem przez starą komnatę z kotłem — aż do stalowej bramy lochu.",
+            kiedy = $"Każda warstwa w dół to dłuższa droga z powrotem do wiadra. Żelazo leży tuż pod salą, po złoto trzeba zejść do środkowej, a droga wiernych prowadzi przez wszystkie trzy — z zakrętem przez starą komnatę z {(Dzwignia.Aktywna ? "dźwignią" : "kotłem")} — aż do stalowej bramy lochu.",
             rycina = warstwyRycina,
           },
           new Tablica
@@ -320,15 +336,18 @@ namespace Trzewia.Atlas
           },
           new Tablica
           {
-            id = "brama", grupa = "prawa", nazwa = "Kocioł i stalowa brama", lacina = "Porta ferrea",
-            opis = Krag.T($"Droga wiernych skręca: pierwszy szyb schodzi do starej komnaty z pajęczynami, w której stoi kocioł, komnatą idzie się w bok, a drugi szyb schodzi na przedproże lochu z Wielkim Pomnikiem. Do lochu wchodzi się tylko przez stalową bramę. Krata podnosi się, póki przy kotle rzuca zaklęcia co najmniej {S(BRAMA.potrzeba)} pobożnych (rozkaz „Do kotła”) — pełne otwarcie po {S(R(BRAMA.otwieranie / 120))} s; gdy przestaną, krata powoli opada ({S(R(BRAMA.opadanie / 120))} s). Wyprostowanym przejdzie się od {S(R(BRAMA.idzieOd * 100))}% otwarcia, niżej trzeba się przeczołgać — do {S(R(BRAMA.czolgaOd * 100))}%. Na nadprożu bramy pięć run zapala się kolejno, ile otwarta.", $"Droga wiernych skręca: pierwszy szyb schodzi do starej komnaty z pajęczynami, w której stoi kocioł, komnatą idzie się w bok, a drugi szyb schodzi na przedproże lochu z pieczęcią zejścia. Do lochu wchodzi się tylko przez stalową bramę. Krata podnosi się, póki przy kotle rzuca zaklęcia co najmniej {S(BRAMA.potrzeba)} mnichów (rozkaz „Do kotła”) — pełne otwarcie po {S(R(BRAMA.otwieranie / 120))} s; gdy przestaną, krata powoli opada ({S(R(BRAMA.opadanie / 120))} s). Wyprostowanym przejdzie się od {S(R(BRAMA.idzieOd * 100))}% otwarcia, niżej trzeba się przeczołgać — do {S(R(BRAMA.czolgaOd * 100))}%. Na nadprożu bramy pięć run zapala się kolejno, ile otwarta."),
-            kiedy = Krag.T($"Najpierw postaw pod bramą tych, którzy mają wejść, potem poślij dwóch pobożnych do kotła. Po {S(R(BRAMA.otwieranie / 120))} s zaklinania pobożni zdążą zejść z komnaty i przejść, zanim krata opadnie. Wejście w mur lochu jest nie do przekucia — tylko brama.", $"Najpierw postaw pod bramą tych, którzy mają wejść, potem poślij dwóch mnichów do kotła. Po {S(R(BRAMA.otwieranie / 120))} s zaklinania mnisi zdążą zejść z komnaty i przejść, zanim krata opadnie. Wejście w mur lochu jest nie do przekucia — tylko brama."),
-            rycina = bramaRycina,
+            id = "brama", grupa = "prawa", nazwa = Dzwignia.Aktywna ? "Dźwignia i stalowa brama" : "Kocioł i stalowa brama", lacina = "Porta ferrea",
+            // etap 8 (Krąg ze zmianami): zamiast kotła i zaklęć — dźwignia, którą ciągnie jeden albo dwóch, razem z siłą co najmniej 4
+            opis = Dzwignia.Aktywna ? $"Droga wiernych skręca: pierwszy szyb schodzi do starej komnaty z pajęczynami, w której stoi duża dźwignia, komnatą idzie się w bok, a drugi szyb schodzi na przedproże lochu z pieczęcią zejścia. Do lochu wchodzi się tylko przez stalową bramę. Dźwignię ciągnie jeden albo dwóch twoich, dowolnej roli (rozkaz „Do dźwigni”); krata podnosi się, póki ciągnący mają razem siłę co najmniej {S(Dzwignia.POTRZEBA)} — pełne otwarcie po {S(R(BRAMA.otwieranie / 120))} s. Za słabi szarpią liny, a dźwignia ani drgnie. Gdy puszczą, dźwignia wraca, a krata powoli opada ({S(R(BRAMA.opadanie / 120))} s). Wyprostowanym przejdzie się od {S(R(BRAMA.idzieOd * 100))}% otwarcia, niżej trzeba się przeczołgać — do {S(R(BRAMA.czolgaOd * 100))}%. Na nadprożu bramy pięć run zapala się kolejno, ile otwarta."
+                : Krag.T($"Droga wiernych skręca: pierwszy szyb schodzi do starej komnaty z pajęczynami, w której stoi kocioł, komnatą idzie się w bok, a drugi szyb schodzi na przedproże lochu z Wielkim Pomnikiem. Do lochu wchodzi się tylko przez stalową bramę. Krata podnosi się, póki przy kotle rzuca zaklęcia co najmniej {S(BRAMA.potrzeba)} pobożnych (rozkaz „Do kotła”) — pełne otwarcie po {S(R(BRAMA.otwieranie / 120))} s; gdy przestaną, krata powoli opada ({S(R(BRAMA.opadanie / 120))} s). Wyprostowanym przejdzie się od {S(R(BRAMA.idzieOd * 100))}% otwarcia, niżej trzeba się przeczołgać — do {S(R(BRAMA.czolgaOd * 100))}%. Na nadprożu bramy pięć run zapala się kolejno, ile otwarta.", $"Droga wiernych skręca: pierwszy szyb schodzi do starej komnaty z pajęczynami, w której stoi kocioł, komnatą idzie się w bok, a drugi szyb schodzi na przedproże lochu z pieczęcią zejścia. Do lochu wchodzi się tylko przez stalową bramę. Krata podnosi się, póki przy kotle rzuca zaklęcia co najmniej {S(BRAMA.potrzeba)} mnichów (rozkaz „Do kotła”) — pełne otwarcie po {S(R(BRAMA.otwieranie / 120))} s; gdy przestaną, krata powoli opada ({S(R(BRAMA.opadanie / 120))} s). Wyprostowanym przejdzie się od {S(R(BRAMA.idzieOd * 100))}% otwarcia, niżej trzeba się przeczołgać — do {S(R(BRAMA.czolgaOd * 100))}%. Na nadprożu bramy pięć run zapala się kolejno, ile otwarta."),
+            kiedy = Dzwignia.Aktywna ? $"Najpierw postaw pod bramą tych, którzy mają wejść, potem poślij do dźwigni kogoś silnego — {Krag.T("robotnik", "grabarz")}, który dużo kopał, pociągnie ją sam; słabszych poślij dwóch. Po {S(R(BRAMA.otwieranie / 120))} s ciągnięcia zdążą zejść z komnaty i przejść, zanim krata opadnie. Wejście w mur lochu jest nie do przekucia — tylko brama."
+                : Krag.T($"Najpierw postaw pod bramą tych, którzy mają wejść, potem poślij dwóch pobożnych do kotła. Po {S(R(BRAMA.otwieranie / 120))} s zaklinania pobożni zdążą zejść z komnaty i przejść, zanim krata opadnie. Wejście w mur lochu jest nie do przekucia — tylko brama.", $"Najpierw postaw pod bramą tych, którzy mają wejść, potem poślij dwóch mnichów do kotła. Po {S(R(BRAMA.otwieranie / 120))} s zaklinania mnisi zdążą zejść z komnaty i przejść, zanim krata opadnie. Wejście w mur lochu jest nie do przekucia — tylko brama."),
+            rycina = Dzwignia.Aktywna ? RycinyAtlasu.dzwigniaRycina : bramaRycina,
           },
           new Tablica
           {
             id = "modlitwaZaInnych", grupa = "prawa", nazwa = "Modlitwa za innych", lacina = "Oratio pro aliis",
-            opis = $"{Krag.T("Pobożny", "Mnich")}, który się modli — na rozkaz „Módl się za innych”, przy obozie, przy ołtarzu albo w krypcie — błogosławi swoich w promieniu {S(BLOGOSLAWIENSTWO.promien)} kafli: rany się goją ({S(S(BLOGOSLAWIENSTWO.leczenie).Replace(".", ","))} życia na sekundę), a każdy dostaje dar swojej roli na {S(R(BLOGOSLAWIENSTWO.trwa / 120))} s po wyjściu z kręgu — rycerz bije mocniej i szybciej chodzi, robotnik szybciej kopie, pobożny mocniej się modli, a każdy wolniej głodnieje. Siebie nie błogosławi. Rzucający zaklęcia przy kotle się nie modlą.",
+            opis = $"{Krag.T("Pobożny", "Mnich")}, który się modli — na rozkaz „Módl się za innych”, przy obozie, przy ołtarzu albo w krypcie — błogosławi swoich w promieniu {S(BLOGOSLAWIENSTWO.promien)} kafli: rany się goją ({S(S(BLOGOSLAWIENSTWO.leczenie).Replace(".", ","))} życia na sekundę), a każdy dostaje dar swojej roli na {S(R(BLOGOSLAWIENSTWO.trwa / 120))} s po wyjściu z kręgu — rycerz bije mocniej i szybciej chodzi, robotnik szybciej kopie, pobożny mocniej się modli, a każdy wolniej głodnieje. Siebie nie błogosławi. {(Dzwignia.Aktywna ? "Ciągnący dźwignię się nie modlą." : "Rzucający zaklęcia przy kotle się nie modlą.")}",
             kiedy = "Postaw modlącego się za innych za rycerzem w walce albo przy kopaczach drogi.",
             rycina = modlitwaZaInnychRycina,
           },

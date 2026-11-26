@@ -80,7 +80,7 @@ namespace Trzewia.Rysunek
                 // 6.11: szyb wykopany, schody w budowie (sim/budowa-schodow.ts) — ten sam rozkaz posyła do budowy schodów
                 var bud = Y < 0 && !A.rytual.otwarta && BudowaSchodow.trwaBudowaSchodow(A);
                 Q.Add(bud ? new Mozliwosc { akcja = "droga", nazwa = "Buduj schody drogi wiernych", opis = "szyb jest wykopany — od dołu osadzają w nim kamienne stopnie: dwóch murarzy na rusztowaniu, jeden kręci kołowrotem, który opuszcza im stopnie", ids = E(B), ok = true }
-                    : new Mozliwosc { akcja = "droga", nazwa = "Kop drogę wiernych", opis = "kopią drogę wiernych: szyb od wnęki przy sali w dół do starej komnaty z kotłem, a z niej drugi szyb w dół, na przedproże lochu; schody stawia się w wykopanym szybie, od dołu", ids = E(B), ok = Y >= 0, powod = i });
+                    : new Mozliwosc { akcja = "droga", nazwa = "Kop drogę wiernych", opis = $"kopią drogę wiernych: szyb od wnęki przy sali w dół do starej komnaty z {(Dzwignia.Aktywna ? "dźwignią" : "kotłem")}, a z niej drugi szyb w dół, na przedproże lochu; schody stawia się w wykopanym szybie, od dołu", ids = E(B), ok = Y >= 0, powod = i });
                 if (I("warsztat") != null) Q.Add(new Mozliwosc { akcja = "warsztat", nazwa = "Pracuj w warsztacie", opis = "ze złota robią krzyże — każdy staje się wiarą", ids = E(B), ok = A.zloto > 0, powod = "nie ma złota" });
                 if (I("kuznia") != null) Q.Add(new Mozliwosc { akcja = "kuznia", nazwa = "Pracuj w kuźni", opis = "z żelaza wykuwają części zbroi rycerza", ids = E(B), ok = A.zelazo > 0, powod = "nie ma żelaza" });
             }
@@ -89,8 +89,46 @@ namespace Trzewia.Rysunek
                 var Y = Zbroja.naWieszaku(A).Count;
                 Q.Add(new Mozliwosc { akcja = "zbroja", nazwa = "Załóż zbroję", opis = "idzie do kuźni, zdejmuje część z wieszaka i ją zakłada", ids = E(o), ok = Y > 0, powod = "na wieszaku nic nie wisi", koszt = Y > 0 ? $"{Y} na wieszaku" : null });
             }
+            // etap 8 (Krąg ze zmianami): dźwignia zamiast kotła — dla każdego, kogo zaznaczysz
+            if (mozliwoscDzwigni(A, M) is { } dz) Q.Add(dz);
             if (I("sypialnia") != null) Q.Add(new Mozliwosc { akcja = "sen", nazwa = "Idź spać", opis = "sen w sypialni zdejmuje osłabienia (ok. minuty)", ids = E(M), ok = true });
             return Q;
+        }
+
+        /// <summary>Stara komnata dostępna: pierwszy odcinek drogi wiernych wykuty aż do jej sklepienia.</summary>
+        static bool komnataDostepna(Sim sim)
+        {
+            var w = sim.world;
+            var s1 = w.odcinkiDrogi.Count > 0 ? w.odcinkiDrogi[0] : null;
+            if (s1 == null) return false;
+            for (var y = w.salaOltarza.y1 + 1; y < w.komnata.y0; y++) if (w.solid((Js.Js.ToInt32(s1.x0) + Js.Js.ToInt32(s1.x1)) >> 1, y)) return false;
+            return true;
+        }
+
+        /// <summary>
+        /// Etap 8 (Krąg ze zmianami): „Do dźwigni — podnieś bramę”. Idzie najsilniejszy z zaznaczonych (albo dwóch — tyle się
+        /// mieści przy dźwigni); brama ruszy, gdy ciągnący mają razem siłę co najmniej Dzwignia.POTRZEBA.
+        /// </summary>
+        static Mozliwosc? mozliwoscDzwigni(Sim sim, List<Creature> zaznaczeni)
+        {
+            var w = sim.world;
+            if (!Dzwignia.Aktywna || w.komnata.x1 < w.komnata.x0 || Pomnik.pomnikRozbity(sim)) return null;
+            var juz = Dzwignia.doDzwigni(sim);
+            var reszta = zaznaczeni.Where(c => c.polecenie?.dzwignia != true && SLud.rolaPostaci(c) != null).ToList();
+            if (reszta.Count == 0) return null;
+            var wolne = Math.Max(0, Dzwignia.MIEJSCA.Length - juz.Count);
+            var ida = reszta.OrderByDescending(Sila.Poziom).ThenBy(c => c.id).Take(wolne).ToList();
+            var razem = Dzwignia.silaRazem(juz) + Dzwignia.silaRazem(ida);
+            var ile = Math.Floor(Brama.stanBramy(sim).otwarcie * 100 + 0.5);
+            var dostepna = komnataDostepna(sim);
+            return new Mozliwosc
+            {
+                akcja = "dzwignia", nazwa = "Do dźwigni — podnieś bramę",
+                opis = $"idą do dźwigni w starej komnacie i ją ciągną; mieści się przy niej dwóch, a ruszy, gdy mają razem siłę co najmniej {Js.Js.S(Dzwignia.POTRZEBA)} — brama podnosi się wtedy (40 s do pełna), a puszczona dźwignia wraca i krata powoli opada{(ile != 0 ? $" (teraz otwarta w {Js.Js.S(ile)}%)" : "")}",
+                ids = (ida.Count > 0 ? ida : reszta.Take(1)).Select(c => c.id).ToList(), ok = dostepna && ida.Count > 0,
+                powod = !dostepna ? "droga wiernych nie sięga jeszcze komnaty z dźwignią" : "przy dźwigni już ciągnie dwóch",
+                koszt = ida.Count == 0 ? null : razem >= Dzwignia.POTRZEBA ? $"siła razem {Js.Js.S(razem)} z {Js.Js.S(Dzwignia.POTRZEBA)}" : $"za słabi: siła {Js.Js.S(razem)} z {Js.Js.S(Dzwignia.POTRZEBA)}",
+            };
         }
 
         /// <summary>
@@ -101,12 +139,11 @@ namespace Trzewia.Rysunek
         {
             var @out = new List<Mozliwosc>();
             var w = sim.world;
-            if (w.komnata.x1 >= w.komnata.x0 && !Pomnik.pomnikRozbity(sim))
+            // (etap 8: przy zmianach kręgu kotła nie ma — jest dźwignia, którą może ciągnąć każdy: mozliwoscDzwigni)
+            if (w.komnata.x1 >= w.komnata.x0 && !Pomnik.pomnikRozbity(sim) && !Dzwignia.Aktywna)
             {
-                var s1 = w.odcinkiDrogi.Count > 0 ? w.odcinkiDrogi[0] : null;
                 // komnata z kotłem dostępna, gdy pierwszy odcinek drogi wiernych jest wykuty do jej sklepienia
-                var wykuty = s1 != null;
-                if (s1 != null) for (var y = w.salaOltarza.y1 + 1; y < w.komnata.y0 && wykuty; y++) if (w.solid((Js.Js.ToInt32(s1.x0) + Js.Js.ToInt32(s1.x1)) >> 1, y)) wykuty = false;
+                var wykuty = komnataDostepna(sim);
                 var zaklina = pobozni.Where(c => c.polecenie?.zaklinaj == true).ToList();
                 var b = Brama.stanBramy(sim);
                 var ile = Math.Floor(b.otwarcie * 100 + 0.5);
@@ -221,6 +258,13 @@ namespace Trzewia.Rysunek
 
         static Styl barwaRoli(string r, double a) { var b = Druzyna.BARWA_ROLI[r]; return Barwa.Rgba(b.r, b.g, b.b, a); }
 
+        /// <summary>Etap 8: siła za nazwą roli — po kropce, w barwie złota.</summary>
+        static void napisSily(IPlotno ctx, string tekst, double x, double y)
+        {
+            ctx.fillStyle = "rgba(204,160,92,0.7)"; ctx.fillText("  ·  ", x, y); x += ctx.measureText("  ·  ").width;
+            ctx.fillStyle = "rgba(244,214,150,0.95)"; ctx.fillText(tekst, x, y);
+        }
+
         public static List<PoleOkna> rysujOknoPostaci(IPlotno ctx, Sim M, Plate g, List<Creature> B, (double x, double y) kursor, double czas)
         {
             if (B.Count == 0) return new List<PoleOkna>();
@@ -234,7 +278,13 @@ namespace Trzewia.Rysunek
             var R = E == null && s.Count == 1 ? SLud.rolaPostaci(B[0]) : null;
             var V = E != null ? Overlay.creatureName(E) : R != null ? SLud.NAZWA_ROLI_MNOGA[R].Substring(0, 1).ToUpperInvariant() + SLud.NAZWA_ROLI_MNOGA[R].Substring(1) : "Oddział";
             ctx.font = $"600 {Js.Js.S(i * 1.6)}px {Ink.SERIF_TYTUL}"; ctx.fillStyle = "rgba(250,228,174,1)"; ctx.shadowColor = "rgba(0,0,0,0.8)"; ctx.shadowBlur = 3; ctx.fillText(V, K + Y, S + Y + i * 1.25, I - Y * 2 - 30); ctx.shadowBlur = 0; ctx.font = $"{Js.Js.S(i * 0.85)}px {Ink.SERIF}";
-            if (E != null && m != null) { ctx.fillStyle = barwaRoli(m, 0.95); ctx.fillText(string.Join(" ", SLud.NAZWA_ROLI[m].ToUpperInvariant().ToCharArray()), K + Y, S + Y + i * 2.55); }
+            if (E != null && m != null)
+            {
+                var rolaNapis = string.Join(" ", SLud.NAZWA_ROLI[m].ToUpperInvariant().ToCharArray());
+                ctx.fillStyle = barwaRoli(m, 0.95); ctx.fillText(rolaNapis, K + Y, S + Y + i * 2.55);
+                // etap 8 (Krąg ze zmianami): poziom siły i ile już do następnego
+                if (Sila.Aktywna) napisSily(ctx, $"siła {Js.Js.S(Sila.Poziom(E))}  ({Js.Js.S(Math.Floor(Sila.Postep(E) * 100))}% do {Js.Js.S(Sila.Poziom(E) + 1)})", K + Y + ctx.measureText(rolaNapis).width, S + Y + i * 2.55);
+            }
             else
             {
                 var N = new[] { "rycerz", "pobozny", "robotnik" }.Select(d => (r: d, n: B.Count(x => SLud.rolaPostaci(x) == d))).Where(d => d.n > 0).ToList();
@@ -245,6 +295,7 @@ namespace Trzewia.Rysunek
                     ctx.fillStyle = barwaRoli(d.r, 0.95); ctx.fillText(t, z, S + Y + i * 2.55); z += ctx.measureText(t).width;
                     if (di != N.Count - 1) { ctx.fillStyle = "rgba(204,160,92,0.7)"; ctx.fillText("  ·  ", z, S + Y + i * 2.55); z += ctx.measureText("  ·  ").width; }
                 }
+                if (Sila.Aktywna) napisSily(ctx, $"siła razem {Js.Js.S(Dzwignia.silaRazem(B))}", z, S + Y + i * 2.55);
             }
             double q = K + I - Y - 12, F = S + Y + 4; var yy = Math.Sqrt(Math.Pow(kursor.x - q, 2) + Math.Pow(kursor.y - F, 2)) < 12;
             ctx.strokeStyle = yy ? "rgba(255,220,160,1)" : "rgba(204,170,120,0.7)"; ctx.lineWidth = 1.6; ctx.lineCap = "round"; ctx.beginPath(); ctx.moveTo(q - 5, F - 5); ctx.lineTo(q + 5, F + 5); ctx.moveTo(q + 5, F - 5); ctx.lineTo(q - 5, F + 5); ctx.stroke();
