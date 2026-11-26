@@ -327,7 +327,8 @@ namespace Trzewia.Symulacja
                 var bezSurowca = pom != null && !string.IsNullOrEmpty(pom.brak) && pom.zaplacone != true && (pom.rodzaj == "kuznia" ? sim.zelazo < (nastepnaCzesc(sim)?.zelazo ?? 99) : sim.zloto < 1);
                 var gornik = p.typ == "kop" && (!string.IsNullOrEmpty(p.zyla) || p.pom != null);
                 var wraca = gornik && (c.hunger > 0.45 || (p.zylaIle ?? 0) >= 8);
-                if (zylaWykuta || bezSurowca || wraca || (p.typ == "idz" && !walkaZDemonem(sim)))
+                // (etap 8: kto ciągnie dźwignię albo do niej idzie — zostaje; dźwignię puszcza bot.brama)
+                if (zylaWykuta || bezSurowca || wraca || (p.typ == "idz" && p.dzwignia != true && !walkaZDemonem(sim)))
                 {
                     odwolajPolecenie(sim, c);
                     if (zylaWykuta) linaZJamy(sim, c);
@@ -413,6 +414,8 @@ namespace Trzewia.Symulacja
         /// <summary>6.11: stalowa brama lochu — dwóch pobożnych do kotła, rycerze pod bramę, potem do lochu.</summary>
         static void brama(Sim sim)
         {
+            // etap 8 (Krąg ze zmianami): zamiast kotła — dźwignia
+            if (Dzwignia.Aktywna) { bramaDzwignia(sim); return; }
             var w = sim.world; var p = pamiec(sim);
             if (w.brama.x1 < w.brama.x0 || czoloDrogi(sim) >= 0 || sim.rytual.otwarta) return;
             var st = stanBramy(sim);
@@ -462,6 +465,101 @@ namespace Trzewia.Symulacja
             mysl(sim, Krag.T("brama lochu zamknięta — dwóch pobożnych do kotła, rycerze pod bramę", "brama lochu zamknięta — dwóch mnichów do kotła, rycerze pod bramę"));
         }
 
+        /// <summary>
+        /// Etap 8 (Krąg ze zmianami): stalowa brama lochu na dźwignię. Gdy ktoś chce do lochu, do dźwigni idzie jeden
+        /// (gdy sam ma siłę co najmniej Dzwignia.POTRZEBA) albo dwóch, którzy mają jej razem dość — najbliżsi, rycerz
+        /// tylko wtedy, gdy bez niego się nie da (on czeka pod bramą, żeby wejść do lochu). Gdy brama stanie w górze,
+        /// puszczają dźwignię: mnisi schodzą pod pomnik, rycerz do lochu, reszta wraca do swoich zajęć.
+        /// </summary>
+        static void bramaDzwignia(Sim sim)
+        {
+            var w = sim.world; var p = pamiec(sim);
+            if (w.brama.x1 < w.brama.x0 || czoloDrogi(sim) >= 0 || sim.rytual.otwarta) return;
+            var st = stanBramy(sim);
+            var przy = Dzwignia.doDzwigni(sim);
+            bool wLochu(Creature c) => w.wLochu(c.x, c.y);
+            string? wPosterunku(Creature c) => wydajPolecenie(sim, c, "idz", w.coreX + (JS.Tak(c.id % 2) ? -6 : 6), w.przedsionekY);
+            if (przy.Count > 0)
+            {
+                if (st.otwarcie >= 0.97)
+                {
+                    foreach (var c in przy)
+                    {
+                        odwolajPolecenie(sim, c);
+                        if (rolaPostaci(c) == "pobozny" && (sim.wiara < 8 || !whisper(sim, "modl", c))) wydajPolecenie(sim, c, "idz", w.coreX + (JS.Tak(c.id % 2) ? -3 : 3), w.przedsionekY);
+                    }
+                    foreach (var c in zRola(sim, "rycerz")) if (!wLochu(c)) wPosterunku(c);
+                    mysl(sim, "brama lochu podniesiona — puszczają dźwignię, rycerz wchodzi do lochu");
+                    return;
+                }
+                var sila = Dzwignia.silaRazem(przy);
+                if (sila >= Dzwignia.POTRZEBA) return;
+                // za słabi (ktoś odszedł jeść albo zginął): dosyła takiego, z którym starczy — a gdy nie ma kogo, odwołuje
+                if (przy.Count < Dzwignia.MIEJSCA.Length)
+                {
+                    var jeden = najblizsiDoDzwigni(sim, kandydaciDoDzwigni(sim).Where(c => Sila.Poziom(c) >= Dzwignia.POTRZEBA - sila));
+                    if (jeden.Count > 0 && JS.Tak(wydajDoDzwigni(sim, new List<double> { jeden[0].id }).przyjeli))
+                    {
+                        mysl(sim, $"przy dźwigni za mało siły — dosyłam: {imie(jeden[0])} (siła {JS.S(Sila.Poziom(jeden[0]))})");
+                        return;
+                    }
+                }
+                foreach (var c in przy) odwolajPolecenie(sim, c);
+                mysl(sim, $"przy dźwigni za mało siły ({JS.S(sila)} z {JS.S(Dzwignia.POTRZEBA)}) — odwołuję, dobiorę innych");
+                return;
+            }
+            if (JS.Tak(p.bramaOd) && !st.wolne) p.bramaOd = null;
+            if (st.otwarcie >= BRAMA.idzieOd)
+            {
+                foreach (var c in zRola(sim, "rycerz")) if (!wLochu(c) && w.wPrzedprozu(c.x, c.y)) wPosterunku(c);
+                return;
+            }
+            var chcaWejsc = zRola(sim, "pobozny").Any(c => (c.job == Job.PIELGRZYM || c.wyprawa == true) && !wLochu(c))
+                || zywi(sim).Any(c => w.wPrzedprozu(c.x, c.y));
+            if (!chcaWejsc || stanPomnika(sim).faza == "kona") return;
+            var ekipa = ekipaDoDzwigni(sim);
+            if (ekipa == null)
+            {
+                if (sim.tick % (2 * M) < BOT_CO) mysl(sim, $"nikt nie ma dość siły na dźwignię (trzeba razem {JS.S(Dzwignia.POTRZEBA)}) — czekam, aż nabiorą");
+                return;
+            }
+            var r = wydajDoDzwigni(sim, ekipa.Select(c => c.id).ToList());
+            if (!JS.Tak(r.przyjeli)) return;
+            p.bramaOd = sim.tick;
+            var pp = w.przedproze;
+            foreach (var c in zRola(sim, "rycerz")) if (!wLochu(c) && c.polecenie?.dzwignia != true) wydajPolecenie(sim, c, "idz", pp.x1 - 1 - (c.id % 3), pp.y1);
+            mysl(sim, $"brama lochu zamknięta — do dźwigni: {string.Join(" i ", ekipa.Select(c => $"{imie(c)} (siła {JS.S(Sila.Poziom(c))})"))}");
+        }
+
+        /// <summary>Kto może iść do dźwigni: żywy, poza lochem, syty, nie walczy, nie skleja liny, nie ma innego rozkazu.</summary>
+        static List<Creature> kandydaciDoDzwigni(Sim sim) =>
+            zywi(sim).Where(c => !sim.world.wLochu(c.x, c.y) && c.hunger < 0.6 && c.job != Job.FIGHT && c.naprawia == null && c.wDloni != true && c.lot == null
+                && (c.polecenie == null || c.polecenie.typ == "idz" && c.polecenie.dzwignia != true && c.polecenie.zaInnych != true)).ToList();
+
+        /// <summary>Najbliżsi dźwigni, rycerz na końcu (on ma wejść do lochu).</summary>
+        static List<Creature> najblizsiDoDzwigni(Sim sim, IEnumerable<Creature> kto)
+        {
+            var k = sim.world.kociol;
+            double koszt(Creature c) => JS.Hypot(c.x - k.x, c.y - k.y) + (rolaPostaci(c) == "rycerz" ? 1000 : 0);
+            return JS.Sort(kto.ToList(), (a, b) => koszt(a) - koszt(b));
+        }
+
+        /// <summary>
+        /// Ekipa do dźwigni: jeden, gdy sam ma dość siły; inaczej para, która ma razem dość — najbliżsi, rycerz na końcu.
+        /// Null — nikt nie ma dość siły ani sam, ani w parze.
+        /// </summary>
+        static List<Creature>? ekipaDoDzwigni(Sim sim)
+        {
+            var kand = najblizsiDoDzwigni(sim, kandydaciDoDzwigni(sim));
+            var sam = kand.FirstOrDefault(c => Sila.Poziom(c) >= Dzwignia.POTRZEBA);
+            if (sam != null) return new List<Creature> { sam };
+            // pary w kolejności kandydatów (najbliżsi pierwsi) — pierwsza, która ma razem dość
+            for (int i = 0; i < kand.Count; i++)
+                for (int j = i + 1; j < kand.Count; j++)
+                    if (Sila.Poziom(kand[i]) + Sila.Poziom(kand[j]) >= Dzwignia.POTRZEBA) return new List<Creature> { kand[i], kand[j] };
+            return null;
+        }
+
         static void rycerzNaFale(Sim sim)
         {
             var w = sim.world;
@@ -476,7 +574,7 @@ namespace Trzewia.Symulacja
                 {
                     if (wydajPolecenie(sim, c, "idz", w.coreX + (JS.Tak(c.id % 2) ? -6 : 6), w.przedsionekY) == null) mysl(sim, "fala Strażników — rycerz biegnie pod pomnik");
                 }
-                else if (!fala && c.polecenie?.typ == "idz") odwolajPolecenie(sim, c);
+                else if (!fala && c.polecenie?.typ == "idz" && c.polecenie.dzwignia != true) odwolajPolecenie(sim, c);
             }
         }
 
