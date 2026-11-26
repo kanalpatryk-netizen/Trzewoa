@@ -227,6 +227,8 @@ namespace Trzewia.Rysunek.Duszki
                 case "zaklada": return A("zaklada")?.Klatka(Math.Max(0, Math.Min(1, (c.zakladanie ?? 0) / ZBROJA.zakladanieTikow))) ?? Spoczynek();
                 case "skleja": return A("skleja")?.KlatkaZegara(czas, id) ?? Spoczynek();
                 case "kreci": return A("kreci")?.KlatkaZegara(czas, id) ?? Spoczynek();
+                // etap 8: ciągnie linę dźwigni (stare arkusze tej animacji nie mają — wtedy jak przy kołowrocie albo spoczynek)
+                case "ciagnie": return d.Animacja("ciagnie")?.KlatkaZegara(czas, id) ?? A("kreci")?.KlatkaZegara(czas, id) ?? Spoczynek();
                 default: return Spoczynek();
             }
         }

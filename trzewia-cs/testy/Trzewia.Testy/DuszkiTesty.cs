@@ -143,7 +143,8 @@ public class DuszkiTesty
     /// <summary>
     /// Oprawa, etap 7d: każdy arkusz nowych ludzi (dane/grafika/duszki-ludzie) ma dokładnie te same animacje (nazwy, klatki,
     /// sterowniki, czasy) i poziomy wielkości co stary arkusz o tej samej nazwie — gra wybiera klatki tymi samymi regułami.
-    /// Każdy stary arkusz ludu ma swój nowy odpowiednik, a każda klatka ma głowę i niepusty prostokąt.
+    /// Każdy stary arkusz ludu ma swój nowy odpowiednik, a każda klatka ma głowę i niepusty prostokąt. Etap 8: nowe arkusze
+    /// (bez arkuszy ścięcia) mają ponad to animacje, których starym brakuje — „ciagnie” (lina dźwigni) — dopisane na końcu.
     /// </summary>
     [Fact]
     public void NowiLudzieMajaTeSameAnimacjeCoStarzy()
@@ -167,11 +168,13 @@ public class DuszkiTesty
                 var n = Duszek.Daj(nazwa!)!;
                 Assert.NotSame(s, n);
                 Assert.True(n.poziomy.All(p => p.nowi), nazwa);
-                Assert.Equal(s.klatek, n.klatek);
+                var dodane = nazwa!.EndsWith("-sciecie") ? Array.Empty<string>() : new[] { "ciagnie" };
+                Assert.Equal(s.klatek + dodane.Sum(k => n.animacje[k].n), n.klatek);
                 Assert.Equal(n.klatek, n.glowa.Length);
                 Assert.Equal(s.mnoznik, n.mnoznik);
                 Assert.Equal(s.poziomy.Select(p => p.h), n.poziomy.Select(p => p.h));
-                Assert.Equal(s.animacje.Keys.OrderBy(k => k), n.animacje.Keys.OrderBy(k => k));
+                Assert.Equal(s.animacje.Keys.Concat(dodane).OrderBy(k => k), n.animacje.Keys.OrderBy(k => k));
+                foreach (var k in dodane) Assert.True(n.animacje[k].od >= s.klatek && n.animacje[k].petla && n.animacje[k].n == 8, $"{nazwa}/{k}");
                 foreach (var (k, a) in s.animacje)
                 {
                     var b = n.animacje[k];

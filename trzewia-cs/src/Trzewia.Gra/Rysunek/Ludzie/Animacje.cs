@@ -332,6 +332,7 @@ namespace Trzewia.Rysunek.Ludzie
                 case "odmawia": k = Odmawia(s, u); break;
                 case "skleja": k = Skleja(s, u); break;
                 case "kreci": k = Kreci(s, u); break;
+                case "ciagnie": k = Ciagnie(s, u); break;
                 case "czyta": k = Czyta(s, 0.3, 1 - Clamp01(u)); break;
                 case "czyta-trwa": k = Czyta(s, u, 0); break;
                 default: k = Rycerz(s, n, u); break;
@@ -702,6 +703,36 @@ namespace Trzewia.Rysunek.Ludzie
             p.dlonP = 1.0; p.dlonL = 1.0;
             var r = default(Rekwizyty);
             if (s.rola == "robotnik") { r.lampa = 2; r.lampaX = -0.2; }
+            return new KlatkaPostaci(p, r);
+        }
+
+        /// <summary>Kierunek liny dźwigni od dłoni: tyle radianów nad poziom, naprzód (etap 8).</summary>
+        public const double KAT_LINY = 0.75;
+
+        /// <summary>
+        /// Etap 8: ciągnie linę dźwigni (pętla). Lina biegnie naprzód i w górę, do szczytu ramienia dźwigni. Odchylony
+        /// w tył, przednia noga zaparta, tylna ugięta, dłonie jedna za drugą na linie. Szarpnięcie: odchyla się mocniej,
+        /// przyciąga dłonie do piersi i przysiada; potem dłonie wędrują z powrotem po linie. Rycerz — miecz w pochwie,
+        /// tarcza na plecach; grabarz — latarnia u pasa; mnich — bez kostura.
+        /// </summary>
+        static KlatkaPostaci Ciagnie(Stroj s, double u)
+        {
+            var q = TAU * u;
+            var sz = 0.5 - 0.5 * Math.Cos(q);          // 0 — dłonie wysunięte, 1 — szarpnięcie
+            var p = Baza(s);
+            p.tulow = -0.24 - 0.26 * sz; p.glowa = 0.14 + 0.14 * sz;
+            p.biodroX = -0.04 - 0.07 * sz;
+            p.udoP = 0.55 + 0.05 * sz; p.kolanoP = 0.14 + 0.1 * sz; p.stopaP = -0.14;
+            p.udoL = -0.3 - 0.06 * sz; p.kolanoL = 0.36 + 0.4 * sz; p.stopaL = 0.08;
+            // dłonie na linie: od barku naprzód i w górę wzdłuż liny; szarpnięcie przyciąga je bliżej
+            var zasieg = 0.27 - 0.09 * sz;
+            double kx = Math.Cos(KAT_LINY), ky = -Math.Sin(KAT_LINY);
+            Siegnij(ref p, true, kx * (zasieg + 0.05), ky * (zasieg + 0.05));
+            Siegnij(ref p, false, kx * zasieg, ky * zasieg + 0.01);
+            p.usta = 0.3 + 0.35 * sz;
+            var r = default(Rekwizyty);
+            if (s.rola == "robotnik") r.lampa = 3;
+            if (s.rola == "rycerz") { r.pochwa = true; r.tarcza = false; }
             return new KlatkaPostaci(p, r);
         }
 

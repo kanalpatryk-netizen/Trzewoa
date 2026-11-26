@@ -39,6 +39,16 @@ static class PiekarniaLudzi
 
     sealed class Anim { public string nazwa = ""; public int od, n; public bool petla, srodki; }
 
+    /// <summary>
+    /// Etap 8: animacje, których stare arkusze nie mają — dopisane na końcu, od nowej strony (stare strony wychodzą bajt
+    /// w bajt te same). „ciagnie” — ciągnie linę dźwigni (pętla na zegarze ekranu, 1,1 s na szarpnięcie); światła klatek
+    /// (latarnia grabarza u pasa) — barwa i siła jak w pierwszej klatce animacji `swiatlaJak`, miejsce z nowej postaci.
+    /// </summary>
+    static readonly (string nazwa, int n, double ms, double przes, string swiatlaJak)[] DODATKOWE =
+    {
+        ("ciagnie", 8, 1100, 0.37, "stoi"),
+    };
+
     /// <summary>Faza albo postęp, w którym gra pokazuje klatkę `i` (pętle i przebiegi „w środkach” — środek przedziału).</summary>
     static double UKlatki(Anim a, int i) => a.petla || a.srodki ? (i + 0.5) / a.n : a.n <= 1 ? 0 : (double)i / (a.n - 1);
 
@@ -81,6 +91,20 @@ static class PiekarniaLudzi
         }
         anim.Sort((x, y) => x.od.CompareTo(y.od));
         int klatek = 0; foreach (var a in anim) klatek = Math.Max(klatek, a.od + a.n);
+        // etap 8: nowe animacje na końcu (arkusz ścięcia ma tylko ścięcie — bez nich)
+        var noweAnimacje = new Dictionary<string, object?>(animacje);
+        var stareKlatki = klatek;
+        var swiatlaNowych = new Dictionary<int, int>();
+        if (!nazwa.EndsWith("-sciecie", StringComparison.Ordinal))
+            foreach (var (n, ile, ms, przes, jak) in DODATKOWE)
+            {
+                if (animacje.ContainsKey(n)) continue;
+                anim.Add(new Anim { nazwa = n, od = klatek, n = ile, petla = true });
+                noweAnimacje[n] = new Dictionary<string, object?> { ["od"] = (double)klatek, ["n"] = (double)ile, ["ster"] = "czas", ["mnoz"] = 1 / ms, ["przes"] = przes, ["ms"] = ms, ["petla"] = true };
+                var wzorSw = animacje.TryGetValue(jak, out var aj) && aj is Dictionary<string, object?> dj ? (int)(double)dj["od"]! : -1;
+                for (int i = 0; i < ile; i++) swiatlaNowych[klatek + i] = wzorSw;
+                klatek += ile;
+            }
         // klatki: poza i rekwizyty
         var kl = new KlatkaPostaci[klatek];
         foreach (var a in anim)
@@ -95,7 +119,7 @@ static class PiekarniaLudzi
             var pw = (Dictionary<string, object?>)poziomyWzoru[pz]!;
             var h = (double)pw["h"]!;
             var swiatlaWzoru = pw.TryGetValue("swiatla", out var sw) ? sw as List<object?> : null;
-            var (poziom, glowyPoziomu, b) = PieczPoziom(katalog, nazwa, h, stroj, kl, swiatlaWzoru);
+            var (poziom, glowyPoziomu, b) = PieczPoziom(katalog, nazwa, h, stroj, kl, swiatlaWzoru, stareKlatki, swiatlaNowych);
             poziomy.Add(poziom);
             bajty += b;
             // głowa (ułamki wzrostu) — z największego poziomu
@@ -104,7 +128,7 @@ static class PiekarniaLudzi
         var wynik = new Dictionary<string, object?>
         {
             ["wersja"] = 1.0, ["postac"] = wzor["postac"], ["wzor"] = wzor["wzor"], ["wariant"] = wzor["wariant"],
-            ["mnoznik"] = wzor["mnoznik"], ["nowi"] = true, ["poziomy"] = poziomy, ["animacje"] = wzor["animacje"], ["glowa"] = glowy,
+            ["mnoznik"] = wzor["mnoznik"], ["nowi"] = true, ["poziomy"] = poziomy, ["animacje"] = noweAnimacje, ["glowa"] = glowy,
         };
         File.WriteAllText(Path.Combine(katalog, nazwa + ".json"), Json.Pisz(wynik));
         return bajty;
@@ -114,7 +138,7 @@ static class PiekarniaLudzi
 
     /// <summary>Jeden poziom wielkości: klatki do stron (półki), światła i głowy.</summary>
     static (Dictionary<string, object?> poziom, List<object?> glowy, long bajty) PieczPoziom(string katalog, string nazwa, double h, Stroj s,
-        KlatkaPostaci[] kl, List<object?>? swiatlaWzoru)
+        KlatkaPostaci[] kl, List<object?>? swiatlaWzoru, int nowaStronaOd, Dictionary<int, int> swiatlaNowych)
     {
         // brudnopis: stopy w (ox, oy) — miejsce na miecz nad głową w skoku i ciało leżącego
         int W = (int)Math.Ceiling(h * 3.6), H = (int)Math.Ceiling(h * 3.1);
@@ -139,6 +163,13 @@ static class PiekarniaLudzi
         for (int i = 0; i < kl.Length; i++)
         {
             int w = ramki[i].x1 - ramki[i].x0, hh = ramki[i].y1 - ramki[i].y0;
+            // (etap 8: nowe animacje od nowej strony — stara strona kończy się dokładnie tak, jak kończyła się bez nich,
+            // więc stare strony wychodzą bajt w bajt te same)
+            if (i == nowaStronaOd && i > 0)
+            {
+                rozmiary.Add((szer, sy + wiersz));
+                strona++; sx = 0; sy = 0; wiersz = 0; szer = 0;
+            }
             if (sx + w > STRONA) { sx = 0; sy += wiersz + ODSTEP; wiersz = 0; }
             if (sy + hh > STRONA)
             {
@@ -181,7 +212,8 @@ static class PiekarniaLudzi
             klatki.Add(new List<object?> { (double)miejsca[i].strona, (double)miejsca[i].x, (double)miejsca[i].y, (double)(r.x1 - r.x0), (double)(r.y1 - r.y0), (double)(r.x0 - ox), (double)(r.y0 - oy) });
             var q = punkty[i];
             glowy.Add(new List<object?> { Z(q.glowa.x / h), Z(q.glowa.y / h), Z(q.rGlowy / h * 1.2) });
-            swiatla.Add(Swiatla(swiatlaWzoru != null && i < swiatlaWzoru.Count ? swiatlaWzoru[i] as List<object?> : null, q, h));
+            var zKlatki = swiatlaNowych.TryGetValue(i, out var jak) ? jak : i;
+            swiatla.Add(Swiatla(swiatlaWzoru != null && zKlatki >= 0 && zKlatki < swiatlaWzoru.Count ? swiatlaWzoru[zKlatki] as List<object?> : null, q, h));
         }
         var poziom = new Dictionary<string, object?> { ["h"] = h, ["strony"] = strony, ["klatki"] = klatki, ["swiatla"] = swiatla };
         return (poziom, glowy, bajty);

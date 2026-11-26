@@ -13,7 +13,7 @@ public class LudzieTesty
     static readonly string[] WSPOLNE =
     {
         "stoi", "stoi-gest", "idzie", "biegnie", "schody-gora", "schody-dol", "wspina", "spada", "czolga", "kuca-stoi", "kuca-idzie",
-        "kopie", "buduje", "je", "spi", "odmawia", "skleja", "modli",
+        "kopie", "buduje", "je", "spi", "odmawia", "skleja", "modli", "ciagnie",
     };
     static readonly string[] RYCERZ =
     {
